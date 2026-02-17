@@ -161,6 +161,19 @@ public interface IExecutionSessionCoordinator
         AwaitRegistrationRequest request,
         CancellationToken cancellationToken);
 
+
+    /// <summary>
+    /// Evaluates an observed exception signal and returns the policy decision that should control session behavior.
+    /// </summary>
+    /// <param name="signal">The exception signal observed by the interpreter execution loop.</param>
+    /// <param name="executionRequest">The parent execution request used for budget and diagnostics context.</param>
+    /// <param name="cancellationToken">A token used to stop policy evaluation when host cancellation is requested.</param>
+    /// <returns>A value task that resolves to the exception-policy decision for the supplied signal.</returns>
+    ValueTask<ExceptionPolicyDecision> EvaluateExceptionAsync(
+        ExceptionSignalDescriptor signal,
+        IExecutionRequest executionRequest,
+        CancellationToken cancellationToken);
+
     /// <summary>
     /// Charges one execution budget meter and returns the resulting accounting state for deterministic guardrail enforcement.
     /// </summary>
