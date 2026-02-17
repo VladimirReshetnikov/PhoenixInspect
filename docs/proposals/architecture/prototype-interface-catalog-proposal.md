@@ -11,7 +11,7 @@ This proposal documents the current prototype interface surface under `src/` so 
 
 ```text
 src/
-├── Interpreter.Abstractions  # Session lifecycle and request/result contracts
+├── Interpreter.Abstractions  # Session lifecycle, stepping, and request/result contracts
 ├── Interpreter.Metadata      # Entry-method metadata resolution seam
 ├── Interpreter.CallModel     # Call target/effect classification seam
 ├── Interpreter.MemoryModel   # Abstract memory read/write seam
@@ -38,23 +38,27 @@ This shape intentionally keeps dependency flow from host/coordination edges towa
 
 `Interpreter.Abstractions` keeps request/result/session primitives centralized so all other modules share a single execution vocabulary.
 
-### 4.2 Metadata contracts
+### 4.2 Stepping control-plane contracts
+
+`Interpreter.Abstractions` now also carries first-pass stepping contracts (`IExecutionStepper`, `StepRequest`, `StepResultSnapshot`, and related enums/data objects) so host-driven virtual debugging flows can evolve without coupling to core implementation details.
+
+### 4.3 Metadata contracts
 
 `Interpreter.Metadata` isolates method-body acquisition and descriptor shape decisions from core stepping and hosting concerns.
 
-### 4.3 Call-model contracts
+### 4.4 Call-model contracts
 
 `Interpreter.CallModel` defines call-site target/effect classification responsibilities needed by call/effects architecture work.
 
-### 4.4 Memory-model contracts
+### 4.5 Memory-model contracts
 
 `Interpreter.MemoryModel` provides a first-pass abstraction for deterministic value reads/writes with provenance-friendly payloads.
 
-### 4.5 Core orchestration contracts
+### 4.6 Core orchestration contracts
 
 `Interpreter.Core` continues to own execution orchestration and instruction stepping while introducing an explicit coordinator seam for call-model and memory-model collaboration.
 
-### 4.6 Diagnostics and hosting contracts
+### 4.7 Diagnostics and hosting contracts
 
 `Interpreter.Diagnostics` and `Interpreter.Hosting` preserve explainability and composition concerns as explicit, separately evolvable layers.
 
