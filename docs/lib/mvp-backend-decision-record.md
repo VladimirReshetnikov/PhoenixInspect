@@ -12,7 +12,7 @@ This document records the selected MVP primary backend strategy for metadata/IL/
 
 ## Decision statement
 
-> We select **AsmResolver** as the **primary metadata/IL/symbol backend** for MVP prototyping, with **dnlib** as the **fallback and cross-check backend** for parity validation and Windows PDB contingency scenarios.
+> We select **AsmResolver** as the **chosen metadata/IL/symbol backend** for MVP prototyping.
 
 ## Context summary
 
@@ -21,7 +21,7 @@ The decision is driven by the current design-phase constraints:
 - deterministic and explainable execution behavior is mandatory,
 - adapter contracts must stay backend-neutral,
 - the MVP needs one high-velocity primary implementation path,
-- fallback coverage is still needed for parity checks and format edge cases.
+- comparative evidence from alternative libraries remains important for confidence and future decision review.
 
 Evidence remains mostly source-scan level (low confidence overall), so this is intentionally marked as a **provisional lock** for MVP prototyping rather than a long-term irreversible dependency commitment.
 
@@ -29,8 +29,8 @@ Evidence remains mostly source-scan level (low confidence overall), so this is i
 
 | Option | Description | Included in final decision |
 |---|---|---|
-| A | AsmResolver-primary, dnlib fallback, SRM-oriented symbol bridge where needed. | **Yes** |
-| B | dnlib-primary, AsmResolver fallback, project-owned symbol normalization. | No |
+| A | AsmResolver as the chosen backend, with SRM-oriented symbol bridge where needed. | **Yes** |
+| B | dnlib as chosen backend, project-owned symbol normalization. | No |
 | C | SRM-oriented custom primary with selective library augmentation for IL-heavy paths. | No |
 | D | Hybrid split: metadata/IL from one backend, symbols from another via strict adapters. | No (deferred) |
 
@@ -41,7 +41,7 @@ Evidence remains mostly source-scan level (low confidence overall), so this is i
 | Metadata completeness for MVP corpus | Medium confidence minimum | **Provisional pass** | Source evidence indicates strong coverage in both AsmResolver and dnlib; fixture validation still required. |
 | IL body fidelity (instruction + EH + locals) | Medium confidence minimum | **Provisional pass** | AsmResolver method-body model appears suitable for normalized projection; malformed-body behavior still unproven. |
 | Generic signature/context behavior | Medium confidence minimum | **Provisional pass** | Current notes indicate feasible projection path, but generic-heavy conformance scenarios remain open. |
-| Portable PDB baseline mapping | Medium confidence minimum | **Provisional pass** | AsmResolver path exists; parity against SRM-oriented expectations still required. |
+| Portable PDB baseline mapping | Medium confidence minimum | **Provisional pass** | AsmResolver path exists; consistency checks against SRM-oriented expectations still required. |
 | Miss-reason normalization compatibility | Medium confidence minimum | **Provisional pass** | No blocker identified; requires adapter conformance fixtures before graduation to confirmed pass. |
 | Deterministic budget behavior | Medium confidence minimum | **Provisional pass** | Policy injection points are present; deterministic replay proof still pending. |
 
@@ -52,10 +52,10 @@ Evidence remains mostly source-scan level (low confidence overall), so this is i
    - Its package/layer boundaries align with the project’s planned separation between acquisition, projection, and interpreter-facing contracts.
    - Existing design notes already treat AsmResolver as the leading candidate, so choosing it now removes ambiguity and focuses prototype work.
 
-2. **Why dnlib is not primary (but remains critical)**
-   - dnlib is strong and remains highly valuable, especially for fallback and cross-check behavior.
-   - However, selecting dnlib primary now would not materially reduce architectural risk versus AsmResolver and could increase churn against current design momentum.
-   - dnlib remains the designated fallback and parity backend, preserving optionality.
+2. **Why dnlib is not chosen for MVP (but remains critical evidence)**
+   - dnlib is strong and remains highly valuable for comparisons and parity validation.
+   - However, selecting dnlib now would not materially reduce architectural risk versus AsmResolver and could increase churn against current design momentum.
+   - We preserve dnlib analysis and comparison coverage, but we are not designating a formal fallback backend at this stage.
 
 3. **Why not SRM-custom or split-hybrid for MVP primary**
    - SRM-custom primary is promising long-term but imposes additional project-owned lifting during a phase where we need velocity and rapid evidence generation.
@@ -67,7 +67,7 @@ Evidence remains mostly source-scan level (low confidence overall), so this is i
 
 - Unblocks focused prototype work against a single primary backend path.
 - Preserves architectural safety via explicit backend-neutral contract requirements.
-- Keeps fallback optionality through dnlib-based parity and contingency coverage.
+- Preserves decision optionality through ongoing dnlib/SRM comparison and parity coverage.
 
 ### Negative / trade-offs
 
@@ -88,10 +88,10 @@ Evidence remains mostly source-scan level (low confidence overall), so this is i
 | Implement baseline AsmResolver-to-normalized projection for method body + symbols. | TBD | MVP prototype baseline | `docs/lib/adapter-conformance-checklist.md` |
 | Add dnlib parity scenarios for generic-heavy IL + partial symbol conditions. | TBD | MVP prototype baseline | `docs/lib/backend-evidence-log.md` |
 | Define explicit trigger conditions for revisiting primary-backend choice (e.g., repeated parity divergence). | TBD | MVP prototype baseline | `docs/lib/backend-capability-matrix.md` |
-| Update integration proposal language to reflect AsmResolver-primary / dnlib-fallback stance. | TBD | Next docs pass | `docs/proposals/integration/pe-pdb-reader-integration-proposal.md` |
+| Update integration proposal language to reflect AsmResolver as chosen backend while preserving comparison guidance. | TBD | Next docs pass | `docs/proposals/integration/pe-pdb-reader-integration-proposal.md` |
 
 ## Change log
 
 | Date | Change | Author |
 |---|---|---|
-| 2026-02-17 | Promoted record from pending template to provisional MVP decision: AsmResolver primary, dnlib fallback. | Codex |
+| 2026-02-17 | Promoted record from pending template to provisional MVP decision: AsmResolver chosen backend; no designated fallback backend at this stage. | Codex |

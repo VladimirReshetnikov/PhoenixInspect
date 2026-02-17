@@ -5,9 +5,10 @@
 For MVP prototyping, this proposal now aligns to the project decision in `docs/lib/mvp-backend-decision-record.md`:
 
 - **Primary backend:** AsmResolver
-- **Fallback/cross-check backend:** dnlib
+- **Designated fallback backend:** none for now
+- **Comparison set retained in docs:** dnlib, SRM/PEReader, and Mono.Cecil trade-off analysis remains in scope
 
-All integration guidance below should be interpreted through this default stance, while preserving backend-neutral adapter contracts and decision-revisit triggers from the decision record.
+All integration guidance below should be interpreted through this default stance, while preserving backend-neutral adapter contracts, side-by-side comparison guidance, and decision-revisit triggers from the decision record.
 
 ---
 
