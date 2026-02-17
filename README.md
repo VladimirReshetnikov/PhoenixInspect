@@ -22,36 +22,46 @@ We are designing a system that can:
 
 ## Documentation Map
 
-### Core proposals
+### Product and user experience
 
-- `docs/il-interpreter-framework-proposal.md`  
-  Foundational proposal for interpreter architecture and execution framework.
-- `docs/mvp-abstract-domain-proposal.md`  
-  Proposal for initial abstract domains and convergence behavior.
-- `docs/technical-stack-proposal.md`  
-  Proposed stack, package boundaries, dependencies, and hardening path.
-- `docs/post-mortem-debugging-feature-proposal.md`  
+- `docs/proposals/product/post-mortem-debugging-feature-proposal.md`
   Product-facing proposal for dump-time expression evaluation.
-- `docs/future-work-planning.md`  
-  Milestones, strategic tracks, decision gates, and follow-up docs.
 
-### Documentation governance
+### Architecture and engine design
 
-- `docs/documentation-organization-proposal.md`  
-  Proposed structure, lifecycle, and quality standards for all project documentation.
-- `docs/call-model-and-effects.md`
+- `docs/proposals/architecture/il-interpreter-framework-proposal.md`
+  Foundational proposal for interpreter architecture and execution framework.
+- `docs/proposals/architecture/mvp-abstract-domain-proposal.md`
+  Proposal for initial abstract domains and convergence behavior.
+- `docs/proposals/architecture/technical-stack-proposal.md`
+  Proposed stack, package boundaries, dependencies, and hardening path.
+- `docs/proposals/architecture/call-model-and-effects.md`
   Draft contract for call classification, fallback strategy, and effect semantics.
+- `docs/proposals/architecture/generic-context-resolver-proposal.md`
+  Generic-context reconstruction strategy for dump-backed interpretation.
+
+### Integration design
+
+- `docs/proposals/integration/clrmd-integration-proposal.md`
+  ClrMD + PE/PDB integration layering and host boundary proposal.
+
+### Planning and governance
+
+- `docs/plans/future-work-planning.md`
+  Milestones, strategic tracks, decision gates, and follow-up docs.
+- `docs/governance/documentation-organization-proposal.md`
+  Proposed structure, lifecycle, and quality standards for project documentation.
 
 ## How to Read the Docs (Suggested Order)
 
 If you are new to the project, read in this order:
 
-1. `docs/post-mortem-debugging-feature-proposal.md` (user/problem framing)
-2. `docs/il-interpreter-framework-proposal.md` (engine architecture)
-3. `docs/mvp-abstract-domain-proposal.md` (analysis model)
-4. `docs/technical-stack-proposal.md` (implementation stack choices)
-5. `docs/future-work-planning.md` (milestones and priorities)
-6. `docs/documentation-organization-proposal.md` (documentation process and information architecture)
+1. `docs/proposals/product/post-mortem-debugging-feature-proposal.md` (user/problem framing)
+2. `docs/proposals/architecture/il-interpreter-framework-proposal.md` (engine architecture)
+3. `docs/proposals/architecture/mvp-abstract-domain-proposal.md` (analysis model)
+4. `docs/proposals/architecture/technical-stack-proposal.md` (implementation stack choices)
+5. `docs/plans/future-work-planning.md` (milestones and priorities)
+6. `docs/governance/documentation-organization-proposal.md` (documentation process and information architecture)
 
 ## Decision-Making Principles
 
@@ -86,7 +96,7 @@ When adding docs:
 The current priorities are:
 
 1. Establish a stable top-level documentation architecture.
-2. Add missing companion documents listed in `future-work-planning.md`.
+2. Add missing companion documents listed in `docs/plans/future-work-planning.md`.
 3. Define crisp contracts for call modeling, effects, and unknown provenance.
 4. Capture quality gates for moving from design to implementation.
 
