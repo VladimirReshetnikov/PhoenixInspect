@@ -7,5 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="../Interpreter.Abstractions/Interpreter.Abstractions.csproj" />
     <ProjectReference Include="../Interpreter.Metadata/Interpreter.Metadata.csproj" />
+    <ProjectReference Include="../Interpreter.CallModel/Interpreter.CallModel.csproj" />
+    <ProjectReference Include="../Interpreter.MemoryModel/Interpreter.MemoryModel.csproj" />
   </ItemGroup>
 </Project>

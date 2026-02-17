@@ -17,3 +17,12 @@
 - Expect iterative review feedback through PRs.
 - Optimize for ambitious progress and thoughtful experimentation, while preserving architectural coherence.
 - Take informed risks when they improve learning velocity or design quality.
+
+## Prototype code in design phase
+- While documentation remains the primary deliverable, writing **prototype code under `src/`** is a legitimate planning/design activity when it clarifies architecture decisions.
+- Prototype code should remain intentionally lightweight, reversible, and explicitly marked as draft.
+- Do not present prototype interfaces, project layouts, or API shapes as final commitments.
+
+## Draft API documentation requirement
+- All **public types and public methods** in prototype code must include detailed XML documentation comments.
+- XML docs should explain intent, parameters/returns, and draft-phase caveats so design rationale remains discoverable in code.
