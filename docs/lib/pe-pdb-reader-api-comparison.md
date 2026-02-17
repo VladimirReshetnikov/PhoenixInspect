@@ -1,235 +1,367 @@
 # PE/PDB reader API comparison and onboarding guide (source-driven draft)
 
-This note expands the backend comparison with **source-level API onboarding guidance** for the PE/PDB reader stacks represented under `lib/`.
+This document compares PE/metadata/IL/PDB reader stacks represented in `lib/` with a specific goal:
 
-Primary objective: help developers who already know one stack quickly map concepts, entry points, and pitfalls in the others.
+- accelerate onboarding when moving between stacks,
+- make adapter design choices explicit,
+- and ground claims in concrete source APIs rather than package-level marketing language.
+
+This rewrite expands the previous draft with deeper source-level details about:
+
+1. load pipelines and parameter surfaces,
+2. method-body decode behavior and failure semantics,
+3. symbol routing and PDB format branching,
+4. mutability/laziness traps that affect deterministic interpretation,
+5. and concrete normalization guidance for our backend-neutral contracts.
+
+---
 
 ## Scope and evidence baseline
 
-This comparison is based on source snapshots in:
+### Included source snapshots
 
-- `lib/asmresolver/src/*`
-- `lib/dnlib/src/*`
-- `lib/cecil/*`
-- selected symbol/interop integration points in dnlib and Cecil that expose DiaSymReader-style workflows.
+- **AsmResolver**: `lib/asmresolver/src/AsmResolver.PE*`, `AsmResolver.DotNet*`, `AsmResolver.Symbols.Pdb*`
+- **dnlib**: `lib/dnlib/src/DotNet/*`, `lib/dnlib/src/PE/*`
+- **Mono.Cecil**: `lib/cecil/Mono.Cecil*`, `lib/cecil/Mono.Cecil.Cil*`, `lib/cecil/symbols/pdb/*`
 
-`System.Reflection.Metadata` (SRM) is still included as a design reference because we intend to keep an SRM-oriented path viable, but this document focuses most deeply on the stacks with source snapshots in this repository.
+### Reference-only comparator
 
-## Reader stacks covered
+- **System.Reflection.Metadata (SRM) + PEReader** remains a design comparator for contract stability and low-level determinism; no local source snapshot is hosted under `lib/`.
 
-1. **AsmResolver**
-   - PE layer (`AsmResolver.PE.File.PEFile`, `AsmResolver.PE.PEImage`)
-   - .NET layer (`AsmResolver.DotNet.ModuleDefinition`)
-   - PDB layer (`AsmResolver.Symbols.Pdb.PdbImage`)
-2. **dnlib**
-   - metadata/module layer (`dnlib.DotNet.ModuleDefMD`)
-   - IL body decode (`dnlib.DotNet.Emit.MethodBodyReader`)
-   - symbol layer (`dnlib.DotNet.Pdb.Symbols.SymbolReader` + factories)
-3. **Mono.Cecil**
-   - module layer (`Mono.Cecil.ModuleDefinition`, `ReaderParameters`)
-   - IL layer (`Mono.Cecil.Cil.MethodBody`, `Instruction`)
-   - symbol providers (`PdbReaderProvider`, portable/native provider split)
-4. **SRM + PEReader model** (design comparator)
-5. **DiaSymReader-focused flows** as consumed by dnlib/Cecil symbol subsystems.
+### Out-of-scope for this note
+
+- high-level decompiler features,
+- editing/rewriting authoring workflows except where they affect read-only semantics,
+- language front-end concerns (Roslyn) beyond symbol/IL interoperability boundaries.
 
 ---
 
-## Quick onboarding matrix: “If you know X, look at Y”
+## Reader stacks and canonical entry points
 
-| Task | AsmResolver | dnlib | Mono.Cecil | SRM mental equivalent |
+## 1) AsmResolver
+
+### Module / PE load surface
+
+- `ModuleDefinition.FromFile/FromStream/FromBytes/FromReader/FromDataSource/FromModuleBaseAddress/...`
+- `PEImage.FromFile/FromStream/FromBytes/...`
+- `PEFile.FromFile/FromStream/FromBytes/...`
+
+The surface is intentionally broad and mostly symmetric across roots.
+
+### Parameter objects
+
+- `ModuleReaderParameters`
+  - exposes `MethodBodyReader`, `FieldRvaDataReader`, `PEReaderParameters`, `ModuleResolver`, `RuntimeContext`.
+- `PEReaderParameters`
+  - exposes `ErrorListener`, `MetadataStreamReader`, `DebugDataReader`, `CertificateReader`, `FileService`, `ReadyToRunSectionReader`.
+- `PdbReaderParameters`
+  - focused and minimal: `ErrorListener` only.
+
+### PDB root
+
+- `PdbImage.FromFile/FromBytes/FromReader/...` gives a first-class symbol root independent of module load.
+
+**Design implication:** AsmResolver naturally supports “PE discovery step” and “PDB parse step” as separate adapter phases, which aligns well with deterministic diagnostics.
+
+---
+
+## 2) dnlib
+
+### Module load surface
+
+- central root: `ModuleDefMD.Load(...)` with many overloads.
+- config via `ModuleCreationOptions` (including PDB options and runtime reader behavior).
+
+### Metadata and decrypter hooks
+
+- `ModuleDefMD` directly exposes metadata streams and tables (`TablesStream`, `StringsStream`, `BlobStream`, `GuidStream`, `USStream`).
+- explicit deobfuscation hooks:
+  - `IMethodDecrypter MethodDecrypter`
+  - `IStringDecrypter StringDecrypter`
+
+### Method body decode surface
+
+- `Emit.MethodBodyReader.CreateCilBody(...)` has many overload families:
+  - decode from `DataReader` or raw `byte[]`,
+  - optional separate EH reader,
+  - explicit `GenericParamContext`,
+  - optional `ModuleContext`.
+
+### Symbol root/routing
+
+- symbol abstraction starts at `DotNet.Pdb.Symbols.SymbolReader`.
+- routing logic concentrated in `DotNet.Pdb.SymbolReaderFactory`.
+- `PdbReaderContext` derives debug-directory context (CodeView guid/age/filename).
+
+**Design implication:** dnlib offers unusually rich low-level control and compatibility routing, but adapter policy must tame option combinations for predictable behavior.
+
+---
+
+## 3) Mono.Cecil
+
+### Module load surface
+
+- `ModuleDefinition.ReadModule(...)` and related factory paths.
+- behavior controlled via `ReaderParameters`.
+
+### `ReaderParameters` shape
+
+Important toggles that affect runtime behavior:
+
+- `ReadingMode` (deferred vs immediate),
+- `ReadSymbols`,
+- `SymbolReaderProvider`,
+- `ThrowIfSymbolsAreNotMatching`,
+- `InMemory`, `ReadWrite`, projection/resolver knobs.
+
+### IL and method body model
+
+- `MethodDefinition.Body` -> `Mono.Cecil.Cil.MethodBody` with instruction/EH/local collections.
+- `ILProcessor` is readily available from method body and strongly mutation-oriented.
+
+### Symbol routing
+
+- generic route: `DefaultSymbolReaderProvider` (portable/native/mdb heuristics, embedded portable support).
+- pdb-specific route in snapshot: `symbols/pdb/Mono.Cecil.Pdb/PdbReaderProvider` chooses embedded portable, portable, or native PDB.
+
+**Design implication:** Cecil is very ergonomic for a “load module + read or rewrite” workflow, but interpretation adapters should guard against accidental mutation semantics leaking into read paths.
+
+---
+
+## Quick concept translation (expanded)
+
+| Concept | AsmResolver | dnlib | Mono.Cecil | Normalized contract target |
 |---|---|---|---|---|
-| Load module from file | `ModuleDefinition.FromFile(...)` | `ModuleDefMD.Load(...)` | `ModuleDefinition.ReadModule(...)` + `ReaderParameters` | `PEReader` + `MetadataReader` creation |
-| Read raw PE headers/sections | `PEFile.FromFile(...)`, `PEFile.Sections` | `module.Metadata.PEImage`-oriented internals | lower-level via image internals (less commonly first API) | `PEReader.PEHeaders` |
-| Get method body | `MethodDefinition.CilMethodBody` / `CilMethodBody` graph | `MethodDef.Body` / `MethodBodyReader` decode path | `MethodDefinition.Body` / `Cil.MethodBody` | `PEReader.GetMethodBody(rva)` (`MethodBodyBlock`) |
-| Enumerate IL instructions | `CilMethodBody.Instructions` (`CilInstructionCollection`) | `CilBody.Instructions` | `MethodBody.Instructions` | decode IL bytes manually/with helper logic |
-| Enumerate EH regions | `CilMethodBody.ExceptionHandlers` | `CilBody.ExceptionHandlers` | `MethodBody.ExceptionHandlers` | `ExceptionRegion` on `MethodBodyBlock` |
-| Read PDB symbols | `PdbImage.FromFile(...)` + module/symbol model | symbol reader factories choose portable/managed/Dia path | `PdbReaderProvider` chooses portable/native provider | `MetadataReaderProvider` (portable); external for Windows PDB |
-| Sequence points | PDB records projected from symbol model | `PdbMethod`/`SequencePoint` model | `MethodDebugInformation.SequencePoints` | `MethodDebugInformationHandle` decode |
+| Module root | `ModuleDefinition` | `ModuleDefMD` | `ModuleDefinition` | `IMetadataModule` |
+| PE root | `PEFile` / `PEImage` | `Metadata.PEImage` path via module | internal `Image` (`ImageReader`) | `IPEArtifact` |
+| Method body | `CilMethodBody` | `CilBody` | `Cil.MethodBody` | `INormalizedMethodBody` |
+| Instruction collection | `CilInstructionCollection` | `CilBody.Instructions` | `MethodBody.Instructions` | `IReadOnlyList<NormalizedInstruction>` |
+| EH collection | `IList<CilExceptionHandler>` | `CilBody.ExceptionHandlers` | `MethodBody.ExceptionHandlers` | `IReadOnlyList<NormalizedExceptionRegion>` |
+| Sequence points | PDB model projection | symbol reader projection | `MethodDebugInformation.SequencePoints` | `IReadOnlyList<NormalizedSequencePoint>` |
+| Source document | PDB source abstractions | `PdbDocument`-style model | `Document` | `NormalizedSourceDocument` |
+| Symbol root abstraction | `PdbImage` | `SymbolReader` | `ISymbolReader` | `IDebugSymbolSource` |
+| Error channel | listener + diagnostics | null/exception/factory fallback mix | provider fallback + specific symbol exceptions | `BackendMissReason + DiagnosticsEnvelope` |
 
 ---
 
-## Source-driven API shape comparison
+## Load pipeline comparison in detail
 
-### 1) Artifact loading and reader parameterization
+## AsmResolver pipeline profile
 
-#### AsmResolver
+1. **Artifact open**
+   - raw PE possible (`PEFile`/`PEImage`) or immediate module load (`ModuleDefinition`).
+2. **Reader-parameter shaping**
+   - configurable error listener and sub-readers at PE layer.
+3. **Metadata / method-body decode**
+   - method-body parser pluggable through `ModuleReaderParameters.MethodBodyReader`.
+4. **PDB parse (optional, independent root)**
+   - `PdbImage` can be loaded independently from PE/module.
 
-- Very broad static factory surface (`FromBytes`, `FromStream`, `FromFile`, mapped-module forms) on `ModuleDefinition` and `PEFile`.
-- Distinct parameter types (`ModuleReaderParameters`, `PEReaderParameters`, `PdbReaderParameters`) encourage explicit configuration of diagnostics and mapping mode.
-- `PdbImage` mirrors module-loading ergonomics (`FromFile`, `FromBytes`, `FromReader`, plus MSF-aware overloads), which makes symbol-only workflows straightforward.
+**Key benefit:** layered architecture makes it straightforward to publish phase-specific diagnostics.
 
-**Onboarding implication:** teams coming from Cecil/dnlib typically adapt quickly because factories are discoverable and symmetric across PE/.NET/PDB layers.
+## dnlib pipeline profile
 
-#### dnlib
+1. **ModuleDefMD.Load(...)** as canonical entry.
+2. **Creation options** tune runtime interpretation and PDB behavior.
+3. **Metadata + body decode** heavily lazy, with on-demand `MethodDef.Body` materialization.
+4. **PDB resolution** through `SymbolReaderFactory` using PE debug data + options.
 
-- Central entry is `ModuleDefMD.Load(...)` with `ModuleCreationOptions`.
-- API favors one root object (`ModuleDefMD`) with rich, lazy access to streams/tables and strong hooks for decrypters (`IMethodDecrypter`, `IStringDecrypter`).
-- Symbol creation is delegated to factories rather than simple static constructors on a single PDB root type.
+**Key benefit:** strong control over difficult binaries and obfuscation-adjacent workflows.
 
-**Onboarding implication:** familiar to reverse-engineering workflows; less symmetric for “standalone PDB as first-class root” than AsmResolver.
+**Risk:** option combinatorics and fallback paths can produce subtle behavior drift without a strict policy preset.
 
-#### Mono.Cecil
+## Cecil pipeline profile
 
-- Configuration is front-loaded in `ReaderParameters` (`ReadingMode`, `ReadSymbols`, symbol provider, streams, etc.).
-- `ModuleDefinition` remains the central object, with deferred/immediate read strategies.
-- Symbol attachment is usually provider-driven (e.g., `PdbReaderProvider`) rather than separate PDB-domain root APIs.
+1. **Module read** with `ReaderParameters`.
+2. **Optional symbol read** from `ReadSymbols` or explicit provider path.
+3. **Method body and debug info** resolved through lazily populated object model.
+4. **Provider-based symbol branching** (embedded/portable/native/etc.).
 
-**Onboarding implication:** ergonomic for “module + optional symbols” pipeline; less modular if you want symbol parsing independent from module load.
+**Key benefit:** concise, high-level onboarding.
 
-#### SRM model
-
-- Explicitly low-level: create a `PEReader`, obtain `MetadataReader`, then compose additional readers for symbols/method bodies.
-
-**Onboarding implication:** best for precise control and contract stability, but high adapter lift for graph-like ergonomics.
-
----
-
-### 2) Method body and IL decode model
-
-#### AsmResolver
-
-- High-level `CilMethodBody` abstraction with:
-  - instruction collection (`CilInstructionCollection`),
-  - local variable collection,
-  - EH collection,
-  - validation/build knobs (`BuildFlags`, `ComputeMaxStackOnBuild`, `VerifyLabelsOnBuild`).
-- Includes explicit helper methods (`VerifyLabels`, `ComputeMaxStack`) that are useful for deterministic preflight checks.
-
-**Strength:** rich model with built-in sanity operations aligned with our explainability goals.
-
-#### dnlib
-
-- `MethodDef.MethodBody` plus `Emit.MethodBodyReader` with multiple `CreateCilBody(...)` overloads.
-- Decode path is highly configurable via operand resolvers, generic parameter context, and optional EH reader separation.
-- Can return empty body if parsing fails in some convenience paths, which is powerful but requires careful miss-reason normalization.
-
-**Strength:** flexible decode for difficult artifacts; good for fuzzing/failure taxonomy work.
-
-#### Mono.Cecil
-
-- `MethodDefinition.Body` lazily reads into `Cil.MethodBody`.
-- `MethodBody` offers instruction/EH collections and editor-oriented helpers via `ILProcessor`.
-- Symbol-driven updates (sequence points / async debug info adjustments) are embedded in the method-body edit lifecycle.
-
-**Strength:** excellent ergonomics for manipulation-centric scenarios; interpretation workflows must avoid accidental mutation assumptions.
-
-#### SRM model
-
-- `MethodBodyBlock` is intentionally low-level: bytecode + metadata tokens + exception regions.
-- No high-level mutable instruction graph by default.
-
-**Strength:** deterministic and compact; requires project-owned lifting to reach parity with graph APIs.
+**Risk:** mutation-first APIs (e.g., `ILProcessor`) encourage editing mental models, which can contaminate deterministic read-only adapter contracts unless explicitly frozen.
 
 ---
 
-### 3) Symbol/PDB model and provider strategy
+## Method body decode: semantics and failure behavior
 
-#### AsmResolver
+## AsmResolver (`CilMethodBody`)
 
-- Dedicated PDB domain model (`PdbImage`, `PdbModule`, symbols, record types).
-- Windows PDB (MSF-based) is a first-class parse target; debug data at PE level is exposed via CodeView structures (`RsdsDataSegment`, etc.).
-- Clean separation between PE debug directory read and PDB content read.
+Notable properties useful for adapter preflight:
 
-**Adapter note:** easier to model “PE says which PDB” and “PDB content parse result” as two independently diagnosable steps.
+- `BuildFlags` with validation-oriented options,
+- `ComputeMaxStackOnBuild`,
+- `VerifyLabelsOnBuild`,
+- explicit helpers (`ComputeMaxStack`, `VerifyLabels` in body lifecycle).
 
-#### dnlib
+**Adapter recommendation:** run a normalization preflight stage that captures validation failures as structured diagnostics before interpretation starts.
 
-- Symbol abstraction anchored by `SymbolReader` (initialize, documents, get-method, custom debug info).
-- Factory logic can route to portable, managed, embedded portable, or DiaSymReader-backed implementations.
-- Contains explicit options controlling DiaSymReader use (`NoDiaSymReader`, `NoOldDiaSymReader` flags), exposing compatibility strategy directly.
+## dnlib (`MethodBodyReader` + `MethodDef.Body`)
 
-**Adapter note:** broad compatibility surface, but behavior matrix expands quickly and needs strict policy presets.
+Characteristics visible in source:
 
-#### Mono.Cecil
+- large overload surface for controlled decode contexts,
+- supports split code/EH readers,
+- explicit generic parameter context threading,
+- convenience paths may return an empty `CilBody` on caught errors in selected factory paths.
 
-- Provider abstraction is explicit (`ISymbolReaderProvider`).
-- `PdbReaderProvider` dynamically dispatches between portable and native PDB readers (including embedded portable PDB checks).
-- Debug info lands in Cecil-centric types (`MethodDebugInformation`, `SequencePoint`, scope/variable models).
+**Adapter recommendation:** never treat empty body as automatically valid. Distinguish:
 
-**Adapter note:** concise API, but provider/version behavior should be pinned with tests due to ecosystem drift history.
+- true empty IL body,
+- decode-failed-and-coerced-empty,
+- unsupported encoding/operand scenario.
 
-#### DiaSymReader-focused model
+These should map to different `BackendMissReason` values.
 
-- In this repo’s evidence, DiaSymReader is mostly consumed through dnlib/Cecil interop layers (COM interfaces, native loaders), not as a standalone project API baseline.
+## Cecil (`MethodDefinition.Body`)
 
-**Adapter note:** keep it as a capability module for Windows PDB, not as the canonical abstraction.
+Characteristics:
 
----
+- method body is object-model-centric and editable,
+- instruction graph maintenance is integrated (next/previous links and offset maintenance in collections),
+- `ILProcessor` makes mutation operations trivially accessible.
 
-## Cross-stack concept translation table
-
-| Concept | AsmResolver term/API | dnlib term/API | Mono.Cecil term/API | Normalized contract suggestion |
-|---|---|---|---|---|
-| Module root | `ModuleDefinition` | `ModuleDefMD` / `ModuleDef` | `ModuleDefinition` | `IMetadataModule` |
-| Method body object | `CilMethodBody` | `CilBody`/`MethodBody` | `Cil.MethodBody` | `INormalizedMethodBody` |
-| Instruction object | `CilInstruction` | `Instruction` | `Instruction` | `NormalizedInstruction` |
-| EH region | `CilExceptionHandler` | `ExceptionHandler` | `ExceptionHandler` | `NormalizedExceptionRegion` |
-| PDB root | `PdbImage` | `SymbolReader` + PDB model (`PdbState`, etc.) | symbol reader provider + debug info objects | `IDebugSymbolSource` |
-| Sequence point | symbol records mapped via PDB model | `SequencePoint` | `SequencePoint` | `NormalizedSequencePoint` |
-| Document/source | PDB source file abstractions | `PdbDocument` / symbol document | `Document` | `NormalizedSourceDocument` |
-| Failure channel | reader contexts + error listeners | options/factories + null/empty fallbacks + exceptions | provider mismatch policies | `BackendMissReason` + diagnostics envelope |
+**Adapter recommendation:** project to immutable DTOs immediately on read, and discard/avoid retaining mutable Cecil body objects in interpreter runtime state.
 
 ---
 
-## Practical interoperability pitfalls (important for onboarding)
+## Symbol/PDB routing behavior (deeper)
 
-1. **Lazy loading semantics differ subtly**
-   - All three object-model stacks are lazy in places, but trigger points differ (e.g., method body materialization, debug info hydration).
-   - Contract tests should separate “metadata open” from “method body decode” from “symbol projection” costs.
+## AsmResolver
 
-2. **Portable vs Windows PDB branching happens at different layers**
-   - AsmResolver: explicit PDB-image domain and CodeView linkage.
-   - dnlib/Cecil: provider/factory dispatch with backend-specific fallbacks.
-   - Normalization should avoid leaking backend routing details into interpreter-facing APIs.
+- PDB modeled as its own domain (`PdbImage`, module/symbol records).
+- RSDS/CodeView data represented at PE debug layer (`RsdsDataSegment` with GUID/age/path parsing).
+- clean distinction between:
+  1. reading PE debug directory hints,
+  2. opening the actual PDB artifact.
 
-3. **Error surfacing style is not uniform**
-   - Some flows throw immediately; others return null/empty and continue.
-   - Our adapters must translate all paths into deterministic miss reasons with provenance.
+**Consequence:** straightforward to emit diagnostics for “linkage metadata present but PDB parse failed” vs “no linkage metadata found.”
 
-4. **Mutation-oriented APIs can hide read-only assumptions**
-   - Cecil and dnlib contain strong editing workflows; interpreter pipeline should treat read results as immutable snapshots after projection.
+## dnlib
 
----
+- `PdbReaderContext` extracts CodeView info and validates RSDS shape.
+- `SymbolReaderFactory` resolves symbol reader kind based on options and data:
+  - managed/portable,
+  - embedded portable,
+  - Windows COM reader paths depending on platform/options.
+- logic includes platform checks and explicit option gates (`PdbReaderOptions` flags).
 
-## Suggested adapter profiles (for faster team onboarding)
+**Consequence:** very capable compatibility matrix, but important to pin policy (e.g., whether COM readers are allowed in a given environment profile).
 
-### Profile A: “Object-graph first, quickest prototype”
+## Cecil
 
-- Primary reader: AsmResolver or dnlib.
-- Use high-level instruction/EH models for rapid interpreter wiring.
-- Add strict projection layer to freeze normalized contracts early.
+- `DefaultSymbolReaderProvider` and `PdbReaderProvider` both contain format dispatch logic.
+- dispatch commonly checks:
+  - embedded portable PDB entries in debug header,
+  - portable-vs-native inference from file/stream.
+- explicit symbol exceptions exist (`SymbolsNotFoundException`, `SymbolsNotMatchingException`).
 
-### Profile B: “Control-first, long-term stable core”
-
-- Start with SRM-inspired normalized model.
-- Use AsmResolver/dnlib only for parity checks and fallback evidence.
-- Higher initial cost, lower long-term API drift.
-
-### Profile C: “Windows PDB-heavy environments”
-
-- Keep metadata/IL reader independent.
-- Add DiaSymReader-backed module behind `ISymbolSource` capability flag.
-- Require explicit diagnostics for “symbol format unsupported/partial”.
+**Consequence:** concise API, but behavior depends significantly on provider selection and throw/mismatch flags in `ReaderParameters`.
 
 ---
 
-## Recommended near-term documentation follow-ups
+## Laziness, caching, and determinism traps
 
-1. Add **API recipe snippets** (one per stack) showing:
+1. **Body hydration timing differs**
+   - Reading module metadata does not equal method-body decode in all stacks.
+   - Benchmark and diagnostics should separate “module open latency” from “first body decode latency”.
+
+2. **Symbol hydration timing differs**
+   - Some flows load symbol state during module read (`ReadSymbols = true`), others only on explicit symbol reader calls.
+
+3. **Mutable object graphs vs immutable interpretation state**
+   - dnlib/Cecil/AsmResolver all expose mutable graph APIs to varying extents.
+   - interpretation pipeline must snapshot and freeze normalized representation.
+
+4. **Fallback style mismatch**
+   - mix of throw, return-null, return-empty-body, and provider fallback exists across stacks.
+   - deterministic host behavior requires immediate normalization to a single failure taxonomy.
+
+---
+
+## Proposed normalized failure taxonomy (adapter-facing)
+
+These reason codes are intended to absorb cross-library differences:
+
+- `ArtifactOpenFailed`
+- `InvalidPeShape`
+- `MissingCliMetadata`
+- `MethodBodyUnreadable`
+- `MethodBodyPartiallyDecoded`
+- `UnsupportedIlEncoding`
+- `OperandResolutionFailed`
+- `DebugDirectoryMissing`
+- `CodeViewSignatureInvalid`
+- `PdbNotFound`
+- `PdbFormatUnsupported`
+- `PdbGuidAgeMismatch`
+- `SymbolReaderUnavailableInEnvironment`
+- `SymbolDataCorrupt`
+- `SymbolProjectionPartial`
+
+Each normalized miss should carry:
+
+- backend id + backend version,
+- backend-native exception (if any),
+- phase (`OpenModule`, `DecodeMethodBody`, `OpenSymbols`, `ProjectSequencePoints`, ...),
+- artifact identity (PE path/hash, PDB path/hash where known).
+
+---
+
+## Adapter profile guidance (updated)
+
+## Profile A — Rapid object-model prototype
+
+- Prefer AsmResolver or dnlib for initial integration speed.
+- Add strict immutable projection layer immediately.
+- Use Cecil as parity check for sequence points and odd IL layouts.
+
+## Profile B — Deterministic core with optional rich backends
+
+- Define SRM-like normalized contracts first.
+- Implement one high-level backend for velocity (AsmResolver or dnlib).
+- Add others only as conformance backends driven by mismatch logs.
+
+## Profile C — Windows-PDB intensive enterprise environments
+
+- Keep metadata/IL path backend-independent.
+- Enable platform-specific symbol capabilities explicitly (COM/native readers) behind capability flags.
+- Require policy-driven allow/deny decisions for native symbol dependencies.
+
+---
+
+## Onboarding recipes teams should add next
+
+1. **Minimal recipe snippets per stack**
    - open module,
-   - select one method,
-   - enumerate IL + EH,
-   - project sequence points.
-2. Add a **failure taxonomy appendix** mapping concrete exception/fallback cases in each stack to `BackendMissReason` candidates.
-3. Link this note to `adapter-conformance-checklist.md` with mandatory parity scenarios.
+   - pick one method,
+   - decode IL + EH,
+   - resolve sequence points.
+
+2. **Parity fixture matrix**
+   - tiny, fat, and invalid method headers,
+   - split EH data,
+   - embedded portable PDB,
+   - RSDS mismatch and missing PDB,
+   - malformed debug directory entries.
+
+3. **Failure mapping appendix**
+   - map concrete thrown exceptions / null / empty-body outcomes in each stack to taxonomy codes above.
+
+4. **Policy presets**
+   - define deterministic defaults for:
+     - symbol reader provider selection,
+     - mismatch throwing behavior,
+     - platform-specific native reader enablement,
+     - diagnostics verbosity.
 
 ---
 
-## Draft design position (updated)
+## Updated draft design position
 
-- Keep **AsmResolver** and **dnlib** as primary source-driven onboarding references and prototype accelerators.
-- Keep **Mono.Cecil** as an ergonomics and behavior cross-check backend.
-- Keep **SRM-style normalized projection** as the long-term contract-stability hedge.
-- Treat **DiaSymReader integration** as explicit Windows-PDB capability composition, not core metadata/IL ownership.
+- **AsmResolver + dnlib** remain the strongest source-driven onboarding anchors for PE/metadata/IL/PDB depth.
+- **Cecil** remains a high-value ergonomics and cross-check backend, especially for symbol/debug interop and mutation-oriented object-model behavior observations.
+- **SRM-style normalized contracts** remain the long-term hedge against backend API drift.
+- **Dia/native reader paths** should stay capability-composed and policy-controlled, not assumed as always-available core behavior.
 
-This remains provisional until evidence rows in `backend-evidence-log.md` are upgraded for method-body parity, sequence-point parity, and corrupted-artifact miss classification.
+This position should be revisited after we add explicit parity fixtures and promote evidence rows in `docs/lib/backend-evidence-log.md` for body decode and symbol projection mismatch classes.
