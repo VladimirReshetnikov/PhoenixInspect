@@ -190,6 +190,25 @@ Goal: unlock getters/helpers that compute values from already-present snapshot d
 
 ---
 
+
+### Phase 2.5 — Async + dynamic semantic lifting
+
+Goal: preserve debugger trust for modern C# language features without executing runtime internals.
+
+**Supported**
+
+* Async state-machine interpretation backed by virtual task semantics (deterministic scheduler, explicit await/continuation diagnostics).
+* Dynamic call-site lifting for common C# `dynamic` invocation shapes with transparent overload-resolution outcomes.
+* Host-visible decision points when target selection cannot be resolved uniquely.
+
+**Guardrails**
+
+* No implicit execution of real thread-pool/runtime scheduling internals.
+* Meta-object/COM dynamic paths default to explicit `DecisionNeeded`/`Partial` outcomes unless policy enables heuristic handling.
+* Every async/dynamic transition emits a traceable diagnostic event to preserve explainability.
+
+---
+
 ### Phase 3 — Virtual scratchpad objects and “what-if” exploration
 
 Goal: make the evaluator a real exploration tool, not only read-only.

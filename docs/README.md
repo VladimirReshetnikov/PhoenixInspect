@@ -111,3 +111,4 @@ docs/
 
 - `proposals/architecture/opcode-support-matrix-proposal.md`
 - `proposals/architecture/async-awaiter-support-matrix-proposal.md`
+- `proposals/architecture/dynamic-dispatch-support-matrix-proposal.md`

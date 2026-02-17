@@ -140,6 +140,25 @@ Based on the new `virtual-tasks` and `dynamic-calls` architecture proposals, the
 
 ---
 
+## M3.6 — Async + dynamic semantic lifting integration
+
+**Goal:** operationalize the new virtual-task and dynamic-dispatch designs as stable interpreter capabilities.
+
+**Deliverables**
+
+- Lifted callsite classification pipeline (`DynamicDispatch`, `AsyncRuntimeIntrinsic`) wired into call-model policy and trace events.
+- Virtual async runtime state integrated into canonical `MachineState` contracts (task store, continuation queue, await-point provenance).
+- Deterministic decision protocol for unresolved dynamic Step Into (`DecisionNeeded` with candidate metadata).
+- Async and dynamic fixture corpus added to replay/perf/test suites with deterministic transcript assertions.
+
+**Exit criteria**
+
+- Curated async fixtures emit stable `AwaitPending -> ContinuationResumed -> Task*` lifecycle traces across replay runs.
+- Curated dynamic fixtures emit stable binder outcomes with explicit ambiguity/unresolved diagnostics.
+- Host APIs and docs expose one shared taxonomy for async/dynamic outcomes and decision points.
+
+---
+
 ## M4 — Dump-aware hosting integration prototype
 
 **Goal:** prove the engine works against snapshot-backed metadata/memory.
