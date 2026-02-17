@@ -1,0 +1,195 @@
+# Roslyn intro tutorial for this project
+
+## Audience and goal
+
+This tutorial is for contributors who are comfortable with C# but new to Roslyn internals.
+
+By the end, you should understand:
+
+- which Roslyn layers matter for our dump-time interpreter design,
+- the minimum API surface we should rely on,
+- how to build a small parse + bind pipeline without over-coupling our architecture to compiler internals.
+
+> Important: the snapshot under `lib/roslyn` is for source study only. Production implementation should reference Roslyn packages from NuGet through our adapters.
+
+## 1) Roslyn mental model in 5 minutes
+
+For this project, think of Roslyn as four layers:
+
+1. **Text + parse options**  
+   Input text and parser configuration (`CSharpParseOptions`) establish language mode and syntax behavior.
+2. **Syntax tree**  
+   Immutable tree produced by APIs like `SyntaxFactory.ParseExpression(...)` and `CSharpSyntaxTree.ParseText(...)`.
+3. **Compilation context**  
+   `CSharpCompilation.Create(...)` or `CreateScriptCompilation(...)` + metadata references define symbol resolution rules.
+4. **Semantic model**  
+   `GetSemanticModel(...)` maps syntax to symbols/types and gives binding diagnostics.
+
+For our architecture, Roslyn is a **front-end service**. It helps parse and optionally bind expressions; it is not our execution engine.
+
+## 2) What we reviewed in `lib/roslyn`
+
+The source snapshot is broad, but a practical onboarding subset is:
+
+- `src/Compilers/CSharp/Portable/Syntax/SyntaxFactory.cs`  
+  Parse entry points such as `ParseExpression(...)`, `ParseName(...)`, and `ParseSyntaxTree(...)`.
+- `src/Compilers/CSharp/Portable/Syntax/CSharpSyntaxTree.cs`  
+  Tree creation/parsing overloads, parse options, file path handling, and text/checksum plumbing.
+- `src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs`  
+  Standard vs script compilation creation and semantic model retrieval.
+- `src/Compilers/CSharp/Portable/Parser/LanguageParser.cs`  
+  Internal parser complexity and error-recovery/terminator-state behavior.
+
+If you are new to Roslyn, start with those files before exploring flow analysis, lowering, or emit pipelines.
+
+## 3) Step-by-step workflow you can map to our adapters
+
+## Step A: Parse an expression
+
+Use `SyntaxFactory.ParseExpression(...)` as the default expression gateway.
+
+```csharp
+var parseOptions = new CSharpParseOptions(languageVersion: LanguageVersion.Preview);
+var expr = SyntaxFactory.ParseExpression(
+    text: "customer.Total + tax",
+    options: parseOptions,
+    consumeFullText: true);
+```
+
+Why this matters:
+
+- `consumeFullText: true` catches trailing tokens instead of silently accepting partial parses.
+- We should store parse options and strictness in provenance so replay behavior stays deterministic.
+
+## Step B: Parse a full snippet when needed
+
+When expression parsing is not enough (e.g., script-like context), use `CSharpSyntaxTree.ParseText(...)`.
+
+```csharp
+var text = SourceText.From("customer.Total + tax");
+var tree = CSharpSyntaxTree.ParseText(
+    text,
+    options: parseOptions.WithKind(SourceCodeKind.Script),
+    path: "debugger://expr/1");
+```
+
+Why this matters:
+
+- `path` and parse options influence diagnostics and should be treated as deterministic input fields.
+- `SourceText` carries encoding/checksum metadata that can help provenance and replay fidelity.
+
+## Step C: Pick compilation mode deliberately
+
+Roslyn has two relevant creation patterns:
+
+- `CSharpCompilation.Create(...)` for standard compilation behavior.
+- `CSharpCompilation.CreateScriptCompilation(...)` for submission/script behavior.
+
+```csharp
+var compilation = CSharpCompilation.Create(
+    assemblyName: "ExpressionFrontEnd",
+    syntaxTrees: new[] { tree },
+    references: references,
+    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+```
+
+```csharp
+var scriptCompilation = CSharpCompilation.CreateScriptCompilation(
+    assemblyName: "ExpressionFrontEnd.Script",
+    syntaxTree: tree,
+    references: references,
+    options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+```
+
+Project guidance:
+
+- Keep script mode policy-controlled and explicit.
+- Capture which mode was used in front-end output metadata.
+
+## Step D: Get semantic info (advisory, not authoritative)
+
+```csharp
+var model = compilation.GetSemanticModel(tree);
+var typeInfo = model.GetTypeInfo(expr);
+var symbolInfo = model.GetSymbolInfo(expr);
+```
+
+Important nuance for adapter design:
+
+- `GetSemanticModel(...)` requires that the tree is part of the compilation; otherwise Roslyn throws.
+- Semantic results should be treated as **advisory** when dump-runtime facts disagree.
+
+## Step E: Normalize diagnostics for our contracts
+
+Roslyn diagnostics are rich but compiler-oriented. Our adapter should project them into stable, product-facing categories.
+
+Suggested normalization buckets:
+
+- Parse failure / malformed expression
+- Missing member/type/reference
+- Ambiguous bind result
+- Unsupported language feature for current policy
+- Internal front-end failure (guardrail category)
+
+Each normalized result should include:
+
+- confidence,
+- evidence (diagnostic IDs, spans),
+- fallback decision,
+- deterministic input fingerprint fields (options, mode, references).
+
+## 4) Why we should not couple to parser internals
+
+`LanguageParser` is intentionally complex and optimized for full C# recovery scenarios. It tracks many terminator states and reset points to preserve parse resilience.
+
+Design takeaway: depend on public parse outcomes and diagnostics, not parser-internal recovery behavior. Internal recovery can shift between Roslyn versions and should not become part of our contract semantics.
+
+## 5) Minimal adapter contract shape (draft)
+
+Use this as a practical starting point:
+
+- **Input**
+  - expression text
+  - language kind/options
+  - compilation mode (standard/script)
+  - reference set identity
+  - strictness flags (`consumeFullText`, policy switches)
+- **Output**
+  - syntax success + normalized diagnostics
+  - optional semantic payload (symbol/type candidates)
+  - confidence and provenance bundle
+  - explicit fallback recommendation when semantic confidence is low
+
+Keep Roslyn object types inside adapter boundaries. Downstream interpreter layers should consume project-defined DTOs/contracts.
+
+## 6) Common beginner pitfalls (and project-safe defaults)
+
+1. **Pitfall:** trusting semantic model results as runtime truth.  
+   **Default:** treat semantic facts as hints unless runtime metadata confirms them.
+2. **Pitfall:** forgetting to include tree in compilation before asking for semantic model.  
+   **Default:** enforce a single builder path that creates tree + compilation together.
+3. **Pitfall:** changing parse options between requests without tracking it.  
+   **Default:** always include options/mode/reference identity in provenance.
+4. **Pitfall:** growing scope into emit/codegen APIs.  
+   **Default:** block non-front-end Roslyn APIs in adapter review checklists unless explicitly approved.
+
+## 7) Suggested onboarding exercise (1-2 hours)
+
+1. Build a tiny spike that parses 10 debugger-style expressions with `ParseExpression(...)`.
+2. Re-run the same corpus with script-mode tree + `CreateScriptCompilation(...)`.
+3. Compare diagnostics and symbol results between modes.
+4. Produce a short evidence table:
+   - expression,
+   - mode,
+   - normalized result,
+   - confidence,
+   - fallback action.
+
+This gives immediate intuition for why our architecture treats Roslyn as a bounded, optional semantic assistant.
+
+## 8) Where to read next
+
+- `docs/lib/roslyn/usage-notes.md` for decision-oriented boundaries and risks.
+- `docs/lib/source-review-deep-dive.md` for cross-library comparisons.
+- `docs/proposals/architecture/semantic-modeling-proposal.md` for how semantic enrichment fits interpreter policy.
+

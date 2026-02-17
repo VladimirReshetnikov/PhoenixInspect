@@ -31,6 +31,7 @@ Rule of thumb: if a note is primarily about one library, keep it in that library
 | dnlib | `lib/dnlib` | `dnlib/usage-notes.md`, `dnlib/source-scan.md` |
 | dnlib intro tutorial | `lib/dnlib` | `dnlib/intro-tutorial.md` |
 | Roslyn | `lib/roslyn` | `roslyn/usage-notes.md`, `roslyn/source-scan.md` |
+| Roslyn intro tutorial | `lib/roslyn` | `roslyn/intro-tutorial.md` |
 | Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
 | Adapter conformance checklist | N/A (cross-library) | `adapter-conformance-checklist.md` |
 | Backend capability evidence log | N/A (cross-library) | `backend-evidence-log.md` |

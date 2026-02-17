@@ -51,6 +51,7 @@ docs/
 | `lib/dnlib/usage-notes.md` | Library Notes | Note | Draft | dnlib fallback/compatibility role and backend-capability planning notes. |
 | `lib/dnlib/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven dnlib module policy, method-body lifecycle, and Portable PDB findings. |
 | `lib/roslyn/usage-notes.md` | Library Notes | Note | Draft | Roslyn front-end role, coupling risks, and conservative-inference guidance. |
+| `lib/roslyn/intro-tutorial.md` | Library Notes | Tutorial | Draft | Introductory Roslyn tutorial for contributors, with parse/bind workflow and adapter boundary guidance. |
 | `lib/roslyn/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven Roslyn parse/compilation/semantic boundaries for expression front-end design. |
 | `lib/backend-capability-matrix.md` | Library Notes | Matrix | Draft | Cross-library capability comparison axes and MVP decision gates for metadata/symbol backends. |
 | `lib/adapter-conformance-checklist.md` | Library Notes | Checklist | Draft | Backend-neutral adapter contract and miss-reason conformance guidance. |
