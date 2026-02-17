@@ -20,6 +20,18 @@ It is intentionally split into:
 
 ## 2) Milestone roadmap (proposed)
 
+## 2.1) Immediate alignment updates from virtual-stepping proposals
+
+Based on the latest product + implementation proposals for virtual stepping, the following cross-document updates are now required and should be treated as near-term planning work:
+
+1. Promote `MachineState`/`FrameState` as canonical terminology across architecture docs (deprecate single-frame `ExecState` as host contract wording).
+2. Standardize one stop-reason taxonomy (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Completed`) across host APIs, testing docs, and replay artifacts.
+3. Lock policy terminology for branch/call handling (`StopForUserChoice` vs fork/join modes; `Interpret` vs `Model` vs `Stop`).
+4. Add explicit EH-phasing gate: MVP must at least support `stop-on-throw`; debugger-grade handler transfer is a later milestone requirement.
+5. Require source-step mapping fallback order (PDB -> decompiler -> IL) in all UX and integration proposals.
+
+---
+
 ## M0 — Architecture baseline and contracts
 
 **Goal:** lock core interfaces and execution model boundaries.
@@ -97,8 +109,8 @@ It is intentionally split into:
 
 **Deliverables**
 
-- Session model with explicit machine/call-stack state and stable pause reasons.
-- Step-command controller for `StepInto`, `StepOver`, `StepOut`, `Resume`, and branch decisions.
+- Session model with explicit `MachineState`/`FrameState` contracts and stable pause reasons.
+- Step-command controller for `StepInto`, `StepOver`, `StepOut`, `Resume`, and branch decisions (`StopForUserChoice`/fork/join).
 - Stop-point history with `Undo` and branch-aware timeline semantics.
 - Source mapping pipeline (PDB first, decompiler map second, IL fallback).
 - Session transcript contract (commands, stop reasons, event batches, and step diffs) for deterministic replay and host hydration.

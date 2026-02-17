@@ -120,6 +120,17 @@ All reuse Layer B semantics.
 * effect policy (block/allow/havoc)
 * instrumentation hooks
 
+### Layer E: Virtual debug control plane (refinement)
+
+To support `StepInto`/`StepOver`/`StepOut` over dump-backed sessions, the framework also needs:
+
+* micro-step visibility (`FramePushed`, `FramePopped`, `BranchDecisionNeeded`, `ExceptionThrown`),
+* stop reasons (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Completed`),
+* deterministic session state snapshots suitable for `Undo` and replay,
+* statement/source mapping abstraction (PDB first, decompiler second, IL fallback).
+
+This control plane is policy + orchestration; opcode semantics remain in Layer B.
+
 ---
 
 ## 4. Core abstractions (API sketch)
@@ -192,24 +203,30 @@ This domain interface is deliberately *not* minimal. You want the transfer funct
 
 ### 4.3 State and memory
 
-Execution state is:
-
-* eval stack
-* locals/args
-* heap/memory model
-* (optional) path constraints
-* effects accumulated so far
+Execution state for the modern stepping architecture is a machine-level stack of frames (rather than a single-frame `ExecState`).
 
 ```csharp
-public sealed record ExecState<TValue, TMem>(
+public sealed record MachineState<TValue, TMem>(
+    ImmutableArray<FrameState<TValue>> CallStack,
+    TMem Memory,
+    PathCondition<TValue>? Path,
+    EffectSummary Effects,
+    BudgetState Budget,
+    DeterminismState Determinism);
+
+public sealed record FrameState<TValue>(
+    MethodInstance Method,
+    int IlOffset,
     EvalStack<TValue> Stack,
     ImmutableArray<TValue> Locals,
     ImmutableArray<TValue> Args,
     TValue This,
-    TMem Memory,
-    PathCondition<TValue>? Path,
-    EffectSummary Effects);
+    ReturnSite? ReturnSite,
+    EhState? Eh,
+    FrameFlags Flags);
 ```
+
+A single-frame helper representation can still exist internally, but host/session contracts should use `MachineState`.
 
 Memory is abstracted:
 
@@ -248,7 +265,7 @@ public interface ICallDispatcher<TValue, TMem>
 {
     CallResult<TValue, TMem> Call(
         ExecContext ctx,
-        ExecState<TValue, TMem> state,
+        MachineState<TValue, TMem> state,
         CallSite site,
         ImmutableArray<TValue> args);
 
@@ -258,13 +275,15 @@ public interface ICallDispatcher<TValue, TMem>
 
 `CallResult` supports multiple outcomes:
 
-* normal return
+* interpreted callee frame push
+* modeled call (pseudo-frame or atomic effect, policy-defined)
 * exceptional return
 * nondeterminism (optional multiple states)
 
 ```csharp
 public sealed record CallResult<TValue, TMem>(
-    ImmutableArray<ExecState<TValue, TMem>> NextStates);
+    ImmutableArray<MachineState<TValue, TMem>> NextStates,
+    ImmutableArray<DebugEvent> Events);
 ```
 
 Effects are tracked separately:
@@ -405,7 +424,7 @@ Configurable levels:
 
 Classic forward dataflow:
 
-* `IN[block]` / `OUT[block]` as abstract `ExecState`
+* `IN[block]` / `OUT[block]` as abstract `MachineState` (or a block-normalized projection thereof)
 * transfer function is “interpret block from start state to end state” using the same instruction semantics, but in over-approx mode
 
 At merges:
