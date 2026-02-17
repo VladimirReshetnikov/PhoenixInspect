@@ -87,13 +87,27 @@ Proposed solution structure:
 
 ## 4) Metadata and IL decoding stack
 
-### Default backend: `System.Reflection.Metadata`
+### Default backend: `System.Reflection.Metadata` + `PEReader`
 
 **Rationale**
 
 - High-performance, low-level metadata reader from Microsoft.
-- Good control over blobs, signatures, tokens.
+- Good control over blobs, signatures, tokens, and Portable PDB access.
 - Suitable for deterministic decoding and explicit handling of edge cases.
+
+### Debug-map and source fallback stack
+
+To align with virtual stepping proposals, use an explicit fallback pipeline rather than optional host heuristics:
+
+1. Portable PDB sequence points/scopes when available.
+2. Decompiler-generated source map when PDB is missing/incomplete.
+3. IL-offset-only mapping as last resort.
+
+Recommended decompiler backend for map generation: `ICSharpCode.Decompiler` (ILSpy engine).
+
+### Artifact acquisition service
+
+Add a dedicated artifact locator module (cache + symbol server aware) as part of integration packages so both dump-hosting and standalone analysis use identical PE/PDB lookup behavior.
 
 ### Optional adapter layer for alternative ecosystems
 
@@ -103,6 +117,7 @@ Support adapter implementations for consumers that already use Cecil/dnlib-like 
 
 - Define an internal canonical metadata abstraction and isolate backend-specific logic.
 - Keep adapters in separate assemblies to reduce transitive dependency footprint.
+- Treat legacy Windows PDB readers as optional plugins behind a stable symbol-reader interface.
 
 ---
 
