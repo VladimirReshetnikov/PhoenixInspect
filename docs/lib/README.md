@@ -38,3 +38,16 @@ When design decisions evolve, update these notes first and then reconcile propos
 - Populate `backend-evidence-log.md` with concrete evidence per capability axis as prototype experiments are run.
 - Keep miss-reason taxonomy synchronized with architecture-level provenance terminology.
 - Progressively fill `mvp-backend-decision-record.md` and finalize once MVP backend gates are met.
+
+## Source-review baseline (current)
+
+The library notes in this folder now include source-structure and API-surface review findings from the local snapshots under `lib/`.
+
+Current emphasis:
+
+- ClrMD runtime ingestion entry points and cache/enumeration behavior
+- AsmResolver module/CIL/PDB package layering
+- dnlib metadata + method-body + symbol reader pipeline structure
+- Roslyn C# parser/compilation/semantic entry points for expression front-end design
+
+These findings remain design-phase guidance and should be validated with executable adapter spikes before MVP backend lock-in.
