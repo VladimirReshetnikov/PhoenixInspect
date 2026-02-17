@@ -31,6 +31,8 @@ We are designing a system that can:
 
 - `docs/proposals/architecture/il-interpreter-framework-proposal.md`
   Foundational proposal for interpreter architecture and execution framework.
+- `docs/proposals/architecture/architecture-overview-proposal.md`
+  High-level system map linking runtime, analysis, adapters, and hosting boundaries.
 - `docs/proposals/architecture/mvp-abstract-domain-proposal.md`
   Proposal for initial abstract domains and convergence behavior.
 - `docs/proposals/architecture/technical-stack-proposal.md`
@@ -63,13 +65,14 @@ We are designing a system that can:
 If you are new to the project, read in this order:
 
 1. `docs/proposals/product/post-mortem-debugging-feature-proposal.md` (user/problem framing)
-2. `docs/proposals/architecture/il-interpreter-framework-proposal.md` (engine architecture)
-3. `docs/proposals/architecture/mvp-abstract-domain-proposal.md` (analysis model)
-4. `docs/proposals/architecture/state-and-domain-model-proposal.md` (formal state/domain semantics)
-5. `docs/proposals/architecture/technical-stack-proposal.md` (implementation stack choices)
-6. `docs/proposals/architecture/testing-strategy-proposal.md` (quality strategy and validation plan)
-7. `docs/plans/future-work-planning.md` (milestones and priorities)
-8. `docs/governance/documentation-organization-proposal.md` (documentation process and information architecture)
+2. `docs/proposals/architecture/architecture-overview-proposal.md` (system map and boundaries)
+3. `docs/proposals/architecture/il-interpreter-framework-proposal.md` (engine architecture)
+4. `docs/proposals/architecture/mvp-abstract-domain-proposal.md` (analysis model)
+5. `docs/proposals/architecture/state-and-domain-model-proposal.md` (formal state/domain semantics)
+6. `docs/proposals/architecture/technical-stack-proposal.md` (implementation stack choices)
+7. `docs/proposals/architecture/testing-strategy-proposal.md` (quality strategy and validation plan)
+8. `docs/plans/future-work-planning.md` (milestones and priorities)
+9. `docs/governance/documentation-organization-proposal.md` (documentation process and information architecture)
 
 ## Decision-Making Principles
 
