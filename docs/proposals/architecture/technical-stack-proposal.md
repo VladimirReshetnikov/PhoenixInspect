@@ -236,3 +236,27 @@ Use standard .NET DI for host-facing composition while allowing direct construct
 2. Should we standardize on a single metadata backend first for speed of delivery?
 3. How much trace detail is retained by default vs opt-in?
 4. Do we publish a CLI with the first milestone or keep it internal-only initially?
+
+
+## 13) Prototype implementation snapshot (draft)
+
+> **Draft status notice:** The current `src/` solution is a prototype scaffold used to validate module seams.
+> Project names, dependencies, and interfaces are exploratory and may change without compatibility guarantees.
+
+Current prototype projects:
+
+- `Interpreter.Abstractions`
+- `Interpreter.Metadata`
+- `Interpreter.Core`
+- `Interpreter.Diagnostics`
+- `Interpreter.Hosting`
+
+Current dependency direction:
+
+- `Abstractions` has no project dependencies.
+- `Metadata` -> `Abstractions`.
+- `Core` -> `Abstractions`, `Metadata`.
+- `Diagnostics` -> `Abstractions`.
+- `Hosting` -> `Abstractions`, `Metadata`, `Core`, `Diagnostics` (+ `Microsoft.Extensions.DependencyInjection.Abstractions`).
+
+This snapshot is intentionally minimal and should be interpreted as a stepping stone toward the broader package layout described earlier in this proposal.

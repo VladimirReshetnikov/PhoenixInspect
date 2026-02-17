@@ -26,6 +26,7 @@ docs/
 | `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft | Language/runtime/dependency and package layout choices. |
 | `proposals/architecture/call-model-and-effects.md` | Architecture | Proposal | Draft | Call classification, fallback behavior, and effect lattice contract. |
 | `proposals/architecture/generic-context-resolver-proposal.md` | Architecture | Proposal | Draft | Generic-context reconstruction strategy for dump-backed interpretation. |
+| `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Proposal | Draft | Initial `src/` project layout, dependency direction, and prototype API boundary rationale. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft | Canonical execution-state model, domain contracts, and provenance semantics. |
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Proposal | Draft | Testing taxonomy, determinism checks, and milestone quality gates. |
 | `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft | Performance model, benchmark corpus strategy, and regression gates. |
@@ -56,7 +57,8 @@ docs/
 6. `proposals/architecture/call-model-and-effects.md`
 7. `proposals/architecture/testing-strategy-proposal.md`
 8. `proposals/architecture/generic-context-resolver-proposal.md`
-9. `plans/future-work-planning.md`
+9. `proposals/architecture/prototype-solution-structure-proposal.md`
+10. `plans/future-work-planning.md`
 
 
 ### Virtual debugger implementation path

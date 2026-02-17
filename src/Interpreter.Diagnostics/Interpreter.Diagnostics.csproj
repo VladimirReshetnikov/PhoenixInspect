@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Diagnostics</AssemblyName>
+    <RootNamespace>Interpreter.Diagnostics</RootNamespace>
+    <Description>Draft prototype tracing and explainability contracts.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Abstractions/Interpreter.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
