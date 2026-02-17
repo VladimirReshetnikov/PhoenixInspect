@@ -34,40 +34,53 @@ The focus here is on **formal-ish, implementation-guiding contracts**:
 
 ## 2) Canonical execution state
 
-Execution state is modeled as a product of independent components.
+To support virtual step-debugging, the canonical runtime state is now a **machine state with an explicit frame stack**, not a single-frame `ExecState`.
 
 ```text
-ExecState = {
-  ControlState,
-  EvalStack,
-  Locals,
-  Arguments,
+MachineState = {
+  CallStack: list<FrameState>,
   HeapState,
   PathFacts,
   TraceContext,
-  BudgetState
+  BudgetState,
+  DeterminismState,
+  EffectSummary
 }
 ```
 
-### 2.1 ControlState
+Compatibility note:
 
-Tracks *where* execution is and how control is expected to continue.
+- A historical single-frame `ExecState` can still be used as an internal helper, but host-facing contracts, replay artifacts, and stepping semantics should be defined in terms of `MachineState`.
+
+### 2.1 FrameState and ControlState
+
+`FrameState` is the control/data unit used by stepping commands.
 
 ```text
-ControlState = {
-  MethodId,
+FrameState = {
+  MethodInstance,
   ILOffset,
-  BlockId?,
-  Mode: {ConcreteStep | AbstractFixpoint},
-  ExceptionalFlow: {None | PendingThrow(ExceptionRef) | FilterEval}
+  EvalStack,
+  Locals,
+  Arguments,
+  This,
+  ReturnSite?,
+  EHState?,
+  Flags: {JustEntered, IsModelFrame, HiddenNonUserCode}
+}
+
+ReturnSite = {
+  CallerMethodInstance,
+  CallerResumeOffset,
+  CallerCallStatementId
 }
 ```
 
 Rules:
 
 - `ILOffset` must correspond to a valid instruction boundary.
-- `BlockId` is required in CFG mode; optional in linear stepping mode.
-- `ExceptionalFlow` does not imply EH handling is complete in MVP; it preserves intent for phased support.
+- Top-frame `JustEntered` is set exactly on the micro-step that pushes a new frame.
+- `ReturnSite` is required for non-root frames so `StepOut` can stop at caller-correct boundaries.
 
 ### 2.2 EvalStack
 
@@ -83,8 +96,8 @@ StackSlot = {
 
 Rules:
 
-- Stack shape is part of state validity.
-- Join between stack states requires equal depth; otherwise state is invalid and escalated as diagnostics.
+- Stack shape is part of frame validity.
+- Join between stack states requires equal depth in the merge scope.
 - `TypeHint` can be broader than runtime type in abstract mode.
 
 ### 2.3 Locals and Arguments
@@ -136,13 +149,14 @@ PathFacts = {
 
 `PathFacts` are consumable by domains (nullness, constants, interval-like plugins).
 
-### 2.6 TraceContext and BudgetState
+### 2.6 TraceContext, BudgetState, and DeterminismState
 
 ```text
 TraceContext = {
   EventCursor,
   ApproximationEvents: list<ApproxEventRef>,
-  UnknownIntroductions: list<UnknownId>
+  UnknownIntroductions: list<UnknownId>,
+  LastStepDiff?
 }
 
 BudgetState = {
@@ -151,9 +165,15 @@ BudgetState = {
   WidenBudgetRemaining?,
   DeadlineUtc?
 }
+
+DeterminismState = {
+  UnknownIdSeed,
+  BranchDecisionLog,
+  ReplayFingerprint
+}
 ```
 
-All budget decrements are deterministic and occur at documented transfer points.
+All budget decrements and deterministic-ID allocations must happen at documented transfer points so command replay remains stable.
 
 ---
 
@@ -233,27 +253,25 @@ This enables precise host messaging without reverse-engineering trace logs.
 
 ## 4) Transfer-function contract
 
-Each opcode/call transfer returns a `StepResult`:
+Each micro-step transfer returns a `MicroStepResult` and emits `DebugEvent` items used by the virtual debug control plane:
 
 ```text
-StepResult = {
-  NextState: ExecState?,
-  Branches: list<ExecState>,
-  Diagnostics: list<DiagEvent>,
-  Approximations: list<ApproxEvent>,
-  BudgetDelta,
-  StepStatus: {Advanced | Blocked | Faulted | Completed}
-}
+MicroStepResult =
+  | Single(NextState: MachineState, Events: list<DebugEvent>)
+  | Fork(NextStates: list<MachineState>, BranchInfo)
+  | Stop(SameState: MachineState, Reason: StopReason, Events: list<DebugEvent>)
+
+StopReason = {StepComplete | DecisionNeeded | ExceptionStop | BudgetStop | Completed}
 ```
 
 Rules:
 
-1. Exactly one of `NextState`, `Branches`, or terminal `StepStatus` must represent progress.
+1. `call/callvirt/newobj` that are interpreted must push a frame as a discrete, observable event (callee body does not execute in the same micro-step).
 2. Any introduction of unknownness must emit both:
    - an `ApproxEvent`, and
    - a provenance-bearing `DomainValue`.
-3. `Blocked` is recoverable only through policy fallback (e.g., unknown return or havoc).
-4. `Faulted` represents interpreter-internal invalidity, not target-program exception behavior.
+3. `DecisionNeeded` is host-resumable via explicit branch choice or policy-specified join/fork behavior.
+4. Interpreter-internal invalidity still uses diagnostic failures, but should not be conflated with target-program exception flow (`ExceptionStop`).
 
 ---
 
@@ -284,7 +302,8 @@ ExecutionPolicy = {
   HavocOnImpureUnknownCall: bool,
   MaxTrackedArrayElements,
   MaxAliasSetSize,
-  EnablePathSplitting,
+  BranchDecisionMode: {StopForUserChoice | ForkBoth | JoinBoth | HeuristicPick},
+  CallHandlingMode: {Interpret | Model | Stop},
   PathSplitLimit,
   JoinStrategy,
   WidenStrategy,
@@ -298,7 +317,7 @@ Policy must be part of trace metadata so replay/debug outputs are reproducible.
 
 ## 7) Serialization and diagnostics contract
 
-To support tooling and offline comparison, `ExecState` snapshots should be serializable into stable schemas.
+To support tooling and offline comparison, `MachineState` snapshots should be serializable into stable schemas.
 
 Recommended artifacts:
 
@@ -334,10 +353,11 @@ Deferred beyond MVP:
 
 ## 9) Open questions
 
-1. Should `Bottom` be representable at slot level in concrete stepping mode, or reserved for abstract fixpoint internals?
+1. How much of `EHState` is mandatory for first public virtual-stepping preview (`stop-on-throw` only vs handler transfer)?
 2. Do we require meet/narrow operators before M3, or can we keep join+widen only?
 3. How aggressively should path-fact contradiction pruning run under `fast` policy presets?
 4. Should unknown provenance graphs be DAG-enforced in v1, or permit cycles for simplicity?
+5. Should modeled calls always appear as model frames in history, or may policy collapse them into atomic events?
 
 ---
 
@@ -345,7 +365,7 @@ Deferred beyond MVP:
 
 This proposal is ready for sign-off when:
 
-1. Core interfaces include explicit types matching sections 2–4.
+1. Core interfaces include explicit `MachineState`/`FrameState` and micro-step result types matching sections 2–4.
 2. At least one end-to-end sample can emit provenance-bearing unknowns.
 3. Merge/join behavior is validated on a curated CFG fixture set.
-4. Host API can surface `StepStatus` + approximation diagnostics without internal type leakage.
+4. Host API can surface `StopReason` + debug events + approximation diagnostics without internal type leakage.
