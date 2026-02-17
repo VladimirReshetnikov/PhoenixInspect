@@ -2,94 +2,114 @@
 
 ## Why it matters
 
-dnlib remains an important reference point for this project even if it is not our default backend.
+dnlib remains an important reference backend even if it is not selected as default.
 
 It is historically strong for:
 
-- broad .NET assembly metadata handling,
-- IL read/write scenarios,
-- practical support patterns across reverse-engineering/debugging tooling,
-- both portable and Windows PDB integration paths.
+- broad .NET metadata handling,
+- practical IL read/write workflows,
+- reverse-engineering-friendly object models,
+- both portable and Windows PDB pathways.
 
 ## Snapshot review highlights
 
-The `lib/dnlib/src` snapshot is centered around a single `dnlib.csproj` with major namespaces grouped by concern:
+The `lib/dnlib/src` snapshot is centered around a single `dnlib.csproj` with layered namespaces:
 
-- `DotNet` (metadata object model and high-level definitions),
-- `DotNet/Emit` (IL body representation and readers),
-- `DotNet/MD` (metadata stream/table internals),
-- `DotNet/Pdb` (portable + managed/windows symbol readers),
+- `DotNet` (high-level metadata definitions and module/type/member models),
+- `DotNet/Emit` (CIL body parsing/emission utilities),
+- `DotNet/MD` (metadata stream and table infrastructure),
+- `DotNet/Pdb` (symbol reader selection and implementations),
 - `PE`, `IO`, and `W32Resources` (binary substrate support).
 
-This layout reinforces dnlib's "one stack" ergonomics: metadata, CIL, and symbol features can be consumed from one library surface.
+This one-stack layout favors integration speed but increases the risk of backend-specific leakage if boundaries are weak.
 
 ## Source-level API surfaces relevant to our adapters
 
-### 1) Module loading and metadata stream access
+### 1) ModuleDefMD as metadata root
 
-`ModuleDefMD` is the principal entry for loading modules from file/bytes/streams and exposes direct access to metadata streams (`TablesStream`, `StringsStream`, `BlobStream`, etc.).
+`ModuleDefMD` provides broad `Load(...)` entry points (file, bytes, stream, reflection module) and direct access to metadata streams.
 
-Practical implication: dnlib can satisfy both high-level and low-level metadata needs, but our adapter should avoid exposing stream-specific details outside ingestion.
+Design implication:
 
-### 2) Method and body model richness
+- good fit for deep metadata probing in adapter spikes,
+- keep stream/table details internal and project only normalized identity/body contracts.
 
-`MethodDef` and `CilBody` together provide object-model access to:
+### 2) MethodDef + CilBody object model
 
-- signatures and generic context,
-- instruction collections,
-- locals and exception handlers,
-- method-level metadata attributes.
+`MethodDef` and `CilBody` expose signatures, generic context, instruction lists, locals, and EH metadata.
 
-Practical implication: dnlib can produce the normalized method-body contract we want with relatively low projection overhead.
+Design implication:
 
-### 3) Explicit method-body reader pipeline
+- dnlib can satisfy our method-body projection contract with low ceremony,
+- normalization layer must prevent dnlib-specific semantics from shaping core contracts.
 
-`MethodBodyReader` APIs expose factory methods that accept operand resolvers, EH readers, and generic parameter context.
+### 3) MethodBodyReader controlled decode pipeline
 
-Practical implication: this is useful for controlled decoding experiments (including malformed/partial bodies), which helps our miss-reason and diagnostics taxonomy work.
+`MethodBodyReader.CreateCilBody(...)` overloads accept operand resolvers, explicit EH readers, and generic parameter context.
 
-### 4) Dual symbol path strategy
+Design implication:
 
-Under `DotNet/Pdb`, the snapshot contains distinct implementations for:
+- strong for malformed/partial-body experiments,
+- ideal for building deterministic failure-classification tests mapped to our miss taxonomy.
 
-- managed/Windows PDB reader paths,
-- portable PDB reader paths,
-- symbol reader factories and options.
+### 4) SymbolReaderFactory policy routing
 
-Practical implication: dnlib can be a realistic fallback for mixed symbol ecosystems, but symbol projection must be normalized so we do not fork host behavior by backend.
+`DotNet/Pdb/SymbolReaderFactory` routes between:
+
+- managed Windows PDB path,
+- portable PDB reader path,
+- COM-based Microsoft reader path (platform/options dependent),
+- embedded portable PDB extraction.
+
+Design implication:
+
+- useful coverage breadth for mixed-symbol environments,
+- requires a strict project policy to avoid backend-implicit symbol behavior differences.
+
+### 5) Portable PDB + managed readers as separate implementations
+
+`DotNet/Pdb/Portable/SymbolReaderFactory` and `DotNet/Pdb/Managed/SymbolReaderFactory` use distinct matching/validation rules.
+
+Design implication:
+
+- symbol projection should include source quality/provenance markers,
+- mismatch and fallback outcomes should be normalized and testable across paths.
 
 ## Potential project applications
 
-1. **Alternative metadata backend**
-   - used behind the same normalized contracts as AsmResolver/SRM-based implementations.
-2. **Compatibility fallback option**
-   - useful where another backend struggles with specific edge-case binaries.
-3. **Cross-checking backend during design**
-   - can validate assumptions in metadata normalization and method-body parsing.
-4. **Failure taxonomy training backend**
-   - controlled reader APIs make it practical to probe malformed input behavior.
+1. **Fallback metadata/CIL backend**
+   - interchangeable behind the same adapter interfaces as primary backend candidates.
+2. **Cross-check backend for parity testing**
+   - validate assumptions made by AsmResolver or SRM-oriented projections.
+3. **Failure-taxonomy training source**
+   - exercise malformed metadata/IL scenarios through explicit reader controls.
+4. **Symbol policy validation backend**
+   - probe portable/embedded/windows symbol behavior under one stack.
 
 ## Boundary and architecture guidance
 
-- Do not bake dnlib object models into interpreter or public project contracts.
-- Keep dnlib support as a pluggable adapter path until explicit MVP commitments are made.
-- Prefer decision records documenting when dnlib is required vs optional.
-- Keep symbol quality/provenance mapping backend-neutral even if dnlib is used for both metadata and symbols.
+- Do not expose dnlib model types outside adapter internals.
+- Keep dnlib capability optional until explicit decision gates are met.
+- Map all reader and symbol failures to project-owned miss reasons.
+- Preserve backend-neutral symbol and method-body contracts even when dnlib powers both.
 
 ## Risks and design pressure
 
-1. **Third-stack overhead**
-   - running SRM + AsmResolver + dnlib in parallel can fragment design effort.
-2. **Contract drift**
-   - if backend-specific quirks leak upward, normalized semantics become unstable.
-3. **Maintenance cost**
-   - each additional backend multiplies regression coverage needs.
-4. **Reader-mode complexity**
-   - multiple symbol reader options (portable/managed/native) can create policy ambiguity unless explicitly governed.
+1. **Stack proliferation overhead**
+   - supporting dnlib in addition to AsmResolver/SRM can fragment effort.
+2. **Contract drift risk**
+   - rich backend-specific conveniences can leak into public abstractions.
+3. **Maintenance multiplier**
+   - each backend adds conformance and regression burden.
+4. **Symbol policy ambiguity**
+   - multiple reader modes can produce inconsistent host behavior if policy is implicit.
+5. **Single-stack overconfidence**
+   - convenience of one library can hide long-term portability and lock-in risk.
 
 ## Recommended next experiments
 
-1. Produce one dnlib-based adapter spike that only maps method body + generic context + symbol sequence points.
-2. Run malformed IL body fixtures through `MethodBodyReader` and classify outcome patterns into miss reasons.
-3. Compare dnlib and AsmResolver projections for the same generic-heavy methods and document semantic diffs.
-4. Create a backend capability note for "single-stack ingestion" vs "multi-stack composition" trade-offs.
+1. Build a dnlib adapter spike for method-body + generic context + sequence points.
+2. Execute malformed IL fixtures through `MethodBodyReader` and classify outcomes.
+3. Compare dnlib vs AsmResolver normalized projection outputs on generic-heavy samples.
+4. Define a deterministic symbol-reader policy profile and evaluate path selection behavior.
+5. Capture explicit parity cases for embedded portable PDB and Windows PDB fallback conditions.

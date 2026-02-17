@@ -13,93 +13,118 @@ This maps directly to our runtime snapshot and value-provider layers described i
 
 ## Snapshot review highlights
 
-The `lib/clrmd/src` snapshot is organized around three main projects:
+The `lib/clrmd/src` snapshot shows a practical split between:
 
-1. `Microsoft.Diagnostics.Runtime` (core runtime and dump APIs)
-2. `Microsoft.Diagnostics.Runtime.Utilities` (DbgEng helpers and utility interop)
-3. `Microsoft.Diagnostics.Runtime.Tests` (conformance/regression coverage for the library itself)
+1. `Microsoft.Diagnostics.Runtime` (main public API surface),
+2. `Microsoft.Diagnostics.Runtime.Utilities` (native debugger/data-reader support utilities),
+3. `Microsoft.Diagnostics.Runtime.Tests` (behavior and regression coverage),
+4. sample tools under `src/Samples/*` (usage examples for stack, heap, and root workflows).
 
-For our design work, almost all required functionality sits in `Microsoft.Diagnostics.Runtime`.
+For project design, most adapter-facing behavior is concentrated in `Microsoft.Diagnostics.Runtime`.
 
 ## Source-level API surfaces relevant to our adapters
 
-### 1) Data target and symbol/file resolution lifecycle
+### 1) Data-target lifecycle and symbol/file resolution
 
-`DataTarget` is the root entry point and encapsulates:
+`DataTarget` centralizes:
 
-- dump/live reader ownership,
-- symbol path and file locator behavior,
-- PE image caching,
-- runtime discovery (`ClrInfo` inventory).
+- reader ownership (`IDataReader`),
+- runtime inventory (`ClrVersions` via `ClrInfo` providers),
+- symbol/file lookup through `IFileLocator`,
+- PE image caching and disposal behavior.
 
-Practical implication: our runtime adapter should wrap `DataTarget` ownership and never leak it upward.
+Design implication:
 
-### 2) Runtime materialization and version-specific behavior
+- treat `DataTarget` as an adapter-internal lifetime root,
+- normalize symbol and file-resolution misses into project miss reasons,
+- avoid exposing mutable `DataTarget` state to interpreter-facing contracts.
 
-`ClrRuntime` is the per-CLR facade that exposes:
+### 2) Runtime materialization and cache flush semantics
 
-- heap, threads, modules, appdomains,
-- architecture/pointer-size semantics,
-- data-target linkage and cache behavior.
+`ClrInfo.CreateRuntime(...)` drives DAC binding and runtime creation; `ClrRuntime.FlushCachedData()` explicitly invalidates previously materialized runtime objects.
 
-Practical implication: our snapshot contract should capture runtime identity explicitly (CLR flavor/version/build) so cross-dump comparisons remain deterministic.
+Design implication:
 
-### 3) Heap and object graph access
+- cache invalidation must be explicit in our runtime snapshot adapter,
+- object identity from prior reads must be treated as stale after flush,
+- provenance metadata should record whether values came from pre- or post-flush snapshots.
 
-`ClrHeap` provides core object/segment enumeration and object lookup APIs. This is essential for:
+### 3) Thread and stack enumeration behavior
 
-- evaluating object/field reads,
-- provenance tagging for value origin,
-- explaining unknown values when objects cannot be materialized.
+`ClrRuntime.Threads` and related stack APIs are lazily materialized and bounded in internal loops; tests in `Microsoft.Diagnostics.Runtime.Tests` also emphasize partial/unavailable scenarios.
 
-Practical implication: we should isolate heap reads behind a budget-aware value provider contract to avoid accidental unbounded traversal.
+Design implication:
 
-### 4) Thread, frame, and root enumeration semantics
+- always emit completeness metadata for stack-walk outcomes,
+- keep deterministic ordering rules in our projected frame lists,
+- encode "walk stopped" reasons (budget, corruption, unsupported shape) explicitly.
 
-`ClrThread` and `ClrStackFrame` expose stack enumeration and root extraction. The source includes cautionary notes about stack-walk robustness and potential non-termination in corrupted states.
+### 4) Heap/value access boundary
 
-Practical implication: our adapter must enforce explicit frame/root enumeration budgets and convert incomplete walks into normalized partial outcomes.
+`ClrRuntime.Heap` and heap object APIs provide high-value runtime facts but also imply potentially expensive traversals for object graph operations.
 
-### 5) Cache behavior knobs that affect determinism/perf
+Design implication:
 
-`CacheOptions` controls what ClrMD caches (e.g., stack traces, roots, type info). These settings can trade memory for repeated-call cost.
+- keep heap operations budgeted and cancellation-aware,
+- separate object identity lookup from deep object expansion,
+- preserve "known unknown" outcomes when objects cannot be fully materialized.
 
-Practical implication: adapter construction should own cache policy so behavior is stable and host-configurable, not environment-implicit.
+### 5) CacheOptions as determinism/perf control plane
+
+`CacheOptions` exposes toggles for method/type/field caching, stack/root caching, string caching, and max dump-cache size.
+
+Design implication:
+
+- define project-level cache presets (e.g., deterministic analysis vs interactive exploration),
+- include active cache policy in evaluation provenance,
+- prevent host-specific defaults from silently changing behavior.
+
+### 6) Runtime diversity and DAC selection pressure
+
+`ClrInfo` encapsulates runtime identity (version/build metadata, DAC lookup paths), and runtime creation can fail or vary based on matching constraints.
+
+Design implication:
+
+- treat runtime identity as first-class input to method-resolution and type-identity logic,
+- surface DAC mismatch/lookup failure as explicit normalized error categories,
+- keep fallback and retry policy out of core interpreter logic.
 
 ## Best-fit responsibilities (project-specific)
 
-For our conceptual design, ClrMD should own:
+ClrMD should own:
 
 1. **Dump runtime observation**
-   - enumerate threads, stacks, frames, and loaded modules,
-   - read memory for runtime-backed value retrieval.
-2. **Runtime fact collection, not semantic interpretation**
-   - provide raw runtime facts,
-   - avoid embedding interpreter semantics in ClrMD adapters.
-3. **Identity bridging inputs**
-   - expose enough runtime identity data to map to project-owned `ModuleId` and method identity records.
+   - enumerate threads, frames, handles, appdomains, modules, and roots.
+2. **Runtime fact collection (not semantic execution)**
+   - provide runtime facts required for interpretation without embedding interpreter behavior.
+3. **Identity-bridge inputs**
+   - provide method-table/method-handle/module identity hints for project-owned identity projection.
 
 ## Boundary rules refined from source review
 
 - Keep ClrMD types out of core interpreter contracts.
 - Normalize to project-owned immutable records at adapter boundaries.
-- Represent lookup failures explicitly (`NotAvailable`, `SymbolMissing`, `Ambiguous`, etc.) instead of leaking backend-specific exceptions.
-- Treat ClrMD enumeration APIs as potentially partial and always attach completeness metadata.
+- Represent backend failures explicitly (`NotAvailable`, `SymbolMissing`, `Ambiguous`, etc.).
+- Treat enumeration APIs as partial by default and attach completeness/provenance metadata.
+- Record runtime/cache configuration in provenance for replayability.
 
 ## Risks and design pressure
 
-1. **Version/runtime diversity pressure**
-   - dump/runtime differences can affect field layout assumptions and method details.
-2. **Artifact dependency pressure**
-   - runtime state alone is insufficient for source-accurate stepping; we still need PE/PDB resolution.
+1. **Runtime/version diversity**
+   - different CLR flavors and DAC matches can affect discoverability and shape of runtime facts.
+2. **Artifact dependence**
+   - runtime inspection alone does not solve source mapping without PE/PDB paths.
 3. **Leaky abstractions**
-   - if ClrMD-specific handles flow upward, portability to non-dump scenarios decreases.
-4. **Walk robustness pressure**
-   - stack and root enumeration may degrade on damaged dumps; adapter contract must expose this cleanly.
+   - exposing ClrMD handles/types upward reduces portability and contract stability.
+4. **Walk robustness**
+   - damaged dumps can produce truncated stack/root data requiring explicit partial-result handling.
+5. **Policy drift**
+   - untracked cache/symbol path changes can produce non-reproducible evaluation outcomes.
 
 ## Recommended next experiments
 
-1. Build a thin `RuntimeSnapshotAdapter` prototype that only projects deterministic records (no backend types).
-2. Add a budgeted stack-walk wrapper and record emitted partial-reason variants.
-3. Capture one evidence run for each dump shape: full dump, minidump, and symbol-poor dump.
-4. Define cache policy presets (`DeterministicLowMem`, `InteractiveDefault`) and measure behavioral drift.
+1. Build a thin `RuntimeSnapshotAdapter` that projects deterministic records only.
+2. Add a budgeted stack-walk wrapper with normalized stop reasons.
+3. Validate cache-policy presets against identical dumps to quantify drift.
+4. Capture an evidence set for full dump, minidump, and symbol-poor artifact configurations.
+5. Add explicit DAC-resolution failure scenarios to conformance documentation.

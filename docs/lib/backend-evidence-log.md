@@ -65,3 +65,12 @@ For each experiment/prototype spike:
 
 - When a capability axis reaches `Medium` confidence for a primary candidate, update `backend-capability-matrix.md` notes and rationale.
 - When critical MVP axes reach consistent `Medium`/`High` confidence, capture a decision record in `mvp-backend-decision-record.md`.
+
+## 2026-02-17 source-review expansion pass
+
+| Date | Backend | Capability axis | Claim | Evidence artifact | Confidence | Follow-up |
+|---|---|---|---|---|---|---|
+| 2026-02-17 | ClrMD | Runtime ingestion and cache control | `DataTarget`, `ClrInfo`, `ClrRuntime`, and `CacheOptions` provide explicit lifecycle + cache semantics suitable for deterministic snapshot adapters when normalized. | Expanded review in `docs/lib/clrmd-usage-notes.md`. | Low | Validate with adapter spike on flush/cache-policy drift scenarios. |
+| 2026-02-17 | AsmResolver | Metadata/CIL + symbol package layering | `AsmResolver.DotNet`, `AsmResolver.PE*`, and `AsmResolver.Symbols.Pdb` package split supports clean adapter seams for metadata, PE, and symbol projection. | Expanded review in `docs/lib/asmresolver-usage-notes.md`. | Low | Execute one end-to-end normalized method-body + sequence-point projection spike. |
+| 2026-02-17 | dnlib | Method-body and symbol policy controllability | `ModuleDefMD`, `MethodBodyReader`, and `DotNet/Pdb/SymbolReaderFactory` provide controllable decode and symbol-path selection surfaces for failure-taxonomy experiments. | Expanded review in `docs/lib/dnlib-usage-notes.md`. | Low | Run malformed IL + embedded portable PDB parity scenarios. |
+| 2026-02-17 | Roslyn | Deterministic expression front-end potential | `SyntaxFactory.ParseExpression`, `ParseSyntaxTree`, `CSharpCompilation.Create*`, and `GetSemanticModel` support a constrained parse/bind front-end contract with provenance capture. | Expanded review in `docs/lib/roslyn-usage-notes.md`. | Low | Build deterministic input-bundle prototype and compare script vs standard compilation modes. |
