@@ -193,3 +193,61 @@ This gives immediate intuition for why our architecture treats Roslyn as a bound
 - `docs/lib/source-review-deep-dive.md` for cross-library comparisons.
 - `docs/proposals/architecture/semantic-modeling-proposal.md` for how semantic enrichment fits interpreter policy.
 
+
+---
+
+## 9) Source-backed deep dive: what matters beyond basic parse/bind samples
+
+A deeper read of the Roslyn snapshot clarifies a few boundary conditions we should encode in adapter contracts.
+
+### `SyntaxFactory.ParseExpression` always goes through lexer + parser, with optional full-text enforcement
+
+`ParseExpression(...)` builds a lexer/parser pair and optionally calls `ConsumeUnexpectedTokens`. This means strictness is not just an external policy flag; it directly changes produced syntax/diagnostic behavior.
+
+Adapter guidance:
+
+- model strictness (`consumeFullText`) as a required input field,
+- persist parse options + strictness in provenance,
+- keep a stable normalization for trailing-token conditions.
+
+### Script compilation differs by construction, not just by option toggles
+
+`CreateScriptCompilation(...)` validates submission parameters and uses submission-oriented defaults (including references superseding lower versions). It is not equivalent to calling `Create(...)` with a few option tweaks.
+
+Adapter guidance:
+
+- treat "script vs regular" as a mode switch with its own policy review,
+- include mode in cache keys and result fingerprints,
+- avoid implicit auto-switching between modes based on heuristic text detection.
+
+### Semantic model acquisition has hard preconditions
+
+`GetSemanticModel(...)` throws when the syntax tree is not part of the compilation. This is a predictable failure mode that should be normalized rather than leaked as raw exceptions.
+
+Adapter guidance:
+
+- enforce one construction pipeline that binds parse tree + compilation together,
+- map tree-membership failures to internal adapter error categories,
+- avoid passing semantic model objects across layers.
+
+### Parser internals (`LanguageParser`) optimize recovery, not debugger semantics
+
+`LanguageParser` contains extensive terminator state handling and recovery heuristics. These are implementation details that may evolve between Roslyn versions.
+
+Adapter guidance:
+
+- rely on public syntax + diagnostics + semantic outputs only,
+- do not encode parser-internal recovery assumptions in product behavior,
+- maintain golden tests over normalized output, not Roslyn internal state.
+
+## 10) Advanced onboarding lab (2-3 hours)
+
+1. Parse the same corpus in strict and non-strict modes.
+2. Build both regular and script compilations for the corpus.
+3. Collect semantic diagnostics and primary symbol/type hints.
+4. Normalize each result to project DTOs and compare:
+   - syntax status,
+   - semantic confidence,
+   - fallback recommendations,
+   - provenance fingerprint fields.
+5. Document one policy recommendation in `docs/lib/roslyn/usage-notes.md` based on observed deltas.
