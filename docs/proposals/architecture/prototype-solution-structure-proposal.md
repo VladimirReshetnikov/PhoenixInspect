@@ -1,79 +1,44 @@
 # Prototype Solution Structure Proposal
 
-> **Draft status notice:** This document describes an intentionally provisional project layout for concept validation.
-> Names, boundaries, dependencies, and contract shapes are expected to evolve as design reviews continue.
+> **Draft status notice:** This document is a scaffolding snapshot for the current design phase.
+> The active module direction is defined by `module-architecture-proposal.md`, and this file tracks how `src/` is currently aligned.
 
 ## 1. Purpose
 
-This proposal introduces an initial `src/` solution layout so the team can:
+This proposal records the current `src/` scaffolding after retiring the earlier prototype layout. It exists to:
 
-- make architecture discussions concrete,
-- prototype cross-module contracts early,
-- validate dependency direction and hosting seams,
-- keep implementation effort intentionally lightweight while documentation-first design continues.
+- keep conceptual architecture and repository structure synchronized,
+- validate dependency direction at project granularity,
+- provide a clean baseline for incremental implementation experiments.
 
-The structure below should be treated as a **working hypothesis**, not a final package architecture.
+## 2. Current scaffolding layout
 
-## 2. Proposed project layout
+The current source tree contains project-only scaffolding (no prototype types yet) for the module architecture catalog:
 
-```text
-src/
-├── Interpreter.Abstractions   # Shared execution contracts and foundational DTOs
-├── Interpreter.Metadata       # Metadata resolution contracts and canonical descriptors
-├── Interpreter.CallModel      # Call classification and effect contracts
-├── Interpreter.MemoryModel    # Abstract memory location and value contracts
-├── Interpreter.Core           # Engine orchestration and instruction stepping contracts
-├── Interpreter.Diagnostics    # Explainability and diagnostic event sink contracts
-└── Interpreter.Hosting        # DI-facing host composition entry points and options
-```
+- Foundations: `Interpreter.Foundation`
+- Core semantics: `Interpreter.Types`, `Interpreter.IL`, `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Core.IR`, `Interpreter.Core.Analysis`, `Interpreter.Core.Tracing`
+- Domains/memory: `Interpreter.Domain.Concrete`, `Interpreter.Domain.CNTypeTaint`, `Interpreter.Domain.Range`, `Interpreter.Memory.VirtualHeap`, `Interpreter.Memory.Overlay`, `Interpreter.Memory.SummaryHeap`
+- Models: `Interpreter.Models.Abstractions`, `Interpreter.Models.CoreLib.Primitives`, `Interpreter.Models.Environment`, `Interpreter.Models.Async`, `Interpreter.Models.Dynamic`, `Interpreter.Models.Collections`, `Interpreter.Models.CompilerPatterns`, `Interpreter.Models.RoslynAdapter`
+- Metadata/symbols/source: `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Metadata.AsmResolver`, `Interpreter.Symbols.PortablePdb`, `Interpreter.Symbols.WindowsPdb.Dia`, `Interpreter.Symbols.WindowsPdb.Managed`, `Interpreter.Decompiler.ILSpy`, `Interpreter.DebugMaps`
+- Artifacts/hosts/debugger: `Interpreter.Artifacts.Abstractions`, `Interpreter.Artifacts.SymbolStore`, `Interpreter.Source.SourceLink`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Host.Live.Snapshot`, `Interpreter.Host.Runtime.Sandbox`, `Interpreter.Debugger.Engine`
+- Product compositions: `Interpreter.Product.DumpDebugging`, `Interpreter.Product.StaticAnalysis`, `Interpreter.Product.LiveSpeculation`, `Interpreter.Product.SandboxRuntime`
 
-## 3. Dependency model (prototype)
+## 3. Dependency policy
 
-The current dependency direction is deliberately inward toward stable concepts:
+The repository scaffolding follows the same layering policy defined in `module-architecture-proposal.md`:
 
-- `Interpreter.Abstractions` has **no project dependencies**.
-- `Interpreter.Metadata` depends on `Interpreter.Abstractions`.
-- `Interpreter.CallModel` depends on `Interpreter.Abstractions`.
-- `Interpreter.MemoryModel` depends on `Interpreter.Abstractions`.
-- `Interpreter.Core` depends on `Interpreter.Abstractions`, `Interpreter.Metadata`, `Interpreter.CallModel`, and `Interpreter.MemoryModel`.
-- `Interpreter.Diagnostics` depends on `Interpreter.Abstractions`.
-- `Interpreter.Hosting` depends on all previous modules and `Microsoft.Extensions.DependencyInjection.Abstractions`.
+- Dependencies point downward by layer; no reverse edges.
+- Core execution remains free of host/metadata/decompiler-specific dependencies.
+- Optional integrations are represented as optional projects with explicit package-level isolation.
 
-This ordering supports experimentation while preserving clean layering constraints.
+## 4. Scope boundary for this phase
 
-## 4. Why these names and seams now
+- `src/` currently contains only project files and dependency edges.
+- Public interfaces/types are intentionally deferred until design convergence for each module seam.
+- Any future addition of prototype APIs should be accompanied by corresponding architecture doc updates in the same PR.
 
-### Interpreter.Abstractions
-A dedicated contracts module allows all prototype components to agree on execution lifecycle and request/result payloads without importing runtime-specific behavior.
+## 5. Next updates expected
 
-### Interpreter.Metadata
-Metadata resolution is expected to have multiple backend options (PE/PDB reader, dump-backed providers, test fixtures). Isolating contracts here prevents metadata concerns from leaking directly into host composition.
-
-### Interpreter.CallModel
-A call-model contracts assembly allows us to iterate on call target classification and side-effect reasoning without entangling early core execution APIs with unstable heuristics.
-
-### Interpreter.MemoryModel
-A memory-model contracts assembly gives us a dedicated seam for abstract locations and value provenance while keeping concrete heap/state representations intentionally open.
-
-### Interpreter.Core
-The core assembly defines orchestration, stepping, and cross-module coordination interfaces only. This keeps the "engine heart" explicit while still postponing irreversible object-model choices.
-
-### Interpreter.Diagnostics
-Explainability and provenance are first-class architectural goals. A dedicated diagnostics contract module makes these concerns visible and testable early.
-
-### Interpreter.Hosting
-Host composition normally changes fastest. Keeping DI-oriented registration in a separate module lets us iterate container setup without destabilizing core contracts.
-
-## 5. Prototype caveats and guardrails
-
-- Public APIs are documented and intentionally detailed, but **not stable**.
-- Types favor simple strings/dictionaries in several places to accelerate discussion and iteration.
-- No assumption should be made that these contracts will survive unchanged into MVP.
-- When a contract changes, update this proposal and related architecture docs in the same PR.
-
-## 6. Immediate next increments
-
-1. Validate whether `Interpreter.CallModel` should remain separate from `Interpreter.Core` after initial classifier experiments.
-2. Validate whether `Interpreter.MemoryModel` should eventually split stack/frame contracts from heap contracts.
-3. Create a short architecture decision log that tracks why each dependency edge exists.
-4. Add initial contract conformance tests once runtime tooling is introduced in CI.
+1. Add architecture-decision notes for selected optional projects (for example, AsmResolver and Windows PDB options).
+2. Capture package version strategy and compatibility constraints once dependency evaluation is complete.
+3. Add focused prototype interfaces in a subset of modules after dependency seams are validated through review.

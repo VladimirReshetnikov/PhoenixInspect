@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Core.Abstractions</AssemblyName>
+    <RootNamespace>Interpreter.Core.Abstractions</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Foundation/Interpreter.Foundation.csproj" />
+    <ProjectReference Include="../Interpreter.Types/Interpreter.Types.csproj" />
+    <ProjectReference Include="../Interpreter.IL/Interpreter.IL.csproj" />
+  </ItemGroup>
+</Project>

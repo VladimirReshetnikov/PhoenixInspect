@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Models.CoreLib.Primitives</AssemblyName>
+    <RootNamespace>Interpreter.Models.CoreLib.Primitives</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Models.Abstractions/Interpreter.Models.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Memory.VirtualHeap/Interpreter.Memory.VirtualHeap.csproj" />
+  </ItemGroup>
+</Project>

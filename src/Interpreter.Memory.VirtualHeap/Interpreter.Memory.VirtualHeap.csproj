@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Memory.VirtualHeap</AssemblyName>
+    <RootNamespace>Interpreter.Memory.VirtualHeap</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

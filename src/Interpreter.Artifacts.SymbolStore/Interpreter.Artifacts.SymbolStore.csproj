@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Artifacts.SymbolStore</AssemblyName>
+    <RootNamespace>Interpreter.Artifacts.SymbolStore</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Artifacts.Abstractions/Interpreter.Artifacts.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

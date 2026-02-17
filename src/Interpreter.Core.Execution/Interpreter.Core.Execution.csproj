@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Core.Execution</AssemblyName>
+    <RootNamespace>Interpreter.Core.Execution</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

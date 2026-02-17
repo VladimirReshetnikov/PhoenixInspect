@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Models.CompilerPatterns</AssemblyName>
+    <RootNamespace>Interpreter.Models.CompilerPatterns</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Models.Abstractions/Interpreter.Models.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Core.IR/Interpreter.Core.IR.csproj" />
+  </ItemGroup>
+</Project>

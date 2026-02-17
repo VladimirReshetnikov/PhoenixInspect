@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>Interpreter.Abstractions</AssemblyName>
-    <RootNamespace>Interpreter.Abstractions</RootNamespace>
-    <Description>Draft prototype contracts shared by all interpreter modules.</Description>
-  </PropertyGroup>
-</Project>

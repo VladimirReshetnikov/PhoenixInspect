@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Models.Environment</AssemblyName>
+    <RootNamespace>Interpreter.Models.Environment</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Models.Abstractions/Interpreter.Models.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Foundation/Interpreter.Foundation.csproj" />
+  </ItemGroup>
+</Project>
