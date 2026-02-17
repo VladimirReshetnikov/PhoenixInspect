@@ -31,6 +31,21 @@ Based on the latest product + implementation proposals for virtual stepping, the
 5. Require source-step mapping fallback order (PDB -> decompiler -> IL) in all UX and integration proposals.
 6. Define a single artifact-resolution contract (`ModuleId`, artifact provenance, deterministic miss reasons) shared by ClrMD and PE/PDB integration layers.
 
+## 2.2) Immediate alignment updates from async + dynamic proposals
+
+Based on the new `virtual-tasks` and `dynamic-calls` architecture proposals, the following cross-document updates are now required:
+
+1. Extend the call-classification contract to include lifted semantic callsites (`DynamicDispatch` and `AsyncRuntimeIntrinsic`) instead of treating them as opaque fallback calls.
+2. Standardize a shared diagnostic taxonomy for dynamic binding and async scheduling outcomes (`Resolved`, `Ambiguous`, `Unresolved`, `MetaObjectRequired`, `AwaitPending`, `ContinuationResumed`, `TaskCompleted`, `TaskFaulted`, `TaskCanceled`).
+3. Update state-model terminology to include virtual async entities (`VirtualTaskState`, continuation queue/scheduler state, and await-point provenance) as first-class machine-state components.
+4. Clarify debugger control-plane behavior for async and dynamic decision points:
+   - dynamic unresolved multi-target dispatch may raise `DecisionNeeded` for Step Into,
+   - async suspension/resume points should emit stable stop/trace events that map to user-method frames.
+5. Expand integration contracts for required artifacts and metadata:
+   - async method/state-machine mapping (`AsyncStateMachineAttribute`, PDB `StateMachineMethod`),
+   - runtime binding type reconstruction for dynamic call arguments.
+6. Expand benchmark + test corpus requirements with dedicated async/dynamic fixture sets and determinism checks for virtual-scheduler replay.
+
 ---
 
 ## M0 — Architecture baseline and contracts

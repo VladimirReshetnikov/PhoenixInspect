@@ -59,6 +59,7 @@ Across both contexts, architecture must preserve deterministic, bounded, and exp
 | - IL stack machine stepper            |               | - CFG builder                      |
 | - opcode transfer semantics           |               | - fixpoint engine                  |
 | - call dispatch and effect emission   |               | - join/widen strategy              |
+| - lifted semantic sites (`dynamic`/`async`) |        | - path split/join policies         |
 +--------------------+------------------+               +------------------+----------------+
                      |                                                     |
                      +------------------------+----------------------------+
@@ -168,7 +169,8 @@ Responsibilities:
 - maintain evaluation stack, locals, arguments, temporary state,
 - execute opcode semantics against abstract domain interfaces,
 - route call instructions through call model dispatcher,
-- emit effect and provenance events.
+- recognize lifted semantic callsites (`DynamicDispatch`, `AsyncRuntimeIntrinsic`) before generic fallback handling,
+- emit effect and provenance events (including lifted-site resolution/scheduler lifecycle events).
 
 Output is either a terminal state/value or bounded partial state on stop conditions.
 
@@ -218,6 +220,7 @@ Required responsibilities:
 - acquire PE/PDB artifacts through policy-guarded sources (local paths, cache, symbol server),
 - produce `DebugMap` for each method with mandatory fallback order: `PDB -> decompiler map -> IL offsets`,
 - provide source payload provenance (`real source`, `embedded source`, `decompiled`, `IL-only`) to host surfaces,
+- resolve async state-machine projection metadata (`AsyncStateMachineAttribute`, PDB `StateMachineMethod`) to map `MoveNext` execution back to user-facing method/step locations,
 - expose deterministic miss/failure diagnostics when symbols or source are unavailable.
 
 This pipeline should be shared by both the virtual-debug control plane and any expression-evaluation hosts so line mapping, locals/scopes, and provenance labels remain consistent.
@@ -232,11 +235,12 @@ This pipeline should be shared by both the virtual-debug control plane and any e
 4. Artifact pipeline resolves debug map and best-available source (PDB/decompiler/IL) for host-visible stepping.
 5. Initial state is created from arguments/locals and memory roots.
 6. Runtime executes (single-state, micro-step loop, or CFG/fixpoint) under budget guards.
-7. Calls are classified (`inline model`, `summary`, `block`, `unknown return`, `havoc`).
-8. Effects and provenance are recorded continuously.
-9. Runtime exits with terminal/partial result, or pause reason (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Completed`).
-10. Orchestrator computes trust label and assembles explanation payload.
-11. Host receives stable result envelope.
+7. Calls are classified (`intrinsic`, `summary`, `reentrant`, `lifted semantic site`, `fallback`).
+8. Lifted sites emit deterministic outcomes (dynamic binding diagnostics; async continuation/task lifecycle events).
+9. Effects and provenance are recorded continuously.
+10. Runtime exits with terminal/partial result, or pause reason (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Completed`).
+11. Orchestrator computes trust label and assembles explanation payload.
+12. Host receives stable result envelope.
 
 ---
 
