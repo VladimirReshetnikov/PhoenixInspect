@@ -181,6 +181,7 @@ public sealed record ExplainabilityNote(
 /// <param name="SessionId">Gets the session identifier copied from the originating execution request.</param>
 /// <param name="State">Gets the lifecycle state reached when this result snapshot was produced.</param>
 /// <param name="StopReason">Gets a host-readable reason indicating why execution stopped or yielded.</param>
+/// <param name="StopDescriptor">Gets structured stop details that classify the stop outcome for host policy and UX routing.</param>
 /// <param name="ExplainabilityNotes">Gets explainability notes preserved as plain strings for broad host compatibility in the draft phase.</param>
 /// <remarks>
 /// This record intentionally mirrors the interface contract without adding richer value objects yet.
@@ -190,4 +191,5 @@ public sealed record ExecutionResult(
     string SessionId,
     ExecutionLifecycleState State,
     string StopReason,
+    ExecutionStopDescriptor StopDescriptor,
     IReadOnlyList<string> ExplainabilityNotes) : IExecutionResult;
