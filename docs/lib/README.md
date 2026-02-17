@@ -18,6 +18,8 @@ These notes are intentionally project-specific: they focus on how each library c
 | AsmResolver | `lib/asmresolver` | `asmresolver-usage-notes.md` |
 | dnlib | `lib/dnlib` | `dnlib-usage-notes.md` |
 | Roslyn | `lib/roslyn` | `roslyn-usage-notes.md` |
+| Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
+| Adapter conformance checklist | N/A (cross-library) | `adapter-conformance-checklist.md` |
 
 ## How to use these notes
 
@@ -27,3 +29,9 @@ Use this folder as a bridge between:
 2. concrete package-selection/adapter decisions in future implementation milestones.
 
 When design decisions evolve, update these notes first and then reconcile proposal docs that depend on them.
+
+## Expansion backlog
+
+- Add concrete evidence notes per backend capability axis as prototype experiments are run.
+- Keep miss-reason taxonomy synchronized with architecture-level provenance terminology.
+- Add one short decision record when primary metadata backend is selected for MVP planning.
