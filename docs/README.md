@@ -6,6 +6,7 @@ This directory contains conceptual design artifacts for the IL interpreter and d
 
 ```text
 docs/
+├── lib/             # Project-specific notes for library snapshots under /lib
 ├── governance/      # Documentation process, standards, and lifecycle
 ├── plans/           # Milestones, sequencing, and decision gates
 └── proposals/
@@ -38,6 +39,11 @@ docs/
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft | Artifact-resolution design for PE/PDB loading, debug-map generation, and source fallback. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
+| `lib/README.md` | Library Notes | Index | Draft | Navigation and usage guidance for `docs/lib/*` library notes. |
+| `lib/clrmd-usage-notes.md` | Library Notes | Note | Draft | Project-specific ClrMD responsibilities, boundaries, risks, and action items. |
+| `lib/asmresolver-usage-notes.md` | Library Notes | Note | Draft | Candidate AsmResolver roles for metadata/CIL and normalization guidance. |
+| `lib/dnlib-usage-notes.md` | Library Notes | Note | Draft | dnlib fallback/compatibility role and backend-capability planning notes. |
+| `lib/roslyn-usage-notes.md` | Library Notes | Note | Draft | Roslyn front-end role, coupling risks, and conservative-inference guidance. |
 | `governance/documentation-organization-proposal.md` | Governance | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
 | `governance/project-faq.md` | Governance | Guide | Draft | FAQ for contributors and stakeholders about scope, expectations, and direction in the concept phase. |
 
