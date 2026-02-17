@@ -35,6 +35,7 @@ docs/
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft | Artifact-resolution design for PE/PDB loading, debug-map generation, and source fallback. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
 | `governance/documentation-organization-proposal.md` | Governance | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
+| `governance/project-faq.md` | Governance | Guide | Draft | FAQ for contributors and stakeholders about scope, expectations, and direction in the concept phase. |
 
 ## Suggested reading paths
 
@@ -78,8 +79,9 @@ docs/
 
 ### Process and governance path
 
-1. `governance/documentation-organization-proposal.md`
-2. `plans/future-work-planning.md`
+1. `governance/project-faq.md`
+2. `governance/documentation-organization-proposal.md`
+3. `plans/future-work-planning.md`
 
 ## Naming and placement conventions
 
