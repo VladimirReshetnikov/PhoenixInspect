@@ -46,6 +46,8 @@ docs/
 | `lib/roslyn-usage-notes.md` | Library Notes | Note | Draft | Roslyn front-end role, coupling risks, and conservative-inference guidance. |
 | `lib/backend-capability-matrix.md` | Library Notes | Matrix | Draft | Cross-library capability comparison axes and MVP decision gates for metadata/symbol backends. |
 | `lib/adapter-conformance-checklist.md` | Library Notes | Checklist | Draft | Backend-neutral adapter contract and miss-reason conformance guidance. |
+| `lib/backend-evidence-log.md` | Library Notes | Log | Draft | Evidence-tracking log that links backend capability claims to concrete prototype artifacts and confidence levels. |
+| `lib/mvp-backend-decision-record.md` | Library Notes | Decision Record | Draft | Structured decision record template for selecting the MVP metadata/symbol backend strategy. |
 | `governance/documentation-organization-proposal.md` | Governance | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
 | `governance/project-faq.md` | Governance | Guide | Draft | FAQ for contributors and stakeholders about scope, expectations, and direction in the concept phase. |
 
