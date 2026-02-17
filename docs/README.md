@@ -24,6 +24,9 @@ docs/
 | `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft | Language/runtime/dependency and package layout choices. |
 | `proposals/architecture/call-model-and-effects.md` | Architecture | Proposal | Draft | Call classification, fallback behavior, and effect lattice contract. |
 | `proposals/architecture/generic-context-resolver-proposal.md` | Architecture | Proposal | Draft | Generic-context reconstruction strategy for dump-backed interpretation. |
+| `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft | Canonical execution-state model, domain contracts, and provenance semantics. |
+| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Proposal | Draft | Testing taxonomy, determinism checks, and milestone quality gates. |
+| `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft | Performance model, benchmark corpus strategy, and regression gates. |
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
 | `governance/documentation-organization-proposal.md` | Governance | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
@@ -42,8 +45,10 @@ docs/
 1. `proposals/architecture/il-interpreter-framework-proposal.md`
 2. `proposals/architecture/mvp-abstract-domain-proposal.md`
 3. `proposals/architecture/call-model-and-effects.md`
-4. `proposals/architecture/generic-context-resolver-proposal.md`
-5. `plans/future-work-planning.md`
+4. `proposals/architecture/state-and-domain-model-proposal.md`
+5. `proposals/architecture/testing-strategy-proposal.md`
+6. `proposals/architecture/generic-context-resolver-proposal.md`
+7. `plans/future-work-planning.md`
 
 ### Runtime integration path
 
@@ -66,6 +71,3 @@ docs/
 ## Next documentation additions (proposed)
 
 - `proposals/architecture/architecture-overview.md`
-- `proposals/architecture/state-and-domain-model.md`
-- `proposals/architecture/testing-strategy.md`
-- `proposals/architecture/perf-and-benchmarks.md`
