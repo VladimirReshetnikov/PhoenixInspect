@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Core</AssemblyName>
+    <RootNamespace>Interpreter.Core</RootNamespace>
+    <Description>Draft prototype engine orchestration contracts.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Abstractions/Interpreter.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Metadata/Interpreter.Metadata.csproj" />
+    <ProjectReference Include="../Interpreter.CallModel/Interpreter.CallModel.csproj" />
+    <ProjectReference Include="../Interpreter.MemoryModel/Interpreter.MemoryModel.csproj" />
+  </ItemGroup>
+</Project>

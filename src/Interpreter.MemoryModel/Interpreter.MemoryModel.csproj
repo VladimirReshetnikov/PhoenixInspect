@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.MemoryModel</AssemblyName>
+    <RootNamespace>Interpreter.MemoryModel</RootNamespace>
+    <Description>Draft prototype heap and value-location contracts for interpreter execution.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Abstractions/Interpreter.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
