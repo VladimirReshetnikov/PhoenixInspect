@@ -19,6 +19,7 @@ docs/
 | Document | Area | Type | Status | Summary |
 |---|---|---|---|---|
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft | User-facing dump-time evaluation capability and phased scope. |
+| `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Draft | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft | Initial abstract domains and analysis behavior for MVP. |
 | `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft | Language/runtime/dependency and package layout choices. |
@@ -42,13 +43,14 @@ docs/
 
 ### Architecture-first path
 
-1. `proposals/architecture/il-interpreter-framework-proposal.md`
-2. `proposals/architecture/mvp-abstract-domain-proposal.md`
-3. `proposals/architecture/call-model-and-effects.md`
-4. `proposals/architecture/state-and-domain-model-proposal.md`
-5. `proposals/architecture/testing-strategy-proposal.md`
-6. `proposals/architecture/generic-context-resolver-proposal.md`
-7. `plans/future-work-planning.md`
+1. `proposals/architecture/architecture-overview-proposal.md`
+2. `proposals/architecture/il-interpreter-framework-proposal.md`
+3. `proposals/architecture/mvp-abstract-domain-proposal.md`
+4. `proposals/architecture/call-model-and-effects.md`
+5. `proposals/architecture/state-and-domain-model-proposal.md`
+6. `proposals/architecture/testing-strategy-proposal.md`
+7. `proposals/architecture/generic-context-resolver-proposal.md`
+8. `plans/future-work-planning.md`
 
 ### Runtime integration path
 
@@ -70,4 +72,4 @@ docs/
 
 ## Next documentation additions (proposed)
 
-- `proposals/architecture/architecture-overview.md`
+- `proposals/architecture/opcode-support-matrix-proposal.md`
