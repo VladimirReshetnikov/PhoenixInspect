@@ -98,15 +98,17 @@ It is intentionally split into:
 **Deliverables**
 
 - Session model with explicit machine/call-stack state and stable pause reasons.
-- Step-command controller for `StepInto`, `StepOver`, `StepOut`, and branch decisions.
+- Step-command controller for `StepInto`, `StepOver`, `StepOut`, `Resume`, and branch decisions.
 - Stop-point history with `Undo` and branch-aware timeline semantics.
 - Source mapping pipeline (PDB first, decompiler map second, IL fallback).
+- Session transcript contract (commands, stop reasons, event batches, and step diffs) for deterministic replay and host hydration.
 
 **Exit criteria**
 
 - End-to-end virtual stepping demo over curated dump-backed scenarios.
 - Deterministic replay of identical step-command sequences.
 - Decision-needed flow for unknown branch conditions is host-visible and actionable.
+- Model-call behavior is explicit (`pseudo-frame` or `atomic effect event`) and policy-configured.
 
 ---
 
@@ -181,6 +183,7 @@ It is intentionally split into:
 3. Create opcode support matrix with implementation status.
 4. Build initial benchmark corpus from realistic IL methods.
 5. Specify virtual debug session contracts (step commands, stop reasons, undo/branch behavior).
+6. Define a step-diff schema (`locals/stack/memory/effects/unknowns`) shared across UI and replay tests.
 
 ### Medium priority
 
