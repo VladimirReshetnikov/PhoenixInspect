@@ -60,6 +60,23 @@ public sealed record MemoryReadRequest(
     int SlotIndex);
 
 /// <summary>
+/// Describes one memory-write request issued by the core execution pipeline.
+/// </summary>
+/// <param name="SessionId">Gets the parent execution session identifier used for correlation across diagnostics.</param>
+/// <param name="LocationKind">Gets the category of location being updated in the abstract memory snapshot.</param>
+/// <param name="SlotIndex">Gets the slot index within the location category, such as local index or stack depth.</param>
+/// <param name="WriteReason">Gets a concise reason label describing why the write is being performed.</param>
+/// <remarks>
+/// The write request mirrors <see cref="MemoryReadRequest"/> but adds intent metadata so diagnostics and replay traces can
+/// explain memory transitions without requiring inference from opcode mnemonics.
+/// </remarks>
+public sealed record MemoryWriteRequest(
+    string SessionId,
+    MemoryLocationKind LocationKind,
+    int SlotIndex,
+    string WriteReason);
+
+/// <summary>
 /// Defines the prototype contract for reading and writing abstract memory values during interpretation.
 /// </summary>
 /// <remarks>
@@ -83,13 +100,13 @@ public interface IAbstractMemoryStore
     /// <summary>
     /// Writes an abstract value into the requested location for the current execution state snapshot.
     /// </summary>
-    /// <param name="request">The memory-read request identifying the location category and slot index to overwrite.</param>
+    /// <param name="request">The memory-write request identifying the location category and slot index to overwrite.</param>
     /// <param name="value">The abstract value to store, including display and provenance information.</param>
     /// <param name="executionRequest">The parent execution request used for policy and diagnostics context.</param>
     /// <param name="cancellationToken">A token that aborts the write operation when execution is canceled.</param>
     /// <returns>A value task that completes when the write has been applied to the prototype store.</returns>
     ValueTask WriteAsync(
-        MemoryReadRequest request,
+        MemoryWriteRequest request,
         AbstractValue value,
         IExecutionRequest executionRequest,
         CancellationToken cancellationToken);

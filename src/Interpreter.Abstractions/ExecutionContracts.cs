@@ -65,6 +65,52 @@ public interface IExecutionRequest
     ExecutionBudget Budget { get; }
 }
 
+
+/// <summary>
+/// Represents the high-level category describing why execution stopped or yielded a snapshot.
+/// </summary>
+/// <remarks>
+/// Categories are intentionally broad during the prototype phase so hosts can start wiring UX flows without
+/// prematurely depending on fine-grained engine internals.
+/// </remarks>
+public enum ExecutionStopCategory
+{
+    /// <summary>
+    /// Indicates that execution reached the natural end of the target method body.
+    /// </summary>
+    Completed,
+
+    /// <summary>
+    /// Indicates that execution halted because one or more configured budgets were exhausted.
+    /// </summary>
+    BudgetExceeded,
+
+    /// <summary>
+    /// Indicates that execution yielded due to an explicit host- or debugger-driven stop request.
+    /// </summary>
+    HostStop,
+
+    /// <summary>
+    /// Indicates that execution terminated because unsupported behavior forced conservative bailout.
+    /// </summary>
+    Unsupported,
+}
+
+/// <summary>
+/// Describes the stop condition attached to one execution result snapshot.
+/// </summary>
+/// <param name="Category">Gets the high-level stop category used by hosts to map UX behavior.</param>
+/// <param name="Code">Gets a stable machine-readable code value such as <c>budget:instruction</c> or <c>unsupported:tailcall</c>.</param>
+/// <param name="Message">Gets a human-readable summary suitable for logs and explainability panes.</param>
+/// <remarks>
+/// This record complements <see cref="IExecutionResult.StopReason"/> rather than replacing it immediately so prototype consumers
+/// can migrate incrementally as the contract surface evolves.
+/// </remarks>
+public sealed record ExecutionStopDescriptor(
+    ExecutionStopCategory Category,
+    string Code,
+    string Message);
+
 /// <summary>
 /// Represents an immutable snapshot describing the current outcome of a prototype execution session.
 /// </summary>
@@ -87,6 +133,11 @@ public interface IExecutionResult
     /// Gets a host-readable reason describing why execution stopped or yielded.
     /// </summary>
     string StopReason { get; }
+
+    /// <summary>
+    /// Gets structured stop details that classify the stop outcome for host policy and UX routing.
+    /// </summary>
+    ExecutionStopDescriptor StopDescriptor { get; }
 
     /// <summary>
     /// Gets a collection of explainability notes generated during execution, including unknown propagation rationale.

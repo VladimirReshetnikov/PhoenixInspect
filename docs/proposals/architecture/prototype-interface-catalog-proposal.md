@@ -38,6 +38,12 @@ This shape intentionally keeps dependency flow from host/coordination edges towa
 
 `Interpreter.Abstractions` keeps request/result/session primitives centralized so all other modules share a single execution vocabulary.
 
+Recent prototype additions:
+
+- `ExecutionStopCategory` to classify terminal outcomes without requiring host parsing of free-form strings.
+- `ExecutionStopDescriptor` as a plain data object that carries machine-readable stop code and human-readable message text alongside category metadata.
+- `IExecutionResult.StopDescriptor` so hosts can map stop states to UX and policy flows while retaining `StopReason` for incremental migration.
+
 ### 4.2 Metadata contracts
 
 `Interpreter.Metadata` isolates method-body acquisition and descriptor shape decisions from core stepping and hosting concerns.
@@ -49,6 +55,11 @@ This shape intentionally keeps dependency flow from host/coordination edges towa
 ### 4.4 Memory-model contracts
 
 `Interpreter.MemoryModel` provides a first-pass abstraction for deterministic value reads/writes with provenance-friendly payloads.
+
+Recent prototype additions:
+
+- `MemoryWriteRequest` as a dedicated write DTO that mirrors read addressing while adding `WriteReason` intent metadata for traceability and explainability logs.
+- `IAbstractMemoryStore.WriteAsync` now consumes `MemoryWriteRequest`, reducing accidental read/write request conflation in coordinator and store implementations.
 
 ### 4.5 Core orchestration contracts
 
