@@ -79,6 +79,7 @@ Target:
 - host-facing evaluation flows,
 - trust labels (`pure`, `partial`, `blocked`, `timed out`),
 - virtual step-session behavior (step commands, pause reasons, undo/branch history),
+- step-diff contract validation (locals/stack/overlay/effects/unknown introductions),
 - diagnostic envelopes consumed by clients.
 
 Examples:
@@ -171,7 +172,8 @@ Required checks:
 3. Compare stable hashes of:
    - trace events,
    - final state summaries,
-   - diagnostics envelopes.
+   - diagnostics envelopes,
+   - virtual-session command transcripts (including stop reasons and step diffs).
 
 Any hash mismatch is treated as a failure unless a nondeterministic field is explicitly allowed and documented.
 
@@ -272,7 +274,8 @@ Required triage metadata in PR/issue:
 
 - Call/effect model scenario coverage reaches agreed threshold.
 - Adapter contract suite covers expected dump-time failure modes.
-- Virtual stepping scenario suite validates `StepInto/Over/Out`, `DecisionNeeded`, and `Undo` deterministically.
+- Virtual stepping scenario suite validates `StepInto/Over/Out`, `Resume`, `DecisionNeeded`, and `Undo` deterministically.
+- Virtual stepping suite verifies policy-dependent modeled-call rendering (`pseudo-frame` vs atomic effect event) is explicit and replay-stable.
 
 ### M5 exit
 

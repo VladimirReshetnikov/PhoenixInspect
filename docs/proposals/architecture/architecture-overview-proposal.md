@@ -128,6 +128,36 @@ Responsibilities:
 
 This layer should stay policy-driven and avoid opcode semantics; it is a controller, not another interpreter.
 
+### 4.3.1 Session lifecycle contract (refinement)
+
+To align product-level virtual stepping semantics with engine behavior, the control plane should expose a stable command/result protocol.
+
+Required commands:
+
+- `StartVirtualSession` (from expression, method entry, or seeded dump frame),
+- `StepInto`, `StepOver`, `StepOut`,
+- `Resume` (continue-to-stop under current policy),
+- `ChooseBranch` (when a branch decision is deferred to the host),
+- `Undo` (move to prior history checkpoint),
+- `ForkSession` / `CheckoutHistoryNode` (optional in first release, but model must not preclude it).
+
+Required stop-reason categories:
+
+- `StepComplete`,
+- `DecisionNeeded`,
+- `ExceptionStop`,
+- `BudgetStop`,
+- `Completed`.
+
+Each stop result should include:
+
+- deterministic state fingerprint,
+- top-frame source location (PDB/decompiler/IL provenance),
+- event batch emitted since prior command,
+- summary diff (`locals`, `stack`, `overlay writes`, `effect events`, `unknown introductions`).
+
+This contract is intentionally host-facing and mode-independent so the same surface can power CLI scripts, IDE UI, and regression replay harnesses.
+
 ### 4.4 Semantics Runtime
 
 This runtime performs instruction-level transfer for single-state stepping.
@@ -189,7 +219,7 @@ Adapters are replaceable; core runtimes remain backend-agnostic.
 5. Runtime executes (single-state, micro-step loop, or CFG/fixpoint) under budget guards.
 6. Calls are classified (`inline model`, `summary`, `block`, `unknown return`, `havoc`).
 7. Effects and provenance are recorded continuously.
-8. Runtime exits with terminal/partial result, or pause reason (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`).
+8. Runtime exits with terminal/partial result, or pause reason (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Completed`).
 9. Orchestrator computes trust label and assembles explanation payload.
 10. Host receives stable result envelope.
 
@@ -208,6 +238,7 @@ Adapters are replaceable; core runtimes remain backend-agnostic.
 - Independent counters for hot resources (steps, merges, forks, allocations).
 - Cooperative cancellation checks in long-running loops.
 - Deterministic stop reasons in result envelope.
+- For virtual sessions, command-level budgets are resettable but auditable (include both per-command and cumulative counters).
 
 ### 6.3 Explainability
 
@@ -215,6 +246,7 @@ Adapters are replaceable; core runtimes remain backend-agnostic.
 - Every blocked action maps to a policy rationale.
 - Trust label synthesis references concrete evidence in trace/events.
 - Virtual-debug surfaces preserve provenance labels (dump-backed vs virtual overlay, interpreted vs modeled).
+- Modeled calls surface as explicit pseudo-frame or explicit atomic effect event (policy-selected, never silent).
 
 ### 6.4 Extensibility
 
@@ -262,6 +294,7 @@ This split enables independent iteration while keeping stable boundaries explici
 - add explicit machine state/call-stack contracts for virtual stepping,
 - introduce virtual debug control plane with stop reasons and branch-decision hooks,
 - strengthen call summaries/effect model including model-frame behavior.
+- add deterministic command/result transcript format for replay and UI hydration.
 
 ### M4–M5
 
