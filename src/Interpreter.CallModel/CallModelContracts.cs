@@ -114,3 +114,154 @@ public interface ICallSiteClassifier
         IExecutionRequest executionRequest,
         CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// Describes the high-level dynamic binder operation recognized from compiler-emitted DLR call-site patterns.
+/// </summary>
+/// <remarks>
+/// The prototype currently focuses on enough operation categories to model <c>dynamic</c> member calls and conversions.
+/// Additional operation kinds should be introduced only when design proposals define the corresponding interpretation rules.
+/// </remarks>
+public enum DynamicOperationKind
+{
+    /// <summary>
+    /// Indicates a dynamic instance or static member invocation operation.
+    /// </summary>
+    InvokeMember,
+
+    /// <summary>
+    /// Indicates a dynamic invocation of a delegate or callable value.
+    /// </summary>
+    Invoke,
+
+    /// <summary>
+    /// Indicates a dynamic conversion operation from one runtime type to another.
+    /// </summary>
+    Convert,
+
+    /// <summary>
+    /// Indicates a dynamic binary operator dispatch.
+    /// </summary>
+    BinaryOperation,
+
+    /// <summary>
+    /// Indicates a dynamic unary operator dispatch.
+    /// </summary>
+    UnaryOperation,
+}
+
+/// <summary>
+/// Captures per-argument binder policy flags that influence dynamic overload resolution semantics.
+/// </summary>
+/// <param name="UseCompileTimeType">Gets whether binding should use the compile-time argument type instead of runtime type.</param>
+/// <param name="IsNamedArgument">Gets whether the argument is passed by name and therefore participates in name-based reordering.</param>
+/// <param name="ArgumentName">Gets the named-argument identifier when <paramref name="IsNamedArgument"/> is true.</param>
+/// <param name="IsStaticTypeReceiver">Gets whether this argument encodes a static receiver represented by a type token/value.</param>
+/// <param name="IsRef">Gets whether the argument is passed by reference.</param>
+/// <param name="IsOut">Gets whether the argument is passed as an out-only reference.</param>
+/// <remarks>
+/// This record intentionally models only a conservative subset of C# runtime-binder argument flags so the prototype can
+/// validate call lifting and explainability behavior before committing to complete DLR parity.
+/// </remarks>
+public sealed record DynamicArgumentPolicy(
+    bool UseCompileTimeType,
+    bool IsNamedArgument,
+    string? ArgumentName,
+    bool IsStaticTypeReceiver,
+    bool IsRef,
+    bool IsOut);
+
+/// <summary>
+/// Describes one dynamic dispatch operation that was lifted from DLR call-site IL into a semantic call-model request.
+/// </summary>
+/// <param name="SessionId">Gets the execution session identifier used for diagnostics and policy scoping.</param>
+/// <param name="CallerMethodIdentity">Gets the fully qualified method identity containing the dynamic call site.</param>
+/// <param name="InstructionOffset">Gets the IL offset where the lifted dynamic dispatch originates.</param>
+/// <param name="OperationKind">Gets the dynamic operation kind derived from binder metadata.</param>
+/// <param name="MemberName">Gets the target member name for member-oriented operations such as <see cref="DynamicOperationKind.InvokeMember"/>.</param>
+/// <param name="CallingContextType">Gets the binder context type used for accessibility and overload-resolution rules.</param>
+/// <param name="CompileTimeArgumentTypes">Gets the compile-time argument type display names captured from call-site delegate shape.</param>
+/// <param name="RuntimeArgumentTypes">Gets runtime argument type display names reconstructed from dump state when available.</param>
+/// <param name="ArgumentPolicies">Gets argument-policy descriptors aligned by index with the argument type arrays.</param>
+/// <remarks>
+/// The request remains string-based so host tooling can iterate on diagnostics and target-selection UX while type-system
+/// abstractions and metadata binding contracts are still in design.
+/// </remarks>
+public sealed record DynamicDispatchRequest(
+    string SessionId,
+    string CallerMethodIdentity,
+    int InstructionOffset,
+    DynamicOperationKind OperationKind,
+    string? MemberName,
+    string CallingContextType,
+    IReadOnlyList<string> CompileTimeArgumentTypes,
+    IReadOnlyList<string?> RuntimeArgumentTypes,
+    IReadOnlyList<DynamicArgumentPolicy> ArgumentPolicies);
+
+/// <summary>
+/// Defines outcome categories for one dynamic dispatch resolution attempt.
+/// </summary>
+/// <remarks>
+/// These categories deliberately separate deterministic success from bounded uncertainty so stepping and explainability
+/// flows can surface why virtual execution could or could not enter a specific overload.
+/// </remarks>
+public enum DynamicDispatchOutcome
+{
+    /// <summary>
+    /// Indicates that one target method was selected deterministically for this dynamic dispatch.
+    /// </summary>
+    Resolved,
+
+    /// <summary>
+    /// Indicates that multiple plausible targets remain and host policy should choose between conservative fallback strategies.
+    /// </summary>
+    Ambiguous,
+
+    /// <summary>
+    /// Indicates that no valid target could be resolved from currently available argument and metadata evidence.
+    /// </summary>
+    Unresolved,
+}
+
+/// <summary>
+/// Represents the result of dynamic dispatch analysis returned to interpreter core and host stepping layers.
+/// </summary>
+/// <param name="Outcome">Gets the dynamic dispatch resolution outcome category.</param>
+/// <param name="SelectedMethodIdentity">Gets the selected target method identity when <paramref name="Outcome"/> is <see cref="DynamicDispatchOutcome.Resolved"/>.</param>
+/// <param name="CandidateMethodIdentities">Gets candidate target method identities considered by the resolver in evaluation order.</param>
+/// <param name="Rationale">Gets a concise rationale explaining the evidence and policy that produced this result.</param>
+/// <param name="UsedRuntimeTypeFallback">Gets whether runtime argument type evidence had to fall back to compile-time types for one or more arguments.</param>
+/// <remarks>
+/// The shape is intentionally explainability-first and can evolve alongside richer candidate scoring metadata in later milestones.
+/// </remarks>
+public sealed record DynamicDispatchResolution(
+    DynamicDispatchOutcome Outcome,
+    string? SelectedMethodIdentity,
+    IReadOnlyList<string> CandidateMethodIdentities,
+    string Rationale,
+    bool UsedRuntimeTypeFallback);
+
+/// <summary>
+/// Defines a prototype service contract that resolves lifted dynamic operations into deterministic or conservatively bounded call targets.
+/// </summary>
+/// <remarks>
+/// Implementations may rely on metadata-only heuristics, Roslyn-assisted symbol resolution, or hybrid strategies while
+/// dynamic-call architecture proposals are validated. This interface remains draft and should not be treated as a stable API.
+/// </remarks>
+public interface IDynamicDispatchResolver
+{
+    /// <summary>
+    /// Resolves a lifted dynamic dispatch request and returns selected target metadata or bounded unresolved outcomes.
+    /// </summary>
+    /// <param name="request">The dynamic dispatch request describing binder semantics, argument typing evidence, and call-site context.</param>
+    /// <param name="executionRequest">The parent execution request carrying session policy and budget constraints.</param>
+    /// <param name="cancellationToken">A token used to cancel expensive target-discovery work when execution stops.</param>
+    /// <returns>
+    /// A value task that resolves to a dynamic dispatch resolution containing selected method identity, candidate targets,
+    /// and explainability rationale for host-facing diagnostics.
+    /// </returns>
+    ValueTask<DynamicDispatchResolution> ResolveAsync(
+        DynamicDispatchRequest request,
+        IExecutionRequest executionRequest,
+        CancellationToken cancellationToken);
+}

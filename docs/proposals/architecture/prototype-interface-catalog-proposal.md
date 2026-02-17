@@ -49,6 +49,8 @@ This shape intentionally keeps dependency flow from host/coordination edges towa
 ### 4.4 Call-model contracts
 
 `Interpreter.CallModel` defines call-site target/effect classification responsibilities needed by call/effects architecture work.
+It now also includes a draft dynamic-dispatch seam (`IDynamicDispatchResolver` plus request/result records) so lifted DLR
+call-site operations can be resolved without coupling `Interpreter.Core` directly to binder-specific policy code.
 
 ### 4.5 Memory-model contracts
 
@@ -57,6 +59,8 @@ This shape intentionally keeps dependency flow from host/coordination edges towa
 ### 4.6 Core orchestration contracts
 
 `Interpreter.Core` continues to own execution orchestration and instruction stepping while introducing an explicit coordinator seam for call-model, memory-model, async-runtime, and budget-tracker collaboration.
+The coordinator now includes a dedicated dynamic-dispatch routing method to preserve explicit orchestration boundaries
+between lifted `dynamic` operations and the call-model's evolving overload-resolution strategy.
 
 ### 4.7 Diagnostics and hosting contracts
 
