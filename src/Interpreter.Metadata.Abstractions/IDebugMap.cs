@@ -1,6 +1,4 @@
 using Interpreter.Core.Abstractions;
-using Interpreter.IL;
-using Interpreter.Types;
 
 namespace Interpreter.Metadata.Abstractions;
 

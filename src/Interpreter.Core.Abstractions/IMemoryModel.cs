@@ -1,4 +1,3 @@
-using Interpreter.IL;
 using Interpreter.Types;
 
 namespace Interpreter.Core.Abstractions;

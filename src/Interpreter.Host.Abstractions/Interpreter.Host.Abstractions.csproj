@@ -6,5 +6,6 @@
   <ItemGroup>
     <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
     <ProjectReference Include="../Interpreter.Artifacts.Abstractions/Interpreter.Artifacts.Abstractions.csproj" />
+    <ProjectReference Include="..\Interpreter.Metadata.Abstractions\Interpreter.Metadata.Abstractions.csproj" />
   </ItemGroup>
 </Project>

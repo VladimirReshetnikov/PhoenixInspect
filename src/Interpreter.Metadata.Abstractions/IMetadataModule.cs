@@ -1,6 +1,7 @@
 using Interpreter.Core.Abstractions;
 using Interpreter.IL;
 using Interpreter.Types;
+using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 
 namespace Interpreter.Metadata.Abstractions;
 
