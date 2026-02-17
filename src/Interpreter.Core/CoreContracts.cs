@@ -100,6 +100,18 @@ public interface IExecutionSessionCoordinator
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Resolves a lifted dynamic dispatch operation so the engine can step into a selected overload or surface bounded uncertainty.
+    /// </summary>
+    /// <param name="request">The lifted dynamic dispatch request containing binder semantics and argument typing evidence.</param>
+    /// <param name="executionRequest">The parent execution request carrying session policy and budget context.</param>
+    /// <param name="cancellationToken">A token used to stop dynamic-resolution work when host cancellation is requested.</param>
+    /// <returns>A value task that resolves to the dynamic dispatch resolution outcome and explainability rationale.</returns>
+    ValueTask<DynamicDispatchResolution> ResolveDynamicDispatchAsync(
+        DynamicDispatchRequest request,
+        IExecutionRequest executionRequest,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Reads a value from the current abstract memory snapshot so instruction evaluation can consume operands deterministically.
     /// </summary>
     /// <param name="readRequest">The memory-read request describing which abstract location to query.</param>
