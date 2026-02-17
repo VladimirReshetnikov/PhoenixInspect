@@ -58,6 +58,16 @@ This shape intentionally keeps dependency flow from host/coordination edges towa
 
 `Interpreter.Diagnostics` and `Interpreter.Hosting` preserve explainability and composition concerns as explicit, separately evolvable layers.
 
+### 4.7 Prototype data objects
+
+To accelerate host integration experiments and keep samples concrete, the current prototype also includes plain data objects that implement or support interface contracts:
+
+- `ExecutionRequest` and `ExecutionResult` in `Interpreter.Abstractions` provide low-ceremony concrete payloads for `IExecutionRequest` and `IExecutionResult`.
+- `ExplainabilityNote` in `Interpreter.Abstractions` introduces a reusable shape for future migration from string-only notes.
+- `ExecutionDiagnosticEvent` and `DiagnosticsFilterOptions` in `Interpreter.Diagnostics` provide draft payloads for structured diagnostic streaming and filtering.
+
+These types remain exploratory and should be evolved together with architecture proposals that define explainability and diagnostics schemas.
+
 ## 5. Draft-phase guardrails
 
 - All interfaces should be treated as **prototype design artifacts**, not stable APIs.
