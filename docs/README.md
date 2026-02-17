@@ -41,6 +41,7 @@ docs/
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft | Artifact-resolution design for PE/PDB loading, debug-map generation, and source fallback. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
+| `plans/requirements-traceability-map.md` | Planning | Matrix | Draft | Cross-document traceability matrix linking product requirements to architecture decisions and validation artifacts. |
 | `lib/README.md` | Library Notes | Index | Draft | Navigation and usage guidance for `docs/lib/*` library notes. |
 | `lib/clrmd-usage-notes.md` | Library Notes | Note | Draft | Project-specific ClrMD responsibilities, boundaries, risks, and action items. |
 | `lib/asmresolver-usage-notes.md` | Library Notes | Note | Draft | Candidate AsmResolver roles for metadata/CIL and normalization guidance. |
@@ -116,6 +117,7 @@ docs/
 2. `governance/documentation-organization-proposal.md`
 3. `governance/terminology-glossary.md`
 4. `plans/future-work-planning.md`
+5. `plans/requirements-traceability-map.md`
 
 ## Repository license
 
