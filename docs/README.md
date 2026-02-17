@@ -37,6 +37,7 @@ docs/
 | `proposals/architecture/virtual-tasks-proposal.md` | Architecture | Proposal | Draft | Async/await lowering model and virtual `Task` runtime semantics for deterministic dump-time execution. |
 | `proposals/architecture/dynamic-calls-proposal.md` | Architecture | Proposal | Draft | DLR `dynamic` call-site lifting and dump-aware overload resolution strategy. |
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft | ClrMD + PE/PDB integration architecture and binding-layer model. |
+| `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft | Artifact-resolution design for PE/PDB loading, debug-map generation, and source fallback. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
 | `lib/README.md` | Library Notes | Index | Draft | Navigation and usage guidance for `docs/lib/*` library notes. |
@@ -101,9 +102,10 @@ docs/
 ### Runtime integration path
 
 1. `proposals/integration/clrmd-integration-proposal.md`
-2. `proposals/integration/pe-pdb-reader-integration-proposal.md`
-3. `proposals/architecture/generic-context-resolver-proposal.md`
-4. `proposals/architecture/call-model-and-effects.md`
+2. `proposals/integration/clrmd-apis-usage-tutorial-proposal.md`
+3. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+4. `proposals/architecture/generic-context-resolver-proposal.md`
+5. `proposals/architecture/call-model-and-effects.md`
 
 ### Process and governance path
 
