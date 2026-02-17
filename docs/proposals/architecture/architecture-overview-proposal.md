@@ -208,6 +208,20 @@ Adapters isolate external systems:
 
 Adapters are replaceable; core runtimes remain backend-agnostic.
 
+### 4.8 Artifact resolution and debug-map pipeline
+
+Virtual stepping quality depends on a dedicated artifact pipeline rather than ad hoc symbol lookups.
+
+Required responsibilities:
+
+- normalize module/method identity (`ModuleId` + token/spec identity) across ClrMD and PE readers,
+- acquire PE/PDB artifacts through policy-guarded sources (local paths, cache, symbol server),
+- produce `DebugMap` for each method with mandatory fallback order: `PDB -> decompiler map -> IL offsets`,
+- provide source payload provenance (`real source`, `embedded source`, `decompiled`, `IL-only`) to host surfaces,
+- expose deterministic miss/failure diagnostics when symbols or source are unavailable.
+
+This pipeline should be shared by both the virtual-debug control plane and any expression-evaluation hosts so line mapping, locals/scopes, and provenance labels remain consistent.
+
 ---
 
 ## 5. Canonical data flow
@@ -215,13 +229,14 @@ Adapters are replaceable; core runtimes remain backend-agnostic.
 1. Host submits evaluation request with policy and budget (or a step command against an existing virtual-debug session).
 2. Orchestrator binds adapters and validates preconditions.
 3. Method body + metadata + generic context are resolved.
-4. Initial state is created from arguments/locals and memory roots.
-5. Runtime executes (single-state, micro-step loop, or CFG/fixpoint) under budget guards.
-6. Calls are classified (`inline model`, `summary`, `block`, `unknown return`, `havoc`).
-7. Effects and provenance are recorded continuously.
-8. Runtime exits with terminal/partial result, or pause reason (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Completed`).
-9. Orchestrator computes trust label and assembles explanation payload.
-10. Host receives stable result envelope.
+4. Artifact pipeline resolves debug map and best-available source (PDB/decompiler/IL) for host-visible stepping.
+5. Initial state is created from arguments/locals and memory roots.
+6. Runtime executes (single-state, micro-step loop, or CFG/fixpoint) under budget guards.
+7. Calls are classified (`inline model`, `summary`, `block`, `unknown return`, `havoc`).
+8. Effects and provenance are recorded continuously.
+9. Runtime exits with terminal/partial result, or pause reason (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Completed`).
+10. Orchestrator computes trust label and assembles explanation payload.
+11. Host receives stable result envelope.
 
 ---
 

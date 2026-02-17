@@ -29,6 +29,7 @@ Based on the latest product + implementation proposals for virtual stepping, the
 3. Lock policy terminology for branch/call handling (`StopForUserChoice` vs fork/join modes; `Interpret` vs `Model` vs `Stop`).
 4. Add explicit EH-phasing gate: MVP must at least support `stop-on-throw`; debugger-grade handler transfer is a later milestone requirement.
 5. Require source-step mapping fallback order (PDB -> decompiler -> IL) in all UX and integration proposals.
+6. Define a single artifact-resolution contract (`ModuleId`, artifact provenance, deterministic miss reasons) shared by ClrMD and PE/PDB integration layers.
 
 ---
 
@@ -196,6 +197,7 @@ Based on the latest product + implementation proposals for virtual stepping, the
 4. Build initial benchmark corpus from realistic IL methods.
 5. Specify virtual debug session contracts (step commands, stop reasons, undo/branch behavior).
 6. Define a step-diff schema (`locals/stack/memory/effects/unknowns`) shared across UI and replay tests.
+7. Specify symbol/source acquisition policy defaults (offline-first vs auto-download) and user-consent UX hooks for hosts.
 
 ### Medium priority
 

@@ -31,6 +31,7 @@ docs/
 | `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft | Performance model, benchmark corpus strategy, and regression gates. |
 | `proposals/architecture/virtual-step-debugging-implementation-proposal.md` | Architecture | Proposal | Draft | Low-level execution model for stepping control plane, stop reasons, model frames, and undo. |
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft | ClrMD + PE/PDB integration architecture and binding-layer model. |
+| `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft | Artifact-resolution design for PE/PDB loading, debug-map generation, and source fallback. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
 | `governance/documentation-organization-proposal.md` | Governance | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
 
@@ -69,8 +70,9 @@ docs/
 ### Runtime integration path
 
 1. `proposals/integration/clrmd-integration-proposal.md`
-2. `proposals/architecture/generic-context-resolver-proposal.md`
-3. `proposals/architecture/call-model-and-effects.md`
+2. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+3. `proposals/architecture/generic-context-resolver-proposal.md`
+4. `proposals/architecture/call-model-and-effects.md`
 
 ### Process and governance path
 

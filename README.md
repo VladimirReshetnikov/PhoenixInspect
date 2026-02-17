@@ -56,6 +56,8 @@ We are designing a system that can:
 
 - `docs/proposals/integration/clrmd-integration-proposal.md`
   ClrMD + PE/PDB integration layering and host boundary proposal.
+- `docs/proposals/integration/pe-pdb-reader-integration-proposal.md`
+  PE/PDB reader and symbol/source acquisition proposal for debug-map generation.
 
 ### Planning and governance
 
@@ -82,6 +84,7 @@ For virtual debugger-specific design work, read these immediately after step 3:
 
 4. `docs/proposals/product/virtual-step-debugging-feature-proposal.md` (feature UX and scope)
 5. `docs/proposals/architecture/virtual-step-debugging-implementation-proposal.md` (execution semantics and control plane)
+6. `docs/proposals/integration/pe-pdb-reader-integration-proposal.md` (artifact resolution and source mapping pipeline)
 
 ## Decision-Making Principles
 
