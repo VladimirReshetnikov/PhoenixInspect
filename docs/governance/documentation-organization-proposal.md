@@ -58,7 +58,7 @@ Proposed directories:
   - architecture decision records (ADRs), one decision per file.
 - `docs/specs/`
   - stable technical contracts/specifications.
-- `docs/planning/`
+- `docs/plans/`
   - roadmap, milestones, sequencing, dependency maps.
 - `docs/operations/`
   - quality gates, contribution workflow, review checklists.
@@ -207,7 +207,7 @@ Every accepted decision/spec should include:
 ### Step 2 (next)
 
 - Rehome current proposals into `docs/proposals/`.
-- Move roadmap content into `docs/planning/`.
+- Move roadmap content into `docs/plans/`.
 - Introduce `docs/overview/architecture-overview.md` and glossary.
 
 ### Step 3 (after initial structure lands)

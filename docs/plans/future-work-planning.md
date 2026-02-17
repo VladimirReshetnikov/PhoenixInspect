@@ -228,8 +228,8 @@ Before moving beyond M4, explicitly decide:
 
 To keep design docs coherent, add or maintain the following companion docs:
 
-- `docs/architecture-overview.md` (high-level system map)
-- `docs/state-and-domain-model.md` (formal semantics of value/memory domains)
-- `docs/call-model-and-effects.md` (contracts and intrinsic policy)
-- `docs/testing-strategy.md` (test taxonomy and quality gates)
-- `docs/perf-and-benchmarks.md` (benchmark plan and acceptance thresholds)
+- `docs/proposals/architecture/architecture-overview.md` (high-level system map)
+- `docs/proposals/architecture/state-and-domain-model.md` (formal semantics of value/memory domains)
+- `docs/proposals/architecture/call-model-and-effects.md` (contracts and intrinsic policy)
+- `docs/proposals/architecture/testing-strategy.md` (test taxonomy and quality gates)
+- `docs/proposals/architecture/perf-and-benchmarks.md` (benchmark plan and acceptance thresholds)
