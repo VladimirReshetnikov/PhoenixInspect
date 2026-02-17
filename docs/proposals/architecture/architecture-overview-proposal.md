@@ -4,6 +4,8 @@
 
 This document provides a high-level but implementation-oriented map of the system architecture for the IL interpreter and dump-time evaluation platform.
 
+The architecture is intentionally framed as a **multi-application execution platform** (dump-time debugging, live speculative debugging, static analysis, deterministic replay/testing), not a single-scenario tool.
+
 It complements lower-level documents by answering:
 
 - what major components exist,
@@ -18,7 +20,7 @@ This is a design map, not a full interface reference. Detailed semantics remain 
 
 ## 2. System context
 
-The platform evaluates .NET IL methods in two broad operating contexts:
+The platform evaluates .NET IL methods in three broad operating contexts:
 
 1. **Live-host or test execution context**
    - metadata and method bodies are fully available,
@@ -31,7 +33,12 @@ The platform evaluates .NET IL methods in two broad operating contexts:
    - external calls are frequently blocked or approximated,
    - explainability and trust labels are first-class outputs.
 
-Across both contexts, architecture must preserve deterministic, bounded, and explainable behavior.
+3. **Analysis and offline-validation context**
+   - method bodies are evaluated in abstract/hybrid modes without target-process execution,
+   - interprocedural summaries and effect classifications are first-class outputs,
+   - deterministic replay artifacts are consumed by test/fuzzing pipelines.
+
+Across all contexts, architecture must preserve deterministic, bounded, and explainable behavior.
 
 ---
 
@@ -57,6 +64,7 @@ Across both contexts, architecture must preserve deterministic, bounded, and exp
 +---------------------------------------+               +-----------------------------------+
 | Semantics Runtime                     |               | Analysis Runtime                   |
 | - IL stack machine stepper            |               | - CFG builder                      |
+| - optional normalized IR executor     |               | - EH-aware fixpoint precision      |
 | - opcode transfer semantics           |               | - fixpoint engine                  |
 | - call dispatch and effect emission   |               | - join/widen strategy              |
 | - lifted semantic sites (`dynamic`/`async`) |        | - path split/join policies         |
@@ -76,6 +84,7 @@ Across both contexts, architecture must preserve deterministic, bounded, and exp
 | - metadata + IL body providers                                                    |
 | - type/generic context resolver                                                   |
 | - dump-backed memory readers + overlay writes                                     |
+| - host ABI + deterministic host-service adapters                                  |
 | - intrinsic/model registry                                                         |
 +----------------------------------------------+------------------------------------+
                                                |
@@ -175,6 +184,19 @@ Responsibilities:
 
 Output is either a terminal state/value or bounded partial state on stop conditions.
 
+### 4.4.1 Execution representation strategy (refinement)
+
+To support both debugger-grade stepping and analysis quality, the runtime should support two representations:
+
+- **Decoded IL stream** for low-overhead instruction stepping and direct IL-offset fidelity.
+- **Normalized method IR** (typed temporaries + explicit control/effect nodes) for analysis, summary generation, and pattern recognition.
+
+Required properties of the normalization layer:
+
+- preserves deterministic mapping from IR nodes back to IL offsets/tokens,
+- canonicalizes stack-manipulation patterns (`dup`, short-form locals, stack shuffles) to simplify transfer logic,
+- can be enabled per policy (debugger hosts may execute raw IL while analysis hosts require normalized IR).
+
 ### 4.5 Analysis Runtime
 
 This runtime performs whole-method over-approximation via CFG and fixpoint iteration.
@@ -182,10 +204,12 @@ This runtime performs whole-method over-approximation via CFG and fixpoint itera
 Responsibilities:
 
 - materialize CFG and exception-flow edges according to configured support level,
+- expose EH precision modes (`Ignore`, `Conservative`, `Modeled`) as explicit policy surface,
 - compute per-block and optional per-offset invariants,
 - apply join and widening policies,
 - track precision degradation events (e.g., widening applied, summary heap merge),
-- produce reusable summaries for call modeling and cache hints.
+- produce reusable summaries for call modeling and cache hints,
+- publish summary evidence metadata (assumptions, unsupported edges, confidence).
 
 ### 4.6 Shared Execution State + Domain Layer
 
@@ -207,6 +231,7 @@ Adapters isolate external systems:
 - method body retrieval,
 - generic context reconstruction,
 - dump-backed object/field/array reads,
+- host ABI and deterministic service shims (time/random/environment/thread identity) for policy-driven concrete or sandboxed execution,
 - `SessionSnapshot` extraction for deterministic environment/time intrinsics,
 - projection layout decoder registration (with runtime-version support metadata),
 - unified special-semantics registry and model summaries.
@@ -331,12 +356,16 @@ This split enables independent iteration while keeping stable boundaries explici
 - introduce virtual debug control plane with stop reasons and branch-decision hooks,
 - strengthen call summaries/effect model including model-frame behavior.
 - add deterministic command/result transcript format for replay and UI hydration.
+- add normalized-method-IR pipeline with IL mapping guarantees for analysis-oriented flows.
+- formalize interprocedural summary contracts (return abstraction, memory/effect deltas, exception metadata, confidence).
 
 ### M4–M5
 
 - harden dump adapters and source-map backends (PDB/decompiler/IL fallback),
 - stabilize hosting contracts for session lifecycle (`Start`, `Step`, `Undo`, `ChooseBranch`),
 - expand diagnostics, replay tests, and benchmark-driven tuning.
+- add speculative live-debug snapshot contracts (`ISnapshotProvider`) with explicit snapshot-stability guarantees.
+- add differential/fuzzing harness integration that compares supported-subset interpreter outcomes against CLR baselines.
 
 ---
 
@@ -348,6 +377,7 @@ This split enables independent iteration while keeping stable boundaries explici
 4. How strict should compatibility be between intrinsic model versions and engine minor versions?
 5. What is the default fallback policy in dump mode for unknown external calls (`block` vs `unknown+havoc`)?
 6. Should modeled calls always materialize as pseudo-frames, or can policy collapse them into atomic effects for performance?
+7. Which host ABI services are mandatory for deterministic sandbox/runtime hosting in v1, and which remain optional extensions?
 
 ---
 
