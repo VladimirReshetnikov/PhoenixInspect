@@ -2,91 +2,126 @@
 
 ## Why it matters
 
-AsmResolver is a strong candidate metadata and CIL backend for our design phase because it provides rich, navigable models for:
+AsmResolver is a strong metadata/CIL backend candidate for our design phase because it provides rich, navigable models for:
 
 - .NET metadata,
 - method bodies and IL structures,
 - PE-level constructs,
-- PDB processing (including dedicated symbols packages).
+- PDB processing (via dedicated symbol packages).
 
-For this project, that capability aligns with artifact resolution, method-body reconstruction, and debug-map generation paths.
+For this project, that aligns with artifact resolution, method-body reconstruction, and debug-map generation.
 
 ## Snapshot review highlights
 
-The `lib/asmresolver/src` snapshot is split into focused packages:
+The `lib/asmresolver/src` snapshot is package-oriented and maps well to adapter seams:
 
-- `AsmResolver.DotNet` (managed metadata/object model),
-- `AsmResolver.PE` and `AsmResolver.PE.File` (PE image model and file access),
-- `AsmResolver.Symbols.Pdb` (PDB readers and symbol model),
+- `AsmResolver.DotNet` (managed metadata model and method/type/member surfaces),
+- `AsmResolver.PE` + `AsmResolver.PE.File` (PE image and binary reading),
+- `AsmResolver.Symbols.Pdb` (PDB model and reader flows),
 - `AsmResolver.PE.Win32Resources` (resource support),
 - `AsmResolver.DotNet.Dynamic` (dynamic method support),
-- `AsmResolver` (core primitives/utilities).
+- `AsmResolver` (shared primitives/utilities).
 
-This package split matches our desired architecture: independent adapters for runtime metadata, PE artifacts, and symbol ingestion with a shared projection layer.
+This package split supports independent metadata, PE, and symbol adapters with a common projection layer.
 
 ## Source-level API surfaces relevant to our adapters
 
-### 1) Module entry and reader parameterization
+### 1) ModuleDefinition ingestion flexibility
 
-`ModuleDefinition` provides a broad set of `From*` factories (bytes, streams, files, PE images), with `ModuleReaderParameters` controlling read behavior.
+`ModuleDefinition` exposes `FromFile`, `FromBytes`, `FromStream`, and PE-based loading flows, all parameterized by `ModuleReaderParameters`.
 
-Practical implication: we can standardize artifact ingestion through one adapter gateway that records reader parameters as provenance metadata.
+Design implication:
 
-### 2) Explicit .NET directory and PE layering
+- centralize ingestion configuration in one adapter policy object,
+- record reader parameters in provenance for replayability,
+- normalize exceptions into stable miss reasons instead of leaking parser specifics.
 
-`PEImage` and `DotNetDirectory` make the PE/.NET layering explicit rather than opaque.
+### 2) Explicit PE/.NET directory layering
 
-Practical implication: this supports deterministic diagnostics when the PE is valid but CLR metadata is partial/malformed, which aligns with our explainability goals.
+AsmResolver keeps PE and CLR metadata concerns explicit (`PEImage`, .NET directory access, and related builders).
 
-### 3) CIL method body model
+Design implication:
 
-`CilMethodBody` and related serializer/build infrastructure in `AsmResolver.DotNet.Code.Cil` provide structured instruction and handler access.
+- distinguish "PE readable" vs "metadata usable" failure modes,
+- improve explainability for partially valid artifacts,
+- keep our miss taxonomy aligned with those layered failure states.
 
-Practical implication: this is a strong fit for our normalized method-body contract (instructions + EH + locals + diagnostics).
+### 3) Method model and CIL body structure
 
-### 4) End-to-end writing/building pipeline (design relevance)
+`MethodDefinition` and `CilMethodBody` provide structured access to:
 
-Builder classes (`DotNetDirectoryFactory`, `DotNetDirectoryBuffer`, PE build results) indicate robust reconstruction support.
+- instruction list,
+- local variables,
+- EH regions,
+- body-level metadata needed for control-flow preparation.
 
-Practical implication: even though we are read-focused, this can help future fixture generation and "round-trip sanity" test tooling.
+Design implication:
 
-### 5) PDB image model breadth
+- AsmResolver can feed our normalized method-body contract with low projection friction,
+- we should still avoid backend instruction objects beyond adapter boundaries.
 
-`PdbImage` exposes APIs for loading from file/bytes/reader and retrieving records/modules/symbols.
+### 4) Builder pipeline as fixture-generation lever
 
-Practical implication: AsmResolver can potentially host both metadata and symbol projection under one backend path, reducing early integration friction.
+`AsmResolver.DotNet.Builder` and PE builder types show a full reconstruction pipeline.
+
+Design implication:
+
+- while runtime is read-focused, this pipeline is useful for synthetic fixture generation,
+- we can generate targeted malformed/edge-case assemblies to harden miss-reason taxonomy.
+
+### 5) PDB model breadth and symbol projection opportunities
+
+`AsmResolver.Symbols.Pdb.PdbImage` supports file/byte/reader loading and symbol/module enumeration.
+
+Design implication:
+
+- feasible single-stack metadata + symbols experimentation for early prototypes,
+- still require backend-neutral symbol projection to avoid long-term lock-in.
+
+### 6) Dynamic method package as future edge-case path
+
+`AsmResolver.DotNet.Dynamic` includes dynamic method readers/helpers.
+
+Design implication:
+
+- not an MVP requirement, but useful for future parity with runtime-generated method scenarios,
+- should remain a capability flag until explicitly validated.
 
 ## Best-fit responsibilities (project-specific)
 
-1. **Canonical metadata decoding backend (candidate)**
-   - method/type/member metadata reads,
-   - generic signature parsing inputs for interpreter dispatch.
-2. **Method body and IL structure extraction**
-   - instruction stream + exception handling data needed by interpreter execution planning.
-3. **Artifact-oriented enrichment**
-   - participation in debug-map materialization when symbol artifacts are available.
+1. **Primary metadata/CIL candidate backend**
+   - method/type/member decoding and generic signature extraction.
+2. **Method-body extraction path**
+   - instruction/EH/local payloads for interpreter planning and stepping.
+3. **Artifact enrichment backend**
+   - PE and symbol facts feeding debug-map generation.
+4. **Fixture construction support**
+   - optional controlled-artifact generation for conformance and robustness tests.
 
 ## Boundary and architecture guidance
 
-- Treat AsmResolver as an adapter implementation detail.
-- Convert AsmResolver models into project-owned contracts before crossing interpreter boundaries.
-- Keep fallback backend optional (e.g., SRM/dnlib) behind the same interfaces.
-- Normalize symbol quality/failure semantics so PDB-source differences do not leak to host UX.
+- Treat AsmResolver as adapter-only implementation detail.
+- Project into immutable project-owned contracts before crossing interpreter boundaries.
+- Keep alternate backends (dnlib/SRM-oriented path) available behind the same interfaces.
+- Normalize symbol quality/failure semantics independent of AsmResolver-specific diagnostics.
 
 ## Risks and design pressure
 
 1. **Abstraction creep**
-   - direct dependency on AsmResolver model types in core planning docs can overfit architecture.
-2. **Multi-backend complexity**
-   - supporting alternative readers requires strict normalization points.
-3. **PDB strategy ambiguity**
-   - if Portable PDB and Windows PDB pipelines diverge too much, we risk split debug-map behavior.
-4. **Large-surface temptation**
-   - broad API coverage may encourage premature adoption of advanced features before contract stabilization.
+   - core designs may become overfit to AsmResolver object model vocabulary.
+2. **Backend plurality cost**
+   - maintaining parity with alternative backends requires strict normalization discipline.
+3. **PDB strategy divergence**
+   - Portable vs Windows PDB behavior can fragment debug-map behavior if unmanaged.
+4. **Surface-area temptation**
+   - broad API coverage may encourage premature adoption of non-MVP features.
+5. **Dynamic-method scope drift**
+   - dynamic method support can expand complexity before baseline deterministic contracts are stable.
 
 ## Recommended next experiments
 
-1. Define a single normalized metadata projection from `ModuleDefinition`/`MethodDefinition`/`CilMethodBody`.
-2. Run one malformed-artifact suite through configurable `ModuleReaderParameters` and catalog error-to-miss mappings.
-3. Validate a portable symbol projection using `PdbImage` and compare parity with an SRM-based symbol path.
-4. Add one round-trip fixture-generation concept using AsmResolver builders to strengthen future conformance tests.
+1. Implement one normalized projection from `ModuleDefinition`/`MethodDefinition`/`CilMethodBody`.
+2. Run malformed-artifact fixtures under varying `ModuleReaderParameters` and map failures.
+3. Validate one symbol projection path from `PdbImage` into project debug-map schema.
+4. Prototype fixture generation for edge-case IL/EH patterns using builder APIs.
+5. Defer dynamic-method support behind an explicit capability gate and document the gate criteria.

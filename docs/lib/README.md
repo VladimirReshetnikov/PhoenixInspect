@@ -33,6 +33,18 @@ Use this folder as a bridge between:
 
 When design decisions evolve, update these notes first and then reconcile proposal docs that depend on them.
 
+
+## Latest expansion focus
+
+The current pass expands source-driven notes for all four snapshot libraries:
+
+- ClrMD runtime lifecycle/caching and stack/heap access boundaries
+- AsmResolver package layering and module/CIL/PDB entry points
+- dnlib module/body/symbol reader pipeline behavior
+- Roslyn parse/tree/compilation/semantic boundaries for expression front-end design
+
+See each `*-usage-notes.md` for adapter implications, risks, and experiment recommendations.
+
 ## Expansion backlog
 
 - Populate `backend-evidence-log.md` with concrete evidence per capability axis as prototype experiments are run.
