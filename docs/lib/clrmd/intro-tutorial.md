@@ -145,3 +145,75 @@ This is a direct policy knob we should expose as controlled behavior, not implic
 - `docs/lib/clrmd/usage-notes.md` for design boundaries and risks.
 - `docs/lib/clrmd/source-scan.md` for source-backed lifecycle and policy details.
 - `docs/proposals/integration/clrmd-integration-proposal.md` for architecture placement.
+
+---
+
+## 8) Source-backed deep dive: lifecycle and partialness details that affect adapter contracts
+
+After reviewing the ClrMD snapshot source in `lib/clrmd`, there are several details we should encode explicitly in our design docs and prototype adapter contracts.
+
+### `DataTarget.LoadDump(...)` binds cache policy at session creation time
+
+`LoadDump(...)` overloads pass `CacheOptions` into `CustomDataTarget`, and that policy flows into runtime behavior for stack roots/traces, string/name caching, and dump memory caching.
+
+Design implications:
+
+- treat cache profile as part of session identity,
+- include profile name and effective `CacheOptions` values in provenance,
+- avoid changing cache options mid-session without creating a new adapter snapshot boundary.
+
+### Symbol/file location can silently come from `_NT_SYMBOL_PATH`
+
+`DataTarget` creates a `SymbolGroup` using environment-driven defaults when no explicit locator is provided.
+
+Design implications:
+
+- deterministic profile: always set locator policy explicitly,
+- exploratory profile: allow environment defaults but mark them as `ambient-policy` in provenance,
+- replay tooling should warn when a result used ambient symbol policy.
+
+### `ClrRuntime.FlushCachedData()` is a semantic boundary, not just a perf operation
+
+The runtime flush path clears caches and can invalidate assumptions about previously materialized runtime objects.
+
+Design implications:
+
+- assign a generation ID to projected records,
+- never merge pre-flush and post-flush data in one deterministic result bundle,
+- if a flush occurs, report it as an explicit provenance event.
+
+### Thread and stack-root enumeration behavior depends on cache toggles
+
+`ClrThread` stack APIs branch on `CacheStackTraces` and `CacheStackRoots`, and traversal may stop for reasons unrelated to user intent (incomplete memory, unreadable contexts, etc.).
+
+Design implications:
+
+- require completeness + stop-reason fields in stack DTOs,
+- surface whether stack data came from cached or uncached path,
+- keep traversal limits (`maxFrames`) first-class adapter inputs.
+
+### Heap enumeration has explicit quality/performance modes (`carefully`)
+
+`ClrHeap.EnumerateObjects(bool carefully)` expresses an important trade-off: fast traversal can skip or mis-handle corruption edge cases that careful traversal is designed to tolerate.
+
+Design implications:
+
+- expose `carefulHeapWalk` as explicit policy,
+- include walk mode in cache keys and evidence logs,
+- run conformance comparisons between careful and non-careful passes on representative dumps.
+
+## 9) Advanced onboarding exercise (half-day)
+
+1. Build two profiles: `DeterministicStrict` and `ExploratoryFast`.
+2. For one dump, run:
+   - runtime creation,
+   - top-N thread stack capture,
+   - bounded heap object walk (`carefully: false` and `carefully: true`).
+3. Record for each run:
+   - cache profile,
+   - symbol policy source (explicit vs ambient),
+   - completeness + stop reason,
+   - object/frame count deltas.
+4. Add one evidence row to `docs/lib/backend-evidence-log.md`.
+
+This exercise makes cache/policy sensitivity concrete and helps prevent accidental contract drift in early adapter prototypes.

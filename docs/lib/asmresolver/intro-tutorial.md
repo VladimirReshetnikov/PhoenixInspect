@@ -286,3 +286,51 @@ Project impact:
 3. Record when lazy properties are evaluated in your spike run.
 4. Compare observed behavior for: metadata-only pass vs full-body pass.
 5. Update evidence log with one concrete "policy -> behavior" observation.
+
+## 13) Additional source-backed findings from `lib/asmresolver` review
+
+A broader pass over `AsmResolver.DotNet`, `AsmResolver.PE`, and `AsmResolver.Symbols.Pdb` reveals a few additional tutorial-level points that help contributors avoid common integration mistakes.
+
+### `ModuleReaderParameters` constructors imply different default policy baselines
+
+The snapshot exposes multiple constructors (`workingDirectory`, `IErrorListener`, `RuntimeContext`, `IFileService`, and clone constructor), and each establishes subtly different defaults for resolver and PE reader behavior.
+
+Practical guidance:
+
+- pick a single constructor path per adapter profile,
+- avoid mixing constructor styles across call sites,
+- document constructor choice in evidence logs because it affects default resolver/error pathways.
+
+### PE ingestion can be performed independently of CLR metadata ingestion
+
+`ModuleDefinition.From...` routes through `PEImage` first, and `PEImage` itself has rich load options. This lets us decouple:
+
+- PE readability checks,
+- metadata-table extraction,
+- method-body extraction.
+
+Practical guidance:
+
+- keep separate result envelopes for PE vs metadata failures,
+- avoid collapsing all read failures into one generic "cannot load module" message,
+- preserve stage-at-failure to improve miss-reason diagnostics.
+
+### Body decode strategy is delegated, so body outcomes are policy-dependent
+
+`SerializedMethodDefinition.GetMethodBody()` delegates to the configured `IMethodBodyReader`. Contributors should assume body-read outcomes may differ if this strategy changes.
+
+Practical guidance:
+
+- include method-body reader identity in provenance,
+- normalize output into stable categories before returning from adapter,
+- add cross-profile parity checks for instruction count/locals/EH extraction.
+
+### PDB leaf-record access is lazy and type-index based
+
+`PdbImage.TryGetLeafRecord(...)` and typed retrieval are index-driven and can return unresolved paths for unknown indices.
+
+Practical guidance:
+
+- avoid assuming type records are eagerly complete,
+- capture missing/unresolved type-index cases in debug-map diagnostics,
+- keep CodeView/TPI details internal and project-neutral in external DTOs.

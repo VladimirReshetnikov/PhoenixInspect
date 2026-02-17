@@ -322,3 +322,47 @@ Design implications:
 4. Re-run with altered PDB options and compare only provenance fields.
 
 This exercise is a fast way to validate that our contracts expose policy choices clearly without leaking dnlib types.
+
+## 17. Additional source-backed findings from `lib/dnlib` review
+
+A broader source pass beyond the initial tutorial files highlights several contract-shaping details.
+
+### `ModuleDefMD.Load(...)` overload breadth should not leak into adapter API shape
+
+dnlib supports many load forms (file, bytes, stream, reflection module, pointer + image layout). This flexibility is useful internally but can create unstable adapter APIs if surfaced directly.
+
+Practical guidance:
+
+- standardize one or two adapter ingestion forms (artifact path + bytes/stream),
+- map all internal load variants to those forms,
+- keep ingest provenance explicit (source kind, runtime kind, layout assumptions).
+
+### `ModuleCreationOptions` encodes symbol/runtime policy and should be versioned
+
+Options like `Runtime`, `TryToLoadPdbFromDisk`, and `PdbFileOrData` have meaningful behavior impact.
+
+Practical guidance:
+
+- define named policy presets in docs,
+- store preset identity in evidence rows and conformance reports,
+- treat option changes as behavior changes requiring regression comparison.
+
+### Method-body decoding accepts multiple decode contexts
+
+`MethodBodyReader.CreateCilBody(...)` overloads permit different parameter lists, generic contexts, and optional module context, which can alter operand resolution quality.
+
+Practical guidance:
+
+- include generic context completeness in provenance,
+- classify unresolved operands distinctly from malformed bytes,
+- do not over-normalize all decode issues into a single failure bucket.
+
+### Symbol-reader path selection is multi-branch and environment-sensitive
+
+`SymbolReaderFactory` may choose embedded portable, standalone portable, managed, or platform-specific readers.
+
+Practical guidance:
+
+- persist selected symbol-reader branch in output metadata,
+- preserve fallback order and miss reasons,
+- test parity across at least two symbol-path configurations.
