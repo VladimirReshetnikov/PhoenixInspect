@@ -81,6 +81,17 @@ Current emphasis:
 
 These findings remain design-phase guidance and should be validated with executable adapter spikes before MVP backend lock-in.
 
+## Tutorial expansion status
+
+The per-library intro tutorials now include source-backed deep-dive sections derived from direct review of snapshot code under `lib/`:
+
+- ClrMD: session lifecycle, cache semantics, stack/heap partialness boundaries.
+- AsmResolver: reader-parameter policy, stage-specific load failures, method-body reader seam, and PDB type-index behavior.
+- dnlib: loader/policy surface breadth, method-body decode context, and symbol-reader branch selection.
+- Roslyn: parse/tree identity inputs, submission-mode semantics, and semantic-model ownership invariants.
+
+Use these tutorial sections as contributor onboarding material before proposing adapter contract changes.
+
 ## Deep-dive companion
 
 Use `source-review-deep-dive.md` when you need a side-by-side, source-backed comparison of:

@@ -251,3 +251,47 @@ Adapter guidance:
    - fallback recommendations,
    - provenance fingerprint fields.
 5. Document one policy recommendation in `docs/lib/roslyn/usage-notes.md` based on observed deltas.
+
+## 10) Additional source-backed findings from `lib/roslyn` review
+
+A wider scan of Roslyn sources adds a few practical tutorial points that are easy to miss when using only top-level APIs.
+
+### Tree path and source identity are not cosmetic
+
+`CSharpSyntaxTree.ParseText(...)` overloads accept `path`, `SourceText`, and encoding/hash inputs that can affect diagnostics and location mapping.
+
+Practical guidance:
+
+- include `path` and source identity in deterministic request fingerprints,
+- avoid per-request random/ephemeral paths unless intentionally modeling transient REPL behavior,
+- keep path policy stable across replay scenarios.
+
+### Script compilation enforces submission-specific assumptions
+
+`CreateScriptCompilation(...)` uses submission-oriented options and lower-version reference supersedence behavior.
+
+Practical guidance:
+
+- keep script mode behind explicit policy flags,
+- track script/regular mode in cache keys and provenance,
+- avoid comparing script and regular semantic results without mode-aware normalization.
+
+### Semantic-model retrieval has strict ownership expectations
+
+Compilation APIs require tree membership for semantic-model access and will throw when invariants are violated.
+
+Practical guidance:
+
+- centralize parse->compilation->semantic flow in one builder path,
+- prevent ad-hoc semantic queries from detached trees,
+- normalize these invariant failures into internal adapter diagnostics, not user-facing crashes.
+
+### Parser recovery internals are intentionally complex and unstable for contracts
+
+The parser includes extensive recovery/terminator handling to maximize language service resilience.
+
+Practical guidance:
+
+- depend on diagnostics and syntax outputs only,
+- keep normalization categories stable even when Roslyn internals evolve,
+- include Roslyn package version in provenance to aid drift triage.
