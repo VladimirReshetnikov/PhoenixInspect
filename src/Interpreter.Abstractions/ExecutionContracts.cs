@@ -20,25 +20,10 @@ public enum ExecutionLifecycleState
     Running,
 
     /// <summary>
-    /// Indicates that execution has completed due to budget limits, stop conditions, or natural termination.
+    /// Indicates that execution has completed due to stop conditions or natural termination.
     /// </summary>
     Completed,
 }
-
-/// <summary>
-/// Carries immutable budget constraints for one interpreter run.
-/// </summary>
-/// <param name="InstructionBudget">Gets the maximum number of instructions the engine is allowed to evaluate before it must stop.</param>
-/// <param name="BranchBudget">Gets the maximum number of branch forks the engine can materialize in a single session.</param>
-/// <param name="WallClockBudget">Gets an optional wall-clock budget used by hosts that enforce elapsed-time limits.</param>
-/// <remarks>
-/// This record is intentionally minimal in the prototype stage and should be treated as a placeholder for richer policy
-/// objects that can include widening cadence, memory quotas, and per-domain safeguards.
-/// </remarks>
-public sealed record ExecutionBudget(
-    int InstructionBudget,
-    int BranchBudget,
-    TimeSpan? WallClockBudget);
 
 /// <summary>
 /// Describes the immutable request payload used to start one prototype interpretation session.
@@ -60,9 +45,9 @@ public interface IExecutionRequest
     string EntryMethodIdentity { get; }
 
     /// <summary>
-    /// Gets the budget policy that bounds deterministic execution behavior for this request.
+    /// Gets a value indicating whether cooperative cancellation should be honored aggressively for this request.
     /// </summary>
-    ExecutionBudget Budget { get; }
+    bool IsCancellationRequestedByDefault { get; }
 }
 
 
@@ -81,9 +66,9 @@ public enum ExecutionStopCategory
     Completed,
 
     /// <summary>
-    /// Indicates that execution halted because one or more configured budgets were exhausted.
+    /// Indicates that execution halted because cooperative cancellation was requested.
     /// </summary>
-    BudgetExceeded,
+    Cancelled,
 
     /// <summary>
     /// Indicates that execution yielded due to an explicit host- or debugger-driven stop request.
@@ -100,7 +85,7 @@ public enum ExecutionStopCategory
 /// Describes the stop condition attached to one execution result snapshot.
 /// </summary>
 /// <param name="Category">Gets the high-level stop category used by hosts to map UX behavior.</param>
-/// <param name="Code">Gets a stable machine-readable code value such as <c>budget:instruction</c> or <c>unsupported:tailcall</c>.</param>
+/// <param name="Code">Gets a stable machine-readable code value such as <c>cancelled:token</c> or <c>unsupported:tailcall</c>.</param>
 /// <param name="Message">Gets a human-readable summary suitable for logs and explainability panes.</param>
 /// <remarks>
 /// This record complements <see cref="IExecutionResult.StopReason"/> rather than replacing it immediately so prototype consumers
@@ -150,7 +135,7 @@ public interface IExecutionResult
 /// </summary>
 /// <param name="SessionId">Gets a stable session identifier used to correlate execution artifacts across logs and diagnostics.</param>
 /// <param name="EntryMethodIdentity">Gets the fully qualified method identity selected as the interpreter entry point.</param>
-/// <param name="Budget">Gets the deterministic budget policy constraining this request.</param>
+/// <param name="IsCancellationRequestedByDefault">Gets a value indicating whether cooperative cancellation should be treated as enabled by default.</param>
 /// <remarks>
 /// This record exists to reduce ceremony in exploratory integration tests and documentation examples.
 /// Hosts should treat the shape as draft-only and expect additional fields once metadata and runtime context modeling matures.
@@ -158,7 +143,7 @@ public interface IExecutionResult
 public sealed record ExecutionRequest(
     string SessionId,
     string EntryMethodIdentity,
-    ExecutionBudget Budget) : IExecutionRequest;
+    bool IsCancellationRequestedByDefault) : IExecutionRequest;
 
 /// <summary>
 /// Captures a reusable explainability note emitted while interpreting one request.

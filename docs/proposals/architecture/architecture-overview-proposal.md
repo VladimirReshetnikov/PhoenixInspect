@@ -111,7 +111,7 @@ This layer is the composition root. It:
 - validates request shape,
 - binds adapters for metadata/memory/model lookup,
 - allocates deterministic ID spaces for unknown value provenance,
-- enforces budgets (instruction steps, path splits, state joins, wall-clock guardrails),
+- enforces cooperative cancellation boundaries and deterministic stop behavior,
 - routes execution to semantics runtime or analysis runtime,
 - merges diagnostics and converts them into user-facing trust labels.
 
@@ -125,7 +125,7 @@ Responsibilities:
 - translate `StepInto`/`StepOver`/`StepOut` into stop predicates over micro-steps,
 - broker branch decisions (`choose true/false`, `fork`, `join`) when conditions are unknown,
 - maintain stop-point history and undo/redo semantics,
-- surface debugger events (`FramePushed`, `FramePopped`, `ExceptionThrown`, `BudgetExceeded`) with source mapping metadata.
+- surface debugger events (`FramePushed`, `FramePopped`, `ExceptionThrown`, `ExecutionCancelled`) with source mapping metadata.
 
 This layer should stay policy-driven and avoid opcode semantics; it is a controller, not another interpreter.
 
@@ -147,7 +147,7 @@ Required stop-reason categories:
 - `StepComplete`,
 - `DecisionNeeded`,
 - `ExceptionStop`,
-- `BudgetStop`,
+- `Cancelled`,
 - `Completed`.
 
 Each stop result should include:

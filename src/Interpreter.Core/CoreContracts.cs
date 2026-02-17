@@ -17,7 +17,7 @@ public interface IInterpreterEngine
     /// <summary>
     /// Executes the requested entry method using the supplied metadata descriptor and returns a deterministic result snapshot.
     /// </summary>
-    /// <param name="request">The immutable request that defines the target method and execution budgets.</param>
+    /// <param name="request">The immutable request that defines the target method and cancellation semantics.</param>
     /// <param name="entryMethod">The metadata descriptor resolved for the request entry point.</param>
     /// <param name="cancellationToken">A token used to cancel interpretation when the host session ends or exceeds limits.</param>
     /// <returns>A result snapshot describing lifecycle state, stop reason, and explainability notes.</returns>
@@ -42,7 +42,7 @@ public interface IInstructionStepper
     /// <param name="instructionOffset">The IL offset of the instruction being interpreted.</param>
     /// <param name="operationCode">The opcode mnemonic used for diagnostics and dispatch decisions.</param>
     /// <param name="frameState">The mutable-by-convention frame state represented as key/value diagnostic slots.</param>
-    /// <param name="cancellationToken">A token used to abort stepping if host or budget cancellation is requested.</param>
+    /// <param name="cancellationToken">A token used to abort stepping if host cancellation is requested.</param>
     /// <returns>The next frame snapshot and any explainability notes produced by the step.</returns>
     ValueTask<InstructionStepResult> StepAsync(
         int instructionOffset,
@@ -91,7 +91,7 @@ public interface IExecutionSessionCoordinator
     /// Classifies the specified call site and returns the resulting target/effect metadata for downstream step logic.
     /// </summary>
     /// <param name="callSite">The call-site descriptor representing the call instruction currently being interpreted.</param>
-    /// <param name="executionRequest">The parent execution request carrying budget and session context.</param>
+    /// <param name="executionRequest">The parent execution request carrying cancellation and session context.</param>
     /// <param name="cancellationToken">A token used to stop classification when host cancellation is requested.</param>
     /// <returns>A value task that resolves to the call-site classification to apply for this instruction.</returns>
     ValueTask<CallSiteClassification> ClassifyCallAsync(
@@ -103,7 +103,7 @@ public interface IExecutionSessionCoordinator
     /// Resolves a lifted dynamic dispatch operation so the engine can step into a selected overload or surface bounded uncertainty.
     /// </summary>
     /// <param name="request">The lifted dynamic dispatch request containing binder semantics and argument typing evidence.</param>
-    /// <param name="executionRequest">The parent execution request carrying session policy and budget context.</param>
+    /// <param name="executionRequest">The parent execution request carrying session policy and cancellation context.</param>
     /// <param name="cancellationToken">A token used to stop dynamic-resolution work when host cancellation is requested.</param>
     /// <returns>A value task that resolves to the dynamic dispatch resolution outcome and explainability rationale.</returns>
     ValueTask<DynamicDispatchResolution> ResolveDynamicDispatchAsync(
@@ -166,25 +166,11 @@ public interface IExecutionSessionCoordinator
     /// Evaluates an observed exception signal and returns the policy decision that should control session behavior.
     /// </summary>
     /// <param name="signal">The exception signal observed by the interpreter execution loop.</param>
-    /// <param name="executionRequest">The parent execution request used for budget and diagnostics context.</param>
+    /// <param name="executionRequest">The parent execution request used for cancellation and diagnostics context.</param>
     /// <param name="cancellationToken">A token used to stop policy evaluation when host cancellation is requested.</param>
     /// <returns>A value task that resolves to the exception-policy decision for the supplied signal.</returns>
     ValueTask<ExceptionPolicyDecision> EvaluateExceptionAsync(
         ExceptionSignalDescriptor signal,
-        IExecutionRequest executionRequest,
-        CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Charges one execution budget meter and returns the resulting accounting state for deterministic guardrail enforcement.
-    /// </summary>
-    /// <param name="request">The budget charge request describing which meter to charge and why.</param>
-    /// <param name="executionRequest">The parent execution request that defines baseline configured budget limits.</param>
-    /// <param name="cancellationToken">A token used to stop budget accounting when host cancellation is requested.</param>
-    /// <returns>
-    /// A value task that resolves to the budget charge result, including remaining budget and optional stop descriptor metadata.
-    /// </returns>
-    ValueTask<BudgetChargeResult> ChargeBudgetAsync(
-        BudgetChargeRequest request,
         IExecutionRequest executionRequest,
         CancellationToken cancellationToken);
 }

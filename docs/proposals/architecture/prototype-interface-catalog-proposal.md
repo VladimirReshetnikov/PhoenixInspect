@@ -36,7 +36,7 @@ This shape intentionally keeps dependency flow from host/coordination edges towa
 
 ### 4.1 Execution contracts
 
-`Interpreter.Abstractions` keeps request/result/session primitives centralized so all other modules share a single execution vocabulary. The module now also includes a first-pass budget-accounting seam (`IExecutionBudgetTracker` plus budget charge/snapshot records) so deterministic guardrail behavior can evolve independently from instruction semantics.
+`Interpreter.Abstractions` keeps request/result/session primitives centralized so all other modules share a single execution vocabulary. The module now emphasizes cancellation-token-aware request/result/session primitives so deterministic stop behavior can evolve without introducing MVP budget accounting.
 
 ### 4.2 Stepping control-plane contracts
 
@@ -58,7 +58,7 @@ call-site operations can be resolved without coupling `Interpreter.Core` directl
 
 ### 4.6 Core orchestration contracts
 
-`Interpreter.Core` continues to own execution orchestration and instruction stepping while introducing an explicit coordinator seam for call-model, memory-model, async-runtime, and budget-tracker collaboration.
+`Interpreter.Core` continues to own execution orchestration and instruction stepping while introducing an explicit coordinator seam for call-model, memory-model, and async-runtime collaboration.
 The coordinator now includes a dedicated dynamic-dispatch routing method to preserve explicit orchestration boundaries
 between lifted `dynamic` operations and the call-model's evolving overload-resolution strategy.
 

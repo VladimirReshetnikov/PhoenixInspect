@@ -89,7 +89,7 @@ public interface IAbstractMemoryStore
     /// Reads an abstract value from the requested location in the current execution state snapshot.
     /// </summary>
     /// <param name="request">The memory-read request identifying the abstract location and slot index to access.</param>
-    /// <param name="executionRequest">The parent execution request used to apply session-level policy and budget semantics.</param>
+    /// <param name="executionRequest">The parent execution request used to apply session-level policy and cancellation semantics.</param>
     /// <param name="cancellationToken">A token that aborts the read operation when execution is canceled.</param>
     /// <returns>A value task that resolves to the abstract value currently associated with the requested location.</returns>
     ValueTask<AbstractValue> ReadAsync(

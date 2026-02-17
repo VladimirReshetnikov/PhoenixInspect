@@ -14,7 +14,7 @@ The objective is to pick technologies that maximize:
 ## 1) Design constraints that drive stack choices
 
 1. **Tight runtime control**
-   We need deterministic and bounded execution (instruction budgets, cancellation, timeouts).
+   For MVP we need deterministic execution with cooperative cancellation via `CancellationToken`; explicit instruction/time budget accounting is deferred.
 2. **Low-level metadata/IL fidelity**
    We must read and model ECMA-335 IL accurately, including signatures, generics, and exception regions.
 3. **Pluggable architecture**

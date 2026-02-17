@@ -31,7 +31,7 @@ public enum CallTargetKind
 /// Describes side-effect classes that a call may exhibit in prototype interpretation.
 /// </summary>
 /// <remarks>
-/// The effect model is a draft abstraction used to connect call analysis with explainability and budget policies,
+/// The effect model is a draft abstraction used to connect call analysis with explainability and cancellation-aware policies,
 /// not a finalized semantic commitment for production behavior.
 /// </remarks>
 public enum CallEffectKind
@@ -104,8 +104,8 @@ public interface ICallSiteClassifier
     /// Classifies the specified call site and returns a deterministic classification record for the current prototype policy.
     /// </summary>
     /// <param name="request">The call-site descriptor produced by the interpreter core for the instruction being processed.</param>
-    /// <param name="executionRequest">The parent execution request used for budget context and session-level policy decisions.</param>
-    /// <param name="cancellationToken">A token that aborts classification work when host cancellation or budget termination is requested.</param>
+    /// <param name="executionRequest">The parent execution request used for cancellation context and session-level policy decisions.</param>
+    /// <param name="cancellationToken">A token that aborts classification work when host cancellation is requested.</param>
     /// <returns>
     /// A value task that resolves to a call-site classification containing target-kind, effect categories, and an explainable rationale.
     /// </returns>
@@ -254,7 +254,7 @@ public interface IDynamicDispatchResolver
     /// Resolves a lifted dynamic dispatch request and returns selected target metadata or bounded unresolved outcomes.
     /// </summary>
     /// <param name="request">The dynamic dispatch request describing binder semantics, argument typing evidence, and call-site context.</param>
-    /// <param name="executionRequest">The parent execution request carrying session policy and budget constraints.</param>
+    /// <param name="executionRequest">The parent execution request carrying session policy and cancellation constraints.</param>
     /// <param name="cancellationToken">A token used to cancel expensive target-discovery work when execution stops.</param>
     /// <returns>
     /// A value task that resolves to a dynamic dispatch resolution containing selected method identity, candidate targets,
