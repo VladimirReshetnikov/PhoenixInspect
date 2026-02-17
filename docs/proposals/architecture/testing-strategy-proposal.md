@@ -78,6 +78,7 @@ Target:
 
 - host-facing evaluation flows,
 - trust labels (`pure`, `partial`, `blocked`, `timed out`),
+- virtual step-session behavior (step commands, pause reasons, undo/branch history),
 - diagnostic envelopes consumed by clients.
 
 Examples:
@@ -85,6 +86,7 @@ Examples:
 - evaluate watch expression from snapshot-backed context,
 - expression containing blocked impure call,
 - timeout path with preserved partial trace.
+- virtual Step Into/Over/Out flow with expected stop locations and debug events.
 
 ## E. Non-functional tests
 
@@ -164,7 +166,7 @@ Determinism is a release-blocking property.
 
 Required checks:
 
-1. Run selected scenario tests N times in isolated processes.
+1. Run selected scenario tests N times in isolated processes (including identical step-command scripts for virtual sessions).
 2. Canonicalize artifacts (ordering, IDs where appropriate).
 3. Compare stable hashes of:
    - trace events,
@@ -270,6 +272,7 @@ Required triage metadata in PR/issue:
 
 - Call/effect model scenario coverage reaches agreed threshold.
 - Adapter contract suite covers expected dump-time failure modes.
+- Virtual stepping scenario suite validates `StepInto/Over/Out`, `DecisionNeeded`, and `Undo` deterministically.
 
 ### M5 exit
 

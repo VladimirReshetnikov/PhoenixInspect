@@ -90,6 +90,26 @@ It is intentionally split into:
 
 ---
 
+
+## M3.5 — Virtual step-debugging control plane
+
+**Goal:** provide debugger-grade virtual stepping semantics on top of the interpreter core.
+
+**Deliverables**
+
+- Session model with explicit machine/call-stack state and stable pause reasons.
+- Step-command controller for `StepInto`, `StepOver`, `StepOut`, and branch decisions.
+- Stop-point history with `Undo` and branch-aware timeline semantics.
+- Source mapping pipeline (PDB first, decompiler map second, IL fallback).
+
+**Exit criteria**
+
+- End-to-end virtual stepping demo over curated dump-backed scenarios.
+- Deterministic replay of identical step-command sequences.
+- Decision-needed flow for unknown branch conditions is host-visible and actionable.
+
+---
+
 ## M4 — Dump-aware hosting integration prototype
 
 **Goal:** prove the engine works against snapshot-backed metadata/memory.
@@ -160,6 +180,7 @@ It is intentionally split into:
 2. Specify effect lattice and call-model contract.
 3. Create opcode support matrix with implementation status.
 4. Build initial benchmark corpus from realistic IL methods.
+5. Specify virtual debug session contracts (step commands, stop reasons, undo/branch behavior).
 
 ### Medium priority
 
@@ -221,6 +242,7 @@ Before moving beyond M4, explicitly decide:
 1. Public API stabilization policy.
 2. Minimum compatibility target (`net8.0` only vs multi-targeting).
 3. What telemetry/diagnostic artifacts are enabled by default.
+4. Whether modeled calls are always represented as pseudo-frames or may be collapsed per policy.
 
 ---
 
@@ -233,5 +255,6 @@ To keep design docs coherent, add or maintain the following companion docs:
 - `docs/proposals/architecture/call-model-and-effects.md` (contracts and intrinsic policy)
 - `docs/proposals/architecture/testing-strategy-proposal.md` (test taxonomy and quality gates)
 - `docs/proposals/architecture/perf-and-benchmarks-proposal.md` (benchmark plan and acceptance thresholds)
+- `docs/proposals/architecture/virtual-step-debugging-implementation-proposal.md` (session/stepping control-plane contracts)
 
 Status note: `architecture-overview-proposal.md`, `state-and-domain-model-proposal.md`, `testing-strategy-proposal.md`, and `perf-and-benchmarks-proposal.md` are now present and should be iterated rather than re-proposed.
