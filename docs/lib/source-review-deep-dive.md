@@ -234,3 +234,13 @@ Design implications:
   - cache-flush drift checks,
   - hidden-sequence-point handling parity,
   - parser strict vs recovery mode comparisons.
+
+## Source-tour execution guidance (new)
+
+To keep future expansions consistent, pair this deep-dive note with `docs/lib/source-tour-workbook.md`:
+
+- use the workbook for per-library source-reading tasks and evidence capture,
+- use this deep dive for cross-library synthesis and architecture implications,
+- update both when new snapshot reviews materially change policy or normalization guidance.
+
+This split keeps tutorial onboarding actionable while preserving a stable cross-library design narrative.

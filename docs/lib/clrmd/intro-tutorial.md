@@ -217,3 +217,20 @@ Design implications:
 4. Add one evidence row to `docs/lib/backend-evidence-log.md`.
 
 This exercise makes cache/policy sensitivity concrete and helps prevent accidental contract drift in early adapter prototypes.
+
+## 10) Source-tour checkpoints (new)
+
+Use this quick checklist when you want to validate ClrMD assumptions directly against snapshot source before proposing adapter-contract changes.
+
+1. **Session and symbol policy root**
+   - Read `lib/clrmd/src/Microsoft.Diagnostics.Runtime/DataTarget.cs` and trace constructor defaults, `SetSymbolPath(...)`, and `LoadPEImage(...)` cache behavior.
+2. **Runtime materialization path**
+   - Read `lib/clrmd/src/Microsoft.Diagnostics.Runtime/ClrInfo.cs` and trace runtime-creation preconditions and artifact lookup behavior.
+3. **Thread/heap cache sensitivity**
+   - Read `lib/clrmd/src/Microsoft.Diagnostics.Runtime/ClrRuntime.cs`, `ClrThread.cs`, and `ClrHeap.cs` and note where cache options alter behavior.
+4. **Flush boundary semantics**
+   - Locate flush-related pathways (`ClrRuntime.FlushCachedData`, DAC flush integration) and record what data should be considered stale after a flush.
+
+Deliverable to add in design review notes:
+
+- one table row per checkpoint with: policy input, observed behavior, normalization impact, and proposed conformance test case.
