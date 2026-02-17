@@ -21,6 +21,7 @@ docs/
 |---|---|---|---|---|
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft | User-facing dump-time evaluation capability and phased scope. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft | Product design for virtual Step Into/Over/Out and session UX in dump analysis. |
+| `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft | Cross-application strategy for reusing the interpreter core across static analysis, speculative live debugging, sandbox runtime hosting, replay/tracing, differential testing, and build-time partial evaluation. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Draft | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft | Initial abstract domains and analysis behavior for MVP. |
@@ -72,10 +73,21 @@ docs/
 
 1. `proposals/product/post-mortem-debugging-feature-proposal.md`
 2. `proposals/product/virtual-step-debugging-feature-proposal.md`
-3. `proposals/architecture/il-interpreter-framework-proposal.md`
-4. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
-5. `proposals/architecture/technical-stack-proposal.md`
-6. `plans/future-work-planning.md`
+3. `proposals/product/other-potential-applications.md`
+4. `proposals/architecture/il-interpreter-framework-proposal.md`
+5. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
+6. `proposals/architecture/technical-stack-proposal.md`
+7. `plans/future-work-planning.md`
+
+### Platform strategy expansion path
+
+1. `proposals/architecture/architecture-overview-proposal.md`
+2. `proposals/product/other-potential-applications.md`
+3. `proposals/architecture/state-and-domain-model-proposal.md`
+4. `proposals/architecture/call-model-and-effects.md`
+5. `proposals/architecture/semantic-modeling-proposal.md`
+6. `proposals/architecture/testing-strategy-proposal.md`
+7. `plans/future-work-planning.md`
 
 ### Architecture-first path
 
