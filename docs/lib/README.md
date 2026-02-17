@@ -23,6 +23,7 @@ These notes are intentionally project-specific: they focus on how each library c
 | Backend capability evidence log | N/A (cross-library) | `backend-evidence-log.md` |
 | MVP backend decision record | N/A (cross-library) | `mvp-backend-decision-record.md` |
 | PE/PDB API comparison | N/A (cross-library) | `pe-pdb-reader-api-comparison.md` |
+| Source review deep dive | N/A (cross-library) | `source-review-deep-dive.md` |
 
 ## How to use these notes
 
@@ -63,3 +64,13 @@ Current emphasis:
 - Roslyn C# parser/compilation/semantic entry points for expression front-end design
 
 These findings remain design-phase guidance and should be validated with executable adapter spikes before MVP backend lock-in.
+
+## Deep-dive companion
+
+Use `source-review-deep-dive.md` when you need a side-by-side, source-backed comparison of:
+
+- lifecycle and policy controls,
+- method-body/symbol pipeline details,
+- partialness and determinism pressure across all four libraries.
+
+The per-library usage notes remain the primary decision notes; the deep-dive doc is intended as a synthesis layer for architecture and backend decision reviews.
