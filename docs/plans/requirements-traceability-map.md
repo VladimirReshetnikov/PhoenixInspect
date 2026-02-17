@@ -65,6 +65,9 @@ Status values:
 | VS-03 | Source stepping fallback order should be PDB → decompiled map → IL. | Debug map proposal and PE/PDB integration proposal define fallback mapping responsibilities. | Mapping-confidence fixtures (exact/approximate/IL-only) in testing strategy; M3.5 criteria. | Covered | Add explicit failure-mode messaging examples for mapping misses. |
 | VS-04 | Async and dynamic behaviors should produce explicit outcomes and decision points. | `virtual-tasks` + `dynamic-calls` proposals define lifted callsites and outcome taxonomy. | Async/dynamic fixture corpus and deterministic outcome assertions in future-work milestones + testing strategy. | Covered | Keep taxonomy synchronized with stop reasons and host contracts. |
 | X-01 | Host APIs should expose stable miss-reason taxonomy and artifact provenance. | Generic context resolver + integration proposals define artifact resolution and miss-reason handling. | Conformance checklist pattern in `docs/lib` and integration-focused tests. | Partial | Add governance doc for miss-reason taxonomy stability/versioning. |
+| X-02 | Framework-heavy stepping should prioritize user intent over runtime machinery noise. | Semantic-modeling proposal defines pattern intrinsics (`lock`, `foreach`, throw-helper forms, interpolation handlers) and modeled-step explainability hooks for virtual stepping. | Virtual stepping fixture corpus comparing baseline vs modeled transcripts; M3.7 semantic-modeling milestone exit criteria. | Partial | Add explicit transcript-diff metrics for modeled-noise reduction and guard against hidden control-flow loss. |
+| X-03 | Environment/time/random APIs in dump sessions must be deterministic and honest about missing data. | Semantic-modeling + architecture overview define `SessionSnapshot` and environment intrinsics with explicit unknown-origin tags when data cannot be recovered. | SessionSnapshot extraction fixtures per dump type; deterministic replay assertions for `DateTime`/`Environment` intrinsics. | Partial | Add integration doc section detailing data-source precedence and confidence levels across OS/dump variants. |
+| X-04 | Projection-backed collection operations must be bounded, version-aware, and fail-closed on unsupported layouts. | Semantic-modeling proposal introduces object projections, copy-on-write overlays, confidence labels, and decoder identity requirements. | Decoder conformance fixtures and unsupported-layout diagnostics checks; M3.7 exit criteria. | Gap | Publish layout-decoder governance doc and add benchmark limits for projection traversal budgets. |
 
 ---
 
@@ -74,6 +77,8 @@ Status values:
 2. **Trust-label mapping spec**: add a normative table from engine diagnostic categories to user-facing labels and colors/icons.
 3. **Miss-reason governance**: publish naming/stability/versioning rules under `docs/governance/` and reference them from integration docs.
 4. **Traceability automation plan**: define a lightweight checklist so PR authors update this map when adding or changing requirements.
+5. **SessionSnapshot integration contract**: document extraction precedence and fallback behavior for time/environment data across dump formats.
+6. **Layout decoder governance**: define decoder versioning, invariant checks, and confidence policy so projections remain trustworthy.
 
 ---
 
