@@ -168,8 +168,9 @@ Responsibilities:
 - decode/cached instruction stream,
 - maintain evaluation stack, locals, arguments, temporary state,
 - execute opcode semantics against abstract domain interfaces,
-- route call instructions through call model dispatcher,
+- route call instructions through a unified special-semantics registry (call intrinsics, pattern intrinsics, projection intrinsics),
 - recognize lifted semantic callsites (`DynamicDispatch`, `AsyncRuntimeIntrinsic`) before generic fallback handling,
+- enforce modeled-call confidence labeling (`Exact`, `BestEffort`, `Partial`, `UnsupportedLayout`) as part of result metadata,
 - emit effect and provenance events (including lifted-site resolution/scheduler lifecycle events).
 
 Output is either a terminal state/value or bounded partial state on stop conditions.
@@ -206,9 +207,25 @@ Adapters isolate external systems:
 - method body retrieval,
 - generic context reconstruction,
 - dump-backed object/field/array reads,
-- intrinsic registry and model summaries.
+- `SessionSnapshot` extraction for deterministic environment/time intrinsics,
+- projection layout decoder registration (with runtime-version support metadata),
+- unified special-semantics registry and model summaries.
 
 Adapters are replaceable; core runtimes remain backend-agnostic.
+
+
+### 4.7.1 Projection overlays and decoder governance (refinement)
+
+Projection-backed operations require explicit governance because private runtime layouts are version-sensitive.
+
+Required contracts:
+
+- Copy-on-write overlay semantics for dump-backed instances: reads may come from projection decoders, writes must be redirected to virtual overlay storage.
+- Decoder identity in diagnostics (`decoder package`, `decoder version`, `runtime family/range`) so host output is auditable.
+- Fail-closed behavior: when invariants fail, return `UnsupportedLayout` confidence with explicit diagnostics instead of speculative guesses.
+- Projection budgets (max nodes/items/depth) with deterministic partial-result behavior when limits are exceeded.
+
+These rules apply uniformly across collection projections and any future projection-heavy semantics.
 
 ### 4.8 Artifact resolution and debug-map pipeline
 

@@ -10,15 +10,27 @@ These notes are intentionally project-specific: they focus on how each library c
 - They are **not** our runtime dependency source of truth.
 - Production-facing implementation should consume official NuGet packages and keep clear adapter boundaries.
 
+## Documentation structure for `docs/lib`
+
+To keep source-review output navigable as the snapshots evolve, this folder uses a two-level layout:
+
+1. **Library-specific subdirectories** (`docs/lib/<library>/`)
+   - `usage-notes.md`: design guidance and project-facing integration boundaries.
+   - `source-scan.md`: source-driven review notes (entry points, lifecycle, policy knobs, and adapter implications) tied to the corresponding `lib/<library>` snapshot.
+2. **Cross-library documents in `docs/lib/` root**
+   - matrices, decision records, checklists, and synthesis artifacts that compare or coordinate multiple libraries.
+
+Rule of thumb: if a note is primarily about one library, keep it in that library’s subdirectory; if it compares multiple libraries, keep it at `docs/lib/` root.
+
 ## Current library notes
 
-| Library | Snapshot path | Note |
+| Library | Snapshot path | Notes |
 |---|---|---|
-| ClrMD | `lib/clrmd` | `clrmd/usage-notes.md` |
-| AsmResolver | `lib/asmresolver` | `asmresolver/usage-notes.md` |
-| dnlib | `lib/dnlib` | `dnlib/usage-notes.md` |
+| ClrMD | `lib/clrmd` | `clrmd/usage-notes.md`, `clrmd/source-scan.md` |
+| AsmResolver | `lib/asmresolver` | `asmresolver/usage-notes.md`, `asmresolver/source-scan.md` |
+| dnlib | `lib/dnlib` | `dnlib/usage-notes.md`, `dnlib/source-scan.md` |
 | dnlib intro tutorial | `lib/dnlib` | `dnlib/intro-tutorial.md` |
-| Roslyn | `lib/roslyn` | `roslyn/usage-notes.md` |
+| Roslyn | `lib/roslyn` | `roslyn/usage-notes.md`, `roslyn/source-scan.md` |
 | Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
 | Adapter conformance checklist | N/A (cross-library) | `adapter-conformance-checklist.md` |
 | Backend capability evidence log | N/A (cross-library) | `backend-evidence-log.md` |
@@ -45,7 +57,7 @@ The current pass expands source-driven notes for all four snapshot libraries:
 - dnlib module/body/symbol reader pipeline behavior
 - Roslyn parse/tree/compilation/semantic boundaries for expression front-end design
 
-See each `<library>/usage-notes.md` document for adapter implications, risks, and experiment recommendations.
+See each `<library>/usage-notes.md` and `<library>/source-scan.md` pair for design guidance and source-backed detail.
 
 ## Expansion backlog
 
@@ -74,4 +86,4 @@ Use `source-review-deep-dive.md` when you need a side-by-side, source-backed com
 - method-body/symbol pipeline details,
 - partialness and determinism pressure across all four libraries.
 
-The per-library usage notes remain the primary decision notes; the deep-dive doc is intended as a synthesis layer for architecture and backend decision reviews.
+The per-library notes remain the primary location for library-owned details; the deep-dive doc is intended as a synthesis layer for architecture and backend decision reviews.

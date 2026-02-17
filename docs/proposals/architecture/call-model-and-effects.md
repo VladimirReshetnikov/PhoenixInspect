@@ -29,23 +29,35 @@ It covers:
 
 Every call instruction is classified into one of the following categories before evaluation:
 
-1. **Intrinsic-modeled**
-   - Predefined semantic model exists for target member.
-   - Preferred for high-value BCL APIs and runtime primitives.
+1. **PureIntrinsic**
+   - Predefined semantic model exists for target member and is side-effect free.
+   - Preferred for high-value BCL APIs and runtime primitives with stable contracts.
 
-2. **Summary-modeled**
+2. **EnvironmentIntrinsic**
+   - Model reads session/environment-derived information (time, process identity, machine/environment fields).
+   - Must return either deterministic session-stable values or explicit unknowns tagged with environment provenance.
+
+3. **ProjectionIntrinsic**
+   - Model answers by reading projected heap/object layouts (for example collection count/lookup operations).
+   - Must be version-aware, bounded, and emit decoder identity + confidence labels.
+
+4. **PatternIntrinsic**
+   - Multi-instruction/runtime idioms are lifted into single modeled operations (`lock`, `foreach`, throw-helper guards, interpolation handlers).
+   - Must preserve observable control-flow outcomes while suppressing framework plumbing noise.
+
+5. **Summary-modeled**
    - A reusable summary describes input/output and effects.
    - Used for scalable precision where full modeling is unnecessary.
 
-3. **Interpreter-reentrant**
+6. **Interpreter-reentrant**
    - Safe and permitted to recursively interpret callee IL.
    - Subject to recursion depth and per-call budget limits.
 
-4. **Lifted semantic callsite**
+7. **Lifted semantic callsite**
    - Compiler/runtime patterns are recognized and lifted into interpreter-owned operations.
    - Initial required lifted kinds: `DynamicDispatch` (DLR call-site rewrite) and `AsyncRuntimeIntrinsic` (builder/awaiter/task-runtime semantics).
 
-5. **Fallback**
+8. **Fallback**
    - No precise model is available or policy disallows execution.
    - Must return an explainable approximation (`unknown return`, `block`, or `havoc`).
 
@@ -55,6 +67,15 @@ For lifted callsites, classification metadata must include the lifted kind and s
 
 - `DynamicDispatch`: binder site ID, member name, static receiver context, and argument binding-type vector.
 - `AsyncRuntimeIntrinsic`: async method descriptor ID, await-point ID (if any), and continuation/action identity.
+
+All modeled classifications (`PureIntrinsic`, `EnvironmentIntrinsic`, `ProjectionIntrinsic`, `PatternIntrinsic`, `Summary-modeled`) must emit a confidence label:
+
+- `Exact`
+- `BestEffort`
+- `Partial`
+- `UnsupportedLayout`
+
+Confidence labels are mandatory for host trust synthesis and regression assertions.
 
 ---
 
@@ -79,6 +100,7 @@ Dispatch returns a `CallOutcome` envelope with:
 - `UpdatedState` (memory/effect-applied state),
 - `EffectSummary` (normalized effect set),
 - `Diagnostics` (zero or more approximation/blocked reasons),
+- `Confidence` (`Exact`, `BestEffort`, `Partial`, `UnsupportedLayout`),
 - `TrustLabel` (`trusted`, `approximate`, `blocked`, `timed_out`).
 
 ### 3.3 Required invariants
