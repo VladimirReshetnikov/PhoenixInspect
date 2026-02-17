@@ -18,6 +18,7 @@ These notes are intentionally project-specific: they focus on how each library c
 | AsmResolver | `lib/asmresolver` | `asmresolver/usage-notes.md` |
 | dnlib | `lib/dnlib` | `dnlib/usage-notes.md` |
 | Roslyn | `lib/roslyn` | `roslyn/usage-notes.md` |
+| Roslyn intro tutorial | `lib/roslyn` | `roslyn/intro-tutorial.md` |
 | Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
 | Adapter conformance checklist | N/A (cross-library) | `adapter-conformance-checklist.md` |
 | Backend capability evidence log | N/A (cross-library) | `backend-evidence-log.md` |
