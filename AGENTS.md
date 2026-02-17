@@ -1,0 +1,1 @@
+At this stage, we are working on the conceptual design of the library. The documentation is in `docs/*.md`. Keep expanding it and maintain it well-organized.
