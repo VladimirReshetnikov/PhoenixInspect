@@ -61,6 +61,15 @@ For each experiment/prototype spike:
 | TBD | Generic-heavy method body with partial symbols | AsmResolver vs dnlib | Same result category + same miss-reason family | TBD | Planned |
 | TBD | Portable PDB sequence-point mapping with async method | AsmResolver vs SRM-oriented layer | Equivalent statement boundary semantics in debug-map contract | TBD | Planned |
 
+## 2026-02-17 deep-dive evidence additions
+
+| Date | Backend | Capability axis | Claim | Evidence artifact | Confidence | Follow-up |
+|---|---|---|---|---|---|---|
+| 2026-02-17 | ClrMD | Stack/root enumeration semantics | `ClrThread` stack/root enumeration includes bounded frame logic and cache-toggle behavior that must be normalized for completeness reporting. | `docs/lib/source-review-deep-dive.md`. | Low | Add adapter conformance case for cache-on/off and bounded frame stop reasons. |
+| 2026-02-17 | AsmResolver | Reader policy controllability | `ModuleReaderParameters` + pluggable `IMethodBodyReader` indicate strong deterministic policy injection points. | `docs/lib/source-review-deep-dive.md`. | Low | Define and test one fixed reader policy profile end-to-end. |
+| 2026-02-17 | dnlib | Portable PDB fidelity detail | `PortablePdbReader` sequence-point decoding preserves hidden points and document record transitions. | `docs/lib/source-review-deep-dive.md`. | Low | Validate debug-map projection retains hidden/document transition semantics. |
+| 2026-02-17 | Roslyn | Parse strictness and mode variability | `ParseExpression(..., consumeFullText)` and `Create` vs `CreateScriptCompilation` show policy-sensitive parse/bind behavior. | `docs/lib/source-review-deep-dive.md`. | Low | Add deterministic corpus comparing strictness + compilation mode outputs. |
+
 ## Open decisions linked to this log
 
 - When a capability axis reaches `Medium` confidence for a primary candidate, update `backend-capability-matrix.md` notes and rationale.

@@ -125,3 +125,18 @@ Design implication:
 3. Validate one symbol projection path from `PdbImage` into project debug-map schema.
 4. Prototype fixture generation for edge-case IL/EH patterns using builder APIs.
 5. Defer dynamic-method support behind an explicit capability gate and document the gate criteria.
+
+## Deep-dive addendum (2026-02 source pass)
+
+Additional source-backed details from AsmResolver package layers:
+
+- `Serialized/ModuleReaderParameters` exposes high-value policy knobs (`ModuleResolver`, `MethodBodyReader`, `PEReaderParameters`, `RuntimeContext`).
+- `Serialized/SerializedMethodDefinition.GetMethodBody()` routes body materialization through a pluggable `IMethodBodyReader`, reinforcing adapter customization potential.
+- `Code/Cil/CilMethodBody` uses lazy initialization for instructions/EH collections and exposes build-time validation flags.
+- `AsmResolver.Symbols.Pdb/PdbImage` provides multiple load routes (file, bytes, reader, MSF file) and typed leaf-record retrieval patterns.
+
+Design addendum:
+
+1. Standardize one project-owned "reader profile" abstraction that maps deterministically to AsmResolver reader parameters.
+2. Preserve decode-state/completeness in projected method-body contracts to avoid hiding lazy-read or malformed-data outcomes.
+3. Keep symbol record richness available internally, but map outward to backend-neutral debug-map records.

@@ -128,3 +128,17 @@ ClrMD should own:
 3. Validate cache-policy presets against identical dumps to quantify drift.
 4. Capture an evidence set for full dump, minidump, and symbol-poor artifact configurations.
 5. Add explicit DAC-resolution failure scenarios to conformance documentation.
+
+## Deep-dive addendum (2026-02 source pass)
+
+Additional source-backed details from `Microsoft.Diagnostics.Runtime`:
+
+- `DataTarget` manages an internal PE image cache keyed by file identity characteristics, and disposal clears cached images.
+- `ClrThread` root/stack enumeration paths show explicit caching behavior (`CacheStackRoots`, `CacheStackTraces`) and bounded frame handling logic.
+- `ClrHeap` exposes both broad and range-scoped object enumeration (`EnumerateObjects(...)`) with careful-mode pathways useful for corruption-tolerant scans.
+
+Design addendum:
+
+1. Include adapter-level cache-generation counters to distinguish repeated reads from cached vs freshly materialized backend objects.
+2. Treat stack and root traversal as potentially incomplete even when APIs return successfully, and always attach stop/completeness metadata.
+3. Separate cheap identity reads from deep heap traversal calls so budgets can be enforced predictably.

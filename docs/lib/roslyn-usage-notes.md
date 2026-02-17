@@ -118,3 +118,18 @@ Design implication:
 3. Create mismatch scenarios where runtime metadata conflicts with Roslyn binding and verify conservative fallback.
 4. Normalize parse/bind diagnostics into stable miss-reason/provenance categories.
 5. Add one no-Roslyn mode conformance scenario to keep interpreter contracts language-front-end-agnostic.
+
+## Deep-dive addendum (2026-02 source pass)
+
+Additional source-backed details from Roslyn C# compiler layer:
+
+- `SyntaxFactory.ParseExpression(...)` and related parse helpers expose `consumeFullText` behavior that directly affects strictness and trailing-token handling.
+- `SyntaxFactory.ParseSyntaxTree(...)` overloads carry parse options, path, and text metadata that should be preserved for deterministic replay.
+- `CSharpCompilation.Create(...)` vs `CreateScriptCompilation(...)` establishes distinct binding contexts that can produce divergent semantic outcomes.
+- `GetSemanticModel(...)` enforces syntax-tree membership in the compilation and supports options shaping model behavior.
+
+Design addendum:
+
+1. Include parse strictness (`consumeFullText`) and compilation mode in front-end request provenance.
+2. Treat semantic-model results as advisory artifacts with explicit confidence and mismatch handling against runtime truth.
+3. Normalize parser recovery and diagnostics into stable project result categories.

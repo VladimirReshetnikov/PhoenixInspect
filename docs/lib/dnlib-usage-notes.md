@@ -113,3 +113,17 @@ Design implication:
 3. Compare dnlib vs AsmResolver normalized projection outputs on generic-heavy samples.
 4. Define a deterministic symbol-reader policy profile and evaluate path selection behavior.
 5. Capture explicit parity cases for embedded portable PDB and Windows PDB fallback conditions.
+
+## Deep-dive addendum (2026-02 source pass)
+
+Additional source-backed details from dnlib:
+
+- `ModuleCreationOptions` clearly separates symbol loading policy (`PdbFileOrData`, `TryToLoadPdbFromDisk`, `PdbOptions`) from runtime reader kind.
+- `ModuleDefMD` lazy stream/table resolution pattern reinforces the need to model partial materialization and bounded access in adapters.
+- `PortablePdbReader.GetMethod(...)` reconstructs sequence points using delta encoding, hidden-sequence markers, and per-document record transitions.
+
+Design addendum:
+
+1. Capture symbol-policy inputs as explicit provenance fields so replay can explain why a symbol path was or was not chosen.
+2. Preserve hidden sequence points and document-switch records in our debug-map representation rather than flattening them.
+3. Use dnlib as a parity backend in conformance scenarios that stress malformed IL and mixed symbol conditions.
