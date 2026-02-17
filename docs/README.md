@@ -53,6 +53,7 @@ docs/
 | `lib/pe-pdb-reader-api-comparison.md` | Library Notes | Comparison Note | Draft | API-shape and capability comparison across PE/PDB reader stacks and adapter implications. |
 | `governance/documentation-organization-proposal.md` | Governance | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
 | `governance/project-faq.md` | Governance | Guide | Draft | FAQ for contributors and stakeholders about scope, expectations, and direction in the concept phase. |
+| `governance/terminology-glossary.md` | Governance | Glossary | Draft | Canonical terminology definitions and cross-document language alignment guidance. |
 
 ## Suggested reading paths
 
@@ -113,7 +114,8 @@ docs/
 
 1. `governance/project-faq.md`
 2. `governance/documentation-organization-proposal.md`
-3. `plans/future-work-planning.md`
+3. `governance/terminology-glossary.md`
+4. `plans/future-work-planning.md`
 
 ## Repository license
 
