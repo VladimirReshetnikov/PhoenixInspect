@@ -22,6 +22,7 @@ These notes are intentionally project-specific: they focus on how each library c
 | Adapter conformance checklist | N/A (cross-library) | `adapter-conformance-checklist.md` |
 | Backend capability evidence log | N/A (cross-library) | `backend-evidence-log.md` |
 | MVP backend decision record | N/A (cross-library) | `mvp-backend-decision-record.md` |
+| PE/PDB API comparison | N/A (cross-library) | `pe-pdb-reader-api-comparison.md` |
 
 ## How to use these notes
 
