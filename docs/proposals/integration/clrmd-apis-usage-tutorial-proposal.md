@@ -323,4 +323,4 @@ Design notes:
 - Deep PDB symbol decoding pipelines.
 - Any claim that current draft snippets represent final public API commitments.
 
-This tutorial should evolve together with `clrmd-integration-proposal.md` and `docs/lib/clrmd-usage-notes.md` as we validate dump shapes and adapter behavior in prototype experiments.
+This tutorial should evolve together with `clrmd-integration-proposal.md` and `docs/lib/clrmd/usage-notes.md` as we validate dump shapes and adapter behavior in prototype experiments.
