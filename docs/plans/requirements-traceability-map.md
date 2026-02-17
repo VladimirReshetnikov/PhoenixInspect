@@ -68,6 +68,7 @@ Status values:
 | X-02 | Framework-heavy stepping should prioritize user intent over runtime machinery noise. | Semantic-modeling proposal defines pattern intrinsics (`lock`, `foreach`, throw-helper forms, interpolation handlers) and modeled-step explainability hooks for virtual stepping. | Virtual stepping fixture corpus comparing baseline vs modeled transcripts; M3.7 semantic-modeling milestone exit criteria. | Partial | Add explicit transcript-diff metrics for modeled-noise reduction and guard against hidden control-flow loss. |
 | X-03 | Environment/time/random APIs in dump sessions must be deterministic and honest about missing data. | Semantic-modeling + architecture overview define `SessionSnapshot` and environment intrinsics with explicit unknown-origin tags when data cannot be recovered. | SessionSnapshot extraction fixtures per dump type; deterministic replay assertions for `DateTime`/`Environment` intrinsics. | Partial | Add integration doc section detailing data-source precedence and confidence levels across OS/dump variants. |
 | X-04 | Projection-backed collection operations must be bounded, version-aware, and fail-closed on unsupported layouts. | Semantic-modeling proposal introduces object projections, copy-on-write overlays, confidence labels, and decoder identity requirements. | Decoder conformance fixtures and unsupported-layout diagnostics checks; M3.7 exit criteria. | Gap | Publish layout-decoder governance doc and add benchmark limits for projection traversal budgets. |
+| X-05 | Special-semantics handling must be unified across call intrinsics, IL-pattern rewrites, and object projections so host diagnostics stay consistent. | Architecture overview + call-model contract now require a unified special-semantics registry and shared confidence taxonomy across modeled outcomes. | Cross-layer contract tests asserting identical provenance/confidence envelopes for call, pattern, and projection modeled steps. | Partial | Add a dedicated interface-level proposal that defines registry lookup order, conflict resolution, and extensibility/versioning policy. |
 
 ---
 
@@ -79,6 +80,7 @@ Status values:
 4. **Traceability automation plan**: define a lightweight checklist so PR authors update this map when adding or changing requirements.
 5. **SessionSnapshot integration contract**: document extraction precedence and fallback behavior for time/environment data across dump formats.
 6. **Layout decoder governance**: define decoder versioning, invariant checks, and confidence policy so projections remain trustworthy.
+7. **Special-semantics registry contract**: define lookup precedence, conflict resolution, and extension versioning for call/pattern/projection models.
 
 ---
 

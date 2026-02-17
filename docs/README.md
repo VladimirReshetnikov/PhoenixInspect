@@ -45,9 +45,14 @@ docs/
 | `plans/requirements-traceability-map.md` | Planning | Matrix | Draft | Cross-document traceability matrix linking product requirements to architecture decisions and validation artifacts. |
 | `lib/README.md` | Library Notes | Index | Draft | Navigation and usage guidance for `docs/lib/*` library notes. |
 | `lib/clrmd/usage-notes.md` | Library Notes | Note | Draft | Project-specific ClrMD responsibilities, boundaries, risks, and action items. |
+| `lib/clrmd/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven ClrMD lifecycle, cache, stack, and heap adapter implications. |
 | `lib/asmresolver/usage-notes.md` | Library Notes | Note | Draft | Candidate AsmResolver roles for metadata/CIL and normalization guidance. |
+| `lib/asmresolver/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven AsmResolver reader-policy, CIL, and PDB ingestion findings. |
 | `lib/dnlib/usage-notes.md` | Library Notes | Note | Draft | dnlib fallback/compatibility role and backend-capability planning notes. |
+| `lib/dnlib/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven dnlib module policy, method-body lifecycle, and Portable PDB findings. |
 | `lib/roslyn/usage-notes.md` | Library Notes | Note | Draft | Roslyn front-end role, coupling risks, and conservative-inference guidance. |
+| `lib/roslyn/intro-tutorial.md` | Library Notes | Tutorial | Draft | Introductory Roslyn tutorial for contributors, with parse/bind workflow and adapter boundary guidance. |
+| `lib/roslyn/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven Roslyn parse/compilation/semantic boundaries for expression front-end design. |
 | `lib/backend-capability-matrix.md` | Library Notes | Matrix | Draft | Cross-library capability comparison axes and MVP decision gates for metadata/symbol backends. |
 | `lib/adapter-conformance-checklist.md` | Library Notes | Checklist | Draft | Backend-neutral adapter contract and miss-reason conformance guidance. |
 | `lib/backend-evidence-log.md` | Library Notes | Log | Draft | Evidence-tracking log that links backend capability claims to concrete prototype artifacts and confidence levels. |
