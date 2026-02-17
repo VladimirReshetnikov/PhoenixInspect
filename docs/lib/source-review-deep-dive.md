@@ -10,6 +10,7 @@ It complements the per-library usage notes with a shared, side-by-side review fo
   - `lib/clrmd/src`
   - `lib/asmresolver/src`
   - `lib/dnlib/src`
+  - `lib/cecil`
   - `lib/roslyn/src/Compilers/CSharp/Portable`
 - Focused on entry points, lifecycle controls, method-body/symbol pipelines, and failure/partial-result behavior.
 - Treated all findings as **design guidance**, not implementation commitments.
@@ -132,6 +133,46 @@ Design implications:
 - Our debug-map model should preserve hidden sequence points and document-switch semantics.
 - Symbol-scope/import/async kick-off metadata should be represented as optional structured data, not dropped.
 
+
+## Mono.Cecil deep findings
+
+### Reader policy and load-mode controls
+
+Key source surfaces reviewed:
+
+- `Mono.Cecil/ModuleDefinition.cs` (`ReaderParameters`, `ReadingMode`).
+- `Mono.Cecil/AssemblyReader.cs` (`ModuleReader.CreateModule(...)`, immediate/deferred reader split).
+
+Design implications:
+
+- Cecil reader policy should be captured as a deterministic adapter preset (mode, symbol policy, resolver wiring, projections).
+- Immediate vs deferred behavior needs explicit parity testing to keep normalized contracts stable.
+
+### Method-body and symbol pipeline behavior
+
+Key source surfaces reviewed:
+
+- `Mono.Cecil/MethodDefinition.cs` and `Mono.Cecil.Cil/MethodBody.cs` (lazy body access + mutable instruction/EH model).
+- `Mono.Cecil.Cil/Symbols.cs` and `Mono.Cecil.Cil/PortablePdb.cs` (provider fallback tree and portable/embedded PDB handling).
+
+Design implications:
+
+- Keep Cecil mutable method-body/symbol objects confined to adapter internals.
+- Normalize symbol-path branch selection and mismatch/no-symbol outcomes into explicit provenance and miss reasons.
+
+### Resolver-path detail and edge cases
+
+Key source surfaces reviewed:
+
+- `Mono.Cecil/BaseAssemblyResolver.cs`, `Mono.Cecil/DefaultAssemblyResolver.cs`, `Mono.Cecil/MetadataResolver.cs`.
+- `Test/Mono.Cecil.Tests/ResolveTests.cs` (forwarders/exported-type/unresolved-shape scenarios).
+
+Design implications:
+
+- Resolver profiles should be explicit and replayable (search directories + known assemblies).
+- Forwarder loops and unresolved member shapes should map to project taxonomy, not backend-specific exceptions.
+
+
 ## Roslyn deep findings
 
 ### Parse gateway behavior
@@ -174,7 +215,7 @@ Design implications:
 ### New synthesis points from this deep dive
 
 1. **Policy objects are first-class architecture assets.**
-   - All four libraries expose knobs that materially affect behavior; adapter contracts should capture those knobs in deterministic request context.
+   - All five libraries expose knobs that materially affect behavior; adapter contracts should capture those knobs in deterministic request context.
 2. **Partialness is a normal outcome, not an edge case.**
    - Each library has meaningful partial/optional/missing pathways (cache invalidation, lazy decode, symbol fallbacks, parser recovery).
 3. **Debug-map fidelity requires preserving nuance.**
@@ -193,3 +234,13 @@ Design implications:
   - cache-flush drift checks,
   - hidden-sequence-point handling parity,
   - parser strict vs recovery mode comparisons.
+
+## Source-tour execution guidance (new)
+
+To keep future expansions consistent, pair this deep-dive note with `docs/lib/source-tour-workbook.md`:
+
+- use the workbook for per-library source-reading tasks and evidence capture,
+- use this deep dive for cross-library synthesis and architecture implications,
+- update both when new snapshot reviews materially change policy or normalization guidance.
+
+This split keeps tutorial onboarding actionable while preserving a stable cross-library design narrative.

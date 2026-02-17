@@ -1,3 +1,17 @@
+# PE/PDB reader integration proposal (draft)
+
+## Decision alignment update (2026-02-17)
+
+For MVP prototyping, this proposal now aligns to the project decision in `docs/lib/mvp-backend-decision-record.md`:
+
+- **Primary backend:** AsmResolver
+- **Designated fallback backend:** none for now
+- **Comparison set retained in docs:** dnlib, SRM/PEReader, and Mono.Cecil trade-off analysis remains in scope
+
+All integration guidance below should be interpreted through this default stance, while preserving backend-neutral adapter contracts, side-by-side comparison guidance, and decision-revisit triggers from the decision record.
+
+---
+
 I’m going to (1) survey the best OSS building blocks for PE/metadata + PDB + decompilation, then (2) propose the “glue layer” that makes them cooperate cleanly with **ClrMD** and your **IL interpretation framework**.
 
 ---

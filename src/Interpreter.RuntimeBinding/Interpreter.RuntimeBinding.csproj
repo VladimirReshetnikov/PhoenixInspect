@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.RuntimeBinding</AssemblyName>
+    <RootNamespace>Interpreter.RuntimeBinding</RootNamespace>
+    <Description>Draft runtime-binding contracts for dump-backed interpreter integration layers.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Abstractions/Interpreter.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

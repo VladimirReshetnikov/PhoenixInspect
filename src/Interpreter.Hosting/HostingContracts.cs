@@ -1,3 +1,4 @@
+using Interpreter.RuntimeBinding;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Interpreter.Hosting;
@@ -55,4 +56,47 @@ public sealed class PrototypeInterpreterOptions
     /// </remarks>
     public bool EnableSyntheticDebugMaps { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether draft runtime-binding services should be wired for dump-backed experiments.
+    /// </summary>
+    /// <remarks>
+    /// This switch intentionally defaults to <see langword="true"/> in the prototype so host integrations can exercise
+    /// runtime-to-metadata boundary contracts while compatibility and package strategy decisions are still unsettled.
+    /// </remarks>
+    public bool EnableRuntimeBindingIntegration { get; set; } = true;
+}
+
+/// <summary>
+/// Provides draft registration helpers for runtime-binding contracts used by ClrMD integration experiments.
+/// </summary>
+/// <remarks>
+/// These helpers register host-supplied implementations only; they do not ship concrete ClrMD adapters in the current
+/// conceptual design phase.
+/// </remarks>
+public static class RuntimeBindingServiceCollectionExtensions
+{
+    /// <summary>
+    /// Registers prototype runtime snapshot and method-body resolver implementations used by dump-backed execution flows.
+    /// </summary>
+    /// <param name="services">The dependency injection collection that receives runtime-binding service registrations.</param>
+    /// <param name="snapshotProvider">The runtime snapshot provider implementation supplied by the hosting environment.</param>
+    /// <param name="methodBodyResolver">The runtime method-body resolver implementation supplied by the hosting environment.</param>
+    /// <returns>The original service collection for fluent registration chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/>, <paramref name="snapshotProvider"/>, or
+    /// <paramref name="methodBodyResolver"/> is <see langword="null"/>.
+    /// </exception>
+    public static IServiceCollection AddPrototypeRuntimeBinding(
+        this IServiceCollection services,
+        IRuntimeSnapshotProvider snapshotProvider,
+        IRuntimeMethodBodyResolver methodBodyResolver)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(snapshotProvider);
+        ArgumentNullException.ThrowIfNull(methodBodyResolver);
+
+        services.AddSingleton(snapshotProvider);
+        services.AddSingleton(methodBodyResolver);
+        return services;
+    }
 }
