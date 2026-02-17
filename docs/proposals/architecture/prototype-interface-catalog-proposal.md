@@ -15,6 +15,7 @@ src/
 ├── Interpreter.Metadata      # Entry-method metadata resolution seam
 ├── Interpreter.CallModel     # Call target/effect classification seam
 ├── Interpreter.MemoryModel   # Abstract memory read/write seam
+├── Interpreter.RuntimeBinding # Dump/runtime snapshot + method-body binding seam
 ├── Interpreter.Core          # Execution orchestration and step coordination seam
 ├── Interpreter.Diagnostics   # Explainability event sink seam
 └── Interpreter.Hosting       # DI registration and host option seam
@@ -27,6 +28,7 @@ src/
 - `Interpreter.CallModel` → `Interpreter.Abstractions`.
 - `Interpreter.MemoryModel` → `Interpreter.Abstractions`.
 - `Interpreter.Core` → `Interpreter.Abstractions`, `Interpreter.Metadata`, `Interpreter.CallModel`, `Interpreter.MemoryModel`.
+- `Interpreter.RuntimeBinding` → `Interpreter.Abstractions`.
 - `Interpreter.Diagnostics` → `Interpreter.Abstractions`.
 - `Interpreter.Hosting` → all interpreter modules + `Microsoft.Extensions.DependencyInjection.Abstractions`.
 
@@ -56,17 +58,21 @@ call-site operations can be resolved without coupling `Interpreter.Core` directl
 
 `Interpreter.MemoryModel` provides a first-pass abstraction for deterministic value reads/writes with provenance-friendly payloads.
 
-### 4.6 Core orchestration contracts
+### 4.6 Runtime-binding contracts
+
+`Interpreter.RuntimeBinding` introduces backend-neutral dump integration seams for runtime snapshot capture and method-body resolution with explicit provenance (`RuntimeMemory`, `PortableExecutable`, `SyntheticFallback`). This keeps ClrMD-specific API usage outside of core interpreter contracts while allowing hosting-layer experiments to wire concrete adapters.
+
+### 4.7 Core orchestration contracts
 
 `Interpreter.Core` continues to own execution orchestration and instruction stepping while introducing an explicit coordinator seam for call-model, memory-model, and async-runtime collaboration.
 The coordinator now includes a dedicated dynamic-dispatch routing method to preserve explicit orchestration boundaries
 between lifted `dynamic` operations and the call-model's evolving overload-resolution strategy.
 
-### 4.7 Diagnostics and hosting contracts
+### 4.8 Diagnostics and hosting contracts
 
 `Interpreter.Diagnostics` and `Interpreter.Hosting` preserve explainability and composition concerns as explicit, separately evolvable layers.
 
-### 4.7 Prototype data objects
+### 4.9 Prototype data objects
 
 To accelerate host integration experiments and keep samples concrete, the current prototype also includes plain data objects that implement or support interface contracts:
 
