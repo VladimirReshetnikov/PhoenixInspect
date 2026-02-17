@@ -27,6 +27,7 @@ Rule of thumb: if a note is primarily about one library, keep it in that library
 | Library | Snapshot path | Notes |
 |---|---|---|
 | ClrMD | `lib/clrmd` | `clrmd/usage-notes.md`, `clrmd/source-scan.md` |
+| ClrMD intro tutorial | `lib/clrmd` | `clrmd/intro-tutorial.md` |
 | AsmResolver | `lib/asmresolver` | `asmresolver/usage-notes.md`, `asmresolver/source-scan.md` |
 | AsmResolver intro tutorial | `lib/asmresolver` | `asmresolver/intro-tutorial.md` |
 | dnlib | `lib/dnlib` | `dnlib/usage-notes.md`, `dnlib/source-scan.md` |
@@ -52,14 +53,14 @@ When design decisions evolve, update these notes first and then reconcile propos
 
 ## Latest expansion focus
 
-The current pass expands source-driven notes for all four snapshot libraries:
+The current pass expands source-driven notes and tutorials for all four snapshot libraries:
 
 - ClrMD runtime lifecycle/caching and stack/heap access boundaries
 - AsmResolver package layering and module/CIL/PDB entry points
 - dnlib module/body/symbol reader pipeline behavior
 - Roslyn parse/tree/compilation/semantic boundaries for expression front-end design
 
-See each `<library>/usage-notes.md` and `<library>/source-scan.md` pair for design guidance and source-backed detail.
+See each `<library>/usage-notes.md` + `<library>/source-scan.md` pair for design guidance and source-backed detail, and use each `intro-tutorial.md` for contributor onboarding workflows.
 
 ## Expansion backlog
 

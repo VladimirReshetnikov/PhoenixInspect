@@ -263,3 +263,62 @@ For new contributors, Example1 + Example2 + Example7 usually provide enough intu
 - [ ] Findings are captured in docs (`docs/lib/dnlib/*` + evidence log updates as needed).
 
 This checklist helps keep dnlib usage aligned with our architecture constraints while still letting us move quickly in prototype spikes.
+
+---
+
+## 15. Source-backed deep dive: load path, decode path, and symbol path
+
+A focused scan of `lib/dnlib/src` surfaces several details that are easy to miss if you only read API snippets.
+
+### `ModuleDefMD` is lazy by design across metadata tables
+
+`ModuleDefMD` keeps many table-backed entities in lazy lists (`TypeDef`, `MethodDef`, `MemberRef`, etc.) and exposes direct stream access (`TablesStream`, `StringsStream`, `BlobStream`, `GuidStream`, `USStream`).
+
+Design implications for our adapters:
+
+- separate lightweight identity scans from deep expansion passes,
+- treat stream-level reads as backend internals only,
+- keep deterministic traversal ordering in projected DTOs (do not rely on incidental lazy-eval order).
+
+### Method body decoding is explicit and failure-tolerant
+
+`MethodBodyReader.CreateCilBody(...)` has multiple overloads and returns an empty body when bytes are invalid, rather than forcing hard failure. Operand resolution flows through `IInstructionOperandResolver`, and generic context participates in decode.
+
+Design implications:
+
+- normalize decode outcomes distinctly (`Valid`, `PartiallyDecoded`, `InvalidBodyBytes`, `UnsupportedOperandShape`),
+- carry generic context identity in provenance for methods where operand interpretation depends on type/method arguments,
+- avoid assuming every `MethodDef` with RVA produces trustworthy CIL.
+
+### PDB reader selection is a policy tree, not a single call
+
+`SymbolReaderFactory` selects among embedded portable, standalone portable, managed, and Windows COM-based paths depending on debug info, platform, options, and file signature checks.
+
+Design implications:
+
+- always emit which symbol path was chosen,
+- include fallback reason when moving from preferred to secondary path,
+- preserve "symbol unavailable" as a first-class non-fatal state.
+
+### `PdbState` mixes loading and mutable symbol state
+
+`PdbState` tracks documents, token mappings, compiler hints, and method-level debug associations. It can initialize method-body debug scope/sequence-point state and exposes mutable collections.
+
+Design implications:
+
+- keep `PdbState` confined to adapter internals,
+- convert to immutable project records before leaving the adapter,
+- treat symbol projection as versioned output with explicit provenance fields.
+
+## 16. Advanced contributor exercise (source-to-contract trace)
+
+1. Pick one generic method in a sample assembly.
+2. Trace: `ModuleDefMD.Load` -> method lookup -> `MethodBodyReader` decode -> symbol reader selection.
+3. Project output to a backend-neutral record that includes:
+   - method identity,
+   - body decode status,
+   - symbol source path selected,
+   - fallback or miss reason.
+4. Re-run with altered PDB options and compare only provenance fields.
+
+This exercise is a fast way to validate that our contracts expose policy choices clearly without leaking dnlib types.

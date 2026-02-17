@@ -232,3 +232,57 @@ Before opening a PR that touches AsmResolver integration design:
 - [ ] I separated metadata, PE, and symbol concerns in the proposed adapter design.
 - [ ] I mapped failures to backend-neutral miss reasons.
 - [ ] I captured at least one evidence item in backend evidence tracking docs when applicable.
+
+---
+
+## 11) Source-backed deep dive: module reader policy and lazy ownership
+
+After scanning the snapshot source, a few implementation details are especially relevant to adapter design:
+
+### `ModuleDefinition` is both the root object and the policy entrance
+
+`ModuleDefinition.FromFile`, `FromStream`, and `FromBytes` all converge on image + reader-parameter flow. In practice this means any adapter-level defaults (resolver, method-body reader, metadata behavior) should be captured once in a `ModuleReaderParameters` factory and reused consistently.
+
+Project impact:
+
+- define one project-owned reader-policy profile per scenario (deterministic replay, exploratory diagnostics),
+- avoid ad-hoc per-call reader parameter construction,
+- include reader-policy identity in provenance.
+
+### Serialized members are intentionally lazy
+
+`SerializedMethodDefinition` defers most expensive work (name/signature/body/custom attributes/generic parameter lists) until properties are actually read. This is an important reminder that traversal order and "which fields were touched" can affect performance and sometimes behavior around malformed metadata.
+
+Project impact:
+
+- keep adapter projections explicit about which properties they materialize,
+- avoid broad eager hydration when only method identity is needed,
+- separate cheap indexing passes from expensive body/symbol passes.
+
+### Method body loading is pluggable through reader parameters
+
+`SerializedMethodDefinition.GetMethodBody()` delegates to `_context.Parameters.MethodBodyReader.ReadMethodBody(...)`. This makes method-body decoding strategy a first-class policy seam.
+
+Project impact:
+
+- standardize our method body reader choice (and fallback behavior) in one place,
+- classify body-load outcomes into stable categories (`ManagedBody`, `NativeBody`, `UnreadableBody`, `MissingBody`),
+- keep raw backend exceptions internal and expose normalized miss reasons.
+
+### Build pipeline (`ManagedPEImageBuilder`) explains why read/write concerns should stay separate
+
+The builder constructs PE scaffolding, .NET directory, imported/exported symbols, relocations, and debug data with diagnostics aggregation. Even if we rarely write images in MVP, this pipeline clarifies object graph expectations and ownership assumptions in the model.
+
+Project impact:
+
+- leverage write-path knowledge only for validation/test fixtures,
+- keep production architecture read-oriented for dump evaluation,
+- avoid introducing write-path coupling into runtime adapters.
+
+## 12) Suggested "advanced onboarding" review pass (half-day)
+
+1. Read `ModuleDefinition` ingestion APIs and document your expected reader-policy defaults.
+2. Trace one method from `SerializedMethodDefinition` token to body materialization.
+3. Record when lazy properties are evaluated in your spike run.
+4. Compare observed behavior for: metadata-only pass vs full-body pass.
+5. Update evidence log with one concrete "policy -> behavior" observation.
