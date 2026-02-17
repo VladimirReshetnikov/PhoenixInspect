@@ -42,3 +42,12 @@ The repository scaffolding follows the same layering policy defined in `module-a
 1. Add architecture-decision notes for selected optional projects (for example, AsmResolver and Windows PDB options).
 2. Capture package version strategy and compatibility constraints once dependency evaluation is complete.
 3. Add focused prototype interfaces in a subset of modules after dependency seams are validated through review.
+
+## 6. Dependency alignment note (build-fix follow-up)
+
+Comparison against the current project scaffolding identified two additional dependency edges required for the solution to build:
+
+- `src/Interpreter.Host.Abstractions/Interpreter.Host.Abstractions.csproj` now references `../Interpreter.Metadata.Abstractions/Interpreter.Metadata.Abstractions.csproj`.
+- `src/Interpreter.Metadata.Abstractions/Interpreter.Metadata.Abstractions.csproj` now references `../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj`.
+
+This keeps dependency direction aligned with the architecture intent (host abstractions can consume metadata abstractions, and metadata abstractions can consume core contracts) while documenting the concrete build-validated edges in `src/`.
