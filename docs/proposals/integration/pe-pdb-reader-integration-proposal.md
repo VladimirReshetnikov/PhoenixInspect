@@ -1,0 +1,434 @@
+I’m going to (1) survey the best OSS building blocks for PE/metadata + PDB + decompilation, then (2) propose the “glue layer” that makes them cooperate cleanly with **ClrMD** and your **IL interpretation framework**.
+
+---
+
+# PE/PDB + Decompilation: library choices, trade-offs, and how they fit together
+
+In a post-mortem / dump-driven debugger, you’re always trying to answer the same questions:
+
+1. **What code is this method?** (resolve a runtime method → metadata identity)
+2. **What IL do I execute?** (get IL bytes + EH + locals sig)
+3. **How do I map IL offsets to “something the user can read”?**
+
+   * Prefer *real source* (PDB sequence points + SourceLink/embedded source)
+   * Fall back to *decompiled C#* with a debug map that still supports stepping
+4. **Where do I get binaries/symbols from when the dump doesn’t contain them?**
+
+The hard part isn’t any single library — it’s stitching them into a coherent pipeline with caching, identity checks, and graceful degradation.
+
+---
+
+## 1) PE / .NET metadata reading
+
+### Option A: **System.Reflection.Metadata + System.Reflection.PortableExecutable** (SRM/PEReader)
+
+**What it is:** Microsoft’s low-level, high-performance readers for ECMA-335 metadata and PE files; also includes APIs to read Portable PDB structures such as `SequencePoint`. ([Microsoft Learn][1])
+
+**Why you’d pick it**
+
+* **Canonical** for modern .NET tooling; Portable PDB format is designed as an extension of ECMA-335 metadata, and SRM is the “native” way to read it. ([GitHub][2])
+* **Portable PDB first-class** (sequence points, scopes, documents, custom debug info, etc.). ([GitHub][2])
+* **Excellent fit with ILSpy’s decompiler**, which itself uses SRM types under the hood. ([GitHub][3])
+
+**Why you might not**
+
+* It’s *deliberately low-level*: you’ll write your own higher-level “model” (method body parsing, signature decoding helpers, convenience caches).
+
+**Typical role in your stack**
+
+* The “truth source” for managed metadata + Portable PDB.
+* Feeds: your interpreter’s `IMetadataResolver` / `IMethodBodyProvider`, and also the decompiler (ILSpy) so you don’t end up doing lossy conversions.
+
+---
+
+### Option B: **AsmResolver**
+
+**What it is:** A managed library for reading/modifying/reconstructing PE files and managed .NET metadata; MIT licensed. ([GitHub][4])
+
+**Why you’d pick it**
+
+* **Much higher-level object model** than SRM for many tasks (walking metadata, rewriting, etc.).
+* Has explicit concepts for Portable PDB metadata streams (e.g., `PdbStream`) in its metadata model. ([Washi Docs][5])
+* Has a dedicated package for “Windows PDB models” (`AsmResolver.Symbols.Pdb`). ([NuGet][6])
+* The project explicitly discussed a split between Windows PDB (MSF) and Portable PDB support and the architectural differences. ([GitHub][7])
+
+**Why you might not**
+
+* **Decompilation ecosystem (ILSpy)** is SRM-centric; if AsmResolver becomes your “canonical metadata,” you’ll still likely load the module again via SRM for decompilation.
+* Depending on your needs, you might end up maintaining two representations (AsmResolver object model + SRM readers), unless you standardize.
+
+**Typical role**
+
+* If you want a **friendlier metadata/PE abstraction** (especially if you ever want to patch/rebuild things).
+* If you want **one library family** that also models Windows PDB structures (though you’ll still need to validate coverage vs DIA for edge cases).
+
+---
+
+### Option C: **dnlib**
+
+**What it is:** Mature .NET assembly reader/writer library; MIT. ([NuGet][8])
+It explicitly documents PDB support, including a **managed Windows PDB reader that supports all OSes**, while Windows PDB writing is Windows-only. ([GitHub][9])
+
+**Why you’d pick it**
+
+* Very pragmatic API for metadata + IL.
+* Built-in story for Windows PDB reading without requiring DIA at runtime (per its docs). ([GitHub][9])
+
+**Why you might not**
+
+* Again: **ILSpy + SRM** is the dominant modern decompiler path.
+* dnlib is excellent, but if you already commit to SRM for Portable PDB and ILSpy for decompilation, dnlib can become “third metadata stack.”
+
+**Typical role**
+
+* If you want **one library that “just handles” old Windows PDBs** in a managed way, dnlib is worth serious consideration. ([GitHub][9])
+
+---
+
+### Option D: **Mono.Cecil**
+
+**What it is:** Classic library to inspect/modify/create .NET assemblies; MIT. ([GitHub][10])
+NuGet description notes support for “some debugging symbol format.” ([NuGet][11])
+
+**Why you’d pick it**
+
+* Extremely widely used; lots of ecosystem knowledge.
+* Pleasant model for many reflection-ish workflows.
+
+**Why you might not**
+
+* For **debugging-grade PDB + stepping maps + decompilation integration**, Cecil is usually not where modern tooling centers anymore (SRM + ILSpy is).
+* If you need robust “debugger semantics” (scopes, async mapping, hidden sequence points correctness), you’ll likely end up leaning on SRM/DiaSymReader/ILSpy anyway.
+
+**Typical role**
+
+* Nice utility dependency, but I wouldn’t make it the core of a dump debugger pipeline.
+
+---
+
+## 2) PDB reading (Portable PDB vs Windows PDB)
+
+### Key reality: two managed symbol worlds
+
+.NET supports **Windows PDBs** and **Portable PDBs** for managed code. ([GitHub][12])
+Portable PDBs are cross-platform and documented; Windows PDB tooling is historically Windows-centric. ([GitHub][13])
+
+Also, Portable PDB isn’t just “a file format”: it’s literally **debugging metadata tables** (Document, MethodDebugInformation, LocalScope, plus custom debug info like EmbeddedSource and SourceLink). ([GitHub][2])
+
+---
+
+### Portable PDB: prefer **System.Reflection.Metadata**
+
+The symreader-portable README explicitly recommends that *new* applications read Portable PDBs directly using `System.Reflection.Metadata` because it’s more efficient than DiaSymReader abstractions. ([GitHub][14])
+
+**What you get (Portable PDB)**
+
+* IL offset → source span mapping (sequence points)
+* Local names/scopes, import scopes
+* Async/iterator state machine info
+* Custom debug info including **EmbeddedSource** and **SourceLink** ([GitHub][2])
+
+---
+
+### Windows PDB: pick one strategy and isolate it
+
+Windows PDB is an MSF-based format; Microsoft has a repo documenting it. ([GitHub][15])
+But for consumption, you have a few options:
+
+1. **DIA (via Microsoft.DiaSymReader.Native)**
+   `Microsoft.DiaSymReader.Native` is a native implementation package, with Windows-only platform support stated on NuGet. ([NuGet][16])
+   This is the “most compatible” route on Windows, but not portable.
+
+2. **dnlib managed Windows PDB reader**
+   dnlib claims a managed Windows PDB reader that supports all OSes. ([GitHub][9])
+   If you need cross-platform Windows-PDB reading, this is one of the few pragmatic OSS choices.
+
+3. **AsmResolver.Symbols.Pdb**
+   NuGet describes it as “Windows PDB models for the AsmResolver tool suite.” ([NuGet][6])
+   It’s promising, but you’ll want to benchmark correctness/coverage for the specific debug info you need (locals/scopes/sequence points for managed code embedded in Windows PDBs, etc.).
+
+**Architectural advice:** treat Windows PDB support as an **optional plugin** behind your own `ISymbolReader` interface. Windows PDB is the format most likely to force platform-specific or library-specific behavior.
+
+---
+
+## 3) Symbol and binary acquisition (when the dump doesn’t contain everything)
+
+### The “acquisition” problem is big enough to deserve its own module
+
+Your post-mortem debugger will constantly hit scenarios like:
+
+* dump is minidump: no module bytes, only module identities
+* module loaded from a path that doesn’t exist on analysis machine
+* PDB isn’t next to the module (common)
+* SourceLink points to remote git content (needs fetching/caching)
+
+Good news: there’s a lot of OSS from the .NET diagnostics ecosystem.
+
+### **dotnet-symbol** (tool) + **symstore / Microsoft.SymbolStore** (library code)
+
+The `dotnet-symbol` tool (from dotnet/symstore) can download symbols/modules needed for debugging dumps (including PDBs and portable PDBs). ([GitHub][17])
+The original `dotnet/symstore` repo is archived, and there’s an explicit continuation in `dotnet/diagnostics`. ([GitHub][18])
+
+**What this implies for your design**
+
+* You likely want a **SymbolStore-like client** internally:
+
+  * understands symbol server layouts / caches
+  * fetches PEs + PDBs by identity
+  * supports Microsoft public symbol server and private servers
+* Whether you literally reuse `Microsoft.SymbolStore` or reimplement the minimal subset, the important point is: **keep acquisition separate from parsing.**
+
+---
+
+## 4) Source decompilation to C# (and debug mapping for stepping)
+
+### The obvious choice: **ILSpy decompiler engine (ICSharpCode.Decompiler)**
+
+ILSpy is MIT licensed. ([GitHub][19])
+The `ICSharpCode.Decompiler` NuGet package is the engine used by ILSpy. ([NuGet][20])
+
+**Why ILSpy is uniquely useful for your “dump stepping” feature**
+It doesn’t just give you text — it has explicit APIs around debug mapping:
+
+* `CSharpDecompiler` exposes `DebugInfoProvider` (hook PDB-derived info in) ([DNDOCS][21])
+* It can **create sequence points** for a decompiled syntax tree (`CreateSequencePoints`) ([DNDOCS][21])
+* It can compute **code mapping information** relating compiler-generated parts (lambdas, async/yield state machines `MoveNext`) back to user methods (`CodeMappingInfo`). ([DNDOCS][22])
+* ILSpy maintainers explicitly describe their “C# with IL” approach as generating sequence points for decompiled code to map statements back to IL instructions. ([GitHub][23])
+
+That last bit is *exactly* what you need for step-over/into/out in a **virtual interpreter** with decompiled fallback.
+
+---
+
+# The missing piece: a layer between ClrMD, PE/PDB readers, the decompiler, and your interpreter
+
+Yes: you want a **dedicated “Artifacts & Debug Info” layer** between:
+
+* **ClrMD** (runtime/dump inspection: modules/types/heap/stack/registers)
+* **PE + metadata + PDB + SourceLink + decompiler**
+* **Your IL interpretation framework** (method execution, unknown propagation, virtual heap)
+
+This layer’s job is to unify identity, caching, and “best available information” selection.
+
+---
+
+## Proposed architecture: “Program Artifacts & Debug Map Service”
+
+### Core design principles
+
+1. **Stable internal representations** (don’t leak SRM vs AsmResolver vs dnlib types across your interpreter)
+2. **Deterministic module identity** (MVID/build-id/signature, PDB id/age, etc.)
+3. **Progressive enhancement**
+
+   * best: real source + portable PDB
+   * next: source via embedded source / SourceLink
+   * next: decompiled C# + decompiler-generated sequence points
+   * last: IL disassembly
+4. **Cache everything** (module bytes, metadata readers, PDB readers, decompiled text, debug maps)
+
+---
+
+## Recommended internal interfaces (thin but powerful)
+
+### 1) Acquisition & identity
+
+```csharp
+public sealed record ModuleIdentity(
+    Guid Mvid,
+    string? SimpleName,
+    string? FilePathHint,
+    byte[]? BuildId /* ELF/MachO */,
+    (uint TimeDateStamp, uint ImageSize)? PeStamp);
+
+public sealed record PdbIdentity(Guid Guid, int Age);
+
+public interface IArtifactLocator
+{
+    ValueTask<Stream?> TryOpenModuleAsync(ModuleIdentity id, CancellationToken ct);
+    ValueTask<Stream?> TryOpenPdbAsync(ModuleIdentity module, PdbIdentity pdb, CancellationToken ct);
+}
+```
+
+**Notes**
+
+* `IArtifactLocator` is where SymbolStore / dotnet-symbol-like logic lives. ([GitHub][17])
+* It should support:
+
+  * “from dump memory if present”
+  * “from local file path”
+  * “from symbol cache/server”
+  * “from user-provided artifacts directory”
+
+---
+
+### 2) Metadata and IL bodies (canonical “method truth”)
+
+```csharp
+public interface IManagedMetadata
+{
+    ModuleIdentity Identity { get; }
+
+    // Token/handle resolution (type/method/field)
+    MethodKey ResolveMethod(int metadataToken);
+    TypeKey ResolveType(int metadataToken);
+
+    // IL body
+    MethodBodyInfo GetMethodBody(MethodKey method);
+}
+```
+
+Implementations:
+
+* `SrmManagedMetadata` (SRM + PEReader)
+* optionally `AsmResolverManagedMetadata` or `DnlibManagedMetadata`
+
+**Why this interface exists**
+
+* Your IL interpreter should **not care** which library provided the metadata; it cares that it can resolve tokens and get a method body.
+
+---
+
+### 3) Symbols and source (PDB-derived first)
+
+```csharp
+public interface ISymbolInfo
+{
+    IReadOnlyList<SequencePointSpan> GetSequencePoints(MethodKey method);
+    LocalScopeTree GetLocalScopes(MethodKey method);
+    SourceDocumentInfo GetDocument(DocumentId doc);
+    SourceLinkInfo? TryGetSourceLink();     // from Portable PDB custom debug info
+    EmbeddedSourceInfo? TryGetEmbeddedSource(DocumentId doc);
+}
+```
+
+Portable PDB gives you these concepts structurally (documents, method debug info, locals/scopes, embedded source, SourceLink). ([GitHub][2])
+SRM is the recommended reader for portable PDB in new tools. ([GitHub][14])
+
+Windows PDB support sits behind the same interface (if present), but as a plugin. ([GitHub][13])
+
+---
+
+### 4) Decompiled source fallback (with debug map)
+
+```csharp
+public interface IDecompilerService
+{
+    DecompiledMethod DecompileMethod(MethodKey method, DecompilerOptions opts);
+}
+
+public sealed record DecompiledMethod(
+    string CSharpText,
+    IReadOnlyList<DecompiledSequencePoint> SequencePoints,
+    CodeMappingInfo? CodeMapping);
+```
+
+Implementation: ILSpy `ICSharpCode.Decompiler`:
+
+* can generate sequence points for the decompiled syntax tree ([DNDOCS][21])
+* can compute `CodeMappingInfo` to relate compiler-generated parts (lambdas, async MoveNext) back to user code ([DNDOCS][22])
+* can accept a debug info provider to improve results when PDB exists ([DNDOCS][21])
+
+This gives you a **consistent stepping substrate** even when real source is absent. ([GitHub][23])
+
+---
+
+## “Glue” service: a single place that decides what to use
+
+Create a high-level façade:
+
+```csharp
+public interface IProgramArtifacts
+{
+    IManagedMetadata GetMetadata(ModuleIdentity module);
+    ISymbolInfo? TryGetSymbols(ModuleIdentity module);
+    IDecompilerService Decompiler { get; }
+
+    DebugMap GetBestDebugMap(MethodKey method); // PDB if available else decompiler else IL
+    SourceText GetBestSource(MethodKey method); // real source if available else decompiled
+}
+```
+
+This is the layer your **post-mortem debugger UI** and **IL interpreter host** call.
+
+---
+
+# How this connects to ClrMD + the IL interpretation framework
+
+ClrMD gives you runtime facts (loaded modules, method tables, object addresses, thread stacks) but it doesn’t *guarantee* you have the module bytes/PDB/source available. That’s why the integration looks like:
+
+1. **ClrMD identifies** the runtime module/method
+2. Your **Artifacts layer resolves** it to a stable `ModuleIdentity` + `MethodKey`
+3. Artifacts layer **acquires** PE/PDB if needed (symbol cache/server)
+4. Artifacts layer provides:
+
+   * IL body + metadata resolution → to the interpreter
+   * debug map + source/decompiled text → to the UI stepping experience
+
+### Practical connection points
+
+* **ClrMD → ModuleIdentity**
+
+  * get module name/path hint
+  * read module metadata in memory (if available) to obtain MVID
+  * record PE timestamp/size for symbol server lookup when relevant
+
+* **ModuleIdentity → PE + PDB**
+
+  * `IArtifactLocator` uses local paths + symbol servers
+  * optionally reuse logic from symstore/dotnet-symbol ecosystem ([GitHub][17])
+
+* **PE + PDB → DebugMap**
+
+  * Portable PDB: SRM reads sequence points/scopes; PDB also carries SourceLink/EmbeddedSource custom debug info ([GitHub][2])
+  * No PDB: ILSpy decompile method + generate sequence points for decompiled code ([DNDOCS][21])
+
+* **DebugMap + IL interpreter**
+
+  * Interpreter’s “instruction pointer” is IL offset within a method body
+  * DebugMap converts IL offset → (document, line/col span) or (decompiled text span)
+  * Step operations use statement boundaries derived from the best available map
+
+---
+
+# Concrete recommendation (if you want the least-friction path)
+
+If I had to pick a default stack that minimizes impedance mismatch:
+
+1. **System.Reflection.Metadata / PEReader** as your canonical metadata + Portable PDB reader ([GitHub][14])
+2. **ILSpy’s ICSharpCode.Decompiler** for decompilation + decompiled debug maps ([NuGet][20])
+3. A dedicated **Artifacts layer** that:
+
+   * normalizes module/method identity
+   * handles symbol acquisition (SymbolStore/dotnet-symbol style)
+   * exposes `GetBestDebugMap()` and `GetBestSource()` to the rest of the system ([GitHub][17])
+4. Optional plugins:
+
+   * **dnlib** (or AsmResolver) if you need cross-platform **Windows PDB** reading ([GitHub][9])
+   * **Microsoft.DiaSymReader.Native** if you decide Windows-only is acceptable for Windows PDBs ([NuGet][16])
+
+This keeps the “mainline” (portable PDB + decompiler) clean and cross-platform, and isolates legacy PDB complexity behind a plugin boundary.
+
+[1]: https://learn.microsoft.com/en-us/dotnet/api/system.reflection.metadata?view=net-10.0&utm_source=chatgpt.com "System.Reflection.Metadata Namespace"
+[2]: https://raw.githubusercontent.com/dotnet/runtime/main/docs/design/specs/PortablePdb-Metadata.md "raw.githubusercontent.com"
+[3]: https://raw.githubusercontent.com/icsharpcode/ILSpy/master/ICSharpCode.Decompiler/CSharp/CSharpDecompiler.cs "raw.githubusercontent.com"
+[4]: https://github.com/Washi1337/AsmResolver?utm_source=chatgpt.com "Washi1337/AsmResolver: A library for creating, reading ..."
+[5]: https://docs.washi.dev/asmresolver/api/pe/AsmResolver.PE.DotNet.Metadata.html?utm_source=chatgpt.com "Namespace AsmResolver.PE.DotNet.Metadata | AsmResolver - Washi"
+[6]: https://www.nuget.org/packages/AsmResolver.Symbols.Pdb/?utm_source=chatgpt.com "AsmResolver.Symbols.Pdb 5.5.1"
+[7]: https://github.com/Washi1337/AsmResolver/issues/297?utm_source=chatgpt.com "AsmResolver.Symbols · Issue #297 · Washi1337/ ..."
+[8]: https://www.nuget.org/packages/dnlib?utm_source=chatgpt.com "dnlib 4.5.0 - Reads and writes .NET assemblies"
+[9]: https://github.com/0xd4d/dnlib?utm_source=chatgpt.com "0xd4d/dnlib: Reads and writes .NET assemblies and ..."
+[10]: https://github.com/jbevain/cecil?utm_source=chatgpt.com "jbevain/cecil: Cecil is a library to inspect, modify and create ..."
+[11]: https://www.nuget.org/packages/mono.cecil/?utm_source=chatgpt.com "Mono.Cecil 0.11.6"
+[12]: https://raw.githubusercontent.com/dotnet/designs/main/accepted/2020/diagnostics/debugging-with-symbols-and-sources.md "raw.githubusercontent.com"
+[13]: https://raw.githubusercontent.com/dotnet/designs/main/accepted/2020/diagnostics/portable-pdb.md "raw.githubusercontent.com"
+[14]: https://github.com/dotnet/symreader-portable?utm_source=chatgpt.com "dotnet/symreader-portable"
+[15]: https://github.com/microsoft/microsoft-pdb?utm_source=chatgpt.com "Information from Microsoft about the PDB format. We'll try to ..."
+[16]: https://www.nuget.org/packages/Microsoft.DiaSymReader.Native/?utm_source=chatgpt.com "Microsoft.DiaSymReader.Native 1.7.0"
+[17]: https://raw.githubusercontent.com/dotnet/symstore/main/src/dotnet-symbol/README.md "raw.githubusercontent.com"
+[18]: https://github.com/dotnet/symstore?utm_source=chatgpt.com "dotnet/symstore: Implements API for retrieval of symbols ..."
+[19]: https://github.com/icsharpcode/ILSpy?utm_source=chatgpt.com "icsharpcode/ILSpy: .NET Decompiler with support for PDB ..."
+[20]: https://www.nuget.org/packages/icsharpcode.decompiler/?utm_source=chatgpt.com "ICSharpCode.Decompiler 9.1.0.7988"
+[21]: https://docs.dndocs.com/n/ICSharpCode.Decompiler/8.2.0.7535/api/ICSharpCode.Decompiler.CSharp.CSharpDecompiler.html "Class CSharpDecompiler
+ \| ICSharpCode.Decompiler 8.2.0.7535 | DNDocs "
+[22]: https://docs.dndocs.com/n/ICSharpCode.Decompiler/8.2.0.7535/api/ICSharpCode.Decompiler.Metadata.CodeMappingInfo.html "Class CodeMappingInfo
+ \| ICSharpCode.Decompiler 8.2.0.7535 | DNDocs "
+[23]: https://github.com/icsharpcode/ILSpy/discussions/2226?utm_source=chatgpt.com "Is there a way to decompile a single function/method call?"
