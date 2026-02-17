@@ -7,6 +7,6 @@
     <ProjectReference Include="../Interpreter.Foundation/Interpreter.Foundation.csproj" />
     <ProjectReference Include="../Interpreter.Types/Interpreter.Types.csproj" />
     <ProjectReference Include="../Interpreter.IL/Interpreter.IL.csproj" />
-    <ProjectReference Include="..\Interpreter.Core.Abstractions\Interpreter.Core.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
   </ItemGroup>
 </Project>
