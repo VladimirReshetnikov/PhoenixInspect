@@ -65,6 +65,52 @@ public interface IExecutionRequest
     ExecutionBudget Budget { get; }
 }
 
+
+/// <summary>
+/// Represents the high-level category describing why execution stopped or yielded a snapshot.
+/// </summary>
+/// <remarks>
+/// Categories are intentionally broad during the prototype phase so hosts can start wiring UX flows without
+/// prematurely depending on fine-grained engine internals.
+/// </remarks>
+public enum ExecutionStopCategory
+{
+    /// <summary>
+    /// Indicates that execution reached the natural end of the target method body.
+    /// </summary>
+    Completed,
+
+    /// <summary>
+    /// Indicates that execution halted because one or more configured budgets were exhausted.
+    /// </summary>
+    BudgetExceeded,
+
+    /// <summary>
+    /// Indicates that execution yielded due to an explicit host- or debugger-driven stop request.
+    /// </summary>
+    HostStop,
+
+    /// <summary>
+    /// Indicates that execution terminated because unsupported behavior forced conservative bailout.
+    /// </summary>
+    Unsupported,
+}
+
+/// <summary>
+/// Describes the stop condition attached to one execution result snapshot.
+/// </summary>
+/// <param name="Category">Gets the high-level stop category used by hosts to map UX behavior.</param>
+/// <param name="Code">Gets a stable machine-readable code value such as <c>budget:instruction</c> or <c>unsupported:tailcall</c>.</param>
+/// <param name="Message">Gets a human-readable summary suitable for logs and explainability panes.</param>
+/// <remarks>
+/// This record complements <see cref="IExecutionResult.StopReason"/> rather than replacing it immediately so prototype consumers
+/// can migrate incrementally as the contract surface evolves.
+/// </remarks>
+public sealed record ExecutionStopDescriptor(
+    ExecutionStopCategory Category,
+    string Code,
+    string Message);
+
 /// <summary>
 /// Represents an immutable snapshot describing the current outcome of a prototype execution session.
 /// </summary>
@@ -89,7 +135,59 @@ public interface IExecutionResult
     string StopReason { get; }
 
     /// <summary>
+    /// Gets structured stop details that classify the stop outcome for host policy and UX routing.
+    /// </summary>
+    ExecutionStopDescriptor StopDescriptor { get; }
+
+    /// <summary>
     /// Gets a collection of explainability notes generated during execution, including unknown propagation rationale.
     /// </summary>
     IReadOnlyList<string> ExplainabilityNotes { get; }
 }
+
+/// <summary>
+/// Provides a minimal concrete implementation of <see cref="IExecutionRequest"/> for prototype scenarios.
+/// </summary>
+/// <param name="SessionId">Gets a stable session identifier used to correlate execution artifacts across logs and diagnostics.</param>
+/// <param name="EntryMethodIdentity">Gets the fully qualified method identity selected as the interpreter entry point.</param>
+/// <param name="Budget">Gets the deterministic budget policy constraining this request.</param>
+/// <remarks>
+/// This record exists to reduce ceremony in exploratory integration tests and documentation examples.
+/// Hosts should treat the shape as draft-only and expect additional fields once metadata and runtime context modeling matures.
+/// </remarks>
+public sealed record ExecutionRequest(
+    string SessionId,
+    string EntryMethodIdentity,
+    ExecutionBudget Budget) : IExecutionRequest;
+
+/// <summary>
+/// Captures a reusable explainability note emitted while interpreting one request.
+/// </summary>
+/// <param name="Code">Gets a machine-friendly diagnostic code used to group similar explainability conditions.</param>
+/// <param name="Message">Gets a host-facing message that explains why conservative behavior or unknown propagation occurred.</param>
+/// <param name="InstructionOffset">Gets the optional IL offset associated with the note when it can be tied to a specific instruction.</param>
+/// <remarks>
+/// The code taxonomy is intentionally unconstrained during the concept phase so product and architecture documents can
+/// iterate on naming before we lock down stable diagnostics contracts.
+/// </remarks>
+public sealed record ExplainabilityNote(
+    string Code,
+    string Message,
+    int? InstructionOffset);
+
+/// <summary>
+/// Provides a minimal concrete implementation of <see cref="IExecutionResult"/> for prototype services and tests.
+/// </summary>
+/// <param name="SessionId">Gets the session identifier copied from the originating execution request.</param>
+/// <param name="State">Gets the lifecycle state reached when this result snapshot was produced.</param>
+/// <param name="StopReason">Gets a host-readable reason indicating why execution stopped or yielded.</param>
+/// <param name="ExplainabilityNotes">Gets explainability notes preserved as plain strings for broad host compatibility in the draft phase.</param>
+/// <remarks>
+/// This record intentionally mirrors the interface contract without adding richer value objects yet.
+/// A future revision may switch this payload to structured explainability data once diagnostic schemas are validated.
+/// </remarks>
+public sealed record ExecutionResult(
+    string SessionId,
+    ExecutionLifecycleState State,
+    string StopReason,
+    IReadOnlyList<string> ExplainabilityNotes) : IExecutionResult;

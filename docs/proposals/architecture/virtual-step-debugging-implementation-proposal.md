@@ -714,3 +714,15 @@ To make this feature clean (and not a pile of special-cases), refine the IL inte
 6. **EH model** at least at “stop on throw”; ideally real handler transfer
 
 Everything else (unknown propagation, taint/effects, call modeling, dump-backed heap) plugs into this naturally.
+---
+
+## Appendix A) Current prototype contract alignment (`src/`)
+
+To keep conceptual design and prototype seams synchronized, the following stepping control-plane contracts now live in `Interpreter.Abstractions`:
+
+- `IExecutionStepper` for host-issued step commands against an existing session.
+- `StepRequest` + `StepCommandKind` for command intent (`Into`/`Over`/`Out`) and command-level budgets.
+- `StepResultSnapshot` + `StepStopReason` for deterministic host-visible outcomes.
+- `ExecutionFrameSnapshot`, `SourceSpanDescriptor`, and `StepEventDescriptor` for plain-data call-stack and event reporting.
+
+These contracts are intentionally lightweight and should be treated as draft artifacts while machine-state and debug-map proposals continue to evolve.
