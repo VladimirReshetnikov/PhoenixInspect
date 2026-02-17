@@ -366,3 +366,20 @@ Practical guidance:
 - persist selected symbol-reader branch in output metadata,
 - preserve fallback order and miss reasons,
 - test parity across at least two symbol-path configurations.
+
+## 18) Source-tour checkpoints (new)
+
+Use this pass when validating dnlib-backed normalization behavior:
+
+1. **Load overload normalization target**
+   - Read `lib/dnlib/src/DotNet/ModuleDefMD.cs` `Load(...)` overload family and decide which forms our adapter will expose.
+2. **Creation policy object discipline**
+   - Read `lib/dnlib/src/DotNet/ModuleCreationOptions.cs` and record the options we treat as deterministic contract inputs.
+3. **Method-body decode context**
+   - Review `lib/dnlib/src/DotNet/Emit/MethodBodyReader.cs` overloads and identify where generic context and parameter context affect decode quality.
+4. **Portable PDB reconstruction details**
+   - Read `lib/dnlib/src/DotNet/Pdb/Portable/PortablePdbReader.cs` sequence-point and scope reconstruction logic.
+
+Review artifact expectation:
+
+- one side-by-side comparison for two option presets, showing differences in body/symbol completeness and normalized miss reasons.

@@ -334,3 +334,21 @@ Practical guidance:
 - avoid assuming type records are eagerly complete,
 - capture missing/unresolved type-index cases in debug-map diagnostics,
 - keep CodeView/TPI details internal and project-neutral in external DTOs.
+
+## 14) Source-tour checkpoints (new)
+
+Before changing AsmResolver adapter behavior, run this focused source pass:
+
+1. **Ingestion surfaces and policy defaults**
+   - Review `lib/asmresolver/src/AsmResolver.DotNet/ModuleDefinition.cs` static `From...` overloads.
+   - Review `lib/asmresolver/src/AsmResolver.DotNet/Serialized/ModuleReaderParameters.cs` constructor set and default fields.
+2. **Decode context and error surfacing**
+   - Review `lib/asmresolver/src/AsmResolver.DotNet/Serialized/ModuleReaderContext.cs` for how bad-image and decode context are carried.
+3. **Method-body decode seam**
+   - Review `lib/asmresolver/src/AsmResolver.DotNet/Serialized/DefaultMethodBodyReader.cs` and `SerializedMethodDefinition.GetMethodBody()`.
+4. **PDB lazy access model**
+   - Review `lib/asmresolver/src/AsmResolver.Symbols.Pdb/PdbImage.cs` symbol/module/leaf-record retrieval behavior.
+
+Expected output in adapter review:
+
+- a policy matrix row showing which reader-parameter fields influence: load success, body decode completeness, and symbol/type-record availability.

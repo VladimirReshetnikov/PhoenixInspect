@@ -42,6 +42,7 @@ Rule of thumb: if a note is primarily about one library, keep it in that library
 | MVP backend decision record | N/A (cross-library) | `mvp-backend-decision-record.md` |
 | PE/PDB API comparison | N/A (cross-library) | `pe-pdb-reader-api-comparison.md` |
 | Source review deep dive | N/A (cross-library) | `source-review-deep-dive.md` |
+| Source tour workbook | N/A (cross-library tutorial) | `source-tour-workbook.md` |
 
 ## How to use these notes
 
@@ -64,6 +65,11 @@ The current pass expands source-driven notes and tutorials for all five snapshot
 - Roslyn parse/tree/compilation/semantic boundaries for expression front-end design
 
 See each `<library>/usage-notes.md` + `<library>/source-scan.md` pair for design guidance and source-backed detail, and use each `intro-tutorial.md` for contributor onboarding workflows.
+
+
+## Source-tour workbook
+
+For contributors doing direct snapshot review, use `source-tour-workbook.md` as the default tutorial playbook. It provides per-library file lists, review questions, and required evidence artifacts so source reading produces decision-ready outputs.
 
 ## Expansion backlog
 

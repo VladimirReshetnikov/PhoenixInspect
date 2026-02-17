@@ -169,3 +169,21 @@ Project guidance:
 - [ ] Evidence note updates are queued in `docs/lib/backend-evidence-log.md`.
 
 This checklist keeps Cecil experiments high-velocity while preserving architecture discipline.
+
+## 11) Source-tour checkpoints (new)
+
+For Cecil-focused design updates, run this source checklist first:
+
+1. **Reader policy and mode semantics**
+   - Inspect `lib/cecil/Mono.Cecil/ModuleDefinition.cs` (`ReaderParameters`, `ReadingMode`, symbol strictness toggles).
+   - Inspect `lib/cecil/Mono.Cecil/AssemblyReader.cs` immediate vs deferred reader selection.
+2. **Method-body ownership and mutability**
+   - Inspect `lib/cecil/Mono.Cecil/MethodDefinition.cs` and `lib/cecil/Mono.Cecil.Cil/MethodBody.cs` lazy body materialization behavior.
+3. **Symbol reader fallback tree**
+   - Inspect `lib/cecil/Mono.Cecil.Cil/Symbols.cs` and `PortablePdb.cs` for provider selection and mismatch pathways.
+4. **Resolver edge behavior**
+   - Inspect `lib/cecil/Mono.Cecil/BaseAssemblyResolver.cs`, `DefaultAssemblyResolver.cs`, and `MetadataResolver.cs` plus `lib/cecil/Test/Mono.Cecil.Tests/ResolveTests.cs`.
+
+Expected review output:
+
+- a concise table mapping each policy choice to explicit provenance fields and miss-reason categories in our backend-neutral contracts.

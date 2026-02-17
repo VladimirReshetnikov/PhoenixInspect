@@ -295,3 +295,20 @@ Practical guidance:
 - depend on diagnostics and syntax outputs only,
 - keep normalization categories stable even when Roslyn internals evolve,
 - include Roslyn package version in provenance to aid drift triage.
+
+## 11) Source-tour checkpoints (new)
+
+Use this source pass before changing Roslyn front-end policy defaults:
+
+1. **Parse-entry strictness behavior**
+   - Read `lib/roslyn/src/Compilers/CSharp/Portable/Syntax/SyntaxFactory.cs` around `ParseExpression(...)` and `ParseSyntaxTree(...)` overloads.
+2. **Compilation-mode semantics**
+   - Read `lib/roslyn/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs` around `Create(...)`, `CreateScriptCompilation(...)`, and script submission validation.
+3. **Semantic-model ownership constraints**
+   - In the same compilation file, trace `GetSemanticModel(...)` invariants and failure conditions for trees not in the compilation.
+4. **Recovery complexity boundary**
+   - Read `lib/roslyn/src/Compilers/CSharp/Portable/Parser/LanguageParser.cs` terminator-state/recovery pathways as a reminder to avoid parser-internal coupling.
+
+Expected design artifact:
+
+- one normalization matrix comparing strict vs non-strict parse + regular vs script compilation modes over the same expression corpus.
