@@ -270,8 +270,11 @@ To keep design docs coherent, add or maintain the following companion docs:
 - `docs/proposals/architecture/architecture-overview-proposal.md` (high-level system map)
 - `docs/proposals/architecture/state-and-domain-model-proposal.md` (formal semantics of value/memory domains)
 - `docs/proposals/architecture/call-model-and-effects.md` (contracts and intrinsic policy)
+- `docs/proposals/architecture/debug-map-design-proposal.md` (debug-map schema and fallback mapping rules)
+- `docs/proposals/architecture/dynamic-calls-proposal.md` (dynamic call-site lifting and overload-resolution policy)
+- `docs/proposals/architecture/virtual-tasks-proposal.md` (async/await virtualization and scheduler semantics)
 - `docs/proposals/architecture/testing-strategy-proposal.md` (test taxonomy and quality gates)
 - `docs/proposals/architecture/perf-and-benchmarks-proposal.md` (benchmark plan and acceptance thresholds)
 - `docs/proposals/architecture/virtual-step-debugging-implementation-proposal.md` (session/stepping control-plane contracts)
 
-Status note: `architecture-overview-proposal.md`, `state-and-domain-model-proposal.md`, `testing-strategy-proposal.md`, and `perf-and-benchmarks-proposal.md` are now present and should be iterated rather than re-proposed.
+Status note: `architecture-overview-proposal.md`, `state-and-domain-model-proposal.md`, `debug-map-design-proposal.md`, `dynamic-calls-proposal.md`, `virtual-tasks-proposal.md`, `testing-strategy-proposal.md`, and `perf-and-benchmarks-proposal.md` are now present and should be iterated rather than re-proposed.
