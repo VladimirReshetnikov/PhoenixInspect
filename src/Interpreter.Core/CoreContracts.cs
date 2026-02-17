@@ -148,4 +148,18 @@ public interface IExecutionSessionCoordinator
     ValueTask<AwaitRegistrationResult> RegisterAwaitAsync(
         AwaitRegistrationRequest request,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Charges one execution budget meter and returns the resulting accounting state for deterministic guardrail enforcement.
+    /// </summary>
+    /// <param name="request">The budget charge request describing which meter to charge and why.</param>
+    /// <param name="executionRequest">The parent execution request that defines baseline configured budget limits.</param>
+    /// <param name="cancellationToken">A token used to stop budget accounting when host cancellation is requested.</param>
+    /// <returns>
+    /// A value task that resolves to the budget charge result, including remaining budget and optional stop descriptor metadata.
+    /// </returns>
+    ValueTask<BudgetChargeResult> ChargeBudgetAsync(
+        BudgetChargeRequest request,
+        IExecutionRequest executionRequest,
+        CancellationToken cancellationToken);
 }
