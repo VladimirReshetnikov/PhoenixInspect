@@ -39,6 +39,12 @@ We are designing a system that can:
   Draft contract for call classification, fallback strategy, and effect semantics.
 - `docs/proposals/architecture/generic-context-resolver-proposal.md`
   Generic-context reconstruction strategy for dump-backed interpretation.
+- `docs/proposals/architecture/state-and-domain-model-proposal.md`
+  Canonical execution-state contract and domain/lattice semantics.
+- `docs/proposals/architecture/testing-strategy-proposal.md`
+  Test taxonomy, determinism checks, and milestone quality gates.
+- `docs/proposals/architecture/perf-and-benchmarks-proposal.md`
+  Performance model, benchmark corpus strategy, and regression gates.
 
 ### Integration design
 
@@ -59,9 +65,11 @@ If you are new to the project, read in this order:
 1. `docs/proposals/product/post-mortem-debugging-feature-proposal.md` (user/problem framing)
 2. `docs/proposals/architecture/il-interpreter-framework-proposal.md` (engine architecture)
 3. `docs/proposals/architecture/mvp-abstract-domain-proposal.md` (analysis model)
-4. `docs/proposals/architecture/technical-stack-proposal.md` (implementation stack choices)
-5. `docs/plans/future-work-planning.md` (milestones and priorities)
-6. `docs/governance/documentation-organization-proposal.md` (documentation process and information architecture)
+4. `docs/proposals/architecture/state-and-domain-model-proposal.md` (formal state/domain semantics)
+5. `docs/proposals/architecture/technical-stack-proposal.md` (implementation stack choices)
+6. `docs/proposals/architecture/testing-strategy-proposal.md` (quality strategy and validation plan)
+7. `docs/plans/future-work-planning.md` (milestones and priorities)
+8. `docs/governance/documentation-organization-proposal.md` (documentation process and information architecture)
 
 ## Decision-Making Principles
 
