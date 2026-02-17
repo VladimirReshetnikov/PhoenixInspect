@@ -20,6 +20,8 @@ These notes are intentionally project-specific: they focus on how each library c
 | Roslyn | `lib/roslyn` | `roslyn-usage-notes.md` |
 | Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
 | Adapter conformance checklist | N/A (cross-library) | `adapter-conformance-checklist.md` |
+| Backend capability evidence log | N/A (cross-library) | `backend-evidence-log.md` |
+| MVP backend decision record | N/A (cross-library) | `mvp-backend-decision-record.md` |
 
 ## How to use these notes
 
@@ -32,6 +34,6 @@ When design decisions evolve, update these notes first and then reconcile propos
 
 ## Expansion backlog
 
-- Add concrete evidence notes per backend capability axis as prototype experiments are run.
+- Populate `backend-evidence-log.md` with concrete evidence per capability axis as prototype experiments are run.
 - Keep miss-reason taxonomy synchronized with architecture-level provenance terminology.
-- Add one short decision record when primary metadata backend is selected for MVP planning.
+- Progressively fill `mvp-backend-decision-record.md` and finalize once MVP backend gates are met.
