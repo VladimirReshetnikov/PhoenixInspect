@@ -29,6 +29,7 @@ Rule of thumb: if a note is primarily about one library, keep it in that library
 | ClrMD | `lib/clrmd` | `clrmd/usage-notes.md`, `clrmd/source-scan.md` |
 | AsmResolver | `lib/asmresolver` | `asmresolver/usage-notes.md`, `asmresolver/source-scan.md` |
 | dnlib | `lib/dnlib` | `dnlib/usage-notes.md`, `dnlib/source-scan.md` |
+| dnlib intro tutorial | `lib/dnlib` | `dnlib/intro-tutorial.md` |
 | Roslyn | `lib/roslyn` | `roslyn/usage-notes.md`, `roslyn/source-scan.md` |
 | Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
 | Adapter conformance checklist | N/A (cross-library) | `adapter-conformance-checklist.md` |
