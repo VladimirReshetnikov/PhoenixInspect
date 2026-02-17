@@ -1,6 +1,6 @@
 # Metadata and symbol backend capability matrix (draft)
 
-This matrix turns the library-specific notes in `docs/lib/*-usage-notes.md` into a common evaluation frame.
+This matrix turns the library-specific notes in `docs/lib/<library>/usage-notes.md` into a common evaluation frame.
 For API-shape-level reader ergonomics and PE/PDB-specific trade-offs, see `pe-pdb-reader-api-comparison.md`.
 
 It is intentionally design-phase guidance, not a final commitment to any concrete dependency set.

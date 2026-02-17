@@ -14,10 +14,10 @@ These notes are intentionally project-specific: they focus on how each library c
 
 | Library | Snapshot path | Note |
 |---|---|---|
-| ClrMD | `lib/clrmd` | `clrmd-usage-notes.md` |
-| AsmResolver | `lib/asmresolver` | `asmresolver-usage-notes.md` |
-| dnlib | `lib/dnlib` | `dnlib-usage-notes.md` |
-| Roslyn | `lib/roslyn` | `roslyn-usage-notes.md` |
+| ClrMD | `lib/clrmd` | `clrmd/usage-notes.md` |
+| AsmResolver | `lib/asmresolver` | `asmresolver/usage-notes.md` |
+| dnlib | `lib/dnlib` | `dnlib/usage-notes.md` |
+| Roslyn | `lib/roslyn` | `roslyn/usage-notes.md` |
 | Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
 | Adapter conformance checklist | N/A (cross-library) | `adapter-conformance-checklist.md` |
 | Backend capability evidence log | N/A (cross-library) | `backend-evidence-log.md` |
@@ -44,7 +44,7 @@ The current pass expands source-driven notes for all four snapshot libraries:
 - dnlib module/body/symbol reader pipeline behavior
 - Roslyn parse/tree/compilation/semantic boundaries for expression front-end design
 
-See each `*-usage-notes.md` for adapter implications, risks, and experiment recommendations.
+See each `<library>/usage-notes.md` document for adapter implications, risks, and experiment recommendations.
 
 ## Expansion backlog
 
