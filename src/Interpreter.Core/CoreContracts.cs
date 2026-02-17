@@ -112,4 +112,28 @@ public interface IExecutionSessionCoordinator
         AbstractValue value,
         IExecutionRequest executionRequest,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Creates a virtual task artifact for async method execution so stepping and explainability can track async lifecycles.
+    /// </summary>
+    /// <param name="sessionId">The parent execution session identifier that owns the virtual task.</param>
+    /// <param name="producerMethodIdentity">The fully qualified async method identity creating the virtual task.</param>
+    /// <param name="resultTypeDisplayName">The display name of the virtual task result type.</param>
+    /// <param name="cancellationToken">A token used to stop async task creation when host cancellation is requested.</param>
+    /// <returns>A value task that resolves to the created virtual task snapshot.</returns>
+    ValueTask<VirtualTaskSnapshot> CreateVirtualTaskAsync(
+        string sessionId,
+        string producerMethodIdentity,
+        string resultTypeDisplayName,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Registers an await operation for the current async activation and returns how stepping should proceed.
+    /// </summary>
+    /// <param name="request">The await-registration request describing activation identity and awaiter metadata.</param>
+    /// <param name="cancellationToken">A token used to cancel await registration when host policy ends execution.</param>
+    /// <returns>A value task that resolves to the await-registration result including outcome and rationale.</returns>
+    ValueTask<AwaitRegistrationResult> RegisterAwaitAsync(
+        AwaitRegistrationRequest request,
+        CancellationToken cancellationToken);
 }
