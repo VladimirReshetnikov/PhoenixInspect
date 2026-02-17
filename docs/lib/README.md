@@ -16,6 +16,7 @@ These notes are intentionally project-specific: they focus on how each library c
 |---|---|---|
 | ClrMD | `lib/clrmd` | `clrmd/usage-notes.md` |
 | AsmResolver | `lib/asmresolver` | `asmresolver/usage-notes.md` |
+| AsmResolver onboarding tutorial | `lib/asmresolver` | `asmresolver/intro-tutorial.md` |
 | dnlib | `lib/dnlib` | `dnlib/usage-notes.md` |
 | Roslyn | `lib/roslyn` | `roslyn/usage-notes.md` |
 | Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
