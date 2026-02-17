@@ -174,7 +174,7 @@ When PDB + source (or SourceLink retrieval) is available, stepping uses:
 
 * sequence points (IL offset ↔ source file/line)
 * local names/scopes
-* async method mapping (optional initially)
+* async method mapping to user methods via state-machine metadata/PDB tables (required for async stepping quality)
 
 The experience should resemble normal stepping:
 
@@ -407,3 +407,27 @@ You’ll know this feature is working when:
 ### A small but important “bonus”: Why this is uniquely good for dumps
 
 A live debugger can’t safely offer “explore both branches” or “step back” without heavyweight time travel infrastructure. A virtual interpreter can. That’s not just a gimmick; it’s an honest advantage of this approach.
+---
+
+
+## 14) Design follow-ons from virtual tasks + dynamic call lifting
+
+The architecture now includes dedicated proposals for async virtual-task semantics and dynamic call-site lifting. This feature spec should treat them as first-class stepping behavior rather than optional extras.
+
+### Async stepping implications
+
+* `await` suspension should produce stable stop/trace events (`AwaitPending`, then `ContinuationResumed`) that are replay-deterministic.
+* Step views should project compiler-generated `MoveNext` execution back to user methods/frames whenever mapping metadata exists.
+* Task completion states (`TaskCompleted`, `TaskFaulted`, `TaskCanceled`) must surface in session timeline diagnostics.
+
+### Dynamic dispatch implications
+
+* Dynamic call-sites should resolve as explicit semantic operations with outcomes (`Resolved`, `Ambiguous`, `Unresolved`, `MetaObjectRequired`).
+* `Step Into` at unresolved multi-target sites may return `DecisionNeeded` so users can choose a target path.
+* UI should display chosen overload and runtime binding types when resolution succeeds to maintain trust.
+
+### Cross-cutting UX rule
+
+If async or dynamic behavior cannot be deterministically resolved, the tool should prefer transparent partial results over silent fallback.
+
+---
