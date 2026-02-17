@@ -32,6 +32,9 @@ docs/
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Proposal | Draft | Testing taxonomy, determinism checks, and milestone quality gates. |
 | `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft | Performance model, benchmark corpus strategy, and regression gates. |
 | `proposals/architecture/virtual-step-debugging-implementation-proposal.md` | Architecture | Proposal | Draft | Low-level execution model for stepping control plane, stop reasons, model frames, and undo. |
+| `proposals/architecture/debug-map-design-proposal.md` | Architecture | Proposal | Draft | Debug-map schema and source/IL mapping strategy for statement-accurate stepping and replay. |
+| `proposals/architecture/virtual-tasks-proposal.md` | Architecture | Proposal | Draft | Async/await lowering model and virtual `Task` runtime semantics for deterministic dump-time execution. |
+| `proposals/architecture/dynamic-calls-proposal.md` | Architecture | Proposal | Draft | DLR `dynamic` call-site lifting and dump-aware overload resolution strategy. |
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft | Artifact-resolution design for PE/PDB loading, debug-map generation, and source fallback. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
@@ -57,11 +60,14 @@ docs/
 4. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
 5. `proposals/architecture/mvp-abstract-domain-proposal.md`
 6. `proposals/architecture/call-model-and-effects.md`
-7. `proposals/architecture/testing-strategy-proposal.md`
-8. `proposals/architecture/generic-context-resolver-proposal.md`
-9. `proposals/architecture/prototype-solution-structure-proposal.md`
-10. `proposals/architecture/prototype-interface-catalog-proposal.md`
-11. `plans/future-work-planning.md`
+7. `proposals/architecture/debug-map-design-proposal.md`
+8. `proposals/architecture/dynamic-calls-proposal.md`
+9. `proposals/architecture/virtual-tasks-proposal.md`
+10. `proposals/architecture/testing-strategy-proposal.md`
+11. `proposals/architecture/generic-context-resolver-proposal.md`
+12. `proposals/architecture/prototype-solution-structure-proposal.md`
+13. `proposals/architecture/prototype-interface-catalog-proposal.md`
+14. `plans/future-work-planning.md`
 
 
 ### Virtual debugger implementation path
@@ -70,7 +76,16 @@ docs/
 2. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
 3. `proposals/architecture/state-and-domain-model-proposal.md`
 4. `proposals/architecture/call-model-and-effects.md`
-5. `proposals/architecture/testing-strategy-proposal.md`
+5. `proposals/architecture/debug-map-design-proposal.md`
+6. `proposals/architecture/virtual-tasks-proposal.md`
+7. `proposals/architecture/testing-strategy-proposal.md`
+
+### Dynamic dispatch design path
+
+1. `proposals/architecture/call-model-and-effects.md`
+2. `proposals/architecture/dynamic-calls-proposal.md`
+3. `proposals/architecture/state-and-domain-model-proposal.md`
+4. `proposals/architecture/testing-strategy-proposal.md`
 
 ### Runtime integration path
 
@@ -95,3 +110,4 @@ docs/
 ## Next documentation additions (proposed)
 
 - `proposals/architecture/opcode-support-matrix-proposal.md`
+- `proposals/architecture/async-awaiter-support-matrix-proposal.md`
