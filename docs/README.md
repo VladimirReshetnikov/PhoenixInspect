@@ -113,6 +113,10 @@ docs/
 2. `governance/documentation-organization-proposal.md`
 3. `plans/future-work-planning.md`
 
+## Repository license
+
+This project is distributed under the **MIT-0 (MIT No Attribution)** license. See the repository-level [`LICENSE`](../LICENSE) file for full terms.
+
 ## Naming and placement conventions
 
 - Place new design docs under `docs/proposals/<area>/` with `*-proposal.md` suffix.

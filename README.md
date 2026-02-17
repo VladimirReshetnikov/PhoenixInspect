@@ -54,4 +54,4 @@ High-value contributions are documentation improvements that sharpen decisions:
 
 ## License
 
-License information is not defined yet and should be added before public distribution.
+This repository is licensed under the **MIT-0 (MIT No Attribution)** license. See [`LICENSE`](LICENSE) for the full text.
