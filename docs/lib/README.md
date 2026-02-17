@@ -32,6 +32,8 @@ Rule of thumb: if a note is primarily about one library, keep it in that library
 | AsmResolver intro tutorial | `lib/asmresolver` | `asmresolver/intro-tutorial.md` |
 | dnlib | `lib/dnlib` | `dnlib/usage-notes.md`, `dnlib/source-scan.md` |
 | dnlib intro tutorial | `lib/dnlib` | `dnlib/intro-tutorial.md` |
+| Mono.Cecil | `lib/cecil` | `cecil/usage-notes.md`, `cecil/source-scan.md` |
+| Mono.Cecil intro tutorial | `lib/cecil` | `cecil/intro-tutorial.md` |
 | Roslyn | `lib/roslyn` | `roslyn/usage-notes.md`, `roslyn/source-scan.md` |
 | Roslyn intro tutorial | `lib/roslyn` | `roslyn/intro-tutorial.md` |
 | Backend capability matrix | N/A (cross-library) | `backend-capability-matrix.md` |
@@ -53,11 +55,12 @@ When design decisions evolve, update these notes first and then reconcile propos
 
 ## Latest expansion focus
 
-The current pass expands source-driven notes and tutorials for all four snapshot libraries:
+The current pass expands source-driven notes and tutorials for all five snapshot libraries:
 
 - ClrMD runtime lifecycle/caching and stack/heap access boundaries
 - AsmResolver package layering and module/CIL/PDB entry points
 - dnlib module/body/symbol reader pipeline behavior
+- Mono.Cecil load-policy, resolver, method-body, and symbol-provider behavior
 - Roslyn parse/tree/compilation/semantic boundaries for expression front-end design
 
 See each `<library>/usage-notes.md` + `<library>/source-scan.md` pair for design guidance and source-backed detail, and use each `intro-tutorial.md` for contributor onboarding workflows.
@@ -77,6 +80,7 @@ Current emphasis:
 - ClrMD runtime ingestion entry points and cache/enumeration behavior
 - AsmResolver module/CIL/PDB package layering
 - dnlib metadata + method-body + symbol reader pipeline structure
+- Mono.Cecil reader-parameter policy, deferred/immediate load paths, resolver flow, and portable PDB handling
 - Roslyn C# parser/compilation/semantic entry points for expression front-end design
 
 These findings remain design-phase guidance and should be validated with executable adapter spikes before MVP backend lock-in.
@@ -88,6 +92,7 @@ The per-library intro tutorials now include source-backed deep-dive sections der
 - ClrMD: session lifecycle, cache semantics, stack/heap partialness boundaries.
 - AsmResolver: reader-parameter policy, stage-specific load failures, method-body reader seam, and PDB type-index behavior.
 - dnlib: loader/policy surface breadth, method-body decode context, and symbol-reader branch selection.
+- Mono.Cecil: reader-parameter policy, symbol-provider fallback tree, resolver edge behavior, and mutable CIL model boundaries.
 - Roslyn: parse/tree identity inputs, submission-mode semantics, and semantic-model ownership invariants.
 
 Use these tutorial sections as contributor onboarding material before proposing adapter contract changes.
@@ -98,6 +103,6 @@ Use `source-review-deep-dive.md` when you need a side-by-side, source-backed com
 
 - lifecycle and policy controls,
 - method-body/symbol pipeline details,
-- partialness and determinism pressure across all four libraries.
+- partialness and determinism pressure across all five libraries.
 
 The per-library notes remain the primary location for library-owned details; the deep-dive doc is intended as a synthesis layer for architecture and backend decision reviews.

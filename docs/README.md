@@ -51,6 +51,9 @@ docs/
 | `lib/asmresolver/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven AsmResolver reader-policy, CIL, and PDB ingestion findings. |
 | `lib/dnlib/usage-notes.md` | Library Notes | Note | Draft | dnlib fallback/compatibility role and backend-capability planning notes. |
 | `lib/dnlib/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven dnlib module policy, method-body lifecycle, and Portable PDB findings. |
+| `lib/cecil/usage-notes.md` | Library Notes | Note | Draft | Mono.Cecil backend role, reader-policy boundaries, and adapter guidance. |
+| `lib/cecil/intro-tutorial.md` | Library Notes | Tutorial | Draft | Introductory Mono.Cecil tutorial for contributors, focused on policy, method bodies, symbols, and resolver usage. |
+| `lib/cecil/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven Mono.Cecil load-mode, symbol-provider, resolver, and method-body findings. |
 | `lib/roslyn/usage-notes.md` | Library Notes | Note | Draft | Roslyn front-end role, coupling risks, and conservative-inference guidance. |
 | `lib/roslyn/intro-tutorial.md` | Library Notes | Tutorial | Draft | Introductory Roslyn tutorial for contributors, with parse/bind workflow and adapter boundary guidance. |
 | `lib/roslyn/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven Roslyn parse/compilation/semantic boundaries for expression front-end design. |
