@@ -44,7 +44,9 @@ MachineState = {
   TraceContext,
   BudgetState,
   DeterminismState,
-  EffectSummary
+  EffectSummary,
+  AsyncState?,
+  LiftedCallState?
 }
 ```
 
@@ -175,6 +177,36 @@ DeterminismState = {
 
 All budget decrements and deterministic-ID allocations must happen at documented transfer points so command replay remains stable.
 
+### 2.7 AsyncState and LiftedCallState
+
+To align with async/dynamic lifted semantics, `MachineState` should include explicit state for virtual async runtime and lifted callsite bookkeeping.
+
+```text
+AsyncState = {
+  VirtualTasks: map<VirtualTaskId, VirtualTaskState>,
+  ContinuationQueue: queue<ContinuationToken>,
+  AwaitProvenance: map<AwaitPointId, UnknownId?>
+}
+
+VirtualTaskState = {
+  Status: {Created | Running | Waiting | RanToCompletion | Faulted | Canceled},
+  ResultValue?,
+  Fault?,
+  AwaiterLinks: set<AwaitPointId>
+}
+
+LiftedCallState = {
+  DynamicSites: map<DynamicSiteId, DynamicSiteRecord>,
+  LastResolution?: DynamicResolutionRecord
+}
+```
+
+Rules:
+
+- `ContinuationQueue` dequeue order must be deterministic and replayable.
+- `VirtualTaskState` transitions must be monotonic along valid lifecycle edges.
+- `DynamicSiteRecord` must preserve candidate/selected target provenance for host explanation and transcript diffing.
+
 ---
 
 ## 3) Domain model
@@ -246,6 +278,12 @@ Minimum `ReasonCode` set for MVP:
 - `HeapReadUnavailable`
 - `BudgetExceeded`
 - `PolicyHavoc`
+- `DynamicDispatchUnresolved`
+- `DynamicDispatchAmbiguous`
+- `AsyncAwaitPending`
+- `AsyncContinuationResumed`
+- `AsyncTaskFaulted`
+- `AsyncTaskCanceled`
 
 This enables precise host messaging without reverse-engineering trace logs.
 

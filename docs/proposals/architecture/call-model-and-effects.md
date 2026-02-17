@@ -21,6 +21,8 @@ It covers:
 4. **Composable precision:** richer models should improve results without changing core contracts.
 5. **Bounded cost:** call reasoning must honor the global budget model.
 
+6. **Semantic lifting for compiler/runtime patterns:** dynamic call sites and async state-machine runtime plumbing should be recognized as lifted semantic operations before fallback policy is considered.
+
 ---
 
 ## 2) Call classification
@@ -39,11 +41,20 @@ Every call instruction is classified into one of the following categories before
    - Safe and permitted to recursively interpret callee IL.
    - Subject to recursion depth and per-call budget limits.
 
-4. **Fallback**
+4. **Lifted semantic callsite**
+   - Compiler/runtime patterns are recognized and lifted into interpreter-owned operations.
+   - Initial required lifted kinds: `DynamicDispatch` (DLR call-site rewrite) and `AsyncRuntimeIntrinsic` (builder/awaiter/task-runtime semantics).
+
+5. **Fallback**
    - No precise model is available or policy disallows execution.
    - Must return an explainable approximation (`unknown return`, `block`, or `havoc`).
 
 Classification output is a first-class trace event so hosts can explain why a given path became less precise.
+
+For lifted callsites, classification metadata must include the lifted kind and site identity:
+
+- `DynamicDispatch`: binder site ID, member name, static receiver context, and argument binding-type vector.
+- `AsyncRuntimeIntrinsic`: async method descriptor ID, await-point ID (if any), and continuation/action identity.
 
 ---
 
@@ -167,7 +178,30 @@ All intrinsics should include negative tests for unsupported argument/state shap
 
 ---
 
-## 8) Open questions
+## 8) Lifted callsite diagnostics (required)
+
+To keep host UX and replay deterministic, lifted callsites must emit standardized outcome diagnostics.
+
+### 8.1 Dynamic dispatch outcomes
+
+- `Resolved` (single best target selected)
+- `Ambiguous` (multiple plausible targets)
+- `Unresolved` (insufficient runtime type/value evidence)
+- `MetaObjectRequired` (IDynamicMetaObjectProvider/COM path not modeled)
+
+### 8.2 Async runtime outcomes
+
+- `AwaitPending` (state machine suspended; continuation scheduled)
+- `ContinuationResumed` (scheduled continuation dequeued and executed)
+- `TaskCompleted`
+- `TaskFaulted`
+- `TaskCanceled`
+
+All outcomes must carry provenance linking back to callsite IL offset, lifted site identity, and active policy profile.
+
+---
+
+## 9) Open questions
 
 1. Should summary models be serialized as source-controlled JSON, C# descriptors, or both?
 2. How should versioning work when runtime behavior diverges across framework versions?
@@ -176,7 +210,7 @@ All intrinsics should include negative tests for unsupported argument/state shap
 
 ---
 
-## 9) Milestone alignment
+## 10) Milestone alignment
 
 - **M1:** implement baseline fallback contract + diagnostics.
 - **M2:** integrate effect joins with fixpoint engine.

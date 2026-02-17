@@ -88,6 +88,8 @@ Examples:
 - expression containing blocked impure call,
 - timeout path with preserved partial trace.
 - virtual Step Into/Over/Out flow with expected stop locations and debug events.
+- dynamic dispatch scenario with deterministic `Resolved`/`Ambiguous`/`Unresolved` outcome diagnostics.
+- async state-machine scenario with deterministic `AwaitPending` -> `ContinuationResumed` -> terminal task outcome trace.
 
 ## E. Non-functional tests
 
@@ -115,7 +117,8 @@ Maintain a curated corpus of method fixtures categorized by feature area:
 - object/array operations,
 - generics and constrained calls,
 - unsupported/edge opcode coverage,
-- dump-specific metadata and memory gaps.
+- dump-specific metadata and memory gaps,
+- lifted semantic callsites (dynamic dispatch and async state-machine/runtime patterns).
 
 Each fixture includes:
 
@@ -173,7 +176,9 @@ Required checks:
    - trace events,
    - final state summaries,
    - diagnostics envelopes,
-   - virtual-session command transcripts (including stop reasons and step diffs).
+   - virtual-session command transcripts (including stop reasons and step diffs),
+   - dynamic dispatch resolution traces (site IDs, candidate sets, chosen target),
+   - async virtual-scheduler traces (continuation queue order and terminal task statuses).
 
 Any hash mismatch is treated as a failure unless a nondeterministic field is explicitly allowed and documented.
 
@@ -215,7 +220,23 @@ Track at minimum:
 
 ---
 
-## 8) CI matrix proposal
+## 8) Feature-specific quality gates (dynamic + async)
+
+To align with the new lifted-callsite architecture proposals, add explicit quality gates:
+
+1. **Dynamic dispatch gate**
+   - For curated fixtures, binder lifting must be detected and classified as `DynamicDispatch` (not generic fallback).
+   - Outcome diagnostics must be stable and replayable (`Resolved`, `Ambiguous`, `Unresolved`, `MetaObjectRequired`).
+2. **Async virtualization gate**
+   - Async builder/awaiter patterns must be classified as `AsyncRuntimeIntrinsic` where recognized.
+   - Virtual task lifecycle transitions and continuation scheduling order must be deterministic under identical policy/input.
+3. **Control-plane gate**
+   - Step-session traces must preserve user-facing async method framing across `await` suspension/resume boundaries.
+   - `DecisionNeeded` behavior for unresolved dynamic Step Into must be policy-consistent and transcripted.
+
+---
+
+## 9) CI matrix proposal
 
 Minimum matrix dimensions:
 
@@ -234,7 +255,7 @@ Recommended pipeline stages:
 
 ---
 
-## 9) Failure triage model
+## 10) Failure triage model
 
 When tests fail, classify into one of:
 
@@ -253,7 +274,7 @@ Required triage metadata in PR/issue:
 
 ---
 
-## 10) Exit criteria by milestone
+## 11) Exit criteria by milestone
 
 ### M0 exit (testing readiness)
 
@@ -284,7 +305,7 @@ Required triage metadata in PR/issue:
 
 ---
 
-## 11) Open questions
+## 12) Open questions
 
 1. Should golden artifacts be stored as full JSON snapshots or compact semantic assertions + generated snapshots?
 2. At what point do we promote precision scorecards from informational to gating?
