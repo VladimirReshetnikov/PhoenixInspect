@@ -31,6 +31,7 @@ docs/
 | `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Proposal | Draft | Catalog of current prototype interfaces, project dependencies, and contract rationale. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft | Canonical execution-state model, domain contracts, and provenance semantics. |
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Proposal | Draft | Testing taxonomy, determinism checks, and milestone quality gates. |
+| `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Draft | Support tiers, fallback contracts, and milestone sequencing for opcode-family coverage. |
 | `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft | Performance model, benchmark corpus strategy, and regression gates. |
 | `proposals/architecture/virtual-step-debugging-implementation-proposal.md` | Architecture | Proposal | Draft | Low-level execution model for stepping control plane, stop reasons, model frames, and undo. |
 | `proposals/architecture/debug-map-design-proposal.md` | Architecture | Proposal | Draft | Debug-map schema and source/IL mapping strategy for statement-accurate stepping and replay. |
@@ -76,10 +77,11 @@ docs/
 8. `proposals/architecture/dynamic-calls-proposal.md`
 9. `proposals/architecture/virtual-tasks-proposal.md`
 10. `proposals/architecture/testing-strategy-proposal.md`
-11. `proposals/architecture/generic-context-resolver-proposal.md`
-12. `proposals/architecture/prototype-solution-structure-proposal.md`
-13. `proposals/architecture/prototype-interface-catalog-proposal.md`
-14. `plans/future-work-planning.md`
+11. `proposals/architecture/opcode-support-matrix-proposal.md`
+12. `proposals/architecture/generic-context-resolver-proposal.md`
+13. `proposals/architecture/prototype-solution-structure-proposal.md`
+14. `proposals/architecture/prototype-interface-catalog-proposal.md`
+15. `plans/future-work-planning.md`
 
 
 ### Virtual debugger implementation path
@@ -122,6 +124,5 @@ docs/
 
 ## Next documentation additions (proposed)
 
-- `proposals/architecture/opcode-support-matrix-proposal.md`
 - `proposals/architecture/async-awaiter-support-matrix-proposal.md`
 - `proposals/architecture/dynamic-dispatch-support-matrix-proposal.md`
