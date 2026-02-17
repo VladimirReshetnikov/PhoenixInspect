@@ -1,4 +1,6 @@
 using Interpreter.Abstractions;
+using Interpreter.CallModel;
+using Interpreter.MemoryModel;
 using Interpreter.Metadata;
 
 namespace Interpreter.Core;
@@ -62,3 +64,52 @@ public sealed record InstructionStepResult(
     int NextInstructionOffset,
     IReadOnlyDictionary<string, string> FrameState,
     IReadOnlyList<string> ExplainabilityNotes);
+
+
+/// <summary>
+/// Coordinates cross-cutting prototype services required to evaluate one call instruction within an interpreter session.
+/// </summary>
+/// <remarks>
+/// This contract keeps orchestration responsibilities explicit while project boundaries are still exploratory.
+/// It is intentionally lightweight and may be split or merged as the prototype dependency model matures.
+/// </remarks>
+public interface IExecutionSessionCoordinator
+{
+    /// <summary>
+    /// Classifies the specified call site and returns the resulting target/effect metadata for downstream step logic.
+    /// </summary>
+    /// <param name="callSite">The call-site descriptor representing the call instruction currently being interpreted.</param>
+    /// <param name="executionRequest">The parent execution request carrying budget and session context.</param>
+    /// <param name="cancellationToken">A token used to stop classification when host cancellation is requested.</param>
+    /// <returns>A value task that resolves to the call-site classification to apply for this instruction.</returns>
+    ValueTask<CallSiteClassification> ClassifyCallAsync(
+        CallSiteDescriptor callSite,
+        IExecutionRequest executionRequest,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Reads a value from the current abstract memory snapshot so instruction evaluation can consume operands deterministically.
+    /// </summary>
+    /// <param name="readRequest">The memory-read request describing which abstract location to query.</param>
+    /// <param name="executionRequest">The parent execution request used for policy and diagnostics context.</param>
+    /// <param name="cancellationToken">A token used to abort read operations when host cancellation is requested.</param>
+    /// <returns>A value task that resolves to the abstract value stored at the requested location.</returns>
+    ValueTask<AbstractValue> ReadMemoryAsync(
+        MemoryReadRequest readRequest,
+        IExecutionRequest executionRequest,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Writes a value into the current abstract memory snapshot after an instruction produces a new result.
+    /// </summary>
+    /// <param name="writeRequest">The memory request identifying the destination abstract location and slot index.</param>
+    /// <param name="value">The abstract value that should be stored into the destination location.</param>
+    /// <param name="executionRequest">The parent execution request used for policy and diagnostics context.</param>
+    /// <param name="cancellationToken">A token used to abort write operations when host cancellation is requested.</param>
+    /// <returns>A value task that completes once the write operation has been applied.</returns>
+    ValueTask WriteMemoryAsync(
+        MemoryReadRequest writeRequest,
+        AbstractValue value,
+        IExecutionRequest executionRequest,
+        CancellationToken cancellationToken);
+}
