@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Product.SandboxRuntime</AssemblyName>
+    <RootNamespace>Interpreter.Product.SandboxRuntime</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Host.Runtime.Sandbox/Interpreter.Host.Runtime.Sandbox.csproj" />
+    <ProjectReference Include="../Interpreter.Core.Execution/Interpreter.Core.Execution.csproj" />
+    <ProjectReference Include="../Interpreter.Domain.Concrete/Interpreter.Domain.Concrete.csproj" />
+    <ProjectReference Include="../Interpreter.Domain.CNTypeTaint/Interpreter.Domain.CNTypeTaint.csproj" />
+    <ProjectReference Include="../Interpreter.Memory.VirtualHeap/Interpreter.Memory.VirtualHeap.csproj" />
+    <ProjectReference Include="../Interpreter.Models.CoreLib.Primitives/Interpreter.Models.CoreLib.Primitives.csproj" />
+    <ProjectReference Include="../Interpreter.Models.Environment/Interpreter.Models.Environment.csproj" />
+  </ItemGroup>
+</Project>

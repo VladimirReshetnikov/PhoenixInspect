@@ -446,7 +446,7 @@ So add:
 ```csharp
 sealed record StepOutcome
 {
-    public StepStopReason Reason; // Breakpoint, StepComplete, Exception, AwaitSuspended, …
+    public string ReasonKind; // Breakpoint, StepComplete, Exception, AwaitSuspended, …
     public object? Payload;       // e.g. AwaitSuspension
 }
 ```

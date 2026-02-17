@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Debugger.Engine</AssemblyName>
+    <RootNamespace>Interpreter.Debugger.Engine</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Core.Execution/Interpreter.Core.Execution.csproj" />
+    <ProjectReference Include="../Interpreter.DebugMaps/Interpreter.DebugMaps.csproj" />
+    <ProjectReference Include="../Interpreter.Host.Abstractions/Interpreter.Host.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Models.Abstractions/Interpreter.Models.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

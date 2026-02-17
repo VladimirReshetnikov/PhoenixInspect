@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Core.Analysis</AssemblyName>
+    <RootNamespace>Interpreter.Core.Analysis</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Core.IR/Interpreter.Core.IR.csproj" />
+  </ItemGroup>
+</Project>

@@ -58,19 +58,19 @@ The objective is to pick technologies that maximize:
 
 Proposed solution structure:
 
-- `src/Interpreter.Core`
+- `src/Interpreter.Core.Execution`
   - IL semantics engine, abstract state machine, control flow stepping.
-- `src/Interpreter.Metadata`
+- `src/Interpreter.Metadata.Abstractions` and `src/Interpreter.Metadata.SRM`
   - metadata adapters and canonical symbol model.
-- `src/Interpreter.AbstractDomains`
-  - reusable domains (constants, nullness, ranges, taint seed).
-- `src/Interpreter.MemoryModels`
-  - concrete heap, summary heap, dump-backed adapters.
-- `src/Interpreter.CallModel`
+- `src/Interpreter.Domain.*`
+  - reusable domains (concrete execution, CN/type-taint, optional range analysis).
+- `src/Interpreter.Memory.*`
+  - virtual heap, overlay memory, and summary-heap analysis components.
+- `src/Interpreter.Models.Abstractions`
   - intrinsic call models, effects, and fallback/havoc policies.
-- `src/Interpreter.Diagnostics`
+- `src/Interpreter.Core.Tracing`
   - tracing APIs, provenance events, explainability payloads.
-- `src/Interpreter.Hosting`
+- `src/Interpreter.Host.Abstractions`
   - DI registration, host configuration, policy bundles.
 - `src/Interpreter.Cli` (optional early)
   - smoke driver for manual experimentation.
@@ -79,9 +79,9 @@ Proposed solution structure:
 
 ### Package boundaries
 
-- Keep `Core` free of host-specific dependencies.
-- Keep `Diagnostics` contracts lightweight and structured.
-- Avoid cyclic dependencies; depend “inward” toward `Core` abstractions.
+- Keep `Interpreter.Core.Execution` free of host-specific dependencies.
+- Keep `Interpreter.Core.Tracing` contracts lightweight and structured.
+- Avoid cyclic dependencies; depend “inward” toward `Interpreter.Core.Abstractions`.
 
 ---
 
@@ -245,11 +245,11 @@ Use standard .NET DI for host-facing composition while allowing direct construct
 
 Current prototype projects:
 
-- `Interpreter.Abstractions`
-- `Interpreter.Metadata`
-- `Interpreter.Core`
-- `Interpreter.Diagnostics`
-- `Interpreter.Hosting`
+- `Interpreter.Core.Abstractions`
+- `Interpreter.Metadata.Abstractions`
+- `Interpreter.Core.Execution`
+- `Interpreter.Core.Tracing`
+- `Interpreter.Host.Abstractions`
 
 Current dependency direction:
 

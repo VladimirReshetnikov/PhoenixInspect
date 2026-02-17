@@ -327,7 +327,7 @@ This pipeline should be shared by both the virtual-debug control plane and any e
 
 Suggested package decomposition:
 
-- `Interpreter.Core`
+- `Interpreter.Core.Execution`
   - instruction semantics, state machine contracts, shared diagnostics.
 - `Interpreter.Analysis`
   - CFG/fixpoint framework and abstract-analysis orchestration.
@@ -335,7 +335,7 @@ Suggested package decomposition:
   - intrinsic call models and summary format.
 - `Interpreter.Integration.ClrMd`
   - dump/metadata adapter layer.
-- `Interpreter.Hosting`
+- `Interpreter.Host.Abstractions`
   - host-facing request/response contracts and policy presets.
 
 This split enables independent iteration while keeping stable boundaries explicit.

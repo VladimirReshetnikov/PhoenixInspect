@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Models.Dynamic</AssemblyName>
+    <RootNamespace>Interpreter.Models.Dynamic</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Models.Abstractions/Interpreter.Models.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Core.IR/Interpreter.Core.IR.csproj" />
+    <ProjectReference Include="../Interpreter.Types/Interpreter.Types.csproj" />
+  </ItemGroup>
+</Project>

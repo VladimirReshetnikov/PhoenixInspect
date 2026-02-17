@@ -1,89 +1,33 @@
 # Prototype Interface Catalog Proposal
 
-> **Draft status notice:** The interfaces in this document are exploratory planning artifacts.
-> They are intended to accelerate architecture learning and are not compatibility commitments.
+> **Draft status notice:** The previous interface catalog has been intentionally retired.
+> Current prototype code contains no public types yet; this document now tracks planned interface-entry points by module.
 
 ## 1. Purpose
 
-This proposal documents the current prototype interface surface under `src/` so design discussions can reference concrete seams, responsibilities, and dependency direction.
+This document provides a placeholder catalog for future interface work while the repository is in scaffolding-only mode.
 
-## 2. Prototype solution map
+## 2. Current state
 
-```text
-src/
-├── Interpreter.Abstractions  # Session lifecycle, stepping, and request/result contracts
-├── Interpreter.Metadata      # Entry-method metadata resolution seam
-├── Interpreter.CallModel     # Call target/effect classification seam
-├── Interpreter.MemoryModel   # Abstract memory read/write seam
-├── Interpreter.RuntimeBinding # Dump/runtime snapshot + method-body binding seam
-├── Interpreter.Core          # Execution orchestration and step coordination seam
-├── Interpreter.Diagnostics   # Explainability event sink seam
-└── Interpreter.Hosting       # DI registration and host option seam
-```
+- All earlier prototype contracts were removed.
+- `src/` contains project/dependency scaffolding only.
+- Interface definitions will be introduced incrementally after module-level dependency review.
 
-## 3. Dependency direction (current draft)
+## 3. Planned interface-entry modules
 
-- `Interpreter.Abstractions` has no project dependencies.
-- `Interpreter.Metadata` → `Interpreter.Abstractions`.
-- `Interpreter.CallModel` → `Interpreter.Abstractions`.
-- `Interpreter.MemoryModel` → `Interpreter.Abstractions`.
-- `Interpreter.Core` → `Interpreter.Abstractions`, `Interpreter.Metadata`, `Interpreter.CallModel`, `Interpreter.MemoryModel`.
-- `Interpreter.RuntimeBinding` → `Interpreter.Abstractions`.
-- `Interpreter.Diagnostics` → `Interpreter.Abstractions`.
-- `Interpreter.Hosting` → all interpreter modules + `Microsoft.Extensions.DependencyInjection.Abstractions`.
+The first interface waves are expected in:
 
-This shape intentionally keeps dependency flow from host/coordination edges toward stable contracts.
+- `Interpreter.Core.Abstractions` (execution and policy contracts)
+- `Interpreter.Metadata.Abstractions` (metadata/token resolution contracts)
+- `Interpreter.Models.Abstractions` (semantic-model extension contracts)
+- `Interpreter.Host.Abstractions` (host integration contracts)
+- `Interpreter.Artifacts.Abstractions` (artifact/source acquisition contracts)
 
-## 4. Interface groups and rationale
+## 4. Guardrails for future additions
 
-### 4.1 Execution contracts
+When interfaces are added:
 
-`Interpreter.Abstractions` keeps request/result/session primitives centralized so all other modules share a single execution vocabulary. The module now emphasizes cancellation-token-aware request/result/session primitives so deterministic stop behavior can evolve without introducing MVP budget accounting.
-
-### 4.2 Stepping control-plane contracts
-
-`Interpreter.Abstractions` now also carries first-pass stepping contracts (`IExecutionStepper`, `StepRequest`, `StepResultSnapshot`, and related enums/data objects) so host-driven virtual debugging flows can evolve without coupling to core implementation details.
-
-### 4.3 Metadata contracts
-
-`Interpreter.Metadata` isolates method-body acquisition and descriptor shape decisions from core stepping and hosting concerns.
-
-### 4.4 Call-model contracts
-
-`Interpreter.CallModel` defines call-site target/effect classification responsibilities needed by call/effects architecture work.
-It now also includes a draft dynamic-dispatch seam (`IDynamicDispatchResolver` plus request/result records) so lifted DLR
-call-site operations can be resolved without coupling `Interpreter.Core` directly to binder-specific policy code.
-
-### 4.5 Memory-model contracts
-
-`Interpreter.MemoryModel` provides a first-pass abstraction for deterministic value reads/writes with provenance-friendly payloads.
-
-### 4.6 Runtime-binding contracts
-
-`Interpreter.RuntimeBinding` introduces backend-neutral dump integration seams for runtime snapshot capture and method-body resolution with explicit provenance (`RuntimeMemory`, `PortableExecutable`, `SyntheticFallback`). This keeps ClrMD-specific API usage outside of core interpreter contracts while allowing hosting-layer experiments to wire concrete adapters.
-
-### 4.7 Core orchestration contracts
-
-`Interpreter.Core` continues to own execution orchestration and instruction stepping while introducing an explicit coordinator seam for call-model, memory-model, and async-runtime collaboration.
-The coordinator now includes a dedicated dynamic-dispatch routing method to preserve explicit orchestration boundaries
-between lifted `dynamic` operations and the call-model's evolving overload-resolution strategy.
-
-### 4.8 Diagnostics and hosting contracts
-
-`Interpreter.Diagnostics` and `Interpreter.Hosting` preserve explainability and composition concerns as explicit, separately evolvable layers.
-
-### 4.9 Prototype data objects
-
-To accelerate host integration experiments and keep samples concrete, the current prototype also includes plain data objects that implement or support interface contracts:
-
-- `ExecutionRequest` and `ExecutionResult` in `Interpreter.Abstractions` provide low-ceremony concrete payloads for `IExecutionRequest` and `IExecutionResult`.
-- `ExplainabilityNote` in `Interpreter.Abstractions` introduces a reusable shape for future migration from string-only notes.
-- `ExecutionDiagnosticEvent` and `DiagnosticsFilterOptions` in `Interpreter.Diagnostics` provide draft payloads for structured diagnostic streaming and filtering.
-
-These types remain exploratory and should be evolved together with architecture proposals that define explainability and diagnostics schemas.
-
-## 5. Draft-phase guardrails
-
-- All interfaces should be treated as **prototype design artifacts**, not stable APIs.
-- Public XML documentation is intentionally detailed to preserve design rationale directly at contract boundaries.
-- When adding or revising interfaces, update this catalog and related architecture proposals in the same change.
+1. Keep contracts minimal and layered.
+2. Add XML docs on all public types and members.
+3. Update dependency and rationale docs in the same change.
+4. Avoid adding product-assembly contracts until lower layers stabilize.

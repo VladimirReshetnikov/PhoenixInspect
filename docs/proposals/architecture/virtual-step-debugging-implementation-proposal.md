@@ -718,11 +718,6 @@ Everything else (unknown propagation, taint/effects, call modeling, dump-backed 
 
 ## Appendix A) Current prototype contract alignment (`src/`)
 
-To keep conceptual design and prototype seams synchronized, the following stepping control-plane contracts now live in `Interpreter.Abstractions`:
+`src/` is currently in scaffolding-only mode with project/dependency definitions and no concrete stepping control-plane types yet.
 
-- `IExecutionStepper` for host-issued step commands against an existing session.
-- `StepRequest` + `StepCommandKind` for command intent (`Into`/`Over`/`Out`) and command-level budgets.
-- `StepResultSnapshot` + `StepStopReason` for deterministic host-visible outcomes.
-- `ExecutionFrameSnapshot`, `SourceSpanDescriptor`, and `StepEventDescriptor` for plain-data call-stack and event reporting.
-
-These contracts are intentionally lightweight and should be treated as draft artifacts while machine-state and debug-map proposals continue to evolve.
+Near-term interface work is expected to begin in `Interpreter.Core.Abstractions` and `Interpreter.Debugger.Engine`, with contract naming intentionally deferred until the module-level review cycle completes.
