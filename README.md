@@ -26,6 +26,8 @@ We are designing a system that can:
 
 - `docs/proposals/product/post-mortem-debugging-feature-proposal.md`
   Product-facing proposal for dump-time expression evaluation.
+- `docs/proposals/product/virtual-step-debugging-feature-proposal.md`
+  Product-facing proposal for virtual Step Into/Over/Out workflows over dump-backed sessions.
 
 ### Architecture and engine design
 
@@ -47,6 +49,8 @@ We are designing a system that can:
   Test taxonomy, determinism checks, and milestone quality gates.
 - `docs/proposals/architecture/perf-and-benchmarks-proposal.md`
   Performance model, benchmark corpus strategy, and regression gates.
+- `docs/proposals/architecture/virtual-step-debugging-implementation-proposal.md`
+  Execution-engine proposal for virtual debugging sessions, stop reasons, undo, and source stepping maps.
 
 ### Integration design
 
@@ -73,6 +77,11 @@ If you are new to the project, read in this order:
 7. `docs/proposals/architecture/testing-strategy-proposal.md` (quality strategy and validation plan)
 8. `docs/plans/future-work-planning.md` (milestones and priorities)
 9. `docs/governance/documentation-organization-proposal.md` (documentation process and information architecture)
+
+For virtual debugger-specific design work, read these immediately after step 3:
+
+4. `docs/proposals/product/virtual-step-debugging-feature-proposal.md` (feature UX and scope)
+5. `docs/proposals/architecture/virtual-step-debugging-implementation-proposal.md` (execution semantics and control plane)
 
 ## Decision-Making Principles
 

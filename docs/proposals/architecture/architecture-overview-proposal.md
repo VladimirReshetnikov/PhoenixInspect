@@ -93,10 +93,10 @@ Across both contexts, architecture must preserve deterministic, bounded, and exp
 
 The host-facing API should remain narrow and policy-driven:
 
-- Submit request (`EvaluateMethod`, `EvaluateExpression`, `AnalyzeMethod`).
+- Submit request (`EvaluateMethod`, `EvaluateExpression`, `AnalyzeMethod`, `StartVirtualDebugSession`).
 - Select policy preset (`fast`, `balanced`, `deep`) with explicit overrides.
 - Receive structured result:
-  - status (`Completed`, `Partial`, `Blocked`, `TimedOut`),
+  - status (`Completed`, `Partial`, `Blocked`, `TimedOut`, `DecisionNeeded`),
   - result value or abstract summary,
   - trace/provenance bundle,
   - trust label and explanation.
@@ -114,7 +114,21 @@ This layer is the composition root. It:
 - routes execution to semantics runtime or analysis runtime,
 - merges diagnostics and converts them into user-facing trust labels.
 
-### 4.3 Semantics Runtime
+### 4.3 Virtual Debug Control Plane
+
+This subsystem coordinates debugger-like commands over interpreter state. It sits between host UI and semantics runtime.
+
+Responsibilities:
+
+- maintain a session-scoped machine state with explicit call stack and instruction pointers,
+- translate `StepInto`/`StepOver`/`StepOut` into stop predicates over micro-steps,
+- broker branch decisions (`choose true/false`, `fork`, `join`) when conditions are unknown,
+- maintain stop-point history and undo/redo semantics,
+- surface debugger events (`FramePushed`, `FramePopped`, `ExceptionThrown`, `BudgetExceeded`) with source mapping metadata.
+
+This layer should stay policy-driven and avoid opcode semantics; it is a controller, not another interpreter.
+
+### 4.4 Semantics Runtime
 
 This runtime performs instruction-level transfer for single-state stepping.
 
@@ -128,7 +142,7 @@ Responsibilities:
 
 Output is either a terminal state/value or bounded partial state on stop conditions.
 
-### 4.4 Analysis Runtime
+### 4.5 Analysis Runtime
 
 This runtime performs whole-method over-approximation via CFG and fixpoint iteration.
 
@@ -140,7 +154,7 @@ Responsibilities:
 - track precision degradation events (e.g., widening applied, summary heap merge),
 - produce reusable summaries for call modeling and cache hints.
 
-### 4.5 Shared Execution State + Domain Layer
+### 4.6 Shared Execution State + Domain Layer
 
 Domain-parametric semantics are centered here.
 
@@ -152,7 +166,7 @@ Stable contracts include:
 - diagnostic envelope (`IssueCode`, severity, location, recommendation),
 - deterministic state hashing/fingerprints for caching and replay.
 
-### 4.6 Environment Adapters
+### 4.7 Environment Adapters
 
 Adapters isolate external systems:
 
@@ -168,14 +182,14 @@ Adapters are replaceable; core runtimes remain backend-agnostic.
 
 ## 5. Canonical data flow
 
-1. Host submits evaluation request with policy and budget.
+1. Host submits evaluation request with policy and budget (or a step command against an existing virtual-debug session).
 2. Orchestrator binds adapters and validates preconditions.
 3. Method body + metadata + generic context are resolved.
 4. Initial state is created from arguments/locals and memory roots.
-5. Runtime executes (single-state or CFG/fixpoint) under budget guards.
+5. Runtime executes (single-state, micro-step loop, or CFG/fixpoint) under budget guards.
 6. Calls are classified (`inline model`, `summary`, `block`, `unknown return`, `havoc`).
 7. Effects and provenance are recorded continuously.
-8. Runtime exits with terminal/partial result.
+8. Runtime exits with terminal/partial result, or pause reason (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`).
 9. Orchestrator computes trust label and assembles explanation payload.
 10. Host receives stable result envelope.
 
@@ -200,6 +214,7 @@ Adapters are replaceable; core runtimes remain backend-agnostic.
 - Every unknown introduction has a cause code and source location.
 - Every blocked action maps to a policy rationale.
 - Trust label synthesis references concrete evidence in trace/events.
+- Virtual-debug surfaces preserve provenance labels (dump-backed vs virtual overlay, interpreted vs modeled).
 
 ### 6.4 Extensibility
 
@@ -244,15 +259,15 @@ This split enables independent iteration while keeping stable boundaries explici
 
 ### M2–M3
 
-- add Analysis Runtime maturity (CFG/fixpoint),
-- strengthen call summaries and effect model,
-- introduce precision/performance policy presets.
+- add explicit machine state/call-stack contracts for virtual stepping,
+- introduce virtual debug control plane with stop reasons and branch-decision hooks,
+- strengthen call summaries/effect model including model-frame behavior.
 
 ### M4–M5
 
-- harden dump adapters,
-- stabilize hosting contracts,
-- expand diagnostics and benchmark-driven tuning.
+- harden dump adapters and source-map backends (PDB/decompiler/IL fallback),
+- stabilize hosting contracts for session lifecycle (`Start`, `Step`, `Undo`, `ChooseBranch`),
+- expand diagnostics, replay tests, and benchmark-driven tuning.
 
 ---
 
@@ -263,6 +278,7 @@ This split enables independent iteration while keeping stable boundaries explici
 3. Where should method-summary caches live: in `Analysis` package or shared `Models` package?
 4. How strict should compatibility be between intrinsic model versions and engine minor versions?
 5. What is the default fallback policy in dump mode for unknown external calls (`block` vs `unknown+havoc`)?
+6. Should modeled calls always materialize as pseudo-frames, or can policy collapse them into atomic effects for performance?
 
 ---
 

@@ -19,6 +19,7 @@ docs/
 | Document | Area | Type | Status | Summary |
 |---|---|---|---|---|
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft | User-facing dump-time evaluation capability and phased scope. |
+| `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft | Product design for virtual Step Into/Over/Out and session UX in dump analysis. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Draft | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft | Initial abstract domains and analysis behavior for MVP. |
@@ -28,6 +29,7 @@ docs/
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft | Canonical execution-state model, domain contracts, and provenance semantics. |
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Proposal | Draft | Testing taxonomy, determinism checks, and milestone quality gates. |
 | `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft | Performance model, benchmark corpus strategy, and regression gates. |
+| `proposals/architecture/virtual-step-debugging-implementation-proposal.md` | Architecture | Proposal | Draft | Low-level execution model for stepping control plane, stop reasons, model frames, and undo. |
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
 | `governance/documentation-organization-proposal.md` | Governance | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
@@ -37,20 +39,32 @@ docs/
 ### Product-first path
 
 1. `proposals/product/post-mortem-debugging-feature-proposal.md`
-2. `proposals/architecture/il-interpreter-framework-proposal.md`
-3. `proposals/architecture/technical-stack-proposal.md`
-4. `plans/future-work-planning.md`
+2. `proposals/product/virtual-step-debugging-feature-proposal.md`
+3. `proposals/architecture/il-interpreter-framework-proposal.md`
+4. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
+5. `proposals/architecture/technical-stack-proposal.md`
+6. `plans/future-work-planning.md`
 
 ### Architecture-first path
 
 1. `proposals/architecture/architecture-overview-proposal.md`
 2. `proposals/architecture/il-interpreter-framework-proposal.md`
-3. `proposals/architecture/mvp-abstract-domain-proposal.md`
+3. `proposals/architecture/state-and-domain-model-proposal.md`
+4. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
+5. `proposals/architecture/mvp-abstract-domain-proposal.md`
+6. `proposals/architecture/call-model-and-effects.md`
+7. `proposals/architecture/testing-strategy-proposal.md`
+8. `proposals/architecture/generic-context-resolver-proposal.md`
+9. `plans/future-work-planning.md`
+
+
+### Virtual debugger implementation path
+
+1. `proposals/product/virtual-step-debugging-feature-proposal.md`
+2. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
+3. `proposals/architecture/state-and-domain-model-proposal.md`
 4. `proposals/architecture/call-model-and-effects.md`
-5. `proposals/architecture/state-and-domain-model-proposal.md`
-6. `proposals/architecture/testing-strategy-proposal.md`
-7. `proposals/architecture/generic-context-resolver-proposal.md`
-8. `plans/future-work-planning.md`
+5. `proposals/architecture/testing-strategy-proposal.md`
 
 ### Runtime integration path
 
