@@ -29,7 +29,7 @@ docs/
 | `proposals/architecture/call-model-and-effects.md` | Architecture | Proposal | Draft | Call classification, fallback behavior, and effect lattice contract. |
 | `proposals/architecture/generic-context-resolver-proposal.md` | Architecture | Proposal | Draft | Generic-context reconstruction strategy for dump-backed interpretation. |
 | `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Proposal | Draft | Initial `src/` project layout, dependency direction, and prototype API boundary rationale. |
-| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Proposal | Draft | Catalog of current prototype interfaces, project dependencies, and contract rationale. |
+| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Proposal | Draft | Implemented first-wave prototype abstraction contracts across core, metadata, and host layers. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft | Canonical execution-state model, domain contracts, and provenance semantics. |
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Proposal | Draft | Testing taxonomy, determinism checks, and milestone quality gates. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft | Semantic modeling layer for BCL/IL idiom lifting, projection-based evaluation, and session-stable environment intrinsics. |
