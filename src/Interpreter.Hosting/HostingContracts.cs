@@ -45,15 +45,6 @@ public sealed class PrototypeInterpreterOptions
     /// </summary>
     public bool EnableVerboseDiagnostics { get; set; } = true;
 
-    /// <summary>
-    /// Gets or sets the default instruction budget applied when a request does not specify explicit limits.
-    /// </summary>
-    public int DefaultInstructionBudget { get; set; } = 50_000;
-
-    /// <summary>
-    /// Gets or sets the default branch budget applied when hosts do not provide request-level overrides.
-    /// </summary>
-    public int DefaultBranchBudget { get; set; } = 2_000;
 
     /// <summary>
     /// Gets or sets a value indicating whether synthetic debug-map generation should be enabled when symbols are unavailable.
@@ -64,12 +55,4 @@ public sealed class PrototypeInterpreterOptions
     /// </remarks>
     public bool EnableSyntheticDebugMaps { get; set; } = true;
 
-    /// <summary>
-    /// Gets or sets the maximum number of debug-map entries generated for one method when synthetic fallback is active.
-    /// </summary>
-    /// <remarks>
-    /// This budget is a coarse safeguard to keep fallback synthesis deterministic and bounded while debug-map normalization
-    /// algorithms are still evolving.
-    /// </remarks>
-    public int SyntheticDebugMapEntryBudget { get; set; } = 4_096;
 }

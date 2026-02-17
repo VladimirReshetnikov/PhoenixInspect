@@ -183,8 +183,8 @@ Goal: unlock getters/helpers that compute values from already-present snapshot d
 
 **Guardrails**
 
-* Hard timeouts per evaluation
-* Allocation and instruction-step budgets
+* No explicit time/instruction budget tracking in MVP; rely on cooperative cancellation and deterministic semantics
+* Cooperative cancellation (`CancellationToken`) for interpreter operations (MVP)
 * Clear “blocked due to side-effect risk” diagnostics
 * Option to “Show evaluation plan” at a high level (e.g., “Calls A → B → C; blocked at D (File IO)”)
 

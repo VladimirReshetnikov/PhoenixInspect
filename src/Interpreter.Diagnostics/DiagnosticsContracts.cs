@@ -6,7 +6,7 @@ namespace Interpreter.Diagnostics;
 /// Captures a structured prototype diagnostic event emitted during interpretation.
 /// </summary>
 /// <param name="SessionId">Gets the execution session identifier used to correlate this event with other traces.</param>
-/// <param name="EventName">Gets the canonical event name, for example <c>UnknownValueCreated</c> or <c>BudgetExceeded</c>.</param>
+/// <param name="EventName">Gets the canonical event name, for example <c>UnknownValueCreated</c> or <c>ExecutionCancelled</c>.</param>
 /// <param name="InstructionOffset">Gets the optional IL offset associated with this event when known.</param>
 /// <param name="Payload">Gets a shallow key/value payload with event-specific diagnostic properties.</param>
 /// <remarks>

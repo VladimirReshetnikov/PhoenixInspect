@@ -88,7 +88,7 @@ public sealed record ExceptionSignalDescriptor(
 /// <param name="StopReasonCode">Gets an optional machine-readable stop reason code when the disposition requests a stop.</param>
 /// <param name="ExplainabilityNote">Gets a host-visible explanation describing why the policy produced this decision.</param>
 /// <remarks>
-/// This output intentionally mirrors existing budget and stop-descriptor conventions so hosts can reuse routing logic
+/// This output intentionally mirrors existing stop-descriptor conventions so hosts can reuse routing logic
 /// across different stop categories during prototype integration.
 /// </remarks>
 public sealed record ExceptionPolicyDecision(
@@ -101,7 +101,7 @@ public sealed record ExceptionPolicyDecision(
 /// </summary>
 /// <remarks>
 /// This contract is draft-only and does not imply a final commitment about CLR-exact exception semantics.
-/// It exists to explore explainable and budget-aware exception behavior in dump-backed sessions.
+/// It exists to explore explainable and cancellation-aware exception behavior in dump-backed sessions.
 /// </remarks>
 public interface IExceptionPolicy
 {
@@ -109,7 +109,7 @@ public interface IExceptionPolicy
     /// Evaluates one exception signal and determines the handling disposition for the active session.
     /// </summary>
     /// <param name="signal">The exception signal descriptor observed by the interpreter.</param>
-    /// <param name="request">The parent execution request carrying session and budget context.</param>
+    /// <param name="request">The parent execution request carrying session and cancellation context.</param>
     /// <param name="cancellationToken">A token used to cancel policy evaluation when the host requests stop.</param>
     /// <returns>A value task that resolves to the policy decision for the supplied exception signal.</returns>
     ValueTask<ExceptionPolicyDecision> EvaluateAsync(

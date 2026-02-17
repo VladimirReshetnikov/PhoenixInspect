@@ -45,9 +45,9 @@ public enum StepStopReason
     DecisionRequired,
 
     /// <summary>
-    /// Indicates that execution suspended because one or more configured budgets were exhausted.
+    /// Indicates that execution suspended because cooperative cancellation was requested.
     /// </summary>
-    BudgetExceeded,
+    Cancelled,
 
     /// <summary>
     /// Indicates that execution suspended due to an exception signal observed by the stepping control plane.
@@ -85,7 +85,6 @@ public sealed record SourceSpanDescriptor(
 /// </summary>
 /// <param name="SessionId">Gets the execution session identifier whose machine state should be advanced.</param>
 /// <param name="Command">Gets the stepping command to perform for this operation.</param>
-/// <param name="InstructionBudget">Gets the maximum number of micro-steps allowed for this command invocation.</param>
 /// <param name="CaptureEvents">Gets a value indicating whether event details should be returned in the result payload.</param>
 /// <remarks>
 /// The request is scoped to a single command to keep host orchestration explicit while we compare stepping loop designs.
@@ -93,7 +92,6 @@ public sealed record SourceSpanDescriptor(
 public sealed record StepRequest(
     string SessionId,
     StepCommandKind Command,
-    int InstructionBudget,
     bool CaptureEvents);
 
 /// <summary>
@@ -154,7 +152,7 @@ public interface IExecutionStepper
     /// <summary>
     /// Executes one stepping command against an existing session and returns an immutable snapshot of the new state boundary.
     /// </summary>
-    /// <param name="request">The stepping request describing command intent, session identity, and command-level budget.</param>
+    /// <param name="request">The stepping request describing command intent and session identity.</param>
     /// <param name="cancellationToken">A token used to stop command processing when host cancellation is requested.</param>
     /// <returns>A value task that resolves to the resulting step snapshot and explainability context.</returns>
     ValueTask<StepResultSnapshot> StepAsync(StepRequest request, CancellationToken cancellationToken);
