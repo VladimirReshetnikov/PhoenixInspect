@@ -33,6 +33,7 @@ For structured topic lists, document inventory, and recommended reading paths, s
 
 For process and roadmap context:
 
+- `docs/governance/project-faq.md`
 - `docs/governance/documentation-organization-proposal.md`
 - `docs/plans/future-work-planning.md`
 
