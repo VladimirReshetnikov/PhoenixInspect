@@ -102,13 +102,13 @@ public interface IExecutionSessionCoordinator
     /// <summary>
     /// Writes a value into the current abstract memory snapshot after an instruction produces a new result.
     /// </summary>
-    /// <param name="writeRequest">The memory request identifying the destination abstract location and slot index.</param>
+    /// <param name="writeRequest">The memory-write request identifying the destination abstract location, slot index, and write intent.</param>
     /// <param name="value">The abstract value that should be stored into the destination location.</param>
     /// <param name="executionRequest">The parent execution request used for policy and diagnostics context.</param>
     /// <param name="cancellationToken">A token used to abort write operations when host cancellation is requested.</param>
     /// <returns>A value task that completes once the write operation has been applied.</returns>
     ValueTask WriteMemoryAsync(
-        MemoryReadRequest writeRequest,
+        MemoryWriteRequest writeRequest,
         AbstractValue value,
         IExecutionRequest executionRequest,
         CancellationToken cancellationToken);
