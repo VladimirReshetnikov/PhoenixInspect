@@ -46,6 +46,17 @@ Based on the new `virtual-tasks` and `dynamic-calls` architecture proposals, the
    - runtime binding type reconstruction for dynamic call arguments.
 6. Expand benchmark + test corpus requirements with dedicated async/dynamic fixture sets and determinism checks for virtual-scheduler replay.
 
+## 2.3) Immediate alignment updates from semantic-modeling proposal
+
+Based on the semantic-modeling architecture proposal, the following cross-document updates are now required:
+
+1. Introduce a unified special-semantics registry contract that spans call intrinsics, IL-pattern rewrites, and heap projections (instead of documenting these as unrelated extension points).
+2. Add `SessionSnapshot` extraction semantics to integration and host contracts so environment/time APIs can return deterministic session-stable values or explicit unknowns with origin tags.
+3. Expand the call-model taxonomy with semantic buckets (`PureIntrinsic`, `EnvironmentIntrinsic`, `ProjectionIntrinsic`, `PatternIntrinsic`) and require confidence labels (`Exact`, `BestEffort`, `Partial`, `UnsupportedLayout`) on modeled outcomes.
+4. Define copy-on-write projection semantics for dump-backed collection mutation so virtual writes are explicit and replay-safe.
+5. Prioritize stepping-noise suppression patterns (`lock`, `foreach`, throw-helper guards, interpolation handlers) as first-class UX investments in virtual stepping docs.
+6. Add versioned layout-decoder governance (identity, supported runtime ranges, invariant checks, fail-closed behavior) for projection-heavy models.
+
 ---
 
 ## M0 — Architecture baseline and contracts
@@ -107,14 +118,14 @@ Based on the new `virtual-tasks` and `dynamic-calls` architecture proposals, the
 
 **Deliverables**
 
-- Intrinsic models for high-value BCL methods.
+- Intrinsic models for high-value BCL methods, with explicit semantic categories (`PureIntrinsic`, `EnvironmentIntrinsic`, `ProjectionIntrinsic`, `PatternIntrinsic`).
 - Effect model (`reads`, `writes`, `allocates`, `throws`, `impure`).
-- Method summary format for reusable call summaries.
+- Method summary format for reusable call summaries and intrinsic/projection explainability payloads.
 
 **Exit criteria**
 
-- Reduced unknown propagation in benchmark corpus.
-- Explainable blocked/approximated call diagnostics.
+- Reduced unknown propagation in benchmark corpus while preserving provenance/confidence labels on approximations.
+- Explainable blocked/approximated call diagnostics, including decoder identity for projection-backed models.
 
 ---
 
@@ -156,6 +167,26 @@ Based on the new `virtual-tasks` and `dynamic-calls` architecture proposals, the
 - Curated async fixtures emit stable `AwaitPending -> ContinuationResumed -> Task*` lifecycle traces across replay runs.
 - Curated dynamic fixtures emit stable binder outcomes with explicit ambiguity/unresolved diagnostics.
 - Host APIs and docs expose one shared taxonomy for async/dynamic outcomes and decision points.
+
+---
+
+## M3.7 — Semantic modeling and projection runtime integration
+
+**Goal:** operationalize semantic lifting beyond async/dynamic so framework-heavy execution is deterministic, bounded, and explainable.
+
+**Deliverables**
+
+- Unified special-semantics registry spanning call intrinsics, IL-pattern rewrites, and object projections.
+- `SessionSnapshot` provider contract and deterministic environment/time intrinsic policy.
+- Copy-on-write projection overlay design for dump-backed collection mutation during virtual sessions.
+- Versioned layout-decoder contract with confidence labeling and fail-closed unsupported-layout behavior.
+- Initial high-ROI modeled patterns and projections (`lock`, `foreach`, throw helpers, interpolation handlers, `ConcurrentDictionary` core operations).
+
+**Exit criteria**
+
+- Curated semantic fixtures show stable replay across repeated runs, including deterministic modeled-step traces.
+- Projection-backed results always emit confidence and decoder metadata; unsupported layouts fail with explicit diagnostics (no silent guessing).
+- Virtual stepping demos show reduced framework-noise stepping for modeled patterns versus baseline interpreter-only runs.
 
 ---
 
@@ -294,6 +325,7 @@ Before moving beyond M4, explicitly decide:
 2. Minimum compatibility target (`net8.0` only vs multi-targeting).
 3. What telemetry/diagnostic artifacts are enabled by default.
 4. Whether modeled calls are always represented as pseudo-frames or may be collapsed per policy.
+5. Which semantic-model packs/decoder sets are in-box for v1 versus optional extensions.
 
 ---
 
@@ -308,6 +340,7 @@ To keep design docs coherent, add or maintain the following companion docs:
 - `docs/proposals/architecture/dynamic-calls-proposal.md` (dynamic call-site lifting and overload-resolution policy)
 - `docs/proposals/architecture/virtual-tasks-proposal.md` (async/await virtualization and scheduler semantics)
 - `docs/proposals/architecture/testing-strategy-proposal.md` (test taxonomy and quality gates)
+- `docs/proposals/architecture/semantic-modeling-proposal.md` (unified intrinsic/pattern/projection semantics and SessionSnapshot policy)
 - `docs/proposals/architecture/perf-and-benchmarks-proposal.md` (benchmark plan and acceptance thresholds)
 - `docs/proposals/architecture/virtual-step-debugging-implementation-proposal.md` (session/stepping control-plane contracts)
 
