@@ -28,9 +28,3 @@
 ## Draft API documentation requirement
 - All **public types and public methods** in prototype code must include detailed XML documentation comments.
 - XML docs should explain intent, parameters/returns, and draft-phase caveats so design rationale remains discoverable in code.
-
-## Autonomous backlog management
-- Maintain a `TODO.md` file at the repository root as a self-assigned backlog for periods when no explicit user task is provided.
-- Keep between **5 and 10** actionable tasks in `TODO.md`.
-- The agent is empowered to curate the backlog autonomously, including rewording, re-prioritizing, adding follow-up tasks, and removing items that are no longer relevant or are low-priority.
-- Prefer tasks that advance the conceptual design phase, especially documentation quality, architecture clarity, and decision-readiness.
