@@ -60,6 +60,21 @@ Based on the semantic-modeling architecture proposal, the following cross-docume
 
 ---
 
+
+## 2.4) Immediate alignment updates from platform-expansion strategy note
+
+Based on `proposals/product/other-potential-applications.md`, the following cross-document updates are now required:
+
+1. Clarify that the interpreter core is a multi-application platform (not only dump-time expression evaluation) across architecture overview, product framing, and roadmap docs.
+2. Add a normalized analysis IR track (`MethodNormalizer`/typed temporaries + IL offset mapping) as a first-class enabler for static-analysis and decompiler-mapping quality.
+3. Promote EH-aware CFG precision modes (`Ignore`, `Conservative`, `Modeled`) to explicit milestone planning so analysis and virtual stepping share conservative exception semantics.
+4. Define reusable interprocedural summary contracts (return abstraction, memory/effect deltas, exception/evidence metadata) and cache/replay expectations.
+5. Add a host snapshot abstraction for speculative live-debug scenarios (`ISnapshotProvider`/stable snapshot semantics) without weakening dump-safety defaults.
+6. Elevate deterministic tracing/replay artifacts (event schema, stable unknown IDs, scheduling tie-break policy) from optional diagnostics to roadmap deliverables.
+7. Expand test/benchmark plans with differential-execution and fuzzing harness goals that compare interpreter behavior against CLR outcomes on supported subsets.
+
+---
+
 ## M0 — Architecture baseline and contracts
 
 **Goal:** lock core interfaces and execution model boundaries.
