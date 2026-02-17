@@ -32,6 +32,7 @@ docs/
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft | Canonical execution-state model, domain contracts, and provenance semantics. |
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Proposal | Draft | Testing taxonomy, determinism checks, and milestone quality gates. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft | Semantic modeling layer for BCL/IL idiom lifting, projection-based evaluation, and session-stable environment intrinsics. |
+| `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft | Unified registry contract for call intrinsics, IL-pattern rewrites, and object projections with deterministic precedence and shared diagnostics envelope. |
 | `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Draft | Support tiers, fallback contracts, and milestone sequencing for opcode-family coverage. |
 | `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft | Performance model, benchmark corpus strategy, and regression gates. |
 | `proposals/architecture/virtual-step-debugging-implementation-proposal.md` | Architecture | Proposal | Draft | Low-level execution model for stepping control plane, stop reasons, model frames, and undo. |
@@ -86,20 +87,22 @@ docs/
 9. `proposals/architecture/virtual-tasks-proposal.md`
 10. `proposals/architecture/testing-strategy-proposal.md`
 11. `proposals/architecture/semantic-modeling-proposal.md`
-12. `proposals/architecture/opcode-support-matrix-proposal.md`
-13. `proposals/architecture/generic-context-resolver-proposal.md`
-14. `proposals/architecture/prototype-solution-structure-proposal.md`
-15. `proposals/architecture/prototype-interface-catalog-proposal.md`
-16. `plans/future-work-planning.md`
+12. `proposals/architecture/special-semantics-registry-proposal.md`
+13. `proposals/architecture/opcode-support-matrix-proposal.md`
+14. `proposals/architecture/generic-context-resolver-proposal.md`
+15. `proposals/architecture/prototype-solution-structure-proposal.md`
+16. `proposals/architecture/prototype-interface-catalog-proposal.md`
+17. `plans/future-work-planning.md`
 
 ### Semantic modeling implementation path
 
 1. `proposals/architecture/call-model-and-effects.md`
 2. `proposals/architecture/state-and-domain-model-proposal.md`
 3. `proposals/architecture/semantic-modeling-proposal.md`
-4. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
-5. `proposals/architecture/testing-strategy-proposal.md`
-6. `plans/future-work-planning.md`
+4. `proposals/architecture/special-semantics-registry-proposal.md`
+5. `proposals/architecture/virtual-step-debugging-implementation-proposal.md`
+6. `proposals/architecture/testing-strategy-proposal.md`
+7. `plans/future-work-planning.md`
 
 
 ### Virtual debugger implementation path

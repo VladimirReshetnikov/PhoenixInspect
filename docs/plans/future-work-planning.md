@@ -56,6 +56,7 @@ Based on the semantic-modeling architecture proposal, the following cross-docume
 4. Define copy-on-write projection semantics for dump-backed collection mutation so virtual writes are explicit and replay-safe.
 5. Prioritize stepping-noise suppression patterns (`lock`, `foreach`, throw-helper guards, interpolation handlers) as first-class UX investments in virtual stepping docs.
 6. Add versioned layout-decoder governance (identity, supported runtime ranges, invariant checks, fail-closed behavior) for projection-heavy models.
+7. Adopt `special-semantics-registry-proposal.md` as the normative registry contract and align architecture/integration docs to its lookup-order and versioning model.
 
 ---
 

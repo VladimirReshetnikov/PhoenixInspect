@@ -538,3 +538,12 @@ If you want the best payoff quickly:
 
    * improves watch readability and avoids deep framework calls
 5. Expand projections (ConcurrentQueue/Bag/Stack) + optional LINQ subset
+---
+
+## Companion contract update
+
+This proposal now has a dedicated companion contract:
+
+- `docs/proposals/architecture/special-semantics-registry-proposal.md`
+
+Use that document as the normative source for registry lookup order, conflict resolution, modeled-outcome envelope parity, and extension/versioning policy.
