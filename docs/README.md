@@ -12,6 +12,7 @@ This directory contains conceptual design artifacts for the IL interpreter and d
 | `post-mortem-debugging-feature-proposal.md` | Proposal | Draft | User-facing dump-time evaluation capability and phased scope. |
 | `future-work-planning.md` | Plan | Draft | Milestones, strategic tracks, and decision gates. |
 | `documentation-organization-proposal.md` | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
+| `call-model-and-effects.md` | Proposal | Draft | Call classification, fallback behavior, and effect lattice contract. |
 
 ## Suggested reading paths
 
@@ -38,6 +39,5 @@ This directory contains conceptual design artifacts for the IL interpreter and d
 
 - `architecture-overview.md`
 - `state-and-domain-model.md`
-- `call-model-and-effects.md`
 - `testing-strategy.md`
 - `perf-and-benchmarks.md`

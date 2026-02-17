@@ -39,6 +39,8 @@ We are designing a system that can:
 
 - `docs/documentation-organization-proposal.md`  
   Proposed structure, lifecycle, and quality standards for all project documentation.
+- `docs/call-model-and-effects.md`
+  Draft contract for call classification, fallback strategy, and effect semantics.
 
 ## How to Read the Docs (Suggested Order)
 
