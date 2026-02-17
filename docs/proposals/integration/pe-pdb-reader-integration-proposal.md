@@ -225,6 +225,163 @@ This layer’s job is to unify identity, caching, and “best available informat
    * last: IL disassembly
 4. **Cache everything** (module bytes, metadata readers, PDB readers, decompiled text, debug maps)
 
+### Layer contract expansion: who owns ClrMD ↔ PE/PDB ↔ Interpreter interactions
+
+To make the boundary operational (not just conceptual), define the service as five explicit layers with one-way dependencies:
+
+1. **Runtime Snapshot Adapter (ClrMD-facing)**
+2. **Artifact Acquisition Layer (PE/PDB discovery + identity validation)**
+3. **Metadata & Symbol Projection Layer (reader-specific decoding)**
+4. **Execution Binding Layer (interpreter-facing contracts)**
+5. **Interpreter Core (execution semantics only)**
+
+This keeps every “mixed concern” in exactly one place.
+
+#### Layer 1: Runtime Snapshot Adapter (ClrMD-facing)
+
+**Responsibility**
+
+* Convert ClrMD runtime objects into stable IDs and runtime facts.
+* Provide dump-backed memory and frame materialization.
+* Never parse metadata tables or PDB records directly.
+
+**Consumes**
+
+* `DataTarget`, `ClrRuntime`, `ClrModule`, `ClrType`, `ClrMethod`, frame/heap primitives.
+
+**Produces**
+
+* `RuntimeMethodHandle`, `RuntimeTypeHandle`, `RuntimeModuleHandle`
+* Raw frame values (`this`, args, locals) with confidence/provenance tags.
+* Optional “runtime hint set” (IL RVA/size, native code ranges, module path hints).
+
+**Why this matters**
+
+If you allow ClrMD objects to flow upward, the interpreter eventually depends on dump APIs. Keeping this adapter strict preserves portability to non-dump scenarios (static binary analysis, replay sessions, synthetic tests).
+
+#### Layer 2: Artifact Acquisition Layer (PE/PDB discovery + identity validation)
+
+**Responsibility**
+
+* Locate module/PDB bytes from dump, local disk, cache, or symbol server.
+* Validate identities before handing streams to readers.
+* Return immutable blobs/streams plus provenance.
+
+**Consumes**
+
+* Stable module/PDB identities from Layer 1 and user symbol-path policy.
+
+**Produces**
+
+* `ArtifactBlob` for PE/PDB + `ArtifactProvenance` (`DumpMapped`, `LocalPath`, `Cache`, `Server`).
+* Validation report (`ExactMatch`, `WeakMatch`, `Mismatch`).
+
+**Why this matters**
+
+This is where correctness guardrails live. The interpreter should never execute IL from an unverified module silently.
+
+#### Layer 3: Metadata & Symbol Projection Layer (reader-specific decoding)
+
+**Responsibility**
+
+* Decode method bodies, signatures, EH regions, locals, sequence points, and scope trees.
+* Normalize SRM/AsmResolver/dnlib output into project-owned records.
+* Hide library-specific quirks and missing-feature fallbacks.
+
+**Consumes**
+
+* PE/PDB blobs from Layer 2.
+* Optional runtime generic context hints from Layer 1.
+
+**Produces**
+
+* `MethodBodyRecord`, `ResolvedToken`, `SymbolMap`, `DocumentMap`, `AsyncMap`.
+* Decoder diagnostics for partial/unreadable records.
+
+**Why this matters**
+
+You can swap readers later (or run dual-read validation) without changing interpreter contracts.
+
+#### Layer 4: Execution Binding Layer (interpreter-facing contracts)
+
+**Responsibility**
+
+* Join runtime facts (Layer 1) with decoded artifacts (Layer 3).
+* Resolve generic instantiation context for each call site.
+* Materialize interpreter start state and provide call/field/heap callbacks.
+
+**Consumes**
+
+* Runtime handles/facts, normalized metadata/symbol records, policy knobs.
+
+**Produces**
+
+* `InterpreterSessionContext` + `IBindingServices`:
+
+  * `IMethodBodyProvider`
+  * `ITokenResolver`
+  * `ISymbolResolver`
+  * `IRuntimeValueProvider`
+  * `IHeapBridge`
+
+**Why this matters**
+
+This is the only layer allowed to “speak both languages” (runtime and metadata). It is the seam where provenance is combined and where fallback decisions become explicit stop reasons or unknowns.
+
+#### Layer 5: Interpreter Core (execution semantics only)
+
+**Responsibility**
+
+* Execute IL using the binding contracts.
+* Track domain values, effects, budgets, and determinism.
+* Report precise requirements back to Layer 4 when information is missing.
+
+**Consumes**
+
+* Only project-owned interfaces, never ClrMD or metadata-reader types.
+
+**Produces**
+
+* Value results, effect summaries, stop reasons, and explainability traces.
+
+---
+
+### Cross-layer interaction scenarios (authoritative hand-off points)
+
+#### Scenario A: Resolve and execute a method from a dump frame
+
+1. Layer 1 maps `ClrStackFrame` + `ClrMethod` to runtime handles and gathers frame values.
+2. Layer 4 requests method artifact from Layer 2 using module identity.
+3. Layer 3 decodes IL/EH/locals and returns normalized records.
+4. Layer 4 merges runtime generic context and emits `MethodExecutionPlan`.
+5. Layer 5 executes and emits result + provenance-rich diagnostics.
+
+#### Scenario B: Missing PDB, decompilation fallback
+
+1. Layer 2 fails PDB lookup, returns `ArtifactMissing(Pdb)`.
+2. Layer 3 builds symbol map with “no source” markers and optional decompiler mapping.
+3. Layer 4 marks stepping mode as `DecompiledFallback`.
+4. Layer 5 continues stepping with downgraded source confidence but stable IL semantics.
+
+#### Scenario C: Identity mismatch between dump module and disk module
+
+1. Layer 2 detects weak/failed identity verification.
+2. Layer 4 policy decides: block execution, allow with warning, or allow for analysis-only.
+3. Layer 5 receives policy outcome as explicit session flag and includes it in explainability output.
+
+---
+
+### Required error and provenance model between layers
+
+Every layer boundary should return structured outcomes, not plain exceptions:
+
+* `Success(value, provenance, diagnostics)`
+* `Partial(value, gaps, provenance, diagnostics)`
+* `Unavailable(reason, remediationHints)`
+* `Conflict(expected, actual, policyDecision)`
+
+That model prevents silent degradation and keeps interpreter behavior auditable when data quality is uneven (which is common for real-world dumps).
+
 ---
 
 ## Recommended internal interfaces (thin but powerful)
