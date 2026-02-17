@@ -76,6 +76,18 @@ public sealed record InstructionStepResult(
 public interface IExecutionSessionCoordinator
 {
     /// <summary>
+    /// Resolves the debug-map descriptor for the active method so stepping and explainability features can reason about statement boundaries.
+    /// </summary>
+    /// <param name="method">The method metadata descriptor whose IL offsets should be mapped for the current execution session.</param>
+    /// <param name="executionRequest">The parent execution request used for policy and diagnostics context.</param>
+    /// <param name="cancellationToken">A token used to stop debug-map resolution when host cancellation is requested.</param>
+    /// <returns>A value task that resolves to the normalized method debug map for the requested method body.</returns>
+    ValueTask<MethodDebugMapDescriptor> ResolveDebugMapAsync(
+        MethodMetadataDescriptor method,
+        IExecutionRequest executionRequest,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Classifies the specified call site and returns the resulting target/effect metadata for downstream step logic.
     /// </summary>
     /// <param name="callSite">The call-site descriptor representing the call instruction currently being interpreted.</param>
