@@ -6,6 +6,8 @@
 ## Current project phase
 - The project is currently in **conceptual design**.
 - The main deliverables are documentation artifacts in `docs/*.md`.
+- Prototype source code is in `src`.
+- Snapshots of some relevant libraries are under `lib`. They are provided as a reference to help with our design process, and should be treated as immutable. Do not add direct references to them from `src`, use corresponding NuGet packages. The set of libraries is not exhaustive; other can be used as needed.
 
 ## Documentation ownership and expectations
 - Continuously expand and refine the documentation set.

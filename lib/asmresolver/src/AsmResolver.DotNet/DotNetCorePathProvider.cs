@@ -1,0 +1,491 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Text.RegularExpressions;
+using AsmResolver.Shims;
+
+namespace AsmResolver.DotNet
+{
+    /// <summary>
+    /// Provides a mechanism for looking up versioned runtimes in a .NET Core / .NET 5.0+ installation folder.
+    /// </summary>
+    public class DotNetCorePathProvider
+    {
+        private static readonly string[] DefaultDotNetWindowsPaths = [
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "dotnet")
+        ];
+
+        private static readonly string[] DefaultDotNetUnixPaths =
+        [
+            "/usr/share/dotnet/",
+            "/usr/local/share/dotnet/",
+            "/opt/dotnet/"
+        ];
+
+        private const string DotNetDefaultLocationRegistry = "/etc/dotnet/install_location";
+
+        private static readonly Regex NetCoreRuntimePattern = new(@"\.NET( Core)? \d+\.\d+\.\d+");
+        private readonly List<DotNetInstallationInfo> _installedRuntimes = new();
+
+        static DotNetCorePathProvider()
+        {
+            DefaultInstallationPath = FindDotNetPath();
+            Default = new DotNetCorePathProvider();
+        }
+
+        /// <summary>
+        /// Creates a new .NET installation path provider, using the <see cref="DefaultInstallationPath"/>
+        /// as the installation path.
+        /// </summary>
+        public DotNetCorePathProvider()
+            : this(DefaultInstallationPath)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new .NET installation path provider, using the provided installation folder for .NET.
+        /// </summary>
+        /// <param name="installationDirectory">
+        /// The .NET installation folder. This should be the path to the directory containing the main <c>dotnet</c> or
+        /// <c>dotnet.exe</c> CLI utility.
+        /// </param>
+        public DotNetCorePathProvider(string? installationDirectory)
+        {
+            if (!string.IsNullOrEmpty(installationDirectory) && Directory.Exists(installationDirectory))
+                DetectInstalledRuntimes(installationDirectory!);
+        }
+
+        /// <summary>
+        /// Gets the default path provider representing the global .NET installation on the current system.
+        /// </summary>
+        public static DotNetCorePathProvider Default
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets the path to the .NET installation on the current system.
+        /// </summary>
+        public static string? DefaultInstallationPath
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Attempts to get the most recent version of .NET Core or .NET that is compatible with the provided
+        /// .NET standard version.
+        /// </summary>
+        /// <param name="standardVersion">The .NET standard version.</param>
+        /// <param name="coreVersion">The most recent compatible .NET or .NET Core version available.</param>
+        /// <returns><c>true</c> if a compatible version was found, <c>false</c> otherwise.</returns>
+        public bool TryGetLatestStandardCompatibleVersion(Version standardVersion, [NotNullWhen(true)] out Version? coreVersion)
+        {
+            bool foundMatch = false;
+            coreVersion = default;
+
+            foreach (var runtime in _installedRuntimes)
+            {
+                for (int i = 0; i < runtime.InstalledVersions.Count; i++)
+                {
+                    var versionInfo = runtime.InstalledVersions[i];
+                    if (versionInfo.IsCompatibleWithStandard(standardVersion)
+                        && (coreVersion is null || versionInfo.Version > coreVersion))
+                    {
+                        foundMatch = true;
+                        coreVersion = versionInfo.Version;
+                    }
+                }
+            }
+
+            return foundMatch;
+        }
+
+        /// <summary>
+        /// Collects all paths to the runtimes that implement the provided .NET or .NET Core runtime version.
+        /// </summary>
+        /// <param name="requestedRuntimeVersion">The requested .NET or .NET Core version.</param>
+        /// <returns>A collection of paths that implement the requested version.</returns>
+        public IEnumerable<string> GetRuntimePathCandidates(Version requestedRuntimeVersion)
+        {
+            foreach (var runtime in _installedRuntimes)
+            {
+                if (runtime.TryFindBestMatchingVersion(requestedRuntimeVersion, out var match))
+                    yield return match.FullPath;
+            }
+        }
+
+        /// <summary>
+        /// Collects all paths to the runtimes that implement the provided .NET or .NET Core runtime version.
+        /// </summary>
+        /// <returns>A collection of paths that implement the requested version.</returns>
+        public IEnumerable<string> GetRuntimePathCandidates(string runtimeName, Version runtimeVersion)
+        {
+            foreach (var runtime in _installedRuntimes)
+            {
+                if (runtime.Name == runtimeName && runtime.TryFindBestMatchingVersion(runtimeVersion, out var match))
+                    yield return match.FullPath;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether a specific version of the runtime is installed or not.
+        /// </summary>
+        /// <param name="runtimeVersion">The runtime version.</param>
+        /// <returns><c>true</c> if the version is installed, <c>false</c> otherwise.</returns>
+        public bool HasRuntimeInstalled(Version runtimeVersion)
+        {
+            foreach (var runtime in _installedRuntimes)
+            {
+                if (runtime.TryFindBestMatchingVersion(runtimeVersion, out _))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether a specific version of the runtime is installed or not.
+        /// </summary>
+        /// <param name="runtimeName">The name of the runtime.</param>
+        /// <param name="runtimeVersion">The runtime version.</param>
+        /// <returns><c>true</c> if the version is installed, <c>false</c> otherwise.</returns>
+        public bool HasRuntimeInstalled(string runtimeName, Version runtimeVersion)
+        {
+            foreach (var runtime in _installedRuntimes)
+            {
+                if (runtime.Name == runtimeName && runtime.TryFindBestMatchingVersion(runtimeVersion, out _))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void DetectInstalledRuntimes(string installationDirectory)
+        {
+            installationDirectory = Path.Combine(installationDirectory, "shared");
+            if (!Directory.Exists(installationDirectory))
+                return;
+
+            foreach (string directory in Directory.GetDirectories(installationDirectory))
+                _installedRuntimes.Add(new DotNetInstallationInfo(directory));
+
+            _installedRuntimes.Sort();
+        }
+
+        /// <summary>
+        /// Attempts to auto detect the installation directory of .NET or .NET Core.
+        /// </summary>
+        /// <returns>The path to the runtime, or <c>null</c> if none was found.</returns>
+        private static string? FindDotNetPath()
+        {
+            if (RuntimeInformationShim.IsRunningOnWindows)
+            {
+                if (FindWindowsDotNetPath() is { } path)
+                    return path;
+            }
+            else if (RuntimeInformationShim.IsRunningOnUnix)
+            {
+                if (FindUnixDotNetPath() is { } path)
+                    return path;
+            }
+
+            if (NetCoreRuntimePattern.Match(RuntimeInformationShim.FrameworkDescription).Success)
+            {
+                // Fallback: if we are currently running .NET Core or newer, we can infer the installation directory
+                // with the help of System.Reflection. The assembly of System.Object is either System.Runtime
+                // or System.Private.CoreLib, which is located at <installation_directory>/shared/<runtime>/<version>/.
+
+#if NET8_0_OR_GREATER
+                [UnconditionalSuppressMessage("SingleFile", "IL3000", Justification = "We're explicitly checking for this scenario.")]
+#endif
+                static string? TryGetObjectCoreLibPath()
+                {
+                    string corlibPath = typeof(object).Assembly.Location;
+
+                    // The path will be empty when publishing as single-file
+                    if (string.IsNullOrEmpty(corlibPath))
+                    {
+                        return null;
+                    }
+
+                    string versionPath = Path.GetDirectoryName(corlibPath)!;
+                    string runtimePath = Path.GetDirectoryName(versionPath)!;
+                    string sharedPath = Path.GetDirectoryName(runtimePath)!;
+                    return Path.GetDirectoryName(sharedPath);
+                }
+
+                return TryGetObjectCoreLibPath();
+            }
+
+            return null;
+        }
+
+        private static string? FindWindowsDotNetPath()
+        {
+            // Probe PATH for installation folder of dotnet.
+            string[] paths = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator);
+            foreach (string path in paths)
+            {
+                if (File.Exists(Path.Combine(path, "dotnet.exe")))
+                    return path;
+            }
+
+            // Probe default locations for installation folder of dotnet.
+            foreach (string path in DefaultDotNetWindowsPaths)
+            {
+                if (File.Exists(Path.Combine(path, "dotnet.exe")))
+                    return path;
+            }
+
+            return null;
+        }
+
+        private static string? FindUnixDotNetPath()
+        {
+            // Probe default locations for installation folder of dotnet.
+            foreach (string path in DefaultDotNetUnixPaths)
+            {
+                if (File.Exists(Path.Combine(path, "dotnet")))
+                    return path;
+            }
+
+            // Check /etc/dotnet/install_location for default installation:
+            // Reference: https://github.com/dotnet/designs/blob/ece1f853d2ba4c174151291056ff29d9101d0091/accepted/2020/install-locations.md?plain=1#L48
+            if (File.Exists(DotNetDefaultLocationRegistry))
+            {
+                using var fs = File.OpenText(DotNetDefaultLocationRegistry);
+                string? path = fs.ReadLine()?.TrimEnd();
+                if (!string.IsNullOrEmpty(path) && File.Exists(Path.Combine(path, "dotnet")))
+                    return path;
+            }
+
+            // If we're running on nix, we need to get it from the nix package.
+            if (Directory.Exists("/nix/store") && FindNixDotNetPath() is { } nixPath)
+                return nixPath;
+
+            return null;
+        }
+
+        private static string? FindNixDotNetPath()
+        {
+            // Probe "dotnet" from PATH. It will be in "<nix-dotnet-root>/dotnet".
+            string[]? paths = Environment.GetEnvironmentVariable("PATH")?.Split(Path.PathSeparator);
+            if (paths is null)
+                return null;
+
+            foreach (string path in paths)
+            {
+                string candidateDotNetPath = Path.Combine(path, "dotnet");
+                if (File.Exists(candidateDotNetPath)
+                    && NativeMethods.RealPath(candidateDotNetPath) is { } binaryPath
+                    && Path.GetDirectoryName(binaryPath) is { } rootPath
+                    && PathShim.Combine(rootPath, "shared") is { } sharedPath // Check if we have a "shared" directory.
+                    && Directory.Exists(sharedPath))
+                {
+                    return rootPath;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Provides information about a .NET runtime installation.
+        /// </summary>
+        private readonly struct DotNetInstallationInfo : IComparable<DotNetInstallationInfo>
+        {
+            /// <summary>
+            /// Creates a new instance of the <see cref="DotNetInstallationInfo"/> structure.
+            /// </summary>
+            /// <param name="path">The path to the runtime.</param>
+            public DotNetInstallationInfo(string path)
+            {
+                string name = Path.GetFileName(path);
+                var installedVersions = DetectInstalledVersionsInDirectory(name, path);
+
+                Name = name;
+                FullPath = path;
+                InstalledVersions = installedVersions.AsReadOnly();
+            }
+
+            /// <summary>
+            /// Gets the name of the runtime.
+            /// </summary>
+            public string Name
+            {
+                get;
+            }
+
+            /// <summary>
+            /// Gets the full path to the runtime.
+            /// </summary>
+            public string FullPath
+            {
+                get;
+            }
+
+            /// <summary>
+            /// Gets a list of installed versions in the directory.
+            /// </summary>
+            public IList<DotNetRuntimeVersionInfo> InstalledVersions
+            {
+                get;
+            }
+
+            /// <summary>
+            /// Attempts to find a version that best matches the provided requested .NET or .NET Core version.
+            /// </summary>
+            /// <param name="requestedVersion">The requested .NET or .NET Core version.</param>
+            /// <param name="versionInfo">The runtime that best matches the version.</param>
+            /// <returns><c>true</c> if a match was found, <c>false</c> otherwise.</returns>
+            public bool TryFindBestMatchingVersion(Version requestedVersion, out DotNetRuntimeVersionInfo versionInfo)
+            {
+                versionInfo = default;
+
+                var bestMatchVersion = new Version();
+                bool foundMatch = false;
+
+                for (int i = 0; i < InstalledVersions.Count; i++)
+                {
+                    var candidate = InstalledVersions[i];
+                    var candidateVersion = candidate.Version;
+
+                    // Prefer exact matches of the version.
+                    if (candidateVersion == requestedVersion)
+                    {
+                        versionInfo = candidate;
+                        return true;
+                    }
+
+                    // Match the major version.
+                    if (candidateVersion.Major == requestedVersion.Major && bestMatchVersion < requestedVersion)
+                    {
+                        versionInfo = candidate;
+                        bestMatchVersion = candidateVersion;
+                        foundMatch = true;
+                    }
+                }
+
+                return foundMatch;
+            }
+
+            /// <summary>
+            /// Finds all installed versions in the directory.
+            /// </summary>
+            /// <param name="name">The name of the runtime.</param>
+            /// <param name="path">The path to the directory to search in.</param>
+            /// <returns>The list of runtimes installed in the provided directory.</returns>
+            private static List<DotNetRuntimeVersionInfo> DetectInstalledVersionsInDirectory(string name, string path)
+            {
+                var versions = new List<DotNetRuntimeVersionInfo>();
+                foreach (string versionDirectory in Directory.GetDirectories(path))
+                {
+                    string versionString = Path.GetFileName(versionDirectory);
+
+                    // TODO: use semver parsing.
+                    int suffixIndex = versionString.IndexOf('-');
+                    if (suffixIndex >= 0)
+                        versionString = versionString.Remove(suffixIndex);
+
+                    if (!VersionShim.TryParse(versionString, out var version))
+                        continue;
+
+                    versions.Add(new DotNetRuntimeVersionInfo(name, version, versionDirectory));
+                }
+
+                return versions;
+            }
+
+            /// <inheritdoc />
+            public int CompareTo(DotNetInstallationInfo other)
+            {
+                // Ensure .NETCoreApp is sorted last to give other runtimes (like Microsoft.WindowsDesktop.App)
+                // priority. This prevents libraries such as WindowsBase.dll to be incorrectly resolved.
+
+                if (Name == other.Name)
+                    return 0;
+                if (Name == KnownRuntimeNames.NetCoreApp)
+                    return 1;
+                if (other.Name == KnownRuntimeNames.NetCoreApp)
+                    return -1;
+                return 0;
+            }
+
+#if DEBUG
+            /// <inheritdoc />
+            public override string ToString() => $"{Name} ({InstalledVersions.Count.ToString()} versions)";
+#endif
+        }
+
+        /// <summary>
+        /// Provides information about a single installation of the .NET runtime.
+        /// </summary>
+        private readonly struct DotNetRuntimeVersionInfo
+        {
+            /// <summary>
+            /// Creates a new instance of the <see cref="DotNetRuntimeVersionInfo"/> structure..
+            /// </summary>
+            /// <param name="runtimeName">The name of the runtime.</param>
+            /// <param name="version">The version of the runtime.</param>
+            /// <param name="fullPath">The full path to the installation directory.</param>
+            public DotNetRuntimeVersionInfo(string runtimeName, Version version, string fullPath)
+            {
+                RuntimeName = runtimeName;
+                Version = version;
+                FullPath = fullPath;
+            }
+
+            /// <summary>
+            /// Gets the name of the runtime.
+            /// </summary>
+            public string RuntimeName
+            {
+                get;
+            }
+
+            /// <summary>
+            /// Gets the version of the runtime.
+            /// </summary>
+            public Version Version
+            {
+                get;
+            }
+
+            /// <summary>
+            /// Gets the full path to the installation directory of the runtime.
+            /// </summary>
+            public string FullPath
+            {
+                get;
+            }
+
+            /// <summary>
+            /// Determines whether the runtime is compatible with the provided .NET standard version
+            /// </summary>
+            /// <param name="standardVersion">The .NET standard version.</param>
+            /// <returns><c>true</c> if compatible, <c>false</c> otherwise.</returns>
+            public bool IsCompatibleWithStandard(Version standardVersion)
+            {
+                // https://docs.microsoft.com/en-us/dotnet/standard/net-standard
+
+                if (standardVersion.Major == 2)
+                {
+                    if (standardVersion.Minor == 0)
+                        return Version.Major >= 2;
+                    if (standardVersion.Minor == 1)
+                        return Version.Major >= 3;
+                }
+
+                return true;
+            }
+
+#if DEBUG
+            /// <inheritdoc />
+            public override string ToString() => $"{RuntimeName}, v{Version}";
+#endif
+        }
+    }
+
+
+}
