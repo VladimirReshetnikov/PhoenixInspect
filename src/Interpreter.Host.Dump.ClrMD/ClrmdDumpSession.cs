@@ -42,7 +42,7 @@ public sealed class ClrmdDumpSession : IDisposable
         var clrInfo = dataTarget.ClrVersions.First();
         var runtime = clrInfo.CreateRuntime();
 
-        var modules = runtime.Modules
+        var modules = runtime.EnumerateModules()
             .Select(module => new ClrmdModuleInfo(
                 Name: Path.GetFileName(module.Name),
                 FilePath: string.IsNullOrWhiteSpace(module.Name) ? null : Path.GetFullPath(module.Name)))

@@ -12,7 +12,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.410101" />
   </ItemGroup>
 
   <ItemGroup>

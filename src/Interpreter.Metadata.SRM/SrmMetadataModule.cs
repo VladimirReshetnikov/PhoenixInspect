@@ -6,6 +6,7 @@ using Interpreter.Core.Abstractions;
 using Interpreter.IL;
 using Interpreter.Metadata.Abstractions;
 using Interpreter.Types;
+using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 
 namespace Interpreter.Metadata.SRM;
 
@@ -38,7 +39,7 @@ public sealed class SrmMetadataModule : IMetadataModule, IDisposable
 
         var moduleDefinition = _metadataReader.GetModuleDefinition();
         var mvid = _metadataReader.GetGuid(moduleDefinition.Mvid);
-        var peStamp = (_peReader.PEHeaders.CoffHeader.TimeDateStamp, (uint)_peReader.PEHeaders.PEHeader!.SizeOfImage);
+        var peStamp = ((uint) _peReader.PEHeaders.CoffHeader.TimeDateStamp, (uint)_peReader.PEHeaders.PEHeader!.SizeOfImage);
 
         Id = new ModuleId(
             mvid,
