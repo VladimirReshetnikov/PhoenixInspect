@@ -16,7 +16,7 @@ In practical terms, we want to support workflows such as:
 
 No. The repository is currently documentation-first and design-centric.
 
-There is no production code in this repository yet; the main outputs are architecture, product, integration, planning, and governance documents under `docs/`.
+There is an intentionally narrow prototype under `src/` and `tests/`: draft public contracts, a budgeted `ret`-only IL micro-step, SRM method-body extraction, ClrMD dump/module discovery, and one end-to-end dump integration test. It validates initial plumbing only; it is not a production-ready evaluator. The main outputs remain the architecture, product, integration, planning, and governance documents under `docs/`.
 
 ## 3) Why focus on deterministic and bounded execution instead of "best effort" simulation?
 
@@ -106,9 +106,9 @@ Good uncertainty handling is:
 - actionable (state what evidence would reduce it),
 - deterministic (same inputs/policies produce same uncertainty markers).
 
-## 13) How will this project eventually move from design to implementation?
+## 13) How is this project moving from design to implementation?
 
-Expected progression:
+The first walking-skeleton slice has begun step 4 below, while the earlier design-governance work remains incomplete. The intended progression is:
 
 1. Mature and align conceptual proposals.
 2. Convert key decisions into explicit ADRs/spec-like contracts.

@@ -8,6 +8,8 @@ Below is a concrete, end-to-end plan for the **smallest “real” integration t
 
 The target IL is exactly **one instruction**: `ret` (opcode `0x2A`). That implies the method must be **`void`** and have an empty body.
 
+> **Implementation status (2026-07): complete for the stated narrow slice.** The target and test are implemented in `tests/Interpreter.TestTarget` and `tests/Interpreter.IntegrationTests`; supporting code lives in `Interpreter.Core.Execution`, `Interpreter.Metadata.SRM`, and `Interpreter.Host.Dump.ClrMD`. The test validates module discovery from a generated dump, then reads IL from the still-accessible on-disk module. It does not yet validate dump-backed heap reads, missing artifacts, frame seeding, or overlay memory.
+
 ---
 
 ## 0) Success criteria (what this test must prove)
@@ -902,4 +904,3 @@ To keep scope minimal, these can throw `NotSupportedException` in this first int
 * Heap/object reading from the dump
 
 You’ll add them in the *next* integration tests (call, field load, etc.).
-

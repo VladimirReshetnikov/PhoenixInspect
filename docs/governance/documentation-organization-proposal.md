@@ -21,7 +21,7 @@ We currently have strong proposal content in `docs/`, but it is mostly a flat li
 3. It becomes unclear what is stable vs exploratory.
 4. Planning and architecture can drift apart silently.
 
-We need an intentional documentation information architecture before implementation complexity arrives.
+We need an intentional documentation information architecture now that the first implementation slice exists and complexity is beginning to arrive.
 
 ---
 
