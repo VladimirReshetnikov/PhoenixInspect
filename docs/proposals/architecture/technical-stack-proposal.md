@@ -14,7 +14,7 @@ The objective is to pick technologies that maximize:
 ## 1) Design constraints that drive stack choices
 
 1. **Tight runtime control**
-   For MVP we need deterministic execution with cooperative cancellation via `CancellationToken`; explicit instruction/time budget accounting is deferred.
+   Deterministic resource counters are required from the first executable slices; the prototype already accounts for instructions and abstract allocation units. Cooperative `CancellationToken` cancellation remains a separate host-responsiveness mechanism and must not replace replay-stable budgets.
 2. **Low-level metadata/IL fidelity**
    We must read and model ECMA-335 IL accurately, including signatures, generics, and exception regions.
 3. **Pluggable architecture**
@@ -40,13 +40,16 @@ The objective is to pick technologies that maximize:
 
 - Prefer language features that are supported in current LTS SDKs used by our target consumers.
 
-### Runtime target: .NET 8 (primary), with optional multi-targeting later
+### Runtime target: .NET 8 (current prototype), decision required before productization
 
-**Why .NET 8 first**
+**Why the prototype currently uses .NET 8**
 
 - Modern performance primitives and runtime stability.
-- Long-term support window.
 - Strong tooling and package ecosystem.
+
+**Lifecycle correction (2026-07)**
+
+.NET 8 is in maintenance and reaches end of support on November 10, 2026. A multi-year implementation should explicitly choose whether to move the development baseline to .NET 10 LTS (supported through November 2028) while retaining `net8.0` as a consumer target, or to accept the near-term migration cost. See the [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
 
 **Deferred decision**
 
@@ -87,13 +90,15 @@ Proposed solution structure:
 
 ## 4) Metadata and IL decoding stack
 
-### Default backend: `System.Reflection.Metadata` + `PEReader`
+### Current integration-spike backend: `System.Reflection.Metadata` + `PEReader`
 
 **Rationale**
 
 - High-performance, low-level metadata reader from Microsoft.
 - Good control over blobs, signatures, tokens, and Portable PDB access.
 - Suitable for deterministic decoding and explicit handling of edge cases.
+
+This is the backend exercised by the current `ret`-only integration test. It conflicts with the provisional MVP decision record that names AsmResolver as the chosen primary backend; that conflict must be resolved by an authoritative ADR before either backend is treated as the product default.
 
 ### Debug-map and source fallback stack
 
@@ -240,23 +245,15 @@ Use standard .NET DI for host-facing composition while allowing direct construct
 
 ## 13) Prototype implementation snapshot (draft)
 
-> **Draft status notice:** The current `src/` solution is a prototype scaffold used to validate module seams.
+> **Draft status notice:** The current solution combines a broad module scaffold with one narrow executable vertical slice.
 > Project names, dependencies, and interfaces are exploratory and may change without compatibility guarantees.
 
-Current prototype projects:
+Current facts:
 
-- `Interpreter.Core.Abstractions`
-- `Interpreter.Metadata.Abstractions`
-- `Interpreter.Core.Execution`
-- `Interpreter.Core.Tracing`
-- `Interpreter.Host.Abstractions`
+- The solution contains 42 `src/` projects plus two test projects; most source projects are placeholders.
+- Handwritten prototype code currently exists in `Interpreter.Types`, `Interpreter.IL`, `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, and `Interpreter.Host.Dump.ClrMD`.
+- `tests/Interpreter.IntegrationTests` generates a dump, discovers the target module with ClrMD, reads a `ret`-only body from the on-disk PE with SRM, and executes one budgeted micro-step.
+- `Interpreter.Core.Execution` depends on core abstractions, not on a concrete metadata backend. `MetadataResolutionServices` supplies the current bridge.
+- There is not yet a concrete value domain, dump-backed memory model, expression front end, orchestrator, debugger control plane, analysis engine, or product composition.
 
-Current dependency direction:
-
-- `Abstractions` has no project dependencies.
-- `Metadata` -> `Abstractions`.
-- `Core` -> `Abstractions`, `Metadata`.
-- `Diagnostics` -> `Abstractions`.
-- `Hosting` -> `Abstractions`, `Metadata`, `Core`, `Diagnostics` (+ `Microsoft.Extensions.DependencyInjection.Abstractions`).
-
-This snapshot is intentionally minimal and should be interpreted as a stepping stone toward the broader package layout described earlier in this proposal.
+This snapshot is a plumbing proof, not evidence that the proposed package decomposition or public contracts have converged.

@@ -19,10 +19,13 @@ docs/
 
 | Document | Area | Type | Status | Summary |
 |---|---|---|---|---|
+| `plans/design-architecture-review.md` | Planning | Review | Current | Repository-wide assessment of product plausibility, semantic architecture, prototype evidence, risks, and a dump-first replacement roadmap. |
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft | User-facing dump-time evaluation capability and phased scope. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft | Product design for virtual Step Into/Over/Out and session UX in dump analysis. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft | Cross-application strategy for reusing the interpreter core across static analysis, speculative live debugging, sandbox runtime hosting, replay/tracing, differential testing, and build-time partial evaluation. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Draft | Top-level component map, runtime boundaries, and canonical data flow. |
+| `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Draft | Granular logical/project module catalog and dependency-direction rules. |
+| `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Proposal | Draft | Initial API sketches for the core, metadata, and host abstraction boundaries. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft | Initial abstract domains and analysis behavior for MVP. |
 | `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft | Language/runtime/dependency and package layout choices. |
@@ -43,14 +46,18 @@ docs/
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft | Artifact-resolution design for PE/PDB loading, debug-map generation, and source fallback. |
+| `proposals/integration-test-plan.md` | Integration | Implemented Plan | Draft | Implemented ret-only dump-to-metadata-to-micro-step walking-skeleton test and its deliberately narrow proof boundary. |
 | `plans/future-work-planning.md` | Planning | Plan | Draft | Milestones, strategic tracks, and decision gates. |
 | `plans/requirements-traceability-map.md` | Planning | Matrix | Draft | Cross-document traceability matrix linking product requirements to architecture decisions and validation artifacts. |
 | `lib/README.md` | Library Notes | Index | Draft | Navigation and usage guidance for `docs/lib/*` library notes. |
 | `lib/clrmd/usage-notes.md` | Library Notes | Note | Draft | Project-specific ClrMD responsibilities, boundaries, risks, and action items. |
+| `lib/clrmd/intro-tutorial.md` | Library Notes | Tutorial | Draft | Contributor introduction to ClrMD dump/runtime/heap/stack inspection workflows. |
 | `lib/clrmd/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven ClrMD lifecycle, cache, stack, and heap adapter implications. |
 | `lib/asmresolver/usage-notes.md` | Library Notes | Note | Draft | Candidate AsmResolver roles for metadata/CIL and normalization guidance. |
+| `lib/asmresolver/intro-tutorial.md` | Library Notes | Tutorial | Draft | Contributor introduction to the AsmResolver object model and reader/writer policy surface. |
 | `lib/asmresolver/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven AsmResolver reader-policy, CIL, and PDB ingestion findings. |
 | `lib/dnlib/usage-notes.md` | Library Notes | Note | Draft | dnlib fallback/compatibility role and backend-capability planning notes. |
+| `lib/dnlib/intro-tutorial.md` | Library Notes | Tutorial | Draft | Contributor introduction to dnlib metadata, method-body, and symbol APIs. |
 | `lib/dnlib/source-scan.md` | Library Notes | Source Scan | Draft | Source-driven dnlib module policy, method-body lifecycle, and Portable PDB findings. |
 | `lib/cecil/usage-notes.md` | Library Notes | Note | Draft | Mono.Cecil backend role, reader-policy boundaries, and adapter guidance. |
 | `lib/cecil/intro-tutorial.md` | Library Notes | Tutorial | Draft | Introductory Mono.Cecil tutorial for contributors, focused on policy, method bodies, symbols, and resolver usage. |
@@ -61,13 +68,23 @@ docs/
 | `lib/backend-capability-matrix.md` | Library Notes | Matrix | Draft | Cross-library capability comparison axes and MVP decision gates for metadata/symbol backends. |
 | `lib/adapter-conformance-checklist.md` | Library Notes | Checklist | Draft | Backend-neutral adapter contract and miss-reason conformance guidance. |
 | `lib/backend-evidence-log.md` | Library Notes | Log | Draft | Evidence-tracking log that links backend capability claims to concrete prototype artifacts and confidence levels. |
-| `lib/mvp-backend-decision-record.md` | Library Notes | Decision Record | Draft | Structured decision record template for selecting the MVP metadata/symbol backend strategy. |
+| `lib/mvp-backend-decision-record.md` | Library Notes | Decision Record | Provisional | Provisional selection of AsmResolver for the MVP, pending implementation evidence and reconciliation with the SRM spike. |
 | `lib/pe-pdb-reader-api-comparison.md` | Library Notes | Comparison Note | Draft | API-shape and capability comparison across PE/PDB reader stacks and adapter implications. |
+| `lib/source-review-deep-dive.md` | Library Notes | Source Review | Draft | Cross-library source review of lifecycle, cache, metadata, symbol, and parsing behavior. |
+| `lib/source-tour-workbook.md` | Library Notes | Workbook | Draft | Guided source-tour exercises for validating backend assumptions. |
 | `governance/documentation-organization-proposal.md` | Governance | Proposal | Draft | Recommended information architecture and doc lifecycle model. |
 | `governance/project-faq.md` | Governance | Guide | Draft | FAQ for contributors and stakeholders about scope, expectations, and direction in the concept phase. |
 | `governance/terminology-glossary.md` | Governance | Glossary | Draft | Canonical terminology definitions and cross-document language alignment guidance. |
 
 ## Suggested reading paths
+
+### Review-first path
+
+1. `plans/design-architecture-review.md`
+2. `proposals/product/post-mortem-debugging-feature-proposal.md`
+3. `proposals/architecture/architecture-overview-proposal.md`
+4. `proposals/architecture/state-and-domain-model-proposal.md`
+5. `plans/future-work-planning.md`
 
 ### Product-first path
 

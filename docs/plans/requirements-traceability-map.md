@@ -1,6 +1,6 @@
 # Requirements-to-Architecture Traceability Map (Draft)
 
-This document links product requirements to architecture decisions and validation artifacts so we can evaluate design readiness before implementation.
+This document links product requirements to architecture decisions and validation artifacts so we can evaluate design readiness while the first implementation spikes are being built.
 
 It is intentionally lightweight and will evolve as proposals are refined.
 
@@ -23,7 +23,7 @@ It is intentionally lightweight and will evolve as proposals are refined.
 ### Out of scope (for now)
 
 - Per-opcode-level tracing (tracked separately in opcode support docs).
-- CI-level test case inventory (to be added once implementation test projects exist).
+- CI-level test-case inventory. An integration-test project now exists, but this map does not yet maintain requirement-to-test IDs.
 
 ### Update cadence
 

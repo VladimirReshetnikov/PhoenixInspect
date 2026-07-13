@@ -6,7 +6,7 @@ If you only read one thing: this project is about making dump-time debugging wor
 
 ## Project gist
 
-We are designing—not yet implementing—a library and architecture that can power experiences such as:
+We are designing and prototyping—not yet shipping—a library and architecture that can power experiences such as:
 
 - post-mortem expression evaluation,
 - virtual stepping (Step Into/Over/Out) over dump-backed sessions,
@@ -21,14 +21,15 @@ Core principles:
 
 ## Current phase
 
-- **Status:** documentation-first conceptual design.
-- **Implementation:** no production code in this repo yet.
+- **Status:** documentation-first conceptual design with an executable walking-skeleton prototype.
+- **Implementation:** draft contracts plus a deliberately narrow end-to-end slice can load a dump, discover a module, read a `ret`-only method body through SRM, and execute one budgeted IL micro-step. This is prototype evidence, not a production-ready interpreter.
 - **Primary output:** proposals, plans, and governance docs under `docs/`.
 
 ## Where to go next
 
 For structured topic lists, document inventory, and recommended reading paths, start here:
 
+- **Repository-wide design and architecture review:** `docs/plans/design-architecture-review.md`
 - **Documentation index and TOC-like navigation:** `docs/README.md`
 
 For process and roadmap context:

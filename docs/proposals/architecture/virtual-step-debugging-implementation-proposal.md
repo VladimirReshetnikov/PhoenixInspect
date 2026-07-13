@@ -718,6 +718,6 @@ Everything else (unknown propagation, taint/effects, call modeling, dump-backed 
 
 ## Appendix A) Current prototype contract alignment (`src/`)
 
-`src/` is currently in scaffolding-only mode with project/dependency definitions and no concrete stepping control-plane types yet.
+`src/` is no longer scaffolding-only. `Interpreter.Core.Execution` contains draft `MachineState`, `FrameState`, `StepOutcome`, `StopReason`, debug-event, budget-policy, and `IlMachine.StepOne` types, with intentionally narrow support for a root `ret` instruction.
 
-Near-term interface work is expected to begin in `Interpreter.Core.Abstractions` and `Interpreter.Debugger.Engine`, with contract naming intentionally deferred until the module-level review cycle completes.
+The actual debugger control plane remains unimplemented: `Interpreter.Debugger.Engine` has no Step Into/Over/Out, stop-plan, history, branch-decision, or source-map orchestration types. Near-term work should therefore treat the existing core types as walking-skeleton evidence rather than as final stepping contracts.

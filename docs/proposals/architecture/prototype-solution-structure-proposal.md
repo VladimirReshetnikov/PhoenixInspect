@@ -1,19 +1,19 @@
 # Prototype Solution Structure Proposal
 
-> **Draft status notice:** This document is a scaffolding snapshot for the current design phase.
-> The active module direction is defined by `module-architecture-proposal.md`, and this file tracks how `src/` is currently aligned.
+> **Draft status notice:** This document records the current module scaffold and the first executable integration slice.
+> The active module direction is defined by `module-architecture-proposal.md`; project names and boundaries remain prototype hypotheses.
 
 ## 1. Purpose
 
-This proposal records the current `src/` scaffolding after retiring the earlier prototype layout. It exists to:
+This proposal records the current `src/` scaffold and implemented walking skeleton after retiring the earlier prototype layout. It exists to:
 
 - keep conceptual architecture and repository structure synchronized,
 - validate dependency direction at project granularity,
 - provide a clean baseline for incremental implementation experiments.
 
-## 2. Current scaffolding layout
+## 2. Current scaffold and implementation layout
 
-The current source tree contains project-only scaffolding (no prototype types yet) for the module architecture catalog:
+The source tree contains 42 source projects matching the module architecture catalog. Most remain project-only placeholders; eight currently contain handwritten prototype types. The implemented slice spans core abstractions/execution, metadata abstractions/SRM, host abstractions/ClrMD, and the supporting type/IL shapes.
 
 - Foundations: `Interpreter.Foundation`
 - Core semantics: `Interpreter.Types`, `Interpreter.IL`, `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Core.IR`, `Interpreter.Core.Analysis`, `Interpreter.Core.Tracing`
@@ -33,19 +33,22 @@ The repository scaffolding follows the same layering policy defined in `module-a
 
 ## 4. Scope boundary for this phase
 
-- `src/` currently contains only project files and dependency edges.
-- Public interfaces/types are intentionally deferred until design convergence for each module seam.
+- Public interfaces and DTOs now exist in the core, metadata, and host abstraction projects. They are draft and reversible; their presence is not an API-stability commitment.
+- `Interpreter.Core.Execution` implements deterministic instruction/allocation budget consumption and a single `ret` micro-step.
+- `Interpreter.Metadata.SRM` can open an on-disk managed PE, identify a method definition, and return its raw method body for the integration slice.
+- `Interpreter.Host.Dump.ClrMD` can load a dump and enumerate managed modules.
+- `tests/Interpreter.IntegrationTests` generates a full dump and validates the `dump -> module discovery -> disk PE/SRM -> ret micro-step` path. It does not yet read heap values from dump memory.
 - Any future addition of prototype APIs should be accompanied by corresponding architecture doc updates in the same PR.
 
 ## 5. Next updates expected
 
-1. Add architecture-decision notes for selected optional projects (for example, AsmResolver and Windows PDB options).
-2. Capture package version strategy and compatibility constraints once dependency evaluation is complete.
-3. Add focused prototype interfaces in a subset of modules after dependency seams are validated through review.
+1. Reconcile the provisional AsmResolver backend decision with the SRM implementation used by the current vertical slice.
+2. Validate the next vertical slice against actual dump-backed heap data rather than only an on-disk module path.
+3. Capture package-version, target-framework, and compatibility constraints before treating project boundaries as durable.
 
 ## 6. Dependency alignment note (build-fix follow-up)
 
-Comparison against the current project scaffolding identified two additional dependency edges required for the solution to build:
+Comparison against the project scaffold identified two additional dependency edges required for the solution to build:
 
 - `src/Interpreter.Host.Abstractions/Interpreter.Host.Abstractions.csproj` now references `../Interpreter.Metadata.Abstractions/Interpreter.Metadata.Abstractions.csproj`.
 - `src/Interpreter.Metadata.Abstractions/Interpreter.Metadata.Abstractions.csproj` now references `../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj`.
