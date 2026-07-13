@@ -9,6 +9,7 @@ docs/
 ├── lib/             # Project-specific notes for library snapshots under /lib
 ├── governance/      # Documentation process, standards, and lifecycle
 ├── plans/           # Milestones, sequencing, and decision gates
+├── reviews/         # Point-in-time design and architecture assessments
 └── proposals/
     ├── architecture/ # Interpreter/core/runtime contracts
     ├── integration/  # External systems and host integration boundaries
@@ -19,6 +20,7 @@ docs/
 
 | Document | Area | Type | Status | Summary |
 |---|---|---|---|---|
+| `reviews/design-and-architecture-review-2026-07-13.md` | Cross-cutting | Review | Complete | Comprehensive assessment of product plausibility, architecture, roadmap, documentation, prototype code, tests, and dependencies, with a prioritized reset plan. |
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft | User-facing dump-time evaluation capability and phased scope. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft | Product design for virtual Step Into/Over/Out and session UX in dump analysis. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft | Cross-application strategy for reusing the interpreter core across static analysis, speculative live debugging, sandbox runtime hosting, replay/tracing, differential testing, and build-time partial evaluation. |
