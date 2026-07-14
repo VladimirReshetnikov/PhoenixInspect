@@ -1,31 +1,24 @@
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Interpreter.Core.Abstractions;
 using Interpreter.Core.Execution;
 using Interpreter.Domain.Concrete;
+using Interpreter.Metadata.SRM;
 using Xunit;
-using IlBody = Interpreter.Core.Abstractions.MethodBody;
-using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 
 namespace Interpreter.Tests;
 
 /// <summary>
-/// Differentially executes real optimized C# compiler output through the prototype and the active CoreCLR.
+/// Differentially executes real optimized C# compiler output projected by SRM through the prototype and CoreCLR.
 /// </summary>
 public sealed class CompilerEmittedDifferentialTests
 {
-    private static readonly MethodHandle FixtureHandle = new(
-        ModuleHandle.FromContentIdentity(
-            ModuleContentIdentity.FromMetadata(
-                new Guid("00000000-0000-0000-0000-000000000456"),
-                "CompilerEmittedDifferentialTests"u8),
-            30,
-            40),
-        0x06000001);
-
-    /// <summary>Enumerates supported compiler-emitted method/argument scenarios, including unchecked overflow.</summary>
-    /// <returns>Rows containing a private fixture method name and its boxed invocation arguments.</returns>
+    /// <summary>Enumerates the admitted compiler-emitted arithmetic corpus, including unchecked overflow.</summary>
+    /// <returns>Rows containing a private fixture MethodDef name and its boxed invocation arguments.</returns>
     public static IEnumerable<object[]> SupportedCases()
     {
         yield return [nameof(ReturnZero), Array.Empty<object>()];
@@ -42,115 +35,286 @@ public sealed class CompilerEmittedDifferentialTests
         yield return [nameof(Multiply), new object[] { -7, 6 }];
         yield return [nameof(Multiply), new object[] { int.MaxValue, 2 }];
         yield return [nameof(Mixed), new object[] { 8, 5 }];
+        yield return [nameof(Fifth), new object[] { 1, 2, 3, 4, 5 }];
         yield return [nameof(VoidNoOp), Array.Empty<object>()];
     }
 
-    /// <summary>Checks that an admitted compiler-emitted method returns exactly the value produced by CoreCLR.</summary>
-    /// <param name="methodName">The private optimized fixture method to inspect and execute.</param>
+    /// <summary>Checks that SRM-projected compiler output returns exactly the value produced by CoreCLR.</summary>
+    /// <param name="methodName">The private optimized fixture MethodDef to resolve and execute.</param>
     /// <param name="arguments">The boxed Int32 arguments supplied to both execution engines.</param>
     [Theory]
     [MemberData(nameof(SupportedCases))]
-    public void InterpreterMatchesCoreClrForActualCompilerEmittedMethod(string methodName, object[] arguments)
+    public void SrmProjectedInterpreterMatchesCoreClr(string methodName, object[] arguments)
     {
         var method = GetFixtureMethod(methodName);
         var expected = method.Invoke(null, arguments);
-        var outcome = Interpret(method, arguments);
+        var run = InterpretFresh(methodName, arguments);
 
-        Assert.Equal(MachineRunStatus.Completed, outcome.Status);
-        Assert.Null(outcome.Failure);
-        Assert.Empty(outcome.State.CallStack);
+        Assert.Equal(MachineRunStatus.Completed, run.Outcome.Status);
+        Assert.Null(run.Outcome.Failure);
+        Assert.Null(run.Outcome.TargetException);
+        Assert.Empty(run.Outcome.State.CallStack);
         if (method.ReturnType == typeof(void))
         {
             Assert.Null(expected);
-            Assert.False(outcome.State.ReturnValue.HasValue);
+            Assert.False(run.Outcome.State.ReturnValue.HasValue);
         }
         else
         {
-            Assert.True(outcome.State.ReturnValue.HasValue);
+            Assert.True(run.Outcome.State.ReturnValue.HasValue);
             var domain = new ConcreteDomain();
-            Assert.True(domain.TryGetConstInt32(outcome.State.ReturnValue.Value, out var actual));
+            Assert.True(domain.TryGetConstInt32(run.Outcome.State.ReturnValue.Value, out var actual));
             Assert.Equal((int)expected!, actual);
         }
     }
 
-    /// <summary>Checks that a real emitted call opcode rejects the complete body before its prefix can execute.</summary>
+    /// <summary>Checks that a real emitted call opcode rejects the complete body during activation.</summary>
     [Fact]
-    public void ActualCompilerEmittedUnsupportedCallFailsClosedBeforeItsSupportedPrefix()
+    public void ActualCompilerEmittedUnsupportedCallFailsClosedBeforeActivation()
     {
-        var method = GetFixtureMethod(nameof(UnsupportedCall));
-        var reflectionBody = method.GetMethodBody()!;
-        var body = CreateBody(reflectionBody);
+        using var module = OpenFixtureModule();
+        var method = ResolveFixtureMethod(module, nameof(UnsupportedCall));
         var domain = new ConcreteDomain();
-        var resolver = new FixedResolver(body);
-        var machine = new IlMachine<ConcreteValue, ConcreteMemory>(
-            domain,
-            resolver,
-            new InstructionBudgetPolicy());
-        var frame = new FrameState<ConcreteValue>(
-            FixtureHandle,
-            0,
+        var machine = CreateMachine(module, domain);
+
+        var activation = machine.ActivateRoot(
+            method,
             ImmutableArray.Create(domain.ConstInt32(-5)),
-            ImmutableArray<ConcreteValue>.Empty,
-            ImmutableArray<ConcreteValue>.Empty,
-            true);
-        var state = MachineState<ConcreteValue, ConcreteMemory>.Create(frame, ConcreteMemory.Empty);
-        var operations = new MachineOperationalState(new BudgetState(100));
+            ConcreteMemory.Empty);
 
-        var outcome = machine.StepOne(state, operations);
-
-        Assert.Same(state, outcome.State);
-        Assert.Same(operations, outcome.OperationalState);
-        Assert.Equal(MachineRunStatus.Blocked, outcome.Status);
-        Assert.Equal("EXEC_UNSUPPORTED_OPCODE", outcome.Failure!.Code);
-        Assert.Empty(outcome.Events);
+        Assert.False(activation.IsSuccess);
+        Assert.Null(activation.State);
+        Assert.Equal(MachineRunStatus.Blocked, activation.Status);
+        Assert.Equal("EXEC_UNSUPPORTED_OPCODE", activation.Failure!.Code);
     }
 
-    private static StepOutcome<ConcreteValue, ConcreteMemory> Interpret(MethodInfo method, object[] arguments)
+    /// <summary>Checks actual direct/adjusted getters and the null-receiver outcome against CoreCLR.</summary>
+    /// <param name="methodName">The instance getter MethodDef name.</param>
+    /// <param name="adjusted">Whether the getter adds one to the loaded field.</param>
+    [Theory]
+    [InlineData(nameof(DifferentialGetterFixture.Read), false)]
+    [InlineData(nameof(DifferentialGetterFixture.ReadAdjusted), true)]
+    public void SrmProjectedGetterAndNullOutcomeMatchCoreClr(string methodName, bool adjusted)
     {
-        var reflectionBody = method.GetMethodBody()
-            ?? throw new InvalidOperationException($"Fixture method {method.Name} has no IL body.");
-        var body = CreateBody(reflectionBody);
-        var domain = new ConcreteDomain();
-        var locals = reflectionBody.LocalVariables.Select(local => local.LocalType == typeof(int)
-            ? domain.ConstInt32(0)
-            : throw new InvalidOperationException($"Fixture local type {local.LocalType} is outside the differential slice."));
-        var frame = new FrameState<ConcreteValue>(
-            FixtureHandle,
-            0,
-            arguments.Select(argument => argument is int integer
-                ? domain.ConstInt32(integer)
-                : throw new InvalidOperationException($"Fixture argument {argument.GetType()} is outside the differential slice.")).ToImmutableArray(),
-            locals.ToImmutableArray(),
-            ImmutableArray<ConcreteValue>.Empty,
-            method.ReturnType != typeof(void));
-        var machine = new IlMachine<ConcreteValue, ConcreteMemory>(
-            domain,
-            new FixedResolver(body),
-            new InstructionBudgetPolicy());
-        var state = MachineState<ConcreteValue, ConcreteMemory>.Create(frame, ConcreteMemory.Empty);
-        var operations = new MachineOperationalState(new BudgetState(100));
+        const int fieldValue = 41;
+        var clrReceiver = new DifferentialGetterFixture(fieldValue);
+        var expected = adjusted ? clrReceiver.ReadAdjusted() : clrReceiver.Read();
+        using var module = OpenFixtureModule();
+        var method = ResolveFixtureMethod(module, nameof(DifferentialGetterFixture), methodName);
+        var definition = module.GetMethodDefinition(method);
+        Assert.True(definition.IsSuccess, definition.Failure?.Code);
+        var code = definition.Value.Body.CodeBytes;
+        Assert.Equal(adjusted ? 9 : 7, code.Length);
+        Assert.Equal(0x02, code[0]);
+        Assert.Equal(0x7B, code[1]);
+        var fieldToken = BinaryPrimitives.ReadInt32LittleEndian(code.AsSpan(2, sizeof(int)));
+        Assert.Equal(0x2A, code[^1]);
+        var field = module.ResolveField(method, fieldToken);
+        Assert.True(field.IsSuccess, field.Failure?.Code);
 
+        var domain = new ConcreteDomain();
+        var memoryModel = new ConcreteMemoryModel(domain);
+        var allocated = memoryModel.NewObject(
+            ConcreteMemory.Empty,
+            definition.Value.Signature.DeclaringType);
+        var memory = memoryModel.StoreField(
+            allocated.mem,
+            allocated.objRef,
+            field.Value,
+            domain.ConstInt32(fieldValue));
+        var machine = CreateMachine(module, domain, memoryModel);
+        var run = Run(machine, method, ImmutableArray.Create(allocated.objRef), memory);
+
+        Assert.Equal(MachineRunStatus.Completed, run.Outcome.Status);
+        AssertInt32(expected, run.Outcome.State.ReturnValue.Value);
+        Assert.Equal(memory, run.Outcome.State.Memory);
+
+        if (adjusted)
+        {
+            Assert.Throws<NullReferenceException>(() =>
+            {
+                _ = InvokeAdjustedGetter(null!);
+            });
+        }
+        else
+        {
+            Assert.Throws<NullReferenceException>(() =>
+            {
+                _ = InvokeDirectGetter(null!);
+            });
+        }
+
+        var nullRun = Run(
+            machine,
+            method,
+            ImmutableArray.Create(domain.ConstNull(definition.Value.Signature.DeclaringType)),
+            ConcreteMemory.Empty);
+        Assert.Equal(MachineRunStatus.TargetException, nullRun.Outcome.Status);
+        Assert.Equal(TargetExceptionKind.NullReference, nullRun.Outcome.TargetException!.Kind);
+        Assert.Equal(nullRun.Outcome.TargetException, nullRun.Outcome.State.TerminalTargetException);
+        Assert.Empty(nullRun.Outcome.State.CallStack);
+        Assert.Equal(98, nullRun.Outcome.OperationalState.Budget.InstructionBudget);
+        Assert.Single(
+            nullRun.Events,
+            item => item.Kind == DebugEventKind.TargetExceptionRaised);
+        Assert.DoesNotContain(
+            nullRun.Events,
+            item => item.Kind == DebugEventKind.InstructionExecuted && item.IlOffset == 1);
+    }
+
+    /// <summary>Checks the optimized compiler emits and execution admits the short fifth-argument encoding.</summary>
+    [Fact]
+    public void CompilerEmitsShortArgumentEncodingForFifthParameter()
+    {
+        using var module = OpenFixtureModule();
+        var method = ResolveFixtureMethod(module, nameof(Fifth));
+        var definition = module.GetMethodDefinition(method);
+        Assert.True(definition.IsSuccess, definition.Failure?.Code);
+        Assert.Equal(new byte[] { 0x0E, 0x04, 0x2A }, definition.Value.Body.CodeBytes.ToArray());
+    }
+
+    /// <summary>
+    /// Checks canonical replay both through one frozen machine plan and through freshly reopened metadata sessions.
+    /// </summary>
+    [Fact]
+    public void SameSessionAndFreshSessionReplayAreByteIdentical()
+    {
+        using var firstModule = OpenFixtureModule();
+        var firstMethod = ResolveFixtureMethod(firstModule, nameof(Mixed));
+        var firstDomain = new ConcreteDomain();
+        var firstMachine = CreateMachine(firstModule, firstDomain);
+        var arguments = ImmutableArray.Create(firstDomain.ConstInt32(8), firstDomain.ConstInt32(5));
+
+        var first = Run(firstMachine, firstMethod, arguments);
+        var sameSession = Run(firstMachine, firstMethod, arguments);
+
+        using var freshModule = OpenFixtureModule();
+        var freshMethod = ResolveFixtureMethod(freshModule, nameof(Mixed));
+        var freshDomain = new ConcreteDomain();
+        var freshMachine = CreateMachine(freshModule, freshDomain);
+        var freshArguments = ImmutableArray.Create(freshDomain.ConstInt32(8), freshDomain.ConstInt32(5));
+        var freshSession = Run(freshMachine, freshMethod, freshArguments);
+
+        var canonical = SerializeCanonical(first);
+        Assert.Equal(canonical, SerializeCanonical(sameSession));
+        Assert.Equal(canonical, SerializeCanonical(freshSession));
+    }
+
+    private static DifferentialRun InterpretFresh(string methodName, object[] arguments)
+    {
+        using var module = OpenFixtureModule();
+        var method = ResolveFixtureMethod(module, methodName);
+        var domain = new ConcreteDomain();
+        var machine = CreateMachine(module, domain);
+        var values = arguments.Select(argument => argument is int integer
+            ? domain.ConstInt32(integer)
+            : throw new InvalidOperationException(
+                $"Fixture argument type {argument.GetType().FullName} is outside the differential slice."))
+            .ToImmutableArray();
+        return Run(machine, method, values);
+    }
+
+    private static DifferentialRun Run(
+        IlMachine<ConcreteValue, ConcreteMemory> machine,
+        MethodHandle method,
+        ImmutableArray<ConcreteValue> arguments,
+        ConcreteMemory? memory = null)
+    {
+        var activation = machine.ActivateRoot(method, arguments, memory ?? ConcreteMemory.Empty);
+        if (!activation.IsSuccess)
+        {
+            throw new InvalidOperationException(
+                $"Fixture activation failed with {activation.Status}/{activation.Failure?.Code}.");
+        }
+
+        var state = activation.State!;
+        var operations = new MachineOperationalState(new BudgetState(100));
+        var events = ImmutableArray.CreateBuilder<DebugEvent>();
         for (var step = 0; step < 100; step++)
         {
             var outcome = machine.StepOne(state, operations);
+            events.AddRange(outcome.Events);
             if (outcome.Status != MachineRunStatus.Ready)
             {
-                return outcome;
+                return new DifferentialRun(outcome, events.ToImmutable());
             }
 
             state = outcome.State;
             operations = outcome.OperationalState;
         }
 
-        throw new InvalidOperationException($"Fixture method {method.Name} did not stop within the safety bound.");
+        throw new InvalidOperationException("Fixture method did not stop within the deterministic step bound.");
     }
 
-    private static IlBody CreateBody(System.Reflection.MethodBody body) => IlBody.Create(
-        body.MaxStackSize,
-        body.GetILAsByteArray() ?? throw new InvalidOperationException("Reflection returned no IL byte array."),
-        body.InitLocals,
-        body.LocalSignatureMetadataToken,
-        body.ExceptionHandlingClauses.Count);
+    private static IlMachine<ConcreteValue, ConcreteMemory> CreateMachine(
+        SrmMetadataModule module,
+        ConcreteDomain domain,
+        ConcreteMemoryModel? memoryModel = null) =>
+        new(
+            domain,
+            new MetadataResolutionServices(module),
+            memoryModel ?? new ConcreteMemoryModel(domain),
+            new InstructionBudgetPolicy());
+
+    private static SrmMetadataModule OpenFixtureModule() =>
+        SrmMetadataModule.LoadFromFile(typeof(CompilerEmittedDifferentialTests).Assembly.Location);
+
+    private static MethodHandle ResolveFixtureMethod(SrmMetadataModule module, string methodName)
+        => ResolveFixtureMethod(module, nameof(CompilerEmittedDifferentialTests), methodName);
+
+    private static MethodHandle ResolveFixtureMethod(
+        SrmMetadataModule module,
+        string typeName,
+        string methodName)
+    {
+        var token = module.FindMethodDefinition(typeName, methodName);
+        Assert.True(token.IsSuccess, token.Failure?.Code);
+        var method = module.GetMethodHandle(token.Value);
+        Assert.True(method.IsSuccess, method.Failure?.Code);
+        return method.Value;
+    }
+
+    private static byte[] SerializeCanonical(DifferentialRun run)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("status", run.Outcome.Status.ToString());
+            writer.WriteNumber("budget", run.Outcome.OperationalState.Budget.InstructionBudget);
+            writer.WriteStartObject("return");
+            writer.WriteBoolean("hasValue", run.Outcome.State.ReturnValue.HasValue);
+            if (run.Outcome.State.ReturnValue.HasValue)
+            {
+                var value = run.Outcome.State.ReturnValue.Value;
+                writer.WriteString("kind", value.Kind.ToString());
+                writer.WriteString("type", value.StaticType.ToString());
+                if (new ConcreteDomain().TryGetConstInt32(value, out var integer))
+                {
+                    writer.WriteNumber("int32", integer);
+                }
+            }
+
+            writer.WriteEndObject();
+            writer.WriteStartArray("events");
+            foreach (var item in run.Events)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("kind", item.Kind.ToString());
+                writer.WriteNumber("moduleHigh", item.Method.Module.High);
+                writer.WriteNumber("moduleLow", item.Method.Module.Low);
+                writer.WriteNumber("methodToken", item.Method.MetadataToken);
+                writer.WriteNumber("ilOffset", item.IlOffset);
+                writer.WriteString("instruction", item.Instruction);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        return buffer.WrittenSpan.ToArray();
+    }
 
     private static MethodInfo GetFixtureMethod(string name) =>
         typeof(CompilerEmittedDifferentialTests).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)
@@ -190,6 +354,9 @@ public sealed class CompilerEmittedDifferentialTests
     private static int Mixed(int left, int right) => (left * 3) + right - 2;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Fifth(int first, int second, int third, int fourth, int fifth) => fifth;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void VoidNoOp()
     {
     }
@@ -197,8 +364,36 @@ public sealed class CompilerEmittedDifferentialTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int UnsupportedCall(int value) => Math.Abs(value);
 
-    private sealed class FixedResolver(IlBody body) : IResolutionServices
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int InvokeDirectGetter(DifferentialGetterFixture receiver) => receiver.Read();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int InvokeAdjustedGetter(DifferentialGetterFixture receiver) => receiver.ReadAdjusted();
+
+    private static void AssertInt32(int expected, ConcreteValue actual)
     {
-        public ResolutionResult<IlBody> GetMethodBody(MethodHandle method) => ResolutionResult<IlBody>.Success(body);
+        var domain = new ConcreteDomain();
+        Assert.True(domain.TryGetConstInt32(actual, out var value));
+        Assert.Equal(expected, value);
     }
+
+    private sealed class DifferentialGetterFixture
+    {
+        private readonly int value;
+
+        internal DifferentialGetterFixture(int value)
+        {
+            this.value = value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal int Read() => value;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal int ReadAdjusted() => value + 1;
+    }
+
+    private sealed record DifferentialRun(
+        StepOutcome<ConcreteValue, ConcreteMemory> Outcome,
+        ImmutableArray<DebugEvent> Events);
 }

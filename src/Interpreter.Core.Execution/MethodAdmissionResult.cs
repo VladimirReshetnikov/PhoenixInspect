@@ -8,7 +8,7 @@ namespace Interpreter.Core.Execution;
 /// <param name="IsAdmitted">Whether every instruction and required body feature is supported.</param>
 /// <param name="InstructionCount">The number of fully decoded instructions on success.</param>
 /// <param name="InstructionBoundaries">
-/// The admitted offsets and evaluation-stack depths derived by simulating the method from entry.
+/// The admitted offsets and evaluation-stack types derived by simulating the method from entry.
 /// </param>
 /// <param name="FailureStatus">The machine status to use when admission fails.</param>
 /// <param name="Failure">The structured body/feature failure on rejection.</param>
@@ -27,5 +27,13 @@ public sealed record MethodAdmissionResult(
 /// Describes one legal instruction-entry boundary derived by whole-body admission.
 /// </summary>
 /// <param name="IlOffset">The zero-based byte offset of the decoded instruction.</param>
-/// <param name="ExpectedStackDepth">The evaluation-stack depth required before the instruction executes.</param>
-public readonly record struct MethodInstructionBoundary(int IlOffset, int ExpectedStackDepth);
+/// <param name="ExpectedStackTypes">
+/// The ordered bottom-to-top structural types required before the instruction executes.
+/// </param>
+public readonly record struct MethodInstructionBoundary(
+    int IlOffset,
+    ImmutableArray<Interpreter.Core.Abstractions.TypeSig> ExpectedStackTypes)
+{
+    /// <summary>Gets the evaluation-stack depth implied by <see cref="ExpectedStackTypes"/>.</summary>
+    public int ExpectedStackDepth => ExpectedStackTypes.IsDefault ? -1 : ExpectedStackTypes.Length;
+}

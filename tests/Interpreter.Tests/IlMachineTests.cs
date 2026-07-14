@@ -1,6 +1,4 @@
-using System.Buffers;
 using System.Collections.Immutable;
-using System.Text.Json;
 using Interpreter.Core.Abstractions;
 using Interpreter.Core.Execution;
 using Interpreter.Domain.Concrete;
@@ -11,22 +9,35 @@ using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 namespace Interpreter.Tests;
 
 /// <summary>
-/// Exercises the E1 arithmetic machine's successful transfers, admission barriers, diagnostics, and determinism.
+/// Exercises metadata-derived activation, typed whole-body admission, concrete transfers, and replay boundaries.
 /// </summary>
 public sealed class IlMachineTests
 {
-    private static readonly MethodHandle Method = new(
-        ModuleHandle.FromContentIdentity(
-            ModuleContentIdentity.FromMetadata(
-                new Guid("00000000-0000-0000-0000-000000000123"),
-                "IlMachineTests"u8),
-            10,
-            20),
-        0x06000001);
+    private static readonly ModuleHandle Module = ModuleHandle.FromContentIdentity(
+        ModuleContentIdentity.FromMetadata(
+            new Guid("00000000-0000-0000-0000-000000000123"),
+            "IlMachineTests-W3"u8),
+        10,
+        20);
 
-    /// <summary>Checks argument/local traffic and add/subtract/multiply through an observable root return value.</summary>
+    private static readonly MethodHandle Method = new(Module, 0x06000001);
+    private static readonly TypeSig DeclaringType = TypeSig.CreateTypeDefinition(
+        Module,
+        0x02000001,
+        "Interpreter.Tests.ExecutionFixture");
+    private static readonly ResolvedField Int32Field = new(
+        new FieldHandle(Module, 0x04000001),
+        DeclaringType,
+        TypeSig.Int32,
+        isStatic: false,
+        isLiteral: false,
+        hasRva: false);
+
+    /// <summary>
+    /// Checks that activation derives argument count, initialized locals, and return disposition from metadata.
+    /// </summary>
     [Fact]
-    public void ScenarioDerivedArgumentsLocalsAndArithmeticProduceRootResult()
+    public void ActivationDerivesFrameShapeAndArithmeticProducesRootResult()
     {
         var body = IlBody.Create(
             2,
@@ -44,596 +55,1067 @@ public sealed class IlMachineTests
             ],
             localVariablesInitialized: true,
             localSignatureToken: 0x11000001);
-        var run = Run(body, [4, 5], localCount: 1, returnsValue: true);
+        var definition = CreateDefinition(body, parameterCount: 2, localCount: 1, returnsValue: true);
+        var domain = new ConcreteDomain();
+        var resolver = new FixedResolver(definition);
+        var memoryModel = new CountingMemoryModel(domain);
+        var machine = CreateMachine(domain, resolver, memoryModel);
+
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstInt32(4), domain.ConstInt32(5)),
+            ConcreteMemory.Empty);
+
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var frame = Assert.Single(activation.State!.CallStack);
+        Assert.Equal(2, frame.Arguments.Length);
+        Assert.Single(frame.Locals);
+        AssertInt32(0, frame.Locals[0]);
+        Assert.Empty(frame.EvalStack);
+        Assert.False(activation.State.ReturnValue.HasValue);
+        Assert.Equal(0, memoryModel.LoadCount);
+
+        var run = Run(machine, activation.State, instructionBudget: 100);
 
         Assert.Equal(MachineRunStatus.Completed, run.Outcome.Status);
         Assert.Empty(run.Outcome.State.CallStack);
-        Assert.True(run.Outcome.State.ReturnValue.HasValue);
         AssertInt32(12, run.Outcome.State.ReturnValue.Value);
         Assert.Equal(90, run.Outcome.OperationalState.Budget.InstructionBudget);
         Assert.Equal(10, run.Events.Count(item => item.Kind == DebugEventKind.InstructionExecuted));
         Assert.Single(run.Events, item => item.Kind == DebugEventKind.FramePopped);
+        Assert.Equal(1, resolver.MethodDefinitionCallCount);
+        Assert.Equal(0, resolver.FieldCallCount);
     }
 
-    /// <summary>Checks whole-body rejection of a supported prefix followed by an unsupported instruction.</summary>
+    /// <summary>Checks compact, short, and long argument/local slot encodings against metadata-derived vectors.</summary>
     [Fact]
-    public void SupportedPrefixAndUnsupportedSuffixAreRejectedBeforeInstructionZero()
+    public void ShortAndLongSlotEncodingsExecuteProjectedSlots()
     {
-        var body = IlBody.Create(1, [0x17, 0x28, 0, 0, 0, 0, 0x2A]);
-        var context = CreateContext(body, [], localCount: 0, returnsValue: true);
+        var domain = new ConcreteDomain();
+        var arguments = Enumerable.Range(0, 5).Select(domain.ConstInt32).ToImmutableArray();
 
-        var outcome = context.Machine.StepOne(context.State, context.OperationalState);
+        var shortArgument = CreateDefinition(
+            IlBody.Create(1, [0x0E, 0x04, 0x2A]),
+            parameterCount: 5,
+            returnsValue: true);
+        var shortArgumentMachine = CreateMachine(
+            domain,
+            new FixedResolver(shortArgument),
+            new CountingMemoryModel(domain));
+        var shortArgumentActivation = shortArgumentMachine.ActivateRoot(Method, arguments, ConcreteMemory.Empty);
+        Assert.True(shortArgumentActivation.IsSuccess, shortArgumentActivation.Failure?.Code);
+        AssertInt32(4, Run(shortArgumentMachine, shortArgumentActivation.State!, 10).Outcome.State.ReturnValue.Value);
 
-        AssertNoTransfer(context, outcome, MachineRunStatus.Blocked, "EXEC_UNSUPPORTED_OPCODE");
+        var longArgument = CreateDefinition(
+            IlBody.Create(1, [0xFE, 0x09, 0x04, 0x00, 0x2A]),
+            parameterCount: 5,
+            returnsValue: true);
+        var longArgumentMachine = CreateMachine(
+            domain,
+            new FixedResolver(longArgument),
+            new CountingMemoryModel(domain));
+        var longArgumentActivation = longArgumentMachine.ActivateRoot(Method, arguments, ConcreteMemory.Empty);
+        Assert.True(longArgumentActivation.IsSuccess, longArgumentActivation.Failure?.Code);
+        AssertInt32(4, Run(longArgumentMachine, longArgumentActivation.State!, 10).Outcome.State.ReturnValue.Value);
+
+        var shortLocals = CreateDefinition(
+            IlBody.Create(
+                1,
+                [0x17, 0x13, 0x04, 0x11, 0x04, 0x2A],
+                localVariablesInitialized: true,
+                localSignatureToken: 0x11000001),
+            localCount: 5,
+            returnsValue: true);
+        var shortLocalMachine = CreateMachine(
+            domain,
+            new FixedResolver(shortLocals),
+            new CountingMemoryModel(domain));
+        var shortLocalActivation = shortLocalMachine.ActivateRoot(
+            Method,
+            ImmutableArray<ConcreteValue>.Empty,
+            ConcreteMemory.Empty);
+        Assert.True(shortLocalActivation.IsSuccess, shortLocalActivation.Failure?.Code);
+        AssertInt32(1, Run(shortLocalMachine, shortLocalActivation.State!, 10).Outcome.State.ReturnValue.Value);
+
+        var longLocals = CreateDefinition(
+            IlBody.Create(
+                1,
+                [0x18, 0xFE, 0x0E, 0x00, 0x01, 0xFE, 0x0C, 0x00, 0x01, 0x2A],
+                localVariablesInitialized: true,
+                localSignatureToken: 0x11000001),
+            localCount: 257,
+            returnsValue: true);
+        var longLocalMachine = CreateMachine(
+            domain,
+            new FixedResolver(longLocals),
+            new CountingMemoryModel(domain));
+        var longLocalActivation = longLocalMachine.ActivateRoot(
+            Method,
+            ImmutableArray<ConcreteValue>.Empty,
+            ConcreteMemory.Empty);
+        Assert.True(longLocalActivation.IsSuccess, longLocalActivation.Failure?.Code);
+        Assert.Equal(257, Assert.Single(longLocalActivation.State!.CallStack).Locals.Length);
+        AssertInt32(2, Run(longLocalMachine, longLocalActivation.State, 10).Outcome.State.ReturnValue.Value);
     }
 
-    /// <summary>Checks structured missing-evidence failure without budget consumption or false events.</summary>
+    /// <summary>Checks that caller values must match the complete metadata-projected argument vector exactly.</summary>
     [Fact]
-    public void MissingBodyProducesStructuredDependencyFailureWithoutFalseExecutionEvent()
+    public void ActivationRejectsWrongCountNonExactInt32AndWrongStructuralType()
+    {
+        var definition = CreateDefinition(
+            IlBody.Create(1, [0x02, 0x2A]),
+            parameterCount: 1,
+            returnsValue: true);
+        var domain = new ConcreteDomain();
+
+        var wrongCount = CreateMachine(domain, new FixedResolver(definition), new CountingMemoryModel(domain))
+            .ActivateRoot(Method, ImmutableArray<ConcreteValue>.Empty, ConcreteMemory.Empty);
+        AssertActivationFailure(wrongCount, MachineRunStatus.InvalidProgram, "EXEC_ARGUMENT_SHAPE_MISMATCH");
+
+        var nonExact = CreateMachine(domain, new FixedResolver(definition), new CountingMemoryModel(domain))
+            .ActivateRoot(
+                Method,
+                ImmutableArray.Create(domain.Top(TypeSig.Int32)),
+                ConcreteMemory.Empty);
+        AssertActivationFailure(nonExact, MachineRunStatus.InvalidProgram, "EXEC_NON_EXACT_ARGUMENT");
+
+        var wrongType = CreateMachine(domain, new FixedResolver(definition), new CountingMemoryModel(domain))
+            .ActivateRoot(
+                Method,
+                ImmutableArray.Create(domain.DefaultValue(TypeSig.Boolean)),
+                ConcreteMemory.Empty);
+        AssertActivationFailure(wrongType, MachineRunStatus.InvalidProgram, "EXEC_VALUE_TYPE_MISMATCH");
+
+        Assert.Throws<ArgumentException>(() => new MethodHandle(default, 0x06000001));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MethodHandle(Module, 0x0A000001));
+    }
+
+    /// <summary>Checks both direct and adjusted getters through one frozen typed field and one memory-model load.</summary>
+    /// <param name="adjust">Whether the getter adds one after loading the field.</param>
+    /// <param name="expected">The expected terminal Int32 result.</param>
+    /// <param name="instructionCount">The expected number of ordinary executed instructions.</param>
+    [Theory]
+    [InlineData(false, 41, 3)]
+    [InlineData(true, 42, 5)]
+    public void ImportedFieldGetterLoadsExactlyOnceWithoutChangingMemory(
+        bool adjust,
+        int expected,
+        int instructionCount)
+    {
+        var definition = CreateDefinition(
+            CreateGetterBody(adjust),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var domain = new ConcreteDomain();
+        var resolver = new FixedResolver(definition, Int32Field);
+        var memoryModel = new CountingMemoryModel(domain);
+        var imported = memoryModel.ImportObject(
+            ConcreteMemory.Empty,
+            DeclaringType,
+            new ImportedObjectEvidenceIdentity("snapshot:test;object:root"));
+        var memory = memoryModel.ImportField(
+            imported.mem,
+            imported.objRef,
+            Int32Field,
+            domain.ConstInt32(41));
+        var machine = CreateMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(imported.objRef),
+            memory);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+
+        var run = Run(machine, activation.State!, instructionBudget: 20);
+
+        Assert.Equal(MachineRunStatus.Completed, run.Outcome.Status);
+        AssertInt32(expected, run.Outcome.State.ReturnValue.Value);
+        Assert.Same(memory, run.Outcome.State.Memory);
+        Assert.Equal(1, memoryModel.LoadCount);
+        Assert.Equal(1, resolver.FieldCallCount);
+        Assert.Equal(instructionCount, run.Events.Count(item => item.Kind == DebugEventKind.InstructionExecuted));
+    }
+
+    /// <summary>
+    /// Checks the explicit terminal null-reference boundary: one budget unit, no ordinary execution event, no state change.
+    /// </summary>
+    [Fact]
+    public void NullFieldReceiverProducesStructuredTargetException()
+    {
+        var definition = CreateDefinition(
+            CreateGetterBody(adjust: false),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var domain = new ConcreteDomain();
+        var resolver = new FixedResolver(definition, Int32Field);
+        var memoryModel = new CountingMemoryModel(domain);
+        var machine = CreateMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstNull(DeclaringType)),
+            ConcreteMemory.Empty);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var operations = new MachineOperationalState(new BudgetState(10));
+
+        var loadReceiver = machine.StepOne(activation.State!, operations);
+        Assert.Equal(MachineRunStatus.Ready, loadReceiver.Status);
+        var targetException = machine.StepOne(loadReceiver.State, loadReceiver.OperationalState);
+
+        Assert.Empty(targetException.State.CallStack);
+        Assert.Same(loadReceiver.State.Memory, targetException.State.Memory);
+        Assert.False(targetException.State.ReturnValue.HasValue);
+        Assert.Equal(8, targetException.OperationalState.Budget.InstructionBudget);
+        Assert.Equal(MachineRunStatus.TargetException, targetException.Status);
+        Assert.Null(targetException.Failure);
+        Assert.NotNull(targetException.TargetException);
+        Assert.Equal(TargetExceptionKind.NullReference, targetException.TargetException!.Kind);
+        Assert.Equal(Method, targetException.TargetException.Method);
+        Assert.Equal(1, targetException.TargetException.IlOffset);
+        Assert.Equal(targetException.TargetException, targetException.State.TerminalTargetException);
+        var raised = Assert.Single(targetException.Events);
+        Assert.Equal(DebugEventKind.TargetExceptionRaised, raised.Kind);
+        Assert.Equal(1, raised.IlOffset);
+        Assert.DoesNotContain(
+            targetException.Events,
+            item => item.Kind == DebugEventKind.InstructionExecuted);
+        Assert.Equal(1, memoryModel.LoadCount);
+
+        var repeated = machine.StepOne(targetException.State, targetException.OperationalState);
+        Assert.Same(targetException.State, repeated.State);
+        Assert.Same(targetException.OperationalState, repeated.OperationalState);
+        Assert.Equal(MachineRunStatus.TargetException, repeated.Status);
+        Assert.Equal(targetException.TargetException, repeated.TargetException);
+        Assert.Empty(repeated.Events);
+        Assert.Equal(1, memoryModel.LoadCount);
+    }
+
+    /// <summary>Checks that pre-stamped target-exception information cannot name a different execution location.</summary>
+    [Fact]
+    public void TargetExceptionLocationConflictDoesNotTransferOrConsumeBudget()
+    {
+        var definition = CreateDefinition(
+            CreateGetterBody(adjust: false),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var domain = new ConcreteDomain();
+        var memoryModel = new CountingMemoryModel(
+            domain,
+            (_, _, _) => MemoryLoadResult<ConcreteValue>.ForTargetException(
+                new TargetExceptionInfo(
+                    TargetExceptionKind.NullReference,
+                    "TARGET_NULL_REFERENCE",
+                    Method,
+                    ilOffset: 2)));
+        var machine = CreateMachine(domain, new FixedResolver(definition, Int32Field), memoryModel);
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstNull(DeclaringType)),
+            ConcreteMemory.Empty);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var operations = new MachineOperationalState(new BudgetState(10));
+        var loadReceiver = machine.StepOne(activation.State!, operations);
+
+        var outcome = machine.StepOne(loadReceiver.State, loadReceiver.OperationalState);
+
+        AssertNoTransfer(
+            loadReceiver.State,
+            loadReceiver.OperationalState,
+            outcome,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_TARGET_EXCEPTION_LOCATION_CONFLICT");
+        Assert.Equal(1, memoryModel.LoadCount);
+    }
+
+    /// <summary>
+    /// Checks typed memory evidence inability and invalidity without state, budget, memory, or event mutation.
+    /// </summary>
+    /// <param name="kind">The memory load classification returned by the injected capability.</param>
+    /// <param name="expectedStatus">The machine status corresponding to the classification.</param>
+    [Theory]
+    [InlineData(MemoryLoadKind.Partial, MachineRunStatus.Blocked)]
+    [InlineData(MemoryLoadKind.Unavailable, MachineRunStatus.Blocked)]
+    [InlineData(MemoryLoadKind.Conflict, MachineRunStatus.Blocked)]
+    [InlineData(MemoryLoadKind.Invalid, MachineRunStatus.InvalidProgram)]
+    public void NonExactMemoryResultsDoNotTransfer(MemoryLoadKind kind, MachineRunStatus expectedStatus)
+    {
+        var definition = CreateDefinition(
+            CreateGetterBody(adjust: false),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var domain = new ConcreteDomain();
+        var inner = new ConcreteMemoryModel(domain);
+        var allocated = inner.NewObject(ConcreteMemory.Empty, DeclaringType);
+        var memoryModel = new CountingMemoryModel(
+            domain,
+            (_, _, _) => MemoryLoadResult<ConcreteValue>.NonExact(kind, $"TEST_{kind.ToString().ToUpperInvariant()}"));
+        var machine = CreateMachine(domain, new FixedResolver(definition, Int32Field), memoryModel);
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(allocated.objRef),
+            allocated.mem);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var operations = new MachineOperationalState(new BudgetState(10));
+        var loadReceiver = machine.StepOne(activation.State!, operations);
+
+        var outcome = machine.StepOne(loadReceiver.State, loadReceiver.OperationalState);
+
+        Assert.Same(loadReceiver.State, outcome.State);
+        Assert.Same(loadReceiver.OperationalState, outcome.OperationalState);
+        Assert.Equal(expectedStatus, outcome.Status);
+        Assert.Equal($"TEST_{kind.ToString().ToUpperInvariant()}", outcome.Failure!.Code);
+        Assert.Empty(outcome.Events);
+        Assert.Equal(1, memoryModel.LoadCount);
+    }
+
+    /// <summary>Checks that imported objects never fabricate a default for a field lacking exact evidence.</summary>
+    [Fact]
+    public void MissingImportedFieldEvidenceBlocksAtLoadWithoutFabricatingZero()
+    {
+        var definition = CreateDefinition(
+            CreateGetterBody(adjust: false),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var domain = new ConcreteDomain();
+        var memoryModel = new CountingMemoryModel(domain);
+        var imported = memoryModel.ImportObject(
+            ConcreteMemory.Empty,
+            DeclaringType,
+            new ImportedObjectEvidenceIdentity("snapshot:test;object:missing-field"));
+        var machine = CreateMachine(domain, new FixedResolver(definition, Int32Field), memoryModel);
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(imported.objRef),
+            imported.mem);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var operations = new MachineOperationalState(new BudgetState(10));
+        var loadReceiver = machine.StepOne(activation.State!, operations);
+
+        var outcome = machine.StepOne(loadReceiver.State, loadReceiver.OperationalState);
+
+        Assert.Same(loadReceiver.State, outcome.State);
+        Assert.Same(loadReceiver.OperationalState, outcome.OperationalState);
+        Assert.Equal(MachineRunStatus.Blocked, outcome.Status);
+        Assert.Equal("MEMORY_IMPORTED_FIELD_UNAVAILABLE", outcome.Failure!.Code);
+        Assert.Empty(outcome.Events);
+    }
+
+    /// <summary>Checks typed boundary vectors and field resolution are frozen before execution begins.</summary>
+    [Fact]
+    public void TypedAdmissionFreezesCompleteBoundaryVectorsAndResolvedField()
+    {
+        var definition = CreateDefinition(
+            CreateGetterBody(adjust: true),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var domain = new ConcreteDomain();
+        var resolver = new FixedResolver(definition, Int32Field);
+        var memoryModel = new CountingMemoryModel(domain);
+        var machine = CreateMachine(domain, resolver, memoryModel);
+
+        var admission = machine.ValidateMethod(definition);
+
+        Assert.True(admission.IsAdmitted, admission.Failure?.Code);
+        Assert.Equal(5, admission.InstructionCount);
+        Assert.Collection(
+            admission.InstructionBoundaries,
+            boundary => AssertBoundary(boundary, 0),
+            boundary => AssertBoundary(boundary, 1, DeclaringType),
+            boundary => AssertBoundary(boundary, 6, TypeSig.Int32),
+            boundary => AssertBoundary(boundary, 7, TypeSig.Int32, TypeSig.Int32),
+            boundary => AssertBoundary(boundary, 8, TypeSig.Int32));
+        Assert.Equal(1, resolver.FieldCallCount);
+        Assert.Equal(0, resolver.MethodDefinitionCallCount);
+        Assert.Equal(0, memoryModel.LoadCount);
+    }
+
+    /// <summary>Checks a supported prefix followed by an unsupported opcode rejects activation before instruction zero.</summary>
+    [Fact]
+    public void SupportedPrefixAndUnsupportedSuffixRejectCompleteActivation()
+    {
+        var definition = CreateDefinition(
+            IlBody.Create(1, [0x17, 0x28, 0, 0, 0, 0, 0x2A]),
+            returnsValue: true);
+        var domain = new ConcreteDomain();
+        var memoryModel = new CountingMemoryModel(domain);
+        var machine = CreateMachine(domain, new FixedResolver(definition), memoryModel);
+
+        var activation = machine.ActivateRoot(Method, ImmutableArray<ConcreteValue>.Empty, ConcreteMemory.Empty);
+
+        AssertActivationFailure(activation, MachineRunStatus.Blocked, "EXEC_UNSUPPORTED_OPCODE");
+        Assert.Equal(0, memoryModel.LoadCount);
+    }
+
+    /// <summary>Checks the closed E2 profile rejects a second field load without observing the resolver twice.</summary>
+    [Fact]
+    public void MultipleFieldLoadsRejectBeforeSecondFieldResolutionObservation()
+    {
+        var body = IlBody.Create(
+            2,
+            [
+                0x02,
+                0x7B, 0x01, 0, 0, 0x04,
+                0x02,
+                0x7B, 0x01, 0, 0, 0x04,
+                0x58,
+                0x2A,
+            ]);
+        var definition = CreateDefinition(body, returnsValue: true, hasImplicitThis: true);
+        var resolver = new FixedResolver(definition, Int32Field);
+        var domain = new ConcreteDomain();
+        var machine = CreateMachine(domain, resolver, new CountingMemoryModel(domain));
+
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstNull(DeclaringType)),
+            ConcreteMemory.Empty);
+
+        AssertActivationFailure(
+            activation,
+            MachineRunStatus.Blocked,
+            "EXEC_MULTIPLE_FIELD_LOADS_UNSUPPORTED");
+        Assert.Equal(1, resolver.FieldCallCount);
+    }
+
+    /// <summary>Checks instance arithmetic and decorated getter bodies cannot expand the two closed W3 profiles.</summary>
+    [Fact]
+    public void InstanceNonGetterAndDecoratedGetterShapesAreRejected()
+    {
+        var domain = new ConcreteDomain();
+        var instanceArithmetic = CreateDefinition(
+            IlBody.Create(1, [0x16, 0x2A]),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var instanceMachine = CreateMachine(
+            domain,
+            new FixedResolver(instanceArithmetic),
+            new CountingMemoryModel(domain));
+        var instanceActivation = instanceMachine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstNull(DeclaringType)),
+            ConcreteMemory.Empty);
+        AssertActivationFailure(
+            instanceActivation,
+            MachineRunStatus.Blocked,
+            "EXEC_INSTANCE_PROFILE_UNSUPPORTED");
+
+        var decoratedGetter = CreateDefinition(
+            IlBody.Create(
+                1,
+                [0x00, 0x02, 0x7B, 0x01, 0, 0, 0x04, 0x2A]),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var getterMachine = CreateMachine(
+            domain,
+            new FixedResolver(decoratedGetter, Int32Field),
+            new CountingMemoryModel(domain));
+        var getterActivation = getterMachine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstNull(DeclaringType)),
+            ConcreteMemory.Empty);
+        AssertActivationFailure(
+            getterActivation,
+            MachineRunStatus.Blocked,
+            "EXEC_FIELD_GETTER_SHAPE_UNSUPPORTED");
+    }
+
+    /// <summary>Enumerates structural whole-body failures that must precede activation or execution.</summary>
+    /// <returns>Method definition facts and the expected stable rejection.</returns>
+    public static IEnumerable<object[]> InvalidAdmissionCases()
+    {
+        yield return [
+            IlBody.Create(1, [0x1F]), 0, 0, true, MachineRunStatus.InvalidProgram, "EXEC_TRUNCATED_INSTRUCTION"];
+        yield return [
+            IlBody.Create(1, [0x02, 0x2A]), 0, 0, true, MachineRunStatus.InvalidProgram, "EXEC_INVALID_SLOT"];
+        yield return [
+            IlBody.Create(1, [0x16]), 0, 0, true, MachineRunStatus.InvalidProgram, "EXEC_MISSING_RETURN"];
+        yield return [
+            IlBody.Create(0, [0x2A, 0x00]), 0, 0, false, MachineRunStatus.InvalidProgram, "EXEC_CODE_AFTER_RETURN"];
+        yield return [
+            IlBody.Create(0, [0x16, 0x2A]), 0, 0, true, MachineRunStatus.InvalidProgram, "EXEC_MAXSTACK_EXCEEDED"];
+        yield return [
+            IlBody.Create(
+                IlMachine<ConcreteValue, ConcreteMemory>.MaximumFrameSlotCount + 1,
+                [0x2A]),
+            0,
+            0,
+            false,
+            MachineRunStatus.Blocked,
+            "EXEC_MAXSTACK_LIMIT"];
+        yield return [
+            IlBody.Create(
+                1,
+                [0x06, 0x2A],
+                localVariablesInitialized: false,
+                localSignatureToken: 0x11000001),
+            0,
+            1,
+            true,
+            MachineRunStatus.Blocked,
+            "EXEC_UNINITIALIZED_LOCALS_UNSUPPORTED"];
+        yield return [
+            IlBody.Create(0, [0x2A], exceptionRegionCount: 1),
+            0,
+            0,
+            false,
+            MachineRunStatus.Blocked,
+            "EXEC_EH_UNSUPPORTED"];
+    }
+
+    /// <summary>Checks representative malformed or unsupported bodies through the public admission surface.</summary>
+    /// <param name="body">The immutable body to validate.</param>
+    /// <param name="parameterCount">The projected explicit Int32 parameter count.</param>
+    /// <param name="localCount">The projected initialized Int32 local count.</param>
+    /// <param name="returnsValue">Whether metadata projects an Int32 return.</param>
+    /// <param name="expectedStatus">The stable rejection status.</param>
+    /// <param name="expectedCode">The stable rejection code.</param>
+    [Theory]
+    [MemberData(nameof(InvalidAdmissionCases))]
+    public void InvalidBodiesFailWholeBodyAdmission(
+        IlBody body,
+        int parameterCount,
+        int localCount,
+        bool returnsValue,
+        MachineRunStatus expectedStatus,
+        string expectedCode)
+    {
+        var definition = CreateDefinition(body, parameterCount, localCount, returnsValue);
+        var domain = new ConcreteDomain();
+        var machine = CreateMachine(domain, new FixedResolver(definition), new CountingMemoryModel(domain));
+
+        var admission = machine.ValidateMethod(definition);
+
+        Assert.False(admission.IsAdmitted);
+        Assert.Equal(expectedStatus, admission.FailureStatus);
+        Assert.Equal(expectedCode, admission.Failure!.Code);
+        Assert.Empty(admission.InstructionBoundaries);
+        Assert.Equal(0, admission.InstructionCount);
+    }
+
+    /// <summary>Checks unresolved field metadata rejects a getter before activation and before memory observation.</summary>
+    [Fact]
+    public void UnresolvedFieldRejectsActivationBeforeMemoryObservation()
+    {
+        var definition = CreateDefinition(
+            CreateGetterBody(adjust: false),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var resolver = new FixedResolver(
+            ResolutionResult<ResolvedMethodDefinition>.Success(definition),
+            ResolutionResult<ResolvedField>.Failed(
+                ResolutionFailureKind.Unavailable,
+                "META_FIELD_NOT_CAPTURED",
+                "Field metadata was not captured."));
+        var domain = new ConcreteDomain();
+        var memoryModel = new CountingMemoryModel(domain);
+        var machine = CreateMachine(domain, resolver, memoryModel);
+
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstNull(DeclaringType)),
+            ConcreteMemory.Empty);
+
+        AssertActivationFailure(activation, MachineRunStatus.Blocked, "META_FIELD_NOT_CAPTURED");
+        Assert.Equal(1, resolver.FieldCallCount);
+        Assert.Equal(0, memoryModel.LoadCount);
+    }
+
+    /// <summary>Checks missing method evidence is preserved as a structured activation inability.</summary>
+    [Fact]
+    public void MissingMethodDefinitionProducesStructuredDependencyFailure()
     {
         var resolver = FixedResolver.Failure(
             ResolutionFailureKind.Unavailable,
-            "META_BODY_NOT_CAPTURED",
-            "Body evidence was not captured.");
-        var context = CreateContext(IlBody.Create(0, [0x2A]), [], 0, false, resolver);
-
-        var outcome = context.Machine.StepOne(context.State, context.OperationalState);
-
-        AssertNoTransfer(context, outcome, MachineRunStatus.Blocked, "META_BODY_NOT_CAPTURED");
-        Assert.Equal(ExecutionFailureKind.DependencyResolution, outcome.Failure!.Kind);
-        Assert.Equal(ResolutionFailureKind.Unavailable, outcome.Failure.ResolutionFailure!.Kind);
-    }
-
-    /// <summary>Checks that preserved exception-region evidence blocks execution before instruction zero.</summary>
-    [Fact]
-    public void ExceptionRegionsAreRejectedBeforeBudgetOrEvents()
-    {
-        var body = IlBody.Create(0, [0x2A], exceptionRegionCount: 1);
-        var context = CreateContext(body, [], 0, false);
-
-        var outcome = context.Machine.StepOne(context.State, context.OperationalState);
-
-        AssertNoTransfer(context, outcome, MachineRunStatus.Blocked, "EXEC_EH_UNSUPPORTED");
-    }
-
-    /// <summary>Checks that a ret-looking operand byte cannot be used as an executable instruction offset.</summary>
-    [Fact]
-    public void OperandByteThatLooksLikeRetIsNotAnInstructionBoundary()
-    {
-        var body = IlBody.Create(1, [0x20, 0x2A, 0x00, 0x00, 0x00, 0x2A]);
-        var context = CreateContext(body, [], 0, true, initialOffset: 1);
-
-        var outcome = context.Machine.StepOne(context.State, context.OperationalState);
-
-        AssertNoTransfer(context, outcome, MachineRunStatus.InvalidProgram, "EXEC_INVALID_INSTRUCTION_OFFSET");
-    }
-
-    /// <summary>Checks current frame stack depth against admission's expected depth at each decoded boundary.</summary>
-    [Fact]
-    public void SeededStackMustMatchWholeBodyDepthAtCurrentBoundary()
-    {
-        var body = IlBody.Create(0, [0x00, 0x2A]);
+            "META_METHOD_NOT_CAPTURED",
+            "Method evidence was not captured.");
         var domain = new ConcreteDomain();
-        var context = CreateContext(
-            body,
-            [],
-            0,
-            false,
-            initialStack: ImmutableArray.Create(domain.ConstInt32(123)),
-            domain: domain);
+        var machine = CreateMachine(domain, resolver, new CountingMemoryModel(domain));
 
-        var outcome = context.Machine.StepOne(context.State, context.OperationalState);
+        var activation = machine.ActivateRoot(Method, ImmutableArray<ConcreteValue>.Empty, ConcreteMemory.Empty);
 
-        AssertNoTransfer(context, outcome, MachineRunStatus.InvalidProgram, "EXEC_INVALID_ENTRY_STACK");
+        AssertActivationFailure(activation, MachineRunStatus.Blocked, "META_METHOD_NOT_CAPTURED");
+        Assert.Equal(ExecutionFailureKind.DependencyResolution, activation.Failure!.Kind);
+        Assert.Equal(ResolutionFailureKind.Unavailable, activation.Failure.ResolutionFailure!.Kind);
+
+        var changingTextResolver = FixedResolver.Failure(
+            ResolutionFailureKind.Unavailable,
+            "META_METHOD_NOT_CAPTURED",
+            "A session-specific explanation that must not enter machine state.");
+        var repeated = CreateMachine(domain, changingTextResolver, new CountingMemoryModel(domain))
+            .ActivateRoot(Method, ImmutableArray<ConcreteValue>.Empty, ConcreteMemory.Empty);
+        Assert.Equal(activation.Failure, repeated.Failure);
     }
 
-    /// <summary>Checks that multiple frames are rejected until calls and continuation metadata are implemented.</summary>
+    /// <summary>Checks unexpected ordinary capability exceptions become stable failures without partial transfers.</summary>
     [Fact]
-    public void NestedFramesFailClosedUntilCallContinuationsExist()
+    public void UnexpectedResolverDomainAndMemoryExceptionsAreNormalized()
     {
-        var body = IlBody.Create(0, [0x2A]);
-        var resolver = new FixedResolver(body);
-        var context = CreateContext(body, [], 0, false, resolver);
-        var secondFrame = context.State.CallStack[0];
-        var nestedState = context.State with { CallStack = context.State.CallStack.Add(secondFrame) };
+        var domain = new ConcreteDomain();
+        var resolverMachine = CreateMachine(
+            domain,
+            new ThrowingResolver(),
+            new CountingMemoryModel(domain));
+        var resolverActivation = resolverMachine.ActivateRoot(
+            Method,
+            ImmutableArray<ConcreteValue>.Empty,
+            ConcreteMemory.Empty);
+        AssertActivationFailure(
+            resolverActivation,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_RESOLVER_FAILURE");
 
-        var outcome = context.Machine.StepOne(nestedState, context.OperationalState);
+        var getterDefinition = CreateDefinition(
+            CreateGetterBody(adjust: false),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var throwingMemory = new CountingMemoryModel(
+            domain,
+            (_, _, _) => throw new SyntheticCapabilityException());
+        var memoryMachine = CreateMachine(
+            domain,
+            new FixedResolver(getterDefinition, Int32Field),
+            throwingMemory);
+        var memoryActivation = memoryMachine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstNull(DeclaringType)),
+            ConcreteMemory.Empty);
+        Assert.True(memoryActivation.IsSuccess, memoryActivation.Failure?.Code);
+        var memoryOperations = new MachineOperationalState(new BudgetState(10));
+        var loadReceiver = memoryMachine.StepOne(memoryActivation.State!, memoryOperations);
+        var memoryOutcome = memoryMachine.StepOne(loadReceiver.State, loadReceiver.OperationalState);
+        AssertNoTransfer(
+            loadReceiver.State,
+            loadReceiver.OperationalState,
+            memoryOutcome,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_MEMORY_MODEL_FAILURE");
 
-        Assert.Same(nestedState, outcome.State);
-        Assert.Same(context.OperationalState, outcome.OperationalState);
-        Assert.Equal(MachineRunStatus.InvalidProgram, outcome.Status);
-        Assert.Equal("EXEC_NESTED_FRAME_UNSUPPORTED", outcome.Failure!.Code);
-        Assert.Empty(outcome.Events);
-        Assert.Equal(0, resolver.CallCount);
+        var arithmeticDefinition = CreateDefinition(
+            IlBody.Create(2, [0x17, 0x18, 0x58, 0x2A]),
+            returnsValue: true);
+        var throwingDomain = new ThrowingArithmeticDomain();
+        var domainMachine = new IlMachine<ConcreteValue, ConcreteMemory>(
+            throwingDomain,
+            new FixedResolver(arithmeticDefinition),
+            new ConcreteMemoryModel(domain),
+            new InstructionBudgetPolicy());
+        var domainActivation = domainMachine.ActivateRoot(
+            Method,
+            ImmutableArray<ConcreteValue>.Empty,
+            ConcreteMemory.Empty);
+        Assert.True(domainActivation.IsSuccess, domainActivation.Failure?.Code);
+        var domainOperations = new MachineOperationalState(new BudgetState(10));
+        var firstConstant = domainMachine.StepOne(domainActivation.State!, domainOperations);
+        var secondConstant = domainMachine.StepOne(firstConstant.State, firstConstant.OperationalState);
+        var domainOutcome = domainMachine.StepOne(secondConstant.State, secondConstant.OperationalState);
+        AssertNoTransfer(
+            secondConstant.State,
+            secondConstant.OperationalState,
+            domainOutcome,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_DOMAIN_FAILURE");
     }
 
-    /// <summary>Checks that budget exhaustion executes no instruction and emits no execution event.</summary>
+    /// <summary>Checks field-step capability failures identify whether memory was actually called.</summary>
     [Fact]
-    public void ExhaustedBudgetDoesNotClaimRetExecuted()
+    public void FieldStepKeepsDomainAndMemoryFailureOriginsTruthful()
     {
-        var body = IlBody.Create(0, [0x2A]);
-        var context = CreateContext(body, [], 0, false, instructionBudget: 0);
+        var definition = CreateDefinition(
+            CreateGetterBody(adjust: false),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var concreteDomain = new ConcreteDomain();
 
-        var outcome = context.Machine.StepOne(context.State, context.OperationalState);
+        var precheckDomain = new SelectiveClassificationDomain();
+        var precheckMemory = new CountingMemoryModel(concreteDomain);
+        var precheckObject = precheckMemory.NewObject(ConcreteMemory.Empty, DeclaringType);
+        var precheckStored = precheckMemory.StoreField(
+            precheckObject.mem,
+            precheckObject.objRef,
+            Int32Field,
+            concreteDomain.ConstInt32(7));
+        var precheckMachine = new IlMachine<ConcreteValue, ConcreteMemory>(
+            precheckDomain,
+            new FixedResolver(definition, Int32Field),
+            precheckMemory,
+            new InstructionBudgetPolicy());
+        var precheckActivation = precheckMachine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(precheckObject.objRef),
+            precheckStored);
+        Assert.True(precheckActivation.IsSuccess, precheckActivation.Failure?.Code);
+        var precheckOperations = new MachineOperationalState(new BudgetState(10));
+        var precheckReceiver = precheckMachine.StepOne(precheckActivation.State!, precheckOperations);
+        precheckDomain.ThrowForEveryStaticType = true;
 
-        Assert.Same(context.State, outcome.State);
-        Assert.Same(context.OperationalState, outcome.OperationalState);
+        var precheckOutcome = precheckMachine.StepOne(
+            precheckReceiver.State,
+            precheckReceiver.OperationalState);
+
+        AssertNoTransfer(
+            precheckReceiver.State,
+            precheckReceiver.OperationalState,
+            precheckOutcome,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_DOMAIN_FAILURE");
+        Assert.Equal(ExecutionFailureKind.DomainFailure, precheckOutcome.Failure!.Kind);
+        Assert.Equal(0, precheckMemory.LoadCount);
+
+        var postcheckDomain = new SelectiveClassificationDomain();
+        var postcheckMemory = new CountingMemoryModel(concreteDomain);
+        var postcheckObject = postcheckMemory.NewObject(ConcreteMemory.Empty, DeclaringType);
+        var postcheckStored = postcheckMemory.StoreField(
+            postcheckObject.mem,
+            postcheckObject.objRef,
+            Int32Field,
+            concreteDomain.ConstInt32(9));
+        var postcheckMachine = new IlMachine<ConcreteValue, ConcreteMemory>(
+            postcheckDomain,
+            new FixedResolver(definition, Int32Field),
+            postcheckMemory,
+            new InstructionBudgetPolicy());
+        var postcheckActivation = postcheckMachine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(postcheckObject.objRef),
+            postcheckStored);
+        Assert.True(postcheckActivation.IsSuccess, postcheckActivation.Failure?.Code);
+        var postcheckOperations = new MachineOperationalState(new BudgetState(10));
+        var postcheckReceiver = postcheckMachine.StepOne(postcheckActivation.State!, postcheckOperations);
+        postcheckDomain.ThrowForInt32StaticType = true;
+
+        var postcheckOutcome = postcheckMachine.StepOne(
+            postcheckReceiver.State,
+            postcheckReceiver.OperationalState);
+
+        AssertNoTransfer(
+            postcheckReceiver.State,
+            postcheckReceiver.OperationalState,
+            postcheckOutcome,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_DOMAIN_FAILURE");
+        Assert.Equal(ExecutionFailureKind.DomainFailure, postcheckOutcome.Failure!.Kind);
+        Assert.Equal(1, postcheckMemory.LoadCount);
+    }
+
+    /// <summary>Checks one machine snapshots the first complete definition and cannot be changed mid-session.</summary>
+    [Fact]
+    public void ResolverCannotChangeDefinitionDuringOneMachineSession()
+    {
+        var firstDefinition = CreateDefinition(IlBody.Create(1, [0x16, 0x2A]), returnsValue: true);
+        var laterDefinition = CreateDefinition(IlBody.Create(0, [0x2A]), returnsValue: false);
+        var resolver = new FlippingResolver(firstDefinition, laterDefinition);
+        var domain = new ConcreteDomain();
+        var machine = CreateMachine(domain, resolver, new CountingMemoryModel(domain));
+
+        var firstActivation = machine.ActivateRoot(
+            Method,
+            ImmutableArray<ConcreteValue>.Empty,
+            ConcreteMemory.Empty);
+        Assert.True(firstActivation.IsSuccess, firstActivation.Failure?.Code);
+        var firstRun = Run(machine, firstActivation.State!, instructionBudget: 10);
+        Assert.Equal(MachineRunStatus.Completed, firstRun.Outcome.Status);
+        AssertInt32(0, firstRun.Outcome.State.ReturnValue.Value);
+
+        var repeatedActivation = machine.ActivateRoot(
+            Method,
+            ImmutableArray<ConcreteValue>.Empty,
+            ConcreteMemory.Empty);
+        Assert.True(repeatedActivation.IsSuccess, repeatedActivation.Failure?.Code);
+        var repeatedRun = Run(machine, repeatedActivation.State!, instructionBudget: 10);
+
+        AssertInt32(0, repeatedRun.Outcome.State.ReturnValue.Value);
+        Assert.Equal(1, resolver.CallCount);
+    }
+
+    /// <summary>Checks a bounded machine rejects a second root MethodDef without resolving or caching it.</summary>
+    [Fact]
+    public void MachineSessionRejectsSecondRootMethod()
+    {
+        var definition = CreateDefinition(IlBody.Create(0, [0x2A]), returnsValue: false);
+        var resolver = new FixedResolver(definition);
+        var domain = new ConcreteDomain();
+        var machine = CreateMachine(domain, resolver, new CountingMemoryModel(domain));
+        var first = machine.ActivateRoot(Method, ImmutableArray<ConcreteValue>.Empty, ConcreteMemory.Empty);
+        Assert.True(first.IsSuccess, first.Failure?.Code);
+
+        var second = machine.ActivateRoot(
+            new MethodHandle(Module, 0x06000002),
+            ImmutableArray<ConcreteValue>.Empty,
+            ConcreteMemory.Empty);
+
+        AssertActivationFailure(second, MachineRunStatus.Blocked, "EXEC_MACHINE_SESSION_MISMATCH");
+        Assert.Equal(1, resolver.MethodDefinitionCallCount);
+    }
+
+    /// <summary>Checks budget exhaustion executes no instruction and emits no event.</summary>
+    [Fact]
+    public void ExhaustedBudgetDoesNotClaimReturnExecuted()
+    {
+        var definition = CreateDefinition(IlBody.Create(0, [0x2A]), returnsValue: false);
+        var domain = new ConcreteDomain();
+        var machine = CreateMachine(domain, new FixedResolver(definition), new CountingMemoryModel(domain));
+        var activation = machine.ActivateRoot(Method, ImmutableArray<ConcreteValue>.Empty, ConcreteMemory.Empty);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var operations = new MachineOperationalState(new BudgetState(0));
+
+        var outcome = machine.StepOne(activation.State!, operations);
+
+        Assert.Same(activation.State, outcome.State);
+        Assert.Same(operations, outcome.OperationalState);
         Assert.Equal(MachineRunStatus.BudgetExhausted, outcome.Status);
         Assert.Empty(outcome.Events);
         Assert.Null(outcome.Failure);
     }
 
-    /// <summary>Checks the deterministic byte-size admission cap for untrusted method bodies.</summary>
+    /// <summary>Checks forged resumed state against the frozen frame and typed boundary shape.</summary>
     [Fact]
-    public void AdmissionCapsUntrustedMethodBodySize()
+    public void ForgedFrameShapeAndTypedBoundaryAreRejectedWithoutTransfer()
     {
-        var bytes = Enumerable.Repeat((byte)0x00, 4096).Append((byte)0x2A).ToArray();
-        var body = IlBody.Create(0, bytes);
-        var context = CreateContext(body, [], 0, false);
+        var definition = CreateDefinition(IlBody.Create(1, [0x16, 0x2A]), returnsValue: true);
+        var domain = new ConcreteDomain();
+        var machine = CreateMachine(domain, new FixedResolver(definition), new CountingMemoryModel(domain));
+        var activation = machine.ActivateRoot(Method, ImmutableArray<ConcreteValue>.Empty, ConcreteMemory.Empty);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var operations = new MachineOperationalState(new BudgetState(10));
 
-        var outcome = context.Machine.StepOne(context.State, context.OperationalState);
+        var invalidOffset = ReplaceFrame(activation.State!, frame => frame with { IlOffset = 2 });
+        AssertNoTransfer(
+            invalidOffset,
+            operations,
+            machine.StepOne(invalidOffset, operations),
+            MachineRunStatus.InvalidProgram,
+            "EXEC_INVALID_INSTRUCTION_OFFSET");
 
-        AssertNoTransfer(context, outcome, MachineRunStatus.Blocked, "EXEC_BODY_TOO_LARGE");
+        var wrongDepth = ReplaceFrame(
+            activation.State!,
+            frame => frame with { EvalStack = ImmutableArray.Create(domain.ConstInt32(1)) });
+        AssertNoTransfer(
+            wrongDepth,
+            operations,
+            machine.StepOne(wrongDepth, operations),
+            MachineRunStatus.InvalidProgram,
+            "EXEC_INVALID_ENTRY_STACK");
+
+        var afterConstant = machine.StepOne(activation.State!, operations);
+        Assert.Equal(MachineRunStatus.Ready, afterConstant.Status);
+        var wrongType = ReplaceFrame(
+            afterConstant.State,
+            frame => frame with { EvalStack = ImmutableArray.Create(domain.ConstNull(DeclaringType)) });
+        AssertNoTransfer(
+            wrongType,
+            afterConstant.OperationalState,
+            machine.StepOne(wrongType, afterConstant.OperationalState),
+            MachineRunStatus.InvalidProgram,
+            "EXEC_VALUE_TYPE_MISMATCH");
     }
 
-    /// <summary>Checks malformed public record shapes are rejected structurally instead of throwing.</summary>
+    /// <summary>Checks malformed state envelopes fail before metadata resolution or instruction execution.</summary>
     [Fact]
-    public void DefaultArraysAndNegativeBodyFactsProduceStructuredInvalidProgram()
+    public void MalformedStateEnvelopeFailsClosed()
     {
-        var validContext = CreateContext(IlBody.Create(0, [0x2A]), [], 0, false);
-        var defaultStackState = new MachineState<ConcreteValue, ConcreteMemory>(
+        var definition = CreateDefinition(IlBody.Create(0, [0x2A]), returnsValue: false);
+        var domain = new ConcreteDomain();
+
+        var defaultResolver = new FixedResolver(definition);
+        var defaultMachine = CreateMachine(domain, defaultResolver, new CountingMemoryModel(domain));
+        var defaultState = new MachineState<ConcreteValue, ConcreteMemory>(
             default,
             ConcreteMemory.Empty,
             OptionalValue<ConcreteValue>.None);
-        var defaultStackOutcome = validContext.Machine.StepOne(defaultStackState, validContext.OperationalState);
-        Assert.Equal(MachineRunStatus.InvalidProgram, defaultStackOutcome.Status);
-        Assert.Equal("EXEC_INVALID_CALL_STACK", defaultStackOutcome.Failure!.Code);
-        Assert.Empty(defaultStackOutcome.Events);
+        var operations = new MachineOperationalState(new BudgetState(10));
+        var defaultOutcome = defaultMachine.StepOne(defaultState, operations);
+        AssertNoTransfer(
+            defaultState,
+            operations,
+            defaultOutcome,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_INVALID_CALL_STACK");
+        Assert.Equal(0, defaultResolver.MethodDefinitionCallCount);
 
-        var malformedFrame = validContext.State.CallStack[0] with { Arguments = default };
-        var malformedFrameState = validContext.State with
+        var resolver = new FixedResolver(definition);
+        var machine = CreateMachine(domain, resolver, new CountingMemoryModel(domain));
+        var activation = machine.ActivateRoot(Method, ImmutableArray<ConcreteValue>.Empty, ConcreteMemory.Empty);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        Assert.Equal(1, resolver.MethodDefinitionCallCount);
+
+        var nested = activation.State! with
         {
-            CallStack = ImmutableArray.Create(malformedFrame),
+            CallStack = activation.State.CallStack.Add(activation.State.CallStack[0]),
         };
-        var malformedFrameOutcome = validContext.Machine.StepOne(malformedFrameState, validContext.OperationalState);
-        Assert.Equal(MachineRunStatus.InvalidProgram, malformedFrameOutcome.Status);
-        Assert.Equal("EXEC_INVALID_FRAME_SLOTS", malformedFrameOutcome.Failure!.Code);
-        Assert.Empty(malformedFrameOutcome.Events);
+        AssertNoTransfer(
+            nested,
+            operations,
+            machine.StepOne(nested, operations),
+            MachineRunStatus.InvalidProgram,
+            "EXEC_NESTED_FRAME_UNSUPPORTED");
 
-        var defaultCodeContext = CreateContext(new IlBody(0, default, false, 0, 0), [], 0, false);
-        var defaultCodeOutcome = defaultCodeContext.Machine.StepOne(
-            defaultCodeContext.State,
-            defaultCodeContext.OperationalState);
-        AssertNoTransfer(defaultCodeContext, defaultCodeOutcome, MachineRunStatus.InvalidProgram, "EXEC_INVALID_CODE_BUFFER");
+        var defaultArguments = ReplaceFrame(
+            activation.State,
+            frame => frame with { Arguments = default });
+        AssertNoTransfer(
+            defaultArguments,
+            operations,
+            machine.StepOne(defaultArguments, operations),
+            MachineRunStatus.InvalidProgram,
+            "EXEC_INVALID_FRAME_SLOTS");
 
-        var negativeEhContext = CreateContext(new IlBody(0, ImmutableArray.Create((byte)0x2A), false, 0, -1), [], 0, false);
-        var negativeEhOutcome = negativeEhContext.Machine.StepOne(
-            negativeEhContext.State,
-            negativeEhContext.OperationalState);
-        AssertNoTransfer(negativeEhContext, negativeEhOutcome, MachineRunStatus.InvalidProgram, "EXEC_INVALID_EH_COUNT");
+        var staleReturn = activation.State with
+        {
+            ReturnValue = OptionalValue<ConcreteValue>.Some(domain.ConstInt32(1)),
+        };
+        AssertNoTransfer(
+            staleReturn,
+            operations,
+            machine.StepOne(staleReturn, operations),
+            MachineRunStatus.InvalidProgram,
+            "EXEC_STALE_RETURN_VALUE");
     }
 
-    /// <summary>Checks that malformed in-progress state and default method handles never reach a resolver.</summary>
+    /// <summary>Checks semantic equality across independently materialized immutable arrays and memory snapshots.</summary>
     [Fact]
-    public void StaleTerminalValueAndInvalidMethodHandleFailBeforeResolution()
+    public void SemanticComparerUsesDomainAndSequenceEquality()
     {
-        var body = IlBody.Create(0, [0x2A]);
-        var staleResolver = new FixedResolver(body);
-        var staleContext = CreateContext(body, [], 0, false, staleResolver);
-        var staleState = staleContext.State with
-        {
-            ReturnValue = OptionalValue<ConcreteValue>.Some(new ConcreteDomain().ConstInt32(1)),
-        };
-
-        var staleOutcome = staleContext.Machine.StepOne(staleState, staleContext.OperationalState);
-
-        Assert.Same(staleState, staleOutcome.State);
-        Assert.Same(staleContext.OperationalState, staleOutcome.OperationalState);
-        Assert.Equal(MachineRunStatus.InvalidProgram, staleOutcome.Status);
-        Assert.Equal("EXEC_STALE_RETURN_VALUE", staleOutcome.Failure!.Code);
-        Assert.Empty(staleOutcome.Events);
-        Assert.Equal(0, staleResolver.CallCount);
-
-        var invalidResolver = new FixedResolver(body);
-        var invalidContext = CreateContext(body, [], 0, false, invalidResolver);
-        var invalidState = invalidContext.State with
-        {
-            CallStack = ImmutableArray.Create(invalidContext.State.CallStack[0] with { Method = default }),
-        };
-
-        var invalidOutcome = invalidContext.Machine.StepOne(invalidState, invalidContext.OperationalState);
-
-        Assert.Same(invalidState, invalidOutcome.State);
-        Assert.Same(invalidContext.OperationalState, invalidOutcome.OperationalState);
-        Assert.Equal(MachineRunStatus.InvalidProgram, invalidOutcome.Status);
-        Assert.Equal("EXEC_INVALID_METHOD_HANDLE", invalidOutcome.Failure!.Code);
-        Assert.Empty(invalidOutcome.Events);
-        Assert.Equal(0, invalidResolver.CallCount);
-        Assert.Throws<ArgumentOutOfRangeException>(() => new MethodHandle(Method.Module, 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new MethodHandle(Method.Module, 0x0A000001));
-    }
-
-    /// <summary>Checks that a resolution success can never smuggle a null reference across the capability seam.</summary>
-    [Fact]
-    public void ResolutionSuccessRejectsNullValues()
-    {
-        Assert.Throws<ArgumentNullException>(() => ResolutionResult<IlBody>.Success(null!));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new ResolutionFailure(
-            (ResolutionFailureKind)int.MaxValue,
-            "INVALID",
-            "invalid"));
-        Assert.Throws<ArgumentException>(() => new ResolutionFailure(
-            ResolutionFailureKind.Invalid,
-            " ",
-            "invalid"));
-
-        Assert.Throws<ArgumentNullException>(ConsumeNullBudget);
-
-        static void ConsumeNullBudget()
-        {
-            BudgetState nullBudget = null!;
-            _ = new InstructionBudgetPolicy().TryConsumeInstruction(ref nullBudget);
-        }
-    }
-
-    /// <summary>Checks that plug-in exception payloads never enter structured execution diagnostics.</summary>
-    [Fact]
-    public void DomainFailuresDoNotEchoExceptionPayloads()
-    {
-        const string canary = "secret-domain-exception-canary";
-        var shapeContext = CreateContext(
+        var definition = CreateDefinition(
             IlBody.Create(1, [0x02, 0x2A]),
-            [1],
-            localCount: 0,
-            returnsValue: true,
-            domain: new ThrowingDomain(canary, throwDuringShapeClassification: true));
-
-        var shapeOutcome = shapeContext.Machine.StepOne(shapeContext.State, shapeContext.OperationalState);
-
-        Assert.Equal(MachineRunStatus.InvalidProgram, shapeOutcome.Status);
-        Assert.Equal("EXEC_DOMAIN_SHAPE_FAILURE", shapeOutcome.Failure!.Code);
-        Assert.DoesNotContain(canary, shapeOutcome.Failure.Message, StringComparison.Ordinal);
-
-        var transferContext = CreateContext(
-            IlBody.Create(2, [0x17, 0x18, 0x58, 0x2A]),
-            [],
-            localCount: 0,
-            returnsValue: true,
-            domain: new ThrowingDomain(canary, throwDuringShapeClassification: false));
-        var first = transferContext.Machine.StepOne(transferContext.State, transferContext.OperationalState);
-        var second = transferContext.Machine.StepOne(first.State, first.OperationalState);
-        var transferOutcome = transferContext.Machine.StepOne(second.State, second.OperationalState);
-
-        Assert.Equal(MachineRunStatus.InvalidProgram, transferOutcome.Status);
-        Assert.Equal("EXEC_DOMAIN_FAILURE", transferOutcome.Failure!.Code);
-        Assert.DoesNotContain(canary, transferOutcome.Failure.Message, StringComparison.Ordinal);
-    }
-
-    /// <summary>Checks that string and I8 fixture values cannot enter the exact Int32 execution slice.</summary>
-    [Fact]
-    public void NonInt32SeedValuesFailClosedBeforeAnyPrefixExecutes()
-    {
+            parameterCount: 1,
+            returnsValue: true);
         var domain = new ConcreteDomain();
-        var body = IlBody.Create(1, [0x02, 0x2A]);
-        var resolver = new FixedResolver(body);
-        var machine = new IlMachine<ConcreteValue, ConcreteMemory>(
-            domain,
-            resolver,
-            new InstructionBudgetPolicy());
-        foreach (var invalidValue in new[] { domain.ConstString("not-an-int32"), domain.ConstInt64(1) })
-        {
-            var frame = new FrameState<ConcreteValue>(
-                Method,
-                0,
-                ImmutableArray.Create(invalidValue),
-                ImmutableArray<ConcreteValue>.Empty,
-                ImmutableArray<ConcreteValue>.Empty,
-                true);
-            var state = MachineState<ConcreteValue, ConcreteMemory>.Create(frame, ConcreteMemory.Empty);
-            var operationalState = new MachineOperationalState(new BudgetState(100));
-
-            var outcome = machine.StepOne(state, operationalState);
-
-            Assert.Same(state, outcome.State);
-            Assert.Same(operationalState, outcome.OperationalState);
-            Assert.Equal(MachineRunStatus.InvalidProgram, outcome.Status);
-            Assert.Equal("EXEC_NON_I4_VALUE", outcome.Failure!.Code);
-            Assert.Empty(outcome.Events);
-        }
-    }
-
-    /// <summary>Checks that lattice bottom never enters an executable frame or consumes budget.</summary>
-    [Fact]
-    public void InfeasibleFrameValuesFailClosedBeforeAnyInstructionExecutes()
-    {
-        var domain = new ConcreteDomain();
-        var bottom = domain.Bottom(ConcreteDomain.Int32Type);
-
-        var argumentContext = CreateContext(IlBody.Create(1, [0x02, 0x2A]), [0], 0, true, domain: domain);
-        var argumentState = argumentContext.State with
-        {
-            CallStack = ImmutableArray.Create(argumentContext.State.CallStack[0] with
-            {
-                Arguments = ImmutableArray.Create(bottom),
-            }),
-        };
-
-        var localBody = IlBody.Create(
-            1,
-            [0x06, 0x2A],
-            localVariablesInitialized: true,
-            localSignatureToken: 0x11000001);
-        var localContext = CreateContext(localBody, [], 1, true, domain: domain);
-        var localState = localContext.State with
-        {
-            CallStack = ImmutableArray.Create(localContext.State.CallStack[0] with
-            {
-                Locals = ImmutableArray.Create(bottom),
-            }),
-        };
-
-        var stackContext = CreateContext(
-            IlBody.Create(1, [0x16, 0x2A]),
-            [],
-            0,
-            true,
-            initialOffset: 1,
-            initialStack: ImmutableArray.Create(bottom),
-            domain: domain);
-
-        foreach (var (context, state) in new[]
-        {
-            (argumentContext, argumentState),
-            (localContext, localState),
-            (stackContext, stackContext.State),
-        })
-        {
-            var outcome = context.Machine.StepOne(state, context.OperationalState);
-            Assert.Same(state, outcome.State);
-            Assert.Same(context.OperationalState, outcome.OperationalState);
-            Assert.Equal(MachineRunStatus.InvalidProgram, outcome.Status);
-            Assert.Equal("EXEC_INFEASIBLE_VALUE", outcome.Failure!.Code);
-            Assert.Empty(outcome.Events);
-        }
-    }
-
-    /// <summary>Checks deterministic bounds before the resolver or value domain can scan hostile frame vectors.</summary>
-    [Fact]
-    public void OversizedFrameVectorsAreRejectedBeforeResolution()
-    {
-        var body = IlBody.Create(0, [0x2A]);
-        var resolver = new FixedResolver(body);
-        var context = CreateContext(body, [], 0, false, resolver);
-        var domain = new ConcreteDomain();
-        var oversizedArguments = Enumerable.Repeat(
-            domain.ConstInt32(0),
-            IlMachine<ConcreteValue, ConcreteMemory>.MaximumFrameSlotCount + 1).ToImmutableArray();
-        var state = context.State with
-        {
-            CallStack = ImmutableArray.Create(context.State.CallStack[0] with { Arguments = oversizedArguments }),
-        };
-
-        var outcome = context.Machine.StepOne(state, context.OperationalState);
-
-        Assert.Same(state, outcome.State);
-        Assert.Same(context.OperationalState, outcome.OperationalState);
-        Assert.Equal(MachineRunStatus.Blocked, outcome.Status);
-        Assert.Equal(ExecutionFailureKind.ResourceLimit, outcome.Failure!.Kind);
-        Assert.Equal("EXEC_FRAME_SLOT_LIMIT", outcome.Failure.Code);
-        Assert.Empty(outcome.Events);
-        Assert.Equal(0, resolver.CallCount);
-    }
-
-    /// <summary>Checks every malformed whole-body boundary named by the active testing strategy.</summary>
-    [Fact]
-    public void MalformedBodiesFailWholeBodyAdmissionWithoutExecutingPrefixes()
-    {
-        var tooManyInstructions = Enumerable.Repeat((byte)0x00, 1025).Append((byte)0x2A).ToArray();
-        var cases = new[]
-        {
-            (IlBody.Create(1, [0x1F]), Array.Empty<int>(), 0, true, MachineRunStatus.InvalidProgram, "EXEC_TRUNCATED_INSTRUCTION"),
-            (IlBody.Create(1, [0x02, 0x2A]), Array.Empty<int>(), 0, true, MachineRunStatus.InvalidProgram, "EXEC_INVALID_SLOT"),
-            (IlBody.Create(1, [0x16]), Array.Empty<int>(), 0, true, MachineRunStatus.InvalidProgram, "EXEC_MISSING_RETURN"),
-            (IlBody.Create(0, [0x2A, 0x00]), Array.Empty<int>(), 0, false, MachineRunStatus.InvalidProgram, "EXEC_CODE_AFTER_RETURN"),
-            (IlBody.Create(0, [0x16, 0x2A]), Array.Empty<int>(), 0, true, MachineRunStatus.InvalidProgram, "EXEC_MAXSTACK_EXCEEDED"),
-            (IlBody.Create(0, [0x2A], localVariablesInitialized: true, localSignatureToken: 0x11000001), Array.Empty<int>(), 0, false, MachineRunStatus.Blocked, "EXEC_LOCAL_LAYOUT_UNAVAILABLE"),
-            (IlBody.Create(0, [0x2A], localVariablesInitialized: true, localSignatureToken: 0x11000000), Array.Empty<int>(), 1, false, MachineRunStatus.InvalidProgram, "EXEC_INVALID_LOCAL_SIGNATURE"),
-            (IlBody.Create(0, [0x2A], localVariablesInitialized: true, localSignatureToken: 0x12000001), Array.Empty<int>(), 1, false, MachineRunStatus.InvalidProgram, "EXEC_INVALID_LOCAL_SIGNATURE"),
-            (IlBody.Create(0, tooManyInstructions), Array.Empty<int>(), 0, false, MachineRunStatus.Blocked, "EXEC_TOO_MANY_INSTRUCTIONS"),
-        };
-
-        foreach (var (body, arguments, localCount, returnsValue, status, code) in cases)
-        {
-            var context = CreateContext(body, arguments, localCount, returnsValue);
-            var outcome = context.Machine.StepOne(context.State, context.OperationalState);
-            AssertNoTransfer(context, outcome, status, code);
-        }
-    }
-
-    /// <summary>Checks that one machine snapshots its first resolved body and cannot be changed mid-run.</summary>
-    [Fact]
-    public void ResolverCannotChangeMethodBodyDuringOneMachineSession()
-    {
-        var stableBody = IlBody.Create(1, [0x16, 0x2A]);
-        var resolver = new FlippingResolver(stableBody, IlBody.Create(0, [0x28]));
-        var context = CreateContext(stableBody, [], 0, true, resolver);
-
-        var first = context.Machine.StepOne(context.State, context.OperationalState);
-        Assert.Equal(MachineRunStatus.Ready, first.Status);
-        var second = context.Machine.StepOne(first.State, first.OperationalState);
-
-        Assert.Equal(MachineRunStatus.Completed, second.Status);
-        Assert.Null(second.Failure);
-        Assert.Equal(1, resolver.CallCount);
-        AssertInt32(0, second.State.ReturnValue.Value);
-    }
-
-    /// <summary>Checks that a long-lived prototype machine cannot retain bodies for unbounded method identities.</summary>
-    [Fact]
-    public void MachineSessionRejectsASecondRootMethodWithoutGrowingItsCaches()
-    {
-        var body = IlBody.Create(1, [0x16, 0x2A]);
-        var resolver = new FixedResolver(body);
-        var context = CreateContext(body, [], 0, true, resolver);
-        var first = context.Machine.StepOne(context.State, context.OperationalState);
-        Assert.Equal(MachineRunStatus.Ready, first.Status);
-        Assert.Equal(1, resolver.CallCount);
-
-        var otherMethod = new MethodHandle(Method.Module, 0x06000002);
-        var otherState = context.State with
-        {
-            CallStack = ImmutableArray.Create(context.State.CallStack[0] with { Method = otherMethod }),
-        };
-        var rejected = context.Machine.StepOne(otherState, context.OperationalState);
-
-        Assert.Equal(MachineRunStatus.Blocked, rejected.Status);
-        Assert.Equal(ExecutionFailureKind.ResourceLimit, rejected.Failure!.Kind);
-        Assert.Equal("EXEC_MACHINE_SESSION_MISMATCH", rejected.Failure.Code);
-        Assert.Empty(rejected.Events);
-        Assert.Equal(1, resolver.CallCount);
-    }
-
-    /// <summary>Checks domain/sequence semantic equality for independently materialized immutable states.</summary>
-    [Fact]
-    public void SemanticComparerUsesSequenceAndDomainEquivalenceInsteadOfBackingArrayIdentity()
-    {
-        var domain = new ConcreteDomain();
-        var first = CreateContext(IlBody.Create(1, [0x16, 0x2A]), [1], 0, true, domain: domain).State;
-        var second = CreateContext(IlBody.Create(1, [0x16, 0x2A]), [1], 0, true, domain: domain).State;
+        var firstMachine = CreateMachine(domain, new FixedResolver(definition), new CountingMemoryModel(domain));
+        var secondMachine = CreateMachine(domain, new FixedResolver(definition), new CountingMemoryModel(domain));
+        var first = firstMachine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstInt32(7)),
+            ConcreteMemory.Empty).State!;
+        var second = secondMachine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstInt32(7)),
+            ConcreteMemory.Empty).State!;
         var comparer = new MachineStateSemanticComparer<ConcreteValue, ConcreteMemory>(domain);
 
         Assert.NotEqual(first, second);
         Assert.True(comparer.Equals(first, second));
         Assert.Equal(comparer.GetHashCode(first), comparer.GetHashCode(second));
-    }
 
-    /// <summary>Checks that uninitialized immutable arrays never alias valid empty semantic state.</summary>
-    [Fact]
-    public void SemanticComparerDistinguishesUninitializedArraysFromValidEmptyState()
-    {
-        var domain = new ConcreteDomain();
-        var comparer = new MachineStateSemanticComparer<ConcreteValue, ConcreteMemory>(domain);
-        var validTerminal = new MachineState<ConcreteValue, ConcreteMemory>(
-            ImmutableArray<FrameState<ConcreteValue>>.Empty,
-            ConcreteMemory.Empty,
-            OptionalValue<ConcreteValue>.None);
-        var invalidTerminal = new MachineState<ConcreteValue, ConcreteMemory>(
+        var invalid = new MachineState<ConcreteValue, ConcreteMemory>(
             default,
             ConcreteMemory.Empty,
             OptionalValue<ConcreteValue>.None);
+        Assert.False(comparer.Equals(first, invalid));
+        Assert.False(comparer.Equals(invalid, first));
 
-        Assert.False(comparer.Equals(validTerminal, invalidTerminal));
-        Assert.False(comparer.Equals(invalidTerminal, validTerminal));
-
-        var validFrame = CreateContext(IlBody.Create(1, [0x2A]), [], 0, false).State.CallStack[0];
-        var invalidFrame = validFrame with { Arguments = default };
-        var validState = validTerminal with { CallStack = ImmutableArray.Create(validFrame) };
-        var invalidState = validTerminal with { CallStack = ImmutableArray.Create(invalidFrame) };
-
-        Assert.False(comparer.Equals(validState, invalidState));
-        var nullFrameState = validTerminal with
-        {
-            CallStack = ImmutableArray.CreateRange(new FrameState<ConcreteValue>[] { null! }),
-        };
-        var otherNullFrameState = validTerminal with
-        {
-            CallStack = ImmutableArray.CreateRange(new FrameState<ConcreteValue>[] { null! }),
-        };
-        Assert.False(comparer.Equals(nullFrameState, otherNullFrameState));
-        var nullValueFrame = validFrame with
-        {
-            Arguments = ImmutableArray.CreateRange(new ConcreteValue[] { null! }),
-        };
-        var otherNullValueFrame = validFrame with
-        {
-            Arguments = ImmutableArray.CreateRange(new ConcreteValue[] { null! }),
-        };
-        Assert.False(comparer.Equals(
-            validTerminal with { CallStack = ImmutableArray.Create(nullValueFrame) },
-            validTerminal with { CallStack = ImmutableArray.Create(otherNullValueFrame) }));
-        Assert.Throws<ArgumentNullException>(() => OptionalValue<ConcreteValue>.Some(null!));
-        Assert.Throws<ArgumentException>(() => new TypeSig(null!));
-        Assert.Throws<ArgumentException>(() => new TypeSig("   "));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new TypeSig(
-            new string('T', TypeSig.MaximumDisplayNameLength + 1)));
+        var wrongType = ReplaceFrame(
+            second,
+            frame => frame with
+            {
+                Arguments = ImmutableArray.Create(domain.DefaultValue(TypeSig.Boolean)),
+            });
+        Assert.False(comparer.Equals(first, wrongType));
+        Assert.False(comparer.Equals(wrongType, first));
     }
 
-    /// <summary>Checks byte-identical canonical transcripts for repeated execution with equal inputs.</summary>
-    [Fact]
-    public void RepeatedRunsHaveEqualSemanticStateBudgetAndEventTranscript()
-    {
-        var body = IlBody.Create(2, [0x02, 0x03, 0x58, 0x1A, 0x59, 0x2A]);
-        var first = Run(body, [20, 5], 0, true);
-        var second = Run(body, [20, 5], 0, true);
-        var comparer = new MachineStateSemanticComparer<ConcreteValue, ConcreteMemory>(new ConcreteDomain());
+    private static IlMachine<ConcreteValue, ConcreteMemory> CreateMachine(
+        ConcreteDomain domain,
+        IResolutionServices resolver,
+        IMemoryModel<ConcreteValue, ConcreteMemory> memoryModel) =>
+        new(domain, resolver, memoryModel, new InstructionBudgetPolicy());
 
-        Assert.True(comparer.Equals(first.Outcome.State, second.Outcome.State));
-        Assert.Equal(first.Outcome.OperationalState, second.Outcome.OperationalState);
-        Assert.Equal(SerializeCanonicalTranscript(first), SerializeCanonicalTranscript(second));
-    }
+    private static ResolvedMethodDefinition CreateDefinition(
+        IlBody body,
+        int parameterCount = 0,
+        int localCount = 0,
+        bool returnsValue = false,
+        bool hasImplicitThis = false,
+        MethodHandle? method = null) =>
+        new(
+            method ?? Method,
+            body,
+            new MethodSignatureShape(
+                DeclaringType,
+                MethodCallingConventionKind.Default,
+                hasImplicitThis,
+                hasExplicitThis: false,
+                genericParameterCount: 0,
+                Enumerable.Repeat(TypeSig.Int32, parameterCount).ToImmutableArray(),
+                returnsValue ? TypeSig.Int32 : TypeSig.Void,
+                Enumerable.Repeat(TypeSig.Int32, localCount).ToImmutableArray()));
 
-    private static RunResult Run(IlBody body, int[] arguments, int localCount, bool returnsValue)
+    private static IlBody CreateGetterBody(bool adjust) => adjust
+        ? IlBody.Create(
+            2,
+            [
+                0x02,                   // ldarg.0
+                0x7B, 0x01, 0, 0, 0x04, // ldfld 0x04000001
+                0x17,                   // ldc.i4.1
+                0x58,                   // add
+                0x2A,                   // ret
+            ])
+        : IlBody.Create(
+            1,
+            [
+                0x02,                   // ldarg.0
+                0x7B, 0x01, 0, 0, 0x04, // ldfld 0x04000001
+                0x2A,                   // ret
+            ]);
+
+    private static MachineState<ConcreteValue, ConcreteMemory> ReplaceFrame(
+        MachineState<ConcreteValue, ConcreteMemory> state,
+        Func<FrameState<ConcreteValue>, FrameState<ConcreteValue>> replace) =>
+        state with { CallStack = ImmutableArray.Create(replace(state.CallStack[0])) };
+
+    private static RunResult Run(
+        IlMachine<ConcreteValue, ConcreteMemory> machine,
+        MachineState<ConcreteValue, ConcreteMemory> initialState,
+        long instructionBudget)
     {
-        var context = CreateContext(body, arguments, localCount, returnsValue);
-        var state = context.State;
-        var operationalState = context.OperationalState;
+        var state = initialState;
+        var operations = new MachineOperationalState(new BudgetState(instructionBudget));
         var events = ImmutableArray.CreateBuilder<DebugEvent>();
-
         for (var step = 0; step < 100; step++)
         {
-            var outcome = context.Machine.StepOne(state, operationalState);
+            var outcome = machine.StepOne(state, operations);
             events.AddRange(outcome.Events);
-            state = outcome.State;
-            operationalState = outcome.OperationalState;
             if (outcome.Status != MachineRunStatus.Ready)
             {
                 return new RunResult(outcome, events.ToImmutable());
             }
+
+            state = outcome.State;
+            operations = outcome.OperationalState;
         }
 
-        throw new InvalidOperationException("Machine did not stop within the test safety bound.");
+        throw new InvalidOperationException("Machine did not stop within the deterministic test bound.");
     }
 
-    private static MachineContext CreateContext(
-        IlBody body,
-        int[] arguments,
-        int localCount,
-        bool returnsValue,
-        IResolutionServices? resolver = null,
-        int initialOffset = 0,
-        long instructionBudget = 100,
-        ImmutableArray<ConcreteValue> initialStack = default,
-        IValueDomain<ConcreteValue>? domain = null)
+    private static void AssertActivationFailure(
+        MachineActivationResult<ConcreteValue, ConcreteMemory> activation,
+        MachineRunStatus expectedStatus,
+        string expectedCode)
     {
-        domain ??= new ConcreteDomain();
-        resolver ??= new FixedResolver(body);
-        var machine = new IlMachine<ConcreteValue, ConcreteMemory>(
-            domain,
-            resolver,
-            new InstructionBudgetPolicy());
-        var frame = new FrameState<ConcreteValue>(
-            Method,
-            initialOffset,
-            arguments.Select(domain.ConstInt32).ToImmutableArray(),
-            Enumerable.Repeat(domain.ConstInt32(0), localCount).ToImmutableArray(),
-            initialStack.IsDefault ? ImmutableArray<ConcreteValue>.Empty : initialStack,
-            returnsValue);
-        var state = MachineState<ConcreteValue, ConcreteMemory>.Create(frame, ConcreteMemory.Empty);
-        var operationalState = new MachineOperationalState(new BudgetState(instructionBudget));
-        return new MachineContext(machine, state, operationalState);
+        Assert.False(activation.IsSuccess);
+        Assert.Null(activation.State);
+        Assert.Equal(expectedStatus, activation.Status);
+        Assert.Equal(expectedCode, activation.Failure!.Code);
     }
 
     private static void AssertNoTransfer(
-        MachineContext context,
+        MachineState<ConcreteValue, ConcreteMemory> state,
+        MachineOperationalState operations,
         StepOutcome<ConcreteValue, ConcreteMemory> outcome,
         MachineRunStatus expectedStatus,
         string expectedCode)
     {
-        Assert.Same(context.State, outcome.State);
-        Assert.Same(context.OperationalState, outcome.OperationalState);
+        Assert.Same(state, outcome.State);
+        Assert.Same(operations, outcome.OperationalState);
         Assert.Equal(expectedStatus, outcome.Status);
         Assert.Equal(expectedCode, outcome.Failure!.Code);
         Assert.Empty(outcome.Events);
+    }
+
+    private static void AssertBoundary(
+        MethodInstructionBoundary boundary,
+        int expectedOffset,
+        params TypeSig[] expectedTypes)
+    {
+        Assert.Equal(expectedOffset, boundary.IlOffset);
+        Assert.Equal(expectedTypes, boundary.ExpectedStackTypes);
     }
 
     private static void AssertInt32(int expected, ConcreteValue actual)
@@ -643,105 +1125,106 @@ public sealed class IlMachineTests
         Assert.Equal(expected, value);
     }
 
-    private static byte[] SerializeCanonicalTranscript(RunResult run)
-    {
-        var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer))
-        {
-            writer.WriteStartObject();
-            writer.WriteString("status", run.Outcome.Status.ToString());
-            writer.WriteStartObject("budget");
-            writer.WriteNumber("instructions", run.Outcome.OperationalState.Budget.InstructionBudget);
-            writer.WriteEndObject();
-            writer.WriteStartObject("return");
-            writer.WriteBoolean("hasValue", run.Outcome.State.ReturnValue.HasValue);
-            if (run.Outcome.State.ReturnValue.HasValue)
-            {
-                var value = run.Outcome.State.ReturnValue.Value;
-                writer.WriteString("kind", value.Kind.ToString());
-                writer.WriteString("type", value.StaticType.DisplayName);
-                var domain = new ConcreteDomain();
-                if (domain.TryGetConstInt32(value, out var int32))
-                {
-                    writer.WriteNumber("int32", int32);
-                }
-            }
-
-            writer.WriteEndObject();
-            writer.WriteStartArray("events");
-            foreach (var item in run.Events)
-            {
-                writer.WriteStartObject();
-                writer.WriteString("kind", item.Kind.ToString());
-                writer.WriteNumber("moduleHigh", item.Method.Module.High);
-                writer.WriteNumber("moduleLow", item.Method.Module.Low);
-                writer.WriteNumber("methodToken", item.Method.MetadataToken);
-                writer.WriteNumber("ilOffset", item.IlOffset);
-                writer.WriteString("instruction", item.Instruction);
-                writer.WriteEndObject();
-            }
-
-            writer.WriteEndArray();
-            if (run.Outcome.Failure is null)
-            {
-                writer.WriteNull("failure");
-            }
-            else
-            {
-                writer.WriteStartObject("failure");
-                writer.WriteString("kind", run.Outcome.Failure.Kind.ToString());
-                writer.WriteString("code", run.Outcome.Failure.Code);
-                if (run.Outcome.Failure.IlOffset is int failureOffset)
-                {
-                    writer.WriteNumber("ilOffset", failureOffset);
-                }
-                else
-                {
-                    writer.WriteNull("ilOffset");
-                }
-
-                if (run.Outcome.Failure.Method is MethodHandle method)
-                {
-                    writer.WriteNumber("moduleHigh", method.Module.High);
-                    writer.WriteNumber("moduleLow", method.Module.Low);
-                    writer.WriteNumber("methodToken", method.MetadataToken);
-                }
-
-                writer.WriteEndObject();
-            }
-
-            writer.WriteEndObject();
-        }
-
-        return buffer.WrittenSpan.ToArray();
-    }
-
-    private sealed record MachineContext(
-        IlMachine<ConcreteValue, ConcreteMemory> Machine,
-        MachineState<ConcreteValue, ConcreteMemory> State,
-        MachineOperationalState OperationalState);
-
     private sealed record RunResult(
         StepOutcome<ConcreteValue, ConcreteMemory> Outcome,
         ImmutableArray<DebugEvent> Events);
 
-    private sealed class ThrowingDomain : IValueDomain<ConcreteValue>
+    private sealed class FixedResolver : IResolutionServices
+    {
+        private readonly ResolutionResult<ResolvedMethodDefinition> methodResult;
+        private readonly ResolutionResult<ResolvedField> fieldResult;
+
+        internal FixedResolver(ResolvedMethodDefinition definition, ResolvedField? field = null)
+            : this(
+                ResolutionResult<ResolvedMethodDefinition>.Success(definition),
+                field is null
+                    ? ResolutionResult<ResolvedField>.Failed(
+                        ResolutionFailureKind.Unavailable,
+                        "META_FIELD_NOT_CONFIGURED",
+                        "This fixture did not configure a field operand.")
+                    : ResolutionResult<ResolvedField>.Success(field))
+        {
+        }
+
+        internal FixedResolver(
+            ResolutionResult<ResolvedMethodDefinition> methodResult,
+            ResolutionResult<ResolvedField> fieldResult)
+        {
+            this.methodResult = methodResult;
+            this.fieldResult = fieldResult;
+        }
+
+        internal int MethodDefinitionCallCount { get; private set; }
+
+        internal int FieldCallCount { get; private set; }
+
+        public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method)
+        {
+            MethodDefinitionCallCount++;
+            return methodResult;
+        }
+
+        public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken)
+        {
+            FieldCallCount++;
+            return fieldResult;
+        }
+
+        internal static FixedResolver Failure(ResolutionFailureKind kind, string code, string message) =>
+            new(
+                ResolutionResult<ResolvedMethodDefinition>.Failed(kind, code, message),
+                ResolutionResult<ResolvedField>.Failed(
+                    ResolutionFailureKind.Unavailable,
+                    "META_FIELD_NOT_CONFIGURED",
+                    "This fixture did not configure a field operand."));
+    }
+
+    private sealed class FlippingResolver : IResolutionServices
+    {
+        private readonly ResolvedMethodDefinition first;
+        private readonly ResolvedMethodDefinition later;
+
+        internal FlippingResolver(ResolvedMethodDefinition first, ResolvedMethodDefinition later)
+        {
+            this.first = first;
+            this.later = later;
+        }
+
+        internal int CallCount { get; private set; }
+
+        public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method)
+        {
+            CallCount++;
+            return ResolutionResult<ResolvedMethodDefinition>.Success(CallCount == 1 ? first : later);
+        }
+
+        public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken) =>
+            ResolutionResult<ResolvedField>.Failed(
+                ResolutionFailureKind.Unavailable,
+                "META_FIELD_NOT_CONFIGURED",
+                "This fixture did not configure a field operand.");
+    }
+
+    private sealed class ThrowingResolver : IResolutionServices
+    {
+        public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method) =>
+            throw new SyntheticCapabilityException();
+
+        public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken) =>
+            throw new SyntheticCapabilityException();
+    }
+
+    private sealed class ThrowingArithmeticDomain : IValueDomain<ConcreteValue>
     {
         private readonly ConcreteDomain inner = new();
-        private readonly string exceptionMessage;
-        private readonly bool throwDuringShapeClassification;
-
-        internal ThrowingDomain(string exceptionMessage, bool throwDuringShapeClassification)
-        {
-            this.exceptionMessage = exceptionMessage;
-            this.throwDuringShapeClassification = throwDuringShapeClassification;
-        }
 
         public ConcreteValue Bottom(TypeSig type) => inner.Bottom(type);
 
         public bool IsBottom(ConcreteValue value) => inner.IsBottom(value);
 
         public ConcreteValue Top(TypeSig type) => inner.Top(type);
+
+        public ConcreteValue DefaultValue(TypeSig type) => inner.DefaultValue(type);
 
         public ConcreteValue ConstInt32(int value) => inner.ConstInt32(value);
 
@@ -755,61 +1238,126 @@ public sealed class IlMachineTests
 
         public TypeSig GetStaticType(ConcreteValue value) => inner.GetStaticType(value);
 
-        public StackKind GetStackKind(ConcreteValue value) => throwDuringShapeClassification
-            ? throw new InvalidOperationException(exceptionMessage)
-            : inner.GetStackKind(value);
+        public StackKind GetStackKind(ConcreteValue value) => inner.GetStackKind(value);
 
         public bool TryGetConstInt32(ConcreteValue value, out int c) => inner.TryGetConstInt32(value, out c);
 
         public ConcreteValue ApplyBinary(BinaryOp op, ConcreteValue a, ConcreteValue b) =>
-            throwDuringShapeClassification
-                ? inner.ApplyBinary(op, a, b)
-                : throw new InvalidOperationException(exceptionMessage);
+            throw new SyntheticCapabilityException();
     }
 
-    private sealed class FixedResolver : IResolutionServices
+    private sealed class SelectiveClassificationDomain : IValueDomain<ConcreteValue>
     {
-        private readonly ResolutionResult<IlBody> result;
+        private readonly ConcreteDomain inner = new();
 
-        public FixedResolver(IlBody body)
+        internal bool ThrowForEveryStaticType { get; set; }
+
+        internal bool ThrowForInt32StaticType { get; set; }
+
+        public ConcreteValue Bottom(TypeSig type) => inner.Bottom(type);
+
+        public bool IsBottom(ConcreteValue value) => inner.IsBottom(value);
+
+        public ConcreteValue Top(TypeSig type) => inner.Top(type);
+
+        public ConcreteValue DefaultValue(TypeSig type) => inner.DefaultValue(type);
+
+        public ConcreteValue ConstInt32(int value) => inner.ConstInt32(value);
+
+        public ConcreteValue Join(ConcreteValue a, ConcreteValue b) => inner.Join(a, b);
+
+        public bool IsLessThanOrEqual(ConcreteValue a, ConcreteValue b) => inner.IsLessThanOrEqual(a, b);
+
+        public ConcreteValue Meet(ConcreteValue a, ConcreteValue b) => inner.Meet(a, b);
+
+        public ConcreteValue Widen(ConcreteValue prev, ConcreteValue next) => inner.Widen(prev, next);
+
+        public TypeSig GetStaticType(ConcreteValue value)
         {
-            result = ResolutionResult<IlBody>.Success(body);
+            var type = inner.GetStaticType(value);
+            if (ThrowForEveryStaticType || ThrowForInt32StaticType && type == TypeSig.Int32)
+            {
+                throw new SyntheticCapabilityException();
+            }
+
+            return type;
         }
 
-        private FixedResolver(ResolutionResult<IlBody> result)
-        {
-            this.result = result;
-        }
+        public StackKind GetStackKind(ConcreteValue value) => inner.GetStackKind(value);
 
-        public int CallCount { get; private set; }
+        public bool TryGetConstInt32(ConcreteValue value, out int c) => inner.TryGetConstInt32(value, out c);
 
-        public ResolutionResult<IlBody> GetMethodBody(MethodHandle method)
-        {
-            CallCount++;
-            return result;
-        }
-
-        public static FixedResolver Failure(ResolutionFailureKind kind, string code, string message) =>
-            new(ResolutionResult<IlBody>.Failed(kind, code, message));
+        public ConcreteValue ApplyBinary(BinaryOp op, ConcreteValue a, ConcreteValue b) =>
+            inner.ApplyBinary(op, a, b);
     }
 
-    private sealed class FlippingResolver : IResolutionServices
+    private sealed class SyntheticCapabilityException : Exception
     {
-        private readonly IlBody first;
-        private readonly IlBody later;
+    }
 
-        public FlippingResolver(IlBody first, IlBody later)
+    private sealed class CountingMemoryModel : IMemoryModel<ConcreteValue, ConcreteMemory>
+    {
+        private readonly ConcreteMemoryModel inner;
+        private readonly Func<ConcreteMemory, ConcreteValue, ResolvedField, MemoryLoadResult<ConcreteValue>>? load;
+
+        internal CountingMemoryModel(
+            ConcreteDomain domain,
+            Func<ConcreteMemory, ConcreteValue, ResolvedField, MemoryLoadResult<ConcreteValue>>? load = null)
         {
-            this.first = first;
-            this.later = later;
+            inner = new ConcreteMemoryModel(domain);
+            this.load = load;
         }
 
-        public int CallCount { get; private set; }
+        internal int LoadCount { get; private set; }
 
-        public ResolutionResult<IlBody> GetMethodBody(MethodHandle method)
+        public bool CanAllocate => inner.CanAllocate;
+
+        public (ConcreteValue objRef, ConcreteMemory mem) NewObject(ConcreteMemory mem, TypeSig type) =>
+            inner.NewObject(mem, type);
+
+        public (ConcreteValue arrRef, ConcreteMemory mem) NewArray(
+            ConcreteMemory mem,
+            TypeSig elemType,
+            ConcreteValue length) =>
+            inner.NewArray(mem, elemType, length);
+
+        public MemoryLoadResult<ConcreteValue> LoadField(
+            ConcreteMemory mem,
+            ConcreteValue objRef,
+            ResolvedField field)
         {
-            CallCount++;
-            return ResolutionResult<IlBody>.Success(CallCount == 1 ? first : later);
+            LoadCount++;
+            return load is null ? inner.LoadField(mem, objRef, field) : load(mem, objRef, field);
         }
+
+        public ConcreteMemory StoreField(
+            ConcreteMemory mem,
+            ConcreteValue objRef,
+            ResolvedField field,
+            ConcreteValue value) =>
+            inner.StoreField(mem, objRef, field, value);
+
+        public ConcreteValue LoadElement(ConcreteMemory mem, ConcreteValue arrRef, ConcreteValue index) =>
+            inner.LoadElement(mem, arrRef, index);
+
+        public ConcreteMemory StoreElement(
+            ConcreteMemory mem,
+            ConcreteValue arrRef,
+            ConcreteValue index,
+            ConcreteValue value) =>
+            inner.StoreElement(mem, arrRef, index, value);
+
+        internal (ConcreteValue objRef, ConcreteMemory mem) ImportObject(
+            ConcreteMemory mem,
+            TypeSig type,
+            ImportedObjectEvidenceIdentity identity) =>
+            inner.ImportObject(mem, type, identity);
+
+        internal ConcreteMemory ImportField(
+            ConcreteMemory mem,
+            ConcreteValue objRef,
+            ResolvedField field,
+            ConcreteValue value) =>
+            inner.ImportField(mem, objRef, field, value);
     }
 }

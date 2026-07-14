@@ -674,6 +674,7 @@ public sealed class ClrmdDumpSession : IDisposable
                     Snapshot,
                     obj.Address,
                     type.Name ?? typeName,
+                    type.MetadataToken,
                     methodTable,
                     handle.Address,
                     handle.HandleKind.ToString(),
@@ -789,6 +790,7 @@ public sealed class ClrmdDumpSession : IDisposable
             }
 
             if (runtimeType.MethodTable != obj.MethodTable ||
+                runtimeType.MetadataToken != obj.TypeMetadataToken ||
                 !string.Equals(runtimeType.Name, obj.TypeName, StringComparison.Ordinal))
             {
                 return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(

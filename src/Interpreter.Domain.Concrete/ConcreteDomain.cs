@@ -12,17 +12,17 @@ namespace Interpreter.Domain.Concrete;
 /// </remarks>
 public sealed class ConcreteDomain : IValueDomain<ConcreteValue>
 {
-    /// <summary>Gets the canonical draft signature for <see cref="int"/>.</summary>
-    public static TypeSig Int32Type { get; } = new("System.Int32");
+    /// <summary>Gets the canonical structural signature for <see cref="int"/>.</summary>
+    public static TypeSig Int32Type => TypeSig.Int32;
 
-    /// <summary>Gets the canonical draft signature for <see cref="long"/>.</summary>
-    public static TypeSig Int64Type { get; } = new("System.Int64");
+    /// <summary>Gets the canonical structural signature for <see cref="long"/>.</summary>
+    public static TypeSig Int64Type => TypeSig.Int64;
 
-    /// <summary>Gets the canonical draft signature for <see cref="bool"/>.</summary>
-    public static TypeSig BooleanType { get; } = new("System.Boolean");
+    /// <summary>Gets the canonical structural signature for <see cref="bool"/>.</summary>
+    public static TypeSig BooleanType => TypeSig.Boolean;
 
-    /// <summary>Gets the canonical draft signature for <see cref="string"/>.</summary>
-    public static TypeSig StringType { get; } = new("System.String");
+    /// <summary>Gets the canonical structural signature for <see cref="string"/>.</summary>
+    public static TypeSig StringType => TypeSig.String;
 
     /// <inheritdoc />
     public ConcreteValue Bottom(TypeSig type) => new(ConcreteValueKind.Bottom, RequireType(type));
@@ -33,7 +33,42 @@ public sealed class ConcreteDomain : IValueDomain<ConcreteValue>
     /// <inheritdoc />
     public ConcreteValue Top(TypeSig type) => new(ConcreteValueKind.Unknown, RequireType(type));
 
-    internal ConcreteValue ConstNull(TypeSig refType) => new(ConcreteValueKind.Null, RequireType(refType));
+    /// <inheritdoc />
+    public ConcreteValue DefaultValue(TypeSig type)
+    {
+        type = RequireType(type);
+        return type.Kind switch
+        {
+            TypeSigKind.Intrinsic => type.IntrinsicKind switch
+            {
+                IntrinsicTypeKind.Int32 => ConstInt32(0),
+                IntrinsicTypeKind.Int64 => ConstInt64(0),
+                IntrinsicTypeKind.Boolean => ConstBool(false),
+                IntrinsicTypeKind.String or IntrinsicTypeKind.Object => ConstNull(type),
+                _ => throw new NotSupportedException(
+                    $"No concrete default is implemented for intrinsic type {type.DisplayName}."),
+            },
+            TypeSigKind.TypeDefinition or TypeSigKind.SzArray => ConstNull(type),
+            TypeSigKind.Synthetic => LegacySyntheticDefault(type),
+            TypeSigKind.Void => throw new ArgumentException("The void type has no runtime default value.", nameof(type)),
+            _ => throw new NotSupportedException($"No concrete default is implemented for {type.DisplayName}."),
+        };
+    }
+
+    /// <summary>Creates an exact typed null reference.</summary>
+    /// <param name="refType">A structural metadata, intrinsic, array, or fixture reference type.</param>
+    /// <returns>An exact null value whose static type is <paramref name="refType"/>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="refType"/> is not represented in the Ref stack category.</exception>
+    public ConcreteValue ConstNull(TypeSig refType)
+    {
+        refType = RequireType(refType);
+        if (InferStackKind(refType) != StackKind.Ref)
+        {
+            throw new ArgumentException("A typed null requires a reference type.", nameof(refType));
+        }
+
+        return new ConcreteValue(ConcreteValueKind.Null, refType);
+    }
 
     /// <inheritdoc />
     public ConcreteValue ConstInt32(int value) => new(ConcreteValueKind.Int32, Int32Type, value);
@@ -182,17 +217,7 @@ public sealed class ConcreteDomain : IValueDomain<ConcreteValue>
         new(ConcreteValueKind.ObjectReference, RequireType(type), id);
 
     internal ConcreteValue ArrayReference(long id, TypeSig elementType) =>
-        new(ConcreteValueKind.ArrayReference, new TypeSig($"{RequireType(elementType).DisplayName}[]"), id);
-
-    internal ConcreteValue DefaultValue(TypeSig type) => type.DisplayName switch
-    {
-        "System.Int32" => ConstInt32(0),
-        "System.Int64" => ConstInt64(0),
-        "System.Boolean" => ConstBool(false),
-        "System.String" or "System.Object" => ConstNull(type),
-        _ when type.DisplayName.EndsWith("[]", StringComparison.Ordinal) => ConstNull(type),
-        _ => Top(type),
-    };
+        new(ConcreteValueKind.ArrayReference, TypeSig.CreateSzArray(RequireType(elementType)), id);
 
     private ConcreteValue ApplyInt32(BinaryOp op, int left, int right) => op switch
     {
@@ -210,16 +235,40 @@ public sealed class ConcreteDomain : IValueDomain<ConcreteValue>
         _ => throw new ArgumentOutOfRangeException(nameof(op)),
     };
 
-    private static StackKind InferStackKind(TypeSig type) => type.DisplayName switch
+    private ConcreteValue LegacySyntheticDefault(TypeSig type) => type.DisplayName switch
     {
-        "System.Int32" or "System.Boolean" or "System.Byte" or "System.SByte" or
-            "System.Int16" or "System.UInt16" or "System.UInt32" => StackKind.I4,
-        "System.Int64" or "System.UInt64" => StackKind.I8,
-        "System.Single" => StackKind.R4,
-        "System.Double" => StackKind.R8,
-        "System.IntPtr" or "System.UIntPtr" => StackKind.NativeInt,
-        "System.String" or "System.Object" => StackKind.Ref,
-        _ when type.DisplayName.EndsWith("[]", StringComparison.Ordinal) => StackKind.Ref,
+        "System.Int32" => ConstInt32(0),
+        "System.Int64" => ConstInt64(0),
+        "System.Boolean" => ConstBool(false),
+        "System.String" or "System.Object" => ConstNull(type),
+        _ when type.DisplayName.EndsWith("[]", StringComparison.Ordinal) => ConstNull(type),
+        _ => throw new NotSupportedException(
+            $"Synthetic type {type.DisplayName} has no declared CLI default-value semantics."),
+    };
+
+    private static StackKind InferStackKind(TypeSig type) => type.Kind switch
+    {
+        TypeSigKind.TypeDefinition or TypeSigKind.SzArray => StackKind.Ref,
+        TypeSigKind.Intrinsic => type.IntrinsicKind switch
+        {
+            IntrinsicTypeKind.Boolean or IntrinsicTypeKind.Int32 => StackKind.I4,
+            IntrinsicTypeKind.Int64 => StackKind.I8,
+            IntrinsicTypeKind.String or IntrinsicTypeKind.Object => StackKind.Ref,
+            _ => StackKind.ValueType,
+        },
+        TypeSigKind.Synthetic => type.DisplayName switch
+        {
+            "System.Int32" or "System.Boolean" or "System.Byte" or "System.SByte" or
+                "System.Int16" or "System.UInt16" or "System.UInt32" => StackKind.I4,
+            "System.Int64" or "System.UInt64" => StackKind.I8,
+            "System.Single" => StackKind.R4,
+            "System.Double" => StackKind.R8,
+            "System.IntPtr" or "System.UIntPtr" => StackKind.NativeInt,
+            "System.String" or "System.Object" => StackKind.Ref,
+            _ when type.DisplayName.EndsWith("[]", StringComparison.Ordinal) => StackKind.Ref,
+            _ => StackKind.ValueType,
+        },
+        TypeSigKind.Void => throw new ArgumentException("The void type has no evaluation-stack category.", nameof(type)),
         _ => StackKind.ValueType,
     };
 

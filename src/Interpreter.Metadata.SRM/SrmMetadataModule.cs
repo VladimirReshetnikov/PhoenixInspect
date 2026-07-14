@@ -8,11 +8,12 @@ using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 namespace Interpreter.Metadata.SRM;
 
 /// <summary>
-/// Provides the deliberately narrow SRM metadata backend used by current executable prototype slices.
+/// Provides the bounded SRM metadata backend used by the W1 body-evidence and W3 execution slices.
 /// </summary>
 /// <remarks>
-/// The backend currently resolves deterministic MethodDef handles and reads method bodies. Additional metadata
-/// capabilities will be added only alongside executable scenarios that exercise them.
+/// The backend resolves deterministic MethodDef handles and bodies, and projects W3 method signatures, local
+/// signatures, and same-module FieldDefs through <see cref="SrmMetadataProjection"/>. Projection is deliberately
+/// separated from disk acquisition so dump-counted metadata can reuse the exact same closed semantic mapping.
 /// </remarks>
 public sealed class SrmMetadataModule : IMetadataModule, IDisposable
 {
@@ -307,6 +308,46 @@ public sealed class SrmMetadataModule : IMetadataModule, IDisposable
                 "META_INVALID_METADATA",
                 "The managed artifact contains invalid MethodDef table metadata.");
         }
+    }
+
+    /// <inheritdoc />
+    public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method)
+    {
+        ThrowIfDisposed();
+        if (method.Module != ModuleHandle)
+        {
+            return ResolutionResult<ResolvedMethodDefinition>.Failed(
+                ResolutionFailureKind.Conflict,
+                "META_METHOD_MODULE_CONFLICT",
+                "The requested method identity does not match this metadata module.");
+        }
+
+        var bodyResult = GetMethodBody(method);
+        if (!bodyResult.IsSuccess)
+        {
+            var failure = bodyResult.Failure!;
+            return ResolutionResult<ResolvedMethodDefinition>.Failed(
+                failure.Kind,
+                failure.Code,
+                failure.Message);
+        }
+
+        return SrmMetadataProjection.ProjectMethodDefinition(
+            _metadataReader,
+            ModuleHandle,
+            method,
+            bodyResult.Value);
+    }
+
+    /// <inheritdoc />
+    public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken)
+    {
+        ThrowIfDisposed();
+        return SrmMetadataProjection.ProjectField(
+            _metadataReader,
+            ModuleHandle,
+            contextMethod,
+            metadataToken);
     }
 
     /// <inheritdoc />

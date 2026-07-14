@@ -77,11 +77,24 @@
         "dependencies": {
           "Interpreter.Core.Abstractions": "[1.0.0, )",
           "Interpreter.Host.Abstractions": "[1.0.0, )",
+          "Interpreter.Metadata.SRM": "[1.0.0, )",
           "Microsoft.Diagnostics.Runtime": "[3.1.455904, )"
         }
       },
       "interpreter.host.externalworker": {
         "type": "Project"
+      },
+      "interpreter.metadata.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.Core.Abstractions": "[1.0.0, )"
+        }
+      },
+      "interpreter.metadata.srm": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.Metadata.Abstractions": "[1.0.0, )"
+        }
       },
       "interpreter.product.dumpquery": {
         "type": "Project",

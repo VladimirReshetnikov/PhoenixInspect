@@ -29,8 +29,12 @@ public sealed class ConcreteMemory : IPersistentMemoryState<ConcreteMemory>, IEq
         ImmutableDictionary<long, ConcreteObjectState>.Empty,
         ImmutableDictionary<long, ConcreteArrayState>.Empty);
 
-    /// <summary>Gets the number of allocated object instances.</summary>
+    /// <summary>Gets the total number of allocated and imported object instances.</summary>
     public int ObjectCount => Objects.Count;
+
+    /// <summary>Gets the number of objects imported from exact external evidence.</summary>
+    public int ImportedObjectCount =>
+        Objects.Count(static item => item.Value.Origin == ConcreteObjectOrigin.Imported);
 
     /// <summary>Gets the number of allocated array instances.</summary>
     public int ArrayCount => Arrays.Count;
@@ -73,11 +77,18 @@ public sealed class ConcreteMemory : IPersistentMemoryState<ConcreteMemory>, IEq
         foreach (var item in Objects.OrderBy(static item => item.Key))
         {
             hash.AddInt64(item.Key);
-            hash.AddString(item.Value.Type.DisplayName);
+            hash.AddType(item.Value.Type);
+            hash.AddInt32((int)item.Value.Origin);
+            hash.AddString(item.Value.ImportedEvidenceIdentity?.Value);
             hash.AddInt32(item.Value.Fields.Count);
-            foreach (var field in item.Value.Fields.OrderBy(static field => field.Key.Value))
+            foreach (var field in item.Value.Fields
+                .OrderBy(static field => field.Key.Module.High)
+                .ThenBy(static field => field.Key.Module.Low)
+                .ThenBy(static field => field.Key.MetadataToken))
             {
-                hash.AddUInt64(field.Key.Value);
+                hash.AddUInt64(field.Key.Module.High);
+                hash.AddUInt64(field.Key.Module.Low);
+                hash.AddInt32(field.Key.MetadataToken);
                 hash.AddValue(field.Value);
             }
         }
@@ -86,7 +97,7 @@ public sealed class ConcreteMemory : IPersistentMemoryState<ConcreteMemory>, IEq
         foreach (var item in Arrays.OrderBy(static item => item.Key))
         {
             hash.AddInt64(item.Key);
-            hash.AddString(item.Value.ElementType.DisplayName);
+            hash.AddType(item.Value.ElementType);
             hash.AddInt32(item.Value.Elements.Length);
             foreach (var element in item.Value.Elements)
             {
@@ -98,7 +109,10 @@ public sealed class ConcreteMemory : IPersistentMemoryState<ConcreteMemory>, IEq
     }
 
     private static bool ObjectStateEquals(ConcreteObjectState left, ConcreteObjectState right) =>
-        left.Type == right.Type && DictionaryEquals(left.Fields, right.Fields, static (a, b) => a == b);
+        left.Type == right.Type &&
+        left.Origin == right.Origin &&
+        left.ImportedEvidenceIdentity == right.ImportedEvidenceIdentity &&
+        DictionaryEquals(left.Fields, right.Fields, static (a, b) => a == b);
 
     private static bool ArrayStateEquals(ConcreteArrayState left, ConcreteArrayState right) =>
         left.ElementType == right.ElementType && left.Elements.SequenceEqual(right.Elements);
@@ -163,7 +177,7 @@ public sealed class ConcreteMemory : IPersistentMemoryState<ConcreteMemory>, IEq
         public void AddValue(ConcreteValue item)
         {
             AddInt32((int)item.Kind);
-            AddString(item.StaticType.DisplayName);
+            AddType(item.StaticType);
             switch (item.Payload)
             {
                 case null:
@@ -186,6 +200,32 @@ public sealed class ConcreteMemory : IPersistentMemoryState<ConcreteMemory>, IEq
             }
         }
 
+        public void AddType(TypeSig type)
+        {
+            AddInt32((int)type.Kind);
+            switch (type.Kind)
+            {
+                case TypeSigKind.Void:
+                    break;
+                case TypeSigKind.Intrinsic:
+                    AddInt32((int)type.IntrinsicKind!);
+                    break;
+                case TypeSigKind.TypeDefinition:
+                    AddUInt64(type.Module!.Value.High);
+                    AddUInt64(type.Module.Value.Low);
+                    AddInt32(type.MetadataToken);
+                    break;
+                case TypeSigKind.Synthetic:
+                    AddString(type.DisplayName);
+                    break;
+                case TypeSigKind.SzArray:
+                    AddType(type.ElementType!);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected structural type kind {type.Kind}.");
+            }
+        }
+
         private void AddUInt32(uint item)
         {
             for (var shift = 0; shift < 32; shift += 8)
@@ -198,7 +238,15 @@ public sealed class ConcreteMemory : IPersistentMemoryState<ConcreteMemory>, IEq
 
 internal sealed record ConcreteObjectState(
     TypeSig Type,
+    ConcreteObjectOrigin Origin,
+    ImportedObjectEvidenceIdentity? ImportedEvidenceIdentity,
     ImmutableDictionary<FieldHandle, ConcreteValue> Fields);
+
+internal enum ConcreteObjectOrigin
+{
+    Allocated,
+    Imported,
+}
 
 internal sealed record ConcreteArrayState(
     TypeSig ElementType,

@@ -6,6 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
     <ProjectReference Include="../Interpreter.Host.Abstractions/Interpreter.Host.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Metadata.SRM/Interpreter.Metadata.SRM.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Runtime" />

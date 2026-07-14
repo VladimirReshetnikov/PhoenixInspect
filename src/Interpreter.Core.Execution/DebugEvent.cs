@@ -12,6 +12,9 @@ public enum DebugEventKind
 
     /// <summary>A <c>ret</c> transfer removed an activation frame.</summary>
     FramePopped,
+
+    /// <summary>An admitted instruction terminated at a modeled target-exception boundary.</summary>
+    TargetExceptionRaised,
 }
 
 /// <summary>
@@ -24,6 +27,8 @@ public enum DebugEventKind
 /// <remarks>
 /// Human-readable failure messages are not represented as instruction events. Decode, evidence, and validation
 /// failures belong in <see cref="ExecutionFailure"/> so traces never claim an instruction ran when it did not.
+/// <see cref="DebugEventKind.TargetExceptionRaised"/> records an attempted admitted instruction that terminated;
+/// it is emitted instead of <see cref="DebugEventKind.InstructionExecuted"/> because no ordinary transfer completed.
 /// </remarks>
 public sealed record DebugEvent(
     DebugEventKind Kind,

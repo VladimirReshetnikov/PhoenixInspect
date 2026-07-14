@@ -24,4 +24,7 @@ public enum MachineRunStatus
 
     /// <summary>The supplied method body or machine state violates an executable IL invariant.</summary>
     InvalidProgram,
+
+    /// <summary>An admitted target instruction raised a modeled terminal exception without handler transfer.</summary>
+    TargetException,
 }

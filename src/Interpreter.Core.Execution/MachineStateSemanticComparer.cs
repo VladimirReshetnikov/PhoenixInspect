@@ -48,7 +48,8 @@ public sealed class MachineStateSemanticComparer<TValue, TMemory> : IEqualityCom
             y.CallStack.IsDefault ||
             x.CallStack.Length != y.CallStack.Length ||
             !memoryComparer.Equals(x.Memory, y.Memory) ||
-            x.ReturnValue.HasValue != y.ReturnValue.HasValue)
+            x.ReturnValue.HasValue != y.ReturnValue.HasValue ||
+            x.TerminalTargetException != y.TerminalTargetException)
         {
             return false;
         }
@@ -81,7 +82,6 @@ public sealed class MachineStateSemanticComparer<TValue, TMemory> : IEqualityCom
     private bool FramesEquivalent(FrameState<TValue> left, FrameState<TValue> right) =>
         left.Method == right.Method &&
         left.IlOffset == right.IlOffset &&
-        left.ReturnsValue == right.ReturnsValue &&
         SequencesEquivalent(left.Arguments, right.Arguments) &&
         SequencesEquivalent(left.Locals, right.Locals) &&
         SequencesEquivalent(left.EvalStack, right.EvalStack);
@@ -109,6 +109,7 @@ public sealed class MachineStateSemanticComparer<TValue, TMemory> : IEqualityCom
     private bool ValuesEquivalent(TValue left, TValue right) =>
         left is not null &&
         right is not null &&
+        Equals(domain.GetStaticType(left), domain.GetStaticType(right)) &&
         domain.IsLessThanOrEqual(left, right) &&
         domain.IsLessThanOrEqual(right, left);
 }

@@ -17,10 +17,34 @@ public sealed class ClrmdHeapObjectInfo
         string rootKind,
         ClrmdModuleInfo module,
         ImmutableArray<MemoryReadResult> evidence)
+        : this(
+            snapshot,
+            address,
+            typeName,
+            typeMetadataToken: 0,
+            methodTable,
+            rootAddress,
+            rootKind,
+            module,
+            evidence)
+    {
+    }
+
+    internal ClrmdHeapObjectInfo(
+        ClrmdSnapshotIdentity snapshot,
+        ulong address,
+        string typeName,
+        int typeMetadataToken,
+        ulong methodTable,
+        ulong rootAddress,
+        string rootKind,
+        ClrmdModuleInfo module,
+        ImmutableArray<MemoryReadResult> evidence)
     {
         Snapshot = snapshot;
         Address = address;
         TypeName = typeName;
+        TypeMetadataToken = typeMetadataToken;
         MethodTable = methodTable;
         RootAddress = rootAddress;
         RootKind = rootKind;
@@ -42,6 +66,15 @@ public sealed class ClrmdHeapObjectInfo
     /// Gets the runtime type name reported by ClrMD.
     /// </summary>
     public string TypeName { get; }
+
+    /// <summary>
+    /// Gets the TypeDef metadata token reported by ClrMD for the object's exact runtime type.
+    /// </summary>
+    /// <remarks>
+    /// Execution preparation validates this runtime token against the declaring TypeDef projected from counted
+    /// metadata. The token is meaningful only together with <see cref="Module"/> and <see cref="Snapshot"/>.
+    /// </remarks>
+    public int TypeMetadataToken { get; }
 
     /// <summary>
     /// Gets the target method-table address reported for the object's runtime type.

@@ -4,7 +4,7 @@ using Interpreter.Metadata.Abstractions;
 namespace Interpreter.Metadata.SRM;
 
 /// <summary>
-/// Adapts one <see cref="IMetadataModule"/> to the VM-facing method-body lookup contract.
+/// Adapts one <see cref="IMetadataModule"/> to the VM-facing atomic method and contextual field lookup contract.
 /// </summary>
 public sealed class MetadataResolutionServices : IResolutionServices
 {
@@ -20,5 +20,10 @@ public sealed class MetadataResolutionServices : IResolutionServices
     }
 
     /// <inheritdoc />
-    public ResolutionResult<MethodBody> GetMethodBody(MethodHandle method) => _module.GetMethodBody(method);
+    public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method) =>
+        _module.GetMethodDefinition(method);
+
+    /// <inheritdoc />
+    public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken) =>
+        _module.ResolveField(contextMethod, metadataToken);
 }

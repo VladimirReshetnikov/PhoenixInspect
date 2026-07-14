@@ -1,10 +1,14 @@
 using System.Buffers.Binary;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using Interpreter.Core.Abstractions;
 using Interpreter.Metadata.SRM;
 using Xunit;
+using IlMethodBody = Interpreter.Core.Abstractions.MethodBody;
+using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 
 namespace Interpreter.Tests;
 
@@ -51,6 +55,14 @@ public sealed class MetadataIdentityTests
             var body = first.GetMethodBody(firstMethod.Value);
             Assert.True(body.IsSuccess);
             Assert.NotEmpty(body.Value.CodeBytes);
+
+            var firstDefinition = first.GetMethodDefinition(firstMethod.Value);
+            var secondDefinition = second.GetMethodDefinition(secondMethod.Value);
+            Assert.True(firstDefinition.IsSuccess);
+            Assert.True(secondDefinition.IsSuccess);
+            Assert.Equal(
+                firstDefinition.Value.Signature.DeclaringType,
+                secondDefinition.Value.Signature.DeclaringType);
         }
         finally
         {
@@ -98,6 +110,17 @@ public sealed class MetadataIdentityTests
             Assert.Equal(
                 new byte[] { 0x1F, 0x2B, 0x2A },
                 patched.GetMethodBody(patched.GetMethodHandle(patchedToken).Value).Value.CodeBytes.ToArray());
+
+            var originalDefinition = original.GetMethodDefinition(original.GetMethodHandle(originalToken).Value);
+            var patchedDefinition = patched.GetMethodDefinition(patched.GetMethodHandle(patchedToken).Value);
+            Assert.True(originalDefinition.IsSuccess);
+            Assert.True(patchedDefinition.IsSuccess);
+            Assert.NotEqual(
+                originalDefinition.Value.Signature.DeclaringType,
+                patchedDefinition.Value.Signature.DeclaringType);
+            Assert.Equal(
+                originalDefinition.Value.Signature.DeclaringType.DisplayName,
+                patchedDefinition.Value.Signature.DeclaringType.DisplayName);
         }
         finally
         {
@@ -152,22 +175,249 @@ public sealed class MetadataIdentityTests
         Assert.Equal("META_INVALID_METHOD_TOKEN", invalid.Failure.Code);
     }
 
+    /// <summary>
+    /// Checks atomic SRM projection of receiver, explicit parameters, return disposition, and initialized locals.
+    /// </summary>
+    [Fact]
+    public void MethodDefinitionProjectionDerivesStaticInstanceReturnParameterAndLocalShapes()
+    {
+        using var module = SrmMetadataModule.LoadFromFile(Assembly.GetExecutingAssembly().Location);
+
+        var staticDefinition = GetDefinition(
+            module,
+            nameof(MetadataIdentityTests),
+            nameof(StaticVoidProjectionFixture));
+        Assert.False(staticDefinition.Signature.HasImplicitThis);
+        Assert.False(staticDefinition.Signature.HasExplicitThis);
+        Assert.Equal(MethodCallingConventionKind.Default, staticDefinition.Signature.CallingConvention);
+        Assert.Equal(0, staticDefinition.Signature.GenericParameterCount);
+        Assert.Equal(new[] { TypeSig.Int32 }, staticDefinition.Signature.ParameterTypes);
+        Assert.Equal(TypeSig.Void, staticDefinition.Signature.ReturnType);
+        Assert.Empty(staticDefinition.Signature.LocalTypes);
+
+        var instanceDefinition = GetDefinition(
+            module,
+            nameof(ProjectionFixture),
+            nameof(ProjectionFixture.InstanceMethodWithLocal));
+        Assert.True(instanceDefinition.Signature.HasImplicitThis);
+        Assert.Equal(new[] { TypeSig.Int32 }, instanceDefinition.Signature.ParameterTypes);
+        Assert.Equal(TypeSig.Int32, instanceDefinition.Signature.ReturnType);
+        Assert.Equal(new[] { TypeSig.Int32 }, instanceDefinition.Signature.LocalTypes);
+        Assert.True(instanceDefinition.Body.LocalVariablesInitialized);
+        Assert.NotEqual(0, instanceDefinition.Body.LocalSignatureToken);
+
+        var receiverType = instanceDefinition.Signature.DeclaringType;
+        Assert.True(receiverType.IsMetadataTypeDefinition);
+        Assert.Equal(module.ModuleHandle, receiverType.Module);
+        Assert.Equal(0x02000000, receiverType.MetadataToken & unchecked((int)0xFF000000));
+    }
+
+    /// <summary>
+    /// Checks that module conflicts and unsupported generic, vararg, and non-W3 type shapes remain typed failures.
+    /// </summary>
+    [Fact]
+    public void MethodDefinitionProjectionRejectsConflictingAndUnsupportedShapes()
+    {
+        using var module = SrmMetadataModule.LoadFromFile(Assembly.GetExecutingAssembly().Location);
+        var uniqueToken = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(UniqueFixtureMethod)).Value;
+        var conflictingMethod = new MethodHandle(new ModuleHandle(1, 2), uniqueToken);
+
+        AssertFailure(
+            module.GetMethodDefinition(conflictingMethod),
+            ResolutionFailureKind.Conflict,
+            "META_METHOD_MODULE_CONFLICT");
+        AssertMethodFailure(
+            module,
+            nameof(MetadataIdentityTests),
+            nameof(GenericMethodProjectionFixture),
+            "META_GENERIC_METHOD_UNSUPPORTED");
+        AssertMethodFailure(
+            module,
+            nameof(MetadataIdentityTests),
+            nameof(VarArgProjectionFixture),
+            "META_VARARGS_METHOD_UNSUPPORTED");
+        AssertMethodFailure(
+            module,
+            nameof(MetadataIdentityTests),
+            nameof(UnsupportedReturnProjectionFixture),
+            "META_RETURN_TYPE_UNSUPPORTED");
+        AssertMethodFailure(
+            module,
+            nameof(MetadataIdentityTests),
+            nameof(UnsupportedParameterProjectionFixture),
+            "META_PARAMETER_TYPE_UNSUPPORTED");
+        AssertMethodFailure(
+            module,
+            nameof(MetadataIdentityTests),
+            nameof(UnsupportedLocalProjectionFixture),
+            "META_LOCAL_TYPE_UNSUPPORTED");
+        AssertMethodFailure(
+            module,
+            "GenericProjectionFixture`1",
+            nameof(GenericProjectionFixture<int>.Identity),
+            "META_GENERIC_DECLARING_TYPE_UNSUPPORTED");
+        AssertMethodFailure(
+            module,
+            nameof(ValueTypeProjectionFixture),
+            nameof(ValueTypeProjectionFixture.Identity),
+            "META_RECEIVER_TYPE_UNSUPPORTED");
+        AssertMethodFailure(
+            module,
+            nameof(ValueTypeProjectionFixture),
+            nameof(ValueTypeProjectionFixture.StaticIdentity),
+            "META_RECEIVER_TYPE_UNSUPPORTED");
+    }
+
+    /// <summary>
+    /// Checks bounded ancestry classification admits a local reference-base chain but rejects enum, value-type,
+    /// and unvalidated lookalike <c>System.Object</c> roots without loading an external assembly.
+    /// </summary>
+    [Fact]
+    public void ReceiverProjectionRequiresPositivelyEstablishedReferenceTypeAncestry()
+    {
+        using var module = SrmMetadataModule.LoadFromFile(Assembly.GetExecutingAssembly().Location);
+        var derivedReferenceDefinition = GetDefinition(
+            module,
+            nameof(DerivedReferenceProjectionFixture),
+            nameof(DerivedReferenceProjectionFixture.Identity));
+        Assert.True(derivedReferenceDefinition.Signature.HasImplicitThis);
+        Assert.Equal(TypeSig.Int32, derivedReferenceDefinition.Signature.ReturnType);
+
+        AssertFailure(
+            ProjectSyntheticReceiver("System", "ValueType", "System.Runtime"),
+            ResolutionFailureKind.Unsupported,
+            "META_RECEIVER_TYPE_UNSUPPORTED");
+        AssertFailure(
+            ProjectSyntheticReceiver("System", "Enum", "System.Runtime"),
+            ResolutionFailureKind.Unsupported,
+            "META_RECEIVER_TYPE_UNSUPPORTED");
+        AssertFailure(
+            ProjectSyntheticReceiver("System", "Object", "Unvalidated.CoreLookalike"),
+            ResolutionFailureKind.Unsupported,
+            "META_RECEIVER_ANCESTRY_UNRESOLVED");
+
+        var knownObjectRoot = ProjectSyntheticReceiver("System", "Object", "System.Runtime");
+        Assert.True(knownObjectRoot.IsSuccess, knownObjectRoot.Failure?.Code);
+        Assert.True(knownObjectRoot.Value.Signature.DeclaringType.IsMetadataTypeDefinition);
+    }
+
+    /// <summary>Checks invalid body-local tokens are rejected by the reusable metadata-only projection seam.</summary>
+    [Fact]
+    public void MethodDefinitionProjectionRejectsInvalidLocalSignatureToken()
+    {
+        var path = Assembly.GetExecutingAssembly().Location;
+        using var module = SrmMetadataModule.LoadFromFile(path);
+        var methodToken = module.FindMethodDefinition(
+            nameof(ProjectionFixture),
+            nameof(ProjectionFixture.InstanceMethodWithLocal)).Value;
+        var method = module.GetMethodHandle(methodToken).Value;
+        var body = module.GetMethodBody(method).Value;
+        var invalidBody = IlMethodBody.Create(
+            body.MaxStack,
+            body.CodeBytes.ToArray(),
+            body.LocalVariablesInitialized,
+            localSignatureToken: 0x1100FFFF,
+            exceptionRegionCount: body.ExceptionRegionCount);
+
+        using var stream = File.OpenRead(path);
+        using var peReader = new PEReader(stream);
+        var result = SrmMetadataProjection.ProjectMethodDefinition(
+            peReader.GetMetadataReader(),
+            module.ModuleHandle,
+            method,
+            invalidBody);
+
+        AssertFailure(result, ResolutionFailureKind.Invalid, "META_LOCAL_SIGNATURE_TOKEN_INVALID");
+    }
+
+    /// <summary>
+    /// Checks exact FieldDef projection and stable rejection of every readily compiler-emitted excluded field shape.
+    /// </summary>
+    [Fact]
+    public void FieldProjectionRequiresDirectInstanceInt32FieldDefinition()
+    {
+        var path = Assembly.GetExecutingAssembly().Location;
+        using var module = SrmMetadataModule.LoadFromFile(path);
+        var getterToken = module.FindMethodDefinition(
+            nameof(ProjectionFixture),
+            nameof(ProjectionFixture.GetInstanceInt32)).Value;
+        var getter = module.GetMethodHandle(getterToken).Value;
+        var genericGetterToken = module.FindMethodDefinition(
+            nameof(ProjectionFixture),
+            nameof(ProjectionFixture.GenericGetter)).Value;
+        var genericGetter = module.GetMethodHandle(genericGetterToken).Value;
+
+        var instanceToken = FindFieldDefinitionToken(path, nameof(ProjectionFixture), "InstanceInt32");
+        var staticToken = FindFieldDefinitionToken(path, nameof(ProjectionFixture), "StaticInt32");
+        var literalToken = FindFieldDefinitionToken(path, nameof(ProjectionFixture), "LiteralInt32");
+        var int64Token = FindFieldDefinitionToken(path, nameof(ProjectionFixture), "InstanceInt64");
+        var otherOwnerToken = FindFieldDefinitionToken(path, nameof(OtherProjectionFixture), "OtherValue");
+
+        var resolved = module.ResolveField(getter, instanceToken);
+        Assert.True(resolved.IsSuccess);
+        Assert.Equal(new FieldHandle(module.ModuleHandle, instanceToken), resolved.Value.Handle);
+        Assert.Equal(TypeSig.Int32, resolved.Value.FieldType);
+        Assert.Equal(
+            module.GetMethodDefinition(getter).Value.Signature.DeclaringType,
+            resolved.Value.DeclaringType);
+        Assert.False(resolved.Value.IsStatic);
+        Assert.False(resolved.Value.IsLiteral);
+        Assert.False(resolved.Value.HasRva);
+
+        AssertFailure(
+            module.ResolveField(getter, staticToken),
+            ResolutionFailureKind.Unsupported,
+            "META_STATIC_FIELD_UNSUPPORTED");
+        AssertFailure(
+            module.ResolveField(getter, literalToken),
+            ResolutionFailureKind.Unsupported,
+            "META_LITERAL_FIELD_UNSUPPORTED");
+        AssertFailure(
+            module.ResolveField(getter, int64Token),
+            ResolutionFailureKind.Unsupported,
+            "META_FIELD_TYPE_UNSUPPORTED");
+        AssertFailure(
+            module.ResolveField(getter, otherOwnerToken),
+            ResolutionFailureKind.Unsupported,
+            "META_FIELD_OWNER_UNSUPPORTED");
+        AssertFailure(
+            module.ResolveField(genericGetter, instanceToken),
+            ResolutionFailureKind.Unsupported,
+            "META_GENERIC_FIELD_CONTEXT_UNSUPPORTED");
+        AssertFailure(
+            module.ResolveField(getter, unchecked((int)0x0A000001)),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_FIELD_TOKEN");
+        AssertFailure(
+            module.ResolveField(new MethodHandle(new ModuleHandle(3, 4), getterToken), instanceToken),
+            ResolutionFailureKind.Conflict,
+            "META_FIELD_CONTEXT_MODULE_CONFLICT");
+    }
+
     /// <summary>Checks that metadata operations cannot outlive their artifact stream and disposal is idempotent.</summary>
     [Fact]
     public void MetadataOperationsRejectUseAfterDispose()
     {
         var module = SrmMetadataModule.LoadFromFile(Assembly.GetExecutingAssembly().Location);
         var token = module.FindMethodDefinition(nameof(MetadataIdentityTests), nameof(UniqueFixtureMethod)).Value;
+        var method = new MethodHandle(module.ModuleHandle, token);
+        var projected = module.GetMethodDefinition(method);
+        Assert.True(projected.IsSuccess);
 
         module.Dispose();
         module.Dispose();
+
+        Assert.Equal(TypeSig.Int32, projected.Value.Signature.ReturnType);
 
         Assert.Throws<ObjectDisposedException>(() => module.FindMethodDefinition(
             nameof(MetadataIdentityTests),
             nameof(UniqueFixtureMethod)));
         Assert.Throws<ObjectDisposedException>(() => module.GetMethodHandle(token));
-        Assert.Throws<ObjectDisposedException>(() => module.GetMethodBody(
-            new MethodHandle(module.ModuleHandle, token)));
+        Assert.Throws<ObjectDisposedException>(() => module.GetMethodDefinition(method));
+        Assert.Throws<ObjectDisposedException>(() => module.GetMethodBody(method));
+        Assert.Throws<ObjectDisposedException>(() => module.ResolveField(method, 0x04000001));
     }
 
     /// <summary>Checks that artifact binding distinguishes MVID, length, and exact metadata-byte conflicts.</summary>
@@ -281,6 +531,214 @@ public sealed class MetadataIdentityTests
     private static int OverloadedFixture(int value) => value;
 
     private static string OverloadedFixture(string value) => value;
+
+    private static void StaticVoidProjectionFixture(int value) => GC.KeepAlive(value);
+
+    private static T GenericMethodProjectionFixture<T>(T value) => value;
+
+    private static int VarArgProjectionFixture(__arglist) => 0;
+
+    private static string UnsupportedReturnProjectionFixture() => string.Empty;
+
+    private static int UnsupportedParameterProjectionFixture(long value) => unchecked((int)value);
+
+    private static int UnsupportedLocalProjectionFixture(int value)
+    {
+        AssignLongOut(out var local);
+        return value + unchecked((int)local);
+    }
+
+    private static void AssignLongOut(out long value) => value = 41;
+
+    private static ResolvedMethodDefinition GetDefinition(
+        SrmMetadataModule module,
+        string typeName,
+        string methodName)
+    {
+        var token = module.FindMethodDefinition(typeName, methodName);
+        Assert.True(token.IsSuccess);
+        var handle = module.GetMethodHandle(token.Value);
+        Assert.True(handle.IsSuccess);
+        var definition = module.GetMethodDefinition(handle.Value);
+        Assert.True(definition.IsSuccess, definition.Failure?.Code);
+        return definition.Value;
+    }
+
+    private static void AssertMethodFailure(
+        SrmMetadataModule module,
+        string typeName,
+        string methodName,
+        string expectedCode)
+    {
+        var token = module.FindMethodDefinition(typeName, methodName);
+        Assert.True(token.IsSuccess);
+        var method = module.GetMethodHandle(token.Value);
+        Assert.True(method.IsSuccess);
+        AssertFailure(module.GetMethodDefinition(method.Value), ResolutionFailureKind.Unsupported, expectedCode);
+    }
+
+    private static void AssertFailure<T>(
+        ResolutionResult<T> result,
+        ResolutionFailureKind expectedKind,
+        string expectedCode)
+    {
+        Assert.False(result.IsSuccess);
+        Assert.Equal(expectedKind, result.Failure!.Kind);
+        Assert.Equal(expectedCode, result.Failure.Code);
+    }
+
+    private static int FindFieldDefinitionToken(string path, string typeName, string fieldName)
+    {
+        using var stream = File.OpenRead(path);
+        using var peReader = new PEReader(stream);
+        var metadata = peReader.GetMetadataReader();
+        return metadata.TypeDefinitions
+            .Where(handle => string.Equals(
+                metadata.GetString(metadata.GetTypeDefinition(handle).Name),
+                typeName,
+                StringComparison.Ordinal))
+            .SelectMany(handle => metadata.GetTypeDefinition(handle).GetFields())
+            .Where(handle => string.Equals(
+                metadata.GetString(metadata.GetFieldDefinition(handle).Name),
+                fieldName,
+                StringComparison.Ordinal))
+            .Select(handle => MetadataTokens.GetToken(handle))
+            .Single();
+    }
+
+    private static ResolutionResult<ResolvedMethodDefinition> ProjectSyntheticReceiver(
+        string baseTypeNamespace,
+        string baseTypeName,
+        string baseAssemblyName)
+    {
+        var metadata = new MetadataBuilder();
+        _ = metadata.AddModule(
+            generation: 0,
+            metadata.GetOrAddString("SyntheticReceiver.dll"),
+            metadata.GetOrAddGuid(new Guid("90000000-0000-0000-0000-000000000001")),
+            encId: default,
+            encBaseId: default);
+        var baseAssembly = metadata.AddAssemblyReference(
+            metadata.GetOrAddString(baseAssemblyName),
+            new Version(10, 0, 0, 0),
+            culture: default,
+            publicKeyOrToken: default,
+            (AssemblyFlags)0,
+            hashValue: default);
+        var baseType = metadata.AddTypeReference(
+            baseAssembly,
+            metadata.GetOrAddString(baseTypeNamespace),
+            metadata.GetOrAddString(baseTypeName));
+
+        var firstField = MetadataTokens.FieldDefinitionHandle(1);
+        var firstMethod = MetadataTokens.MethodDefinitionHandle(1);
+        _ = metadata.AddTypeDefinition(
+            TypeAttributes.NotPublic,
+            metadata.GetOrAddString(string.Empty),
+            metadata.GetOrAddString("<Module>"),
+            baseType: default,
+            firstField,
+            firstMethod);
+        _ = metadata.AddTypeDefinition(
+            TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit,
+            metadata.GetOrAddString("Synthetic"),
+            metadata.GetOrAddString("Receiver"),
+            baseType,
+            firstField,
+            firstMethod);
+
+        var signatureBuilder = new BlobBuilder();
+        new BlobEncoder(signatureBuilder)
+            .MethodSignature(
+                SignatureCallingConvention.Default,
+                genericParameterCount: 0,
+                isInstanceMethod: true)
+            .Parameters(
+                parameterCount: 1,
+                returnType => returnType.Type(isByRef: false).Int32(),
+                parameters => parameters.AddParameter().Type(isByRef: false).Int32());
+        var methodDefinition = metadata.AddMethodDefinition(
+            MethodAttributes.Public | MethodAttributes.HideBySig,
+            MethodImplAttributes.IL | MethodImplAttributes.Managed,
+            metadata.GetOrAddString("Identity"),
+            metadata.GetOrAddBlob(signatureBuilder),
+            bodyOffset: 0,
+            MetadataTokens.ParameterHandle(1));
+        _ = metadata.AddParameter(
+            ParameterAttributes.None,
+            metadata.GetOrAddString("value"),
+            sequenceNumber: 1);
+
+        var metadataImage = new BlobBuilder();
+        new MetadataRootBuilder(metadata).Serialize(
+            metadataImage,
+            methodBodyStreamRva: 0,
+            0);
+        using var provider = MetadataReaderProvider.FromMetadataImage(metadataImage.ToImmutableArray());
+        var module = new ModuleHandle(0x9000000000000001, 0x9000000000000002);
+        var method = new MethodHandle(module, MetadataTokens.GetToken(methodDefinition));
+        return SrmMetadataProjection.ProjectMethodDefinition(
+            provider.GetMetadataReader(),
+            module,
+            method,
+            IlMethodBody.Create(maxStack: 1, [0x16, 0x2A]));
+    }
+
+    private sealed class ProjectionFixture
+    {
+        private const int LiteralInt32 = 41;
+        private static int StaticInt32 = 17;
+        private int InstanceInt32 = 19;
+        private long InstanceInt64 = 23;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal int InstanceMethodWithLocal(int value)
+        {
+            AssignOut(out var local);
+            return local + value + InstanceInt32;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal int GetInstanceInt32() => InstanceInt32;
+
+        internal int GenericGetter<T>() => InstanceInt32;
+
+        internal long GetInstanceInt64() => InstanceInt64;
+
+        internal static int GetStaticInt32() => StaticInt32;
+
+        internal static int GetLiteralInt32() => LiteralInt32;
+
+        private static void AssignOut(out int value) => value = 41;
+    }
+
+    private sealed class OtherProjectionFixture
+    {
+        private int OtherValue = 29;
+
+        internal int GetOtherValue() => OtherValue;
+    }
+
+    private sealed class GenericProjectionFixture<T>
+    {
+        internal T Identity(T value) => value;
+    }
+
+    private readonly struct ValueTypeProjectionFixture
+    {
+        internal int Identity(int value) => value;
+
+        internal static int StaticIdentity(int value) => value;
+    }
+
+    private class ReferenceBaseProjectionFixture
+    {
+    }
+
+    private sealed class DerivedReferenceProjectionFixture : ReferenceBaseProjectionFixture
+    {
+        internal int Identity(int value) => value;
+    }
 
     private static void PatchUniqueFixtureConstant(string path)
     {

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Interpreter.Core.Abstractions;
 
@@ -17,6 +18,12 @@ namespace Interpreter.Core.Abstractions;
 /// </remarks>
 public readonly record struct ModuleHandle(ulong High, ulong Low)
 {
+    private static ReadOnlySpan<byte> RuntimeEvidenceDomain =>
+        "Interpreter.ModuleHandle.RuntimeEvidence.v1"u8;
+
+    /// <summary>Gets the maximum admitted stable runtime-module source-identity length.</summary>
+    public const int MaximumRuntimeEvidenceSourceIdLength = 2048;
+
     /// <summary>
     /// Creates a deterministic module handle from exact metadata, PE fields, and optional complete artifact content.
     /// </summary>
@@ -55,6 +62,77 @@ public readonly record struct ModuleHandle(ulong High, ulong Low)
         return new ModuleHandle(
             BinaryPrimitives.ReadUInt64BigEndian(digest),
             BinaryPrimitives.ReadUInt64BigEndian(digest[sizeof(ulong)..]));
+    }
+
+    /// <summary>
+    /// Creates a snapshot-scoped execution handle from exact metadata and a stable runtime-module source identity.
+    /// </summary>
+    /// <param name="contentIdentity">The validated MVID, metadata length, and complete metadata digest.</param>
+    /// <param name="stableSourceId">
+    /// A bounded canonical runtime-module identity that includes the snapshot/loader provenance required to prevent
+    /// target addresses or display names from aliasing across observations.
+    /// </param>
+    /// <returns>
+    /// A domain-separated deterministic handle suitable for dump-grounded execution identity. This operation does
+    /// not pretend that a runtime source identity is a complete PE <see cref="ArtifactContentIdentity"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="contentIdentity"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="stableSourceId"/> is empty, whitespace, or contains control characters.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="stableSourceId"/> exceeds <see cref="MaximumRuntimeEvidenceSourceIdLength"/> characters.
+    /// </exception>
+    public static ModuleHandle FromRuntimeEvidenceIdentity(
+        ModuleContentIdentity contentIdentity,
+        string stableSourceId)
+    {
+        ArgumentNullException.ThrowIfNull(contentIdentity);
+        if (string.IsNullOrWhiteSpace(stableSourceId))
+        {
+            throw new ArgumentException(
+                "A non-empty stable runtime-module source identity is required.",
+                nameof(stableSourceId));
+        }
+
+        if (stableSourceId.Length > MaximumRuntimeEvidenceSourceIdLength)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(stableSourceId),
+                $"Runtime-module source identities are limited to {MaximumRuntimeEvidenceSourceIdLength} characters.");
+        }
+
+        if (stableSourceId.Any(char.IsControl))
+        {
+            throw new ArgumentException(
+                "A runtime-module source identity cannot contain control characters.",
+                nameof(stableSourceId));
+        }
+
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        hash.AppendData(RuntimeEvidenceDomain);
+
+        Span<byte> numeric = stackalloc byte[sizeof(int)];
+        BinaryPrimitives.WriteInt32BigEndian(numeric, RuntimeEvidenceDomain.Length);
+        hash.AppendData(numeric);
+
+        Span<byte> mvid = stackalloc byte[16];
+        _ = contentIdentity.Mvid.TryWriteBytes(mvid);
+        hash.AppendData(mvid);
+
+        BinaryPrimitives.WriteInt32BigEndian(numeric, contentIdentity.MetadataLength);
+        hash.AppendData(numeric);
+        hash.AppendData(Convert.FromHexString(contentIdentity.MetadataSha256));
+
+        var sourceBytes = Encoding.UTF8.GetBytes(stableSourceId);
+        BinaryPrimitives.WriteInt32BigEndian(numeric, sourceBytes.Length);
+        hash.AppendData(numeric);
+        hash.AppendData(sourceBytes);
+
+        var digest = hash.GetHashAndReset();
+        return new ModuleHandle(
+            BinaryPrimitives.ReadUInt64BigEndian(digest),
+            BinaryPrimitives.ReadUInt64BigEndian(digest.AsSpan(sizeof(ulong))));
     }
 
     /// <summary>

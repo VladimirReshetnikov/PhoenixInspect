@@ -81,6 +81,18 @@
       "interpreter.host.abstractions": {
         "type": "Project"
       },
+      "interpreter.metadata.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.Core.Abstractions": "[1.0.0, )"
+        }
+      },
+      "interpreter.metadata.srm": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.Metadata.Abstractions": "[1.0.0, )"
+        }
+      },
       "Microsoft.Diagnostics.NETCore.Client": {
         "type": "CentralTransitive",
         "requested": "[0.2.410101, )",

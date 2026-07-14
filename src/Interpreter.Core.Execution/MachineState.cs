@@ -23,6 +23,17 @@ public sealed record MachineState<TValue, TMemory>(
     where TMemory : IPersistentMemoryState<TMemory>
 {
     /// <summary>
+    /// Gets structured target-exception termination information, or <see langword="null"/> for ready and normally
+    /// completed states.
+    /// </summary>
+    /// <remarks>
+    /// A target-terminated state has an empty call stack and no return value. It is a terminal latch rather than a
+    /// resumable pre-instruction snapshot; stepping it again reports the same terminal condition without consuming
+    /// budget or emitting a second event.
+    /// </remarks>
+    public TargetExceptionInfo? TerminalTargetException { get; init; }
+
+    /// <summary>
     /// Creates an initial machine state with no terminal return value.
     /// </summary>
     /// <param name="rootFrame">The single root activation to execute.</param>

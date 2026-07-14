@@ -18,11 +18,17 @@ public readonly record struct MethodHandle
     /// <summary>Creates a validated method-definition handle.</summary>
     /// <param name="module">The deterministic identity of the defining module.</param>
     /// <param name="metadataToken">A non-nil MethodDef metadata token.</param>
+    /// <exception cref="ArgumentException"><paramref name="module"/> is the default handle.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="metadataToken"/> is not a non-nil MethodDef token.
     /// </exception>
     public MethodHandle(ModuleHandle module, int metadataToken)
     {
+        if (module == default)
+        {
+            throw new ArgumentException("A method handle requires a non-default module identity.", nameof(module));
+        }
+
         if (!IsValidMetadataToken(metadataToken))
         {
             throw new ArgumentOutOfRangeException(

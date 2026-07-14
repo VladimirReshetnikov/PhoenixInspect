@@ -25,6 +25,14 @@ public interface IValueDomain<TValue>
     /// <returns>A canonical typed top value; presentation provenance must live outside semantic equality.</returns>
     TValue Top(TypeSig type);
 
+    /// <summary>Creates the deterministic CLI default value for a supported static type.</summary>
+    /// <param name="type">The exact structural type to initialize.</param>
+    /// <returns>
+    /// The exact all-zero value required by CLI initialization for a supported primitive, reference, or aggregate
+    /// type. Implementations must not return lattice bottom or fabricate a target observation.
+    /// </returns>
+    TValue DefaultValue(TypeSig type);
+
     /// <summary>Creates an exact signed 32-bit value in the CLI I4 stack category.</summary>
     /// <param name="value">The runtime integer payload.</param>
     /// <returns>A domain value representing only <paramref name="value"/>.</returns>
@@ -85,5 +93,4 @@ public interface IValueDomain<TValue>
     /// <param name="b">The right same-typed operand.</param>
     /// <returns>The operation result, preserving lattice bottom/top behavior and unchecked Int32 overflow.</returns>
     TValue ApplyBinary(BinaryOp op, TValue a, TValue b);
-
 }

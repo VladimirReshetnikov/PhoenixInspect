@@ -658,21 +658,26 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
                 session.ReadStringField(probe, new string('F', 1_025), maximumCharacters: 1));
 
             var domain = new ConcreteDomain();
+            var dumpResolverResult = ClrmdDumpExecutionResolver.Create(
+                module,
+                dumpContentIdentity,
+                methodBody);
+            Assert.True(dumpResolverResult.IsSuccess, dumpResolverResult.Failure?.Code);
+            var dumpResolver = dumpResolverResult.Value;
             var machine = new IlMachine<ConcreteValue, ConcreteMemory>(
                 domain,
-                new SingleMethodResolver(methodHandle, dumpBackedMethodBody),
+                dumpResolver,
+                new ConcreteMemoryModel(domain),
                 new InstructionBudgetPolicy());
-            var frame = new FrameState<ConcreteValue>(
-                Method: methodHandle,
-                IlOffset: 0,
-                Arguments: ImmutableArray<ConcreteValue>.Empty,
-                Locals: ImmutableArray<ConcreteValue>.Empty,
-                EvalStack: ImmutableArray<ConcreteValue>.Empty,
-                ReturnsValue: false);
-            var state = MachineState<ConcreteValue, ConcreteMemory>.Create(frame, ConcreteMemory.Empty);
+            var activation = machine.ActivateRoot(
+                dumpResolver.Method,
+                ImmutableArray<ConcreteValue>.Empty,
+                ConcreteMemory.Empty);
+            Assert.True(activation.IsSuccess, activation.Failure?.Code);
+            Assert.NotNull(activation.State);
             var operationalState = new MachineOperationalState(
                 new BudgetState(InstructionBudget: 4));
-            var outcome = machine.StepOne(state, operationalState);
+            var outcome = machine.StepOne(activation.State, operationalState);
             Assert.Equal(MachineRunStatus.Completed, outcome.Status);
             Assert.Null(outcome.Failure);
             Assert.Empty(outcome.State.CallStack);
@@ -924,22 +929,4 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             bound => Assert.Equal(expectedBounds[bound.Name], bound.Value));
     }
 
-    private sealed class SingleMethodResolver : IResolutionServices
-    {
-        private readonly MethodHandle _method;
-        private readonly MethodBody _body;
-
-        public SingleMethodResolver(MethodHandle method, MethodBody body)
-        {
-            _method = method;
-            _body = body;
-        }
-
-        public ResolutionResult<MethodBody> GetMethodBody(MethodHandle method) => method == _method
-            ? ResolutionResult<MethodBody>.Success(_body)
-            : ResolutionResult<MethodBody>.Failed(
-                ResolutionFailureKind.Invalid,
-                "TEST_METHOD_MISMATCH",
-                "The dump-backed fixture resolver accepts exactly one content-identified method.");
-    }
 }

@@ -28,17 +28,20 @@ public interface IMemoryModel<TValue, TMem>
     /// <summary>Loads a field observation without changing memory.</summary>
     /// <param name="mem">The snapshot to observe.</param>
     /// <param name="objRef">A non-null object reference valid in <paramref name="mem"/>.</param>
-    /// <param name="field">The field identity to observe.</param>
-    /// <returns>The stored value, or a canonical unknown when exact default-layout evidence is unavailable.</returns>
-    TValue LoadField(TMem mem, TValue objRef, FieldHandle field);
+    /// <param name="field">The frozen resolved field descriptor to observe.</param>
+    /// <returns>
+    /// An exact typed value, a typed non-exact evidence outcome, or structured target-exception information.
+    /// Implementations must never convert absent imported evidence into an allocated-object default.
+    /// </returns>
+    MemoryLoadResult<TValue> LoadField(TMem mem, TValue objRef, ResolvedField field);
 
     /// <summary>Stores a field value in a derived persistent snapshot.</summary>
     /// <param name="mem">The immutable ancestor snapshot.</param>
     /// <param name="objRef">A non-null object reference valid in <paramref name="mem"/>.</param>
-    /// <param name="field">The field identity to update.</param>
+    /// <param name="field">The frozen resolved field descriptor to update.</param>
     /// <param name="value">The domain value to store.</param>
     /// <returns>A descendant snapshot in which the field contains <paramref name="value"/>.</returns>
-    TMem StoreField(TMem mem, TValue objRef, FieldHandle field, TValue value);
+    TMem StoreField(TMem mem, TValue objRef, ResolvedField field, TValue value);
 
     /// <summary>Loads an in-range array element without changing memory.</summary>
     /// <param name="mem">The snapshot to observe.</param>

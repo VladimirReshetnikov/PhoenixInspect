@@ -199,6 +199,7 @@
         "dependencies": {
           "Interpreter.Core.Abstractions": "[1.0.0, )",
           "Interpreter.Host.Abstractions": "[1.0.0, )",
+          "Interpreter.Metadata.SRM": "[1.0.0, )",
           "Microsoft.Diagnostics.Runtime": "[3.1.455904, )"
         }
       },

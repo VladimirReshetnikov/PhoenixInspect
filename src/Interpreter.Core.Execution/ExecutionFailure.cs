@@ -25,6 +25,9 @@ public enum ExecutionFailureKind
     /// <summary>A value-domain operation rejected an otherwise decoded transfer.</summary>
     DomainFailure,
 
+    /// <summary>A memory-model capability returned invalid evidence or rejected an admitted transfer.</summary>
+    MemoryFailure,
+
     /// <summary>A deterministic input or execution resource cap was exceeded.</summary>
     ResourceLimit,
 }
@@ -45,3 +48,15 @@ public sealed record ExecutionFailure(
     MethodHandle? Method = null,
     int? IlOffset = null,
     ResolutionFailure? ResolutionFailure = null);
+
+internal static class ResolutionFailureDiagnostics
+{
+    internal static ResolutionFailure Sanitize(ResolutionFailure failure)
+    {
+        ArgumentNullException.ThrowIfNull(failure);
+        return new ResolutionFailure(
+            failure.Kind,
+            failure.Code,
+            "The resolver reported a structured dependency failure.");
+    }
+}
