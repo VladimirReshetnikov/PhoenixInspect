@@ -1,6 +1,12 @@
-> **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-only evaluator. The near-term interpreter proof is a closed, scenario-derived concrete opcode slice; CFG/fixpoint analysis, broad unknown propagation, and multi-mode reuse remain gated research. API sketches below are illustrative, not current contracts.
+> **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-only evaluator. The closed W3 concrete opcode/memory proof is implemented and locally verified at hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-checkpoint run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767), while exact hosted documentation closure remains pending. CFG/fixpoint analysis, broad unknown propagation, and multi-mode reuse remain gated research. API sketches below are illustrative, not current contracts.
 
 Below is a **low-level technical proposal** for a reusable **CIL (ECMA-335) interpreter framework** whose distinguishing hypothesis is that incomplete concrete state, provenance-bearing unknowns, and later abstract interpretation can share opcode semantics.
+
+The implemented checkpoint is intentionally narrower than that hypothesis. Its normative contract is
+[Concrete IL Execution](concrete-il-execution-contract-proposal.md): structural method/type/field identities, atomic
+metadata-derived activation, frozen typed whole-body admission, concrete E1 arithmetic, and E2 direct or
+constant-adjusted `Int32` getter execution through an injected persistent-memory capability. Missing/non-exact memory
+evidence blocks without transfer; it does not yet become a composable unknown.
 
 This is written as if you were going to **build and maintain this as a core library**—usable for:
 
@@ -17,7 +23,8 @@ This is written as if you were going to **build and maintain this as a core libr
 
 ## 0. Executive intent (technical, not marketing)
 
-Build a library that can **execute IL in a virtual machine**, but where “execution” means:
+Build a library that can **execute IL in a virtual machine**. The first bullet is implemented in W3; the remaining
+bullets describe gated research modes:
 
 * For some operations, produce a **concrete result** (e.g., `1 + 2 = 3`)
 * For operations that depend on unavailable state (socket, native call, missing heap value, reflection, etc.), produce an **abstract/unknown result** while still advancing control flow
@@ -35,19 +42,24 @@ A design goal: **the same instruction semantics** should serve all modes; only t
 
 ### G1: First-class “unknownness” with provenance
 
-If IL reads from the world, from missing memory, or from unsupported instructions, we should not stop; we should return a value that is:
+In a later unknown-aware slice, if admitted IL reads missing state or crosses an explicitly modeled boundary, the
+engine may continue with a value that is:
 
 * typed (at least as well as IL types allow)
 * composable through subsequent instructions
 * optionally constrained (range/nullness/type set)
 * traceable (“unknown because: Socket.Receive”, “unknown because: missing field data”, “unknown because: calli/unsafe”, etc.)
 
+W3 deliberately does stop before transfer on unsupported IL or non-exact evidence. It never treats an unsupported
+instruction as an unknown-producing operation.
+
 ### G2: Pluggable abstract domains and memory models
 
 Support **concrete**, **hybrid**, and **pure abstract** execution by swapping:
 
 * `IValueDomain<TValue>` (constants, nullness, ranges, taint, etc.)
-* `IMemoryModel<TValue>` (virtual heap, summary heap with aliasing, dump-backed heap adapter, etc.)
+* `IMemoryModel<TValue,TMemory>` plus `IPersistentMemoryState<TMemory>` (virtual heap, summary heap with aliasing,
+  prepared dump-evidence adapter, etc.)
 
 ### G3: Sound(ish) abstract interpretation on real IL
 
@@ -94,6 +106,11 @@ Responsible for turning “method token” into:
 **Key point:** the interpreter core must not care whether metadata comes from
 `System.Reflection.Metadata`, Cecil, dnlib, runtime inspection, etc.
 
+W3 realizes the backend-neutral seam as `IResolutionServices`: one operation returns an atomic body/signature/local
+`ResolvedMethodDefinition`, and another resolves a contextual field operand to a frozen `ResolvedField`. The SRM
+adapter projects disk metadata for differential tests; the ClrMD host projects exact counted dump metadata and
+revalidates the physical method bytes without placing either backend in core execution.
+
 ### Layer B: Core execution semantics (stack machine)
 
 Implements instruction semantics in terms of:
@@ -103,6 +120,10 @@ Implements instruction semantics in terms of:
 * load/store through `IMemoryModel`
 * control transfers (branches, switch, leave)
 * call/newobj dispatch via `ICallDispatcher`
+
+Only the dependency-closed W3 subset is current: `nop`, I4 constants, argument/local loads, local stores, unchecked
+`add`/`sub`/`mul`, exact `ldfld`, and `ret`. Branches, calls, allocation opcodes, writes, EH, byrefs, and unknown-aware
+continuation remain research. Whole-body admission rejects an unsupported suffix before any prefix executes.
 
 ### Layer C: Analysis engines (strategies)
 
@@ -136,6 +157,10 @@ This control plane is policy + orchestration; opcode semantics remain in Layer B
 ---
 
 ## 4. Core abstractions (API sketch)
+
+The sketches in this section show the intended extension shape. They are not source-compatible transcriptions of the
+current prototype; the current surface is recorded in
+[Prototype Contract Inventory](prototype-interface-catalog-proposal.md).
 
 ### 4.1 Metadata and method bodies
 
@@ -259,6 +284,11 @@ public interface IMemoryModel<TValue, TMem>
 ```
 
 **Key point:** `Havoc` is not a nice-to-have. It’s what makes “unknown call that writes to memory” analyzable.
+
+Current W3 narrows this interface for executable evidence. `LoadField` accepts a frozen `ResolvedField` and returns
+`MemoryLoadResult<TValue>` (`Exact`, `Partial`, `Unavailable`, `Conflict`, `Invalid`, or structured
+`TargetException`). The machine injects this capability and performs exactly one load for its one admitted `ldfld`.
+Other members in the sketch are concrete-memory experiments or later opcode requirements, not admitted transfers.
 
 ### 4.4 Calls and effects
 
@@ -649,7 +679,18 @@ This is what turns “unknown propagation” from annoying to usable.
 
 ### 13.1 Differential execution (concrete vs CLR)
 
-For supported verifiable IL:
+The W3 corpus currently compares metadata-derived E1 arithmetic, unchecked overflow, void return, and E2
+direct/adjusted getter plus typed-null behavior with CoreCLR. Reflection supplies only the result/exception oracle;
+SRM supplies the interpreter activation shape. The same/fresh metadata replay cases reproduce canonical transcripts.
+
+The generated dump E2 case goes further: method shape/body and the exact correlated `Int32` field cell come from
+counted dump evidence, and closing/reopening/rebinding the dump reproduces structural identities, state, memory,
+budget, events, and transcript. This passes locally at hardened checkpoint `19c292f9f`; all four hosted jobs also pass in
+[implementation-checkpoint run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767), while exact documentation
+closure remains pending.
+
+For later supported verifiable IL:
 
 * generate small methods, run in real CLR, compare to interpreter concrete mode
 * cover tricky instructions: `box`, `unbox.any`, `constrained`, `initobj`, EH, generics
@@ -670,6 +711,10 @@ For each intrinsic/BCL model:
 ---
 
 ## 14. Proposed deliverables / packages
+
+This is a capability catalog, not the active package plan. Current W3 realizes only the core single-path E1/E2
+semantics, `ConcreteDomain`, persistent allocated/imported `ConcreteMemory`, and two resolver adapters inside the ten
+evidence-bearing source projects. It does not create the speculative domain/model/analysis packages below.
 
 1. **Core**
 
@@ -706,10 +751,11 @@ For each intrinsic/BCL model:
 
 ## 15. Why this design is the right “spine”
 
-It avoids the two classic failure modes:
+The long-term design aims to avoid two classic failure modes:
 
 1. **“We can’t evaluate that, stop.”**
-   Instead: return unknown, keep going, and annotate why.
+   In a future unknown-aware admitted slice: return unknown, keep going, and annotate why. W3 intentionally blocks
+   without transfer on unsupported IL or non-exact evidence.
 
 2. **“We built a concrete interpreter and now want static analysis.”**
    Instead: the semantics are domain-parametric from day one; abstract interpretation is a strategy, not a rewrite.

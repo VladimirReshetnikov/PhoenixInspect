@@ -6,7 +6,12 @@
 
 ## Purpose
 
-This inventory records the small public contract surface exercised by the current dump-evidence and concrete-IL proofs. It is descriptive, not a promise of compatibility. A contract is added only with an executable consumer and is removed when it gets ahead of code.
+This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
+and W3 concrete-IL proofs. It is descriptive, not a promise of compatibility. Hardened W3 checkpoint `19c292f9f`
+passes the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767); exact hosted documentation
+closure remains pending. A contract is added only with an executable consumer and is removed when it gets ahead of
+code.
 
 ## Active contracts
 
@@ -14,29 +19,45 @@ This inventory records the small public contract surface exercised by the curren
 
 `Interpreter.Core.Abstractions` contains:
 
-- path-independent `ModuleHandle` and definition-based `MethodHandle` identities, including complete-artifact content when a disk PE is the source;
-- `IValueDomain<TValue>`, including executable order, meet, join, and widening operations;
+- structural, path-independent `ModuleHandle`, `MethodHandle`, `FieldHandle`, and metadata-defined `TypeSig`
+  identities. Disk handles derive from complete-artifact content; dump handles derive from counted metadata plus
+  snapshot/runtime-module evidence;
+- immutable `ResolvedMethodDefinition`, `MethodSignatureShape`, and `ResolvedField` projections that freeze the body,
+  declaring type, receiver/parameter/return/local types, calling convention, and field storage facts;
+- `IValueDomain<TValue>`, including default-value construction, exact type/stack-kind inspection, concrete constants,
+  arithmetic, and executable order/meet/join/widen operations;
 - `IMemoryModel<TValue,TMemory>` constrained by `IPersistentMemoryState<TSelf>`;
-- the deliberately narrow `IResolutionServices.GetMethodBody` boundary;
+- `MemoryLoadResult<TValue>`, which distinguishes exact values, partial/unavailable/conflicting/invalid evidence, and
+  structured target exceptions;
+- `IResolutionServices.GetMethodDefinition` plus contextual `ResolveField`, whose first result is frozen by one
+  machine session; and
 - immutable `TypeSig`/`MethodBody`, budget, operation, and stack-category shapes used by those contracts.
 
 `Interpreter.Core.Execution` contains:
 
 - semantic `MachineState` and separate `MachineOperationalState` budget bookkeeping;
-- root-frame state, optional root return values, and a semantic comparer that excludes operational history;
+- metadata-derived `ActivateRoot`, root-frame state, optional root return values, terminal target-exception state, and
+  a semantic comparer that excludes operational history;
 - whole-body `MethodAdmissionResult`, structured `ExecutionFailure`, and low-level `MachineRunStatus`;
-- `IlMachine.StepOne`, whose current closed set is `nop`, integer constants, argument/local loads, local stores, `add`, `sub`, `mul`, and `ret`.
+- `IlMachine.StepOne`, whose current closed set is `nop`, integer constants, argument/local loads, local stores,
+  `add`, `sub`, `mul`, one exact `ldfld`, and `ret`.
 
-Admission rejects unsupported opcodes, malformed operands, non-boundary offsets, incompatible seeded stack/slot shapes, nested frames, and exception regions before budget consumption, state mutation, or instruction events.
+Activation receives only a method handle, receiver/arguments, and persistent memory. It atomically resolves the body
+and metadata shape, validates exact supplied types, constructs initialized local defaults, fixes the empty entry
+stack, and exposes no state on failure. Whole-body admission decodes every instruction once into a frozen typed plan;
+it rejects unsupported/malformed suffixes, invalid slot or stack shapes, non-boundary resumed states, nested frames,
+and exception regions before budget consumption, state mutation, memory calls, or instruction events.
 
-`TMemory` is carried as a persistent semantic snapshot but the arithmetic machine does not inject or call
-`IMemoryModel`; the concrete memory model is an independently tested W3 spike. That capability enters the machine
-only alongside the first memory-touching opcode and an end-to-end transfer test.
+`IlMachine<TValue,TMemory>` now receives `IMemoryModel<TValue,TMemory>`. The closed E2 profile admits only an exact
+instance `Int32` getter, direct or with one constant arithmetic adjustment, and freezes exactly one contextual
+same-module FieldDef before execution. Successful `ldfld` performs exactly one typed load and preserves memory.
+Non-exact memory evidence performs no transfer. Typed null consumes one instruction unit, emits one
+`TargetExceptionRaised` event, and produces an idempotent terminal `TargetException` state without handler search.
 
-The current body contract does **not** decode a method signature: argument/local counts and `ReturnsValue` are
-trusted frame-seeding inputs, then checked only against IL slot use, stack depth, and the admitted I4 stack category.
-This is sufficient for the controlled differential corpus but is not an untrusted-method admission boundary. W3
-must project signature/local types from metadata and validate seeded frames before widening this kernel's claim.
+The old caller-shaped body-only activation is gone. Argument count, local vector/defaults, implicit receiver, and
+return disposition are metadata-derived facts. The admitted plan records exact entry-stack type vectors, not only
+depth or CLI stack categories. Arbitrary signatures, generic contexts, MemberRefs, branches, calls, EH, byrefs,
+statics, and broader instance methods remain rejected.
 
 ### Concrete validation domain
 
@@ -44,16 +65,27 @@ must project signature/local types from metadata and validate seeded frames befo
 
 - a lifted-flat concrete value lattice with one semantic top per static type;
 - executable lattice order and meet/join laws;
-- persistent object, array, and field snapshots;
+- exact structural object references, typed null, and deterministic default construction;
+- persistent allocated/imported object, array, and field snapshots;
+- exact dump-object import identities and explicit field-cell import;
 - branch isolation through immutable memory updates.
 
-It is a semantics-validation domain, not a CLR object-layout emulator or production heap.
+Allocated objects receive CLI defaults. Imported objects do not: a field absent from the imported exact evidence is
+unavailable rather than zero or top. This remains a semantics-validation domain, not a CLR object-layout emulator or
+production heap.
 
 ### Artifact metadata
 
-`Interpreter.Metadata.Abstractions` retains only module identity/descriptor and method-definition/body acquisition contracts. `Interpreter.Metadata.SRM` implements them with `PEReader` and `System.Reflection.Metadata`.
+`Interpreter.Metadata.Abstractions` retains module identity/descriptor and complete method/field projection contracts.
+`Interpreter.Metadata.SRM` implements them with `PEReader` and `System.Reflection.Metadata`; its reusable projection
+also operates over counted metadata supplied by the dump host.
 
-Paths and names are display or acquisition hints, never identity. A disk module carries both metadata-root identity (MVID, metadata length, metadata SHA-256) and complete-artifact identity (whole-file length and SHA-256); the latter prevents PE files with identical metadata but changed IL from aliasing. Method lookup and body acquisition return structured unavailable/unsupported/conflict/invalid failures. The body projection preserves max stack, local-signature presence, local initialization, and exception-region count so execution admission cannot erase unsupported evidence.
+Paths and names are display or acquisition hints, never identity. A disk module carries both metadata-root identity
+(MVID, metadata length, metadata SHA-256) and complete-artifact identity (whole-file length and SHA-256); the latter
+prevents PE files with identical metadata but changed IL from aliasing. Projection atomically decodes method body,
+calling convention, structural declaring type, implicit receiver, parameters, return, and locals. Field projection is
+contextual and preserves declaring type, exact type, and static/literal/RVA dispositions. Unsupported signature/type
+forms and value-type/interface receiver shapes return structured failures rather than partial execution shapes.
 
 ### Dump evidence
 
@@ -74,10 +106,21 @@ Nullable descriptors include the outer field plus both child metadata tokens, ad
 projection. Admission rejects duplicate child tokens, overlap, out-of-extent storage, and extent arithmetic overflow;
 evaluation rejects a forged same-snapshot owner address or method table before issuing memory reads.
 
-The dump body obtains its MethodDef RVA from counted dump metadata and its header, code, local-signature token, and declared extra sections from counted dump memory. A disk body's SRM decode is only an independent test oracle. Dump evidence and disk-artifact evidence remain distinct even when their complete metadata-root identities agree; MVID alone is not a sufficient binding.
+The dump body obtains its MethodDef RVA from counted dump metadata and its physical header, code, local-signature
+token, padding, and declared extra sections from counted dump memory. `ClrmdDumpExecutionResolver` re-parses those
+bytes, projects the complete method/field shape from the same counted metadata, derives a snapshot-scoped module
+handle, and proves that the exact admitted `ldfld` operand names the correlated runtime field. A disk body's SRM
+decode is only an independent test oracle. Dump evidence and disk-artifact evidence remain distinct even when their
+metadata-root identities agree; MVID alone is not a sufficient binding.
+
+`ClrmdExactInt32FieldExecutionEvidence` is created only after the rooted object, runtime owner, metadata declaring
+type/FieldDef, and exact four-byte observation agree. It retains a stable bounded owner-evidence identity used when
+the concrete memory snapshot imports the object and field. Partial or missing ClrMD preparation evidence never reaches
+activation. A deliberately absent cell in an already imported test snapshot instead remains unavailable when
+`ldfld` queries it; that runtime negative does not fabricate a default or retroactively invalidate activation.
 
 The size/cache caps are deterministic resource controls. A narrow Windows x64 external-worker prototype has locally
-passed one real malformed-artifact checkpoint, but it is non-gating work outside W1 and W2 and does not create an
+passed one real malformed-artifact checkpoint, but it is non-gating work outside W1–W3 and does not create an
 admitted external artifact product surface.
 
 ### Read-only dump query
@@ -121,11 +164,12 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 
 ## Deliberately absent
 
-The active public surface does not contain speculative debugger sessions, frame/local/argument/static query roots,
-exact-null roots, query member chains, null-conditional access, properties/getters, calls, indexers, arrays, reflection,
-construction, implicit loading, conversions, general operators, interpreter entry points, generic reconstruction,
-symbol/debug-map providers, call models, async/dynamic models, abstract-analysis worklists, product facades, or service
-locators. Their research documents do not reserve API or assembly names.
+The query product surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
+null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
+loading, conversions, or general operators. W3's public interpreter activation is an architecture proof, not a query
+language feature or product method-evaluation facade. Speculative debugger sessions, generic reconstruction,
+symbol/debug-map providers, call models, async/dynamic models, abstract-analysis worklists, product facades, and
+service locators remain absent; their research documents do not reserve API or assembly names.
 
 ## Change rule
 

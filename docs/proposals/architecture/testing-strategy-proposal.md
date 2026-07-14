@@ -36,18 +36,32 @@ hidden/no-window process policy. A raw `dotnet test` command is not an approved 
 `tests/Interpreter.Tests` is dump-free. Its checked-in corpus covers:
 
 1. lifted-flat concrete-domain order, join, meet, widening, canonical unknowns, and redacted display;
-2. persistent object/array snapshot and fork isolation, deterministic allocation, bounded arrays, and stable content hashes;
-3. a whole-body-admitted branchless `Int32` kernel for constants, arguments, locals, `add`, `sub`, `mul`, and value/void `ret`;
-4. fail-closed behavior for unsupported suffixes, EH, malformed/truncated IL, invalid slots/stack/type shape, injected offsets/state, nested frames, oversized bodies, and exhausted budget;
-5. byte-identical canonical outcome transcripts for repeated normalized inputs;
-6. compiler-emitted methods invoked on CoreCLR and interpreted through the same opcode handlers, including unchecked overflow boundaries;
-7. path-independent module/method identity and distinct metadata unavailable/conflict/invalid outcomes.
+2. persistent allocated/imported object and array snapshot/fork isolation, deterministic allocation, bounded arrays,
+   stable content hashes, allocated defaults, and unavailable absent imported fields;
+3. SRM-derived structural module/type/method/field identities plus atomic body/signature/local projection for static and
+   instance methods, `void`/`Int32` returns, initialized `Int32` locals, and directly declared instance FieldDefs;
+4. metadata-derived root activation and a typed, whole-body-admitted E1 arithmetic profile covering compact, short,
+   and long argument/local encodings, plus an E2 direct or constant-adjusted `Int32` instance getter whose receiver
+   must use the one-byte compact `ldarg.0`; equivalent short `ldarg.s 0` and long `ldarg 0` receiver encodings are
+   negative admission cases;
+5. fail-closed behavior for unsupported signatures, fields, suffixes, EH, malformed/truncated IL, invalid
+   slots/stack/type shape, injected offsets/state, nested frames, decorated or multiple-field getters, oversized
+   bodies/`maxstack`, and exhausted budget before any forbidden transfer;
+6. exact/non-exact/exceptional memory-load behavior, one-load `ldfld`, truthful capability-failure origin, and an
+   idempotent terminal null-receiver outcome with exact budget and event assertions;
+7. byte-identical canonical outcomes for repeated normalized inputs and for fresh metadata/resolver/machine/memory
+   reconstruction; and
+8. compiler-emitted arithmetic and getter methods invoked on CoreCLR and interpreted through the same value-domain and
+   memory handlers, including unchecked overflow and null-receiver outcomes.
 
-The differential harness proves only its closed, branchless, EH-free, `Int32` fixture set. It is not evidence for calls, fields, branches, exceptions, arbitrary signatures, or an unknown-aware domain.
+The differential harness proves the two closed, branchless, EH-free W3 profiles only. It is not evidence for calls,
+branches, handlers, arbitrary signatures, inherited/static fields, or an unknown-aware domain.
 
 ### Real dump-memory proof
 
-`tests/Interpreter.IntegrationTests/DumpMemoryEvidenceIntegrationTests.cs` generates a full Windows process dump and:
+The ordinary real-dump suite uses `DumpMemoryEvidenceIntegrationTests.cs` for W1/W2 evidence and
+`W3DumpGetterExecutionIntegrationTests.cs` for the prepared E2 execution proof. Together they generate full Windows
+process dumps and:
 
 1. retains one read-only dump stream for SHA-256 identity and ClrMD session lifetime;
 2. discovers the runtime module and reads its metadata root from dump memory;
@@ -58,9 +72,17 @@ The differential harness proves only its closed, branchless, EH-free, `Int32` fi
 7. independently proves a compiler-emitted fat method body from counted dump metadata/memory, including its 12-byte header, code, padding, local-signature token, and two declared EH regions; the disk body remains an equality oracle and supplies no constructor input;
 8. carries evidence source, explicit snapshot/module identity availability, fallback, and only bounds whose guarded operation was actually reached through every query result and canonical replay;
 9. disposes and reopens the same dump, rediscovers the module/root, and reproduces complete canonical result bytes and their SHA-256 fingerprint; and
-10. verifies deterministic scan/instruction budgets, cleanup, disposal, and invalid-address behavior.
+10. verifies deterministic scan/instruction budgets, cleanup, disposal, and invalid-address behavior; and
+11. projects an E2 getter's method/signature/FieldDef from the same counted dump metadata/body evidence, proves the
+    admitted `ldfld` operand names the correlated runtime field, imports only an exact four-byte `Int32`, executes the
+    direct and adjusted getter through `IlMachine`/`IMemoryModel`, and repeats the canonical prepared-execution result
+    after dump close/reopen/module-root-method-field rebind. The disk PE is only a post-acquisition equality oracle.
 
-These fixtures do not prove arbitrary root/frame recovery, chained expression binding, broad IL semantics, or debugger stepping. They do prove the common result envelope, the first bounded root-field query surface, a fully dump-sourced tiny method body, and a compiler-emitted real-dump fat body with locals and two EH regions; broader malformed/chained-section shapes remain fast parser evidence. A separate Normal-vs-Full fixture proves that an omitted page remains partial/unavailable rather than being zero-filled.
+These fixtures do not prove arbitrary root/frame recovery, chained expression binding, broad IL semantics, or debugger
+stepping. They do prove the common result envelope, the first bounded root-field query surface, fully dump-sourced tiny
+and fat bodies, and one exact counted-dump E2 getter family executed through the real persistent-memory seam. Broader
+malformed/chained-section shapes remain fast parser evidence. A separate Normal-vs-Full fixture proves that an omitted
+page remains partial/unavailable rather than being zero-filled.
 
 ### Restricted dump-query proof
 
@@ -85,6 +107,23 @@ selector, search disposition, issue, counters, caps, and retained-match state. M
 reclassified as null merely to apply `??`; generic partial primitive wrappers retain explanation without becoming
 decoded scalar answers.
 
+### Concrete W3 execution proof
+
+Exact hardened implementation commit `19c292f9f` closes the in-tree and local-execution portion of the
+[normative W3 contract](concrete-il-execution-contract-proposal.md). It contains `+8,842/-1,650` hand-written LOC
+(`+5,362/-928` production and `+3,480/-722` tests) plus 39 generated lock-file additions. The implementation replaces
+caller-shaped/display-name execution with structural metadata identities, atomic resolution, metadata-derived
+activation, a frozen typed whole-body plan, injected persistent memory, and a latched structured target-null terminal
+outcome.
+
+The W3 corpus spans structural/SRM projection, negative admission, domain/memory laws, direct and adjusted getters,
+compiler/CoreCLR arithmetic/overflow/getter/null differential comparison, same/fresh-session replay, and generated
+counted-dump import/execution/reopen replay. Tests assert resolver and memory call counts, exact budget deltas, ordered
+events, failure-state preservation, and emitted compiler opcode shapes—not just final values. [GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs
+at that exact implementation checkpoint. The later exact pushed documentation-closure commit has not yet passed the
+hosted workflow, so W3 is implemented and verified but is not yet recorded as complete.
+
 ### Corrupt-backend normalization and non-gating malformed-input corpus
 
 Backend memory-read exceptions are normalized into typed invalid evidence rather than escaping as incidental
@@ -94,15 +133,16 @@ Separately, the versioned malformed-minidump corpus deterministically covers eve
 signature/version failures, stream-directory overflow/overlap, `MemoryList`/`Memory64List` truncation, bounded header
 and directory bit flips, appended junk, and a sparse artifact just above the 8 GiB admission limit. Its canonical
 manifest and hard case/count/size caps have fast tests. This corpus is retained as non-gating prototype work outside
-W1 and W2. Its five facts are tagged `Scope=Cybersecurity` and excluded from every current milestone test invocation;
-they provide no W1/W2 validation.
+W1, W2, and W3. Its five facts are tagged `Scope=Cybersecurity` and excluded from every current milestone test
+invocation; they provide no W1/W2/W3 validation.
 
 ### One-shot external-worker proof
 
 `tests/Interpreter.Host.ExternalWorker.Tests` exercises the separately landed Windows x64 broker/runner prototype. Its
 four-test package, including one real malformed-artifact process boundary, passed locally at checkpoint `9fcf00934`
-under the headless wrapper. The worker remains non-gating prototype work outside W1 and W2; its presence and test result
-do not admit an external artifact product surface. Its test project is not invoked by the current milestone workflow.
+under the headless wrapper. The worker remains non-gating prototype work outside W1, W2, and W3; its presence and test
+result do not admit an external artifact product surface. Its test project is not invoked by the current milestone
+workflow.
 
 ### Optimized modeled-incident measurement
 
@@ -121,7 +161,7 @@ is not a W1 gate.
 | Repository build | Stable .NET 10.0.2xx feature-band/minimum-patch pin, central versions, committed lock files, deterministic Release build, warnings-as-errors under `CI=true`. | `CI-enforced` for exact completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: locked restore and the zero-warning Release build passed in GitHub run 29309374548. |
 | Fast tests | Unit/domain/admission/differential/determinism/metadata suite plus payload-safe harness start/readiness failure coverage is checked in. | The same run passed 60 semantic/differential tests and 40 fast adapter/harness tests. |
 | Dump integration | Required Windows dump category and a bounded target/dump harness are checked in. | The dependent Windows job passed 3/3 dump tests. An inability to create/load the dump remains a failure, not a passing skip. |
-| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes, explicit replayable evidence context, plus stable identity/content-hash assertions are checked in. The same dump reopened in a fresh session reproduces module/root selection and complete replay bytes/fingerprint. | Passed at exact W1 closure commit `e2580a8a8` in run 29353198889. |
+| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes carry explicit replayable evidence context. W3's successful prepared-execution test projection separately retains owner-evidence identity, structural method/field facts, imported memory, resolver/load counts, state, budget, events, and return outcome, then serializes those documented observables canonically. The same dump reopened in a fresh session reproduces module/root selection, W2 result/plan bytes, and W3 successful prepared-execution identity/transcript/fingerprint. Target-null idempotence and CoreCLR agreement are asserted separately rather than claimed as a fresh-session canonical transcript. | W1 passed at exact closure commit `e2580a8a8` in run 29353198889; W3's expanded replay passes locally at hardened implementation commit `19c292f9f`, whose exact [implementation-checkpoint run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs, and awaits hosted documentation closure. |
 | Documentation truth | The evidence matrix distinguishes raw dump bytes, dump metadata-derived facts, ClrMD-decoded runtime structures, whole-file-identified disk oracle facts, and explicit fixture inputs. `eng/verify-markdown-links.ps1` validates repository-local inline/reference destinations with stable file/line diagnostics. | The dedicated documentation-consistency job passed on the exact completion commit. Keep the evidence matrix synchronized whenever an evidence fallback changes. |
 
 The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
@@ -173,7 +213,7 @@ passed all four required jobs at exact W1 closure commit `e2580a8a8`: documentat
 passed the same four required jobs at exact W2 closure commit `5bed47100`, with all test commands filtered by
 `Scope!=Cybersecurity`.
 
-### Current local W1–W2 verification — 2026-07-14
+### Historical local W1–W2 verification — 2026-07-14
 
 Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was skipped and no UI was displayed.
 
@@ -190,6 +230,31 @@ Both W1 and W2 local results are corroborated by their exact-commit hosted closu
 repository-wide and compile all 15 projects as topology and compilation-health evidence. Every current test command
 excludes `Scope=Cybersecurity`; the five dedicated hostile-artifact corpus facts therefore contribute neither W2
 validation nor a cybersecurity claim.
+
+### Current local W3 implementation verification — 2026-07-14
+
+Exact hardened implementation commit `19c292f9f` passed the following local matrix. Every managed command ran through
+`./eng/Invoke-HeadlessProcess.ps1`; every test filter excluded `Scope=Cybersecurity`; no test was skipped; and no UI was
+displayed.
+
+| Gate | Headless command shape | Result |
+|---|---|---|
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --filter "Scope!=Cybersecurity"` | Passed, 103/103. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast&Scope!=Cybersecurity"` | Passed, 67/67. |
+| Ordinary real-dump evidence | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 5/5. |
+| Optimized modeled-context evidence | the same wrapped integration-project command with `--filter "Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 1/1. |
+| Focused W3 evidence | the same wrapped integration-project command with `--filter "FullyQualifiedName~W3DumpGetterExecutionIntegrationTests&Scope!=Cybersecurity"` | Passed, 2/2. This is a focused re-run/view, not two additional ordinary-dump facts. |
+| Documentation/workflow guards | `./eng/verify-markdown-links.ps1` and `./eng/verify-headless-workflows.ps1` | Passed. |
+
+This verifies all behavioral portions of W3 and the implementation-checkpoint portion of its repository-wide gate.
+[GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs
+at the same exact pushed implementation commit. It does not satisfy the separate requirement that the later exact
+pushed documentation-closure commit pass every hosted job; that evidence remains pending. The implementation
+checkpoint realizes `+8,842/-1,650` hand-written LOC (`+5,362/-928` production and `+3,480/-722` tests) plus 39
+generated lock-file lines.
 
 ## 3) Active test layers
 
@@ -239,7 +304,7 @@ policy, preparation/plan outcome, value/evidence result, diagnostics, provenance
 case is repeated in-session and after fresh-session rebind; the 13 prepared plans carry an injective canonical identity.
 Later syntax expands only from a scenario whose evidence and resource behavior are explicit.
 
-### E. Differential tests (W3+)
+### E. Concrete differential tests (W3)
 
 For each admitted concrete opcode/method shape, run a tiny compiled fixture on CoreCLR and through the interpreter, then compare normalized value or exception outcomes. Reject unsupported bodies before execution; never treat partial execution as a differential pass.
 
@@ -257,7 +322,7 @@ Prefer purpose-built, source-controlled test targets that expose one risk at a t
 
 - fixed primitive fields and bounded strings for W1;
 - null/member/coalescing cases for W2;
-- branchless EH-free arithmetic/getter bodies for W3;
+- closed branchless EH-free arithmetic/getter bodies for W3;
 - missing, sparse, mismatched, and malformed evidence for negative coverage.
 
 Build settings that affect emitted IL are part of the fixture contract. Verify the emitted method body before relying on its shape.
@@ -322,8 +387,9 @@ All four current `dotnet test` commands include `Scope!=Cybersecurity`; the exte
 invoked. Its projects remain solution-build inputs only because restore/build stays repository-wide across all 15
 projects as topology/compilation-health evidence. That compilation is not cybersecurity behavioral validation.
 
-The historical W0 run below proves only its original jobs. New W1 jobs and tests become `CI-enforced` only after a
-successful hosted run names the exact pushed commit; checked-in workflow text or local execution alone is insufficient.
+The historical W0 run below proves only its original jobs. A new or changed gate becomes `CI-enforced` only after a
+successful hosted run names the exact pushed closure commit; checked-in workflow text or local execution alone is
+insufficient.
 
 Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/hybrid modes, or multiple operating systems until those dimensions have distinct implemented behavior and fixtures. Performance jobs become scheduled or gating only after a representative corpus and baseline exist.
 
@@ -366,10 +432,29 @@ Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/
 
 ### W3 — concrete IL semantics and differential oracle
 
-- Implemented domain and persistent-memory laws pass.
-- A fixture-derived, branchless, EH-free opcode closure runs through the real domain/memory seam.
-- Tiny compiled fixtures agree with CoreCLR on normalized outcomes, including documented exception boundaries.
-- The admission check rejects unsupported opcode/EH shapes before execution.
+W3 has eleven normative executable-evidence gates:
+
+1. Structural type, method, and field identity tests pass, including cross-module non-aliasing.
+2. SRM projection tests pass for static/instance arguments, `void`/`Int32` returns, initialized locals, and FieldDefs.
+3. Structured rejection tests pass for unsupported signatures, local shapes, field tokens/definitions, EH, and opcodes.
+4. Activation tests prove caller counts, local values/counts, and return disposition are no longer inputs.
+5. Typed whole-body admission proves a supported prefix never executes when a suffix is rejected.
+6. Concrete-domain and persistent-memory laws pass, including allocated defaults and imported-field absence.
+7. Direct and adjusted getters perform exactly one real memory-model load and preserve memory.
+8. Compiler-emitted arithmetic, unchecked-overflow, getter, and null-receiver outcomes agree with CoreCLR.
+9. Canonical outcomes and fingerprints agree in repeated and fresh metadata/resolver/machine/memory sessions; the
+   dump-grounded case also agrees after dump close/reopen and complete rebind.
+10. A generated real-dump E2 test executes method metadata/body and field bytes obtained from counted dump evidence,
+    with the independently opened PE used only as a late oracle.
+11. The repository-wide Release build and all required non-cybersecurity fast, ordinary-dump, and optimized-dump lanes
+    pass headlessly with zero skips.
+
+All eleven pass locally at hardened implementation commit `19c292f9f` with the exact matrix recorded in section 2;
+[implementation-checkpoint run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) also passed all four required
+jobs at that exact commit. W3 is complete only after the later exact pushed documentation-closure commit passes every
+required hosted job; that hosted closure is pending. Neither the implementation nor its validation includes
+`Scope=Cybersecurity`.
 
 ### W4 — unknown-aware method evaluation
 
@@ -410,5 +495,5 @@ Record the failing fixture/test, exact command and environment, expected versus 
 1. Which representative private-production optimized incident corpus can supply an honest root/frame-context denominator?
 2. What corpus composition would justify setting a recoverability readiness threshold without hiding unavailable cases?
 
-Both are post-W1 product-readiness questions. External-input cybersecurity is separately scoped and is not an open W1
-or W2 testing decision.
+Both are post-W1 product-readiness questions. External-input cybersecurity is separately scoped and is not an open W1,
+W2, or W3 testing decision.

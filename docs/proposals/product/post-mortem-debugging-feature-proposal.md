@@ -1,6 +1,9 @@
 # Design Doc: Post-Mortem Expression Evaluator for .NET Dumps
 
-> **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices only. Method execution, virtual scratch objects, async/dynamic lifting, and advanced query workflows are research backlog gated by executable evidence; they are not current delivery commitments.
+> **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices only. W3 implements a
+> closed interpreter/memory architecture proof, but product-facing method execution, virtual scratch objects,
+> async/dynamic lifting, and advanced query workflows remain research backlog gated by executable evidence; they are
+> not current delivery commitments.
 
 ## 1) Summary
 
@@ -11,7 +14,7 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** for a restricted C# expression subset over dump evidence. Later research may add counterfactual method execution and an isolated virtual heap, but those capabilities are not implied by the first product slice.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** for a restricted C# expression subset over dump evidence. The closed W3 getter proof validates architecture below that product boundary; it does not add getter syntax or execution to the query language. Later research may add counterfactual method execution and an isolated virtual heap, but those capabilities are not implied by the first product slice.
 
 ---
 
@@ -232,7 +235,35 @@ exact W2 closure commit `5bed47100`.
 
 Goal: investigate getters/helpers that would compute values from snapshot-derived or assumed state. Results in this phase are **counterfactual execution**, not historical replay and not evidence of why the original process reached its captured state.
 
-**Supported**
+**Implemented prerequisite evidence, not a product capability**
+
+Exact hardened implementation checkpoint `19c292f9f` proves a deliberately closed W3 execution seam:
+
+* Structural module, type, MethodDef, and FieldDef identities are projected through SRM without leaking reader handles.
+* Method body, signature, return shape, and locals form one immutable resolution result; activation derives frame
+  shape from it, and typed whole-body admission finishes before instruction zero.
+* E1 executes branchless, EH-free exact-`Int32` arithmetic. E2 executes one directly declared same-module
+  `Int32` instance field getter, either directly or with exactly one integer constant followed by one unchecked
+  `add`, `sub`, or `mul`, through the injected persistent-memory capability. Its receiver must use the exact compact
+  `ldarg.0` encoding.
+* The real-dump fixture derives the method and `ldfld` correlation from counted dump metadata/body evidence, imports
+  only an exact four-byte field observation, and reproduces the prepared transcript after dump reopen/rebind. The disk
+  PE remains an independent late oracle, not resolver input.
+* CoreCLR differential tests cover the admitted arithmetic/getter/null outcomes. A null receiver becomes a latched
+  terminal target exception rather than a resumable partial state.
+
+The cumulative hand-written implementation range from `e7b6a4ace` is `+8,842/-1,650` LOC
+(`+5,362/-928` production and `+3,480/-722` tests/fixtures), plus 39 generated lock-file lines. Local headless
+verification at the hardened checkpoint passed a zero-warning 15-project Release build, 103 non-cybersecurity
+unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3
+lane, and both documentation guards, all with zero skips. The primary checkpoint `12b6ef942` passed all four jobs in
+[GitHub Actions run
+29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656). [Run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact
+hardened checkpoint `19c292f9f`. Formal W3 closure is still pending on the later exact pushed documentation-closure commit.
+The W2 query grammar continues to reject every method/getter execution entry point.
+
+**Research target (not implemented)**
 
 * Evaluate property getters and methods that are **provably safe** under our rules:
 
@@ -409,8 +440,11 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
 * **W2:** restricted query v1 with typed snapshot roots, immutable object/field plans, exact
   `String`/`Int32`/`Nullable<Int32>` behavior, and complete-corpus canonical replay; complete for its
   non-cybersecurity scope at exact closure commit `5bed47100`.
-* **W3:** scenario-derived concrete IL slice plus CoreCLR differential oracle.
-* **W4:** decomposed, evidence-gated unknown-aware counterfactual method evaluation.
+* **W3:** closed scenario-derived concrete E1/E2 IL slice plus CoreCLR and real-dump getter evidence implemented at
+  hardened checkpoint `19c292f9f`; local non-cybersecurity lanes and its exact-checkpoint four-job hosted run pass,
+  while the later exact-commit hosted documentation closure is still pending.
+* **W4:** decomposed, evidence-gated unknown-aware counterfactual method evaluation. Calls, broader opcodes, generics,
+  PDB-backed context, and a second meaningful value domain remain gates rather than inherited W3 capability.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

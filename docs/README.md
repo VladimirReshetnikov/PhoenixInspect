@@ -4,13 +4,35 @@ This directory contains conceptual design artifacts for the IL interpreter and d
 
 ## Current delivery focus
 
-The only active product target is a deterministic, read-only expression evaluator grounded in a .NET dump. The W0 repository/toolchain reset and W1–W2 generated-dump vertical slice are implemented in-tree: exact/partial evidence; fully dump-sourced tiny and compiler-emitted fat method bodies; a closed root-field query grammar; typed snapshot-scoped root bindings; immutable plans that select their field once; exact-null and compatible coalescing over `String` and `Nullable<Int32>` alongside direct `Int32`; canonical request/root-selection/plan identities; explicit snapshot/module identity availability, evidence source, fallback, and path-accurate actually-applied bounds; honest no-answer completeness with retained explanatory evidence; and a concrete differential kernel are executable proofs. The versioned W2 corpus contains 22 cases spanning 20 distinct expression texts and reproduces the complete canonical result byte sequence/SHA-256 for all cases plus the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after a fresh open and rebind. W2 is complete for its non-cybersecurity scope: [GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at exact closure commit `5bed47100`. A whole-file-identified disk PE remains only an independent oracle.
+The only active product target is a deterministic, read-only expression evaluator grounded in a .NET dump. The W0
+repository/toolchain reset and W1–W3 generated-dump vertical slices are implemented in-tree. W1/W2 provide
+exact/partial evidence, fully dump-sourced tiny and compiler-emitted fat method bodies, a closed root-field query
+grammar, typed snapshot-scoped root bindings, immutable plans that select their field once, exact-null and compatible
+coalescing over `String` and `Nullable<Int32>` alongside direct `Int32`, canonical request/root-selection/plan
+identities, path-accurate bounds, and honest no-answer completeness. The versioned W2 corpus contains 22 cases over
+20 distinct expression texts and reproduces every complete result plus each successfully prepared plan after a fresh
+open and rebind. W2 is complete for its non-cybersecurity scope: [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
+at exact closure commit `5bed47100`.
+
+W3 hardened implementation checkpoint `19c292f9f` adds structural execution identities; SRM-projected static/instance signatures,
+initialized locals, and FieldDefs; metadata-derived activation; immutable typed whole-body plans; injected persistent
+memory; exact `ldfld`; and a latched target-null outcome. Its generated-dump proof replays the counted physical body,
+correlates exactly one getter operand with one exact owner/field observation, imports that evidence without fabricating
+missing cells, executes direct and adjusted getters, and reproduces the canonical prepared-memory result after dump
+reopen/rebind. Local headless verification passed locked restore, the zero-warning fifteen-project Release build,
+103 unit tests, 67 fast tests, 5 ordinary dump tests, 1 optimized-context test, and the focused 2-test W3 lane with no
+skips. [GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at the
+exact implementation commit. Hosted documentation-closure evidence is still pending, so W3 is implemented and
+validated but not yet formally closed. A whole-file-identified disk PE remains only an independent oracle, never dump
+resolver input.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
 A versioned malformed-minidump mutation corpus and a Windows x64 one-shot external-worker prototype are retained as
-separately landed, non-gating work outside W1 and W2. The worker's malformed-artifact checkpoint passed locally. Their
-five hostile-corpus facts and the ExternalWorker test project provide no milestone validation: all current W1/W2 test
+separately landed, non-gating work outside W1, W2, and W3. The worker's malformed-artifact checkpoint passed locally. Their
+five hostile-corpus facts and the ExternalWorker test project provide no milestone validation: all current W1–W3 test
 invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide across all 15 projects,
 including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
 cybersecurity behavioral evidence. Their presence does not admit arbitrary external artifacts.
@@ -56,7 +78,7 @@ docs/
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence, W0–W4 test gates, and explicitly deferred research suites. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft · Research | BCL/IL semantic lifting and projection concepts for later phases. |
 | `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft · Research | Candidate unified registry for later modeled semantics. |
-| `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate support tiers for the later method-execution slice. |
+| `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Current · Supporting | Implemented closed W3 E1/E2 encodings and explicit gates for later opcode expansion. |
 | `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft · Research | Aspirational performance model and benchmark gates. |
 | `proposals/architecture/virtual-step-debugging-implementation-proposal.md` | Architecture | Proposal | Draft · Research | Candidate stepping control plane, stop reasons, model frames, and undo. |
 | `proposals/architecture/debug-map-design-proposal.md` | Architecture | Proposal | Draft · Research | Candidate source/IL mapping strategy for virtual stepping. |
@@ -186,7 +208,7 @@ These sketches explain earlier reasoning, but neither their API shapes nor their
 4. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 5. `lib/backend-evidence-log.md`
 
-Generic-context reconstruction and call/effect modeling are later research topics, not prerequisites for the active W1–W2 evidence path.
+Generic-context reconstruction and call/effect modeling are later research topics, not prerequisites for the active W1–W3 evidence path.
 
 ### Process and governance path
 

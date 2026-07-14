@@ -6,6 +6,8 @@
 
 **Normative scope:** W3 non-cybersecurity closure
 
+**Implementation status:** code, local evidence, and hosted implementation-checkpoint evidence complete at `19c292f9f`; exact hosted documentation closure pending
+
 ## 1) Purpose
 
 This document defines the complete W3 execution boundary. W3 is an architecture-validation milestone, not a new
@@ -67,8 +69,9 @@ ldfld <same-module instance Int32 FieldDef>
 ret
 ```
 
-An adjusted fixture may feed the loaded value into E1 arithmetic, for example `ldc.i4.1; add`, to prove that memory
-results re-enter the same value-domain handlers rather than a getter-specific shortcut.
+The sole adjusted form appends one exact `ldc.i4.*`, `ldc.i4.s`, or `ldc.i4` constant and then exactly one unchecked
+`add`, `sub`, or `mul` before `ret`. This proves that memory results re-enter the E1 value-domain handlers rather than
+a getter-specific shortcut; it does not admit a longer E1 instruction sequence inside an instance method.
 
 The admitted E2 field must be:
 
@@ -261,7 +264,8 @@ model therefore preserves whether an object was freshly allocated or imported fr
 
 Dump import requires:
 
-- the exact snapshot and object binding selected by W1/W2;
+- the exact snapshot and uniquely selected rooted-object evidence established by the earlier dump-evidence path; W3
+  reuses those evidence facts directly and does not depend on a W2 product-query plan;
 - an exact owner/type match between the ClrMD descriptor and metadata field descriptor;
 - equal non-nil `FieldDef` tokens;
 - an exact four-byte `Int32` observation; and
@@ -293,8 +297,9 @@ Unsupported or malformed IL, resolution inability, and non-exact memory evidence
 semantic state, persistent memory, operational budget, and events unchanged. Stable status and diagnostic fields name
 the method, IL offset, and failure category without claiming a transfer occurred.
 
-An unexpected exception thrown by a resolver, value domain, or memory plug-in is normalized to a payload-safe
-capability failure. Host exception text is not copied into a result.
+An ordinary exception thrown by a resolver, value domain, or memory plug-in is normalized to a payload-safe
+capability failure; catastrophic `OutOfMemoryException` and `StackOverflowException` are deliberately not caught.
+Host exception text is not copied into a result.
 
 ### 11.3 Target null reference
 
@@ -307,8 +312,10 @@ Applying admitted `ldfld` to an exact typed null receiver terminates with:
 - one `TargetExceptionRaised` event; and
 - no `InstructionExecuted` event, because no ordinary semantic transfer completed.
 
-No handler transfer is attempted. This one explicit exceptional boundary is part of E2 differential evidence; broader
-stop-on-throw behavior and handler semantics remain later work.
+The successor is a latched terminal state with an empty call stack and the structured target exception retained on the
+state. Stepping it again is idempotent: it returns the same state, operational budget, status, and exception with no
+memory call or event. No handler transfer is attempted. This one explicit exceptional boundary is part of E2
+differential evidence; broader stop-on-throw behavior and handler semantics remain later work.
 
 Budget exhaustion before an instruction calls no domain or memory transfer and emits no event.
 
@@ -349,6 +356,30 @@ W3 closure requires all of the following, headlessly and with `Scope!=Cybersecur
 
 Tests must assert not only final values but also resolver/memory call counts, budget deltas, event truthfulness, state
 preservation on failure, and emitted compiler opcode shapes.
+
+### 13.1 Implementation evidence checkpoint
+
+The cumulative diff from normative-contract checkpoint `e7b6a4ace` through hardened implementation checkpoint
+`19c292f9f` realizes this contract in 8,842 hand-written additions and 1,650 deletions: 5,362 production
+additions/928 deletions and 3,480 test/fixture additions/722 deletions. It also contains 39 generated package-lock
+additions. Generated locks and documentation are excluded from the hand-written ledger; its commit-level raw-diff
+reconciliation is recorded in [Future Work Planning](../../plans/future-work-planning.md).
+
+Local verification used only the repository's headless process wrapper and passed:
+
+- locked restore and the fifteen-project Release build with zero warnings and errors;
+- Markdown-link and managed-workflow headless guards;
+- 103/103 non-cybersecurity semantic, admission, metadata, memory, and differential tests;
+- 67/67 fast integration tests;
+- 5/5 ordinary real-dump tests, including the counted W3 getter proof;
+- 1/1 optimized modeled-context test; and
+- the focused W3 dump lane at 2/2, all with zero skips.
+
+These results satisfy the implementation and local portions of the gate. They do not by themselves close W3; the
+exact pushed documentation-closure commit and its hosted run will be recorded here after every required job passes.
+[GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at
+the exact implementation commit and independently corroborates the code checkpoint.
 
 ## 14) Completion and expansion rule
 

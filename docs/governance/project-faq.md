@@ -6,7 +6,7 @@ This FAQ answers the questions contributors, partner teams, and prospective adop
 
 ## 1) What is this project trying to build?
 
-The active product target is a deterministic, read-only expression evaluator grounded in .NET dumps. The IL interpreter is enabling technology for later method evaluation, not the near-term product by itself.
+The active product target is a deterministic, read-only expression evaluator grounded in .NET dumps. The IL interpreter is enabling technology for later method evaluation, not the near-term product by itself. W3 now implements one deliberately closed architecture proof: metadata-derived activation and whole-body admission for branchless `Int32` arithmetic plus one dump-grounded direct or constant-adjusted `Int32` field getter. That proof does not expose method or property evaluation through the product query language.
 
 The committed sequence starts with direct snapshot reads and a restricted expression/query front end. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, live speculation, sandbox runtime hosting, and other applications remain research backlog until those evidence gates pass.
 
@@ -20,7 +20,9 @@ Longer-term workflows may include:
 
 No. The repository remains in conceptual design with a narrow executable prototype.
 
-There is an intentionally narrow prototype under `src/` and `tests/`: draft public contracts, a whole-body-admitted integer arithmetic/local kernel, a persistent concrete validation heap, SRM method-body extraction, and bounded ClrMD dump/module/object/field/string/metadata/IL evidence. Unit, compiler-differential, fast adapter, and real-dump suites validate that limited surface; it is not yet a production-ready expression evaluator. Work is evidence-led: executable slices and tests are the progress signal, with concise documentation kept in sync.
+There is an intentionally narrow prototype under `src/` and `tests/`: draft public contracts; structural module/type/method/field identities; SRM-derived method signatures, locals, bodies, and field definitions; metadata-derived root activation; frozen typed whole-body admission; a persistent concrete validation heap; and bounded ClrMD dump/module/object/field/string/metadata/IL evidence. The closed W3 E1/E2 profiles execute branchless `Int32` arithmetic and one exact direct or constant-adjusted instance-field getter through the injected memory capability. The getter fixture reopens and rebinds the dump, reconstructs the prepared memory snapshot from counted evidence, and reproduces its canonical execution transcript without using the disk PE as resolver input.
+
+Hardened checkpoint `19c292f9f` passed local headless verification with a zero-warning 15-project Release build, 103 non-cybersecurity unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards, all with zero skips. Its cumulative hand-written implementation range from `e7b6a4ace` is `+8,842/-1,650` LOC (`+5,362/-928` production and `+3,480/-722` tests/fixtures), plus 39 generated lock-file lines. The primary checkpoint `12b6ef942` passed all four jobs in [GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656); [run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact hardened checkpoint `19c292f9f`. These runs are checkpoint corroboration, not formal W3 closure: the later exact pushed documentation-closure commit still has to pass every required job. The prototype is not yet a production-ready expression evaluator or a product method-evaluation feature.
 
 ## 3) Why focus on deterministic and bounded execution instead of "best effort" simulation?
 
@@ -118,6 +120,10 @@ The first walking skeleton is implemented. The intended progression is now evide
 4. Validate success, partialness, failure, and determinism.
 5. Revise the design from that evidence before expanding scope.
 
+W3 demonstrates this progression at the interpreter/memory seam, but expansion remains gated. Calls, branches, broader
+opcodes, exception handling, generics, Portable PDB projection, a second meaningful value domain, and product-facing
+counterfactual method evaluation each require their own scenario and acceptance evidence.
+
 ## 14) What are the main technical risks currently anticipated?
 
 Representative risks include:
@@ -131,6 +137,8 @@ Representative risks include:
 - drift between product expectations, design claims, and executable evidence.
 
 The documentation set is intentionally structured to expose and manage these risks early.
+External-input cybersecurity remains separately scoped and supplies no W1-W3 milestone evidence; current milestone
+test claims explicitly exclude `Scope=Cybersecurity`.
 
 ## 15) How can external consumers evaluate whether this direction is promising?
 
@@ -149,11 +157,12 @@ If these answers become stronger over time, the design is moving in the right di
 
 Out of scope in the current phase:
 
-- claiming implementation completeness,
+- claiming product or general-interpreter implementation completeness from the closed W3 proof,
 - promising production timelines,
 - polishing runtime tooling UX beyond design-level proposals,
 - publishing final API guarantees before executable evidence stabilizes them,
-- treating virtual stepping, abstract analysis, async/dynamic lifting, live speculation, or sandbox hosting as active commitments.
+- treating product method evaluation, broader opcode families, generic/PDB-aware execution, a second value domain,
+  virtual stepping, abstract analysis, async/dynamic lifting, live speculation, or sandbox hosting as active commitments.
 
 ## 17) How should people give feedback on the docs?
 

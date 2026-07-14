@@ -1,4 +1,8 @@
-> **Roadmap status: research backlog.** This is counterfactual stepping from snapshot/assumed state, not replay of historical execution. It does not enter active delivery until the dump-query slice, interpreted-method slice, persistent-memory contract, and handler-transfer EH gates pass.
+> **Roadmap status: research backlog.** This is counterfactual stepping from snapshot/assumed state, not replay of
+> historical execution. W3's interpreted-method/persistent-memory proof is implemented and locally/hosted-checkpoint
+> verified at hardened checkpoint `19c292f9f`, but exact documentation closure remains pending. Even after W3 closes, virtual stepping
+> requires an admitted W4 method-execution slice with deterministic pause/event contracts, source mapping, and
+> generalized stop-on-throw behavior. Debugger-grade Step Out additionally requires handler-transfer EH.
 
 Here is a low-level candidate design for virtual Step Into / Over / Out over dump snapshots plus virtual state.
 
@@ -33,20 +37,21 @@ You *can’t* do “instruction stepping” only; users want “source stepping�
 
 ## 2) Does this require refining the IL interpreter framework?
 
-Yes. A clean implementation needs 4 refinements:
+Yes. A clean implementation needs four extensions to the W3 kernel:
 
-1. **Introduce a first-class call stack in the interpreter state** (multi-frame machine state).
-   Your earlier `ExecState` was “one frame + memory”. Stepping *requires* explicit frames.
+1. **Generalize the existing call-stack container to multi-frame execution.**
+   W3 already stores an explicit root `FrameState` in `MachineState`, but its call-free profile admits exactly one
+   frame and has no call/return transfer.
 
 2. **Make calls/returns observable as micro-steps.**
    For Step Into to stop at callee entry, a `call` must push a frame as a discrete event.
 
-3. **Add “pause/stop reasons” + debug events** (call/return, exception, decision-needed, budget).
-   Otherwise the stepper has no stable control plane.
+3. **Add session-level pause/stop reasons and extend the existing low-level debug events** for call/return,
+   exception, decision-needed, and budget boundaries. Machine status and events alone are not a stepping control plane.
 
-4. **Support cheap state snapshots (Undo)** via either:
+4. **Build session history and Undo policy over snapshot-friendly state** via either:
 
-   * persistent immutable state (preferred), or
+   * the existing persistent immutable semantic state plus retained history (preferred), or
    * checkpoint + reversible write log (works, but harder)
 
 Everything else (unknown propagation, havoc, models) already fits nicely.
@@ -709,12 +714,12 @@ Branching:
 
 ## 14) Summary of required interpreter framework refinements
 
-To make this feature clean (and not a pile of special-cases), refine the IL interpreter framework to include:
+To make this feature clean (and not a pile of special-cases), extend the W3 interpreter framework with:
 
-1. **MachineState + FrameState** (call stack and IP are explicit)
+1. **Multi-frame call/return semantics** over the existing explicit `MachineState` + `FrameState` container
 2. **Micro-step execution** with call/return as visible events
-3. **SessionPauseReason + DebugEvents** for a stepping controller, distinct from low-level machine status
-4. **Persistent or snapshot-friendly memory model** to enable Undo
+3. **SessionPauseReason + extended DebugEvents** for a stepping controller, distinct from low-level machine status
+4. **Session history/retention policy** over the existing persistent semantic memory to enable Undo
 5. **Branch policy hook** that can stop for user decision
 6. **EH model** at least at “stop on throw”; ideally real handler transfer
 
@@ -723,6 +728,23 @@ Everything else (unknown propagation, taint/effects, call modeling, dump-backed 
 
 ## Appendix A) Current prototype contract alignment (`src/`)
 
-`src/` is no longer scaffolding-only. `Interpreter.Core.Execution` contains draft semantic and operational state, `StepOutcome`, `MachineRunStatus`, deterministic budgets/events, whole-body admission, and `IlMachine.StepOne`. The admitted executable subset is branchless, EH-free `Int32` constants/arguments/locals plus `add`, `sub`, `mul`, and `ret`; a concrete domain exercises it through compiler-differential tests. The candidate `SessionPauseReason` below is deliberately not a current code contract.
+`src/` is no longer scaffolding-only. `Interpreter.Core.Execution` contains draft semantic/operational state,
+`MachineActivationResult`, `StepOutcome`, `MachineRunStatus`, deterministic budgets/events, frozen typed whole-body
+admission, and `IlMachine.ActivateRoot`/`StepOne`. Activation derives receiver, parameter, local, and return shapes
+from one atomically resolved method definition; callers no longer seed counts, local values, or return disposition.
+
+The admitted E1 subset is static, branchless, EH-free `Int32` constants/arguments/initialized locals plus `add`,
+`sub`, `mul`, and `ret`. E2 admits only a direct or one-constant-adjusted instance `Int32` getter with exactly one
+same-module FieldDef `ldfld`. The injected `IMemoryModel` returns exact/non-exact/target-exception outcomes; imported
+objects do not fabricate defaults for absent fields. Exact typed null creates a budgeted/evented, idempotent terminal
+`TargetException` state. Compiler/CoreCLR and generated real-dump tests cover direct/adjusted getters and fresh-session
+replay. These implementation facts pass locally at hardened checkpoint `19c292f9f`, whose four jobs also pass in [implementation-
+checkpoint run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767); exact hosted
+documentation closure remains pending.
+
+This gives later stepping work a real frame stack, persistent semantic memory, truthful low-level events/statuses, and
+terminal target-exception boundary. It does **not** provide command history, undo, stop predicates, source maps,
+branches, calls/frame pushes, handler transfer, or a resumable exception stop. The candidate `SessionPauseReason`
+below is deliberately not a current code contract.
 
 The actual debugger control plane remains unimplemented; the speculative `Interpreter.Debugger.Engine` project was removed with the empty scaffolding. There is no Step Into/Over/Out, stop plan, history, branch-decision, or source-map orchestration. This research design must not be read as a current stepping contract.

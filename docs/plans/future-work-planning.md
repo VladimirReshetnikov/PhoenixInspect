@@ -8,9 +8,18 @@ This is the active delivery plan for the interpreter and dump-time evaluation in
 
 The only active product target is a **deterministic, read-only expression evaluator grounded in a .NET dump**.
 
-The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a primitive field, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. It obtains each MethodDef RVA from counted dump metadata and reads the header, code, locals token, padding, and declared extra sections from dump memory; the tiny exact dump-sourced `ret` is executable, while the fat body proves locals and two EH regions without claiming interpreter support for them. The full-content-identified disk PE is only an independent oracle. Separately, a concrete branchless `Int32` kernel is checked against compiler-emitted methods running on CoreCLR. These are architectural proofs, not a production evaluator.
+The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
+enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a
+primitive field, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump
+memory. It obtains each MethodDef RVA from counted dump metadata and reads the header, code, locals token, padding, and
+declared extra sections from dump memory. W3 projects structural method/signature/local/field shapes from that counted
+metadata, admits only a closed branchless `Int32` arithmetic or direct/adjusted getter profile, imports one exact field
+observation into persistent memory, and executes the getter through the same domain-parametric machine. CoreCLR and the
+full-content-identified disk PE are independent oracles only. These are architectural proofs, not a production method
+evaluator.
 
-With W2 closed, the following remain research backlog rather than delivery commitments until their own entry gates pass:
+With W1 and W2 closed and W3 implemented locally, the following remain research backlog rather than delivery
+commitments until their own entry gates pass:
 
 - virtual Step Into/Over/Out, undo, and branch exploration,
 - whole-method CFG/fixpoint abstract interpretation,
@@ -26,8 +35,9 @@ Scope expands only through an explicit decision gate backed by executable eviden
 Its deliberately narrow contract is the [Restricted Dump Query v1
 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any increment beyond that contract
 requires an explicit scope decision. Representative private-production measurement is outside W1, already-landed
-worker/corpus code remains separately scoped non-gating prototype work, the concrete W3 work is a bounded
-architecture-risk spike, W3 remains incomplete, and W4 remains gated.
+worker/corpus code remains separately scoped non-gating prototype work, and W4 remains gated. W3 implementation and
+local evidence are complete at hardened checkpoint `19c292f9f`; formal W3 closure remains pending until the exact pushed
+documentation-closure commit passes every required hosted job.
 
 ## 2) LOC sizing and work-in-progress
 
@@ -52,10 +62,9 @@ Work-in-progress limit:
 The ranges make large milestones decomposable and expose scope growth without converting uncertain architecture work into
 a calendar forecast. A milestone total is the sum of its non-overlapping package ranges.
 
-The W1 and W2 rows below preserve the original planning assumptions for calibration only. They are superseded by the
-attributable realized-work ledgers in their milestone sections and must not be read as either current scope or remaining
-work. Cybersecurity portions of the original W1 work and any security-policy fixture work formerly implied by W2 are
-excluded from these milestones.
+The W1 and W2 rows below and W3's original aggregate forecast preserve planning assumptions for calibration only. They
+are superseded by the attributable realized-work ledgers in their milestone sections and must not be read as either
+current scope or remaining work. Cybersecurity work is excluded from all three milestones.
 
 | Milestone | Work package | Estimated implementation LOC |
 |---|---|---:|
@@ -294,26 +303,58 @@ Evaluate a restricted expression such as `root.OptionalMessage ?? "<missing>"` a
 
 ### W3 — Concrete IL semantics and differential oracle
 
-**Estimated implementation surface:** 2,000–3,500 LOC
+**Original forecast (superseded):** 2,000–3,500 LOC
 
-**Status:** bounded architecture-risk spike partially implemented (concrete domain, persistent memory tests, I4 arithmetic kernel, whole-body admission, and differential oracle). W3 is not the active delivery milestone and its signature/memory-opcode requirements remain open.
+**Realized dedicated implementation surface:** 8,842 hand-written additions and 1,650 deletions
+
+The exact cumulative diff from normative-contract checkpoint `e7b6a4ace` through hardened implementation checkpoint
+`19c292f9f` contains 5,362 production additions/928 deletions and 3,480 test/fixture additions/722 deletions. It also
+contains 39 generated package-lock additions required by the dump host's SRM dependency; those generated lines and the
+separately committed normative documentation are excluded from the hand-written ledger. Primary implementation commit
+`12b6ef942` has a raw `+8,717/-1,655` hand-written diff, and admission-hardening commit `19c292f9f` has a raw
+`+134/-4` diff. Nine replacement lines occur in both commit-level raw diffs; the cumulative checkpoint diff counts each
+delivered line once and therefore supplies the authoritative `+8,842/-1,650` total. This stream does not reassign the
+earlier arithmetic/domain/memory spike already represented in W0's mixed-file attribution range. The original forecast
+was therefore materially low and remains visible rather than being rewritten post hoc.
+
+**Status:** **Implementation and local validation complete; hosted closure pending.** Commit `19c292f9f` passed locked
+restore; a fifteen-project Release build with zero warnings/errors; Markdown-link and headless-workflow guards; 103
+non-cybersecurity unit tests; 67 fast integration tests; 5 ordinary dump tests; 1 optimized-context test; and the
+focused 2-test W3 dump lane, all headlessly with zero skips. Formal completion still requires the exact pushed
+documentation-closure commit to pass all required hosted jobs. [GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at the
+exact implementation commit; it validates the implementation checkpoint but is not substituted for that final gate.
 
 **Goal:** validate the domain-parametric interpreter on a scenario-derived, closed opcode set.
 
 **Deliverables**
 
-- A concrete value domain and memory model exercised by real opcode handlers.
-- The minimal opcode closure required by selected branchless, EH-free arithmetic and field-read getters.
-- Metadata-projected argument, return, and local stack shapes; frame admission must not trust caller-supplied counts or `ReturnsValue` for untrusted methods.
-- An admission check that rejects bodies outside the supported opcode/EH tier before execution.
-- A differential harness that runs tiny methods on CoreCLR and the interpreter and compares outcomes.
-- Deterministic budgets and event semantics for every admitted instruction.
+- Structural module, type, MethodDef, and FieldDef identities rather than display-name equality.
+- Atomic SRM projection of method body, calling convention, receiver/parameters, return type, and initialized locals;
+  contextual FieldDefs resolve separately and are frozen into the admitted plan.
+- `ActivateRoot(method, arguments, memory)` with no caller-supplied counts, local values, or `ReturnsValue` flag.
+- Frozen typed whole-body plans for the closed E1 arithmetic and E2 direct/constant-adjusted getter profiles.
+- An injected persistent-memory capability with distinct allocated defaults and imported missing-field semantics.
+- Dump preparation that replays counted physical method evidence and correlates one exact owner, `ldfld`, and Int32 read.
+- Deterministic budgets/events, normalized capability failures, and a latched typed-null target-exception boundary.
+- Compiler/CoreCLR differential and same/fresh-session canonical replay, including dump disposal/reopen/rebind.
 
 **Exit criteria**
 
-- The same opcode handlers execute through the intended domain seam rather than test-only shortcuts.
-- Differential fixtures agree with CoreCLR on the admitted subset, including documented exceptional boundaries.
-- Unsupported bodies are rejected with an explicit reason and no partial execution.
+The normative [Concrete IL Execution Contract](../proposals/architecture/concrete-il-execution-contract-proposal.md)
+owns the exact behavior. Closure requires all of these executable gates:
+
+1. structural type/method/field identity and cross-module non-aliasing;
+2. SRM static/instance, `void`/`Int32`, initialized-local, and FieldDef projection;
+3. structured rejection of unsupported signatures, locals, tokens, fields, EH, and opcodes;
+4. metadata-derived activation without caller counts, locals, or return disposition;
+5. typed whole-body rejection before any supported prefix executes;
+6. concrete-domain and persistent-memory laws, including allocated defaults and imported absence;
+7. direct and adjusted getters with exactly one real memory load and unchanged memory;
+8. CoreCLR agreement for arithmetic, wraparound overflow, getters, and typed-null behavior;
+9. same-session and fresh-session canonical replay;
+10. generated real-dump execution from counted method, metadata, owner, and field evidence; and
+11. the complete local and hosted non-cybersecurity Release/fast/dump/optimized gate.
 
 ### W4 — Unknown-aware method evaluation
 
@@ -332,7 +373,7 @@ of at most 3,500 LOC each
 
 **Entry criteria**
 
-- W1–W3 exit criteria pass in CI.
+- W1/W2 are closed; W3's implementation criteria pass locally, and its exact documentation-closure commit must pass CI.
 - Real scenarios demonstrate that method execution adds value beyond W2 queries.
 - Each W4 slice has an explicit estimate of at most 3,500 implementation LOC before work begins.
 
@@ -369,7 +410,9 @@ Every host-facing result identifies one of:
 - `CounterfactualExecution`: interpreted from recovered or assumed state under explicit policy.
 - `AbstractAnalysis`: may/must reasoning over possible states.
 
-The active W1–W2 work uses only the first two modes.
+The active W1/W2 product paths use only the first two modes. W3 is an internal architecture proof and exposes no
+host-facing method result. Any later product method evaluation must use `CounterfactualExecution`; it cannot relabel
+W3 execution as an observation that the target historically ran the method.
 
 ### Result honesty
 
@@ -386,8 +429,9 @@ A UI trust badge may summarize them but never replaces them in contracts or test
 
 ### Exception handling
 
-- W3 admits EH-free bodies only.
-- The first W4 exception behavior is stop-on-throw without handler transfer.
+- W3 admits EH-free bodies only and latches one exact typed-null `ldfld` as a terminal target exception without handler
+  transfer or continuation.
+- The first W4 exception increment may generalize stop-on-throw, but handler transfer remains separate.
 - Full handler search, filters, unwind, `finally`/`fault`, and cross-frame propagation are prerequisites for debugger-grade exception stepping, not implicit refinements.
 
 ## 6) Risks and mitigations
@@ -398,10 +442,10 @@ A UI trust badge may summarize them but never replaces them in contracts or test
 | A single maintainer cannot sustain a platform-sized surface | High | Critical | Give every active slice an implementation-LOC envelope; split slices above 3,500 LOC; prefer one product path. |
 | Maintainer unavailability leaves the active slice without continuity | Medium | Critical | Keep one canonical vertical-slice path, executable fixtures, explicit evidence boundaries, and a current handoff map; avoid private operational knowledge. |
 | Optimized dumps omit roots, locals, arguments, or `this` | High | High | Make unavailable/partial expected outcomes; measure scenario recovery rather than guessing. |
-| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Keep external-input cybersecurity outside W1 and W2 and admit no external artifact product surface through their completion; any future initiative owns its separate requirements and evidence. |
+| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Keep external-input cybersecurity outside W1–W3 and admit no external artifact product surface through their completion; any future initiative owns its separate requirements and evidence. |
 | Documentation volume is mistaken for capability | High | High | Track implementation and validation separately; design just ahead of code. |
 | Backend or identity mismatch yields plausible wrong reads | Medium | Critical | Identity validation, conflict outcomes, real-dump fixtures, no silent fallback. |
-| The evaluator does not materially improve incident workflows | Medium | High | Test W1/W2 against concrete user questions before funding method execution. |
+| The evaluator does not materially improve incident workflows | Medium | High | Test W1/W2 against concrete user questions before funding a W4 product method-evaluation slice; W3 alone is architecture validation. |
 
 ## 7) Decision gates
 
@@ -417,11 +461,12 @@ W2 decisions now applied:
 6. Every case in the versioned corpus, not one representative expression, must replay canonically after reopening and
    rebinding the dump.
 
-Before starting W3:
+W3 decisions now applied:
 
 1. Select fixtures first, then derive the closed opcode set.
-2. Confirm the active metadata backend from executable evidence.
-3. Define the admission check for unsupported IL and EH.
+2. Use SRM to project structural signatures, locals, and FieldDefs from one immutable evidence source.
+3. Reject the complete typed body—including unsupported IL, EH, and non-E1/E2 shapes—before instruction zero.
+4. Import only exact dump owner/field evidence into persistent memory and keep the machine independent of the live dump session.
 
 Before starting any W4 slice:
 

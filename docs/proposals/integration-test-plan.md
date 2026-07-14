@@ -12,12 +12,13 @@ The current plan has three execution lanes:
 
 - a fast, dump-free semantics lane for every change;
 - a supported Windows lane that generates real full dumps and exercises the evidence boundary; and
-- an independent Windows x64 external-worker prototype-regression lane outside W1 and W2.
+- an independent Windows x64 external-worker prototype-regression lane outside W1, W2, and W3.
 
-The Windows lane now also evaluates the complete W2 v1 product grammar over that evidence. Dump-free parser, root,
-and plan-identity checks remain in the fast category because they require no DAC, process, dump, clock, or network.
-The worker lane retains a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside
-the non-security W1/W2 closure.
+The Windows lane now evaluates both the complete W2 v1 product grammar and W3's closed counted-dump E2 getter over that
+evidence. Dump-free parser, root, plan-identity, SRM projection, activation/admission, memory-law, and CoreCLR
+differential checks remain fast because they require no DAC, process, dump, clock, or network. The worker lane retains
+a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside the non-cybersecurity
+W1/W2/W3 closure.
 
 ## Fast semantics lane
 
@@ -27,11 +28,22 @@ Current proof obligations are:
 
 - the concrete domain satisfies bottom/top, order, join, meet, and widening laws, including distinct unknown origins;
 - persistent memory forks and subsequent stores cannot mutate an earlier snapshot;
-- constants, arguments, pre-seeded locals, `add`, `sub`, `mul`, and value/void `ret` execute with CoreCLR-compatible results for the admitted slice;
-- compiler-emitted straight-line methods agree with live CoreCLR results across a small differential corpus;
-- whole-body admission rejects unsupported suffixes, EH, malformed/truncated instructions, invalid slot/stack shapes, injected resume state, nested frames, and offsets inside operands before consuming budget or emitting events;
+- metadata-projected constants, arguments, initialized locals, `add`, `sub`, `mul`, `ldfld`, and value/void `ret`
+  execute with CoreCLR-compatible results for the closed E1/E2 profiles;
+- compiler-emitted straight-line arithmetic and direct/adjusted getter methods agree with live CoreCLR results,
+  including unchecked overflow and a typed-null receiver;
+- metadata-derived activation receives only the method, ordered values, and persistent memory; caller counts, local
+  values/counts, and return disposition are rejected as inputs;
+- whole-body typed admission rejects unsupported signatures, field identities/storage, suffixes, EH,
+  malformed/truncated instructions, invalid slot/stack types, injected resume state, nested frames, decorated/multiple
+  getter loads, and offsets inside operands before consuming budget, emitting events, or calling memory;
+- direct and adjusted getters call the injected memory model exactly once, preserve memory, and distinguish exact,
+  partial, unavailable, conflict, invalid, and structured target-exception loads;
 - identical normalized inputs produce a byte-identical canonical transcript;
-- module and method handles remain identical when the same PE is copied to a different path;
+- repeated construction from fresh metadata/resolver/machine/memory inputs reproduces the canonical transcript and
+  SHA-256 fingerprint;
+- structural module, type, method, and field handles remain identical when the same PE is copied to a different path
+  and do not alias across modules;
 - module and method handles differ when IL bytes change even if metadata/MVID, PE timestamp, and image size are deliberately preserved, because complete-artifact length/SHA-256 participates in disk-backed identity;
 - metadata not-found, ambiguity, malformed content, and module mismatch remain distinguishable.
 
@@ -51,7 +63,8 @@ These tests may use fixed IL where a C# compiler cannot conveniently emit the in
 The combined fast and ordinary dump lanes must prove all of the following through bounded runs. The omnibus
 `DumpMemoryEvidenceIntegrationTests` run anchors the memory/evidence path; `ClrmdInstanceFieldInfoTests` proves the
 layout-admission part of item 15, `ForeignSnapshotIsolationIntegrationTests` supplies the separate case in item 17, and
-`ClrmdEvaluationResultExtensionsTests` proves item 18. Item 19 is the separately versioned scenario-corpus dump/run:
+`ClrmdEvaluationResultExtensionsTests` proves item 18. Item 19 is the separately versioned scenario-corpus dump/run;
+item 20 is W3's prepared-execution dump/run:
 
 1. The dump is opened read-only and receives a path-independent SHA-256 snapshot identity.
 2. The runtime-module catalog is immutable and preserves app-domain/module/image/metadata addresses separately from a target path hint.
@@ -90,11 +103,53 @@ layout-admission part of item 15, `ForeignSnapshotIsolationIntegrationTests` sup
     exact axes, diagnostics, module/source context, independently expected path bounds, full ordered provenance
     payload, and value-read geometry. Distinct unpaired UTF-16 literals remain plan-distinct even when their fallbacks
     are unselected and their returned values match.
+20. `W3DumpGetterExecutionIntegrationTests` derives a snapshot-scoped execution module and direct/adjusted getter
+    method/signature/FieldDef shapes from counted dump metadata plus exact physical method-body evidence; proves that
+    the one admitted `ldfld` operand is the correlated runtime `Int32` field; imports only its exact four bytes into a
+    persistent-memory snapshot; and executes through `IlMachine`. Partial method or field evidence stops preparation
+    before activation or import. A deliberately absent imported cell permits activation and the preceding
+    `ldarg.0`, then blocks the attempted `ldfld` with one memory query but no field transfer, fabricated default, or
+    consumed field-instruction budget. Same-machine, fresh-resolver, and dump close/reopen/rebind runs reproduce
+    canonical identities, transcript bytes, and SHA-256. The disk PE is opened only after dump execution as an
+    independent CoreCLR/body oracle.
 
 A separate dump test generates an optimized Release modeled-incident target, retains `this`, argument, local, static,
 and strong-root axes, and emits a canonical report with raw member bytes at 5/5, attributable context at 1/5, and
 product-query availability at 1/5. Those counts describe one generated dump, not representative private-production
 recoverability. The generated report is W1 context evidence; representative production measurement is not a W1 gate.
+
+## W3 concrete-execution evidence lane
+
+The [normative W3 contract](architecture/concrete-il-execution-contract-proposal.md) requires eleven headless evidence
+gates, all excluding `Scope=Cybersecurity`. At exact hardened implementation checkpoint `19c292f9f`, their status is:
+
+1. Structural type, method, and field identities, including cross-module non-aliasing: passing in the dump-free
+   metadata-identity suite.
+2. SRM projection of static/instance arguments, `void`/`Int32` returns, initialized locals, and FieldDefs: passing from
+   one content-identified metadata source, without Reflection-derived interpreter shape.
+3. Structured rejection of unsupported signatures, local shapes, field tokens/definitions, EH, and opcodes: passing
+   in metadata/admission negatives.
+4. Activation without caller-supplied argument/local counts, local values, or return disposition: passing from frozen
+   resolved method definitions.
+5. Typed whole-body admission that prevents a supported prefix from executing before a rejected suffix: passing with
+   expected bounded resolution calls, zero memory calls, and unchanged state, memory, budget, and events.
+6. Concrete-domain and persistent-memory laws, including allocated defaults and absent imported fields: passing.
+7. Direct and adjusted getters with exactly one injected memory-model load and unchanged memory: passing in fast
+   machine tests and the counted-dump E2 run.
+8. CoreCLR differential agreement for arithmetic, unchecked overflow, getters, and null receivers: passing over
+   compiler-emitted fixture shapes.
+9. Repeated and fresh-session canonical replay: passing for fresh metadata/resolver/machine/memory construction and
+   for dump close/reopen/module-root-method-field rebind.
+10. Generated real-dump E2 execution whose method metadata/body and field value come from counted dump evidence:
+    passing in `W3DumpGetterExecutionIntegrationTests`; disk bytes supply only a late oracle.
+11. Repository-wide Release build and required non-cybersecurity fast, ordinary-dump, and optimized-dump jobs: passing
+    locally with the matrix below and in all four jobs of the exact-commit hosted implementation-checkpoint run.
+
+The hardened implementation checkpoint realizes `+8,842/-1,650` hand-written LOC (`+5,362/-928` production and
+`+3,480/-722` tests/fixtures) plus 39 generated lock-file lines. All eleven gates pass locally, and [GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at
+that exact pushed code checkpoint. Formal W3 closure still requires the exact pushed documentation-closure commit to
+pass the same required jobs.
 
 ## Non-gating malformed-artifact corpus
 
@@ -103,14 +158,14 @@ all 0–31-byte header truncations, bounded garbage, invalid signature/version, 
 `MemoryList`/`Memory64List` truncation, bounded header/directory bit flips, appended junk, and a sparse file just above
 the 8 GiB admission boundary. Fast tests prove stable names/order/bytes, coverage, and case/count/size ceilings.
 
-This already-landed corpus is retained as a non-gating prototype outside W1 and W2. Its future scope is not an active
-test decision for either milestone.
+This already-landed corpus is retained as a non-gating prototype outside W1, W2, and W3. Its future scope is not an
+active test decision for those milestones.
 
 ## Non-gating one-shot external-worker lane
 
 The implemented Windows x64 broker/runner projects occupy real solution boundaries and have their own headless test
 project. Its four-test package, including a real malformed-artifact process checkpoint, passed locally at
-`9fcf00934`. The projects and regression lane are retained as non-gating prototype work outside W1 and W2; their
+`9fcf00934`. The projects and regression lane are retained as non-gating prototype work outside W1, W2, and W3; their
 presence does not admit an external artifact product surface.
 
 ## Evidence matrix
@@ -125,14 +180,17 @@ presence does not admit an external artifact product surface.
 | MethodDef RVA | Method row decoded from the counted dump metadata image | That the complete body range is captured/readable |
 | Header, code, locals token, and EH count | Exact counted dump-memory reads of the tiny/fat header and all declared extra sections | That the interpreter supports executing locals or handlers |
 | Disk method body | Independent SRM decoding from the whole-file-identified test artifact | Any fact in the dump-backed executable body's construction |
+| W3 resolved method/field plan | Structural method/type/FieldDef projection from one exact counted metadata image plus the exact physical dump method body | Any signature, opcode, field family, inheritance conversion, or handler outside the closed E1/E2 profiles |
+| W3 imported field cell | Exact owner/type/token correlation and exact four-byte dump observation retained in an immutable imported-object snapshot | A value for any absent, partial, unavailable, conflicting, or invalid field observation |
+| W3 getter result | `IlMachine` execution through the injected value domain and persistent-memory capability, with load count, budget, events, state, and memory asserted | Historical target execution, broad method evaluation, or user-facing query semantics |
 | Evaluation evidence context | Explicit dump snapshot/module identities, evaluator source/fallback policy, and only bounds whose guarded operations were reached | That an unavailable module/root was recovered or that an unapplied limit constrained the result |
 | Generic partial-field projection | Retained typed wrapper, provenance, issue code, and `None` answer completeness | A decoded scalar value |
 | Fresh-session replay | Complete canonical result byte sequence/SHA-256 for all 22 cases and canonical plan projection string/SHA-256 for the 13 prepared cases after dump close/reopen and module/root rediscovery | Historical process replay or equivalence across different snapshots |
-| Malformed corpus fast result | Historical deterministic generated mutation bytes and in-process admission outcome; its five facts are now excluded by `Scope!=Cybersecurity` | Any W1/W2 completion requirement; this corpus is non-gating prototype work |
-| Worker prototype checkpoint | One historical locally verified malformed-artifact process result; its test project is not invoked now | Any W1/W2 completion requirement or external product admission |
+| Malformed corpus fast result | Historical deterministic generated mutation bytes and in-process admission outcome; its five facts are now excluded by `Scope!=Cybersecurity` | Any W1/W2/W3 completion requirement; this corpus is non-gating prototype work |
+| Worker prototype checkpoint | One historical locally verified malformed-artifact process result; its test project is not invoked now | Any W1/W2/W3 completion requirement or external product admission |
 | Modeled optimized report | One generated optimized Release full dump with five predeclared axes | Representative private-production context recoverability or a readiness percentage |
 | Live result in differential tests | CoreCLR invocation in the test process | Dump recoverability |
-| Interpreter result | Explicit frame, policy, domain, memory, and admitted body | Historical replay or product-level expression evaluation |
+| Interpreter result | Metadata-derived activation, frozen typed plan, explicit value domain, persistent memory, and deterministic budget/event policy | Historical replay or product-level expression evaluation |
 
 ## CI policy
 
@@ -153,8 +211,9 @@ a zero-warning Release build, 60 semantic/differential tests, and 40 fast adapte
 Windows job passed 3/3 required dump tests.
 
 That service run is the historical W0 baseline only. It does not contain the later result-context, optimized
-modeled-incident, headless-policy, topology, or external-worker packages. Do not call the later W1 packages CI-enforced until a
-successful hosted run records their exact pushed commit; the external-worker package remains non-gating for W1 and W2.
+modeled-incident, headless-policy, topology, external-worker, W2 query, or W3 execution packages. A later gate is
+CI-enforced only after a successful hosted run records its exact pushed closure commit; the external-worker package
+remains non-gating for W1, W2, and W3.
 
 [GitHub Actions run
 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs
@@ -169,6 +228,18 @@ managed command used `Invoke-HeadlessProcess`; there were no skips or UI. [GitHu
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) then passed all four required
 jobs at exact W2 closure commit `5bed47100`.
 
+Current local W3 verification at exact hardened implementation checkpoint `19c292f9f` passed locked restore; a strict 15-project
+Release build with 0 warnings and 0 errors; 103/103 `Interpreter.Tests`; 67/67 fast integration tests; 5/5 ordinary dump
+tests; 1/1 optimized modeled-context test; and a separate focused 2/2
+`W3DumpGetterExecutionIntegrationTests` invocation. The focused invocation is a filtered view/re-run, not two
+additional ordinary-dump facts. The Markdown-link and headless-workflow guards also passed. Every managed command used
+`Invoke-HeadlessProcess`, every test command excluded `Scope=Cybersecurity`, and there were zero skips and no UI. The
+checkpoint realizes `+8,842/-1,650` hand-written LOC (`+5,362/-928` production and `+3,480/-722` tests/fixtures) plus
+39 generated lock-file lines. [GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs on
+the same exact pushed implementation checkpoint. It corroborates the local matrix but is not substituted for the
+documentation-closure gate.
+
 Restore and build remain repository-wide, so all 15 projects are compiled as topology/compilation-health evidence.
 Every current test invocation includes `Scope!=Cybersecurity`; the five dedicated hostile-artifact corpus facts are
 excluded and no cybersecurity validation is claimed.
@@ -177,9 +248,14 @@ No workflow uploads dumps, target output, heap values, paths, or expression resu
 
 ## Next evidence gates
 
-The generated-fixture W1–W2 path, typed root and immutable plan boundary, nullable-`Int32` evidence, 22-case complete
-replay, foreign-snapshot rejection, Normal-vs-Full sparse-memory case, path-accurate bounds, honest no-answer
-projection, headless workflow guard, and optimized modeled-incident report are implemented and locally verified.
-W1 and W2 are complete for their revised non-cybersecurity scopes. Separately landed malformed corpus/worker prototypes
-and representative private-production measurement are not W2 gates. W3 expands the
-differential corpus only from scenario-derived compiler IL; opcode counts or percentage targets do not define readiness.
+The generated-fixture W1–W2 path and its prior exact-commit hosted closure evidence remain unchanged. W3's structural
+identity, SRM projection, metadata-derived activation, typed whole-body admission, concrete-domain/persistent-memory
+laws, direct/adjusted getter, CoreCLR differential, same/fresh-session replay, and counted-dump E2 gates all pass at
+exact hardened implementation checkpoint `19c292f9f`, together with the full local repository matrix and all four jobs
+of hosted run 29374585767. W3 is implemented and validated for its defined non-cybersecurity scope; formal closure is
+pending the exact pushed documentation-closure commit and its required hosted jobs.
+
+Beyond W3, a second meaningful value domain is required before any shared multi-mode-engine claim. New opcodes
+or method families enter only through a scenario-derived compiler fixture and its complete dependency closure; opcode
+counts and percentage targets do not define readiness. Separately landed malformed corpus/worker prototypes,
+cybersecurity validation, and representative private-production measurement are outside W3.

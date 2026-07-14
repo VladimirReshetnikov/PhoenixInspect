@@ -1,6 +1,6 @@
 # PE/PDB reader integration proposal (draft)
 
-## Decision alignment update (2026-07-13)
+## Decision and W3 implementation alignment (2026-07-14)
 
 For the active dump/query and first interpreter slices, this proposal aligns to `docs/lib/mvp-backend-decision-record.md`:
 
@@ -8,8 +8,15 @@ For the active dump/query and first interpreter slices, this proposal aligns to 
 - **Alternative adapters:** research candidates, introduced only by an executable corpus gap
 - **Comparison set retained in docs:** AsmResolver, dnlib, and Mono.Cecil trade-off analysis remains useful reference material
 - **Active dump-body boundary:** MethodDef RVA, tiny/fat header, code, local-signature token, and declared extra sections come from counted dump metadata/memory. A disk PE has separate whole-file length/SHA-256 identity and is only an independent oracle; it is never a source of hidden admission facts for that body.
+- **Implemented W3 projection:** exact hardened implementation checkpoint `19c292f9f` projects structural
+  module/type/MethodDef/FieldDef identities,
+  atomic method body/signature/return/local shape, and contextual same-module FieldDef resolution. Its real-dump getter
+  resolver operates on counted dump metadata/body bytes, proves that the admitted `ldfld` is the correlated runtime
+  field, and reproduces the prepared-memory transcript after dump reopen/rebind.
+- **Still gated:** Portable/Windows PDB projection, SourceLink, generic context, MemberRef/MethodSpec execution,
+  broader opcode families, a second meaningful domain, product method evaluation, and cybersecurity validation.
 
-The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers.
+The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers. Local headless verification at `19c292f9f` passed a zero-warning 15-project Release build, 103 non-cybersecurity unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards. [GitHub Actions run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at the same exact pushed implementation checkpoint. W3 is implemented and validated for its defined non-cybersecurity scope; formal closure still requires the exact pushed documentation-closure commit to pass those jobs.
 
 ---
 
@@ -193,9 +200,10 @@ The original `dotnet/symstore` repo is archived, and there’s an explicit conti
   * supports Microsoft public symbol server and private servers
 * Whether you literally reuse `Microsoft.SymbolStore` or reimplement the minimal subset, the important point is: **keep acquisition separate from parsing.**
 
-**External-input scope:** the active W1 and W2 slices do not admit externally acquired PE/PDB/SourceLink artifacts. The
-local SRM opener's 512 MiB bound remains a deterministic evidence contract. The separately landed dump-query worker is
-non-gating prototype work outside W1 and W2 and does not change this scope.
+**External-input scope:** the W1-W3 milestone evidence does not admit externally acquired PE/PDB/SourceLink artifacts.
+The local SRM opener's 512 MiB bound remains a deterministic evidence contract. The separately landed dump-query
+worker is non-gating prototype work outside W1-W3 and does not change this scope. All current milestone test claims
+exclude `Scope=Cybersecurity`.
 
 ---
 
@@ -304,13 +312,14 @@ This is where correctness guardrails live. The interpreter should never execute 
 **Responsibility**
 
 * Decode method bodies, signatures, EH regions, locals, sequence points, and scope trees.
-* Normalize SRM/AsmResolver/dnlib output into project-owned records.
-* Hide library-specific quirks and missing-feature fallbacks.
+* Normalize active SRM output into project-owned records. An alternative backend must first reproduce the same
+  projected-contract corpus; W3 does not carry simultaneous AsmResolver/dnlib implementations.
+* Hide reader-specific quirks and represent missing features explicitly rather than silently falling back.
 
 **Consumes**
 
 * PE/PDB blobs from Layer 2.
-* Optional runtime generic context hints from Layer 1.
+* Optional runtime generic context hints from Layer 1 only after a generic scenario is admitted; W3 has none.
 
 **Produces**
 
@@ -325,8 +334,9 @@ You can swap readers later (or run dual-read validation) without changing interp
 
 **Responsibility**
 
-* Join runtime facts (Layer 1) with decoded artifacts (Layer 3).
-* Resolve generic instantiation context for each call site.
+* Join runtime facts (Layer 1) with decoded metadata/artifact facts (Layer 3).
+* In W3, freeze one exact non-generic method/field execution view; resolve generic instantiation context for call sites
+  only in a later admitted slice.
 * Materialize interpreter start state and provide call/field/heap callbacks.
 
 **Consumes**
@@ -367,22 +377,35 @@ This is the only layer allowed to “speak both languages” (runtime and metada
 
 ### Cross-layer interaction scenarios (authoritative hand-off points)
 
-#### Scenario A: Resolve and execute a method from a dump frame
+#### Scenario A: Prepare and execute one rooted dump getter (implemented W3)
 
-1. Layer 1 maps `ClrStackFrame` + `ClrMethod` to runtime handles and gathers frame values.
-2. The dump adapter reads the exact metadata root, MethodDef RVA, physical header, code, and declared extra sections through counted reads.
-3. It returns a normalized body only when all required dump evidence is exact; any independently decoded PE body remains a comparison oracle.
-4. Layer 4 merges runtime generic context and emits `MethodExecutionPlan`.
-5. Layer 5 executes and emits result + provenance-rich diagnostics.
+1. Layer 1 selects one exact strong-root object, runtime module, and direct runtime field descriptor.
+2. The dump adapter reads the exact metadata root, MethodDef RVA, physical header, code, and declared extra sections
+   through counted reads.
+3. It returns a normalized body only when all required dump evidence is exact; any independently decoded PE body
+   remains a comparison oracle.
+4. Layer 4 projects the exact non-generic method shape and contextual FieldDef, proves the sole admitted
+   `ldfld`/runtime-field correlation, and imports the exact four-byte field observation.
+5. Layer 5 activates the explicit rooted receiver, freezes the typed whole-body plan, and executes the closed E2
+   profile with deterministic outcome, budget, ordered events, and resulting memory. The host/test composition retains
+   the cross-layer correlation provenance and fresh-session replay evidence around that execution.
 
-#### Scenario B: Missing PDB, decompilation fallback
+#### Scenario B: Resolve a method from a dump frame (future)
+
+1. Layer 1 maps `ClrStackFrame` + `ClrMethod` to runtime handles and attempts to recover `this`, arguments, and locals.
+2. The same counted method-evidence boundary applies, but frame seeding, optimized-frame degradation, and generic
+   context require a separately admitted product scenario before Layer 5 may execute it.
+
+#### Scenario C: Missing PDB, decompilation fallback (future research)
 
 1. Layer 2 fails PDB lookup, returns `ArtifactMissing(Pdb)`.
-2. Layer 3 builds symbol map with “no source” markers and optional decompiler mapping.
-3. Layer 4 marks stepping mode as `DecompiledFallback`.
-4. Layer 5 continues stepping with downgraded source confidence but stable IL semantics.
+2. After a debug-map slice is admitted, Layer 3 may build “no source” markers and an explicitly lower-confidence
+   decompiler mapping.
+3. After a virtual-stepping controller is admitted, Layer 4 may classify that mapping as `DecompiledFallback`.
+4. Layer 5 may continue with downgraded source confidence only after W4 method execution, deterministic pause/event,
+   source-map/decompiler, and stepping gates have their own executable evidence. None is part of W3.
 
-#### Scenario C: Identity mismatch between dump module and disk module
+#### Scenario D: Identity mismatch between dump module and disk module
 
 1. Layer 2 detects failed metadata-root identity verification or a changed complete-artifact identity.
 2. The active dump-backed path blocks correlation; it does not substitute disk body facts or expose an executable mixed-source body.
@@ -404,6 +427,10 @@ That model prevents silent degradation and keeps interpreter behavior auditable 
 ---
 
 ## Recommended internal interfaces (thin but powerful)
+
+The sketches below describe a possible broader artifact/symbol platform. They are not the implemented W3 public API.
+W3 uses narrower project-owned structural resolution contracts and no symbol, decompiler, acquisition, or generic
+service.
 
 ### 1) Acquisition & identity
 
@@ -454,8 +481,9 @@ public interface IManagedMetadata
 
 Implementations:
 
-* `SrmManagedMetadata` (SRM + PEReader)
-* optionally `AsmResolverManagedMetadata` or `DnlibManagedMetadata`
+* `SrmManagedMetadata` (SRM + PEReader) is the active direction; W3's narrower SRM projection is implemented.
+* `AsmResolverManagedMetadata` or `DnlibManagedMetadata` remains hypothetical unless an executable active-slice gap
+  triggers a same-contract comparison.
 
 **Why this interface exists**
 
@@ -523,7 +551,8 @@ public interface IProgramArtifacts
 }
 ```
 
-This is the layer your **post-mortem debugger UI** and **IL interpreter host** call.
+This is a prospective layer the **post-mortem debugger UI** and a broader **IL interpreter host** could call after
+artifact and symbol scenarios are admitted. It is not part of the W3 proof.
 
 ---
 
@@ -566,6 +595,9 @@ ClrMD gives you runtime facts (loaded modules, method tables, object addresses, 
 ---
 
 # Concrete recommendation (if you want the least-friction path)
+
+Only item 1's closed metadata/IL subset is implemented for W3. The PDB, decompiler, acquisition, and optional-plugin
+items remain evidence-gated product/research work.
 
 If I had to pick a default stack that minimizes impedance mismatch:
 

@@ -2,7 +2,10 @@
 
 ## Status
 
-Supporting design for W3/W4. Concrete execution and lattice laws are active; fixpoint, async, dynamic, and virtual-debug state are gated research.
+Supporting design for W3/W4. The closed W3 concrete state/domain contract is implemented and locally verified at
+hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-checkpoint run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Exact hosted documentation
+closure remains pending. Fixpoint, async, dynamic, and virtual-debug state are gated research.
 
 ## Scope
 
@@ -20,6 +23,11 @@ The focus here is on **formal-ish, implementation-guiding contracts**:
 3. how unknownness and provenance are encoded,
 4. how transfer functions communicate guarantees.
 
+The implemented subset is normatively defined by the
+[Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md). Broader shapes in this document are
+research generalizations, not claims that the current machine supports CFG joins, calls, writes, EH, or unknown-aware
+continuation.
+
 ---
 
 ## 1) Design goals
@@ -34,7 +42,24 @@ The focus here is on **formal-ish, implementation-guiding contracts**:
 
 ## 2) Canonical execution state
 
-To support virtual step-debugging, the canonical runtime state is now a **machine state with an explicit frame stack**, not a single-frame `ExecState`.
+The implemented W3 runtime state is a **machine state with an explicit frame stack**, not a single-frame `ExecState`:
+
+```text
+MachineState<TValue,TMemory> = {
+  CallStack: immutable list<FrameState<TValue>>,
+  Memory: persistent TMemory,
+  ReturnValue?: TValue,
+  TerminalTargetException?: TargetExceptionInfo
+}
+
+MachineOperationalState = {
+  Budget: deterministic instruction budget
+}
+```
+
+Budget and events are not fields of semantic state. A normal root return empties the call stack and optionally sets
+`ReturnValue`; typed-null `ldfld` empties it and sets `TerminalTargetException`. Re-stepping either terminal shape
+cannot execute an instruction. The following is the candidate research superset for later analysis/debugging work:
 
 ```text
 MachineState = {
@@ -65,7 +90,11 @@ Compatibility note:
 
 ### 2.1 FrameState and ControlState
 
-`FrameState` is the control/data unit used by stepping commands.
+The current `FrameState` contains the structural method handle, IL offset, immutable evaluation stack, locals, and
+arguments. An instance receiver occupies argument slot zero; W3 has no separate `This` cell. `ActivateRoot` derives
+the complete slot vectors from one atomic method/signature/local projection, initializes admitted locals through the
+domain default operation, and creates exactly one frame at offset zero. The larger control/data shape below is for
+later stepping commands.
 
 ```text
 FrameState = {
@@ -90,12 +119,17 @@ ReturnSite = {
 Rules:
 
 - `ILOffset` must correspond to a valid instruction boundary.
+- In W3, the frozen admitted plan must also prove the complete evaluation-stack type vector at that boundary; depth
+  alone is insufficient.
+- W3 rejects nested/resumed frames that do not match its single-root profile before budget or memory activity.
 - Top-frame `JustEntered` is set exactly on the micro-step that pushes a new frame.
 - `ReturnSite` is required for non-root frames so `StepOut` can stop at caller-correct boundaries.
 
 ### 2.2 EvalStack
 
-The evaluation stack is an ordered sequence of `StackSlot` values.
+The W3 evaluation stack is an immutable ordered sequence of domain values. Its static types and CLI stack kinds are
+checked against the frozen admitted boundary on activation/resume and before/after transfers. The provenance-bearing
+`StackSlot` shape below is a later generalization.
 
 ```text
 StackSlot = {
@@ -113,7 +147,11 @@ Rules:
 
 ### 2.3 Locals and Arguments
 
-Both are index-addressed maps with stable slot descriptors.
+W3 arguments and locals are immutable ordered vectors with exact metadata-derived `TypeSig` vectors in the admitted
+plan. E1 positively covers compact, short, and long argument/local encodings over those vectors. E2 requires the exact
+one-byte compact `ldarg.0` receiver load; equivalent `ldarg.s 0` and long `ldarg 0` forms are negative admission cases.
+Callers cannot seed counts, local values, or return disposition. Index-addressed maps with richer cells are a later
+generalization.
 
 ```text
 Locals    : LocalIndex -> DomainCell
@@ -129,7 +167,11 @@ DomainCell = {
 
 ### 2.4 HeapState
 
-Heap is represented through abstract locations, not raw addresses.
+The active machine carries an `IPersistentMemoryState<TSelf>` snapshot and calls only its injected
+`IMemoryModel<TValue,TMemory>`. `ConcreteMemory` uses deterministic internal reference identities rather than raw
+target addresses. Newly allocated objects have CLI default cells; imported dump objects retain a stable external
+evidence identity and fields not explicitly imported from exact evidence remain unavailable. The abstract heap shape
+below is a later generalization.
 
 ```text
 HeapState = {
@@ -184,7 +226,12 @@ DeterminismState = {
 }
 ```
 
-All budget decrements and deterministic-ID allocations must happen at documented transfer points so command replay remains stable. Operational context is not part of semantic equality and must never be joined or widened at CFG merge points. Otherwise decreasing budgets, growing traces, allocation order, and traversal-dependent provenance IDs can prevent convergence or make semantic equality unstable.
+In W3, successful ordinary instructions consume one unit and emit one `InstructionExecuted` event. Exact target-null
+`ldfld` also consumes one unit but emits only `TargetExceptionRaised`; admission/evidence failures and pre-instruction
+budget exhaustion consume nothing and emit nothing. All budget decrements and deterministic-ID allocations must happen
+at documented transfer points so command replay remains stable. Operational context is not part of semantic equality
+and must never be joined or widened at CFG merge points. Otherwise decreasing budgets, growing traces, allocation
+order, and traversal-dependent provenance IDs can prevent convergence or make semantic equality unstable.
 
 ### 2.7 AsyncState and LiftedCallState (research)
 
@@ -300,7 +347,13 @@ This enables precise host messaging without reverse-engineering trace logs.
 
 ## 4) Transfer-function contract
 
-Each micro-step transfer returns a `MicroStepResult` and emits `DebugEvent` items used by the virtual debug control plane:
+The implemented low-level transfer returns `StepOutcome<TValue,TMemory>` containing resulting semantic state,
+operational budget, `MachineRunStatus`, ordered events, and either a structured execution failure or target exception.
+Statuses are `Ready`, `Completed`, `BudgetExhausted`, `Blocked`, `InvalidProgram`, and `TargetException`. Admission,
+resolution, domain, and non-exact-memory inability preserve semantic state, memory, budget, and events. Capability
+exceptions other than out-of-memory and stack-overflow are normalized without copying provider exception text.
+
+The following `SessionTransition` is a future controller result layered over one or more low-level outcomes:
 
 ```text
 SessionTransition =
@@ -322,6 +375,8 @@ Rules:
    - a provenance-bearing `DomainValue`.
 3. `DecisionNeeded` is host-resumable via explicit branch choice or policy-specified join/fork behavior.
 4. Interpreter-internal invalidity still uses diagnostic failures, but should not be conflated with target-program exception flow (`ExceptionStop`).
+5. W3's typed-null `ldfld` is a terminal, non-resumable machine target exception; handler transfer and general
+   stop-on-throw remain later work.
 
 ---
 
@@ -386,12 +441,15 @@ Versioning rules:
 
 ## 8) MVP constraints and deferred capabilities
 
-In scope for the first concrete execution slice:
+Implemented in the W3 concrete execution slice:
 
-- concrete primitive values,
-- a persistent memory snapshot contract,
+- exact `Int32`, structural object references, typed null, and lifted-flat per-type top/bottom values,
+- a persistent memory snapshot contract with allocated defaults and exact imported-field absence,
 - tested partial-order/join/meet/widen laws,
-- deterministic budget accounting.
+- deterministic budget/event accounting,
+- metadata-derived activation and frozen typed whole-body admission,
+- exact direct/constant-adjusted getter `ldfld` through a typed memory-result contract, and
+- terminal null-reference outcome, plus separate same/fresh-session replay of successful execution outcomes.
 
 Deferred until the unknown-aware method slice or research gates:
 
@@ -417,7 +475,8 @@ Deferred until the unknown-aware method slice or research gates:
 
 ## 10) Proposed acceptance criteria
 
-This proposal is ready for sign-off when:
+W3 satisfies the concrete machine-state, persistent-memory, deterministic budget/event, and lattice-law portions of
+this proposal locally at hardened implementation checkpoint `19c292f9f`. The broader research proposal is ready for sign-off when:
 
 1. Core interfaces include explicit `MachineState`/`FrameState`, while any session controller keeps its transition and pause protocol distinct from the machine result.
 2. At least one end-to-end sample can emit provenance-bearing unknowns.

@@ -16,13 +16,13 @@ The solution retains ten source projects, each containing contracts or behavior 
 
 | Project | Current responsibility |
 |---|---|
-| `Interpreter.Core.Abstractions` | Type/body shapes plus identity, value-domain, persistent-memory, budget, and resolution contracts needed by the engine. |
-| `Interpreter.Core.Execution` | Deterministic micro-step engine and machine-state protocol. |
-| `Interpreter.Domain.Concrete` | Concrete validation values and persistent virtual memory. |
-| `Interpreter.Metadata.Abstractions` | Project-owned metadata identities/projections required by active code. |
-| `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter. |
+| `Interpreter.Core.Abstractions` | Structural type/method/field identities, atomic resolution shapes, value-domain, typed memory-result, persistent-memory, and budget contracts. |
+| `Interpreter.Core.Execution` | Metadata-derived activation, frozen typed whole-body admission, and deterministic micro-step/machine-outcome protocol. |
+| `Interpreter.Domain.Concrete` | Concrete validation values plus persistent allocated/imported object and field memory. |
+| `Interpreter.Metadata.Abstractions` | Project-owned metadata identities and complete method/field projection contracts. |
+| `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter and reusable method/signature/local/field projection over a `MetadataReader`. |
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
-| `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, and raw memory evidence through ClrMD. |
+| `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, and W3 snapshot-scoped execution resolution/import correlation through ClrMD. |
 | `Interpreter.Product.DumpQuery` | Closed W2 grammar, typed snapshot-root binding, one-time field selection into immutable canonical plans, bounded `Evaluate(plan)`, closed value projection, and complete-corpus replay. |
 | `Interpreter.Host.ExternalWorker` | Trusted Windows x64 staging broker, bounded protocol/contracts, response validation, AppContainer/Job/handle policy, payload-free telemetry projection, and observable cleanup. |
 | `Interpreter.Host.ExternalWorker.Runner` | One-request framework-dependent AppContainer executable that re-verifies containment, pins the trusted DAC, disables ambient capabilities, evaluates the admitted dump query, and exits. |
@@ -30,7 +30,8 @@ The solution retains ten source projects, each containing contracts or behavior 
 Tests are separated into a fast semantic/contract suite, a real dump integration suite, a Windows external-worker
 suite, and two generated target executables: the general dump target and the optimized modeled-incident target. The
 real-dump suite contains an independently versioned 22-case/20-expression W2 corpus rather than treating one query in the W1
-omnibus test as query-product closure evidence.
+omnibus test as query-product closure evidence. It also contains a dedicated W3 direct/adjusted getter lane that
+executes only exact counted dump evidence and reopens/rebinds the dump for replay.
 
 ## 3. Dependency rules
 
@@ -54,15 +55,29 @@ write full dump
   -> freeze snapshot, owner, field, decoder, optional literal, and reached bounds into an immutable canonical plan
   -> evaluate that plan through its selected Int32, Nullable<Int32>, or String decoder without member rebinding
   -> decode MethodDef RVA, tiny/fat header, code, locals, padding, and declared extra sections from counted dump evidence
-  -> compare with a full-content-identified disk artifact as an independent fixture oracle
-  -> execute the normalized body built solely from exact dump evidence
+  -> project body + signature + locals + receiver + exact ldfld FieldDef from that counted dump evidence
+  -> correlate the rooted runtime owner and exact four-byte Int32 observation with the admitted field operand
+  -> import only that exact cell into persistent concrete memory
+  -> derive root activation from metadata and freeze a typed whole-body plan before instruction zero
+  -> execute the direct and constant-adjusted getters through one real IMemoryModel ldfld transfer
+  -> compare with a full-content-identified disk artifact as an independent late fixture oracle
   -> report explicit snapshot/module availability, source, fallback, and only bounds whose operation was reached
   -> preserve partial wrappers as explanatory evidence without manufacturing a scalar answer
   -> repeat all 22 versioned query cases in one session, then close/reopen and reconstruct the root binding
   -> reproduce every canonical result byte sequence/SHA-256 and each successfully prepared plan projection/SHA-256
+  -> close/reopen/rebind the W3 module, root, method, field, and import, then reproduce execution transcripts
 ```
 
-The runtime binding identity is the counted metadata root's MVID, exact metadata length, and metadata SHA-256. The independently opened disk PE additionally has a whole-file identity (exact artifact length plus SHA-256), so changing IL outside the metadata root changes artifact/module/method handles even if an incorrectly preserved MVID and metadata root would not. That disk identity is not derivable from the dump metadata root and does not authenticate dump code. The disk bodies are used only to assert equality: the MethodDef RVA, tiny/fat header, `maxstack`, init-locals flag, local-signature token, code, padding, and exception sections are decoded from exact counted dump metadata and memory reads. The real-dump evidence now includes tiny `RetOnly` and a compiler-emitted fat body with locals and two EH regions.
+The runtime binding identity is the counted metadata root's MVID, exact metadata length, and metadata SHA-256. W3's
+execution module handle additionally incorporates stable snapshot/runtime-module evidence, so different loader
+instances cannot alias through repeated names or addresses. The independently opened disk PE has a whole-file
+identity (exact artifact length plus SHA-256), so changing IL outside the metadata root changes disk
+artifact/module/method handles even if an incorrectly preserved MVID and metadata root would not. That disk identity
+is not derivable from the dump metadata root and does not authenticate dump code. The disk bodies are used only to
+assert equality: the MethodDef RVA, tiny/fat header, `maxstack`, init-locals flag, local-signature token, code, padding,
+and exception sections are decoded from exact counted dump metadata and memory reads. The real-dump evidence includes
+tiny `RetOnly`, a compiler-emitted fat body with locals and two EH regions, and exact direct/adjusted `Int32` getter
+bodies admitted through the counted-dump resolver.
 
 W2 proves typed binding and bounded evaluation for one host-named, exactly selected non-null object and one exact
 instance field. Its admitted value domain is `String`, `Int32`, and `Nullable<Int32>` with only compatible literal
@@ -72,12 +87,21 @@ full 22-case/20-expression corpus reproduces every result byte sequence/fingerpr
 plan projection strings/fingerprints within and across dump sessions. This implementation and local headless
 verification passed all four required hosted jobs at exact closure commit `5bed47100` in [GitHub Actions run
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
-It does not prove exact-null roots, frame/local/argument/static recovery, arbitrary heap-root discovery, chained or
-null-conditional access, properties/getters, calls, indexers, arrays, reflection, construction, general operators,
-user-IL execution, broad IL semantics, or debugger stepping.
+It does not prove exact-null query roots, frame/local/argument/static recovery, arbitrary heap-root discovery, chained
+or null-conditional query access, product-level properties/getters, calls, indexers, arrays, reflection, construction,
+general operators, broad IL semantics, or debugger stepping. Separately, W3 proves only counterfactual execution of
+the closed E1 arithmetic and E2 direct/constant-adjusted getter profiles; it does not expose that capability through
+the W2 product grammar.
+
+Hardened W3 checkpoint `19c292f9f` is locally verified through locked restore, the 15-project zero-warning Release
+build, Markdown/headless guards, 103 non-cybersecurity unit tests, 67 fast integration tests, 5 ordinary dump tests,
+1 optimized-context dump test, and the focused 2-test W3 lane. All four hosted jobs also passed at that exact
+implementation checkpoint in [GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). The exact later
+documentation-closure commit and its hosted W3 run remain pending.
 
 The external-worker projects are separately executable, and their four-test package includes a locally passing real
-malformed-artifact process checkpoint. This is non-gating prototype work outside W1 and W2; its presence does not admit
+malformed-artifact process checkpoint. This is non-gating prototype work outside W1–W3; its presence does not admit
 an external artifact product surface.
 
 ## 5. Rule for adding a project
@@ -106,7 +130,7 @@ A desired namespace, future product, candidate backend, or possible plugin is no
   completed 2026-07-14 UTC (2026-07-13 PDT). Third-party actions are pinned to verified release commit SHAs.
 
 That hosted run is the W0 baseline. The malformed corpus and external worker are separately landed, non-gating
-prototypes outside W1 and W2.
+prototypes outside W1–W3.
 
 Historical unfiltered local verification on 2026-07-14 passed locked restore, the strict 15-project Release build with
 0 warnings/errors, 64/64 core tests, 63/63 fast integration tests, 3/3 ordinary dump tests, and 1/1 optimized-context
@@ -121,5 +145,11 @@ projects and the integration assembly, as topology/compilation-health evidence o
 cybersecurity or milestone behavioral evidence. [GitHub Actions run
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
 at exact W2 closure commit `5bed47100`; the W1 run above remains W1-only history.
+
+The later hardened W3 checkpoint `19c292f9f` passes the same headless, non-cybersecurity workflow locally with
+103 unit, 67 fast integration, 5 ordinary dump, 1 optimized-context, and 2 focused W3 tests; [GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passes all four jobs at that
+implementation commit. No formal W3 closure is claimed until the exact pushed documentation-closure commit passes all
+required jobs.
 
 The physical layout and contracts remain prototype hypotheses. They may change freely as W1–W4 force better boundaries.

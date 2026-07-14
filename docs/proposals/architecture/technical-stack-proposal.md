@@ -16,7 +16,10 @@ The objective is to pick technologies that maximize:
 ## 1) Design constraints that drive stack choices
 
 1. **Tight runtime control**
-   Deterministic resource counters are required from the first executable slices; the prototype already accounts for instructions and abstract allocation units. Cooperative `CancellationToken` cancellation remains a separate host-responsiveness mechanism and must not replace replay-stable budgets.
+   Deterministic resource counters are required from the first executable slices; the prototype currently accounts
+   for admitted instruction transfers. Allocation, path, join, and widening budgets remain later requirements.
+   Cooperative `CancellationToken` cancellation remains a separate host-responsiveness mechanism and must not replace
+   replay-stable budgets.
 2. **Low-level metadata/IL fidelity**
    We must read and model ECMA-335 IL accurately, including signatures, generics, and exception regions.
 3. **Pluggable architecture**
@@ -65,21 +68,23 @@ The objective is to pick technologies that maximize:
 Current prototype structure:
 
 - `src/Interpreter.Core.Execution`
-  - IL semantics engine, abstract state machine, control flow stepping.
+  - metadata-derived activation, typed whole-body admission, and deterministic IL micro-step engine.
 - `src/Interpreter.Core.Abstractions`
-  - draft domain/memory/identity contracts and the small backend-neutral type/method-body shapes they consume.
+  - draft structural type/method/field identities, atomic resolution, value/memory, evidence-result, and budget
+    contracts consumed by the engine.
 - `src/Interpreter.Metadata.Abstractions` and `src/Interpreter.Metadata.SRM`
   - projected metadata contracts and the active SRM/PEReader adapter.
 - `src/Interpreter.Domain.Concrete`
-  - concrete validation domain and persistent virtual memory.
+  - concrete validation domain and persistent allocated/imported virtual memory.
 - `src/Interpreter.Host.Abstractions`
   - typed dump-memory/evidence contracts.
 - `src/Interpreter.Host.Dump.ClrMD`
-  - dump loading, runtime discovery, and raw evidence reads.
+  - dump loading, runtime discovery, raw evidence reads, and snapshot-scoped W3 execution resolution/import
+    correlation.
 - `src/Interpreter.Product.DumpQuery`
   - the closed, bounded root-field query evaluator and result projection.
 - `src/Interpreter.Host.ExternalWorker` and `src/Interpreter.Host.ExternalWorker.Runner`
-  - a separately landed, non-gating Windows process-boundary prototype outside W1 and W2.
+  - a separately landed, non-gating Windows process-boundary prototype outside W1–W3.
 - `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, `tests/Interpreter.TestTarget`, and
   `tests/Interpreter.OptimizedContextTestTarget`
   - fast semantic/contract tests, real dump evidence, and the generated optimized-context report.
@@ -105,7 +110,13 @@ the same no-dialog process policy applies locally and in CI.
 - Good control over blobs, signatures, tokens, and Portable PDB access.
 - Suitable for deterministic decoding and explicit handling of edge cases.
 
-This is the active prototype backend because it is exercised by executable integration evidence and aligns with the planned Portable PDB path. The earlier source-scan-only AsmResolver choice is superseded. Backend-neutral projected contracts remain a goal; an alternative adapter is justified only by a recorded fixture/corpus gap.
+This is the active prototype backend because it is exercised by executable integration evidence and aligns with the
+planned Portable PDB path. W3's reusable SRM projection atomically derives body, calling convention, structural
+declaring type, receiver/parameters/return, initialized locals, and contextual FieldDefs from one `MetadataReader`.
+Disk-backed differential tests use it over a content-identified PE; the dump resolver uses it over exact counted
+metadata bytes and separately revalidates the counted physical method body. The earlier source-scan-only AsmResolver
+choice is superseded. Backend-neutral projected contracts remain a goal; an alternative adapter is justified only by
+a recorded fixture/corpus gap.
 
 ### Debug-map and source fallback stack
 
@@ -182,10 +193,16 @@ Use standard .NET DI for host-facing composition while allowing direct construct
      rediscovery.
    - Run the optimized modeled-context target separately from ordinary dump evidence.
 4. **Differential tests (W3+)**
-   - Compare the fixture-derived concrete opcode subset with CoreCLR.
+   - Compare metadata-derived E1 arithmetic/overflow/void and E2 direct/adjusted getter/null behavior with CoreCLR.
+   - Reflection invokes the oracle only; SRM supplies the interpreter's complete activation shape.
+5. **Prepared dump-execution tests (W3)**
+   - Resolve method/signature/field from exact counted dump evidence, correlate and import one exact `Int32` cell,
+     execute the admitted getter through `IMemoryModel`, and replay after closing/reopening/rebinding the dump.
+   - Assert structural identities, typed plan boundaries, resolver/memory call counts, state/memory equality, budget,
+     events, terminal null behavior, and canonical transcript equality.
 
 The external-worker regression project is compiled through the solution, but its tests are not invoked. The five
-hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1/W2 test commands
+hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W3 test commands
 exclude that scope. Repository-wide compilation is topology/compilation-health evidence only, not cybersecurity
 behavioral validation.
 
@@ -228,7 +245,7 @@ CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad 
 
 ## 10) Future external-input and supply-chain posture
 
-Cybersecurity work for external artifacts is explicitly outside W1 and W2. The following remains product-entry
+Cybersecurity work for external artifacts is explicitly outside W1–W3. The following remains product-entry
 guidance, not a current completion gate; the landed worker and malformed corpus are non-gating prototypes and do not
 admit an external artifact product surface.
 
@@ -272,6 +289,14 @@ projects as topology/compilation-health evidence. [GitHub Actions run
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
 at exact W2 closure commit `5bed47100`.
 
+Hardened W3 checkpoint `19c292f9f` passes locally through the same headless workflow: locked restore; the strict
+15-project Release build with zero warnings/errors; Markdown-link and headless-workflow guards; 103 non-cybersecurity
+unit tests; 67 fast integration tests; 5 ordinary dump tests; 1 optimized-context test; and the focused 2-test W3
+lane. All four jobs also pass at that exact implementation commit in [GitHub Actions run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). This is implementation-
+checkpoint evidence, not formal W3 closure; closure awaits the exact pushed documentation-closure commit and its
+required hosted jobs.
+
 Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.
 
 ### Platforms
@@ -298,13 +323,23 @@ Current facts:
 
 - The solution retains ten `src/` projects with active code/contracts plus test projects; 33 empty placeholders were removed and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
 - Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Host.ExternalWorker`, and `Interpreter.Host.ExternalWorker.Runner`.
-- Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code, `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. The independently opened disk PE carries exact whole-file length/SHA-256 identity and serves only as a comparison oracle; its body contributes no fact to the dump-backed executable body.
+- Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
+  metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
+  terminal typed-null target outcome. Its closed E1/E2 profiles do not imply branches, calls, EH, statics, byrefs,
+  generics, or arbitrary instance methods.
+- Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code,
+  `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. It projects
+  the signature and exact `ldfld` FieldDef from the same metadata, correlates one exact runtime field observation, and
+  imports only that cell. The independently opened disk PE carries exact whole-file length/SHA-256 identity and serves
+  only as a comparison oracle; its body/signature contributes no fact to dump-backed execution.
 - External-input resource ceilings are 8 GiB per dump before hashing/ClrMD parsing, a 256 MiB ClrMD dump cache with stack-trace/root caching disabled, and 512 MiB at the typed external-PE `Open` boundary before SRM parsing. These bounds reduce resource-exhaustion risk but are not a parser/DAC sandbox; trusted-fixture convenience APIs are not external admission boundaries.
 - The Windows x64 one-shot worker and malformed-minidump corpus are separately landed, non-gating prototypes outside
-  W1 and W2. The five hostile-corpus facts and worker test project provide no current milestone validation; all W1/W2
+  W1–W3. The five hostile-corpus facts and worker test project provide no current milestone validation; all W1–W3
   test invocations exclude `Scope=Cybersecurity`, while repository-wide compilation retains the projects only as
   topology/compilation-health evidence. The projects do not create an admitted external artifact product surface.
-- `Interpreter.Core.Execution` depends on core abstractions, not on a concrete metadata backend. `MetadataResolutionServices` supplies the current bridge.
+- `Interpreter.Core.Execution` depends on core abstractions, not on SRM or ClrMD. `MetadataResolutionServices` supplies
+  the disk bridge; `ClrmdDumpExecutionResolver` supplies the counted-dump bridge while implementing the same
+  `IResolutionServices` contract.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
