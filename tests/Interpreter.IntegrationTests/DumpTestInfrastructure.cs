@@ -95,7 +95,9 @@ internal sealed class TestTargetRunner : IDisposable
     internal static TestTargetRunner StartAndWaitReady(
         string executablePath,
         IReadOnlyList<string> arguments,
-        string? isolatedDirectory)
+        string? isolatedDirectory,
+        TimeSpan? readinessTimeout = null,
+        Func<StreamReader, Task<string?>>? readReadinessLineAsync = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
         ArgumentNullException.ThrowIfNull(arguments);
@@ -103,6 +105,16 @@ internal sealed class TestTargetRunner : IDisposable
         {
             ArgumentNullException.ThrowIfNull(argument);
         }
+
+        var effectiveReadinessTimeout = readinessTimeout ?? ReadyTimeout;
+        if (effectiveReadinessTimeout <= TimeSpan.Zero || effectiveReadinessTimeout > ReadyTimeout)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(readinessTimeout),
+                "The readiness timeout must be positive and no greater than the harness maximum.");
+        }
+
+        readReadinessLineAsync ??= static reader => reader.ReadLineAsync();
 
         var ownedDirectory = CreateIsolatedDirectory(isolatedDirectory);
         var process = new Process
@@ -160,7 +172,10 @@ internal sealed class TestTargetRunner : IDisposable
         Exception? readinessError = null;
         try
         {
-            line = process.StandardOutput.ReadLineAsync().WaitAsync(ReadyTimeout).GetAwaiter().GetResult();
+            line = readReadinessLineAsync(process.StandardOutput)
+                .WaitAsync(effectiveReadinessTimeout)
+                .GetAwaiter()
+                .GetResult();
         }
         catch (Exception exception)
         {

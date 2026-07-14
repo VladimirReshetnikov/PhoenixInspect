@@ -25,6 +25,12 @@ internal static class Program
             return 71;
         }
 
+        if (args is ["--harness-never-ready"])
+        {
+            Thread.Sleep(Timeout.Infinite);
+            return 73;
+        }
+
         if (Environment.GetEnvironmentVariable("OPENAI_API_KEY") is not null ||
             Environment.GetEnvironmentVariable("GITHUB_TOKEN") is not null ||
             Environment.GetEnvironmentVariable("GH_TOKEN") is not null ||

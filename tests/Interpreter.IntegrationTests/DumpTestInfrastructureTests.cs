@@ -77,6 +77,54 @@ public sealed class DumpTestInfrastructureTests
         AssertNoLiveProcess(failure.TargetProcessId);
     }
 
+    /// <summary>Checks that a target which never reports readiness is bounded, classified, and terminated.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Readiness_timeout_is_stable_and_leaves_no_orphan()
+    {
+        var isolatedDirectory = NewIsolatedDirectoryPath();
+        var executablePath = TestTargetPaths.ResolveExecutable();
+
+        var failure = Assert.Throws<TestTargetHarnessException>(() =>
+            TestTargetRunner.StartAndWaitReady(
+                executablePath,
+                ["--harness-never-ready"],
+                isolatedDirectory,
+                readinessTimeout: TimeSpan.FromMilliseconds(250)));
+
+        AssertFailure(
+            failure,
+            "HARNESS_TARGET_READY_TIMEOUT",
+            "The dump test target did not report readiness within the bounded startup window.",
+            isolatedDirectory);
+        AssertNoLiveProcess(failure.TargetProcessId);
+    }
+
+    /// <summary>Checks that a readiness-channel fault is normalized without disclosing exception payload.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Readiness_channel_failure_is_payload_safe_and_leaves_no_orphan()
+    {
+        var isolatedDirectory = NewIsolatedDirectoryPath();
+        var executablePath = TestTargetPaths.ResolveExecutable();
+
+        var failure = Assert.Throws<TestTargetHarnessException>(() =>
+            TestTargetRunner.StartAndWaitReady(
+                executablePath,
+                ["--harness-never-ready"],
+                isolatedDirectory,
+                readReadinessLineAsync: static _ =>
+                    Task.FromException<string?>(new IOException("secret-read-channel-canary"))));
+
+        AssertFailure(
+            failure,
+            "HARNESS_TARGET_READY_FAILED",
+            "The dump test target readiness channel failed before reporting readiness.",
+            isolatedDirectory);
+        Assert.DoesNotContain("secret-read-channel-canary", failure.Message, StringComparison.Ordinal);
+        AssertNoLiveProcess(failure.TargetProcessId);
+    }
+
     private static string NewIsolatedDirectoryPath() =>
         Path.Combine(Path.GetTempPath(), $"interpreter-harness-negative-{Guid.NewGuid():N}");
 
