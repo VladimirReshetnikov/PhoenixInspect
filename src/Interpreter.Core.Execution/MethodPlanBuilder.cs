@@ -409,11 +409,11 @@ internal static class MethodPlanBuilder
         }
 
         var direct = instructions.Count == 3 &&
-            IsInstruction(instructions[0], AdmittedInstructionKind.LoadArgument, operand: 0) &&
+            IsInstruction(instructions[0], AdmittedInstructionKind.LoadArgument, operand: 0, size: 1) &&
             instructions[1].Kind == AdmittedInstructionKind.LoadField &&
             instructions[2].Kind == AdmittedInstructionKind.Return;
         var adjusted = instructions.Count == 5 &&
-            IsInstruction(instructions[0], AdmittedInstructionKind.LoadArgument, operand: 0) &&
+            IsInstruction(instructions[0], AdmittedInstructionKind.LoadArgument, operand: 0, size: 1) &&
             instructions[1].Kind == AdmittedInstructionKind.LoadField &&
             instructions[2].Kind == AdmittedInstructionKind.LoadInt32 &&
             (instructions[3].Kind is
@@ -435,8 +435,9 @@ internal static class MethodPlanBuilder
     private static bool IsInstruction(
         AdmittedInstruction instruction,
         AdmittedInstructionKind kind,
-        int operand) =>
-        instruction.Kind == kind && instruction.Operand == operand;
+        int operand,
+        int size) =>
+        instruction.Kind == kind && instruction.Operand == operand && instruction.Size == size;
 
     private static PlanPreparationResult? ValidateSignature(ResolvedMethodDefinition definition)
     {

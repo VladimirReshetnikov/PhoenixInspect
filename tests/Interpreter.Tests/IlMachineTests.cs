@@ -87,6 +87,53 @@ public sealed class IlMachineTests
         Assert.Equal(0, resolver.FieldCallCount);
     }
 
+    /// <summary>
+    /// Checks the admitted <c>nop</c> transfer as an observable budgeted instruction before a metadata-derived void
+    /// return, including its exact successor offset and event truthfulness.
+    /// </summary>
+    [Fact]
+    public void NopExecutesAsOneBudgetedEventBeforeVoidReturn()
+    {
+        var definition = CreateDefinition(IlBody.Create(0, [0x00, 0x2A]), returnsValue: false);
+        var domain = new ConcreteDomain();
+        var resolver = new FixedResolver(definition);
+        var memoryModel = new CountingMemoryModel(domain);
+        var machine = CreateMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray<ConcreteValue>.Empty,
+            ConcreteMemory.Empty);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var initialState = activation.State!;
+
+        var first = machine.StepOne(
+            initialState,
+            new MachineOperationalState(new BudgetState(2)));
+
+        Assert.Equal(MachineRunStatus.Ready, first.Status);
+        Assert.Equal(1, first.OperationalState.Budget.InstructionBudget);
+        Assert.Equal(1, Assert.Single(first.State.CallStack).IlOffset);
+        Assert.Same(initialState.Memory, first.State.Memory);
+        var nopEvent = Assert.Single(first.Events);
+        Assert.Equal(
+            (DebugEventKind.InstructionExecuted, 0, "Nop"),
+            (nopEvent.Kind, nopEvent.IlOffset, nopEvent.Instruction));
+
+        var second = machine.StepOne(first.State, first.OperationalState);
+
+        Assert.Equal(MachineRunStatus.Completed, second.Status);
+        Assert.Equal(0, second.OperationalState.Budget.InstructionBudget);
+        Assert.Empty(second.State.CallStack);
+        Assert.False(second.State.ReturnValue.HasValue);
+        Assert.Collection(
+            second.Events,
+            item => Assert.Equal(DebugEventKind.InstructionExecuted, item.Kind),
+            item => Assert.Equal(DebugEventKind.FramePopped, item.Kind));
+        Assert.Equal(1, resolver.MethodDefinitionCallCount);
+        Assert.Equal(0, resolver.FieldCallCount);
+        Assert.Equal(0, memoryModel.LoadCount);
+    }
+
     /// <summary>Checks compact, short, and long argument/local slot encodings against metadata-derived vectors.</summary>
     [Fact]
     public void ShortAndLongSlotEncodingsExecuteProjectedSlots()
@@ -233,6 +280,58 @@ public sealed class IlMachineTests
         Assert.Equal(1, memoryModel.LoadCount);
         Assert.Equal(1, resolver.FieldCallCount);
         Assert.Equal(instructionCount, run.Events.Count(item => item.Kind == DebugEventKind.InstructionExecuted));
+    }
+
+    /// <summary>
+    /// Checks the remaining admitted one-constant E2 arithmetic adjustments so every allowed operator is exercised
+    /// after a real typed memory load rather than only in the static E1 profile.
+    /// </summary>
+    /// <param name="operatorOpcode">The admitted <c>sub</c> or <c>mul</c> opcode.</param>
+    /// <param name="expected">The expected result after applying the operator to field value 41 and constant 2.</param>
+    [Theory]
+    [InlineData((byte)0x59, 39)]
+    [InlineData((byte)0x5A, 82)]
+    public void AdjustedGetterExercisesEveryAdmittedArithmeticOperator(byte operatorOpcode, int expected)
+    {
+        var definition = CreateDefinition(
+            IlBody.Create(
+                2,
+                [
+                    0x02,
+                    0x7B, 0x01, 0x00, 0x00, 0x04,
+                    0x18,
+                    operatorOpcode,
+                    0x2A,
+                ]),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var domain = new ConcreteDomain();
+        var resolver = new FixedResolver(definition, Int32Field);
+        var memoryModel = new CountingMemoryModel(domain);
+        var imported = memoryModel.ImportObject(
+            ConcreteMemory.Empty,
+            DeclaringType,
+            new ImportedObjectEvidenceIdentity("snapshot:test;object:adjusted-operators"));
+        var memory = memoryModel.ImportField(
+            imported.mem,
+            imported.objRef,
+            Int32Field,
+            domain.ConstInt32(41));
+        var machine = CreateMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(imported.objRef),
+            memory);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+
+        var run = Run(machine, activation.State!, instructionBudget: 10);
+
+        Assert.Equal(MachineRunStatus.Completed, run.Outcome.Status);
+        AssertInt32(expected, run.Outcome.State.ReturnValue.Value);
+        Assert.Same(memory, run.Outcome.State.Memory);
+        Assert.Equal(1, memoryModel.LoadCount);
+        Assert.Equal(1, resolver.FieldCallCount);
+        Assert.Equal(5, run.Events.Count(item => item.Kind == DebugEventKind.InstructionExecuted));
     }
 
     /// <summary>
@@ -515,6 +614,36 @@ public sealed class IlMachineTests
             getterActivation,
             MachineRunStatus.Blocked,
             "EXEC_FIELD_GETTER_SHAPE_UNSUPPORTED");
+    }
+
+    /// <summary>
+    /// Checks that alternate encodings of receiver slot zero do not silently broaden the exact compiler-emitted E2
+    /// <c>ldarg.0</c> profile merely because typed decoding normalizes them to the same argument index.
+    /// </summary>
+    /// <param name="code">A getter body using either short or long explicit slot-zero encoding.</param>
+    [Theory]
+    [InlineData(new byte[] { 0x0E, 0x00, 0x7B, 0x01, 0x00, 0x00, 0x04, 0x2A })]
+    [InlineData(new byte[] { 0xFE, 0x09, 0x00, 0x00, 0x7B, 0x01, 0x00, 0x00, 0x04, 0x2A })]
+    public void AlternateReceiverEncodingsAreRejectedByExactGetterProfile(byte[] code)
+    {
+        var domain = new ConcreteDomain();
+        var definition = CreateDefinition(
+            IlBody.Create(1, code),
+            returnsValue: true,
+            hasImplicitThis: true);
+        var resolver = new FixedResolver(definition, Int32Field);
+        var machine = CreateMachine(domain, resolver, new CountingMemoryModel(domain));
+
+        var activation = machine.ActivateRoot(
+            Method,
+            ImmutableArray.Create(domain.ConstNull(DeclaringType)),
+            ConcreteMemory.Empty);
+
+        AssertActivationFailure(
+            activation,
+            MachineRunStatus.Blocked,
+            "EXEC_FIELD_GETTER_SHAPE_UNSUPPORTED");
+        Assert.Equal(1, resolver.FieldCallCount);
     }
 
     /// <summary>Enumerates structural whole-body failures that must precede activation or execution.</summary>
