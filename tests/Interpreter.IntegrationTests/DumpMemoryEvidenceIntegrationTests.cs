@@ -280,7 +280,20 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             Assert.Equal(EvaluationCompleteness.None, nullConditionalQuery.Completeness);
             Assert.Equal(EvaluationEvidenceStatus.Exact, nullConditionalQuery.Evidence);
             Assert.Null(nullConditionalQuery.Value);
-            Assert.Equal(EvaluationProvenanceKind.Policy, Assert.Single(nullConditionalQuery.Provenance).Kind);
+            Assert.Collection(
+                nullConditionalQuery.Provenance,
+                grammar =>
+                {
+                    Assert.Equal(EvaluationProvenanceKind.Policy, grammar.Kind);
+                    Assert.Equal("dump-query:grammar-v1", grammar.SourceId);
+                },
+                request =>
+                {
+                    Assert.Equal(EvaluationProvenanceKind.Policy, request.Kind);
+                    Assert.Equal(
+                        "dump-query-input:sha256:ec13747a1dd96c39af758a8ca45adb838d40a07387126379cf99624a9e77cac9",
+                        request.SourceId);
+                });
             Assert.Equal("QUERY_SYNTAX_UNSUPPORTED", Assert.Single(nullConditionalQuery.Diagnostics).Code);
 
             var blankExpressionQuery = DumpQueryEngine.Evaluate(

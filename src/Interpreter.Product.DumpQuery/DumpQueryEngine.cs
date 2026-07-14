@@ -1,18 +1,22 @@
 using System.Collections.Immutable;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Interpreter.Core.Abstractions;
 using Interpreter.Host.Dump.ClrMD;
 
 namespace Interpreter.Product.DumpQuery;
 
 /// <summary>
-/// Evaluates one bounded, read-only root-field query against an immutable ClrMD dump session.
+/// Prepares and evaluates one bounded, read-only root-field query against an immutable ClrMD dump session.
 /// </summary>
 /// <remarks>
 /// This is a draft W2 product slice, not a general expression evaluator. Its grammar is exactly one ordinal,
 /// case-sensitive root identifier, <c>.</c>, one instance-field identifier, and optionally <c>??</c> followed by
-/// a null, Int32, or bounded string literal. An exact null may be read from the selected field; null-conditional
-/// root access is not admitted because this slice requires an exact non-null root object. It performs no user-code
-/// execution, calls, indexers, arithmetic, assignments, or chained traversal.
+/// a null, Int32, or bounded string literal. Preparation selects the root and field once into an immutable plan;
+/// evaluation decodes that selected field without repeating member binding. Every product query is classified as
+/// <see cref="EvaluationSemanticMode.DerivedQuery"/> because it applies host root/member binding over adapter
+/// observations. The underlying adapter reads remain <see cref="EvaluationSemanticMode.Observation"/> results.
 /// </remarks>
 public static class DumpQueryEngine
 {
@@ -44,28 +48,234 @@ public static class DumpQueryEngine
             StringLiteralLengthBound,
             ObservedStringLengthBound);
 
-    /// <summary>Evaluates one closed-grammar expression over a caller-selected dump root.</summary>
-    /// <param name="session">The immutable dump session from which <paramref name="root"/> was selected.</param>
-    /// <param name="expression">Untrusted expression text subject to deterministic syntax and length bounds.</param>
-    /// <param name="rootName">The exact case-sensitive identifier assigned to the supplied root.</param>
-    /// <param name="root">
-    /// The already selected root object, or <see langword="null"/> when root selection produced no exact object.
-    /// Missing root evidence remains unavailable and is never reinterpreted as a null target value.
-    /// </param>
-    /// <param name="upstreamBounds">
-    /// Optional immutable bounds that the caller actually enforced before this operation, such as strong-handle scan
-    /// and retained-match caps used to select <paramref name="root"/>. The engine adds only parser, identifier,
-    /// literal, observed-string, and raw-read bounds whose guarded operation this execution path actually reaches.
-    /// Callers must not report intended or unenforced policies; a default array means no upstream bound is claimed.
+    /// <summary>Parses and binds one closed-grammar expression into an immutable object-specific query plan.</summary>
+    /// <param name="session">The immutable dump session against which root and member evidence are bound.</param>
+    /// <param name="expression">Expression text subject to deterministic syntax and length bounds.</param>
+    /// <param name="rootBinding">
+    /// Typed host root-selection evidence. Only <see cref="DumpQueryRootBindingStatus.ExactObject"/> can produce a
+    /// plan; every other status produces a blocked result that preserves its distinct evidence and applied bounds.
     /// </param>
     /// <returns>
-    /// A multi-axis derived-query result. Exact null, partial or missing evidence, unsupported field types, and
-    /// invalid syntax remain distinct outcomes with ordered provenance and stable secret-safe diagnostics.
+    /// A successful immutable plan whose member descriptor was selected once, or a complete invalid/blocked result
+    /// explaining the parser, root, member, or type boundary that prevented preparation.
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="session"/> or <paramref name="rootBinding"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// The root binding contains a duplicate bound or a bound name reserved by the product or dump adapter.
+    /// </exception>
+    public static DumpQueryPreparationResult Prepare(
+        ClrmdDumpSession session,
+        string? expression,
+        DumpQueryRootBinding rootBinding)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(rootBinding);
+        ValidateUpstreamBounds(rootBinding.AppliedBounds);
+
+        var parsed = DumpQueryParser.Parse(expression, rootBinding.Name);
+        var rootEvidenceBelongsToSession = RootEvidenceBelongsToSession(session, rootBinding);
+        var rootMemoryReadBoundApplied =
+            rootEvidenceBelongsToSession && ReturnedOutcomeReachedRawMemoryRead(rootBinding.Evidence);
+        var context = CreateEvidenceContext(
+            session,
+            rootBinding.Root,
+            rootBinding.AppliedBounds,
+            ImmutableArray<EvaluationDeterministicBound>.Empty,
+            parsed.AppliedBounds,
+            rawMemoryReadBoundApplied: false,
+            observedStringBoundApplied: false);
+        if (!parsed.IsSuccess)
+        {
+            var parseProvenance = ImmutableArray.CreateBuilder<EvaluationProvenance>();
+            parseProvenance.Add(new EvaluationProvenance(
+                EvaluationProvenanceKind.Policy,
+                GrammarProvenanceId));
+            if (TryCreateRawRequestProvenanceId(expression, rootBinding.Name, out var rawRequestProvenanceId))
+            {
+                parseProvenance.Add(new EvaluationProvenance(
+                    EvaluationProvenanceKind.Policy,
+                    rawRequestProvenanceId));
+            }
+
+            return DumpQueryPreparationResult.Failed(CreateResult(
+                context,
+                EvaluationCompletionStatus.Invalid,
+                EvaluationCompleteness.None,
+                EvaluationEvidenceStatus.Exact,
+                null,
+                parseProvenance.ToImmutable(),
+                ImmutableArray.Create(new EvaluationDiagnostic(
+                    parsed.DiagnosticCode!,
+                    parsed.DiagnosticMessage!))));
+        }
+
+        var query = parsed.Query!;
+        context = CreateEvidenceContext(
+            session,
+            rootBinding.Root,
+            rootBinding.AppliedBounds,
+            ImmutableArray<EvaluationDeterministicBound>.Empty,
+            parsed.AppliedBounds,
+            rawMemoryReadBoundApplied: rootMemoryReadBoundApplied,
+            observedStringBoundApplied: false);
+        var provenance = ImmutableArray.CreateBuilder<EvaluationProvenance>();
+        if (rootEvidenceBelongsToSession)
+        {
+            AppendMemoryProvenance(provenance, rootBinding.Evidence);
+        }
+
+        provenance.Add(new EvaluationProvenance(
+            EvaluationProvenanceKind.Policy,
+            CreateParsedRequestProvenanceId(query)));
+
+        if (rootBinding.Snapshot != session.Snapshot)
+        {
+            return DumpQueryPreparationResult.Failed(CreateResult(
+                context,
+                EvaluationCompletionStatus.Blocked,
+                EvaluationCompleteness.None,
+                EvaluationEvidenceStatus.Conflict,
+                null,
+                provenance.ToImmutable(),
+                ImmutableArray.Create(new EvaluationDiagnostic(
+                    "DUMP_SNAPSHOT_MISMATCH",
+                    "The root binding belongs to a different immutable dump snapshot."))));
+        }
+
+        if (rootBinding.Status != DumpQueryRootBindingStatus.ExactObject || rootBinding.Root is null)
+        {
+            return DumpQueryPreparationResult.Failed(CreateRootBindingFailure(context, rootBinding, provenance));
+        }
+
+        var root = rootBinding.Root;
+        provenance.Add(new EvaluationProvenance(
+            EvaluationProvenanceKind.RuntimeStructure,
+            root.Snapshot.MemorySourceId,
+            root.Address));
+
+        var fieldResult = session.GetInstanceField(root, query.FieldName);
+        context = CreateEvidenceContext(
+            session,
+            root,
+            rootBinding.AppliedBounds,
+            fieldResult.AppliedBounds,
+            parsed.AppliedBounds,
+            rawMemoryReadBoundApplied: rootMemoryReadBoundApplied,
+            observedStringBoundApplied: false);
+        if (fieldResult.Status != ClrmdEvidenceStatus.Exact)
+        {
+            var observation = fieldResult.ToObservationResult();
+            AppendProvenance(provenance, observation.Provenance);
+            return DumpQueryPreparationResult.Failed(CreateResult(
+                context,
+                EvaluationCompletionStatus.Blocked,
+                EvaluationCompleteness.None,
+                observation.Evidence,
+                null,
+                provenance.ToImmutable(),
+                observation.Diagnostics));
+        }
+
+        var field = fieldResult.Value!;
+        provenance.Add(CreateFieldProvenance(root, field));
+        var fieldKind = ClassifyField(field);
+        if (fieldKind is null)
+        {
+            return DumpQueryPreparationResult.Failed(CreateResult(
+                context,
+                EvaluationCompletionStatus.Blocked,
+                EvaluationCompleteness.None,
+                EvaluationEvidenceStatus.Exact,
+                null,
+                provenance.ToImmutable(),
+                ImmutableArray.Create(new EvaluationDiagnostic(
+                    "QUERY_FIELD_TYPE_UNSUPPORTED",
+                    "The selected field type is outside the supported Int32, nullable Int32, and string query domain."))));
+        }
+
+        if (!CoalesceIsCompatible(fieldKind.Value, query.CoalesceLiteral))
+        {
+            return DumpQueryPreparationResult.Failed(InvalidCoalesceType(context, provenance));
+        }
+
+        var plan = new DumpQueryPlan(
+            rootBinding,
+            field,
+            fieldKind.Value,
+            query.CoalesceLiteral,
+            parsed.AppliedBounds,
+            fieldResult.AppliedBounds);
+        return DumpQueryPreparationResult.Success(plan);
+    }
+
+    /// <summary>Evaluates an already prepared plan without repeating root or member selection.</summary>
+    /// <param name="session">The immutable dump session that must contain the plan's bound object and field.</param>
+    /// <param name="plan">The exact object-specific plan returned by <see cref="Prepare"/>.</param>
+    /// <returns>
+    /// A multi-axis derived-query result. Every outcome includes the plan fingerprint as policy provenance; exact null,
+    /// partial or missing evidence, and decoded scalar/string answers remain distinct.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="session"/> or <paramref name="plan"/> is <see langword="null"/>.
+    /// </exception>
+    public static EvaluationResult<DumpQueryValue> Evaluate(ClrmdDumpSession session, DumpQueryPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(plan);
+
+        var root = plan.RootBinding.Root!;
+        var rootEvidenceBelongsToSession = RootEvidenceBelongsToSession(session, plan.RootBinding);
+        var rootMemoryReadBoundApplied =
+            rootEvidenceBelongsToSession && ReturnedOutcomeReachedRawMemoryRead(plan.RootBinding.Evidence);
+        var provenance = ImmutableArray.CreateBuilder<EvaluationProvenance>();
+        if (rootEvidenceBelongsToSession)
+        {
+            AppendMemoryProvenance(provenance, plan.RootBinding.Evidence);
+        }
+
+        provenance.Add(new EvaluationProvenance(
+            EvaluationProvenanceKind.RuntimeStructure,
+            root.Snapshot.MemorySourceId,
+            root.Address));
+        provenance.Add(CreateFieldProvenance(root, plan.Field));
+        provenance.Add(new EvaluationProvenance(EvaluationProvenanceKind.Policy, plan.ProvenanceId));
+
+        return plan.FieldKind switch
+        {
+            DumpQueryPlanFieldKind.Int32 => EvaluateInt32(
+                session,
+                plan,
+                rootMemoryReadBoundApplied,
+                provenance),
+            DumpQueryPlanFieldKind.NullableInt32 => EvaluateNullableInt32(
+                session,
+                plan,
+                rootMemoryReadBoundApplied,
+                provenance),
+            DumpQueryPlanFieldKind.String => EvaluateString(
+                session,
+                plan,
+                rootMemoryReadBoundApplied,
+                provenance),
+            _ => throw new InvalidOperationException("The bound dump-query field kind is invalid."),
+        };
+    }
+
+    /// <summary>Evaluates one closed-grammar expression over a caller-selected dump root.</summary>
+    /// <param name="session">The immutable dump session from which <paramref name="root"/> was selected.</param>
+    /// <param name="expression">Expression text subject to deterministic syntax and length bounds.</param>
+    /// <param name="rootName">The exact case-sensitive identifier assigned to the supplied root.</param>
+    /// <param name="root">
+    /// The already selected root object, or <see langword="null"/> when no exact root is available. New callers should
+    /// prefer <see cref="DumpQueryRootBinding.FromSearchResult"/> so absence and non-exact evidence remain distinct.
+    /// </param>
+    /// <param name="upstreamBounds">Bounds actually applied before this operation; default means none are claimed.</param>
+    /// <returns>The preparation failure or evaluated immutable plan result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="session"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
-    /// <paramref name="upstreamBounds"/> contains a null entry, a duplicate name, or a name reserved by an
-    /// engine- or adapter-applied bound.
+    /// <paramref name="upstreamBounds"/> contains a null, duplicate, or reserved bound name.
     /// </exception>
     public static EvaluationResult<DumpQueryValue> Evaluate(
         ClrmdDumpSession session,
@@ -76,158 +286,27 @@ public static class DumpQueryEngine
     {
         ArgumentNullException.ThrowIfNull(session);
         ValidateUpstreamBounds(upstreamBounds);
-        var parsed = DumpQueryParser.Parse(expression, rootName);
-        var context = CreateEvidenceContext(
-            session,
-            root,
-            upstreamBounds,
-            ImmutableArray<EvaluationDeterministicBound>.Empty,
-            parsed.AppliedBounds,
-            rawMemoryReadBoundApplied: false,
-            observedStringBoundApplied: false);
-        if (!parsed.IsSuccess)
-        {
-            return CreateResult(
-                context,
-                EvaluationCompletionStatus.Invalid,
-                EvaluationCompleteness.None,
-                EvaluationEvidenceStatus.Exact,
-                null,
-                ImmutableArray.Create(new EvaluationProvenance(
-                    EvaluationProvenanceKind.Policy,
-                    GrammarProvenanceId)),
-                ImmutableArray.Create(new EvaluationDiagnostic(
-                    parsed.DiagnosticCode!,
-                    parsed.DiagnosticMessage!)));
-        }
-
-        if (root is null)
-        {
-            return CreateResult(
-                context,
-                EvaluationCompletionStatus.Blocked,
-                EvaluationCompleteness.None,
-                EvaluationEvidenceStatus.Unavailable,
-                null,
-                ImmutableArray<EvaluationProvenance>.Empty,
-                ImmutableArray.Create(new EvaluationDiagnostic(
-                    "QUERY_ROOT_UNAVAILABLE",
-                    "No exact root object is available for the dump query.")));
-        }
-
-        var query = parsed.Query!;
-        var provenance = ImmutableArray.CreateBuilder<EvaluationProvenance>();
-        var rootEvidenceBelongsToSession = RootEvidenceBelongsToSession(session, root);
-        if (rootEvidenceBelongsToSession)
-        {
-            AppendMemoryProvenance(provenance, root.Evidence);
-        }
-
-        var rootMemoryReadBoundApplied =
-            rootEvidenceBelongsToSession && ReturnedOutcomeReachedRawMemoryRead(root.Evidence);
-        provenance.Add(new EvaluationProvenance(
-            EvaluationProvenanceKind.RuntimeStructure,
-            root.Snapshot.MemorySourceId,
-            root.Address));
-
-        var fieldResult = session.GetInstanceField(root, query.FieldName);
-        context = CreateEvidenceContext(
-            session,
-            root,
-            upstreamBounds,
-            fieldResult.AppliedBounds,
-            parsed.AppliedBounds,
-            rawMemoryReadBoundApplied: rootMemoryReadBoundApplied,
-            observedStringBoundApplied: false);
-        if (fieldResult.Status != ClrmdEvidenceStatus.Exact)
-        {
-            var observation = fieldResult.ToObservationResult();
-            AppendProvenance(provenance, observation.Provenance);
-            return CreateResult(
-                context,
-                EvaluationCompletionStatus.Blocked,
-                EvaluationCompleteness.None,
-                observation.Evidence,
-                null,
-                provenance.ToImmutable(),
-                observation.Diagnostics);
-        }
-
-        var field = fieldResult.Value!;
-        provenance.Add(new EvaluationProvenance(
-            EvaluationProvenanceKind.RuntimeStructure,
-            root.Snapshot.MemorySourceId,
-            field.Address,
-            field.Size,
-            field.Size));
-
-        if (string.Equals(field.ElementType, "Int32", StringComparison.Ordinal))
-        {
-            if (query.CoalesceLiteral is not null)
-            {
-                return InvalidCoalesceType(context, provenance);
-            }
-
-            return EvaluateInt32(
-                session,
-                root,
-                query.FieldName,
-                upstreamBounds,
-                fieldResult.AppliedBounds,
-                parsed.AppliedBounds,
-                rootMemoryReadBoundApplied,
-                provenance);
-        }
-
-        if (string.Equals(field.ElementType, "String", StringComparison.Ordinal))
-        {
-            if (query.CoalesceLiteral is { Kind: not (DumpQueryLiteralKind.String or DumpQueryLiteralKind.Null) })
-            {
-                return InvalidCoalesceType(context, provenance);
-            }
-
-            return EvaluateString(
-                session,
-                root,
-                query,
-                upstreamBounds,
-                fieldResult.AppliedBounds,
-                parsed.AppliedBounds,
-                rootMemoryReadBoundApplied,
-                provenance);
-        }
-
-        return CreateResult(
-            context,
-            EvaluationCompletionStatus.Blocked,
-            EvaluationCompleteness.None,
-            EvaluationEvidenceStatus.Exact,
-            null,
-            provenance.ToImmutable(),
-            ImmutableArray.Create(new EvaluationDiagnostic(
-                "QUERY_FIELD_TYPE_UNSUPPORTED",
-                "The selected field type is outside the supported Int32 and string query domain.")));
+        var binding = root is null
+            ? DumpQueryRootBinding.CreateUnavailable(rootName, session.Snapshot)
+            : DumpQueryRootBinding.FromExactObject(rootName, root, upstreamBounds);
+        var preparation = Prepare(session, expression, binding);
+        return preparation.IsSuccess
+            ? Evaluate(session, preparation.Plan!)
+            : preparation.Failure!;
     }
 
     private static EvaluationResult<DumpQueryValue> EvaluateInt32(
         ClrmdDumpSession session,
-        ClrmdHeapObjectInfo root,
-        string fieldName,
-        ImmutableArray<EvaluationDeterministicBound> upstreamBounds,
-        ImmutableArray<EvaluationDeterministicBound> adapterBounds,
-        DumpQueryParserBounds parserBounds,
+        DumpQueryPlan plan,
         bool rootMemoryReadBoundApplied,
         ImmutableArray<EvaluationProvenance>.Builder provenance)
     {
-        var fieldRead = session.ReadInt32Field(root, fieldName);
-        var context = CreateEvidenceContext(
+        var root = plan.RootBinding.Root!;
+        var fieldRead = session.ReadInt32Field(root, plan.Field);
+        var context = CreatePlanContext(
             session,
-            root,
-            upstreamBounds,
-            adapterBounds,
-            parserBounds,
-            rawMemoryReadBoundApplied:
-                rootMemoryReadBoundApplied || ReturnedOutcomeReachedRawMemoryRead(fieldRead.Evidence),
+            plan,
+            rootMemoryReadBoundApplied || ReturnedOutcomeReachedRawMemoryRead(fieldRead.Evidence),
             observedStringBoundApplied: false);
         var observation = fieldRead.ToObservationResult();
         AppendProvenance(provenance, observation.Provenance);
@@ -253,25 +332,83 @@ public static class DumpQueryEngine
             observation.Diagnostics);
     }
 
-    private static EvaluationResult<DumpQueryValue> EvaluateString(
+    private static EvaluationResult<DumpQueryValue> EvaluateNullableInt32(
         ClrmdDumpSession session,
-        ClrmdHeapObjectInfo root,
-        ParsedDumpQuery query,
-        ImmutableArray<EvaluationDeterministicBound> upstreamBounds,
-        ImmutableArray<EvaluationDeterministicBound> adapterBounds,
-        DumpQueryParserBounds parserBounds,
+        DumpQueryPlan plan,
         bool rootMemoryReadBoundApplied,
         ImmutableArray<EvaluationProvenance>.Builder provenance)
     {
-        var fieldRead = session.ReadStringField(root, query.FieldName, MaximumObservedStringCharacters);
-        var context = CreateEvidenceContext(
+        var root = plan.RootBinding.Root!;
+        var fieldRead = session.ReadNullableInt32Field(root, plan.Field);
+        var context = CreatePlanContext(
             session,
-            root,
-            upstreamBounds,
-            adapterBounds,
-            parserBounds,
-            rawMemoryReadBoundApplied:
-                rootMemoryReadBoundApplied || ReturnedOutcomeReachedRawMemoryRead(fieldRead.Evidence),
+            plan,
+            rootMemoryReadBoundApplied || ReturnedOutcomeReachedRawMemoryRead(fieldRead.Evidence),
+            observedStringBoundApplied: false);
+        var observation = fieldRead.ToObservationResult();
+        AppendProvenance(provenance, observation.Provenance);
+        if (fieldRead.Status != ClrmdEvidenceStatus.Exact || fieldRead.Value is not { } value)
+        {
+            return CreateResult(
+                context,
+                EvaluationCompletionStatus.Blocked,
+                EvaluationCompleteness.None,
+                observation.Evidence,
+                null,
+                provenance.ToImmutable(),
+                observation.Diagnostics);
+        }
+
+        DumpQueryValue result;
+        if (value.IsNull)
+        {
+            result = plan.CoalesceLiteral switch
+            {
+                { Kind: DumpQueryLiteralKind.Int32 } literal => DumpQueryValue.FromInt32(literal.Int32Value),
+                _ => DumpQueryValue.FromNull(),
+            };
+        }
+        else if (value.Value is int decoded)
+        {
+            result = DumpQueryValue.FromInt32(decoded);
+        }
+        else
+        {
+            return CreateResult(
+                context,
+                EvaluationCompletionStatus.Blocked,
+                EvaluationCompleteness.None,
+                EvaluationEvidenceStatus.Invalid,
+                null,
+                provenance.ToImmutable(),
+                ImmutableArray.Create(new EvaluationDiagnostic(
+                    "QUERY_NULLABLE_INT32_INVALID",
+                    "The exact nullable Int32 observation did not contain a supported null or scalar state.")));
+        }
+
+        AppendCoalesceProvenance(provenance, plan);
+        return CreateResult(
+            context,
+            EvaluationCompletionStatus.Completed,
+            EvaluationCompleteness.Complete,
+            EvaluationEvidenceStatus.Exact,
+            result,
+            provenance.ToImmutable(),
+            observation.Diagnostics);
+    }
+
+    private static EvaluationResult<DumpQueryValue> EvaluateString(
+        ClrmdDumpSession session,
+        DumpQueryPlan plan,
+        bool rootMemoryReadBoundApplied,
+        ImmutableArray<EvaluationProvenance>.Builder provenance)
+    {
+        var root = plan.RootBinding.Root!;
+        var fieldRead = session.ReadStringField(root, plan.Field, MaximumObservedStringCharacters);
+        var context = CreatePlanContext(
+            session,
+            plan,
+            rootMemoryReadBoundApplied || ReturnedOutcomeReachedRawMemoryRead(fieldRead.Evidence),
             observedStringBoundApplied: fieldRead.TargetLength is >= 0);
         var observation = fieldRead.ToObservationResult();
         AppendProvenance(provenance, observation.Provenance);
@@ -279,11 +416,9 @@ public static class DumpQueryEngine
         if (fieldRead.Status == ClrmdEvidenceStatus.Exact)
         {
             DumpQueryValue value;
-            if (fieldRead.IsNull && query.CoalesceLiteral is { } literal)
+            if (fieldRead.IsNull && plan.CoalesceLiteral is { Kind: DumpQueryLiteralKind.String } literal)
             {
-                value = literal.Kind == DumpQueryLiteralKind.Null
-                    ? DumpQueryValue.FromNull()
-                    : DumpQueryValue.FromString(literal.StringValue!);
+                value = DumpQueryValue.FromString(literal.StringValue!);
             }
             else if (fieldRead.IsNull)
             {
@@ -294,13 +429,7 @@ public static class DumpQueryEngine
                 value = DumpQueryValue.FromString(fieldRead.Value!);
             }
 
-            if (query.CoalesceLiteral is not null)
-            {
-                provenance.Add(new EvaluationProvenance(
-                    EvaluationProvenanceKind.Transformation,
-                    CoalesceProvenanceId));
-            }
-
+            AppendCoalesceProvenance(provenance, plan);
             return CreateResult(
                 context,
                 EvaluationCompletionStatus.Completed,
@@ -335,6 +464,109 @@ public static class DumpQueryEngine
             observation.Diagnostics);
     }
 
+    private static EvaluationResult<DumpQueryValue> CreateRootBindingFailure(
+        EvaluationEvidenceContext context,
+        DumpQueryRootBinding binding,
+        ImmutableArray<EvaluationProvenance>.Builder provenance)
+    {
+        var (completion, evidence, code, message) = binding.Status switch
+        {
+            DumpQueryRootBindingStatus.ExhaustiveAbsence => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Unavailable,
+                "QUERY_ROOT_ABSENT",
+                "An exhaustive root search found no matching object."),
+            DumpQueryRootBindingStatus.Partial when binding.Issue == ClrmdValueIssue.LimitExceeded => (
+                EvaluationCompletionStatus.BudgetExhausted,
+                EvaluationEvidenceStatus.Partial,
+                "QUERY_ROOT_LIMIT_EXCEEDED",
+                "A deterministic root-search bound was exhausted before unique selection was proven."),
+            DumpQueryRootBindingStatus.Partial when binding.Issue == ClrmdValueIssue.MemoryUnavailable => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Partial,
+                "QUERY_ROOT_MEMORY_PARTIAL",
+                "Incomplete dump-memory evidence prevented unique root selection."),
+            DumpQueryRootBindingStatus.Partial when binding.Issue == ClrmdValueIssue.ModuleUnavailable => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Partial,
+                "QUERY_ROOT_MODULE_PARTIAL",
+                "Incomplete runtime-module evidence prevented unique root selection."),
+            DumpQueryRootBindingStatus.Partial => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Partial,
+                "QUERY_ROOT_PARTIAL",
+                "Root selection ended with incomplete evidence and cannot choose a unique object."),
+            DumpQueryRootBindingStatus.Unavailable when binding.Issue == ClrmdValueIssue.RuntimeUnsupported => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Unavailable,
+                "QUERY_ROOT_RUNTIME_UNAVAILABLE",
+                "The dump runtime cannot provide a root in the supported query profile."),
+            DumpQueryRootBindingStatus.Unavailable => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Unavailable,
+                "QUERY_ROOT_UNAVAILABLE",
+                "No exact root object is available for the dump query."),
+            DumpQueryRootBindingStatus.Conflict when binding.Issue == ClrmdValueIssue.AmbiguousMatch => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Conflict,
+                "QUERY_ROOT_AMBIGUOUS",
+                "More than one root matched a query that requires unique selection."),
+            DumpQueryRootBindingStatus.Conflict when binding.Issue == ClrmdValueIssue.TypeMismatch => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Conflict,
+                "QUERY_ROOT_TYPE_CONFLICT",
+                "Root-selection evidence conflicts with the requested runtime type."),
+            DumpQueryRootBindingStatus.Conflict => (
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Conflict,
+                "QUERY_ROOT_CONFLICT",
+                "Root selection was ambiguous or incompatible with the requested query context."),
+            DumpQueryRootBindingStatus.Invalid => (
+                EvaluationCompletionStatus.Invalid,
+                EvaluationEvidenceStatus.Invalid,
+                "QUERY_ROOT_INVALID",
+                "Captured root-selection evidence violates a supported runtime invariant."),
+            _ => throw new InvalidOperationException("An exact root binding cannot produce a binding failure."),
+        };
+        return CreateResult(
+            context,
+            completion,
+            EvaluationCompleteness.None,
+            evidence,
+            null,
+            provenance.ToImmutable(),
+            ImmutableArray.Create(new EvaluationDiagnostic(code, message)));
+    }
+
+    private static DumpQueryPlanFieldKind? ClassifyField(ClrmdInstanceFieldInfo field)
+    {
+        if (field.IsNullableInt32)
+        {
+            return DumpQueryPlanFieldKind.NullableInt32;
+        }
+
+        if (string.Equals(field.ElementType, "Int32", StringComparison.Ordinal))
+        {
+            return DumpQueryPlanFieldKind.Int32;
+        }
+
+        return string.Equals(field.ElementType, "String", StringComparison.Ordinal)
+            ? DumpQueryPlanFieldKind.String
+            : null;
+    }
+
+    private static bool CoalesceIsCompatible(
+        DumpQueryPlanFieldKind fieldKind,
+        DumpQueryLiteral? literal) => literal is null || fieldKind switch
+    {
+        DumpQueryPlanFieldKind.Int32 => false,
+        DumpQueryPlanFieldKind.NullableInt32 =>
+            literal.Kind is DumpQueryLiteralKind.Int32 or DumpQueryLiteralKind.Null,
+        DumpQueryPlanFieldKind.String =>
+            literal.Kind is DumpQueryLiteralKind.String or DumpQueryLiteralKind.Null,
+        _ => false,
+    };
+
     private static EvaluationResult<DumpQueryValue> InvalidCoalesceType(
         EvaluationEvidenceContext context,
         ImmutableArray<EvaluationProvenance>.Builder provenance) =>
@@ -348,6 +580,18 @@ public static class DumpQueryEngine
             ImmutableArray.Create(new EvaluationDiagnostic(
                 "QUERY_COALESCE_TYPE_UNSUPPORTED",
                 "The null-coalescing literal is incompatible with the selected field type.")));
+
+    private static void AppendCoalesceProvenance(
+        ImmutableArray<EvaluationProvenance>.Builder provenance,
+        DumpQueryPlan plan)
+    {
+        if (plan.HasCoalesce)
+        {
+            provenance.Add(new EvaluationProvenance(
+                EvaluationProvenanceKind.Transformation,
+                CoalesceProvenanceId));
+        }
+    }
 
     private static EvaluationResult<DumpQueryValue> CreateResult(
         EvaluationEvidenceContext context,
@@ -367,6 +611,20 @@ public static class DumpQueryEngine
             context,
             provenance,
             diagnostics);
+
+    private static EvaluationEvidenceContext CreatePlanContext(
+        ClrmdDumpSession session,
+        DumpQueryPlan plan,
+        bool rawMemoryReadBoundApplied,
+        bool observedStringBoundApplied) =>
+        CreateEvidenceContext(
+            session,
+            plan.RootBinding.Root,
+            plan.RootBinding.AppliedBounds,
+            plan.FieldSelectionBounds,
+            plan.ParserBounds,
+            rawMemoryReadBoundApplied,
+            observedStringBoundApplied);
 
     private static EvaluationEvidenceContext CreateEvidenceContext(
         ClrmdDumpSession session,
@@ -483,23 +741,98 @@ public static class DumpQueryEngine
         }
     }
 
-    private static bool ReturnedOutcomeReachedRawMemoryRead(
-        ImmutableArray<Interpreter.Host.Abstractions.MemoryReadResult> evidence)
+    private static string CreateParsedRequestProvenanceId(ParsedDumpQuery query)
     {
-        // ClrmdProcessMemoryReader turns every expected backend read failure into a MemoryReadResult. The admitted
-        // primitive and string paths validate their sizes and address ranges before calling it. Consequently, every
-        // returned outcome that reached Memory.Read retains at least one read; disposal or an unexpected runtime
-        // exception escapes instead of producing an EvaluationResult whose applied bounds could be understated.
-        return !evidence.IsEmpty;
+        var builder = new StringBuilder();
+        AppendCanonicalString(builder, "dump-query-request-v1");
+        AppendCanonicalString(builder, query.RootName);
+        AppendCanonicalString(builder, query.FieldName);
+        if (query.CoalesceLiteral is null)
+        {
+            AppendCanonicalString(builder, "none");
+        }
+        else
+        {
+            AppendCanonicalString(builder, query.CoalesceLiteral.Kind.ToString());
+            AppendCanonicalString(builder, query.CoalesceLiteral.Kind switch
+            {
+                DumpQueryLiteralKind.Null => string.Empty,
+                DumpQueryLiteralKind.Int32 =>
+                    query.CoalesceLiteral.Int32Value.ToString(CultureInfo.InvariantCulture),
+                DumpQueryLiteralKind.String => query.CoalesceLiteral.StringValue!,
+                _ => throw new InvalidOperationException("The parsed literal kind is invalid."),
+            });
+        }
+
+        var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())))
+            .ToLowerInvariant();
+        return $"dump-query-request:sha256:{digest}";
     }
+
+    private static bool TryCreateRawRequestProvenanceId(
+        string? expression,
+        string? rootName,
+        out string provenanceId)
+    {
+        if (expression?.Length > DumpQueryParser.MaximumExpressionLength ||
+            rootName?.Length > DumpQueryParser.MaximumIdentifierLength)
+        {
+            provenanceId = string.Empty;
+            return false;
+        }
+
+        var builder = new StringBuilder();
+        AppendCanonicalString(builder, "dump-query-input-v1");
+        AppendCanonicalString(builder, expression is null ? "null" : "value");
+        AppendCanonicalString(builder, expression ?? string.Empty);
+        AppendCanonicalString(builder, rootName is null ? "null" : "value");
+        AppendCanonicalString(builder, rootName ?? string.Empty);
+        var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())))
+            .ToLowerInvariant();
+        provenanceId = $"dump-query-input:sha256:{digest}";
+        return true;
+    }
+
+    private static void AppendCanonicalString(StringBuilder builder, string value)
+    {
+        builder.Append(value.Length.ToString(CultureInfo.InvariantCulture));
+        builder.Append(':');
+        foreach (var character in value)
+        {
+            builder.Append(((int)character).ToString("X4", CultureInfo.InvariantCulture));
+        }
+    }
+
+    private static EvaluationProvenance CreateFieldProvenance(
+        ClrmdHeapObjectInfo root,
+        ClrmdInstanceFieldInfo field) => new(
+            EvaluationProvenanceKind.RuntimeStructure,
+            root.Snapshot.MemorySourceId,
+            field.Address,
+            field.Size,
+            field.Size);
+
+    private static bool ReturnedOutcomeReachedRawMemoryRead(
+        ImmutableArray<Interpreter.Host.Abstractions.MemoryReadResult> evidence) => !evidence.IsEmpty;
 
     private static bool RootEvidenceBelongsToSession(
         ClrmdDumpSession session,
-        ClrmdHeapObjectInfo root) =>
-        root.Snapshot == session.Snapshot &&
-        root.Module.Identity.Snapshot == session.Snapshot &&
-        root.Evidence.All(read =>
+        DumpQueryRootBinding binding)
+    {
+        if (binding.Snapshot != session.Snapshot)
+        {
+            return false;
+        }
+
+        if (binding.Root is { } root &&
+            (root.Snapshot != session.Snapshot || root.Module.Identity.Snapshot != session.Snapshot))
+        {
+            return false;
+        }
+
+        return binding.Evidence.All(read =>
             string.Equals(read.SourceId, session.Memory.SourceId, StringComparison.Ordinal));
+    }
 
     private static void AppendMemoryProvenance(
         ImmutableArray<EvaluationProvenance>.Builder builder,
@@ -518,8 +851,5 @@ public static class DumpQueryEngine
 
     private static void AppendProvenance(
         ImmutableArray<EvaluationProvenance>.Builder builder,
-        ImmutableArray<EvaluationProvenance> evidence)
-    {
-        builder.AddRange(evidence);
-    }
+        ImmutableArray<EvaluationProvenance> evidence) => builder.AddRange(evidence);
 }

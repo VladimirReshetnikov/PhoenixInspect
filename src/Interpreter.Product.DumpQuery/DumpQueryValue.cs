@@ -10,7 +10,7 @@ namespace Interpreter.Product.DumpQuery;
 /// </remarks>
 public enum DumpQueryValueKind
 {
-    /// <summary>An exactly observed null reference.</summary>
+    /// <summary>An exact null from a supported reference or nullable-value field.</summary>
     Null,
 
     /// <summary>An exactly decoded signed 32-bit integer.</summary>
@@ -41,7 +41,8 @@ public sealed class DumpQueryValue
 
     /// <summary>
     /// Gets the string or known prefix when <see cref="Kind"/> is <see cref="DumpQueryValueKind.String"/>.
-    /// Exact null is represented by <see cref="DumpQueryValueKind.Null"/>, never by this property's null value.
+    /// Exact null from a supported reference or nullable-value field is represented by
+    /// <see cref="DumpQueryValueKind.Null"/>, never by this property's null value.
     /// </summary>
     public string? StringValue { get; }
 

@@ -81,18 +81,19 @@ public sealed class ForeignSnapshotIsolationIntegrationTests
             Assert.Null(text.Value);
             Assert.Empty(text.Evidence);
 
+            var rootSelectionBounds = ImmutableArray.Create(
+                new EvaluationDeterministicBound(
+                    "root-selection.maximum-handles",
+                    objectSearch.MaximumHandlesScanned),
+                new EvaluationDeterministicBound(
+                    "root-selection.maximum-matches",
+                    objectSearch.MaximumMatches));
             var query = DumpQueryEngine.Evaluate(
                 secondSession,
                 "root.Marker",
                 "root",
                 foreignObject,
-                ImmutableArray.Create(
-                    new EvaluationDeterministicBound(
-                        "root-selection.maximum-handles",
-                        objectSearch.MaximumHandlesScanned),
-                    new EvaluationDeterministicBound(
-                        "root-selection.maximum-matches",
-                        objectSearch.MaximumMatches)));
+                rootSelectionBounds);
             Assert.Equal(EvaluationCompletionStatus.Blocked, query.Completion);
             Assert.Equal(EvaluationEvidenceStatus.Conflict, query.Evidence);
             Assert.Equal(secondSession.Snapshot.MemorySourceId, query.Context.Snapshot.SourceId);
@@ -106,6 +107,40 @@ public sealed class ForeignSnapshotIsolationIntegrationTests
                 query.Provenance,
                 static provenance => provenance.Kind == EvaluationProvenanceKind.DumpMemory);
             Assert.Equal("DUMP_SNAPSHOT_MISMATCH", Assert.Single(query.Diagnostics).Code);
+
+            var rootBinding = DumpQueryRootBinding.FromSearchResult("root", objectSearch);
+            var foreignPreparation = DumpQueryEngine.Prepare(secondSession, "root.Marker", rootBinding);
+            Assert.False(foreignPreparation.IsSuccess);
+            Assert.Null(foreignPreparation.Plan);
+            var preparationFailure = Assert.IsType<EvaluationResult<DumpQueryValue>>(
+                foreignPreparation.Failure);
+            Assert.Equal(EvaluationCompletionStatus.Blocked, preparationFailure.Completion);
+            Assert.Equal(EvaluationEvidenceStatus.Conflict, preparationFailure.Evidence);
+            Assert.Equal("DUMP_SNAPSHOT_MISMATCH", Assert.Single(preparationFailure.Diagnostics).Code);
+            Assert.DoesNotContain(
+                preparationFailure.Provenance,
+                static provenance => provenance.Kind == EvaluationProvenanceKind.DumpMemory);
+
+            var localPreparation = DumpQueryEngine.Prepare(firstSession, "root.Marker", rootBinding);
+            Assert.True(localPreparation.IsSuccess);
+            var localPlan = Assert.IsType<DumpQueryPlan>(localPreparation.Plan);
+            var foreignPlanEvaluation = DumpQueryEngine.Evaluate(secondSession, localPlan);
+            Assert.Equal(EvaluationCompletionStatus.Blocked, foreignPlanEvaluation.Completion);
+            Assert.Equal(EvaluationEvidenceStatus.Conflict, foreignPlanEvaluation.Evidence);
+            Assert.Equal(secondSession.Snapshot.MemorySourceId, foreignPlanEvaluation.Context.Snapshot.SourceId);
+            Assert.Equal(EvaluationIdentityAvailability.Unavailable, foreignPlanEvaluation.Context.Module.Availability);
+            Assert.Null(foreignPlanEvaluation.Context.Module.SourceId);
+            Assert.DoesNotContain(
+                foreignPlanEvaluation.Context.Bounds,
+                static bound => bound.Name == "dump.memory-read.bytes");
+            Assert.DoesNotContain(
+                foreignPlanEvaluation.Provenance,
+                static provenance => provenance.Kind == EvaluationProvenanceKind.DumpMemory);
+            Assert.Contains(
+                foreignPlanEvaluation.Provenance,
+                provenance => provenance.Kind == EvaluationProvenanceKind.Policy &&
+                    provenance.SourceId == localPlan.ProvenanceId);
+            Assert.Equal("DUMP_SNAPSHOT_MISMATCH", Assert.Single(foreignPlanEvaluation.Diagnostics).Code);
         }
         finally
         {
