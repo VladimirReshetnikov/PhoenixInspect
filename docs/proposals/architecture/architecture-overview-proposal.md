@@ -8,11 +8,10 @@
 
 The funded product direction is a **deterministic, read-only expression evaluator grounded in a .NET dump**. The interpreter is enabling technology for expressions that eventually require user IL; it is not presently a general-purpose execution platform.
 
-The proof obligations are deliberately ordered. The first two have exact-HEAD hosted closure evidence for their
-revised non-cybersecurity scopes. The third is implemented and locally verified at hardened implementation commit
-`19c292f9f`; all four jobs also passed at that exact implementation checkpoint in [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Its later exact
-documentation-closure commit and hosted run remain pending:
+The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
+revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
+commit `de6cea124` passed all four required jobs in [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237):
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -208,7 +207,9 @@ counted dump evidence; it reopens and rebinds the dump to reproduce identities, 
 canonical transcript. The independently opened disk PE remains a late comparison oracle. These implementation facts
 and all required non-cybersecurity lanes pass locally at `19c292f9f`; [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) also passed all four jobs.
-Formal hosted W3 documentation closure is not yet claimed.
+Exact documentation-closure commit `de6cea124` then passed all four required jobs in [closure run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), formally closing W3's defined
+non-cybersecurity scope.
 
 ## 5. Identity model
 
@@ -290,8 +291,9 @@ opened SRM modules. Its dump E2 proof additionally closes and reopens the dump, 
 object, reprojects the method/field from counted evidence, reimports the exact field cell, and reproduces structural
 identities plus the canonical execution transcript. This passes locally at hardened implementation commit `19c292f9f`, whose
 four hosted jobs also passed in [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767); exact pushed
-documentation-closure and hosted-run evidence remain pending.
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Exact documentation-closure
+commit `de6cea124` and [run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237)
+close that evidence chain with all four required jobs passing.
 
 ## 8. Status protocols
 

@@ -41,8 +41,10 @@ tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both docum
 [GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656)
 historically passed all four jobs at `12b6ef942`. [Run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact
-hardened checkpoint `19c292f9f`. Hosted W3 closure is not claimed here; it requires every required job to pass on the
-later exact pushed documentation-closure commit.
+hardened checkpoint `19c292f9f`. [Run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
+required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
+non-cybersecurity scope. That closure does not add product method evaluation or cybersecurity evidence.
 
 ## Active decision and remaining evidence gaps
 

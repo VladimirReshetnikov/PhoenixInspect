@@ -35,8 +35,10 @@ build with zero warnings and errors; 103 semantic/admission/differential tests; 
 dump tests; 1 optimized-context dump test; and the focused 2-test W3 dump lane, all with zero skips. W3 does not add a
 product-facing method evaluator or claim historical execution. [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) also passed all four jobs at
-the exact implementation commit. Formal closure remains pending until the exact pushed documentation-closure commit
-passes all required hosted jobs.
+the exact implementation commit. [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
+required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
+non-cybersecurity scope.
 
 A versioned malformed-minidump mutation corpus and a Windows x64 one-shot worker are retained as separately landed,
 non-gating prototype work outside W1, W2, and W3. The worker's malformed-artifact test passed locally at its checkpoint.

@@ -260,7 +260,10 @@ lane, and both documentation guards, all with zero skips. The primary checkpoint
 [GitHub Actions run
 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656). [Run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact
-hardened checkpoint `19c292f9f`. Formal W3 closure is still pending on the later exact pushed documentation-closure commit.
+hardened checkpoint `19c292f9f`. [Run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
+required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
+non-cybersecurity architecture-proof scope.
 The W2 query grammar continues to reject every method/getter execution entry point.
 
 **Research target (not implemented)**
@@ -441,8 +444,9 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
   `String`/`Int32`/`Nullable<Int32>` behavior, and complete-corpus canonical replay; complete for its
   non-cybersecurity scope at exact closure commit `5bed47100`.
 * **W3:** closed scenario-derived concrete E1/E2 IL slice plus CoreCLR and real-dump getter evidence implemented at
-  hardened checkpoint `19c292f9f`; local non-cybersecurity lanes and its exact-checkpoint four-job hosted run pass,
-  while the later exact-commit hosted documentation closure is still pending.
+  hardened checkpoint `19c292f9f`; formally closed for its defined non-cybersecurity architecture-proof scope at exact
+  documentation commit `de6cea124` after [GitHub Actions run
+  29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
 * **W4:** decomposed, evidence-gated unknown-aware counterfactual method evaluation. Calls, broader opcodes, generics,
   PDB-backed context, and a second meaningful value domain remain gates rather than inherited W3 capability.
 

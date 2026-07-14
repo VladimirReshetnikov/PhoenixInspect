@@ -21,8 +21,10 @@ Local headless verification passed a zero-warning 15-project Release build, 103 
 integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both
 documentation guards. [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at
-the same exact pushed implementation checkpoint. W3 is implemented and validated for its defined non-cybersecurity
-scope; formal closure still requires the exact pushed documentation-closure commit to pass those jobs.
+the same exact pushed implementation checkpoint. Exact documentation-closure commit
+`de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined
+non-cybersecurity scope.
 
 This checkpoint does not implement product method evaluation, calls, branches, broader opcode families, generic
 context reconstruction, Portable PDB projection, a second meaningful value domain, or cybersecurity validation.

@@ -97,8 +97,10 @@ Hardened W3 checkpoint `19c292f9f` is locally verified through locked restore, t
 build, Markdown/headless guards, 103 non-cybersecurity unit tests, 67 fast integration tests, 5 ordinary dump tests,
 1 optimized-context dump test, and the focused 2-test W3 lane. All four hosted jobs also passed at that exact
 implementation checkpoint in [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). The exact later
-documentation-closure commit and its hosted W3 run remain pending.
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
+documentation commit `de6cea124`; [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+at that exact commit.
 
 The external-worker projects are separately executable, and their four-test package includes a locally passing real
 malformed-artifact process checkpoint. This is non-gating prototype work outside W1–W3; its presence does not admit
@@ -149,7 +151,8 @@ at exact W2 closure commit `5bed47100`; the W1 run above remains W1-only history
 The later hardened W3 checkpoint `19c292f9f` passes the same headless, non-cybersecurity workflow locally with
 103 unit, 67 fast integration, 5 ordinary dump, 1 optimized-context, and 2 focused W3 tests; [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passes all four jobs at that
-implementation commit. No formal W3 closure is claimed until the exact pushed documentation-closure commit passes all
-required jobs.
+implementation commit. Formal W3 closure is recorded at exact documentation commit `de6cea124`, whose [GitHub Actions
+run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required
+jobs.
 
 The physical layout and contracts remain prototype hypotheses. They may change freely as W1–W4 force better boundaries.

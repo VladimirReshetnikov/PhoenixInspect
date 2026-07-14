@@ -1,4 +1,4 @@
-> **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-only evaluator. The closed W3 concrete opcode/memory proof is implemented and locally verified at hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-checkpoint run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767), while exact hosted documentation closure remains pending. CFG/fixpoint analysis, broad unknown propagation, and multi-mode reuse remain gated research. API sketches below are illustrative, not current contracts.
+> **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-only evaluator. The closed W3 concrete opcode/memory proof was hardened at implementation checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124`; [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs at that exact closure commit. CFG/fixpoint analysis, broad unknown propagation, and multi-mode reuse remain gated research. API sketches below are illustrative, not current contracts.
 
 Below is a **low-level technical proposal** for a reusable **CIL (ECMA-335) interpreter framework** whose distinguishing hypothesis is that incomplete concrete state, provenance-bearing unknowns, and later abstract interpretation can share opcode semantics.
 
@@ -685,10 +685,11 @@ SRM supplies the interpreter activation shape. The same/fresh metadata replay ca
 
 The generated dump E2 case goes further: method shape/body and the exact correlated `Int32` field cell come from
 counted dump evidence, and closing/reopening/rebinding the dump reproduces structural identities, state, memory,
-budget, events, and transcript. This passes locally at hardened checkpoint `19c292f9f`; all four hosted jobs also pass in
+budget, events, and transcript. This passed locally at hardened checkpoint `19c292f9f`, whose four hosted jobs passed in
 [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767), while exact documentation
-closure remains pending.
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 then closed formally at
+exact documentation commit `de6cea124` when [run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
 
 For later supported verifiable IL:
 

@@ -24,9 +24,10 @@ reopen/rebind. Local headless verification passed locked restore, the zero-warni
 103 unit tests, 67 fast tests, 5 ordinary dump tests, 1 optimized-context test, and the focused 2-test W3 lane with no
 skips. [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at the
-exact implementation commit. Hosted documentation-closure evidence is still pending, so W3 is implemented and
-validated but not yet formally closed. A whole-file-identified disk PE remains only an independent oracle, never dump
-resolver input.
+exact implementation commit. [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) then passed all four required
+jobs at exact documentation-closure commit `de6cea124`, so W3 is formally closed for its defined non-cybersecurity
+scope. A whole-file-identified disk PE remains only an independent oracle, never dump resolver input.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 

@@ -8,10 +8,11 @@
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
 and W3 concrete-IL proofs. It is descriptive, not a promise of compatibility. Hardened W3 checkpoint `19c292f9f`
-passes the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767); exact hosted documentation
-closure remains pending. A contract is added only with an executable consumer and is removed when it gets ahead of
-code.
+passed the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
+documentation commit `de6cea124`; [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+at that exact commit. A contract is added only with an executable consumer and is removed when it gets ahead of code.
 
 ## Active contracts
 

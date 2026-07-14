@@ -293,9 +293,10 @@ Hardened W3 checkpoint `19c292f9f` passes locally through the same headless work
 15-project Release build with zero warnings/errors; Markdown-link and headless-workflow guards; 103 non-cybersecurity
 unit tests; 67 fast integration tests; 5 ordinary dump tests; 1 optimized-context test; and the focused 2-test W3
 lane. All four jobs also pass at that exact implementation commit in [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). This is implementation-
-checkpoint evidence, not formal W3 closure; closure awaits the exact pushed documentation-closure commit and its
-required hosted jobs.
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Formal W3 closure is recorded
+at exact documentation commit `de6cea124`; [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+at that exact commit.
 
 Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.
 

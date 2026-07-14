@@ -4,8 +4,10 @@
 
 Supporting design for W3/W4. The closed W3 concrete state/domain contract is implemented and locally verified at
 hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Exact hosted documentation
-closure remains pending. Fixpoint, async, dynamic, and virtual-debug state are gated research.
+29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
+documentation commit `de6cea124`; [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+at that exact commit. Fixpoint, async, dynamic, and virtual-debug state are gated research.
 
 ## Scope
 

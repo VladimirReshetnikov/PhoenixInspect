@@ -18,8 +18,8 @@ observation into persistent memory, and executes the getter through the same dom
 full-content-identified disk PE are independent oracles only. These are architectural proofs, not a production method
 evaluator.
 
-With W1 and W2 closed and W3 implemented locally, the following remain research backlog rather than delivery
-commitments until their own entry gates pass:
+With W1–W3 closed for their stated scopes, the following remain research backlog rather than delivery commitments until
+their own entry gates pass:
 
 - virtual Step Into/Over/Out, undo, and branch exploration,
 - whole-method CFG/fixpoint abstract interpretation,
@@ -35,9 +35,10 @@ Scope expands only through an explicit decision gate backed by executable eviden
 Its deliberately narrow contract is the [Restricted Dump Query v1
 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any increment beyond that contract
 requires an explicit scope decision. Representative private-production measurement is outside W1, already-landed
-worker/corpus code remains separately scoped non-gating prototype work, and W4 remains gated. W3 implementation and
-local evidence are complete at hardened checkpoint `19c292f9f`; formal W3 closure remains pending until the exact pushed
-documentation-closure commit passes every required hosted job.
+worker/corpus code remains separately scoped non-gating prototype work, and W4 remains gated. W3 is complete for its
+defined non-cybersecurity architecture-validation scope at exact documentation-closure commit
+`de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
 
 ## 2) LOC sizing and work-in-progress
 
@@ -317,13 +318,15 @@ delivered line once and therefore supplies the authoritative `+8,842/-1,650` tot
 earlier arithmetic/domain/memory spike already represented in W0's mixed-file attribution range. The original forecast
 was therefore materially low and remains visible rather than being rewritten post hoc.
 
-**Status:** **Implementation and local validation complete; hosted closure pending.** Commit `19c292f9f` passed locked
+**Status:** **Complete for the defined non-cybersecurity W3 architecture-validation scope.** Hardened implementation
+checkpoint `19c292f9f` passed locked
 restore; a fifteen-project Release build with zero warnings/errors; Markdown-link and headless-workflow guards; 103
 non-cybersecurity unit tests; 67 fast integration tests; 5 ordinary dump tests; 1 optimized-context test; and the
-focused 2-test W3 dump lane, all headlessly with zero skips. Formal completion still requires the exact pushed
-documentation-closure commit to pass all required hosted jobs. [GitHub Actions run
+focused 2-test W3 dump lane, all headlessly with zero skips. [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at the
-exact implementation commit; it validates the implementation checkpoint but is not substituted for that final gate.
+exact implementation commit. Exact documentation-closure commit
+`de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), satisfying the final W3 gate.
 
 **Goal:** validate the domain-parametric interpreter on a scenario-derived, closed opcode set.
 
@@ -373,7 +376,7 @@ of at most 3,500 LOC each
 
 **Entry criteria**
 
-- W1/W2 are closed; W3's implementation criteria pass locally, and its exact documentation-closure commit must pass CI.
+- W1–W3 are closed for their stated scopes.
 - Real scenarios demonstrate that method execution adds value beyond W2 queries.
 - Each W4 slice has an explicit estimate of at most 3,500 implementation LOC before work begins.
 

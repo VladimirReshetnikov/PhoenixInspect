@@ -148,8 +148,10 @@ gates, all excluding `Scope=Cybersecurity`. At exact hardened implementation che
 The hardened implementation checkpoint realizes `+8,842/-1,650` hand-written LOC (`+5,362/-928` production and
 `+3,480/-722` tests/fixtures) plus 39 generated lock-file lines. All eleven gates pass locally, and [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at
-that exact pushed code checkpoint. Formal W3 closure still requires the exact pushed documentation-closure commit to
-pass the same required jobs.
+that exact pushed code checkpoint. Exact documentation-closure commit
+`de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), formally closing W3 for its
+defined non-cybersecurity scope.
 
 ## Non-gating malformed-artifact corpus
 
@@ -237,8 +239,9 @@ additional ordinary-dump facts. The Markdown-link and headless-workflow guards a
 checkpoint realizes `+8,842/-1,650` hand-written LOC (`+5,362/-928` production and `+3,480/-722` tests/fixtures) plus
 39 generated lock-file lines. [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs on
-the same exact pushed implementation checkpoint. It corroborates the local matrix but is not substituted for the
-documentation-closure gate.
+the same exact pushed implementation checkpoint. Exact documentation-closure commit
+`de6cea124488d503d13c61a4c8e67203a16d06f9` passed the same four-job workflow in [run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), satisfying the closure gate.
 
 Restore and build remain repository-wide, so all 15 projects are compiled as topology/compilation-health evidence.
 Every current test invocation includes `Scope!=Cybersecurity`; the five dedicated hostile-artifact corpus facts are
@@ -246,14 +249,16 @@ excluded and no cybersecurity validation is claimed.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
-## Next evidence gates
+## Post-W3 evidence gates
 
 The generated-fixture W1–W2 path and its prior exact-commit hosted closure evidence remain unchanged. W3's structural
 identity, SRM projection, metadata-derived activation, typed whole-body admission, concrete-domain/persistent-memory
 laws, direct/adjusted getter, CoreCLR differential, same/fresh-session replay, and counted-dump E2 gates all pass at
 exact hardened implementation checkpoint `19c292f9f`, together with the full local repository matrix and all four jobs
-of hosted run 29374585767. W3 is implemented and validated for its defined non-cybersecurity scope; formal closure is
-pending the exact pushed documentation-closure commit and its required hosted jobs.
+of hosted run 29374585767. Exact documentation-closure commit
+`de6cea124488d503d13c61a4c8e67203a16d06f9` passed all four required jobs in [run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined
+non-cybersecurity scope.
 
 Beyond W3, a second meaningful value domain is required before any shared multi-mode-engine claim. New opcodes
 or method families enter only through a scenario-derived compiler fixture and its complete dependency closure; opcode

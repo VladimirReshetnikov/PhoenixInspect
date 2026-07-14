@@ -63,8 +63,10 @@ An experiment must implement the same projected contract and run the same confor
   arithmetic operator and `nop`. The primary checkpoint `12b6ef942` passed all four jobs in [GitHub Actions run
   29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656). [Run
   29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at
-  exact hardened checkpoint `19c292f9f`. Formal W3 closure remains pending on the later exact pushed
-  documentation-closure commit.
+  exact hardened checkpoint `19c292f9f`. [Run
+  29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all
+  four required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
+  non-cybersecurity scope.
 - This evidence does not implement Portable PDBs, generic-context substitution, broader opcode/token families, a
   second value domain, or a product-facing method evaluator.
 
@@ -88,5 +90,4 @@ Remaining stabilization gates are deliberately capability-driven:
 
 - generic signature and instantiation fixtures when generics enter an active milestone;
 - Portable PDB sequence-point/local-scope fixtures when an expression or stepping path actually needs them;
-- broader bounded malformed/truncated artifact tests before any broader artifact-input promise; and
-- an exact pushed documentation-closure commit with every required hosted job passing before W3 is recorded closed.
+- broader bounded malformed/truncated artifact tests before any broader artifact-input promise.

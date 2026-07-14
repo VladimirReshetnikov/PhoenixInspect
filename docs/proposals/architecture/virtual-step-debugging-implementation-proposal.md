@@ -1,6 +1,8 @@
 > **Roadmap status: research backlog.** This is counterfactual stepping from snapshot/assumed state, not replay of
 > historical execution. W3's interpreted-method/persistent-memory proof is implemented and locally/hosted-checkpoint
-> verified at hardened checkpoint `19c292f9f`, but exact documentation closure remains pending. Even after W3 closes, virtual stepping
+> verified at hardened checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124`; [GitHub
+> Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four
+> required jobs at that exact closure commit. Virtual stepping still
 > requires an admitted W4 method-execution slice with deterministic pause/event contracts, source mapping, and
 > generalized stop-on-throw behavior. Debugger-grade Step Out additionally requires handler-transfer EH.
 
@@ -739,8 +741,10 @@ same-module FieldDef `ldfld`. The injected `IMemoryModel` returns exact/non-exac
 objects do not fabricate defaults for absent fields. Exact typed null creates a budgeted/evented, idempotent terminal
 `TargetException` state. Compiler/CoreCLR and generated real-dump tests cover direct/adjusted getters and fresh-session
 replay. These implementation facts pass locally at hardened checkpoint `19c292f9f`, whose four jobs also pass in [implementation-
-checkpoint run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767); exact hosted
-documentation closure remains pending.
+checkpoint run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally
+closed at exact documentation commit `de6cea124`; [GitHub Actions run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+at that exact commit.
 
 This gives later stepping work a real frame stack, persistent semantic memory, truthful low-level events/statuses, and
 terminal target-exception boundary. It does **not** provide command history, undo, stop predicates, source maps,

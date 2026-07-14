@@ -121,8 +121,9 @@ compiler/CoreCLR arithmetic/overflow/getter/null differential comparison, same/f
 counted-dump import/execution/reopen replay. Tests assert resolver and memory call counts, exact budget deltas, ordered
 events, failure-state preservation, and emitted compiler opcode shapes—not just final values. [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs
-at that exact implementation checkpoint. The later exact pushed documentation-closure commit has not yet passed the
-hosted workflow, so W3 is implemented and verified but is not yet recorded as complete.
+at that exact implementation checkpoint. Exact documentation-closure commit `de6cea124` then passed all four required
+jobs in [run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), so W3 is formally
+closed for its defined non-cybersecurity scope.
 
 ### Corrupt-backend normalization and non-gating malformed-input corpus
 
@@ -161,7 +162,7 @@ is not a W1 gate.
 | Repository build | Stable .NET 10.0.2xx feature-band/minimum-patch pin, central versions, committed lock files, deterministic Release build, warnings-as-errors under `CI=true`. | `CI-enforced` for exact completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: locked restore and the zero-warning Release build passed in GitHub run 29309374548. |
 | Fast tests | Unit/domain/admission/differential/determinism/metadata suite plus payload-safe harness start/readiness failure coverage is checked in. | The same run passed 60 semantic/differential tests and 40 fast adapter/harness tests. |
 | Dump integration | Required Windows dump category and a bounded target/dump harness are checked in. | The dependent Windows job passed 3/3 dump tests. An inability to create/load the dump remains a failure, not a passing skip. |
-| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes carry explicit replayable evidence context. W3's successful prepared-execution test projection separately retains owner-evidence identity, structural method/field facts, imported memory, resolver/load counts, state, budget, events, and return outcome, then serializes those documented observables canonically. The same dump reopened in a fresh session reproduces module/root selection, W2 result/plan bytes, and W3 successful prepared-execution identity/transcript/fingerprint. Target-null idempotence and CoreCLR agreement are asserted separately rather than claimed as a fresh-session canonical transcript. | W1 passed at exact closure commit `e2580a8a8` in run 29353198889; W3's expanded replay passes locally at hardened implementation commit `19c292f9f`, whose exact [implementation-checkpoint run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs, and awaits hosted documentation closure. |
+| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes carry explicit replayable evidence context. W3's successful prepared-execution test projection separately retains owner-evidence identity, structural method/field facts, imported memory, resolver/load counts, state, budget, events, and return outcome, then serializes those documented observables canonically. The same dump reopened in a fresh session reproduces module/root selection, W2 result/plan bytes, and W3 successful prepared-execution identity/transcript/fingerprint. Target-null idempotence and CoreCLR agreement are asserted separately rather than claimed as a fresh-session canonical transcript. | W1 passed at exact closure commit `e2580a8a8` in run 29353198889; W3's expanded replay passed at hardened implementation checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124` in [run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). |
 | Documentation truth | The evidence matrix distinguishes raw dump bytes, dump metadata-derived facts, ClrMD-decoded runtime structures, whole-file-identified disk oracle facts, and explicit fixture inputs. `eng/verify-markdown-links.ps1` validates repository-local inline/reference destinations with stable file/line diagnostics. | The dedicated documentation-consistency job passed on the exact completion commit. Keep the evidence matrix synchronized whenever an evidence fallback changes. |
 
 The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
@@ -251,10 +252,10 @@ displayed.
 This verifies all behavioral portions of W3 and the implementation-checkpoint portion of its repository-wide gate.
 [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs
-at the same exact pushed implementation commit. It does not satisfy the separate requirement that the later exact
-pushed documentation-closure commit pass every hosted job; that evidence remains pending. The implementation
-checkpoint realizes `+8,842/-1,650` hand-written LOC (`+5,362/-928` production and `+3,480/-722` tests) plus 39
-generated lock-file lines.
+at the same exact pushed implementation commit. Exact documentation-closure commit `de6cea124` and [run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently satisfied the
+separate hosted closure requirement. The implementation checkpoint realizes `+8,842/-1,650` hand-written LOC
+(`+5,362/-928` production and `+3,480/-722` tests) plus 39 generated lock-file lines.
 
 ## 3) Active test layers
 
@@ -452,9 +453,9 @@ W3 has eleven normative executable-evidence gates:
 All eleven pass locally at hardened implementation commit `19c292f9f` with the exact matrix recorded in section 2;
 [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) also passed all four required
-jobs at that exact commit. W3 is complete only after the later exact pushed documentation-closure commit passes every
-required hosted job; that hosted closure is pending. Neither the implementation nor its validation includes
-`Scope=Cybersecurity`.
+jobs at that exact commit. Exact documentation-closure commit `de6cea124` passed all four required jobs in [run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), formally closing W3. Neither
+the implementation nor its validation includes `Scope=Cybersecurity`.
 
 ### W4 — unknown-aware method evaluation
 
