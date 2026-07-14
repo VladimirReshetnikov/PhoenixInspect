@@ -8,8 +8,23 @@ internal static class Program
     {
     }
 
-    private static void Main()
+    private static int Main(string[] args)
     {
+        if (args is ["--harness-invalid-readiness"])
+        {
+            Console.WriteLine("NOT_READY secret-readiness-marker-canary");
+            Console.Out.Flush();
+            Thread.Sleep(Timeout.Infinite);
+            return 70;
+        }
+
+        if (args is ["--harness-exit-before-ready"])
+        {
+            Console.Error.WriteLine("secret-readiness-stderr-canary");
+            Console.Error.Flush();
+            return 71;
+        }
+
         if (Environment.GetEnvironmentVariable("OPENAI_API_KEY") is not null ||
             Environment.GetEnvironmentVariable("GITHUB_TOKEN") is not null ||
             Environment.GetEnvironmentVariable("GH_TOKEN") is not null ||
@@ -17,7 +32,7 @@ internal static class Program
         {
             Console.WriteLine("UNSAFE_ENVIRONMENT");
             Console.Out.Flush();
-            return;
+            return 72;
         }
 
         RetOnly();
@@ -32,6 +47,7 @@ internal static class Program
 
         Thread.Sleep(Timeout.Infinite);
         dumpProbeRoot.Free();
+        return 0;
     }
 }
 
