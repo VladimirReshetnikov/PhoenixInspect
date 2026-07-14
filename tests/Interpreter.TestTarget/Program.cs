@@ -90,6 +90,8 @@ internal sealed class DumpProbe
         Message = message;
         OptionalMessage = null;
         LongMessage = new string('x', 5000);
+        PresentCount = 73;
+        OptionalCount = null;
         Enabled = true;
     }
 
@@ -100,6 +102,10 @@ internal sealed class DumpProbe
     internal readonly string? OptionalMessage;
 
     internal readonly string LongMessage;
+
+    internal readonly int? PresentCount;
+
+    internal readonly int? OptionalCount;
 
     internal readonly bool Enabled;
 }
