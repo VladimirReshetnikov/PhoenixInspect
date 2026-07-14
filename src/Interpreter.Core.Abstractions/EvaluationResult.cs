@@ -215,6 +215,7 @@ public sealed class EvaluationResult<TValue>
         EvaluationCompleteness completeness,
         EvaluationEvidenceStatus evidence,
         EvaluationEffectStatus effects,
+        EvaluationEvidenceContext context,
         TValue? value,
         ImmutableArray<EvaluationProvenance> provenance,
         ImmutableArray<EvaluationDiagnostic> diagnostics)
@@ -224,6 +225,7 @@ public sealed class EvaluationResult<TValue>
         Completeness = completeness;
         Evidence = evidence;
         Effects = effects;
+        Context = context;
         Value = value;
         Provenance = provenance;
         Diagnostics = diagnostics;
@@ -244,6 +246,12 @@ public sealed class EvaluationResult<TValue>
     /// <summary>Gets the independently classified effect behavior.</summary>
     public EvaluationEffectStatus Effects { get; }
 
+    /// <summary>
+    /// Gets the explicit backend-neutral evidence context, including neutral context for results without an external
+    /// evidence source.
+    /// </summary>
+    public EvaluationEvidenceContext Context { get; }
+
     /// <summary>Gets the complete or partial value projection, when present.</summary>
     public TValue? Value { get; }
 
@@ -253,7 +261,7 @@ public sealed class EvaluationResult<TValue>
     /// <summary>Gets ordered stable diagnostics.</summary>
     public ImmutableArray<EvaluationDiagnostic> Diagnostics { get; }
 
-    /// <summary>Creates a validated multi-axis result envelope.</summary>
+    /// <summary>Creates a validated multi-axis result envelope with explicit neutral evidence context.</summary>
     /// <param name="semanticMode">The result's truth mode.</param>
     /// <param name="completion">How the request stopped.</param>
     /// <param name="completeness">How much of the answer is present.</param>
@@ -262,7 +270,10 @@ public sealed class EvaluationResult<TValue>
     /// <param name="value">The complete or partial value, or null when completeness is none.</param>
     /// <param name="provenance">Ordered provenance entries; a default array is normalized to empty.</param>
     /// <param name="diagnostics">Ordered diagnostics; a default array is normalized to empty.</param>
-    /// <returns>A result whose axes satisfy the active read-only result invariants.</returns>
+    /// <returns>
+    /// A result whose axes satisfy the active read-only result invariants and whose <see cref="Context"/> is
+    /// <see cref="EvaluationEvidenceContext.Neutral"/>.
+    /// </returns>
     public static EvaluationResult<TValue> Create(
         EvaluationSemanticMode semanticMode,
         EvaluationCompletionStatus completion,
@@ -270,6 +281,42 @@ public sealed class EvaluationResult<TValue>
         EvaluationEvidenceStatus evidence,
         EvaluationEffectStatus effects,
         TValue? value,
+        ImmutableArray<EvaluationProvenance> provenance = default,
+        ImmutableArray<EvaluationDiagnostic> diagnostics = default) =>
+        Create(
+            semanticMode,
+            completion,
+            completeness,
+            evidence,
+            effects,
+            value,
+            EvaluationEvidenceContext.Neutral,
+            provenance,
+            diagnostics);
+
+    /// <summary>Creates a validated multi-axis result envelope with an explicit evidence context.</summary>
+    /// <param name="semanticMode">The result's truth mode.</param>
+    /// <param name="completion">How the request stopped.</param>
+    /// <param name="completeness">How much of the answer is present.</param>
+    /// <param name="evidence">The supporting-evidence classification.</param>
+    /// <param name="effects">The independently classified effect behavior.</param>
+    /// <param name="value">The complete or partial value, or null when completeness is none.</param>
+    /// <param name="context">
+    /// The immutable evidence source, identity, fallback, and applied-bound context. Use
+    /// <see cref="EvaluationEvidenceContext.Neutral"/> when no external evidence context applies.
+    /// </param>
+    /// <param name="provenance">Ordered provenance entries; a default array is normalized to empty.</param>
+    /// <param name="diagnostics">Ordered diagnostics; a default array is normalized to empty.</param>
+    /// <returns>A result whose axes and explicit context satisfy the active read-only result invariants.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
+    public static EvaluationResult<TValue> Create(
+        EvaluationSemanticMode semanticMode,
+        EvaluationCompletionStatus completion,
+        EvaluationCompleteness completeness,
+        EvaluationEvidenceStatus evidence,
+        EvaluationEffectStatus effects,
+        TValue? value,
+        EvaluationEvidenceContext context,
         ImmutableArray<EvaluationProvenance> provenance = default,
         ImmutableArray<EvaluationDiagnostic> diagnostics = default)
     {
@@ -297,6 +344,8 @@ public sealed class EvaluationResult<TValue>
         {
             throw new ArgumentOutOfRangeException(nameof(effects));
         }
+
+        ArgumentNullException.ThrowIfNull(context);
 
         if (semanticMode is EvaluationSemanticMode.Observation or EvaluationSemanticMode.DerivedQuery &&
             effects != EvaluationEffectStatus.None)
@@ -341,6 +390,7 @@ public sealed class EvaluationResult<TValue>
             completeness,
             evidence,
             effects,
+            context,
             value,
             normalizedProvenance,
             normalizedDiagnostics);

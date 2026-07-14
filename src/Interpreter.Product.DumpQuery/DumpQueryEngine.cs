@@ -20,6 +20,24 @@ public static class DumpQueryEngine
     private const string GrammarProvenanceId = "dump-query:grammar-v1";
     private const string CoalesceProvenanceId = "dump-query:null-coalesce-v1";
 
+    private static readonly ImmutableArray<EvaluationDeterministicBound> EngineBounds =
+        ImmutableArray.Create(
+            new EvaluationDeterministicBound(
+                "query.expression.characters",
+                DumpQueryParser.MaximumExpressionLength),
+            new EvaluationDeterministicBound(
+                "query.root-name.characters",
+                DumpQueryParser.MaximumIdentifierLength),
+            new EvaluationDeterministicBound(
+                "query.field-name.characters",
+                DumpQueryParser.MaximumIdentifierLength),
+            new EvaluationDeterministicBound(
+                "query.string-literal.characters",
+                DumpQueryParser.MaximumStringLiteralLength),
+            new EvaluationDeterministicBound(
+                "query.observed-string.characters",
+                MaximumObservedStringCharacters));
+
     /// <summary>Evaluates one closed-grammar expression over a caller-selected dump root.</summary>
     /// <param name="session">The immutable dump session from which <paramref name="root"/> was selected.</param>
     /// <param name="expression">Untrusted expression text subject to deterministic syntax and length bounds.</param>
@@ -28,22 +46,35 @@ public static class DumpQueryEngine
     /// The already selected root object, or <see langword="null"/> when root selection produced no exact object.
     /// Missing root evidence remains unavailable and is never reinterpreted as a null target value.
     /// </param>
+    /// <param name="upstreamBounds">
+    /// Optional immutable bounds that the caller actually enforced before this operation, such as strong-handle scan
+    /// and retained-match caps used to select <paramref name="root"/>. The engine adds its parser, root-name,
+    /// field-name, literal, observed-string, and raw-read bounds. Callers must not report intended or unenforced
+    /// policies; a default array means no upstream bound is claimed.
+    /// </param>
     /// <returns>
     /// A multi-axis derived-query result. Exact null, partial or missing evidence, unsupported field types, and
     /// invalid syntax remain distinct outcomes with ordered provenance and stable secret-safe diagnostics.
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="session"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="upstreamBounds"/> contains a null entry, a duplicate name, or a name reserved by an
+    /// engine-applied bound.
+    /// </exception>
     public static EvaluationResult<DumpQueryValue> Evaluate(
         ClrmdDumpSession session,
         string? expression,
         string? rootName,
-        ClrmdHeapObjectInfo? root)
+        ClrmdHeapObjectInfo? root,
+        ImmutableArray<EvaluationDeterministicBound> upstreamBounds = default)
     {
         ArgumentNullException.ThrowIfNull(session);
+        var context = CreateEvidenceContext(session, root, upstreamBounds);
         var parsed = DumpQueryParser.Parse(expression, rootName);
         if (!parsed.IsSuccess)
         {
             return CreateResult(
+                context,
                 EvaluationCompletionStatus.Invalid,
                 EvaluationCompleteness.None,
                 EvaluationEvidenceStatus.Exact,
@@ -59,6 +90,7 @@ public static class DumpQueryEngine
         if (root is null)
         {
             return CreateResult(
+                context,
                 EvaluationCompletionStatus.Blocked,
                 EvaluationCompleteness.None,
                 EvaluationEvidenceStatus.Unavailable,
@@ -83,6 +115,7 @@ public static class DumpQueryEngine
             var observation = fieldResult.ToObservationResult();
             AppendProvenance(provenance, observation.Provenance);
             return CreateResult(
+                context,
                 EvaluationCompletionStatus.Blocked,
                 EvaluationCompleteness.None,
                 observation.Evidence,
@@ -103,23 +136,24 @@ public static class DumpQueryEngine
         {
             if (query.CoalesceLiteral is not null)
             {
-                return InvalidCoalesceType(provenance);
+                return InvalidCoalesceType(context, provenance);
             }
 
-            return EvaluateInt32(session, root, query.FieldName, provenance);
+            return EvaluateInt32(session, root, query.FieldName, context, provenance);
         }
 
         if (string.Equals(field.ElementType, "String", StringComparison.Ordinal))
         {
             if (query.CoalesceLiteral is { Kind: not (DumpQueryLiteralKind.String or DumpQueryLiteralKind.Null) })
             {
-                return InvalidCoalesceType(provenance);
+                return InvalidCoalesceType(context, provenance);
             }
 
-            return EvaluateString(session, root, query, provenance);
+            return EvaluateString(session, root, query, context, provenance);
         }
 
         return CreateResult(
+            context,
             EvaluationCompletionStatus.Blocked,
             EvaluationCompleteness.None,
             EvaluationEvidenceStatus.Exact,
@@ -134,6 +168,7 @@ public static class DumpQueryEngine
         ClrmdDumpSession session,
         ClrmdHeapObjectInfo root,
         string fieldName,
+        EvaluationEvidenceContext context,
         ImmutableArray<EvaluationProvenance>.Builder provenance)
     {
         var fieldRead = session.ReadInt32Field(root, fieldName);
@@ -142,6 +177,7 @@ public static class DumpQueryEngine
         if (fieldRead.Status == ClrmdEvidenceStatus.Exact && fieldRead.Value?.Value is int value)
         {
             return CreateResult(
+                context,
                 EvaluationCompletionStatus.Completed,
                 EvaluationCompleteness.Complete,
                 EvaluationEvidenceStatus.Exact,
@@ -151,6 +187,7 @@ public static class DumpQueryEngine
         }
 
         return CreateResult(
+            context,
             EvaluationCompletionStatus.Blocked,
             EvaluationCompleteness.None,
             observation.Evidence,
@@ -163,6 +200,7 @@ public static class DumpQueryEngine
         ClrmdDumpSession session,
         ClrmdHeapObjectInfo root,
         ParsedDumpQuery query,
+        EvaluationEvidenceContext context,
         ImmutableArray<EvaluationProvenance>.Builder provenance)
     {
         var fieldRead = session.ReadStringField(root, query.FieldName, MaximumObservedStringCharacters);
@@ -195,6 +233,7 @@ public static class DumpQueryEngine
             }
 
             return CreateResult(
+                context,
                 EvaluationCompletionStatus.Completed,
                 EvaluationCompleteness.Complete,
                 EvaluationEvidenceStatus.Exact,
@@ -206,6 +245,7 @@ public static class DumpQueryEngine
         if (fieldRead.Status == ClrmdEvidenceStatus.Partial && fieldRead.Value is not null)
         {
             return CreateResult(
+                context,
                 fieldRead.Issue == ClrmdValueIssue.LimitExceeded
                     ? EvaluationCompletionStatus.Completed
                     : EvaluationCompletionStatus.Blocked,
@@ -217,6 +257,7 @@ public static class DumpQueryEngine
         }
 
         return CreateResult(
+            context,
             EvaluationCompletionStatus.Blocked,
             EvaluationCompleteness.None,
             observation.Evidence,
@@ -226,8 +267,10 @@ public static class DumpQueryEngine
     }
 
     private static EvaluationResult<DumpQueryValue> InvalidCoalesceType(
+        EvaluationEvidenceContext context,
         ImmutableArray<EvaluationProvenance>.Builder provenance) =>
         CreateResult(
+            context,
             EvaluationCompletionStatus.Invalid,
             EvaluationCompleteness.None,
             EvaluationEvidenceStatus.Exact,
@@ -238,6 +281,7 @@ public static class DumpQueryEngine
                 "The null-coalescing literal is incompatible with the selected field type.")));
 
     private static EvaluationResult<DumpQueryValue> CreateResult(
+        EvaluationEvidenceContext context,
         EvaluationCompletionStatus completion,
         EvaluationCompleteness completeness,
         EvaluationEvidenceStatus evidence,
@@ -251,8 +295,38 @@ public static class DumpQueryEngine
             evidence,
             EvaluationEffectStatus.None,
             value,
+            context,
             provenance,
             diagnostics);
+
+    private static EvaluationEvidenceContext CreateEvidenceContext(
+        ClrmdDumpSession session,
+        ClrmdHeapObjectInfo? root,
+        ImmutableArray<EvaluationDeterministicBound> upstreamBounds)
+    {
+        var bounds = ImmutableArray.CreateBuilder<EvaluationDeterministicBound>(
+            EngineBounds.Length + 1 + (upstreamBounds.IsDefault ? 0 : upstreamBounds.Length));
+        bounds.AddRange(EngineBounds);
+        bounds.Add(new EvaluationDeterministicBound(
+            "dump.memory-read.bytes",
+            session.Memory.MaximumReadLength));
+        if (!upstreamBounds.IsDefault)
+        {
+            bounds.AddRange(upstreamBounds);
+        }
+
+        var module = root is not null &&
+            root.Snapshot == session.Snapshot &&
+            root.Module.Identity.Snapshot == session.Snapshot
+                ? EvaluationEvidenceIdentity.CreateAvailable(root.Module.Identity.SourceId)
+                : EvaluationEvidenceIdentity.Unavailable;
+        return EvaluationEvidenceContext.Create(
+            EvaluationEvidenceSourceKind.DumpSnapshot,
+            EvaluationEvidenceIdentity.CreateAvailable(session.Snapshot.MemorySourceId),
+            module,
+            EvaluationFallback.None,
+            bounds.ToImmutable());
+    }
 
     private static void AppendMemoryProvenance(
         ImmutableArray<EvaluationProvenance>.Builder builder,

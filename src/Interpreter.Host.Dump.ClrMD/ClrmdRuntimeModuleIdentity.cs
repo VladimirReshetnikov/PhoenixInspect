@@ -17,4 +17,16 @@ public readonly record struct ClrmdRuntimeModuleIdentity(
     ulong AppDomainAddress,
     ulong ModuleAddress,
     ulong ImageBase,
-    ulong ImageSize);
+    ulong ImageSize)
+{
+    /// <summary>
+    /// Gets a stable, path-independent identity projection suitable for backend-neutral result context and replay.
+    /// </summary>
+    /// <remarks>
+    /// The versioned representation uses the dump content digest followed by fixed-width lowercase hexadecimal
+    /// application-domain, CLR-module, image-base, and image-size fields. It identifies a runtime module instance;
+    /// it is not an assertion that separately acquired file bytes match that loaded instance.
+    /// </remarks>
+    public string SourceId =>
+        $"clrmd-module:v1:{Snapshot.Sha256}:{AppDomainAddress:x16}:{ModuleAddress:x16}:{ImageBase:x16}:{ImageSize:x16}";
+}

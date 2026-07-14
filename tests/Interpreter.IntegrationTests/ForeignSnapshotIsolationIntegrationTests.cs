@@ -1,4 +1,7 @@
+using System.Collections.Immutable;
+using Interpreter.Core.Abstractions;
 using Interpreter.Host.Dump.ClrMD;
+using Interpreter.Product.DumpQuery;
 using Xunit;
 
 namespace Interpreter.IntegrationTests;
@@ -75,6 +78,26 @@ public sealed class ForeignSnapshotIsolationIntegrationTests
             Assert.False(text.IsNull);
             Assert.Null(text.Value);
             Assert.Empty(text.Evidence);
+
+            var query = DumpQueryEngine.Evaluate(
+                secondSession,
+                "root.Marker",
+                "root",
+                foreignObject,
+                ImmutableArray.Create(
+                    new EvaluationDeterministicBound(
+                        "root-selection.maximum-handles",
+                        objectSearch.MaximumHandlesScanned),
+                    new EvaluationDeterministicBound(
+                        "root-selection.maximum-matches",
+                        objectSearch.MaximumMatches)));
+            Assert.Equal(EvaluationCompletionStatus.Blocked, query.Completion);
+            Assert.Equal(EvaluationEvidenceStatus.Conflict, query.Evidence);
+            Assert.Equal(secondSession.Snapshot.MemorySourceId, query.Context.Snapshot.SourceId);
+            Assert.Equal(EvaluationIdentityAvailability.Unavailable, query.Context.Module.Availability);
+            Assert.Null(query.Context.Module.SourceId);
+            Assert.Equal(EvaluationFallbackStatus.None, query.Context.Fallback.Status);
+            Assert.Equal("DUMP_SNAPSHOT_MISMATCH", Assert.Single(query.Diagnostics).Code);
         }
         finally
         {

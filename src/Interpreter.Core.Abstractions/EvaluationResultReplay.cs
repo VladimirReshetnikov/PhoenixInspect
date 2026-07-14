@@ -37,6 +37,25 @@ public static class EvaluationResultReplay
             writer.WriteString("completeness", result.Completeness.ToString());
             writer.WriteString("evidence", result.Evidence.ToString());
             writer.WriteString("effects", result.Effects.ToString());
+            writer.WriteStartObject("context");
+            writer.WriteString("sourceKind", result.Context.SourceKind.ToString());
+            WriteIdentity(writer, "snapshot", result.Context.Snapshot);
+            WriteIdentity(writer, "module", result.Context.Module);
+            writer.WriteStartObject("fallback");
+            writer.WriteString("status", result.Context.Fallback.Status.ToString());
+            writer.WriteString("name", result.Context.Fallback.Name);
+            writer.WriteEndObject();
+            writer.WriteStartArray("bounds");
+            foreach (var bound in result.Context.Bounds)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("name", bound.Name);
+                writer.WriteNumber("value", bound.Value);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
             if (result.Value is null)
             {
                 writer.WriteNull("value");
@@ -111,4 +130,23 @@ public static class EvaluationResultReplay
         Func<TValue, string> projectValue)
         where TValue : class =>
         Convert.ToHexString(SHA256.HashData(SerializeCanonical(result, projectValue))).ToLowerInvariant();
+
+    private static void WriteIdentity(
+        Utf8JsonWriter writer,
+        string propertyName,
+        EvaluationEvidenceIdentity identity)
+    {
+        writer.WriteStartObject(propertyName);
+        writer.WriteString("availability", identity.Availability.ToString());
+        if (identity.SourceId is null)
+        {
+            writer.WriteNull("sourceId");
+        }
+        else
+        {
+            writer.WriteString("sourceId", identity.SourceId);
+        }
+
+        writer.WriteEndObject();
+    }
 }
