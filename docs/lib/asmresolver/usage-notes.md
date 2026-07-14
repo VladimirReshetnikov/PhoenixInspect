@@ -1,5 +1,7 @@
 # AsmResolver usage notes for this project
 
+> **Historical backend research (2026-02).** This note predates the executable SRM/PEReader adapter. Statements about candidacy describe the earlier comparison, not the active implementation plan; see `../mvp-backend-decision-record.md`.
+
 ## Why it matters
 
 AsmResolver is a strong metadata/CIL backend candidate for our design phase because it provides rich, navigable models for:

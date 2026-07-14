@@ -1,4 +1,6 @@
-Below is a **low-level technical proposal** for a reusable **CIL (ECMA-335) interpreter framework** whose “killer feature” is that it does *not* require complete concrete runtime state. Instead, it supports **unknown / missing data**, **havoc’ed side effects**, and **abstract interpretation** (fixpoint dataflow), with the same core semantics engine.
+> **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-only evaluator. The near-term interpreter proof is a closed, scenario-derived concrete opcode slice; CFG/fixpoint analysis, broad unknown propagation, and multi-mode reuse remain gated research. API sketches below are illustrative, not current contracts.
+
+Below is a **low-level technical proposal** for a reusable **CIL (ECMA-335) interpreter framework** whose distinguishing hypothesis is that incomplete concrete state, provenance-bearing unknowns, and later abstract interpretation can share opcode semantics.
 
 This is written as if you were going to **build and maintain this as a core library**—usable for:
 

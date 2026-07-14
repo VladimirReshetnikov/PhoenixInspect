@@ -1,4 +1,6 @@
-Below is a *best-effort* design for the nastiest part of post-mortem expression evaluation: **reconstructing generic type/method instantiations** from a dump, especially when the executing code is **shared generic code** (hello `System.__Canon`) and when the top frame is a **state machine** (`MoveNext`) with tons of `MethodSpec` calls.
+> **Roadmap status: research backlog beyond the first dump/query slice.** The supported baseline is `MethodTable`-anchored recovery for reified instance types plus typed-unavailable fallback. Private CLR dictionary decoding is a version-pinned research spike, not a promised general solution.
+
+Below is a best-effort candidate design for reconstructing generic type/method instantiations from a dump, especially shared generic code and state-machine frames.
 
 I’m going to treat this as a concrete subsystem: **`GenericContextResolver`**. It lives in the “bridge layer” between **ClrMD** (runtime view of the dump) and **metadata/PDB readers** (AsmResolver, etc.). It emits a *substitution map* you can feed into your IL interpreter and member resolver.
 

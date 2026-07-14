@@ -1,97 +1,63 @@
-# MVP metadata/symbol backend decision record
-
-This document records the selected MVP primary backend strategy for metadata/IL/symbol ingestion.
+# Active metadata backend decision record
 
 ## Decision status
 
-- **Status:** Decided (provisional, design-phase)
-- **Decision owner(s):** Architecture working group (design docs maintainers)
-- **Target milestone:** MVP prototype baseline
-- **Decision date:** 2026-02-17
-- **Last updated:** 2026-02-17
+- **Status:** Decided for the active prototype slices
+- **Decision:** SRM/PEReader
+- **Decision date:** 2026-07-13
+- **Revisit scope:** prototype implementation choice, not a public object-model guarantee
+- **Supersedes:** the 2026-02-17 provisional AsmResolver selection
 
-## Decision statement
+## Decision
 
-> We select **AsmResolver** as the **chosen metadata/IL/symbol backend** for MVP prototyping.
+Use `System.Reflection.Metadata` plus `PEReader` as the metadata, PE, IL-body, and Portable PDB foundation for the dump-evidence, restricted-expression, and first interpreted-method slices.
 
-## Context summary
+Keep project-owned identities and result/evidence contracts at the boundary. Do not leak SRM handles into the interpreter or host API. Do not implement a second backend without an executable corpus demonstrating a material SRM deficiency or cost.
 
-The decision is driven by the current design-phase constraints:
+## Why the decision changed
 
-- deterministic and explainable execution behavior is mandatory,
-- adapter contracts must stay backend-neutral,
-- the MVP needs one high-velocity primary implementation path,
-- comparative evidence from alternative libraries remains important for confidence and future decision review.
+The earlier AsmResolver choice was based primarily on source scans and projected implementation velocity. Since then, the repository acquired a working SRM adapter and an end-to-end integration seam. AsmResolver remained an empty project. The old decision therefore privileged anticipated convenience over repository evidence.
 
-Evidence remains mostly source-scan level (low confidence overall), so this is intentionally marked as a **provisional lock** for MVP prototyping rather than a long-term irreversible dependency commitment.
+SRM is the lower-risk active choice because:
 
-## Option set considered
+- it is already exercised by the prototype;
+- its low-level behavior makes identity, partialness, and malformed-input policy explicit;
+- Portable PDBs use the same metadata model;
+- the expected decompiler fallback, ILSpy, is SRM-centric;
+- removing the unused backend reduces dependency and package surface.
 
-| Option | Description | Included in final decision |
-|---|---|---|
-| A | AsmResolver as the chosen backend, with SRM-oriented symbol bridge where needed. | **Yes** |
-| B | dnlib as chosen backend, project-owned symbol normalization. | No |
-| C | SRM-oriented custom primary with selective library augmentation for IL-heavy paths. | No |
-| D | Hybrid split: metadata/IL from one backend, symbols from another via strict adapters. | No (deferred) |
+This does not assert that SRM is universally superior. It says the project will deepen one proven path before funding alternatives.
 
-## Capability gate summary
+## Boundary rules
 
-| Gate | Required evidence threshold | Result | Notes |
-|---|---|---|---|
-| Metadata completeness for MVP corpus | Medium confidence minimum | **Provisional pass** | Source evidence indicates strong coverage in both AsmResolver and dnlib; fixture validation still required. |
-| IL body fidelity (instruction + EH + locals) | Medium confidence minimum | **Provisional pass** | AsmResolver method-body model appears suitable for normalized projection; malformed-body behavior still unproven. |
-| Generic signature/context behavior | Medium confidence minimum | **Provisional pass** | Current notes indicate feasible projection path, but generic-heavy conformance scenarios remain open. |
-| Portable PDB baseline mapping | Medium confidence minimum | **Provisional pass** | AsmResolver path exists; consistency checks against SRM-oriented expectations still required. |
-| Miss-reason normalization compatibility | Medium confidence minimum | **Provisional pass** | No blocker identified; requires adapter conformance fixtures before graduation to confirmed pass. |
-| Deterministic budget behavior | Medium confidence minimum | **Provisional pass** | Policy injection points are present; deterministic replay proof still pending. |
+1. Artifact module identity is content-derived (MVID plus PE disambiguation where required); paths and discovery order are hints, not identity.
+2. Runtime module instances and disk artifacts remain separate identities joined by explicit evidence.
+3. Missing, sparse, conflicting, and malformed inputs produce typed evidence outcomes and stable diagnostics.
+4. Method definitions use module identity plus metadata token; generic instantiations add deterministic context rather than allocation counters.
+5. Backend-specific objects do not cross projected contracts.
 
-## Rationale
+## Revisit triggers
 
-1. **Why AsmResolver as primary now**
-   - It offers a rich and layered object model across metadata, IL bodies, PE structures, and symbol-facing packages, which reduces MVP adapter bring-up friction.
-   - Its package/layer boundaries align with the project’s planned separation between acquisition, projection, and interpreter-facing contracts.
-   - Existing design notes already treat AsmResolver as the leading candidate, so choosing it now removes ambiguity and focuses prototype work.
+Evaluate another backend only when at least one checked-in fixture demonstrates:
 
-2. **Why dnlib is not chosen for MVP (but remains critical evidence)**
-   - dnlib is strong and remains highly valuable for comparisons and parity validation.
-   - However, selecting dnlib now would not materially reduce architectural risk versus AsmResolver and could increase churn against current design momentum.
-   - We preserve dnlib analysis and comparison coverage, but we are not designating a formal fallback backend at this stage.
+- an unsupported or disproportionately costly metadata/IL/PDB operation required by an active milestone;
+- malformed-input behavior that cannot be made sufficiently bounded or diagnosable;
+- a measured performance/memory problem relevant to an active acceptance criterion; or
+- a Windows PDB requirement for which SRM is intentionally not the implementation.
 
-3. **Why not SRM-custom or split-hybrid for MVP primary**
-   - SRM-custom primary is promising long-term but imposes additional project-owned lifting during a phase where we need velocity and rapid evidence generation.
-   - A split-hybrid primary/fused approach increases orchestration complexity before adapter conformance gates are mature.
+An experiment must implement the same projected contract and run the same conformance fixtures. A source comparison or attractive API alone is not a trigger.
 
 ## Consequences
 
-### Positive
+- `Interpreter.Metadata.AsmResolver` is removed rather than retained as an empty option.
+- AsmResolver, dnlib, Cecil, and DIA notes under `docs/lib/` remain research references, not roadmap commitments.
+- Package count and backend vocabulary shrink while the public boundary remains replaceable.
+- Any future backend decision is based on executable differential evidence.
 
-- Unblocks focused prototype work against a single primary backend path.
-- Preserves architectural safety via explicit backend-neutral contract requirements.
-- Preserves decision optionality through ongoing dnlib/SRM comparison and parity coverage.
+## Evidence required before stabilization
 
-### Negative / trade-offs
-
-- Increases short-term risk of accidental AsmResolver vocabulary leakage.
-- May delay SRM-first hardening and hybrid experiments until after baseline prototype milestones.
-- Current evidence confidence is still low; this decision requires active validation to remain credible.
-
-### Risk mitigations
-
-- Enforce the adapter conformance checklist as a quality gate for all backend-facing features.
-- Keep dnlib parity scenarios mandatory for changed projection behavior.
-- Track mismatch classes in the backend evidence log and escalate unresolved divergence as decision-review triggers.
-
-## Follow-up actions
-
-| Action | Owner | Target milestone | Tracking link |
-|---|---|---|---|
-| Implement baseline AsmResolver-to-normalized projection for method body + symbols. | TBD | MVP prototype baseline | `docs/lib/adapter-conformance-checklist.md` |
-| Add dnlib parity scenarios for generic-heavy IL + partial symbol conditions. | TBD | MVP prototype baseline | `docs/lib/backend-evidence-log.md` |
-| Define explicit trigger conditions for revisiting primary-backend choice (e.g., repeated parity divergence). | TBD | MVP prototype baseline | `docs/lib/backend-capability-matrix.md` |
-| Update integration proposal language to reflect AsmResolver as chosen backend while preserving comparison guidance. | TBD | Next docs pass | `docs/proposals/integration/pe-pdb-reader-integration-proposal.md` |
-
-## Change log
-
-| Date | Change | Author |
-|---|---|---|
-| 2026-02-17 | Promoted record from pending template to provisional MVP decision: AsmResolver chosen backend; no designated fallback backend at this stage. | Codex |
+- exact module/method identity across repeated process runs;
+- PE identity mismatch and missing-artifact outcomes;
+- method body, locals, EH region, and generic signature fixtures as their slices are admitted;
+- Portable PDB sequence-point/local-scope fixtures when the expression or stepping path actually needs them;
+- bounded malformed/truncated artifact tests.

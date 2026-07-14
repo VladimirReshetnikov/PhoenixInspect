@@ -1,5 +1,7 @@
 # Design & Architecture Review — Interpreter (.NET IL Interpreter / Dump-Time Evaluation)
 
+> **Point-in-time review and reset input.** Counts and implementation facts below describe the repository before the 2026-07-13 remediation pass; they are intentionally preserved as review evidence rather than rewritten as current status. The active scope, roadmap, and topology now live in `README.md`, `docs/plans/future-work-planning.md`, and `docs/proposals/architecture/architecture-overview-proposal.md`.
+
 ## Executive summary
 
 This is a documentation-first conceptual-design project for a reusable CIL (ECMA-335) interpreter whose distinguishing idea is executing IL *without* complete concrete state — propagating provenance-bearing "unknowns," havoc'd effects, and abstract-interpretation domains through one domain-parametric semantics engine, aimed first at post-mortem crash-dump evaluation and a "virtual" step-debugger. Its single most important strength is genuine design quality in the load-bearing places: the domain-parametric spine (`IValueDomain`/`IMemoryModel`/`ICallModel`), a strictly acyclic downward-only dependency graph with the execution core provably isolated from ClrMD/SRM/ILSpy, and a real end-to-end vertical seam (spawn target → write a real process dump → load via ClrMD → resolve metadata → single-step the VM) that proves the hardest integration works. Its single most important risk is a near-total imbalance between ambition and reality: roughly 80,000 words of design across 56 documents specify seven-plus multi-year subsystems, while the executing engine implements exactly one opcode (`ret`), 34 of 42 projects are empty shells, there is one test, and no CI enforces anything. The design surface has run far ahead of a finishable core, and the plan contains no effort, capacity, or sizing signal that would pull it back. **Overall verdict: promising design instincts trapped inside an over-scoped, under-validated program — fundamentally sound to build on, but only after a ruthless narrowing to one vertical slice.** Confidence: **high** (most load-bearing claims were independently verified against the repo).
@@ -75,7 +77,7 @@ The doc-first posture is explicit and legitimate for a concept-phase repo. The p
 
 ### Plan
 
-**No effort/timeline/capacity model; milestones are un-estimable monoliths.** *(High — partially calibrated)* — The plan is ordering-only, with no effort, dates, team size, or sizing anywhere (verified: no scheduling terms in the file). *Calibration:* each milestone *does* provide Deliverables + Exit criteria (a decomposition), so "single bullet list" is imprecise — but none of it is sized, so the roadmap cannot be scheduled or its realism assessed. **Recommendation:** decompose at least M0–M2 into estimable tasks with coarse sizing (S/M/L or ideal-days) and one explicit capacity assumption (e.g., "1 part-time maintainer"); even rough sizing exposes which milestones are unrealistic.
+**No implementation-surface model; milestones are un-estimable monoliths.** *(High — partially calibrated)* — The plan is ordering-only, with no bounded implementation size anywhere. *Calibration:* each milestone *does* provide Deliverables + Exit criteria (a decomposition), so "single bullet list" is imprecise — but none of it is sized, so its scope realism cannot be assessed. **Recommendation:** decompose at least M0–M2 into estimable tasks with explicit hand-written production/test LOC ranges and an upper split threshold; even rough LOC envelopes expose which milestones are unrealistically broad without manufacturing calendar precision.
 
 **Breadth-before-depth: four research subsystems are queued as active alignment work before the M1 MVP exists.** *(High — confirmed)* — `future-work-planning §2.1–2.4` label async, dynamic, semantic-modeling, and platform-expansion work as "immediate alignment updates ... now required," directly contradicting the plan's own `§1.2` ("foundations before broad feature surface") and `§5` mitigation ("architecture review before adding major surface area"). **Recommendation:** freeze `§2.1–2.4` expansion as "design-backlog, not active" until M1 passes its exit criteria; add an explicit WIP limit ("no new subsystem alignment docs until M1 exit").
 
@@ -127,7 +129,7 @@ The cheapest way to convert the biggest architectural bet from paper to evidence
 - **Collapse the project count** toward the ~5 packages the overview itself proposes; re-split only on demonstrated need.
 - **Reconcile the live contradictions**: stop-reason taxonomy (docs + code), package count/names, AsmResolver-vs-SRM canonical backend, `ExecState` deprecation.
 - **Decide EH scope explicitly** (stop-on-throw for MVP vs. handler transfer later) and give EH its own milestone.
-- **Add sizing** to M0–M2 tasks and one capacity assumption.
+- **Add implementation-LOC ranges** to M0–M2 tasks and split packages whose upper bound exceeds the documented threshold.
 
 ### P2
 - Extend the integration test to decode IL from dump memory.
@@ -155,10 +157,10 @@ The cheapest way to convert the biggest architectural bet from paper to evidence
 
 ## Reconciliation with two independent reviews
 
-Two further independent reviews were produced in parallel and merged into this branch:
+Two further independent reviews were produced in parallel and merged into this branch. Their standalone files were intentionally deleted after their distinct findings were reconciled here, so this root review is the sole retained review artifact:
 
-- `docs/reviews/design-and-architecture-review-2026-07-13.md` (from `codex/review-architecture`), and
-- `docs/plans/design-architecture-review.md` (from `codex/review-project-architecture`), which also applied factual repairs to the orientation docs (README, project-faq, prototype-solution-structure, technical-stack, requirements-traceability-map, integration-test-plan).
+- `codex/review-architecture` supplied the product-truth, partial-contract, EH, expression-front-end, and threat-model findings; and
+- `codex/review-project-architecture` supplied the execution-profile, state-hygiene, dump-first roadmap, and factual orientation repairs.
 
 **Three reviews conducted independently reached the same top-level verdict:** the core idea is sound, the scope is dispersed across ~4–7 products that do not share one correctness model, the roadmap is platform-first/value-last, the prototype's public contracts are not ready to stabilize, and the right move is to narrow to a single dump-time vertical slice and prove it before building analysis/async/dynamic/sandbox. That convergence raises my confidence in the shared conclusions from "high" to "very high." Below I evaluate their distinctive arguments, incorporate the ones that improve this review, and argue the points where I differ.
 
@@ -172,7 +174,7 @@ Two further independent reviews were produced in parallel and merged into this b
 
 4. **Concrete code-level defects I missed — now independently verified in the source.** Both reviews found these and I confirmed each by reading the files:
    - `SrmMetadataModule.ComputeStableHandleValue` returns `(ulong)StringComparer.OrdinalIgnoreCase.GetHashCode(path)` ([SrmMetadataModule.cs:181](src/Interpreter.Metadata.SRM/SrmMetadataModule.cs)). .NET string hashing is randomized per process, so the "stable handle" is not stable across runs — it breaks the project's headline replay/determinism goal. `ModuleId` equality also includes `Name`/`PathHint`, and method handles are sequential per-module counters — both order/identity-unstable.
-   - The integration harness can hang on its failure path: `process.StandardError.ReadToEnd()` is called *before* `process.Kill()` ([RetOnlyDumpIntegrationTests.cs:186](tests/Interpreter.IntegrationTests/RetOnlyDumpIntegrationTests.cs)); with the target alive, the read blocks until EOF.
+   - The integration harness can hang on its failure path: `process.StandardError.ReadToEnd()` is called *before* `process.Kill()` (historical `tests/Interpreter.IntegrationTests/RetOnlyDumpIntegrationTests.cs:186`, removed by the remediation pass); with the target alive, the read blocks until EOF.
    - `IlMachine.StepOne` emits an `InstructionExecuted` event for budget-exhausted, missing-body, invalid-offset, and unsupported-opcode cases — none of which executed an instruction — so replay/explanations would assert events that never occurred.
    - The one integration test reads IL from the on-disk module and compares two disk reads' MVIDs; it does **not** read IL or identity from dump memory. It is a module-discovery smoke test, not evidence of dump-backed interpretation.
 

@@ -1,5 +1,7 @@
 # Call Model and Effects Contract (Draft)
 
+> **Roadmap status: supporting design for W4, not an active implementation commitment.** The first dump/query and concrete IL slices admit no user calls. This contract should be narrowed by the first scenario that reaches a call boundary.
+
 ## Purpose
 
 This document defines the conceptual contract for call handling in the IL interpreter, with emphasis on deterministic behavior, bounded execution, and explainable approximations.

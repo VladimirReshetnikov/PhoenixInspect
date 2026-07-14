@@ -1,4 +1,6 @@
-Here’s a low-level technical proposal for implementing **virtual step debugging** (Step Into / Over / Out) over **dump snapshots + virtual state**, using the IL interpreter framework we outlined (unknown propagation + abstractable memory model). I’ll focus on the execution engine and the interfaces you’ll need, and I’ll be explicit about which parts require refining the interpreter design.
+> **Roadmap status: research backlog.** This is counterfactual stepping from snapshot/assumed state, not replay of historical execution. It does not enter active delivery until the dump-query slice, interpreted-method slice, persistent-memory contract, and handler-transfer EH gates pass.
+
+Here is a low-level candidate design for virtual Step Into / Over / Out over dump snapshots plus virtual state.
 
 ---
 
@@ -116,7 +118,7 @@ public sealed record DebugEvent(
 And the stepping driver returns:
 
 ```csharp
-public enum StopReason
+public enum SessionPauseReason
 {
     StepComplete,
     DecisionNeeded,     // unknown branch, ambiguous dispatch, etc.
@@ -125,9 +127,9 @@ public enum StopReason
     Completed           // root returned
 }
 
-public sealed record StepOutcome<TValue, TMem>(
+public sealed record SessionStepOutcome<TValue, TMem>(
     MachineState<TValue, TMem> State,
-    StopReason Reason,
+    SessionPauseReason Reason,
     ImmutableArray<DebugEvent> Events,
     StepDiff? Diff // optional (see below)
 );
@@ -162,7 +164,7 @@ public abstract record StepResult<TValue, TMem>
 {
     public sealed record Single(MachineState<TValue, TMem> Next, ImmutableArray<DebugEvent> Events) : StepResult<TValue, TMem>;
     public sealed record Fork(ImmutableArray<MachineState<TValue, TMem>> NextStates, BranchInfo Info) : StepResult<TValue, TMem>;
-    public sealed record Stop(MachineState<TValue, TMem> Same, StopReason Reason, ImmutableArray<DebugEvent> Events) : StepResult<TValue, TMem>;
+    public sealed record Stop(MachineState<TValue, TMem> Same, SessionPauseReason Reason, ImmutableArray<DebugEvent> Events) : StepResult<TValue, TMem>;
 }
 ```
 
@@ -404,7 +406,10 @@ Design `TMem` as a persistent structure:
 * writes create new versions with structural sharing
 * history only stores pointers
 
-This makes Undo basically free.
+This makes restoring a previously retained semantic snapshot cheap, but Undo as a product feature is not free.
+History retention, branch-tree indexing, eviction, checkpoint policy, transcript storage, allocation identity, and
+reversible external effects still require explicit budgets and measured implementations. The dump-backed base heap
+is immutable rather than versioned; only interpreter-owned overlays can participate in rewind.
 
 **Option B: checkpoint + write log**
 
@@ -585,7 +590,7 @@ Budget dimensions:
 * max allocations / virtual heap size
 * max branch forks
 
-Budget exceed should produce `StopReason.BudgetStop` and a resumable session.
+Budget exceed should produce machine `BudgetExhausted`; the controller maps it to `SessionPauseReason.BudgetStop` and a resumable session.
 
 ---
 
@@ -677,7 +682,7 @@ public StepOutcome Step(StepCommand cmd)
         stopPredicate: (s, ev) => plan.ShouldStop(s, ev, DebugMaps),
         options: plan.ExecutionOptions);
 
-    if (outcome.Reason == StopReason.StepComplete || outcome.Reason == StopReason.Completed)
+    if (outcome.Reason == SessionPauseReason.StepComplete || outcome.Reason == SessionPauseReason.Completed)
         History.Push(before, outcome.State, cmd, outcome.Diff);
 
     State = outcome.State;
@@ -708,7 +713,7 @@ To make this feature clean (and not a pile of special-cases), refine the IL inte
 
 1. **MachineState + FrameState** (call stack and IP are explicit)
 2. **Micro-step execution** with call/return as visible events
-3. **StopReasons + DebugEvents** for a stepping controller
+3. **SessionPauseReason + DebugEvents** for a stepping controller, distinct from low-level machine status
 4. **Persistent or snapshot-friendly memory model** to enable Undo
 5. **Branch policy hook** that can stop for user decision
 6. **EH model** at least at “stop on throw”; ideally real handler transfer
@@ -718,6 +723,6 @@ Everything else (unknown propagation, taint/effects, call modeling, dump-backed 
 
 ## Appendix A) Current prototype contract alignment (`src/`)
 
-`src/` is no longer scaffolding-only. `Interpreter.Core.Execution` contains draft `MachineState`, `FrameState`, `StepOutcome`, `StopReason`, debug-event, budget-policy, and `IlMachine.StepOne` types, with intentionally narrow support for a root `ret` instruction.
+`src/` is no longer scaffolding-only. `Interpreter.Core.Execution` contains draft semantic and operational state, `StepOutcome`, `MachineRunStatus`, deterministic budgets/events, whole-body admission, and `IlMachine.StepOne`. The admitted executable subset is branchless, EH-free `Int32` constants/arguments/locals plus `add`, `sub`, `mul`, and `ret`; a concrete domain exercises it through compiler-differential tests. The candidate `SessionPauseReason` below is deliberately not a current code contract.
 
-The actual debugger control plane remains unimplemented: `Interpreter.Debugger.Engine` has no Step Into/Over/Out, stop-plan, history, branch-decision, or source-map orchestration types. Near-term work should therefore treat the existing core types as walking-skeleton evidence rather than as final stepping contracts.
+The actual debugger control plane remains unimplemented; the speculative `Interpreter.Debugger.Engine` project was removed with the empty scaffolding. There is no Step Into/Over/Out, stop plan, history, branch-decision, or source-map orchestration. This research design must not be read as a current stepping contract.

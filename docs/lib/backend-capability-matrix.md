@@ -1,15 +1,17 @@
-# Metadata and symbol backend capability matrix (draft)
+# Metadata and symbol backend capability matrix (historical research)
+
+> **Decision context:** this matrix captures the pre-decision, source-review comparison made in 2026-02. SRM/PEReader is now the active backend for prototype slices; see `mvp-backend-decision-record.md` and the current rows in `backend-evidence-log.md`. The matrix is retained to preserve research and future revisit criteria, not to imply that backend selection remains open.
 
 This matrix turns the library-specific notes in `docs/lib/<library>/usage-notes.md` into a common evaluation frame.
 For API-shape-level reader ergonomics and PE/PDB-specific trade-offs, see `pe-pdb-reader-api-comparison.md`.
 
-It is intentionally design-phase guidance, not a final commitment to any concrete dependency set.
+Its ratings are source-review hypotheses, not executable capability claims.
 
 ## Purpose
 
 - define a shared vocabulary for backend comparison,
 - keep interpreter-facing contracts stable while adapters evolve,
-- make trade-offs explicit before MVP backend lock-in.
+- preserve the trade-offs considered before the SRM backend decision.
 
 ## Capability axes
 
@@ -26,7 +28,7 @@ The axes below are used when evaluating AsmResolver, dnlib, and SRM-oriented imp
 | Performance predictability | Required for budgeted execution and bounded analysis. | Must support deterministic budgets for metadata/method materialization paths. |
 | API stability and maintainability | Reduces integration churn during design-to-implementation transition. | Must be shielded by project-owned adapter interfaces. |
 
-## Draft comparison snapshot
+## Historical comparison snapshot
 
 Legend:
 
@@ -36,7 +38,7 @@ Legend:
 
 | Backend candidate | Metadata completeness | IL body fidelity | Generic signatures | Portable PDB | Windows PDB | Explainability mapping | Notes |
 |---|---|---|---|---|---|---|---|
-| AsmResolver | Strong | Strong | Strong | Partial | Partial | Partial | Current leading design candidate; still requires strict normalization boundary. |
+| AsmResolver | Strong | Strong | Strong | Partial | Partial | Partial | Leading design candidate in the 2026-02 source review; never established by an executable adapter. |
 | dnlib | Strong | Strong | Partial | Partial | Partial | Partial | Valuable fallback/cross-check backend; avoid premature primary-path coupling. |
 | SRM-oriented custom layer | Strong | Partial | Partial | Strong | Unknown | Strong | Potentially lean and controllable, but requires more project-owned lifting for IL workflows. |
 
@@ -49,17 +51,17 @@ Legend:
 3. **PDB behavior needs one normalized story**
    - both Portable and Windows PDB cases should converge into the same debug-map and provenance outputs.
 
-## Decision gates
+## Historical decision gates
 
-Before declaring an MVP backend baseline, require:
+The original matrix proposed the following gates before declaring a backend baseline:
 
 1. a thin adapter prototype that exercises metadata + IL + symbol paths,
 2. documented miss-reason mapping for partial/artifact-poor dumps,
 3. a benchmark sketch for method materialization cost under realistic dump workloads,
 4. at least one cross-backend conformance scenario (same input, same normalized outcome category).
 
-## Follow-up documentation tasks
+## Current use
 
-- Add per-axis evidence references as prototype experiments are completed.
-- Split this matrix into “MVP required” vs “post-MVP desirable” rows once milestone gates solidify.
-- Cross-link each axis to relevant architecture and integration proposals after terminology alignment.
+- Add new executable evidence to `backend-evidence-log.md`, not to the historical ratings above.
+- Revisit a candidate only under the triggers in `mvp-backend-decision-record.md`.
+- Keep project-owned identity, evidence, and miss-reason contracts independent of backend-specific object models.

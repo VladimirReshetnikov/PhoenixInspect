@@ -1,10 +1,11 @@
 namespace Interpreter.Core.Abstractions;
 
 /// <summary>
-/// Represents mutable interpreter execution limits used to bound runtime cost.
+/// Represents the one deterministic execution limit consumed by the current interpreter slice.
 /// </summary>
 /// <param name="InstructionBudget">Remaining instruction budget.</param>
-/// <param name="AllocationBudget">Remaining allocation budget in abstract units.</param>
-/// <param name="MaxCallDepth">Remaining call-depth allowance.</param>
-/// <param name="MaxForks">Remaining branch-fork allowance.</param>
-public sealed record BudgetState(long InstructionBudget, long AllocationBudget, int MaxCallDepth, int MaxForks);
+/// <remarks>
+/// Allocation, call-depth, fork, and traversal budgets are introduced only with the operations that consume them;
+/// carrying unenforced limit fields would create a false safety contract.
+/// </remarks>
+public sealed record BudgetState(long InstructionBudget);

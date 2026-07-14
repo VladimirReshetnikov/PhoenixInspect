@@ -1,4 +1,6 @@
-Below is the “MVP precision package” I’d put on paper for this library: a **minimal abstract value domain** (constants + nullness + runtime type-sets + taint) and a **small, ruthless BCL modeling set** that punches way above its weight—especially for real-world IL that contains `string`, `Nullable<T>`, `Span<T>`, and `Task` patterns.
+> **Roadmap status: research backlog.** This is no longer the active MVP. The active milestones first prove dump evidence, a restricted derived-query front end, and a concrete scenario-derived IL slice. CN-T enters the roadmap only after the concrete corpus and domain laws pass. Span, Task, and framework models are explicitly outside that gate.
+
+This document records a candidate later precision package: a minimal abstract value domain (constants, nullness, runtime type sets, and taint) plus selected BCL models.
 
 I’m going to assume the broader architecture we discussed: **domain-parametric IL semantics**, plus a **call dispatcher** that can replace “interpret the callee IL” with **models** that are (a) bounded, (b) deterministic, and (c) explicitly conservative in abstract mode.
 

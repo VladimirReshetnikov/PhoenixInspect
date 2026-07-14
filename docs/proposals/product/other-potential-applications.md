@@ -1,12 +1,16 @@
-Below is a technical “applications & implications” document for the IL interpreter framework we’ve been sketching (domain-parametric semantics + pluggable memory model + call modeling + unknown propagation + optional abstract interpretation).
+# Research Backlog: Other Potential Applications
 
-The through-line is: once you have a **single, well-specified execution semantics** for IL that can run in **concrete**, **hybrid (unknown)**, or **abstract** modes, you can reuse it far beyond post-mortem interactive debugging.
+> **Roadmap relation: speculative research, not a delivery commitment.** The active product target is the read-only dump evaluator. No multi-application reuse claim is considered validated until at least two domains execute the same meaningful opcode set and a second real consumer demonstrates reuse.
+
+This note records applications and architectural implications that may become relevant if the domain-parametric semantics hypothesis is validated.
+
+The hypothesis is that a single, well-specified IL semantics could eventually support concrete, hybrid, and abstract modes and be reused beyond post-mortem debugging. The current prototype does not yet demonstrate that claim.
 
 ---
 
-# 1) What we already have (the reusable core)
+## 1) Hypothesized reusable core
 
-From our previous design, the interpreter’s **spine** looks like this:
+The proposed interpreter **spine** looks like this:
 
 * **IL semantics engine** (ECMA-335 stack machine) parameterized by:
 
@@ -25,13 +29,13 @@ From our previous design, the interpreter’s **spine** looks like this:
 * **Explainability hooks** (value provenance, effect summary, “why unknown”)
 * Optional “debugger runtime model” pieces (async, dynamic, etc.) implemented as *semantic intrinsics* rather than stepping into framework internals.
 
-That’s already enough to support multiple “products” built on the same engine.
+If these seams survive implementation in more than one mode and consumer, they may support multiple products. Today they are design hypotheses, and most corresponding projects contain no behavior.
 
 ---
 
-# 2) Application: Static analysis and program reasoning
+## 2) Application: Static analysis and program reasoning
 
-## 2.1 Use cases
+### 2.1 Use cases
 
 This is the most “obvious” sibling of dump debugging because you already designed abstract interpretation:
 
@@ -43,11 +47,11 @@ This is the most “obvious” sibling of dump debugging because you already des
 * **Trimming/AOT friendliness checks** (reflection patterns, dynamic code paths)
 * **API misuse** checks that are awkward in Roslyn syntax (because IL reveals post-rewrite truth)
 
-## 2.2 What the framework needs for this (extensions/adjustments)
+### 2.2 What the framework needs for this (extensions/adjustments)
 
 Your core already has CFG + fixpoint + join/widen, but serious static analysis benefits from a few upgrades:
 
-### A) An analysis-friendly IR (optional, but huge)
+#### A) An analysis-friendly IR (optional, but huge)
 
 Interpreting raw IL for fixpoint works, but you’ll quickly want a normalized internal IR:
 
@@ -63,7 +67,7 @@ This makes:
 
 **Adjustment:** add a `MethodNormalizer` phase producing `IRGraph` (blocks + typed temps) while preserving a mapping back to IL offsets.
 
-### B) Exception-aware CFG
+#### B) Exception-aware CFG
 
 Most analyses are useless without at least conservative EH edges:
 
@@ -76,7 +80,7 @@ Most analyses are useless without at least conservative EH edges:
 * `EH.Conservative` (sound-ish)
 * `EH.Modeled` (uses call models to mark “non-throwing”)
 
-### C) Interprocedural summaries + recursion handling
+#### C) Interprocedural summaries + recursion handling
 
 If you want whole-program effects/taint/purity, you need summaries:
 
@@ -87,7 +91,7 @@ If you want whole-program effects/taint/purity, you need summaries:
 
 **Adjustment:** formalize a `Summary` format and a `SummaryProvider` contract. The core engine already emits `EffectSummary` and supports `Havoc`; you “just” need to cache and compose them.
 
-### D) Domain composition
+#### D) Domain composition
 
 Your MVP domain (const + nullness + type-set + taint) is a great baseline. Static analysis will want:
 
@@ -105,11 +109,11 @@ Your MVP domain (const + nullness + type-set + taint) is a great baseline. Stati
 
 ---
 
-# 3) Application: Predictive/speculative features in *live* debugging
+## 3) Application: Predictive/speculative features in *live* debugging
 
 Think of this as “shadow execution” that augments a normal debugger, without actually running user code in the target.
 
-## 3.1 Use cases
+### 3.1 Use cases
 
 * **Safe expression evaluation**: “what would this evaluate to?” without func-eval side effects
 * **Preview Step Over**: show which locals/fields are likely to change if you Step Over
@@ -117,7 +121,7 @@ Think of this as “shadow execution” that augments a normal debugger, without
 * **Side-effect detection**: warn if expression would touch IO/threading/native/reflection
 * **Async/dynamic explanation**: show resolved overload/awaiter path without stepping runtime machinery
 
-## 3.2 Key difference vs dump debugging
+### 3.2 Key difference vs dump debugging
 
 Instead of ClrMD reading from a dump snapshot, you read from a **live snapshot** of the target process.
 
@@ -136,9 +140,9 @@ The interpreter then runs on:
 * heap reads via the snapshot
 * writes to a virtual overlay (never to the real process)
 
-## 3.3 Extensions/adjustments needed
+### 3.3 Extensions/adjustments needed
 
-### A) Snapshot consistency + races
+#### A) Snapshot consistency + races
 
 With a dump you assume the world is frozen. With a live process:
 
@@ -152,7 +156,7 @@ With a dump you assume the world is frozen. With a live process:
 
 Your existing “CanWalkHeap” style checks map well to this.
 
-### B) “Predictive stepping” as a first-class strategy
+#### B) “Predictive stepping” as a first-class strategy
 
 You already have:
 
@@ -167,7 +171,7 @@ For predictive debugging you’ll want a strategy that:
 
 **Adjustment:** make `StepDiff` and “write events” part of the public interpreter protocol (not just UI sugar).
 
-### C) Handling ambient sources (time/random/env) correctly
+#### C) Handling ambient sources (time/random/env) correctly
 
 In a live session, it’s tempting to call host `DateTime.Now`. Don’t.
 You need:
@@ -177,7 +181,7 @@ You need:
 
 This is the same “SessionSnapshot” concept you already wanted for dumps.
 
-### D) Interop with existing debugger protocols
+#### D) Interop with existing debugger protocols
 
 If you integrate with DAP/ICorDebug, you’ll want:
 
@@ -189,23 +193,23 @@ If you integrate with DAP/ICorDebug, you’ll want:
 
 ---
 
-# 4) Application: Executing IL on platforms without JIT (AOT-only / sandboxed runtime)
+## 4) Application: Executing IL on platforms without JIT (AOT-only / sandboxed runtime)
 
 This is where your framework morphs from “debugger VM” into a “runtime VM”.
 
-## 4.1 Use cases
+### 4.1 Use cases
 
 * Run IL on iOS / restricted platforms (no JIT)
 * Game scripting / plugin execution (load untrusted IL and run it)
 * Deterministic execution environments (replay, simulation)
 * “Debug build” interpreter fallback (e.g., interpret rarely used code paths)
 
-## 4.2 What changes (this is the biggest delta)
+### 4.2 What changes (this is the biggest delta)
 
 Dump debugging tolerates “unknown”. Runtime execution does not.
 You need a **fully concrete** domain and a **real runtime substrate**:
 
-### A) Concrete execution domain
+#### A) Concrete execution domain
 
 * exact integer/float semantics
 * full exception behavior
@@ -214,7 +218,7 @@ You need a **fully concrete** domain and a **real runtime substrate**:
 
 This is doable, but it’s a different ambition level than “evaluate safely.”
 
-### B) A “runtime library model” rather than “debug models”
+#### B) A “runtime library model” rather than “debug models”
 
 Instead of modeling `DateTime.Now` as Unknown, you must define what it means:
 
@@ -231,7 +235,7 @@ Same for:
 
 In other words: you need a **policy-based host ABI**.
 
-### C) Threading and async
+#### C) Threading and async
 
 For a general runtime, eventually you need:
 
@@ -241,9 +245,9 @@ For a general runtime, eventually you need:
 
 But you could ship a single-threaded runtime first (common for sandboxed environments).
 
-## 4.3 Extensions/adjustments needed
+### 4.3 Extensions/adjustments needed
 
-### A) Host ABI + intrinsics become a formal layer
+#### A) Host ABI + intrinsics become a formal layer
 
 Your current call-model registry becomes the runtime’s “system call interface”:
 
@@ -262,7 +266,7 @@ The runtime interpreter calls host services for:
 * interop
 * GC (or a simplified managed heap)
 
-### B) Verification / safety
+#### B) Verification / safety
 
 For untrusted IL you need:
 
@@ -276,7 +280,7 @@ Your existing budget system helps, but you’ll want:
 * safe stack typing enforcement
 * restricted reflection, etc.
 
-### C) Performance considerations become central
+#### C) Performance considerations become central
 
 A debugging interpreter can be slow; a runtime interpreter must be optimized:
 
@@ -295,18 +299,18 @@ A debugging interpreter can be slow; a runtime interpreter must be optimized:
 
 ---
 
-# 5) Application: Deterministic replay, time-travel, and execution tracing
+## 5) Application: Deterministic replay, time-travel, and execution tracing
 
 Even without a live target, an interpreter is excellent for “explain what happened” tooling.
 
-## 5.1 Use cases
+### 5.1 Use cases
 
 * record a “virtual execution trace” from an expression/method call
 * show how a value was computed (dataflow provenance)
 * enable time-travel stepping (Step Back) cheaply because state is virtual
 * generate minimal repro steps (in a controlled sandbox)
 
-## 5.2 Framework implications
+### 5.2 Framework implications
 
 You already planned:
 
@@ -331,11 +335,11 @@ No fundamental changes—just elevate tracing/determinism from “debug feature�
 
 ---
 
-# 6) Application: Differential testing, fuzzing, and decompiler/AOT validation
+## 6) Application: Differential testing, fuzzing, and decompiler/AOT validation
 
 An IL interpreter is a fantastic oracle for “does this IL behave like the CLR?”
 
-## 6.1 Use cases
+### 6.1 Use cases
 
 * Differential execution:
 
@@ -351,7 +355,7 @@ An IL interpreter is a fantastic oracle for “does this IL behave like the CLR?
 
   * compare interpreter outcome vs AOT output on supported subset
 
-## 6.2 Framework implications
+### 6.2 Framework implications
 
 You’ll want a testing harness layer:
 
@@ -363,18 +367,18 @@ No redesign, but you’ll add instrumentation hooks and a “runner” API.
 
 ---
 
-# 7) Application: Build-time partial evaluation and “semantic extraction”
+## 7) Application: Build-time partial evaluation and “semantic extraction”
 
 This is the “use it as a controlled evaluator” angle.
 
-## 7.1 Use cases
+### 7.1 Use cases
 
 * Evaluate **attribute constructors** and arguments safely (to extract configuration, analyzers, trimming hints)
 * Evaluate **source generator helpers** or embedded DSLs in IL form
 * Infer “constant-ish” results (e.g., computed strings) without running full program
 * Derive “effect summaries” (IO/reflection/native) for build gating
 
-## 7.2 Framework implications
+### 7.2 Framework implications
 
 This mostly wants the **hybrid mode**:
 
@@ -392,11 +396,11 @@ Again, no redesign; more “productization” of existing concepts.
 
 ---
 
-# 8) Cross-cutting adjustments that pay off across all applications
+## 8) Cross-cutting adjustments that pay off across all applications
 
-These are worth calling out because they are “good investments” regardless of which direction you take.
+These are candidate investments only after an implemented scenario demonstrates a repeated need. They should not be pulled into the active dump-evaluator roadmap merely because several speculative applications could use them.
 
-## 8.1 Make semantic modeling a first-class extension system
+### 8.1 Make semantic modeling a first-class extension system
 
 Everything you’ve discussed—dynamic lifting, async tasks, concurrent collections projections, environment modeling—fits best if you formalize:
 
@@ -406,7 +410,7 @@ Everything you’ve discussed—dynamic lifting, async tasks, concurrent collect
 
 A clean plugin model prevents the core VM from becoming a pile of ad-hoc `if (method == ...)`.
 
-## 8.2 Treat “effects” as a primary output of execution
+### 8.2 Treat “effects” as a primary output of execution
 
 Effects aren’t just for sandboxing. They power:
 
@@ -417,7 +421,7 @@ Effects aren’t just for sandboxing. They power:
 
 So keep `EffectSummary` in the state and in summaries.
 
-## 8.3 Determinism as a configurable contract
+### 8.3 Determinism as a configurable contract
 
 Different applications want different determinism:
 
@@ -428,7 +432,7 @@ Different applications want different determinism:
 
 Build determinism controls into the host services and unknown-minting.
 
-## 8.4 Add an analysis-friendly IR (even if the debugger executes IL directly)
+### 8.4 Add an analysis-friendly IR (even if the debugger executes IL directly)
 
 If you only ever execute decoded IL, you’ll fight stack-height joins and duplicated patterns forever. A normalized IR helps:
 
@@ -441,13 +445,13 @@ You can still keep a low-level IL stepper; the IR can be optional.
 
 ---
 
-# 9) “Do we need to change the previous design?” — quick verdict
+## 9) “Do we need to change the previous design?” — quick verdict
 
 ### No: the big architectural idea still holds
 
-The core bet—**domain + memory model parametrization** with **call/pattern modeling**—is exactly what makes multi-application reuse possible.
+The core bet—**domain + memory model parametrization** with **call/pattern modeling**—is what could make multi-application reuse possible. It remains unvalidated until shared semantics run in multiple modes and a second consumer exists.
 
-### Yes: a few refinements become non-optional
+### If platform expansion is funded, a few refinements become non-optional
 
 If you want the framework to serve *all* these applications well, I’d explicitly add:
 
@@ -457,4 +461,4 @@ If you want the framework to serve *all* these applications well, I’d explicit
 4. **Host ABI abstraction** (needed for no-JIT runtime mode and deterministic policies)
 5. **First-class effects + provenance + determinism controls** (cross-cutting)
 
-Everything else can remain as plug-in packages (async models, dynamic models, collection projections, etc.).
+Everything else could remain as plug-in packages (async models, dynamic models, collection projections, etc.). None of these refinements or packages is an active commitment under the current scope lock.

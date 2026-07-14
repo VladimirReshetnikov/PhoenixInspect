@@ -1,50 +1,87 @@
-# Prototype Interface Catalog Proposal
+# Prototype Contract Inventory
 
-> **Draft status notice:** The catalog below reflects the first implemented abstraction wave in `src/` and remains intentionally minimal.
+**Lifecycle:** Current implementation note
+**Roadmap relation:** Active
+**Stability:** Draft and reversible
 
-## 1. Purpose
+## Purpose
 
-This catalog tracks the currently implemented prototype contracts that establish layering boundaries between interpreter core logic, metadata providers, and host integrations.
+This inventory records the small public contract surface exercised by the current dump-evidence and concrete-IL proofs. It is descriptive, not a promise of compatibility. A contract is added only with an executable consumer and is removed when it gets ahead of code.
 
-## 2. Current state
+## Active contracts
 
-- `Interpreter.Core.Abstractions` now defines opaque handles, execution effects/diagnostics, budget policy hooks, value and memory contracts, resolution services, and call-model contracts.
-- `Interpreter.Metadata.Abstractions` now defines module/document identities, metadata universe contracts, normalized symbol/debug-map contracts, and source text retrieval.
-- `Interpreter.Host.Abstractions` now defines external runtime references/values, session snapshot contracts, frame seeding, external object reads, runtime↔metadata bridging, and optional generic-context resolution.
-- Supporting draft data-shape types were introduced in `Interpreter.Types` and `Interpreter.IL` so the abstraction projects can compile without committing to final runtime representations.
+### Core semantics
 
-## 3. Module-level contract inventory
+`Interpreter.Core.Abstractions` contains:
 
-### 3.1 `Interpreter.Core.Abstractions`
+- path-independent `ModuleHandle` and definition-based `MethodHandle` identities, including complete-artifact content when a disk PE is the source;
+- `IValueDomain<TValue>`, including executable order, meet, join, and widening operations;
+- `IMemoryModel<TValue,TMemory>` constrained by `IPersistentMemoryState<TSelf>`;
+- the deliberately narrow `IResolutionServices.GetMethodBody` boundary;
+- immutable `TypeSig`/`MethodBody`, budget, operation, and stack-category shapes used by those contracts.
 
-- Identity handles: `ModuleHandle`, `TypeHandle`, `MethodHandle`, `FieldHandle`
-- Effects/diagnostics: `EffectKind`, `EffectEvent`, `EffectSummary`, `UnknownOrigin`, `Diagnostic`, `IDiagnosticSink`
-- Budgeting/branching: `BudgetState`, `IBudgetPolicy`, `BranchDecision`
-- Value domain: `IValueDomain<TValue>` and supporting enums
-- Memory model: `IMemoryModel<TValue, TMem>`, `HavocRegion`
-- Resolution contracts: `ResolvedType`, `ResolvedField`, `ResolvedMethod`, `IResolutionServices`
-- Call modeling: `CallSite`, `CallOutcome<TValue, TMem>`, `CallModelContext<TValue, TMem>`, `ICallModel<TValue, TMem>`
+`Interpreter.Core.Execution` contains:
 
-### 3.2 `Interpreter.Metadata.Abstractions`
+- semantic `MachineState` and separate `MachineOperationalState` budget bookkeeping;
+- root-frame state, optional root return values, and a semantic comparer that excludes operational history;
+- whole-body `MethodAdmissionResult`, structured `ExecutionFailure`, and low-level `MachineRunStatus`;
+- `IlMachine.StepOne`, whose current closed set is `nop`, integer constants, argument/local loads, local stores, `add`, `sub`, `mul`, and `ret`.
 
-- Identities: `ModuleId`, `DocumentId`, `PdbId`
-- Metadata modules: `IMetadataModule`, `IMetadataUniverse`
-- Symbol contracts: `SequencePoint`, `LocalInfo`, `LocalScope`, `ISymbolInfo`
-- Debug map contracts: `DebugDocument`, `SourceSpan`, `IDebugMap`, `IDebugMapProvider`
-- Source text contract: `ISourceTextProvider`
+Admission rejects unsupported opcodes, malformed operands, non-boundary offsets, incompatible seeded stack/slot shapes, nested frames, and exception regions before budget consumption, state mutation, or instruction events.
 
-### 3.3 `Interpreter.Host.Abstractions`
+`TMemory` is carried as a persistent semantic snapshot but the arithmetic machine does not inject or call
+`IMemoryModel`; the concrete memory model is an independently tested W3 spike. That capability enters the machine
+only alongside the first memory-touching opcode and an end-to-end transfer test.
 
-- Runtime references and values: `ExternalObjectRef`, `ExternalThreadId`, `ExternalFrameId`, `ExternalValue`
-- Session/environment snapshot: `SessionSnapshot`, `ISessionSnapshotProvider`
-- Object model and optional raw-memory access: `IExternalObjectModel`, `IProcessMemoryReader`
-- Frame seeding: `FrameSeed`, `IFrameSeeder`
-- Runtime bridge: `RuntimeMethodId`, `RuntimeModuleId`, `RuntimeMethodInfo`, `IRuntimeMetadataBridge`
-- Optional generic context bridge: `IGenericContextResolver`
+The current body contract does **not** decode a method signature: argument/local counts and `ReturnsValue` are
+trusted frame-seeding inputs, then checked only against IL slot use, stack depth, and the admitted I4 stack category.
+This is sufficient for the controlled differential corpus but is not an untrusted-method admission boundary. W3
+must project signature/local types from metadata and validate seeded frames before widening this kernel's claim.
 
-## 4. Design guardrails retained for next iterations
+### Concrete validation domain
 
-1. Keep abstraction projects dependency-light and free of concrete backend types (ClrMD, SRM, ILSpy, Roslyn).
-2. Preserve XML documentation quality for all public types and methods because prototype rationale lives in API comments during design.
-3. Add companion documentation updates whenever contracts are expanded so architecture intent remains synchronized with implementation.
-4. Treat all signatures and DTO layouts as draft and reversible until MVP architecture checkpoints finalize stable public API boundaries.
+`Interpreter.Domain.Concrete` supplies the first real implementation of both semantic seams:
+
+- a lifted-flat concrete value lattice with one semantic top per static type;
+- executable lattice order and meet/join laws;
+- persistent object, array, and field snapshots;
+- branch isolation through immutable memory updates.
+
+It is a semantics-validation domain, not a CLR object-layout emulator or production heap.
+
+### Artifact metadata
+
+`Interpreter.Metadata.Abstractions` retains only module identity/descriptor and method-definition/body acquisition contracts. `Interpreter.Metadata.SRM` implements them with `PEReader` and `System.Reflection.Metadata`.
+
+Paths and names are display or acquisition hints, never identity. A disk module carries both metadata-root identity (MVID, metadata length, metadata SHA-256) and complete-artifact identity (whole-file length and SHA-256); the latter prevents PE files with identical metadata but changed IL from aliasing. Method lookup and body acquisition return structured unavailable/unsupported/conflict/invalid failures. The body projection preserves max stack, local-signature presence, local initialization, and exception-region count so execution admission cannot erase unsupported evidence.
+
+### Dump evidence
+
+`Interpreter.Host.Abstractions` contains only the counted immutable process-memory read contract and its exact/partial/unavailable result.
+
+`Interpreter.Host.Dump.ClrMD` owns ClrMD-specific evidence:
+
+- content-identified dump sessions and snapshot-scoped runtime-module instances;
+- immutable module catalogs and bounded object searches with completeness status;
+- bounded strong-GCHandle discovery with raw handle/object-header validation, plus primitive-field, bounded-string, metadata-root, and complete tiny/fat method-body observations;
+- 8 GiB external-dump admission and a 256 MiB ClrMD cache with stack-derived caches disabled; SRM's typed external `Open` boundary separately admits managed PEs up to 512 MiB;
+- coherent `Exact`, `Partial`, `Unavailable`, `Conflict`, and `Invalid` evidence statuses plus stable issue codes;
+- ordered raw reads that retain source identity, address, requested length, returned bytes, and missing-byte count.
+
+The dump body obtains its MethodDef RVA from counted dump metadata and its header, code, local-signature token, and declared extra sections from counted dump memory. A disk body's SRM decode is only an independent test oracle. Dump evidence and disk-artifact evidence remain distinct even when their complete metadata-root identities agree; MVID alone is not a sufficient binding.
+
+The size/cache caps are deterministic resource controls, not hostile-input isolation. The external worker plus a proven AppContainer, low-privilege account, or VM boundary remains a product-exposure gate.
+
+## Deliberately absent
+
+The active public surface does not contain speculative debugger sessions, frame seeding, generic reconstruction, symbol/debug-map providers, call models, async/dynamic models, abstract-analysis worklists, product facades, or service locators. Their research documents do not reserve API or assembly names.
+
+## Change rule
+
+A public contract change must include:
+
+1. detailed XML documentation of intent, failure behavior, parameters/returns, and draft caveats;
+2. an executable test at the boundary it introduces;
+3. deterministic identity and ordering where observable;
+4. explicit partial/unavailable behavior for evidence-dependent operations;
+5. an update to this inventory when the responsibility materially changes.

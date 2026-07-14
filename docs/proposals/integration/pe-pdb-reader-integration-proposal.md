@@ -1,14 +1,15 @@
 # PE/PDB reader integration proposal (draft)
 
-## Decision alignment update (2026-02-17)
+## Decision alignment update (2026-07-13)
 
-For MVP prototyping, this proposal now aligns to the project decision in `docs/lib/mvp-backend-decision-record.md`:
+For the active dump/query and first interpreter slices, this proposal aligns to `docs/lib/mvp-backend-decision-record.md`:
 
-- **Primary backend:** AsmResolver
-- **Designated fallback backend:** none for now
-- **Comparison set retained in docs:** dnlib, SRM/PEReader, and Mono.Cecil trade-off analysis remains in scope
+- **Active backend:** `System.Reflection.Metadata` + `PEReader`
+- **Alternative adapters:** research candidates, introduced only by an executable corpus gap
+- **Comparison set retained in docs:** AsmResolver, dnlib, and Mono.Cecil trade-off analysis remains useful reference material
+- **Active dump-body boundary:** MethodDef RVA, tiny/fat header, code, local-signature token, and declared extra sections come from counted dump metadata/memory. A disk PE has separate whole-file length/SHA-256 identity and is only an independent oracle; it is never a source of hidden admission facts for that body.
 
-All integration guidance below should be interpreted through this default stance, while preserving backend-neutral adapter contracts, side-by-side comparison guidance, and decision-revisit triggers from the decision record.
+The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers.
 
 ---
 
@@ -192,6 +193,8 @@ The original `dotnet/symstore` repo is archived, and there’s an explicit conti
   * supports Microsoft public symbol server and private servers
 * Whether you literally reuse `Microsoft.SymbolStore` or reimplement the minimal subset, the important point is: **keep acquisition separate from parsing.**
 
+**Security boundary:** acquisition is network-off by default and requires explicit host/user policy. The active local SRM opener rejects managed PEs above 512 MiB before parsing. Clients must verify PE/PDB identity before admission, constrain schemes/hosts and redirects, bound download and decompression sizes, defend cache paths against traversal/collision, and record provenance. SourceLink URLs are untrusted input and must not become ambient network authority. Dump/source bytes and paths are excluded from telemetry by default. These controls do not replace the external worker plus access-control gate for hostile inputs.
+
 ---
 
 ## 4) Source decompilation to C# (and debug mapping for stepping)
@@ -230,7 +233,7 @@ This layer’s job is to unify identity, caching, and “best available informat
 ### Core design principles
 
 1. **Stable internal representations** (don’t leak SRM vs AsmResolver vs dnlib types across your interpreter)
-2. **Deterministic module identity** (MVID/build-id/signature, PDB id/age, etc.)
+2. **Deterministic, layered identity** (dump metadata-root MVID/length/SHA-256; complete artifact whole-file length/SHA-256; PDB id/age). Metadata-root agreement does not imply full PE equality.
 3. **Progressive enhancement**
 
    * best: real source + portable PDB
@@ -365,8 +368,8 @@ This is the only layer allowed to “speak both languages” (runtime and metada
 #### Scenario A: Resolve and execute a method from a dump frame
 
 1. Layer 1 maps `ClrStackFrame` + `ClrMethod` to runtime handles and gathers frame values.
-2. Layer 4 requests method artifact from Layer 2 using module identity.
-3. Layer 3 decodes IL/EH/locals and returns normalized records.
+2. The dump adapter reads the exact metadata root, MethodDef RVA, physical header, code, and declared extra sections through counted reads.
+3. It returns a normalized body only when all required dump evidence is exact; any independently decoded PE body remains a comparison oracle.
 4. Layer 4 merges runtime generic context and emits `MethodExecutionPlan`.
 5. Layer 5 executes and emits result + provenance-rich diagnostics.
 
@@ -379,9 +382,9 @@ This is the only layer allowed to “speak both languages” (runtime and metada
 
 #### Scenario C: Identity mismatch between dump module and disk module
 
-1. Layer 2 detects weak/failed identity verification.
-2. Layer 4 policy decides: block execution, allow with warning, or allow for analysis-only.
-3. Layer 5 receives policy outcome as explicit session flag and includes it in explainability output.
+1. Layer 2 detects failed metadata-root identity verification or a changed complete-artifact identity.
+2. The active dump-backed path blocks correlation; it does not substitute disk body facts or expose an executable mixed-source body.
+3. A future separately classified artifact-only analysis mode may define a different policy, but it cannot relabel the artifact as dump evidence.
 
 ---
 
@@ -524,14 +527,14 @@ This is the layer your **post-mortem debugger UI** and **IL interpreter host** c
 
 # How this connects to ClrMD + the IL interpretation framework
 
-ClrMD gives you runtime facts (loaded modules, method tables, object addresses, thread stacks) but it doesn’t *guarantee* you have the module bytes/PDB/source available. That’s why the integration looks like:
+ClrMD gives you runtime facts (loaded modules, method tables, object addresses, thread stacks) but it doesn’t *guarantee* you have all method-body pages, a disk module, PDB, or source. The active dump path does not hide those gaps with artifact bytes. The broader artifact integration looks like:
 
 1. **ClrMD identifies** the runtime module/method
 2. Your **Artifacts layer resolves** it to a stable `ModuleIdentity` + `MethodKey`
-3. Artifacts layer **acquires** PE/PDB if needed (symbol cache/server)
+3. Artifacts layer **acquires** PE/PDB if explicitly authorized for symbols, static-artifact analysis, or an independent oracle (symbol cache/server)
 4. Artifacts layer provides:
 
-   * IL body + metadata resolution → to the interpreter
+   * artifact IL body + metadata resolution → to explicitly artifact-backed/static consumers, not into an incomplete dump body
    * debug map + source/decompiled text → to the UI stepping experience
 
 ### Practical connection points

@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>Interpreter.Host.Live.Snapshot</AssemblyName>
-    <RootNamespace>Interpreter.Host.Live.Snapshot</RootNamespace>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="../Interpreter.Host.Abstractions/Interpreter.Host.Abstractions.csproj" />
-  </ItemGroup>
-</Project>

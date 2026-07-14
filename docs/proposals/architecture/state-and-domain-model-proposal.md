@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Supporting design for W3/W4. Concrete execution and lattice laws are active; fixpoint, async, dynamic, and virtual-debug state are gated research.
 
 ## Scope
 
@@ -38,15 +38,24 @@ To support virtual step-debugging, the canonical runtime state is now a **machin
 
 ```text
 MachineState = {
+  Semantic: SemanticState,
+  Operational: OperationalContext
+}
+
+SemanticState = {
   CallStack: list<FrameState>,
   HeapState,
   PathFacts,
+  PendingTargetException?,
+  EffectSummary
+}
+
+OperationalContext = {
   TraceContext,
   BudgetState,
   DeterminismState,
-  EffectSummary,
-  AsyncState?,
-  LiftedCallState?
+  Cancellation,
+  CachesAndMetrics
 }
 ```
 
@@ -151,7 +160,7 @@ PathFacts = {
 
 `PathFacts` are consumable by domains (nullness, constants, interval-like plugins).
 
-### 2.6 TraceContext, BudgetState, and DeterminismState
+### 2.6 Operational context: trace, budgets, and determinism
 
 ```text
 TraceContext = {
@@ -175,11 +184,11 @@ DeterminismState = {
 }
 ```
 
-All budget decrements and deterministic-ID allocations must happen at documented transfer points so command replay remains stable.
+All budget decrements and deterministic-ID allocations must happen at documented transfer points so command replay remains stable. Operational context is not part of semantic equality and must never be joined or widened at CFG merge points. Otherwise decreasing budgets, growing traces, allocation order, and traversal-dependent provenance IDs can prevent convergence or make semantic equality unstable.
 
-### 2.7 AsyncState and LiftedCallState
+### 2.7 AsyncState and LiftedCallState (research)
 
-To align with async/dynamic lifted semantics, `MachineState` should include explicit state for virtual async runtime and lifted callsite bookkeeping.
+If async/dynamic lifted semantics later pass their entry gates, semantic state may gain explicit virtual-runtime and lifted-call bookkeeping. These fields are not part of the active state contract.
 
 ```text
 AsyncState = {
@@ -225,9 +234,9 @@ DomainValue =
 
 Every domain implementation must supply:
 
-- partial order `<=`,
+- executable partial-order test `IsLessThanOrEqual(a, b)`,
 - `join(a, b)`,
-- optional `meet(a, b)` (recommended),
+- `meet(a, b)`,
 - `widen(prev, next)` when fixpoint acceleration is enabled.
 
 Required properties:
@@ -294,13 +303,16 @@ This enables precise host messaging without reverse-engineering trace logs.
 Each micro-step transfer returns a `MicroStepResult` and emits `DebugEvent` items used by the virtual debug control plane:
 
 ```text
-MicroStepResult =
+SessionTransition =
   | Single(NextState: MachineState, Events: list<DebugEvent>)
   | Fork(NextStates: list<MachineState>, BranchInfo)
-  | Stop(SameState: MachineState, Reason: StopReason, Events: list<DebugEvent>)
+  | Stop(SameState: MachineState, Reason: SessionPauseReason, Events: list<DebugEvent>)
 
-StopReason = {StepComplete | DecisionNeeded | ExceptionStop | BudgetStop | Completed}
+SessionPauseReason = {StepComplete | DecisionNeeded | ExceptionStop | BudgetStop | Cancelled | Completed}
 ```
+
+This is a future session-controller protocol layered over low-level `StepOutcome`/`MachineRunStatus`; it does not
+rename machine outcomes. The canonical mapping is in `architecture-overview-proposal.md`.
 
 Rules:
 
@@ -315,13 +327,15 @@ Rules:
 
 ## 5) State join semantics at CFG merge points
 
-Given incoming states `S1..Sn`, merged state `Sm` is computed component-wise:
+Given incoming semantic states `S1..Sn`, merged semantic state `Sm` is computed component-wise:
 
 1. Validate stack shape compatibility.
 2. Join locals/arguments slot-by-slot.
 3. Join heap conservatively by abstract location.
 4. Merge path facts with contradiction handling.
-5. Union trace approximation references.
+5. Merge semantic effects according to their lattice.
+
+Budgets, cancellation, trace cursors, diagnostics already emitted, worklist order, provenance-ID allocation, caches, and metrics are deliberately excluded. Analysis orchestration retains them outside the lattice state.
 
 Contradiction rule:
 
@@ -372,16 +386,18 @@ Versioning rules:
 
 ## 8) MVP constraints and deferred capabilities
 
-In scope for MVP:
+In scope for the first concrete execution slice:
 
-- concrete + hybrid values,
-- nullness and constant tracking,
-- coarse heap abstraction,
-- provenance-bearing unknowns,
+- concrete primitive values,
+- a persistent memory snapshot contract,
+- tested partial-order/join/meet/widen laws,
 - deterministic budget accounting.
 
-Deferred beyond MVP:
+Deferred until the unknown-aware method slice or research gates:
 
+- hybrid nullness/constant/type/taint products,
+- provenance-bearing unknown values,
+- coarse and summary heap abstractions,
 - full relational numeric domains,
 - high-precision alias analysis,
 - full exception-region fixpoint semantics,
@@ -392,7 +408,7 @@ Deferred beyond MVP:
 ## 9) Open questions
 
 1. How much of `EHState` is mandatory for first public virtual-stepping preview (`stop-on-throw` only vs handler transfer)?
-2. Do we require meet/narrow operators before M3, or can we keep join+widen only?
+2. Which later domains need a separate narrowing operator beyond `Meet`?
 3. How aggressively should path-fact contradiction pruning run under `fast` policy presets?
 4. Should unknown provenance graphs be DAG-enforced in v1, or permit cycles for simplicity?
 5. Should modeled calls always appear as model frames in history, or may policy collapse them into atomic events?
@@ -403,7 +419,7 @@ Deferred beyond MVP:
 
 This proposal is ready for sign-off when:
 
-1. Core interfaces include explicit `MachineState`/`FrameState` and micro-step result types matching sections 2–4.
+1. Core interfaces include explicit `MachineState`/`FrameState`, while any session controller keeps its transition and pause protocol distinct from the machine result.
 2. At least one end-to-end sample can emit provenance-bearing unknowns.
 3. Merge/join behavior is validated on a curated CFG fixture set.
-4. Host API can surface `StopReason` + debug events + approximation diagnostics without internal type leakage.
+4. Host API can surface session pause reason, machine status, debug events, and approximation diagnostics without conflating their vocabularies or leaking internal types.

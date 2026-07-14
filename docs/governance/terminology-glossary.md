@@ -1,5 +1,7 @@
 # Terminology Glossary
 
+> **Lifecycle:** Draft · **Roadmap:** Supporting
+
 This glossary establishes a shared vocabulary for the conceptual design phase of the IL interpreter and dump-time evaluation project.
 
 The intent is to reduce ambiguity across product, architecture, integration, and planning documents. Definitions here are design-time working definitions, not implementation commitments.
@@ -20,7 +22,7 @@ Abstract domains enable deterministic reasoning under uncertainty and support ex
 
 ### Budgeted execution
 
-Execution constrained by explicit resource limits (for example instruction count, branch exploration, recursion depth, time slice, or memory usage).
+Execution constrained by explicit replay-stable resource limits (for example instruction count, branch exploration, call depth, traversal count, allocation units, or memory usage). Host cancellation or wall-clock deadlines are separate responsiveness mechanisms.
 
 Budget exhaustion is a first-class outcome and must be reported with provenance rather than hidden behind implicit timeouts.
 
@@ -30,17 +32,41 @@ The policy-driven categorization of an invocation target into handling modes suc
 
 Classification drives whether execution continues, partially evaluates, or yields a conservative miss reason.
 
+### Completion status
+
+The operational outcome of a request, kept separate from what its value means. Working categories include completed, blocked, budget-exhausted, cancelled, decision-needed, and failed.
+
+Completion is not a confidence score: a completed counterfactual execution can still rely on models or assumptions.
+
+### Completeness
+
+How much of the requested answer was produced: complete, partial, or none. Completeness is separate from completion and evidence quality; for example, a request can complete normally with a partial answer because some dump pages were unavailable.
+
+### Counterfactual execution
+
+Interpreter execution that starts from dump-derived, user-provided, or assumed state and answers what code **would** compute under explicit policies and models.
+
+Counterfactual execution is not historical replay and cannot establish why the original process reached the captured state.
+
 ### Deterministic replay
 
 A property of analysis where repeated runs over the same dump inputs, metadata inputs, and configuration produce the same observable evaluation result and explanation.
 
 Determinism applies to both value-level outcomes and provenance/diagnostic artifacts.
 
+For a virtual session, replay means reproducing the tool's command transcript; it does not mean replaying the original process's historical execution.
+
 ### Dump-time evaluation
 
 Evaluation of expressions, statements, or stepping operations against a memory dump rather than a live process.
 
 Because execution is reconstructed from static snapshot artifacts, dump-time evaluation prioritizes bounded simulation, explicit uncertainty, and safety-first fallback behavior.
+
+### Evidence status
+
+The quality of the evidence supporting a result, independent of request completion or semantic mode. Working categories are exact, partial, unavailable, conflicting, and invalid.
+
+Evidence status must carry provenance and miss reasons. It must not be collapsed into a single trust or confidence badge inside engine contracts.
 
 ### Effect lattice
 
@@ -60,6 +86,17 @@ A normalized reason code and descriptive payload that explains why exact evaluat
 
 Miss reasons should be stable enough to support telemetry, testing, and user-facing guidance.
 
+### Semantic mode
+
+The kind of claim an evaluation result makes:
+
+- **Observation**: a fact decoded directly from snapshot evidence.
+- **Derived query**: a deterministic calculation over observed facts without executing user IL.
+- **Counterfactual execution**: interpreted execution from recovered or assumed state.
+- **Abstract analysis**: may/must reasoning over a set of possible states.
+
+Every host-facing result should identify its semantic mode. A UI trust indicator may summarize mode, completion, completeness, evidence, effects, and provenance, but must not replace those axes.
+
 ### Provenance
 
 Traceable metadata that links a computed result to its source evidence and transformation path, such as dump memory reads, PE/PDB symbols, policy decisions, and fallback transitions.
@@ -74,12 +111,11 @@ It is not a full process recreation; it is a bounded analysis substrate assemble
 
 ### Virtual stepping
 
-A dump-backed approximation of debugger Step Into/Over/Out behavior produced through interpreter simulation, debug-map guidance, and conservative stop rules.
+A counterfactual, dump-backed approximation of debugger Step Into/Over/Out behavior produced through interpreter simulation, debug-map guidance, and conservative stop rules.
 
-Virtual stepping must clearly communicate where behavior diverges from live runtime stepping semantics.
+Virtual stepping explores what code would do from a selected snapshot-derived state. It must clearly communicate assumptions and divergence from live-runtime behavior and must never imply causal or historical replay.
 
 ## Open terminology questions
 
-- Should we distinguish "analysis confidence" from "result confidence" as separate first-class fields in public contracts?
 - Do we need separate terms for "unsupported by policy" versus "unsupported by capability" to improve user guidance and telemetry quality?
 - Should "modeled call" be split into deterministic model versus heuristic model?

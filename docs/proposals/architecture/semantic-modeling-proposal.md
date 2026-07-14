@@ -1,4 +1,6 @@
-Below is a technical proposal for a **“semantic modeling layer”** in your dump-time IL interpreter: it recognizes common **BCL types** and **compiler/IL idioms** and replaces “interpret framework internals” with **high-level, deterministic semantics** (or explicit Unknowns) to dramatically improve stepping, watches, and post-mortem exploration.
+> **Roadmap status: research backlog.** Models are added only when an active scenario reaches the corresponding boundary and supplies versioned fixtures. No model pack, layout decoder, or broad BCL coverage is currently committed.
+
+Below is a candidate semantic-modeling design for recognizing selected BCL types and compiler/IL idioms without interpreting framework machinery literally.
 
 ---
 
@@ -91,7 +93,7 @@ public interface ISemanticsLibrary<TValue, TMem>
 
 They carry:
 
-* provenance (“modeled because Env_Time”, “projection used .NET 8 layout decoder”, “fallback unknown”)
+* provenance (“modeled because Env_Time”, “projection used the version-pinned runtime layout decoder”, “fallback unknown”)
 * effect tags (`ReadEnv`, `Threading`, `Native`, `UnsupportedLayout`)
 * optional “explainability” payload (why/what was assumed)
 

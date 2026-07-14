@@ -1,5 +1,7 @@
 # ClrMD APIs tutorial (project-focused usage scenarios)
 
+> **Lifecycle:** Draft · **Roadmap:** Reference
+
 ## Purpose and audience
 
 This document is a practical tutorial for how we expect to use ClrMD in this project’s dump-time evaluation pipeline.
@@ -214,47 +216,32 @@ public static IEnumerable<HeapObjectRecord> EnumerateObjects(ClrRuntime runtime)
 
 ---
 
-## 6) Scenario E: Method IL location hints + PE fallback handshake
+## 6) Scenario E: Counted dump method body + independent PE oracle
 
 ### Goal
 
-Use ClrMD to discover IL address/size when possible, then hand off to PE/PDB resolver when memory pages are missing.
+Construct a dump-backed method body only from exact counted dump metadata and memory, while keeping disk-artifact decoding as an independent source.
 
 ### Key ClrMD APIs
 
-- `ClrMethod.GetILInfo()` (when available)
-- data-reader-backed memory reads via `DataTarget.DataReader`
-- file resolution helpers through `DataTarget.FileLocator` and symbol path configuration
+- `ClrMethod.MetadataToken` for the runtime-selected MethodDef identity
+- data-reader-backed counted memory reads through the project adapter
+- `MetadataReaderProvider.FromMetadataImage` over the exact dump metadata-root read
+- `PEReader` only for an independently opened, whole-file-identified disk oracle or static-artifact workflow
 
-### Draft pattern
+### Active pattern
 
-```csharp
-public readonly record struct IlBytesResult(
-    bool Success,
-    byte[]? IlBytes,
-    string MissReason);
-
-public static IlBytesResult TryReadIl(ClrmdSession session, ClrMethod method)
-{
-    var il = method.GetILInfo();
-    if (il is null || il.Address == 0 || il.Length <= 0)
-        return new IlBytesResult(false, null, "IlInfoUnavailable");
-
-    var buffer = new byte[il.Length];
-    var read = session.Target.DataReader.Read(il.Address, buffer);
-
-    if (read != buffer.Length)
-        return new IlBytesResult(false, null, "IlBytesMissingFromDump");
-
-    return new IlBytesResult(true, buffer, "None");
-}
-```
+1. Read the module's complete metadata image from dump memory and retain that counted read.
+2. Validate the runtime MethodDef token, decode its implementation kind and RVA from those metadata bytes, and map the RVA only for supported mapped/loaded layouts.
+3. Parse the physical tiny/fat header from counted memory reads, validate the local StandAloneSig row against the dump metadata, then read the exact code and every declared extra section under fixed caps.
+4. Expose a normalized body only when all required ranges are exact. Partial/missing/malformed evidence remains a typed result and is never filled from disk.
+5. In tests, compare the result with SRM's independent decode of a disk PE whose identity includes exact whole-file length and SHA-256. That comparison supplies no input to step 3.
 
 ### Project guidance
 
-- Treat ClrMD IL reads as best-effort, not guaranteed.
-- When IL is missing, transition to PE-based method-body resolution through integration adapters.
-- Keep miss reasons structured (`IlInfoUnavailable`, `ImageNotFound`, `MetadataTokenUnresolvable`).
+- Treat captured metadata/header/code/section reads as fallible evidence with exact byte counts.
+- Keep miss reasons structured (`MetadataUnavailable`, `MethodBodyLayoutUnsupported`, `MethodHeaderInvalid`, `MemoryUnavailable`, `LimitExceeded`).
+- Do not call an identity-correlated disk body “dump sourced.” A future artifact-backed evaluation mode needs separate semantics and provenance.
 
 ---
 

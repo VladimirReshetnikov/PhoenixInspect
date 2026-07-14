@@ -1,5 +1,7 @@
 # Dynamic calls in a post-mortem IL interpreter: “lift the semantics, not the machinery”
 
+> **Roadmap status: research backlog.** Dynamic binding is not part of the active dump-query or first interpreted-method slices. It enters only after the ordinary call, type reconstruction, and evidence-result contracts are validated on compiled fixtures.
+
 ## 0. Problem recap
 
 A C# `dynamic` invocation is *not* compiled as “pick an overload and `call` it”. It’s compiled as a DLR call-site: a cache field, a null-check + initialization path that builds a `CallSiteBinder` (via `Microsoft.CSharp.RuntimeBinder.Binder.*`), and then an indirect call through the site’s `Target` delegate. That’s great for a live process; it’s a nightmare for a dump-time IL interpreter because “doing it literally” means emulating:

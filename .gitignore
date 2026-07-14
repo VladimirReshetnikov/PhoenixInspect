@@ -22,6 +22,12 @@ TestResults/
 *.coveragexml
 coverage/
 
+# Secret-bearing crash artifacts must stay local
+*.dmp
+*.dump
+/core
+/core.[0-9]*
+
 # NuGet
 packages/
 *.nupkg

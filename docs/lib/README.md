@@ -1,8 +1,8 @@
 # Library Reference Notes (`lib/` snapshots)
 
-This section captures design-oriented notes for library snapshots stored under `lib/`.
+This section indexes design-oriented notes for library snapshots stored under `lib/` and separates them from active implementation decisions.
 
-These notes are intentionally project-specific: they focus on how each library can help (or complicate) our dump-time IL interpretation and virtual-debugging architecture.
+> **Current policy (2026-07):** SRM/PEReader is the active metadata backend and ClrMD is the active dump adapter. The source scans, tutorials, and comparisons in this directory are preserved research, not package-selection instructions. Executable evidence lives in `backend-evidence-log.md`; the active choice and revisit triggers live in `mvp-backend-decision-record.md`.
 
 ## Scope and intent
 
@@ -49,12 +49,12 @@ Rule of thumb: if a note is primarily about one library, keep it in that library
 Use this folder as a bridge between:
 
 1. high-level architecture and integration proposals under `docs/proposals/`, and
-2. concrete package-selection/adapter decisions in future implementation milestones.
+2. executable package-selection and adapter evidence in the prototype.
 
-When design decisions evolve, update these notes first and then reconcile proposal docs that depend on them.
+Do not infer current capability from a source scan. Add a checked-in fixture to the evidence log, then update the decision record and dependent proposals if that evidence changes direction.
 
 
-## Latest expansion focus
+## Preserved 2026-02 source-review focus
 
 The current pass expands source-driven notes and tutorials for all five snapshot libraries:
 
@@ -71,13 +71,14 @@ See each `<library>/usage-notes.md` + `<library>/source-scan.md` pair for design
 
 For contributors doing direct snapshot review, use `source-tour-workbook.md` as the default tutorial playbook. It provides per-library file lists, review questions, and required evidence artifacts so source reading produces decision-ready outputs.
 
-## Expansion backlog
+## Active maintenance policy
 
-- Populate `backend-evidence-log.md` with concrete evidence per capability axis as prototype experiments are run.
+- Add current executable evidence per capability axis to the leading section of `backend-evidence-log.md`.
 - Keep miss-reason taxonomy synchronized with architecture-level provenance terminology.
-- Progressively fill `mvp-backend-decision-record.md` and finalize once MVP backend gates are met.
+- Change `mvp-backend-decision-record.md` only when its evidence-based revisit triggers are met.
+- Do not expand an alternative-backend tutorial or comparison unless an active scenario exposes a concrete gap.
 
-## Source-review baseline (current)
+## Historical source-review baseline
 
 The library notes in this folder now include source-structure and API-surface review findings from the local snapshots under `lib/`.
 
@@ -89,7 +90,7 @@ Current emphasis:
 - Mono.Cecil reader-parameter policy, deferred/immediate load paths, resolver flow, and portable PDB handling
 - Roslyn C# parser/compilation/semantic entry points for expression front-end design
 
-These findings remain design-phase guidance and should be validated with executable adapter spikes before MVP backend lock-in.
+These findings remain useful design history. They do not supersede the executable SRM path or constitute a reason to add another adapter.
 
 ## Tutorial expansion status
 

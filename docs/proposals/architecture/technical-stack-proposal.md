@@ -1,5 +1,7 @@
 # Technical Stack Proposal
 
+> **Lifecycle:** Draft · **Roadmap:** Active
+
 This document proposes the initial technical stack for the IL interpreter and dump-time evaluation initiative.
 
 The objective is to pick technologies that maximize:
@@ -40,16 +42,17 @@ The objective is to pick technologies that maximize:
 
 - Prefer language features that are supported in current LTS SDKs used by our target consumers.
 
-### Runtime target: .NET 8 (current prototype), decision required before productization
+### Runtime target: .NET 10 LTS
 
-**Why the prototype currently uses .NET 8**
+**Decision (2026-07)**
 
-- Modern performance primitives and runtime stability.
-- Strong tooling and package ecosystem.
+- Development and CI target `net10.0`.
+- `global.json` pins the stable .NET 10.0.2xx feature band and permits only later patches in that band.
+- Multi-targeting is deferred until an actual consumer requires it.
 
 **Lifecycle correction (2026-07)**
 
-.NET 8 is in maintenance and reaches end of support on November 10, 2026. A multi-year implementation should explicitly choose whether to move the development baseline to .NET 10 LTS (supported through November 2028) while retaining `net8.0` as a consumer target, or to accept the near-term migration cost. See the [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
+.NET 8 is in maintenance and reaches end of support on November 10, 2026. .NET 10 is active LTS through November 14, 2028. The project therefore moved now, before prototype compatibility becomes expensive. See the [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core).
 
 **Deferred decision**
 
@@ -59,32 +62,28 @@ The objective is to pick technologies that maximize:
 
 ## 3) Repository and package layout proposal
 
-Proposed solution structure:
+Current prototype structure:
 
 - `src/Interpreter.Core.Execution`
   - IL semantics engine, abstract state machine, control flow stepping.
+- `src/Interpreter.Core.Abstractions`
+  - draft domain/memory/identity contracts and the small backend-neutral type/method-body shapes they consume.
 - `src/Interpreter.Metadata.Abstractions` and `src/Interpreter.Metadata.SRM`
-  - metadata adapters and canonical symbol model.
-- `src/Interpreter.Domain.*`
-  - reusable domains (concrete execution, CN/type-taint, optional range analysis).
-- `src/Interpreter.Memory.*`
-  - virtual heap, overlay memory, and summary-heap analysis components.
-- `src/Interpreter.Models.Abstractions`
-  - intrinsic call models, effects, and fallback/havoc policies.
-- `src/Interpreter.Core.Tracing`
-  - tracing APIs, provenance events, explainability payloads.
+  - projected metadata contracts and the active SRM/PEReader adapter.
+- `src/Interpreter.Domain.Concrete`
+  - concrete validation domain and persistent virtual memory.
 - `src/Interpreter.Host.Abstractions`
-  - DI registration, host configuration, policy bundles.
-- `src/Interpreter.Cli` (optional early)
-  - smoke driver for manual experimentation.
-- `tests/*`
-  - dedicated test projects per module.
+  - typed dump-memory/evidence contracts.
+- `src/Interpreter.Host.Dump.ClrMD`
+  - dump loading, runtime discovery, and raw evidence reads.
+- `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, and `tests/Interpreter.TestTarget`
+  - fast semantic/contract tests and real dump evidence.
 
 ### Package boundaries
 
 - Keep `Interpreter.Core.Execution` free of host-specific dependencies.
-- Keep `Interpreter.Core.Tracing` contracts lightweight and structured.
 - Avoid cyclic dependencies; depend “inward” toward `Interpreter.Core.Abstractions`.
+- Add a physical project only with implementation, an independently useful dependency boundary, and a test that exercises it. Logical future seams stay in documentation.
 
 ---
 
@@ -98,7 +97,7 @@ Proposed solution structure:
 - Good control over blobs, signatures, tokens, and Portable PDB access.
 - Suitable for deterministic decoding and explicit handling of edge cases.
 
-This is the backend exercised by the current `ret`-only integration test. It conflicts with the provisional MVP decision record that names AsmResolver as the chosen primary backend; that conflict must be resolved by an authoritative ADR before either backend is treated as the product default.
+This is the active prototype backend because it is exercised by executable integration evidence and aligns with the planned Portable PDB path. The earlier source-scan-only AsmResolver choice is superseded. Backend-neutral projected contracts remain a goal; an alternative adapter is justified only by a recorded fixture/corpus gap.
 
 ### Debug-map and source fallback stack
 
@@ -112,7 +111,7 @@ Recommended decompiler backend for map generation: `ICSharpCode.Decompiler` (ILS
 
 ### Artifact acquisition service
 
-Add a dedicated artifact locator module (cache + symbol server aware) as part of integration packages so both dump-hosting and standalone analysis use identical PE/PDB lookup behavior.
+Artifact acquisition remains off by default in the active local slice. When required, add it behind explicit network policy, identity verification, bounded downloads/decompression, and provenance; do not create a placeholder project first.
 
 ### Optional adapter layer for alternative ecosystems
 
@@ -164,16 +163,16 @@ Use standard .NET DI for host-facing composition while allowing direct construct
 
 ### Test categories
 
-1. **Instruction semantics tests**
-   - One opcode family at a time with edge-case matrices.
-2. **Domain law tests**
-   - Lattice laws (`join`, `leq`, top/bottom behavior) where applicable.
-3. **Fixpoint convergence tests**
-   - Ensure analyses terminate under configured widen/budgets.
-4. **Golden trace tests**
-   - Validate explainability output format and key events.
-5. **Regression corpus tests**
-   - Preserve behavior for historically problematic IL snippets.
+1. **Fast domain, persistent-memory, budget, and admitted-opcode tests**
+   - Run without dumps or external artifacts.
+2. **Adapter contract tests**
+   - Assert project-owned identity, evidence status, provenance, bounds, and stable miss reasons.
+3. **Windows dump integration tests**
+   - Exercise real dump creation/loading and state exactly which evidence came from dump memory versus disk artifacts.
+4. **Differential tests (W3+)**
+   - Compare the fixture-derived concrete opcode subset with CoreCLR.
+
+CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad performance suites remain research until their roadmap entry gates pass. `testing-strategy-proposal.md` is the source of truth for current evidence and milestone gates.
 
 ### Fuzz/property testing (later phase)
 
@@ -199,7 +198,8 @@ Use standard .NET DI for host-facing composition while allowing direct construct
 
 ### NuGet packaging
 
-- Publish modular packages (core + optional adapters/extensions).
+- Do not publish packages during the conceptual prototype phase.
+- Revisit modular package publication only after active boundaries have independent consumers and compatibility tests.
 - Use semantic versioning with documented compatibility expectations.
 
 ### API governance
@@ -211,49 +211,54 @@ Use standard .NET DI for host-facing composition while allowing direct construct
 
 ## 10) Security and supply-chain posture
 
-- Enable lock files and deterministic builds.
-- Prefer first-party dependencies where feasible.
-- Add baseline static analysis and dependency audit checks in CI.
-- Define a policy for handling untrusted metadata inputs (validation and defensive parsing).
+- Treat dumps, PE/PDB files, symbol responses, SourceLink documents, and expression text as hostile and potentially secret-bearing.
+- Keep network acquisition off unless a host/user explicitly enables it; verify identity before combining remote/disk artifacts with dump evidence.
+- Bound raw reads, graph traversal, strings, parser work, downloads, and decompression.
+- Never place dump contents, source text, file paths, environment data, or expression results in telemetry by default.
+- Run arbitrary external artifacts in a constrained worker process before product exposure; local in-process parsing is prototype-only and is not a sandbox.
+- Use central package versions, committed lock files, deterministic builds, dependency review, and minimal dependency surface.
 
 ---
 
 ## 11) CI/CD proposal
 
-### CI stages (minimum)
+### W0 CI target
 
-1. Restore/build
-2. Unit/integration tests
-3. Formatting/analyzers
-4. Benchmark smoke (optional scheduled)
-5. Package validation (on release branches)
+The stages below are required by the W0 exit gate. The workflow is checked in and the successful local 2026-07-13 command results are recorded in `testing-strategy-proposal.md`; the first GitHub service-side run remains pending, so the gate is not yet described as remotely CI-enforced.
+
+1. locked restore and Release build under stable .NET 10;
+2. fast unit/domain/determinism tests;
+3. real dump integration evidence on Windows.
+
+Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.
 
 ### Platforms
 
-- Primary: Linux + Windows runners.
+- Windows is required for the current full-dump test signal.
+- Add Linux when a checked-in dump fixture or platform-specific live-dump test provides equivalent evidence.
 - Add macOS only when a real host requirement emerges.
 
 ---
 
 ## 12) Open questions
 
-1. Do we need early `netstandard2.1` support for host ecosystem compatibility?
-2. Should we standardize on a single metadata backend first for speed of delivery?
-3. How much trace detail is retained by default vs opt-in?
-4. Do we publish a CLI with the first milestone or keep it internal-only initially?
+1. Which concrete consumer, if any, justifies multi-targeting?
+2. How much trace detail is retained by default versus explicit local opt-in?
+3. Does the first restricted-expression slice need an internal CLI, or are tests the right host?
 
 
 ## 13) Prototype implementation snapshot (draft)
 
-> **Draft status notice:** The current solution combines a broad module scaffold with one narrow executable vertical slice.
+> **Draft status notice:** The current solution is a reduced eight-project prototype organized around executable evidence and a small set of dependency boundaries.
 > Project names, dependencies, and interfaces are exploratory and may change without compatibility guarantees.
 
 Current facts:
 
-- The solution contains 42 `src/` projects plus two test projects; most source projects are placeholders.
-- Handwritten prototype code currently exists in `Interpreter.Types`, `Interpreter.IL`, `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, and `Interpreter.Host.Dump.ClrMD`.
-- `tests/Interpreter.IntegrationTests` generates a dump, discovers the target module with ClrMD, reads a `ret`-only body from the on-disk PE with SRM, and executes one budgeted micro-step.
+- The solution retains eight `src/` projects with active code/contracts plus test projects; 33 empty placeholders were removed and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
+- Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, and `Interpreter.Product.DumpQuery`.
+- Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code, `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. The independently opened disk PE carries exact whole-file length/SHA-256 identity and serves only as a comparison oracle; its body contributes no fact to the dump-backed executable body.
+- External-input resource ceilings are 8 GiB per dump before hashing/ClrMD parsing, a 256 MiB ClrMD dump cache with stack-trace/root caching disabled, and 512 MiB at the typed external-PE `Open` boundary before SRM parsing. These bounds reduce resource-exhaustion risk but are not a parser/DAC sandbox; trusted-fixture convenience APIs are not external admission boundaries.
 - `Interpreter.Core.Execution` depends on core abstractions, not on a concrete metadata backend. `MetadataResolutionServices` supplies the current bridge.
-- There is not yet a concrete value domain, dump-backed memory model, expression front end, orchestrator, debugger control plane, analysis engine, or product composition.
+- The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 
 This snapshot is a plumbing proof, not evidence that the proposed package decomposition or public contracts have converged.

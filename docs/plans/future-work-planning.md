@@ -1,363 +1,298 @@
 # Future Work Planning
 
-This document tracks forward-looking work for the interpreter and dump-time evaluation initiative.
+> **Lifecycle:** Current · **Roadmap:** Active
 
-It is intentionally split into:
+This is the active delivery plan for the interpreter and dump-time evaluation initiative. It is intentionally evidence-led: each milestone must produce a useful executable scenario or remove a concrete obstacle to the next one.
 
-- near-term roadmap (execution-oriented),
-- strategic tracks (cross-cutting investments), and
-- decision gates (questions we should answer before scaling scope).
+## 1) Scope lock
 
----
+The only active product target is a **deterministic, read-only expression evaluator grounded in a .NET dump**.
 
-## 1) Planning assumptions
+The current proof generates and opens a dump read-only, finds a strongly GCHandle-rooted object through bounded dump enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a primitive field, bounded/null strings, metadata, and the complete tiny `RetOnly` body from dump memory. It obtains the MethodDef RVA from counted dump metadata, reads the header/code/declared extra sections from dump memory, and executes the exact dump-sourced `ret`; fast parser fixtures separately cover fat headers and chained EH sections, and the full-content-identified disk PE is only an independent oracle. Separately, a concrete branchless `Int32` kernel is checked against compiler-emitted methods running on CoreCLR. These are architectural proofs, not a production evaluator.
 
-1. We are still in conceptual design and architecture shaping.
-2. We should prioritize leverage: foundations before broad feature surface.
-3. Every new capability should preserve deterministic, bounded, and explainable execution.
+Until W1 and W2 pass their exit criteria, the following remain research backlog rather than delivery commitments:
 
----
+- virtual Step Into/Over/Out, undo, and branch exploration,
+- whole-method CFG/fixpoint abstract interpretation,
+- async/Task and DLR `dynamic` lifting,
+- broad BCL projection and semantic-registry systems,
+- live speculation, static-analysis products, and no-JIT/sandbox hosting.
 
-## 2) Milestone roadmap (proposed)
+Scope expands only through an explicit decision gate backed by executable evidence.
 
-## 2.1) Immediate alignment updates from virtual-stepping proposals
+**Current active milestone:** harden the implemented W1–W2 generated-dump vertical slice for external artifacts and representative incident evidence. W0 and the bounded W2 root-field query are present in-tree; local and remote-run verification remain recorded separately. The concrete W3 work is a bounded architecture-risk spike, not permission to skip the remaining product/security gates; W3 remains incomplete and W4 remains gated.
 
-Based on the latest product + implementation proposals for virtual stepping, the following cross-document updates are now required and should be treated as near-term planning work:
+## 2) LOC sizing and work-in-progress
 
-1. Promote `MachineState`/`FrameState` as canonical terminology across architecture docs (deprecate single-frame `ExecState` as host contract wording).
-2. Standardize one stop-reason taxonomy (`StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Completed`) across host APIs, testing docs, and replay artifacts.
-3. Lock policy terminology for branch/call handling (`StopForUserChoice` vs fork/join modes; `Interpret` vs `Model` vs `Stop`).
-4. Add explicit EH-phasing gate: MVP must at least support `stop-on-throw`; debugger-grade handler transfer is a later milestone requirement.
-5. Require source-step mapping fallback order (PDB -> decompiler -> IL) in all UX and integration proposals.
-6. Define a single artifact-resolution contract (`ModuleId`, artifact provenance, deterministic miss reasons) shared by ClrMD and PE/PDB integration layers.
+Planning estimates use ranges of **hand-written implementation LOC**. They include production code, tests, fixtures,
+harnesses, scripts, and material CI/configuration logic. They exclude documentation, generated output, package lock files,
+solution-file churn, vendored snapshots, and deletion-only scaffold removal. Count additions and materially rewritten lines
+once rather than treating raw diff churn as delivered scope.
 
-## 2.2) Immediate alignment updates from async + dynamic proposals
+LOC ranges are implementation-surface envelopes, not productivity or schedule forecasts. Record the realized count when a
+milestone closes and recalibrate later ranges from that evidence. Split any independently deliverable work package whose
+upper estimate exceeds 3,500 LOC.
 
-Based on the new `virtual-tasks` and `dynamic-calls` architecture proposals, the following cross-document updates are now required:
+Work-in-progress limit:
 
-1. Extend the call-classification contract to include lifted semantic callsites (`DynamicDispatch` and `AsyncRuntimeIntrinsic`) instead of treating them as opaque fallback calls.
-2. Standardize a shared diagnostic taxonomy for dynamic binding and async scheduling outcomes (`Resolved`, `Ambiguous`, `Unresolved`, `MetaObjectRequired`, `AwaitPending`, `ContinuationResumed`, `TaskCompleted`, `TaskFaulted`, `TaskCanceled`).
-3. Update state-model terminology to include virtual async entities (`VirtualTaskState`, continuation queue/scheduler state, and await-point provenance) as first-class machine-state components.
-4. Clarify debugger control-plane behavior for async and dynamic decision points:
-   - dynamic unresolved multi-target dispatch may raise `DecisionNeeded` for Step Into,
-   - async suspension/resume points should emit stable stop/trace events that map to user-method frames.
-5. Expand integration contracts for required artifacts and metadata:
-   - async method/state-machine mapping (`AsyncStateMachineAttribute`, PDB `StateMachineMethod`),
-   - runtime binding type reconstruction for dynamic call arguments.
-6. Expand benchmark + test corpus requirements with dedicated async/dynamic fixture sets and determinism checks for virtual-scheduler replay.
+1. Keep one delivery milestone active at a time.
+2. Do not add a subsystem proposal unless the active milestone needs its contract.
+3. Do not create an empty project to reserve a hypothetical boundary.
+4. A planned test is not validation; only a running artifact counts as evidence.
 
-## 2.3) Immediate alignment updates from semantic-modeling proposal
+### Work-package LOC estimates for the funded path
 
-Based on the semantic-modeling architecture proposal, the following cross-document updates are now required:
+The ranges make large milestones decomposable and expose scope growth without converting uncertain architecture work into
+a calendar forecast. A milestone total is the sum of its non-overlapping package ranges.
 
-1. Introduce a unified special-semantics registry contract that spans call intrinsics, IL-pattern rewrites, and heap projections (instead of documenting these as unrelated extension points).
-2. Add `SessionSnapshot` extraction semantics to integration and host contracts so environment/time APIs can return deterministic session-stable values or explicit unknowns with origin tags.
-3. Expand the call-model taxonomy with semantic buckets (`PureIntrinsic`, `EnvironmentIntrinsic`, `ProjectionIntrinsic`, `PatternIntrinsic`) and require confidence labels (`Exact`, `BestEffort`, `Partial`, `UnsupportedLayout`) on modeled outcomes.
-4. Define copy-on-write projection semantics for dump-backed collection mutation so virtual writes are explicit and replay-safe.
-5. Prioritize stepping-noise suppression patterns (`lock`, `foreach`, throw-helper guards, interpolation handlers) as first-class UX investments in virtual stepping docs.
-6. Add versioned layout-decoder governance (identity, supported runtime ranges, invariant checks, fail-closed behavior) for projection-heavy models.
-7. Adopt `special-semantics-registry-proposal.md` as the normative registry contract and align architecture/integration docs to its lookup-order and versioning model.
+| Milestone | Work package | Estimated implementation LOC |
+|---|---|---:|
+| W0 | Collapse speculative scaffolding; reconcile scope, status, and backend decisions | 100–250 |
+| W0 | Pin/lock the toolchain and add build, fast, dump, and deterministic-replay gates | 250–500 |
+| W0 | Repair identity, machine-status, lattice, persistence, and admission contracts exposed by the walking skeleton | 700–1,200 |
+| W1 | Snapshot identity, read-only lifetime, exact/partial raw-memory reader, and module catalog | 700–1,100 |
+| W1 | Bounded root/object/field/string/metadata/IL evidence path | 1,000–1,600 |
+| W1 | Identity-conflict, sparse/corrupt-input, provenance, redaction, and supported-runner hardening | 900–1,500 |
+| W2 | Closed grammar and deterministic parse/admission diagnostics | 350–600 |
+| W2 | Root/member binder and immutable read-only query plan | 350–700 |
+| W2 | Bounded evaluator plus honest result/provenance envelope | 500–900 |
+| W2 | Ten-plus scenario, negative, replay, and security-policy fixtures | 500–900 |
 
----
+## 3) Evidence-led roadmap
 
+### W0 — Truthful baseline and fast feedback
 
-## 2.4) Immediate alignment updates from platform-expansion strategy note
+**Estimated implementation surface:** 1,050–1,950 LOC
 
-Based on `proposals/product/other-potential-applications.md`, the following cross-document updates are now required:
+**Status:** implementation and local verification complete on 2026-07-13; first GitHub workflow result still pending before the remote CI exit claim is closed.
 
-1. Clarify that the interpreter core is a multi-application platform (not only dump-time expression evaluation) across architecture overview, product framing, and roadmap docs.
-2. Add a normalized analysis IR track (`MethodNormalizer`/typed temporaries + IL offset mapping) as a first-class enabler for static-analysis and decompiler-mapping quality.
-3. Promote EH-aware CFG precision modes (`Ignore`, `Conservative`, `Modeled`) to explicit milestone planning so analysis and virtual stepping share conservative exception semantics.
-4. Define reusable interprocedural summary contracts (return abstraction, memory/effect deltas, exception/evidence metadata) and cache/replay expectations.
-5. Add a host snapshot abstraction for speculative live-debug scenarios (`ISnapshotProvider`/stable snapshot semantics) without weakening dump-safety defaults.
-6. Elevate deterministic tracing/replay artifacts (event schema, stable unknown IDs, scheduling tie-break policy) from optional diagnostics to roadmap deliverables.
-7. Expand test/benchmark plans with differential-execution and fuzzing harness goals that compare interpreter behavior against CLR outcomes on supported subsets.
-
----
-
-## M0 — Architecture baseline and contracts
-
-**Goal:** lock core interfaces and execution model boundaries.
+**Goal:** make the existing proof repeatable and ensure repository claims match executable behavior.
 
 **Deliverables**
 
-- Core interfaces for value domains, memory models, call dispatch, and metadata providers.
-- Canonical execution state model and error/diagnostic envelopes.
-- Initial “unknown value provenance” data contract.
+- Minimal CI that builds and runs the fast test set.
+- Determinism smoke coverage for the implemented micro-step.
+- Corrections for unstable identity, false instruction-executed events, and integration-harness failure behavior.
+- One documented mapping between machine execution status, future session pause reasons, diagnostics, and adapter miss reasons; do not force them into one enum.
+- Scope, roadmap, and traceability documents that distinguish design from implementation and validation.
 
 **Exit criteria**
 
-- Can run no-op/smoke interpretation across basic IL bodies.
-- API review sign-off on core abstractions.
+- A clean checkout builds and the fast tests pass in CI.
+- Repeated execution over the same input produces the same serialized observable outcome.
+- The walking-skeleton documentation states exactly what comes from the dump and what comes from the on-disk PE.
 
----
+### W1 — Real dump-evidence slice
 
-## M1 — Concrete + hybrid stepping MVP
+**Estimated implementation surface:** 2,600–4,200 LOC across the independently deliverable packages above
 
-**Goal:** execute straightforward IL while tolerating unknown inputs.
+**Status:** the generated trusted-fixture slice is implemented in-tree. It covers fully dump-sourced method-body facts, metadata-root conflicts, whole-file disk-artifact identity, typed malformed dump/PE admission, opened-stream dump/PE size-limit regressions, foreign-snapshot rejection, one Normal-vs-Full sparse-memory case, common result axes, and canonical replay. A representative corrupt/hostile corpus, representative incident evidence, service-side CI, and the external no-network/access-control worker plus trusted-DAC boundary remain hardening gates; local caps, locator refusal, and generated fixtures are not hostile-input isolation.
+
+**Goal:** prove the product's highest-risk evidence path before expanding IL semantics.
+
+**Scenario**
+
+Given a generated dump containing a known object graph, locate a root and read a primitive field plus a bounded string from dump memory.
 
 **Deliverables**
 
-- Instruction semantics for fundamental opcode families.
-- Concrete value domain + hybrid unknown-aware value domain.
-- Deterministic budgets and cancellation support.
-- Basic call-model fallback (`block`, `unknown return`, `havoc`).
+- Dump-backed object/type/field/string reads with explicit bounds.
+- Canonical runtime-to-metadata identity for the scenario.
+- Separate identities for the counted dump metadata root (MVID, metadata length, metadata SHA-256) and a complete disk artifact (whole-file length and SHA-256); metadata agreement never authenticates disk body bytes as dump evidence.
+- Dump-backed MethodDef RVA, tiny/fat header, code, local-signature token, and declared extra-section reads; a normalized body is available only when all required evidence is exact.
+- Typed evidence outcomes such as exact, partial, unavailable, conflict, and invalid, each with provenance and a stable miss reason.
+- Tests for sparse/unreadable memory, invalid addresses, truncation, and identity mismatch.
+- Security defaults for this generated-fixture slice: locator-backed acquisition refused, project-owned reads/traversals bounded, secret-safe diagnostics, no dump contents in telemetry, an 8 GiB dump-admission limit, a 256 MiB ClrMD dump cache with stack-derived caches disabled, and a 512 MiB managed-PE limit at the typed external `Open` boundary. This does not prevent ClrMD full-path probes or unsigned full-path DAC loading.
 
 **Exit criteria**
 
-- Demonstrated end-to-end stepping on representative methods.
-- Trace events show where unknownness is introduced.
+- The scenario returns the expected field/string values from dump memory without executing user IL.
+- Missing or corrupt evidence produces a deterministic non-success outcome rather than an exception or guess.
+- The result identifies evidence source, completeness, and every fallback used.
+- Before any public CLI/server/UI accepts caller-supplied artifacts, a one-shot worker is atomically placed in a
+  Windows Job Object with one inherited read-only artifact handle, bounded framed IPC, process/child/memory/CPU limits,
+  kill-on-close/timeout behavior, a cleared environment, private scratch, diagnostics/network acquisition disabled,
+  payload-safe telemetry, and containment tests. A Job Object alone is not described as a security sandbox; hostile
+  parser/DAC compromise additionally requires a proven AppContainer, low-privilege account, or VM boundary.
 
----
+### W2 — Restricted expression/query slice
 
-## M2 — CFG and fixpoint abstract interpretation
+**Estimated implementation surface:** 1,700–3,100 LOC
 
-**Goal:** perform whole-method over-approx analysis with joins/widening.
+**Status:** implemented and locally verified for the generated strong-root fixture. The first grammar intentionally supports exactly one exact non-null ordinal root, one direct field through `.`, and optional bounded null/`Int32`/string coalescing; broader C# syntax, null-conditional access, and frame roots are not implied.
+
+**Goal:** turn W1's evidence operations into the first useful product interaction.
+
+**Scenario**
+
+Evaluate a restricted expression such as `root.OptionalMessage ?? "<missing>"` against a known dump root.
 
 **Deliverables**
 
-- CFG builder for method bodies (with phased EH handling).
-- Worklist/fixpoint engine.
-- Initial abstract domains (nullness and constants).
-- Convergence controls (join/widen policy hooks).
+- Deterministic parsing of an admitted C# expression subset.
+- Binding against host-provided roots and the dump/metadata universe.
+- A read-only query plan for direct field access, exact nullable-field observation/coalescing, and bounded literals.
+- Stable parse, bind, unsupported-syntax, and missing-evidence diagnostics.
+- A host-facing result carrying semantic mode, completion, completeness, evidence status, effects, value, and provenance.
+
+**Non-goals for W2**
+
+- Compiling a synthetic method or executing user IL.
+- Method/getter invocation, overload resolution, construction, reflection, implicit assembly loading, LINQ, or loops.
+- IDE completion and polished debugger UI.
 
 **Exit criteria**
 
-- Stable fixpoint on selected real-world methods.
-- Invariants available at block/offset granularity.
+- At least ten scenario expressions cover success, exact null/coalescing, unavailable roots, invalid syntax, unsupported syntax (including `?.`), and partial evidence.
+- Results are classified as `Observation` or `DerivedQuery`; no result language implies historical or counterfactual execution.
+- Repeated runs produce identical values and machine-readable explanations.
 
----
+### W3 — Concrete IL semantics and differential oracle
 
-## M3 — Call modeling and effects maturity
+**Estimated implementation surface:** 2,000–3,500 LOC
 
-**Goal:** improve practical precision by taming call boundaries.
+**Status:** bounded architecture-risk spike partially implemented (concrete domain, persistent memory tests, I4 arithmetic kernel, whole-body admission, and differential oracle). W3 is not the active delivery milestone and its signature/memory-opcode requirements remain open.
+
+**Goal:** validate the domain-parametric interpreter on a scenario-derived, closed opcode set.
 
 **Deliverables**
 
-- Intrinsic models for high-value BCL methods, with explicit semantic categories (`PureIntrinsic`, `EnvironmentIntrinsic`, `ProjectionIntrinsic`, `PatternIntrinsic`).
-- Effect model (`reads`, `writes`, `allocates`, `throws`, `impure`).
-- Method summary format for reusable call summaries and intrinsic/projection explainability payloads.
+- A concrete value domain and memory model exercised by real opcode handlers.
+- The minimal opcode closure required by selected branchless, EH-free arithmetic and field-read getters.
+- Metadata-projected argument, return, and local stack shapes; frame admission must not trust caller-supplied counts or `ReturnsValue` for untrusted methods.
+- An admission check that rejects bodies outside the supported opcode/EH tier before execution.
+- A differential harness that runs tiny methods on CoreCLR and the interpreter and compares outcomes.
+- Deterministic budgets and event semantics for every admitted instruction.
 
 **Exit criteria**
 
-- Reduced unknown propagation in benchmark corpus while preserving provenance/confidence labels on approximations.
-- Explainable blocked/approximated call diagnostics, including decoder identity for projection-backed models.
+- The same opcode handlers execute through the intended domain seam rather than test-only shortcuts.
+- Differential fixtures agree with CoreCLR on the admitted subset, including documented exceptional boundaries.
+- Unsupported bodies are rejected with an explicit reason and no partial execution.
 
----
+### W4 — Unknown-aware method evaluation
 
+**Estimated implementation surface:** more than 3,500 LOC for the umbrella; decompose into independently valuable slices
+of at most 3,500 LOC each
 
-## M3.5 — Virtual step-debugging control plane
+**Goal:** extend the product from read-only derived queries to explicitly counterfactual method evaluation.
 
-**Goal:** provide debugger-grade virtual stepping semantics on top of the interpreter core.
+**Candidate slices**
 
-**Deliverables**
+- Provenance-bearing unknown values over the W3 opcode set.
+- Restricted calls and effects with typed model outcomes.
+- Deterministic instruction, call-depth, allocation, and traversal budgets.
+- Stop-on-throw behavior. Handler transfer is not part of the first W4 slice.
+- Host results classified as `CounterfactualExecution`, with assumptions and models visible.
 
-- Session model with explicit `MachineState`/`FrameState` contracts and stable pause reasons.
-- Step-command controller for `StepInto`, `StepOver`, `StepOut`, `Resume`, and branch decisions (`StopForUserChoice`/fork/join).
-- Stop-point history with `Undo` and branch-aware timeline semantics.
-- Source mapping pipeline (PDB first, decompiler map second, IL fallback).
-- Session transcript contract (commands, stop reasons, event batches, and step diffs) for deterministic replay and host hydration.
+**Entry criteria**
 
-**Exit criteria**
+- W1–W3 exit criteria pass in CI.
+- Real scenarios demonstrate that method execution adds value beyond W2 queries.
+- Each W4 slice has an explicit estimate of at most 3,500 implementation LOC before work begins.
 
-- End-to-end virtual stepping demo over curated dump-backed scenarios.
-- Deterministic replay of identical step-command sequences.
-- Decision-needed flow for unknown branch conditions is host-visible and actionable.
-- Model-call behavior is explicit (`pseudo-frame` or `atomic effect event`) and policy-configured.
+**Exit criteria for the umbrella**
 
----
+- Selected methods tolerate missing inputs without fabricating concrete values.
+- Differential and degraded-evidence tests cover every supported opcode/call family.
+- Product language consistently describes results as counterfactual, not historical replay.
 
-## M3.6 — Async + dynamic semantic lifting integration
+## 4) Research backlog and entry gates
 
-**Goal:** operationalize the new virtual-task and dynamic-dispatch designs as stable interpreter capabilities.
+Research documents remain useful hypotheses. They become delivery work only through these gates:
 
-**Deliverables**
+| Research area | Earliest entry gate |
+|---|---|
+| Handler-transfer EH | A W4 scenario requires interpreted `catch`/`finally`; define search/unwind behavior just ahead of implementation. |
+| Virtual stepping | W4 method execution, deterministic pause/event contracts, source mapping, and stop-on-throw are validated. Debugger-grade Step Out additionally requires handler-transfer EH. |
+| Async/Task lifting | The interpreter supports the scenario-derived `MoveNext` opcode closure, generics, calls, and required EH behavior. |
+| Dynamic dispatch lifting | Direct call/binding behavior is validated and a concrete dump scenario justifies DLR-specific work. |
+| CFG/fixpoint abstract analysis | At least two value domains share the same meaningful opcode semantics; lattice order and convergence laws are executable tests. |
+| Broad semantic registry/projections | Two independently implemented models demonstrate a repeated extension problem. |
+| Additional products | A second consumer proves reuse against the implemented core rather than the package diagram. |
 
-- Lifted callsite classification pipeline (`DynamicDispatch`, `AsyncRuntimeIntrinsic`) wired into call-model policy and trace events.
-- Virtual async runtime state integrated into canonical `MachineState` contracts (task store, continuation queue, await-point provenance).
-- Deterministic decision protocol for unresolved dynamic Step Into (`DecisionNeeded` with candidate metadata).
-- Async and dynamic fixture corpus added to replay/perf/test suites with deterministic transcript assertions.
+Exact shared-generic dictionary decoding remains a version-pinned research spike. The baseline is public `MethodTable`-anchored recovery where available plus typed-unknown fallback.
 
-**Exit criteria**
+## 5) Cross-cutting contracts for active work
 
-- Curated async fixtures emit stable `AwaitPending -> ContinuationResumed -> Task*` lifecycle traces across replay runs.
-- Curated dynamic fixtures emit stable binder outcomes with explicit ambiguity/unresolved diagnostics.
-- Host APIs and docs expose one shared taxonomy for async/dynamic outcomes and decision points.
+### Semantic mode
 
----
+Every host-facing result identifies one of:
 
-## M3.7 — Semantic modeling and projection runtime integration
+- `Observation`: decoded directly from snapshot evidence.
+- `DerivedQuery`: computed over observed evidence without user-IL execution.
+- `CounterfactualExecution`: interpreted from recovered or assumed state under explicit policy.
+- `AbstractAnalysis`: may/must reasoning over possible states.
 
-**Goal:** operationalize semantic lifting beyond async/dynamic so framework-heavy execution is deterministic, bounded, and explainable.
+The active W1–W2 work uses only the first two modes.
 
-**Deliverables**
+### Result honesty
 
-- Unified special-semantics registry spanning call intrinsics, IL-pattern rewrites, and object projections.
-- `SessionSnapshot` provider contract and deterministic environment/time intrinsic policy.
-- Copy-on-write projection overlay design for dump-backed collection mutation during virtual sessions.
-- Versioned layout-decoder contract with confidence labeling and fail-closed unsupported-layout behavior.
-- Initial high-ROI modeled patterns and projections (`lock`, `foreach`, throw helpers, interpolation handlers, `ConcurrentDictionary` core operations).
+Keep these axes separate:
 
-**Exit criteria**
+- semantic mode,
+- completion status,
+- completeness,
+- evidence status,
+- effects/virtual writes,
+- provenance and diagnostics.
 
-- Curated semantic fixtures show stable replay across repeated runs, including deterministic modeled-step traces.
-- Projection-backed results always emit confidence and decoder metadata; unsupported layouts fail with explicit diagnostics (no silent guessing).
-- Virtual stepping demos show reduced framework-noise stepping for modeled patterns versus baseline interpreter-only runs.
+A UI trust badge may summarize them but never replaces them in contracts or tests.
 
----
+### Exception handling
 
-## M4 — Dump-aware hosting integration prototype
+- W3 admits EH-free bodies only.
+- The first W4 exception behavior is stop-on-throw without handler transfer.
+- Full handler search, filters, unwind, `finally`/`fault`, and cross-frame propagation are prerequisites for debugger-grade exception stepping, not implicit refinements.
 
-**Goal:** prove the engine works against snapshot-backed metadata/memory.
+## 6) Risks and mitigations
 
-**Deliverables**
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Scope disperses across research subsystems | High | Critical | Scope lock, one active milestone, explicit research gates. |
+| A single maintainer cannot sustain a platform-sized surface | High | Critical | Give every active slice an implementation-LOC envelope; split slices above 3,500 LOC; prefer one product path. |
+| Maintainer unavailability leaves the active slice without continuity | Medium | Critical | Keep one canonical vertical-slice path, executable fixtures, explicit evidence boundaries, and a current handoff map; avoid private operational knowledge. |
+| Optimized dumps omit roots, locals, arguments, or `this` | High | High | Make unavailable/partial expected outcomes; measure scenario recovery rather than guessing. |
+| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Bounded project-owned parsing/traversal, refused locator acquisition, secret-safe output, and no-network/access-control worker plus trusted-DAC policy before external use. |
+| Documentation volume is mistaken for capability | High | High | Track implementation and validation separately; design just ahead of code. |
+| Backend or identity mismatch yields plausible wrong reads | Medium | Critical | Identity validation, conflict outcomes, real-dump fixtures, no silent fallback. |
+| The evaluator does not materially improve incident workflows | Medium | High | Test W1/W2 against concrete user questions before funding method execution. |
 
-- Dump-backed metadata provider adapter.
-- Read-only memory model integration.
-- Host-facing evaluation API suitable for watch/immediate-style usage.
+## 7) Decision gates
 
-**Exit criteria**
+W2 decisions now applied:
 
-- Demonstrable dump-time expression evaluation for curated scenarios.
-- Clear trust labels (pure/partial/blocked/timed out).
+1. The supported subset is a project-owned bounded parser for one root/field and optional literal coalescing.
+2. Project-owned immutable parse/query shapes stay internal; no Roslyn object enters a core contract.
+3. Diagnostics use stable payload-safe text, value display is redacted, and canonical replay is explicitly not telemetry-safe.
 
----
+Before starting W3:
 
-## M5 — Hardening and developer experience
+1. Select fixtures first, then derive the closed opcode set.
+2. Confirm the active metadata backend from executable evidence.
+3. Define the admission check for unsupported IL and EH.
 
-**Goal:** make the system maintainable and contributor-friendly.
+Before starting any W4 slice:
 
-**Deliverables**
+1. Demonstrate user value not achievable through W2's read-only query plan.
+2. Define its effects, budget, and degraded-evidence behavior.
+3. Give it an explicit implementation estimate no larger than 3,500 LOC.
 
-- Comprehensive test matrix and regression corpus.
-- Performance baselines with targeted optimization plan.
-- Contributor docs, architecture diagrams, and extension samples.
+### Optimized-dump recoverability measurement
 
-**Exit criteria**
+The generated strong-handle fixture proves decoding, not incident recoverability, and therefore contributes no percentage to a frame-context claim. The first representative measurement must use an explicitly versioned corpus of optimized Release dumps and record, for every predeclared expression scenario:
 
-- Predictable CI signal and acceptable performance envelope.
-- Onboarding path for new contributors is documented and validated.
+1. the target/runtime/build profile and capture mechanism;
+2. whether the required root, `this`, argument, local, and member bytes are present independently;
+3. whether selection is unique, ambiguous, partial, unavailable, conflicting, or invalid;
+4. the exact query result axes and stable diagnostic code; and
+5. the numerator and denominator for each context kind, with unsupported scenarios retained in the denominator.
 
----
+Report raw counts and corpus composition before any aggregate percentage. Do not extrapolate from synthetic roots to production incidents, and do not set a readiness threshold until a representative incident corpus exists. Until then, the honest baseline is: strong-handle object queries are validated for the generated fixture; optimized frame-context recovery is unmeasured and unsupported.
 
-## 3) Cross-cutting strategic tracks
+## 8) Documentation policy
 
-### Track A: Explainability and trust
-
-- Rich provenance for unknown values.
-- User-facing explanation messages derived from trace events.
-- Consistent severity taxonomy for approximation events.
-
-### Track B: Precision vs performance controls
-
-- Policy presets (`fast`, `balanced`, `deep`).
-- Domain-specific widening strategies.
-- Optional path splitting limits and heuristics.
-
-### Track C: Extensibility model
-
-- Stable extension points for custom domains and call models.
-- Versioned plugin contracts.
-- Compatibility guidance for external contributors.
-
-### Track D: Reliability and operability
-
-- Deterministic replay of execution traces.
-- Metrics for convergence and precision degradation.
-- Failure mode catalog and recovery guidance.
-
----
-
-## 4) Priority backlog candidates
-
-### High priority
-
-1. Define canonical unknown provenance schema.
-2. Specify effect lattice and call-model contract.
-3. Create opcode support matrix with implementation status.
-4. Build initial benchmark corpus from realistic IL methods.
-5. Specify virtual debug session contracts (step commands, stop reasons, undo/branch behavior).
-6. Define a step-diff schema (`locals/stack/memory/effects/unknowns`) shared across UI and replay tests.
-7. Specify symbol/source acquisition policy defaults (offline-first vs auto-download) and user-consent UX hooks for hosts.
-
-### Medium priority
-
-1. Add visualization helpers for state diffs across CFG blocks.
-2. Draft method summary serialization format.
-3. Introduce policy presets and tuning docs.
-
-### Lower priority (but valuable)
-
-1. Property-based IL fuzzing framework.
-2. Optional symbolic constraints plugin prototype.
-3. Experimental query DSL for dump-time workflows.
-
----
-
-## 5) Risks and mitigations
-
-## Risk: Scope expansion outruns architecture stability
-
-**Mitigation**
-
-- Gate user-visible features behind milestone exit criteria.
-- Enforce architecture review before adding major surface area.
-
-## Risk: Call modeling becomes ad hoc and inconsistent
-
-**Mitigation**
-
-- Define standardized call-model metadata and review process.
-- Prefer reusable summaries/intrinsics over one-off special cases.
-
-## Risk: Precision complaints without actionable diagnostics
-
-**Mitigation**
-
-- Make provenance mandatory for unknown introductions.
-- Maintain clear taxonomy for blocked vs approximated behavior.
-
-## Risk: Performance regressions in abstract interpretation mode
-
-**Mitigation**
-
-- Track benchmark deltas per PR for core hot paths.
-- Add convergence watchdogs and tune widening defaults.
-
----
-
-## 6) Decision gates
-
-Before moving beyond M2, explicitly decide:
-
-1. Which metadata backend(s) are first-class in v1.
-2. Whether EH is mandatory for first public preview.
-3. Which domains are “in the box” vs extension-only.
-4. What host surfaces (CLI, SDK-only, IDE integration) are first release targets.
-
-Before moving beyond M4, explicitly decide:
-
-1. Public API stabilization policy.
-2. Minimum compatibility target (`net8.0` only vs multi-targeting).
-3. What telemetry/diagnostic artifacts are enabled by default.
-4. Whether modeled calls are always represented as pseudo-frames or may be collapsed per policy.
-5. Which semantic-model packs/decoder sets are in-box for v1 versus optional extensions.
-
----
-
-## 7) Documentation follow-ups
-
-To keep design docs coherent, add or maintain the following companion docs:
-
-- `docs/proposals/architecture/architecture-overview-proposal.md` (high-level system map)
-- `docs/proposals/architecture/state-and-domain-model-proposal.md` (formal semantics of value/memory domains)
-- `docs/proposals/architecture/call-model-and-effects.md` (contracts and intrinsic policy)
-- `docs/proposals/architecture/debug-map-design-proposal.md` (debug-map schema and fallback mapping rules)
-- `docs/proposals/architecture/dynamic-calls-proposal.md` (dynamic call-site lifting and overload-resolution policy)
-- `docs/proposals/architecture/virtual-tasks-proposal.md` (async/await virtualization and scheduler semantics)
-- `docs/proposals/architecture/testing-strategy-proposal.md` (test taxonomy and quality gates)
-- `docs/proposals/architecture/semantic-modeling-proposal.md` (unified intrinsic/pattern/projection semantics and SessionSnapshot policy)
-- `docs/proposals/architecture/perf-and-benchmarks-proposal.md` (benchmark plan and acceptance thresholds)
-- `docs/proposals/architecture/virtual-step-debugging-implementation-proposal.md` (session/stepping control-plane contracts)
-
-Status note: `architecture-overview-proposal.md`, `state-and-domain-model-proposal.md`, `debug-map-design-proposal.md`, `dynamic-calls-proposal.md`, `virtual-tasks-proposal.md`, `testing-strategy-proposal.md`, and `perf-and-benchmarks-proposal.md` are now present and should be iterated rather than re-proposed.
+- Update this plan when executable evidence changes sequencing or scope.
+- Keep current implementation facts in the root README and prototype-status documents; link rather than duplicating volatile counts.
+- Mark research documents clearly, but do not expand them merely to make their taxonomies agree.
+- Prefer a short contract plus a running fixture over another comprehensive up-front specification.

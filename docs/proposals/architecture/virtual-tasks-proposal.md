@@ -1,5 +1,7 @@
 # Proposal: First-class async/await + virtual `Task` semantics in a dump-time IL interpreter
 
+> **Roadmap status: research backlog.** Ordinary `MoveNext` IL, generics, byrefs, boxing, and handler-transfer EH are prerequisites. Intercepting builder/awaiter calls does not remove those prerequisites, and no async implementation is committed before their scenario gates pass.
+
 ## 1) Motivation and constraints
 
 Interpreting *user IL* in a post-mortem dump is feasible as long as we avoid “real world” side effects. Interpreting *TPL internals* to construct and schedule `Task`s is a different beast: it drags in thread pool scheduling, execution context flow, timer infrastructure, cancellation registration, and a lot of implementation details that are irrelevant to what the user *means* by `async` code.

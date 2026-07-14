@@ -1,5 +1,7 @@
 # dnlib usage notes for this project
 
+> **Historical backend research (2026-02).** This source review is retained for a future evidence-triggered comparison. SRM/PEReader is the active implementation; see `../mvp-backend-decision-record.md`.
+
 ## Why it matters
 
 dnlib remains an important reference backend even if it is not selected as default.

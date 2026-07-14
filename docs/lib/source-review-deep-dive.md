@@ -1,5 +1,7 @@
 # Library source review deep dive (snapshot-based, design phase)
 
+> **Historical source research (2026-02).** This comparison preserves library behavior and earlier trade-offs; it is not a current backend-selection exercise. Use `mvp-backend-decision-record.md` for the active SRM/PEReader choice and `backend-evidence-log.md` for executable evidence.
+
 This document captures a deeper, source-driven review of the library snapshots under `lib/` and translates those findings into adapter and documentation implications for this project.
 
 It complements the per-library usage notes with a shared, side-by-side review format that is easier to use during architecture and backend decision discussions.

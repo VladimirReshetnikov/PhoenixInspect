@@ -3,14 +3,19 @@ using System.Collections.Immutable;
 namespace Interpreter.Core.Execution;
 
 /// <summary>
-/// Represents the result of performing one interpreter micro-step.
+/// Represents the complete result of requesting one low-level machine transition.
 /// </summary>
-/// <typeparam name="TValue">Abstract value representation carried in the returned state.</typeparam>
-/// <typeparam name="TMemory">Abstract memory representation carried in the returned state.</typeparam>
-/// <param name="State">Updated machine state after step processing.</param>
-/// <param name="StopReason">Reason execution is currently stopped.</param>
-/// <param name="Events">Deterministic event stream emitted during the step.</param>
+/// <typeparam name="TValue">The domain value representation carried by returned state.</typeparam>
+/// <typeparam name="TMemory">The persistent memory representation carried by returned state.</typeparam>
+/// <param name="State">The resulting state; it is unchanged when no instruction executed.</param>
+/// <param name="OperationalState">Updated deterministic bookkeeping; unchanged when no instruction executed.</param>
+/// <param name="Status">Whether the machine can continue, completed, exhausted budget, or became blocked/invalid.</param>
+/// <param name="Events">Structured deterministic events emitted only for transfers that actually occurred.</param>
+/// <param name="Failure">A structured failure when <paramref name="Status"/> is blocked or invalid.</param>
 public sealed record StepOutcome<TValue, TMemory>(
     MachineState<TValue, TMemory> State,
-    StopReason StopReason,
-    ImmutableArray<DebugEvent> Events);
+    MachineOperationalState OperationalState,
+    MachineRunStatus Status,
+    ImmutableArray<DebugEvent> Events,
+    ExecutionFailure? Failure = null)
+    where TMemory : Interpreter.Core.Abstractions.IPersistentMemoryState<TMemory>;

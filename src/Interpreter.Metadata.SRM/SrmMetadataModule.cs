@@ -1,31 +1,44 @@
-using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Interpreter.Core.Abstractions;
-using Interpreter.IL;
 using Interpreter.Metadata.Abstractions;
-using Interpreter.Types;
 using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 
 namespace Interpreter.Metadata.SRM;
 
 /// <summary>
-/// Provides a minimal SRM-backed metadata module implementation for draft integration seams.
+/// Provides the deliberately narrow SRM metadata backend used by current executable prototype slices.
 /// </summary>
+/// <remarks>
+/// The backend currently resolves deterministic MethodDef handles and reads method bodies. Additional metadata
+/// capabilities will be added only alongside executable scenarios that exercise them.
+/// </remarks>
 public sealed class SrmMetadataModule : IMetadataModule, IDisposable
 {
+    private const int MethodDefinitionTokenType = 0x06000000;
+    private const long MaximumExternalArtifactLength = 512L * 1024 * 1024;
+    private const int MaximumLookupNameLength = 1024;
+    private const int MaximumTypeDefinitionScanCount = 100_000;
+    private const int MaximumMethodDefinitionScanCount = 1_000_000;
+    private const int MaximumMethodBodyCodeBytes = 4_096;
     private readonly FileStream _stream;
     private readonly PEReader _peReader;
     private readonly MetadataReader _metadataReader;
-    private readonly ConcurrentDictionary<(int Token, GenericContext Ctx), MethodHandle> _methodHandleByToken = new();
-    private readonly ConcurrentDictionary<MethodHandle, int> _tokenByMethodHandle = new();
-    private long _nextMethodHandle = 1;
+    private bool _disposed;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SrmMetadataModule"/> class for the specified module file.
+    /// Opens a managed PE module from disk and derives path-independent identity from its metadata and PE headers.
     /// </summary>
-    /// <param name="modulePath">Path to a managed PE module.</param>
+    /// <param name="modulePath">The local artifact path to open for metadata operations.</param>
+    /// <remarks>
+    /// The path is retained only as descriptor evidence. It does not participate in <see cref="Id"/> or
+    /// <see cref="ModuleHandle"/> equality, so byte-identical copies produce stable execution identities.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="modulePath"/> is empty or whitespace.</exception>
+    /// <exception cref="NotSupportedException">
+    /// The opened artifact exceeds the deterministic external-input size limit.
+    /// </exception>
     public SrmMetadataModule(string modulePath)
     {
         if (string.IsNullOrWhiteSpace(modulePath))
@@ -33,151 +46,386 @@ public sealed class SrmMetadataModule : IMetadataModule, IDisposable
             throw new ArgumentException("Module path is required.", nameof(modulePath));
         }
 
-        _stream = File.OpenRead(modulePath);
-        _peReader = new PEReader(_stream, PEStreamOptions.LeaveOpen);
-        _metadataReader = _peReader.GetMetadataReader();
+        FileStream? stream = null;
+        PEReader? peReader = null;
+        try
+        {
+            stream = File.OpenRead(modulePath);
+            if (stream.Length > MaximumExternalArtifactLength)
+            {
+                throw new ArtifactSizeLimitExceededException(MaximumExternalArtifactLength);
+            }
 
-        var moduleDefinition = _metadataReader.GetModuleDefinition();
-        var mvid = _metadataReader.GetGuid(moduleDefinition.Mvid);
-        var peStamp = ((uint) _peReader.PEHeaders.CoffHeader.TimeDateStamp, (uint)_peReader.PEHeaders.PEHeader!.SizeOfImage);
+            var artifactIdentity = ArtifactContentIdentity.FromStream(stream);
+            peReader = new PEReader(stream, PEStreamOptions.LeaveOpen);
+            var metadataReader = peReader.GetMetadataReader();
 
-        Id = new ModuleId(
-            mvid,
-            Name: Path.GetFileName(modulePath),
-            PathHint: Path.GetFullPath(modulePath),
-            PeStamp: peStamp);
-        ModuleHandle = new ModuleHandle(ComputeStableHandleValue(modulePath));
+            var moduleDefinition = metadataReader.GetModuleDefinition();
+            var mvid = metadataReader.GetGuid(moduleDefinition.Mvid);
+            var metadataContent = peReader.GetMetadata().GetContent();
+            var contentIdentity = ModuleContentIdentity.FromMetadata(mvid, metadataContent.AsSpan());
+            var peHeader = peReader.PEHeaders.PEHeader
+                ?? throw new BadImageFormatException("The managed module has no PE optional header.");
+            var peStamp = (
+                TimeDateStamp: unchecked((uint)peReader.PEHeaders.CoffHeader.TimeDateStamp),
+                ImageSize: unchecked((uint)peHeader.SizeOfImage));
+
+            Id = new ModuleId(contentIdentity, peStamp, artifactIdentity);
+            Descriptor = new ModuleDescriptor(Id, Path.GetFileName(modulePath), Path.GetFullPath(modulePath));
+            ModuleHandle = ModuleHandle.FromContentIdentity(
+                contentIdentity,
+                peStamp.TimeDateStamp,
+                peStamp.ImageSize,
+                artifactIdentity);
+            _stream = stream;
+            _peReader = peReader;
+            _metadataReader = metadataReader;
+        }
+        catch
+        {
+            peReader?.Dispose();
+            stream?.Dispose();
+            throw;
+        }
     }
 
     /// <inheritdoc />
     public ModuleId Id { get; }
 
     /// <inheritdoc />
+    public ModuleDescriptor Descriptor { get; }
+
+    /// <inheritdoc />
     public ModuleHandle ModuleHandle { get; }
 
     /// <summary>
-    /// Creates an SRM module by opening the specified on-disk module path.
+    /// Opens an SRM module from a local managed PE artifact.
     /// </summary>
-    /// <param name="modulePath">Path to the module that should be opened for metadata operations.</param>
-    /// <returns>A new <see cref="SrmMetadataModule"/> instance.</returns>
+    /// <param name="modulePath">The trusted local artifact path to open.</param>
+    /// <returns>A disposable SRM-backed metadata module.</returns>
+    /// <remarks>
+    /// This throwing convenience is intended for trusted fixtures and caller-programming errors. External artifact
+    /// admission should use <see cref="Open"/> so absence and malformed PE content remain typed outcomes.
+    /// </remarks>
+    /// <exception cref="NotSupportedException">
+    /// The opened artifact exceeds the deterministic external-input size limit.
+    /// </exception>
     public static SrmMetadataModule LoadFromFile(string modulePath) => new(modulePath);
 
     /// <summary>
-    /// Tries to locate a method-definition token by type and method name.
+    /// Attempts to open an external managed PE artifact without exposing incidental parser or file-system exceptions.
     /// </summary>
-    /// <param name="typeName">Simple metadata type name.</param>
-    /// <param name="methodName">Method name to resolve.</param>
-    /// <param name="methodToken">Resolved method-definition token when the method is found.</param>
-    /// <returns><see langword="true"/> when the method is found; otherwise <see langword="false"/>.</returns>
-    public bool TryFindMethodDefToken(string typeName, string methodName, out int methodToken)
+    /// <param name="modulePath">The local artifact path supplied by the host.</param>
+    /// <returns>
+    /// A disposable module on success; otherwise a stable unavailable or invalid result whose message does not echo
+    /// the path or parser payload.
+    /// </returns>
+    public static ResolutionResult<SrmMetadataModule> Open(string modulePath)
     {
-        methodToken = default;
-
-        foreach (var typeHandle in _metadataReader.TypeDefinitions)
+        if (string.IsNullOrWhiteSpace(modulePath))
         {
-            var typeDefinition = _metadataReader.GetTypeDefinition(typeHandle);
-            if (!string.Equals(_metadataReader.GetString(typeDefinition.Name), typeName, StringComparison.Ordinal))
-            {
-                continue;
-            }
+            return ResolutionResult<SrmMetadataModule>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_ARTIFACT_PATH_INVALID",
+                "A non-empty local artifact path is required.");
+        }
 
-            foreach (var candidateHandle in typeDefinition.GetMethods())
+        string fullPath;
+        try
+        {
+            fullPath = Path.GetFullPath(modulePath);
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return ResolutionResult<SrmMetadataModule>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_ARTIFACT_PATH_INVALID",
+                "The supplied local artifact path is structurally invalid.");
+        }
+
+        try
+        {
+            return ResolutionResult<SrmMetadataModule>.Success(new SrmMetadataModule(fullPath));
+        }
+        catch (ArtifactSizeLimitExceededException)
+        {
+            return ResolutionResult<SrmMetadataModule>.Failed(
+                ResolutionFailureKind.Unsupported,
+                "META_ARTIFACT_SIZE_LIMIT",
+                "The managed artifact exceeds the deterministic external-input size limit.");
+        }
+        catch (Exception exception) when (
+            exception is FileNotFoundException or
+            DirectoryNotFoundException or
+            UnauthorizedAccessException or
+            IOException)
+        {
+            return ResolutionResult<SrmMetadataModule>.Failed(
+                ResolutionFailureKind.Unavailable,
+                "META_ARTIFACT_UNAVAILABLE",
+                "The managed artifact could not be opened from the supplied location.");
+        }
+        catch (Exception exception) when (
+            exception is BadImageFormatException or
+            InvalidDataException or
+            InvalidOperationException or
+            ArgumentException)
+        {
+            return ResolutionResult<SrmMetadataModule>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_ARTIFACT_INVALID",
+                "The managed artifact is structurally invalid for the active metadata reader.");
+        }
+    }
+
+    /// <summary>
+    /// Searches a simple metadata type for a uniquely named method definition.
+    /// </summary>
+    /// <param name="typeName">The simple metadata type name.</param>
+    /// <param name="methodName">The method name to find.</param>
+    /// <returns>
+    /// The unique MethodDef token, or a structured unavailable, invalid, or conflict result that preserves why the
+    /// fixture lookup could not produce an identity.
+    /// </returns>
+    /// <remarks>
+    /// This helper exists for bounded fixtures. Production binding must include namespace, arity, and signature and
+    /// must surface ambiguous matches rather than selecting the first overload.
+    /// </remarks>
+    public ResolutionResult<int> FindMethodDefinition(string typeName, string methodName)
+    {
+        ThrowIfDisposed();
+        if (string.IsNullOrWhiteSpace(typeName) || string.IsNullOrWhiteSpace(methodName))
+        {
+            return ResolutionResult<int>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_INVALID_METHOD_LOOKUP",
+                "A non-empty simple type name and method name are required.");
+        }
+
+        if (typeName.Length > MaximumLookupNameLength || methodName.Length > MaximumLookupNameLength)
+        {
+            return ResolutionResult<int>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_METHOD_LOOKUP_TOO_LONG",
+                "Type and method names are bounded for deterministic metadata lookup.");
+        }
+
+        if (_metadataReader.TypeDefinitions.Count > MaximumTypeDefinitionScanCount ||
+            _metadataReader.MethodDefinitions.Count > MaximumMethodDefinitionScanCount)
+        {
+            return ResolutionResult<int>.Failed(
+                ResolutionFailureKind.Unsupported,
+                "META_METHOD_LOOKUP_LIMIT",
+                "The metadata tables exceed the deterministic lookup profile.");
+        }
+
+        try
+        {
+            var methodToken = default(int);
+            var matchingTypeCount = 0;
+            var matchCount = 0;
+
+            foreach (var typeHandle in _metadataReader.TypeDefinitions)
             {
-                var methodDefinition = _metadataReader.GetMethodDefinition(candidateHandle);
-                if (!string.Equals(_metadataReader.GetString(methodDefinition.Name), methodName, StringComparison.Ordinal))
+                var typeDefinition = _metadataReader.GetTypeDefinition(typeHandle);
+                if (!string.Equals(_metadataReader.GetString(typeDefinition.Name), typeName, StringComparison.Ordinal))
                 {
                     continue;
                 }
 
-                methodToken = MetadataTokens.GetToken(candidateHandle);
-                return true;
+                matchingTypeCount++;
+
+                foreach (var candidateHandle in typeDefinition.GetMethods())
+                {
+                    var methodDefinition = _metadataReader.GetMethodDefinition(candidateHandle);
+                    if (!string.Equals(_metadataReader.GetString(methodDefinition.Name), methodName, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    methodToken = MetadataTokens.GetToken(candidateHandle);
+                    matchCount++;
+                }
             }
-        }
 
-        return false;
+            if (matchingTypeCount == 0)
+            {
+                return ResolutionResult<int>.Failed(
+                    ResolutionFailureKind.Unavailable,
+                    "META_TYPE_NOT_FOUND",
+                    "No matching metadata type was found.");
+            }
+
+            if (matchCount == 0)
+            {
+                return ResolutionResult<int>.Failed(
+                    ResolutionFailureKind.Unavailable,
+                    "META_METHOD_NOT_FOUND",
+                    "No matching method definition was found.");
+            }
+
+            if (matchCount > 1)
+            {
+                return ResolutionResult<int>.Failed(
+                    ResolutionFailureKind.Conflict,
+                    "META_AMBIGUOUS_METHOD",
+                    "Multiple matching method definitions were found.");
+            }
+
+            return ResolutionResult<int>.Success(methodToken);
+        }
+        catch (Exception exception) when (exception is BadImageFormatException or ArgumentOutOfRangeException)
+        {
+            return ResolutionResult<int>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_INVALID_METADATA",
+                "The managed artifact contains invalid method-definition metadata.");
+        }
     }
 
     /// <inheritdoc />
-    public TypeHandle GetTypeHandle(int metadataToken, GenericContext ctx) =>
-        throw new NotSupportedException("Type-handle resolution is intentionally out of scope for this draft integration seam.");
-
-    /// <inheritdoc />
-    public MethodHandle GetMethodHandle(int metadataToken, GenericContext ctx)
+    public ResolutionResult<MethodHandle> GetMethodHandle(int metadataToken)
     {
-        var key = (metadataToken, ctx);
-        return _methodHandleByToken.GetOrAdd(key, _ =>
+        ThrowIfDisposed();
+        try
         {
-            var handle = new MethodHandle((ulong)Interlocked.Increment(ref _nextMethodHandle));
-            _tokenByMethodHandle[handle] = metadataToken;
-            return handle;
-        });
+            if (!IsValidMethodDefinitionToken(metadataToken))
+            {
+                return ResolutionResult<MethodHandle>.Failed(
+                    ResolutionFailureKind.Invalid,
+                    "META_INVALID_METHOD_TOKEN",
+                    "The supplied metadata token is not a valid MethodDef in this module.");
+            }
+
+            return ResolutionResult<MethodHandle>.Success(new MethodHandle(ModuleHandle, metadataToken));
+        }
+        catch (Exception exception) when (exception is BadImageFormatException or ArgumentOutOfRangeException)
+        {
+            return ResolutionResult<MethodHandle>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_INVALID_METADATA",
+                "The managed artifact contains invalid MethodDef table metadata.");
+        }
     }
 
     /// <inheritdoc />
-    public FieldHandle GetFieldHandle(int metadataToken, GenericContext ctx) =>
-        throw new NotSupportedException("Field-handle resolution is intentionally out of scope for this draft integration seam.");
-
-    /// <inheritdoc />
-    public TypeSig GetTypeSignature(TypeHandle type) =>
-        throw new NotSupportedException("Type signature decoding is intentionally out of scope for this draft integration seam.");
-
-    /// <inheritdoc />
-    public MethodSig GetMethodSignature(MethodHandle method) =>
-        throw new NotSupportedException("Method signature decoding is intentionally out of scope for this draft integration seam.");
-
-    /// <inheritdoc />
-    public FieldSig GetFieldSignature(FieldHandle field) =>
-        throw new NotSupportedException("Field signature decoding is intentionally out of scope for this draft integration seam.");
-
-    /// <inheritdoc />
-    public ResolvedType ResolveTypeToken(int token, GenericContext ctx) =>
-        throw new NotSupportedException("Type token resolution is intentionally out of scope for this draft integration seam.");
-
-    /// <inheritdoc />
-    public ResolvedField ResolveFieldToken(int token, GenericContext ctx) =>
-        throw new NotSupportedException("Field token resolution is intentionally out of scope for this draft integration seam.");
-
-    /// <inheritdoc />
-    public ResolvedMethod ResolveMethodToken(int token, GenericContext ctx) =>
-        throw new NotSupportedException("Method token resolution is intentionally out of scope for this draft integration seam.");
-
-    /// <inheritdoc />
-    public bool TryGetMethodBody(MethodHandle method, out MethodBody body)
+    public ResolutionResult<MethodBody> GetMethodBody(MethodHandle method)
     {
-        body = default!;
-        if (!_tokenByMethodHandle.TryGetValue(method, out var token))
+        ThrowIfDisposed();
+        if (method.Module != ModuleHandle)
         {
-            return false;
+            return ResolutionResult<MethodBody>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_MODULE_MISMATCH",
+                "The supplied method handle belongs to a different module.");
         }
 
-        var methodDefinitionHandle = MetadataTokens.MethodDefinitionHandle(token);
-        var methodDefinition = _metadataReader.GetMethodDefinition(methodDefinitionHandle);
-        if (methodDefinition.RelativeVirtualAddress == 0)
+        try
         {
-            return false;
-        }
+            if (!IsValidMethodDefinitionToken(method.MetadataToken))
+            {
+                return ResolutionResult<MethodBody>.Failed(
+                    ResolutionFailureKind.Invalid,
+                    "META_INVALID_METHOD_TOKEN",
+                    "The supplied metadata token is not a valid MethodDef in this module.");
+            }
 
-        var methodBody = _peReader.GetMethodBody(methodDefinition.RelativeVirtualAddress);
-        body = new MethodBody(methodBody.MaxStack, methodBody.GetILBytes());
-        return true;
+            var methodDefinitionHandle = MetadataTokens.MethodDefinitionHandle(method.MetadataToken & 0x00FFFFFF);
+            var methodDefinition = _metadataReader.GetMethodDefinition(methodDefinitionHandle);
+            var implementationAttributes = methodDefinition.ImplAttributes;
+            if ((implementationAttributes & System.Reflection.MethodImplAttributes.CodeTypeMask) != System.Reflection.MethodImplAttributes.IL ||
+                (implementationAttributes & System.Reflection.MethodImplAttributes.ManagedMask) != System.Reflection.MethodImplAttributes.Managed)
+            {
+                return ResolutionResult<MethodBody>.Failed(
+                    ResolutionFailureKind.Unsupported,
+                    "META_METHOD_IMPLEMENTATION_UNSUPPORTED",
+                    "The selected method is not implemented as managed IL.");
+            }
+
+            if (methodDefinition.RelativeVirtualAddress == 0)
+            {
+                return ResolutionResult<MethodBody>.Failed(
+                    ResolutionFailureKind.Unavailable,
+                    "META_METHOD_BODY_UNAVAILABLE",
+                    "The selected MethodDef has no managed IL body.");
+            }
+
+            var methodBody = _peReader.GetMethodBody(methodDefinition.RelativeVirtualAddress);
+            var ilBytes = methodBody.GetILBytes();
+            if (ilBytes is null)
+            {
+                return ResolutionResult<MethodBody>.Failed(
+                    ResolutionFailureKind.Invalid,
+                    "META_METHOD_BODY_INVALID",
+                    "The managed method body did not expose an IL code span.");
+            }
+
+            if (ilBytes.Length > MaximumMethodBodyCodeBytes)
+            {
+                return ResolutionResult<MethodBody>.Failed(
+                    ResolutionFailureKind.Unsupported,
+                    "META_METHOD_BODY_SIZE_LIMIT",
+                    "The method body exceeds the active deterministic execution profile.");
+            }
+
+            return ResolutionResult<MethodBody>.Success(
+                MethodBody.Create(
+                    methodBody.MaxStack,
+                    ilBytes,
+                    methodBody.LocalVariablesInitialized,
+                    methodBody.LocalSignature.IsNil ? 0 : MetadataTokens.GetToken(methodBody.LocalSignature),
+                    methodBody.ExceptionRegions.Length));
+        }
+        catch (BadImageFormatException)
+        {
+            return ResolutionResult<MethodBody>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_INVALID_METHOD_BODY",
+                "The managed artifact contains an invalid method body.");
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return ResolutionResult<MethodBody>.Failed(
+                ResolutionFailureKind.Invalid,
+                "META_INVALID_METHOD_BODY",
+                "The managed artifact contains an invalid method-body reference.");
+        }
     }
-
-    /// <inheritdoc />
-    public MethodHandle ResolveVirtualOverride(MethodHandle declared, TypeHandle runtimeType) =>
-        throw new NotSupportedException("Virtual override resolution is intentionally out of scope for this draft integration seam.");
 
     /// <summary>
-    /// Releases open module streams and SRM readers.
+    /// Releases the PE reader and underlying artifact stream.
     /// </summary>
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         _peReader.Dispose();
         _stream.Dispose();
     }
 
-    private static ulong ComputeStableHandleValue(string modulePath)
+    private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+    private bool IsValidMethodDefinitionToken(int token)
     {
-        var normalized = Path.GetFullPath(modulePath);
-        return (ulong)StringComparer.OrdinalIgnoreCase.GetHashCode(normalized);
+        if ((token & unchecked((int)0xFF000000)) != MethodDefinitionTokenType)
+        {
+            return false;
+        }
+
+        var rowNumber = token & 0x00FFFFFF;
+        return rowNumber > 0 && rowNumber <= _metadataReader.MethodDefinitions.Count;
+    }
+
+    private sealed class ArtifactSizeLimitExceededException : NotSupportedException
+    {
+        internal ArtifactSizeLimitExceededException(long maximumBytes)
+            : base($"Managed PE artifacts are limited to {maximumBytes} bytes before hashing or parsing.")
+        {
+        }
     }
 }

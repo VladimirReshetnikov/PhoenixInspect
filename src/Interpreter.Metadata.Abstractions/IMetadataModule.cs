@@ -1,51 +1,33 @@
 using Interpreter.Core.Abstractions;
-using Interpreter.IL;
-using Interpreter.Types;
 using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 
 namespace Interpreter.Metadata.Abstractions;
 
 /// <summary>
-/// Defines metadata operations for a single module.
+/// Defines the narrow metadata-module capability exercised by current executable prototype slices.
 /// </summary>
+/// <remarks>
+/// The contract intentionally stops at deterministic MethodDef identity and body acquisition. Type, field,
+/// signature, and dispatch services belong in later contract-just-ahead increments backed by executable fixtures.
+/// </remarks>
 public interface IMetadataModule
 {
-    /// <summary>Gets the stable module identity.</summary>
+    /// <summary>Gets the canonical, path-independent module identity.</summary>
     ModuleId Id { get; }
 
-    /// <summary>Gets the corresponding core-layer module handle.</summary>
+    /// <summary>Gets non-identity display and artifact-location evidence for the module.</summary>
+    ModuleDescriptor Descriptor { get; }
+
+    /// <summary>Gets the corresponding deterministic execution-core handle.</summary>
     ModuleHandle ModuleHandle { get; }
 
-    /// <summary>Builds or retrieves a stable type handle from a metadata token and context.</summary>
-    TypeHandle GetTypeHandle(int metadataToken, GenericContext ctx);
+    /// <summary>Resolves a MethodDef token into a deterministic definition handle.</summary>
+    /// <param name="metadataToken">The MethodDef metadata token.</param>
+    /// <returns>The method definition handle or a structured invalid result.</returns>
+    ResolutionResult<MethodHandle> GetMethodHandle(int metadataToken);
 
-    /// <summary>Builds or retrieves a stable method handle from a metadata token and context.</summary>
-    MethodHandle GetMethodHandle(int metadataToken, GenericContext ctx);
-
-    /// <summary>Builds or retrieves a stable field handle from a metadata token and context.</summary>
-    FieldHandle GetFieldHandle(int metadataToken, GenericContext ctx);
-
-    /// <summary>Resolves a type signature from a type handle.</summary>
-    TypeSig GetTypeSignature(TypeHandle type);
-
-    /// <summary>Resolves a method signature from a method handle.</summary>
-    MethodSig GetMethodSignature(MethodHandle method);
-
-    /// <summary>Resolves a field signature from a field handle.</summary>
-    FieldSig GetFieldSignature(FieldHandle field);
-
-    /// <summary>Resolves a type token to the normalized core representation.</summary>
-    ResolvedType ResolveTypeToken(int token, GenericContext ctx);
-
-    /// <summary>Resolves a field token to the normalized core representation.</summary>
-    ResolvedField ResolveFieldToken(int token, GenericContext ctx);
-
-    /// <summary>Resolves a method token to the normalized core representation.</summary>
-    ResolvedMethod ResolveMethodToken(int token, GenericContext ctx);
-
-    /// <summary>Tries to retrieve a method body for interpretation.</summary>
-    bool TryGetMethodBody(MethodHandle method, out MethodBody body);
-
-    /// <summary>Resolves the runtime target method for virtual/interface dispatch.</summary>
-    MethodHandle ResolveVirtualOverride(MethodHandle declared, TypeHandle runtimeType);
+    /// <summary>Retrieves a method body suitable for draft interpreter execution.</summary>
+    /// <param name="method">The deterministic method-definition handle.</param>
+    /// <returns>The method body or a structured unavailable/invalid result.</returns>
+    ResolutionResult<MethodBody> GetMethodBody(MethodHandle method);
 }

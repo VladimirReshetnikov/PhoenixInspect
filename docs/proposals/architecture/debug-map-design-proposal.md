@@ -1,3 +1,5 @@
+> **Roadmap status: research backlog.** Debug maps become active only when an admitted interpreted-method or stepping slice needs source boundaries. PDB-to-decompiler-to-IL fallback is a design hypothesis, not implemented capability.
+
 Below is a deeper technical write-up for:
 
 1. a **`DebugMap` data model** that can drive stepping/highlighting regardless of where the “source” comes from, and

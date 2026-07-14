@@ -1,12 +1,14 @@
-Below is a high-level feature proposal for **virtual step-by-step debugging** in **post-mortem dump analysis**, built on top of the **IL interpretation framework** we outlined (unknown propagation, sandboxed call modeling, virtual heap overlay, source mapping). It’s “high-level” in the sense of user experience + scope + constraints, but it stays technically grounded so it’s plausibly implementable.
+This is a high-level product hypothesis for **virtual step-by-step debugging** in post-mortem dump analysis.
 
 ---
 
 # Feature Proposal: Virtual Step Debugging for Post-Mortem Dumps
 
+> **Roadmap relation: research backlog, not an active delivery commitment.** Entry requires validated dump-backed evaluation, unknown-aware method execution, deterministic pause/event contracts, and source mapping. Debugger-grade Step Out and exception behavior additionally require handler-transfer EH.
+
 ## 1) Summary
 
-Add an interactive **stepper** to dump debugging that can “execute” code *virtually* (no live process) starting from a **user-provided expression or method call**, allowing:
+Explore an interactive **counterfactual stepper** that can interpret code from a dump-derived or assumed starting state (without a live process), allowing:
 
 * **Step Into / Step Over / Step Out**
 * View **locals**, **arguments**, **evaluation stack**, **virtual call stack**
@@ -14,7 +16,7 @@ Add an interactive **stepper** to dump debugging that can “execute” code *vi
 * Safely handle missing data and side effects by propagating **unknown values** and/or using **models**
 * Support **Undo Last Step** (reverse stepping), enabled by the purely virtual, side-effect-free execution model
 
-The goal is not to recreate an exact runtime; it’s to provide a **debugger-like exploration workflow** over a dump snapshot, with explicit trust boundaries.
+The goal is not to recreate runtime history. It is to provide a **debugger-like counterfactual exploration workflow** over a dump snapshot, with explicit assumptions and trust boundaries.
 
 ---
 
@@ -23,12 +25,12 @@ The goal is not to recreate an exact runtime; it’s to provide a **debugger-lik
 In post-mortem analysis, users frequently want answers that require “just a bit of execution”:
 
 * Follow computed properties without manually walking the heap
-* Understand why some value became null / empty / default
-* See how a cache key is built or which branch was taken
+* Inspect what a method would compute from a captured object state
+* Explore how a cache key would be built or how branches behave under explicit assumptions
 * Evaluate a predicate over a collection without exporting data
 * Explore state machine logic (async/iterator) from a dump
 
-A normal debugger solves this by executing code in the debuggee. A dump cannot. This feature fills that gap by providing a **virtual debugger** that runs on a **snapshot + sandbox**.
+A normal debugger solves this by executing code in the debuggee. A dump cannot. This research explores a **virtual debugger** that runs on a snapshot plus a policy-constrained virtual execution environment. That policy boundary is not, by itself, a security sandbox for hostile artifacts.
 
 ---
 
@@ -38,7 +40,7 @@ A new concept appears in the UI:
 
 ### Virtual Execution Session
 
-A session is a deterministic, bounded “execution trace” produced by the interpreter.
+A session is a deterministic, bounded **virtual transcript** produced by the interpreter.
 
 * Input:
 
@@ -53,6 +55,8 @@ A session is a deterministic, bounded “execution trace” produced by the inte
 ### Big UX rule
 
 This is **not stepping the original process**. It is stepping **a simulation** that reads from the dump and writes only to a **virtual overlay**.
+
+It therefore cannot establish which historical path the process took or why the captured value became what it is. Transcript “replay” means reproducing this tool's commands and assumptions, not replaying the original process.
 
 We should make this obvious with subtle but constant cues:
 
@@ -242,7 +246,7 @@ When the current condition is unknown, the stepper can do one of three user-visi
      * “Assume condition is true (create branch)”
      * “Assume condition is false (create branch)”
      * “Explore both (two tabs)”
-   * This is where a virtual debugger becomes *better than a real one*: you can explore alternate realities.
+   * This enables explicit counterfactual scenario branches from the same captured evidence.
 
 3. **Pick one path (fast mode)**
 
@@ -252,6 +256,8 @@ When the current condition is unknown, the stepper can do one of three user-visi
 ---
 
 ## 8) Exceptions in virtual stepping
+
+The behavior below is a later research tier. Until handler transfer exists, the only honest initial behavior is to stop at a throw site and expose the exception value/evidence without claiming that interpreted `catch`/`finally` blocks ran.
 
 Virtual execution should treat exceptions explicitly:
 
@@ -274,7 +280,7 @@ UI should show:
 
 ## 9) Undo Last Step: reverse stepping in a virtual world
 
-This is one of the rare cases where post-mortem + interpretation can beat a live debugger.
+This can make scenario exploration unusually convenient, but it is state/transcript rewind rather than historical reverse debugging.
 
 ### Why undo is feasible
 
@@ -298,6 +304,8 @@ Undo should revert:
 * locals/args/this binding
 * virtual heap allocations and mutations
 * the current branch/assumption context
+
+Undo never changes or rewinds the dump and never reconstructs prior states of the original process.
 
 ### UI/UX for undo
 
@@ -345,6 +353,8 @@ A virtual stepper is powerful, and it must stay safe and predictable:
 
 ### Phase 1: Minimal virtual stepping (statement-level)
 
+This phase is itself research-gated; “Phase 1” does not mean it precedes the active dump evaluator roadmap.
+
 * Start from expression/method call
 * Step Over / Into / Out
 * Source view:
@@ -354,6 +364,8 @@ A virtual stepper is powerful, and it must stay safe and predictable:
 * Unknown propagation visible in locals/watch
 * Models for obvious “world” calls (socket/file/native) return unknown + effect tags
 * **Undo last step** supported with a bounded linear history
+
+Step Out is limited to EH-free admitted bodies until handler-transfer semantics exist.
 
 ### Phase 2: Branch exploration + better decompiled mapping
 
@@ -372,9 +384,9 @@ A virtual stepper is powerful, and it must stay safe and predictable:
 
 ## 12) Success criteria
 
-You’ll know this feature is working when:
+If this research is activated, it is working when:
 
-* Users can answer “why is this value X?” in minutes instead of manual heap spelunking
+* Users can answer “what would this code compute from this captured state?” without confusing the answer with historical causation
 * Most sessions proceed without hard stops (“unsupported” becomes “modeled unknown”)
 * Undo is used frequently (strong signal of value)
 * Users trust the tool because it’s explicit about:
@@ -406,13 +418,13 @@ You’ll know this feature is working when:
 
 ### A small but important “bonus”: Why this is uniquely good for dumps
 
-A live debugger can’t safely offer “explore both branches” or “step back” without heavyweight time travel infrastructure. A virtual interpreter can. That’s not just a gimmick; it’s an honest advantage of this approach.
+A live debugger cannot cheaply offer “explore both branches” from a fixed snapshot. A virtual interpreter may be able to explore such scenarios and rewind its own transcript, provided the UI never presents that as historical time travel.
 ---
 
 
 ## 14) Design follow-ons from virtual tasks + dynamic call lifting
 
-The architecture now includes dedicated proposals for async virtual-task semantics and dynamic call-site lifting. This feature spec should treat them as first-class stepping behavior rather than optional extras.
+Dedicated proposals explore async virtual-task semantics and dynamic call-site lifting. They remain separately gated research, not prerequisites to an initial virtual-step experiment and not implied commitments.
 
 ### Async stepping implications
 

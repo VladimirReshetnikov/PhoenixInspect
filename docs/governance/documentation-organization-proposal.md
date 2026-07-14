@@ -1,270 +1,104 @@
-# Proposal: Project Documentation Organization
+# Documentation Maintenance Policy
 
-## 1) Purpose
+**Lifecycle:** Current lightweight governance
+**Supersedes:** the unimplemented ADR/spec/owner/template migration proposal
 
-This proposal defines how documentation should be organized, authored, reviewed, and evolved for the IL interpreter and dump-time evaluation project.
+## 1. Purpose
 
-The goal is to make docs:
+Documentation exists to improve product and engineering decisions. It is not a parallel measure of implementation progress. This solo/small-team design-phase repository keeps only the governance that has demonstrated value.
 
-- easy to navigate for new and returning contributors,
-- explicit about decisions and uncertainty,
-- resilient as the project moves from concept to implementation.
+## 2. Maintained information architecture
 
----
+```text
+docs/
+├── README.md        canonical inventory and reading paths
+├── governance/      terminology and maintenance policy
+├── plans/           active sequencing and evidence traceability
+├── proposals/
+│   ├── product/
+│   ├── architecture/
+│   └── integration/
+└── lib/             source/library research notes
+```
 
-## 2) Context and Problem Statement
+The root `DESIGN-ARCHITECTURE-REVIEW.md` is the point-in-time review that motivated the 2026-07 reset.
 
-We currently have strong proposal content in `docs/`, but it is mostly a flat list of large files. As scope grows, this creates discoverability and maintenance risk:
+No per-folder index, owner field, freshness timestamp, ADR directory, normative-spec directory, or template automation is required now. Add such machinery only when a recurring coordination problem demonstrates its value.
 
-1. Related decisions become scattered.
-2. Contributors duplicate definitions or assumptions.
-3. It becomes unclear what is stable vs exploratory.
-4. Planning and architecture can drift apart silently.
+## 3. Two independent status axes
 
-We need an intentional documentation information architecture now that the first implementation slice exists and complexity is beginning to arrive.
+Every current, active, or supporting document in the canonical index has:
 
----
+1. a **lifecycle** — `Current`, `Draft`, `Complete`, `Superseded`, or `Historical`;
+2. a **roadmap relation** — `Active`, `Supporting`, `Research`, `Reference`, or `Historical`.
 
-## 3) Documentation Principles
+Historical library notes and point-in-time source records may use a single combined status when a second axis would add no decision value. The index, not an inferred filename convention, is authoritative for status.
 
-1. **Docs are part of architecture**
-   Documentation is not a byproduct; it is a design artifact and source of truth.
+Examples:
 
-2. **Decision visibility over narrative completeness**
-   Every important choice should be findable with rationale and status.
+- a draft restricted-expression design can be `Draft / Active`;
+- a polished async proposal can be `Complete / Research backlog`;
+- an old package catalog can be `Superseded / Historical`.
 
-3. **Explicit uncertainty**
-   Unknowns and open questions must be documented clearly, not hidden.
+“Complete” means the document is complete as a document. It does not mean the capability is implemented.
 
-4. **Stable entry points**
-   New contributors should have a predictable reading path.
+## 4. Design-just-ahead-of-code rule
 
-5. **Low-friction evolution**
-   We should enable iterative changes without constant large rewrites.
+- The active milestone may add or refine the smallest contract needed for its next executable slice.
+- A new subsystem proposal requires an active-roadmap dependency; curiosity alone goes to a short research note or issue, not a normative-looking proposal.
+- Do not create empty projects, interface catalogs, support matrices, registries, or governance artifacts in anticipation of possible implementation.
+- Prefer updating or superseding contradictory documents over adding another reconciliation layer.
+- When implementation disproves a design, update the design in the same change.
 
----
+## 5. Evidence language
 
-## 4) Proposed Information Architecture
+Documents distinguish:
 
-### 4.1 Top-level structure under `docs/`
+- **designed:** a behavior or boundary is described;
+- **implemented:** code exists;
+- **validated:** an executable test or measured corpus supports the claim;
+- **committed:** it is on the active roadmap with an exit criterion.
 
-Proposed directories:
+Planned tests are not validation. Empty projects are not implementation. A source scan is not backend conformance evidence.
 
-- `docs/overview/`
-  - project goals, glossary, architecture map, reading guides.
-- `docs/proposals/`
-  - active design proposals and concept docs.
-- `docs/decisions/`
-  - architecture decision records (ADRs), one decision per file.
-- `docs/specs/`
-  - stable technical contracts/specifications.
-- `docs/plans/`
-  - roadmap, milestones, sequencing, dependency maps.
-- `docs/operations/`
-  - quality gates, contribution workflow, review checklists.
+## 6. Placement and naming
 
-### 4.2 Transitional policy
+- Keep stable, descriptive kebab-case filenames.
+- Product behavior belongs under `proposals/product`; technical boundaries under `proposals/architecture`; external-system seams under `proposals/integration`; sequencing under `plans`; process under `governance`.
+- Point-in-time reviews may live at the repository root when explicitly requested as a top-level handoff artifact.
+- If a file moves or is deleted, update `README.md`, `docs/README.md`, and inbound links in the same change.
 
-Because we already have documents at `docs/*.md`, migration should be phased:
+## 7. Required document shape
 
-- **Phase A (now):** keep existing files in place; add cross-links and ownership metadata.
-- **Phase B:** move files into structured folders with lightweight redirects/index docs.
-- **Phase C:** enforce naming and location conventions for all new docs.
+Use only the structure the content needs. For active or supporting design, include:
 
-This avoids breaking context while improving structure.
+- lifecycle and roadmap relation near the top;
+- scope/non-scope;
+- decisions and assumptions;
+- evidence and gaps;
+- entry/exit criteria when sequencing matters.
 
----
+Long templates and mandatory sections are intentionally avoided.
 
-## 5) Document Types and Lifecycle
+## 8. Review triggers
 
-Each document should declare its type in a short metadata block near the top.
+Review affected documentation when:
 
-### 5.1 Types
+- a public prototype contract changes;
+- a milestone or scope lock changes;
+- implementation evidence changes a capability claim;
+- terminology or identity/result semantics change;
+- a backend/dependency/security boundary changes;
+- a link target is moved or removed.
 
-- **Overview**: onboarding and high-level framing.
-- **Proposal**: suggested design, alternatives, and recommendation.
-- **Decision (ADR)**: accepted/rejected decision with rationale and consequences.
-- **Spec**: normative behavior/contracts.
-- **Plan**: sequencing, milestones, and prioritization.
-- **Guide**: contributor workflows and standards.
+## 9. Definition of done
 
-### 5.2 Status model
+A documentation change is done when:
 
-Recommended status values:
+1. the relevant claims match repository evidence;
+2. lifecycle and roadmap relation are honest in the index;
+3. active terminology agrees with the glossary or explicitly explains a local distinction;
+4. inbound links and reading paths work;
+5. it does not present research design as implementation, validation, or commitment.
 
-- `draft`
-- `in-review`
-- `accepted`
-- `superseded`
-- `deprecated`
-
-Status should be visible in each doc and in index pages.
-
----
-
-## 6) Naming and Template Conventions
-
-### 6.1 File naming
-
-- Use kebab-case.
-- Prefer descriptive names over abbreviations.
-- Include suffix where useful, e.g. `*-proposal.md`, `adr-XXXX-*.md`.
-
-### 6.2 Section conventions for proposals
-
-Minimum required sections:
-
-1. Problem statement
-2. Goals and non-goals
-3. Constraints
-4. Proposed design
-5. Alternatives considered
-6. Risks and mitigations
-7. Open questions
-8. Recommendation and next step
-
-### 6.3 ADR template (proposed)
-
-- Context
-- Decision
-- Status
-- Consequences
-- Rejected alternatives
-- Follow-up actions
-
----
-
-## 7) Indexes and Navigation Contracts
-
-To keep docs discoverable, add explicit index files:
-
-- `docs/README.md` (master index)
-- one `README.md` in each docs subfolder
-
-Each index should include:
-
-- purpose of that section,
-- document list with one-line summary,
-- status column,
-- “read next” links.
-
-Additionally:
-
-- maintain a single glossary page under `docs/overview/glossary.md`,
-- link key terms to glossary definitions from major docs.
-
----
-
-## 8) Ownership and Review Model
-
-### 8.1 Ownership
-
-- Each document should include an owner (person or team).
-- Owner is responsible for freshness and consistency.
-
-### 8.2 Review triggers
-
-A doc should be reviewed when:
-
-- a related proposal is accepted/rejected,
-- milestone boundaries change,
-- core interfaces/contracts are modified,
-- terminology changes.
-
-### 8.3 Staleness policy
-
-Every accepted decision/spec should include:
-
-- `last-reviewed` date,
-- expected next review trigger.
-
----
-
-## 9) Cross-Document Consistency Rules
-
-1. **One canonical definition per key term**
-   Terms like “unknown value,” “effect model,” and “purity indicator” must resolve to one source.
-
-2. **Decision-to-spec linkage**
-   Accepted ADRs should link to the corresponding spec updates (and vice versa).
-
-3. **Plan traceability**
-   Roadmap items should reference the docs/specs they depend on.
-
-4. **No silent supersession**
-   Superseded docs must link to replacements at the top.
-
----
-
-## 10) Migration Plan for Existing Docs
-
-### Step 1 (immediate)
-
-- Add repository-level `README.md` as canonical entry point.
-- Add this documentation-organization proposal.
-- Add a `docs/README.md` index.
-
-### Step 2 (next)
-
-- Rehome current proposals into `docs/proposals/`.
-- Move roadmap content into `docs/plans/`.
-- Introduce `docs/overview/architecture-overview.md` and glossary.
-
-### Step 3 (after initial structure lands)
-
-- Introduce ADR directory with first architecture decisions.
-- Extract stable contract docs into `docs/specs/`.
-- Enforce new-doc template via checklist or lightweight tooling.
-
----
-
-## 11) Immediate Recommended Actions
-
-1. Approve this organization direction.
-2. Create `docs/README.md` with categorized links and statuses.
-3. Start ADR practice with 1–2 high-impact decisions:
-   - metadata backend boundary model,
-   - call-model fallback semantics.
-4. Draft first spec candidates:
-   - unknown provenance schema,
-   - effect lattice contract.
-
----
-
-## 12) Risks and Mitigations
-
-### Risk: Over-structuring too early
-
-Mitigation:
-
-- keep migration phased,
-- avoid heavy process tooling initially,
-- prioritize helpful indexes over rigid bureaucracy.
-
-### Risk: Documentation drift remains
-
-Mitigation:
-
-- assign owner per doc,
-- add review triggers and freshness metadata,
-- make consistency checks part of PR review.
-
-### Risk: Contributor friction from templates
-
-Mitigation:
-
-- keep templates short and pragmatic,
-- allow exceptions with rationale,
-- evolve templates from real usage feedback.
-
----
-
-## 13) Definition of Done for Documentation Organization
-
-This proposal is considered implemented when:
-
-1. A stable docs index exists with categorized navigation.
-2. Core docs are grouped by purpose (overview/proposals/planning/etc.).
-3. At least one ADR and one spec are introduced using agreed templates.
-4. New docs follow documented naming/type/status conventions.
-5. Supersession links are present where documents overlap.
+This policy is deliberately smaller than the regime it replaces. If the team grows, revise it in response to observed coordination needs.

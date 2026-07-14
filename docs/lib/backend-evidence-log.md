@@ -1,17 +1,19 @@
-# Backend capability evidence log (draft)
+# Backend capability evidence log
 
-This log records concrete evidence for the capability axes in `backend-capability-matrix.md`.
+> **Current record plus preserved history.** The SRM/PEReader rows dated 2026-07 are executable evidence for the active backend decision. The source-review rows dated 2026-02-17 are intentionally retained as historical research; they do not reopen the backend decision or establish implemented capability.
 
-It is intentionally lightweight in the conceptual phase: the goal is to make claims traceable, not to freeze implementation decisions.
+This log records concrete evidence for the capability axes in `backend-capability-matrix.md` while keeping the distinction between source inspection and running fixtures explicit. The active choice is recorded in `mvp-backend-decision-record.md`.
 
 ## How to use this log
 
-For each experiment/prototype spike:
+For each executable experiment or prototype slice:
 
-1. add one row under the relevant backend section,
-2. link to artifact(s) such as notes, scripts, or benchmark output,
+1. add one row to **Current executable evidence**,
+2. link to a checked-in test and, where useful, captured output,
 3. classify confidence as `Low`, `Medium`, or `High`,
-4. record open follow-ups required before raising confidence.
+4. state the exact evidence boundary and open follow-up required before raising confidence.
+
+Source-reading observations remain useful in the historical section, but they stay `Low` confidence and cannot by themselves change the active backend.
 
 ## Evidence quality rubric
 
@@ -21,7 +23,24 @@ For each experiment/prototype spike:
 | Medium | Reproducible in a narrow scenario. | One or more prototype runs with captured output and explicit constraints. |
 | High | Reproducible across representative scenarios. | Repeated runs, edge-case coverage, and cross-backend comparison where applicable. |
 
-## AsmResolver evidence
+## Current executable evidence
+
+| Date | Backend | Capability axis | Executable claim | Evidence artifact | Confidence | Boundary / follow-up |
+|---|---|---|---|---|---|---|
+| 2026-07-13 | SRM/PEReader | Stable module/method identity, MethodDef lookup, and body facts | The fast metadata corpus copies one PE to a different path and obtains equal module/method handles; it distinguishes missing type/method, ambiguous name, invalid token, and module mismatch. The dump fixture independently opens the test-target PE to obtain MVID plus `maxstack`/locals/EH admission facts. | [`MetadataIdentityTests.cs`](../../tests/Interpreter.Tests/MetadataIdentityTests.cs), [`DumpMemoryEvidenceIntegrationTests.cs`](../../tests/Interpreter.IntegrationTests/DumpMemoryEvidenceIntegrationTests.cs) | Medium | This proves a narrow managed-PE path and honest identity join. It does not cover malformed/truncated PE files, signatures/generics, Portable PDBs, or deliberate dump/disk conflicts. |
+| 2026-07-13 | ClrMD + raw process memory | Snapshot/runtime identity and bounded object/string/metadata/IL evidence | A generated full dump is content-identified and opened read-only. Bounded enumeration finds a strong GCHandle; counted reads validate both the handle's selected object pointer and the object's method-table header before exact `Int32`, bounded/null strings, metadata MVID, and method code bytes are read. The dump-sourced `ret` code is executed after its MVID agrees with the independently opened artifact. | [`DumpMemoryEvidenceIntegrationTests.cs`](../../tests/Interpreter.IntegrationTests/DumpMemoryEvidenceIntegrationTests.cs) | Medium | This proves one strongly rooted/full-dump scenario, including partial/unavailable/conflict classifications and scan/read caps. It does not establish arbitrary frame/root recovery, corrupt/sparse dump handling, or that disk-supplied body-header facts came from dump memory. |
+
+## Active decision and remaining evidence gaps
+
+- SRM/PEReader is the decided backend for active prototype slices; see `mvp-backend-decision-record.md`.
+- Alternatives are reconsidered only after an active fixture demonstrates a material SRM deficiency and a candidate adapter runs the same projected-contract corpus.
+- Confidence increases only with representative identity, malformed/partial artifact, signature, method-body, and (when admitted) Portable PDB fixtures.
+
+## Historical source-review record (2026-02-17)
+
+The material below is preserved verbatim where possible because it records useful library behavior and the reasoning that preceded executable evidence. Terms such as “candidate,” “planned,” and “primary” describe that 2026-02 research context, not the current roadmap.
+
+### AsmResolver evidence
 
 | Date | Capability axis | Claim | Evidence artifact | Confidence | Follow-up |
 |---|---|---|---|---|---|
@@ -29,7 +48,7 @@ For each experiment/prototype spike:
 | 2026-02-17 | IL body fidelity | `CilMethodBody` and related builder/serializer types indicate full instruction/EH modeling path. | Source review in `docs/lib/asmresolver/usage-notes.md`. | Low | Capture malformed-body behavior and diagnostics mapping. |
 | 2026-02-17 | Symbol/PDB ingestion | `PdbImage` APIs support file/byte/reader loading and symbol/module enumeration. | Source review in `docs/lib/asmresolver/usage-notes.md`. | Low | Verify sequence-point parity against SRM path. |
 
-## dnlib evidence
+### dnlib evidence
 
 | Date | Capability axis | Claim | Evidence artifact | Confidence | Follow-up |
 |---|---|---|---|---|---|
@@ -37,7 +56,7 @@ For each experiment/prototype spike:
 | 2026-02-17 | IL body fidelity | `MethodDef`, `CilBody`, and `MethodBodyReader` indicate robust method-body decoding controls (including generic context input). | Source review in `docs/lib/dnlib/usage-notes.md`. | Low | Run corrupted/partial method fixtures and capture miss-reason mapping. |
 | 2026-02-17 | Symbol strategy breadth | Distinct portable/managed/windows PDB reader paths exist in `DotNet/Pdb` namespaces. | Source review in `docs/lib/dnlib/usage-notes.md`. | Low | Decide policy defaults for reader selection and fallback ordering. |
 
-## ClrMD evidence
+### ClrMD evidence
 
 | Date | Capability axis | Claim | Evidence artifact | Confidence | Follow-up |
 |---|---|---|---|---|---|
@@ -45,7 +64,7 @@ For each experiment/prototype spike:
 | 2026-02-17 | Determinism and boundedness pressure | Thread/frame/root enumeration paths include caveats that require explicit budget and completeness handling in our contracts. | Source review in `docs/lib/clrmd/usage-notes.md`. | Low | Implement budgeted enumeration wrapper and record partial outcomes. |
 | 2026-02-17 | Cache policy relevance | `CacheOptions` indicates behavior/perf knobs that can alter repeated-call characteristics. | Source review in `docs/lib/clrmd/usage-notes.md`. | Low | Evaluate fixed cache presets and measure drift/reproducibility. |
 
-## Roslyn evidence
+### Roslyn evidence
 
 | Date | Capability axis | Claim | Evidence artifact | Confidence | Follow-up |
 |---|---|---|---|---|---|
@@ -53,15 +72,15 @@ For each experiment/prototype spike:
 | 2026-02-17 | Semantic assistance | `CSharpCompilation.Create`/`CreateScriptCompilation` and `GetSemanticModel` support optional semantic-binding workflows. | Source review in `docs/lib/roslyn/usage-notes.md`. | Low | Compare semantic outputs against runtime metadata truth in mismatch scenarios. |
 | 2026-02-17 | Determinism constraints | Parse/compilation options are explicit and must be part of reproducible analysis inputs. | Source review in `docs/lib/roslyn/usage-notes.md`. | Low | Define deterministic input bundle and replay harness. |
 
-## Cross-backend conformance evidence
+### Cross-backend conformance evidence
 
 | Date | Scenario | Backends compared | Expected normalized parity | Evidence artifact | Status |
 |---|---|---|---|---|---|
 | 2026-02-17 | Source review parity pass | ClrMD, AsmResolver, dnlib, Roslyn | Library notes now map each backend to explicit adapter boundaries and risk categories. | `docs/lib/<library>/usage-notes.md` updates in this change. | Completed (analysis-only) |
-| TBD | Generic-heavy method body with partial symbols | AsmResolver vs dnlib | Same result category + same miss-reason family | TBD | Planned |
-| TBD | Portable PDB sequence-point mapping with async method | AsmResolver vs SRM-oriented layer | Equivalent statement boundary semantics in debug-map contract | TBD | Planned |
+| TBD | Generic-heavy method body with partial symbols | AsmResolver vs dnlib | Same result category + same miss-reason family | TBD | Historical plan (inactive) |
+| TBD | Portable PDB sequence-point mapping with async method | AsmResolver vs SRM-oriented layer | Equivalent statement boundary semantics in debug-map contract | TBD | Historical plan (inactive) |
 
-## 2026-02-17 deep-dive evidence additions
+### 2026-02-17 deep-dive evidence additions
 
 | Date | Backend | Capability axis | Claim | Evidence artifact | Confidence | Follow-up |
 |---|---|---|---|---|---|---|
@@ -70,12 +89,7 @@ For each experiment/prototype spike:
 | 2026-02-17 | dnlib | Portable PDB fidelity detail | `PortablePdbReader` sequence-point decoding preserves hidden points and document record transitions. | `docs/lib/source-review-deep-dive.md`. | Low | Validate debug-map projection retains hidden/document transition semantics. |
 | 2026-02-17 | Roslyn | Parse strictness and mode variability | `ParseExpression(..., consumeFullText)` and `Create` vs `CreateScriptCompilation` show policy-sensitive parse/bind behavior. | `docs/lib/source-review-deep-dive.md`. | Low | Add deterministic corpus comparing strictness + compilation mode outputs. |
 
-## Open decisions linked to this log
-
-- When a capability axis reaches `Medium` confidence for a primary candidate, update `backend-capability-matrix.md` notes and rationale.
-- When critical MVP axes reach consistent `Medium`/`High` confidence, capture a decision record in `mvp-backend-decision-record.md`.
-
-## 2026-02-17 source-review expansion pass
+### 2026-02-17 source-review expansion pass
 
 | Date | Backend | Capability axis | Claim | Evidence artifact | Confidence | Follow-up |
 |---|---|---|---|---|---|---|

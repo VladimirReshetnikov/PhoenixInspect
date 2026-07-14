@@ -1,5 +1,7 @@
 # Performance and Benchmark Proposal
 
+> **Roadmap status: supporting research.** Numerical SLAs and broad matrices below are hypotheses until the active dump/query and concrete IL corpora produce baselines. Near-term gates track correctness, determinism, boundedness, and gross regressions only.
+
 ## Status
 
 Draft

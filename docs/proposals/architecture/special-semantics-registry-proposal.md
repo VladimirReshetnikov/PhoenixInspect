@@ -1,5 +1,7 @@
 # Special Semantics Registry Proposal
 
+> **Roadmap status: research backlog.** A unified registry is premature until at least two implemented model kinds need shared precedence and diagnostics. The current prototype must not create registry infrastructure or packages in anticipation of that need.
+
 ## 1) Purpose
 
 The semantic-modeling proposal introduced three complementary mechanisms that must behave as one cohesive capability:

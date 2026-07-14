@@ -1,5 +1,7 @@
 # Design Doc: Post-Mortem Expression Evaluator for .NET Dumps
 
+> **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices only. Method execution, virtual scratch objects, async/dynamic lifting, and advanced query workflows are research backlog gated by executable evidence; they are not current delivery commitments.
+
 ## 1) Summary
 
 When debugging a crash dump, engineers frequently need answers that are “one computed step away” from what the raw heap shows:
@@ -9,13 +11,13 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. This feature provides a **safe, sandboxed C# expression evaluator** that operates against the dump snapshot and (optionally) an isolated “virtual” heap for scratch objects—enabling faster root cause analysis without needing a repro.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** for a restricted C# expression subset over dump evidence. Later research may add counterfactual method execution and an isolated virtual heap, but those capabilities are not implied by the first product slice.
 
 ---
 
 ## 2) Problem Statement
 
-**Dump analysis is high-friction for “computed truth.”**
+**Dump analysis is high-friction for derived questions.**
 The heap contains the data, but not the *answers*. Many useful questions require:
 
 * chasing indirections (`Nullable<T>`, wrapper types, `Lazy<T>`, caching layers)
@@ -38,9 +40,9 @@ We want dump debugging to feel closer to a modern IDE: **ask a question, get an 
 Bring a **first-class “Immediate/Watch” experience** to post-mortem .NET debugging:
 
 * Evaluate common C# expressions in the context of a selected dump thread/frame.
-* Treat the dump as immutable truth; evaluation cannot mutate the dump.
-* Allow advanced “what-if” exploration via a virtual scratchpad heap, without affecting snapshot data.
-* Provide clear trust signals: what was evaluated purely vs what was blocked/approximated.
+* Treat the dump as immutable evidence; evaluation cannot mutate it.
+* Later research may allow “what-if” exploration via a virtual scratchpad heap without affecting snapshot data.
+* Provide clear semantic-mode, completeness, evidence, effect, and provenance signals.
 
 The end-state experience should feel like:
 **“Rider/VS Immediate Window, but for dumps, with safety rails and deterministic behavior.”**
@@ -56,6 +58,8 @@ The end-state experience should feel like:
 * Support/triage engineers doing initial dump investigation
 
 ### Core scenarios
+
+The active slice starts with snapshot-grounded navigation and simple derived queries. The broader scenarios below are product hypotheses, not all MVP commitments.
 
 1. **Crash triage**
 
@@ -84,14 +88,14 @@ The end-state experience should feel like:
 
 2. **Deterministic and bounded**
 
-   * Evaluation should complete quickly or fail clearly with timeouts/limits.
+   * Evaluation should complete within deterministic resource budgets or report the exhausted budget clearly; host cancellation is reported separately.
    * No unbounded loops, recursion blowups, or runaway allocations.
 
 3. **Safety-first execution model**
 
    * No filesystem/network/process/thread/time access.
    * No arbitrary native interop.
-   * “Pure” evaluation by default.
+   * Read-only derived queries by default; any later code execution requires explicit policy and counterfactual labeling.
 
 4. **Honest results**
 
@@ -125,11 +129,16 @@ Evaluation runs in a specific **context**:
 
 ### Output and trust indicators
 
-Each evaluation returns:
+Each evaluation returns separate, machine-readable axes:
 
-* Value + type
-* A “purity” indicator (e.g., **Pure**, **Blocked**, **Partial**, **Timed Out**)
-* Diagnostics when blocked (what capability was disallowed)
+* semantic mode (`Observation`, `DerivedQuery`, and only in later phases `CounterfactualExecution` or `AbstractAnalysis`)
+* completion status (completed, blocked, budget-exhausted, cancelled, decision-needed, or failed)
+* completeness (complete, partial, or none)
+* evidence status (exact, partial, unavailable, conflicting, or invalid)
+* effects/virtual-write summary
+* value + type, provenance, and diagnostics
+
+A host may synthesize a compact trust indicator from those fields, but the badge must not replace them or imply more certainty than the evidence supports.
 
 ---
 
@@ -139,7 +148,12 @@ This is intentionally phased so we can deliver value early without promising “
 
 ### Phase 1 — Read-only, high-confidence expressions (MVP)
 
-Goal: cover 70% of common “what’s in here?” questions.
+Goal: prove that a small expression/query surface materially improves common “what’s in here?” investigations.
+
+The following is the target Phase 1 capability set, admitted incrementally. W2 intentionally begins with a smaller
+closed syntax/operator subset: one exact non-null root, one direct field through `.`, and optional literal `??` over
+an exact nullable field. Null-conditional access remains outside the admitted grammar until the root value model can
+distinguish exact null from unavailable root evidence.
 
 **Supported**
 
@@ -153,6 +167,14 @@ Goal: cover 70% of common “what’s in here?” questions.
   * numeric conversions, enum formatting
 * `typeof(T)`, `default(T)`, literal values
 * Safe pretty-printing of common BCL types
+
+**Expression front-end boundary**
+
+* Parse a deliberately admitted C# expression subset with deterministic options.
+* Bind only against host-provided roots and the dump/metadata universe; do not load assemblies implicitly.
+* Lower admitted syntax into a read-only query plan rather than compiling a synthetic method.
+* Reject method/getter execution, construction, reflection, unsupported syntax, and unavailable context with stable diagnostics.
+* Treat an auto-property as data only when a backing-field projection is explicitly recognized and reported.
 
 **Not supported (MVP)**
 
@@ -169,9 +191,9 @@ Goal: cover 70% of common “what’s in here?” questions.
 
 ---
 
-### Phase 2 — Safe method/property evaluation (“pure code execution”)
+### Phase 2 — Safe method/property evaluation (research gate)
 
-Goal: unlock getters/helpers that compute values from already-present snapshot data.
+Goal: investigate getters/helpers that would compute values from snapshot-derived or assumed state. Results in this phase are **counterfactual execution**, not historical replay and not evidence of why the original process reached its captured state.
 
 **Supported**
 
@@ -183,15 +205,17 @@ Goal: unlock getters/helpers that compute values from already-present snapshot d
 
 **Guardrails**
 
-* No explicit time/instruction budget tracking in MVP; rely on cooperative cancellation and deterministic semantics
-* Cooperative cancellation (`CancellationToken`) for interpreter operations (MVP)
+* Deterministic instruction, call-depth, allocation, and traversal budgets are mandatory; cooperative cancellation is a separate host-responsiveness mechanism.
 * Clear “blocked due to side-effect risk” diagnostics
 * Option to “Show evaluation plan” at a high level (e.g., “Calls A → B → C; blocked at D (File IO)”)
+* Initial admission may be limited to EH-free bodies. The first exception behavior is stop-on-throw; interpreted handler transfer is a later prerequisite for `catch`/`finally` claims.
 
 ---
 
 
 ### Phase 2.5 — Async + dynamic semantic lifting
+
+**Roadmap relation:** Research backlog. Entry requires validated method execution, calls, generics, the scenario-derived `MoveNext` opcode closure, and required EH behavior.
 
 Goal: preserve debugger trust for modern C# language features without executing runtime internals.
 
@@ -211,6 +235,8 @@ Goal: preserve debugger trust for modern C# language features without executing 
 
 ### Phase 3 — Virtual scratchpad objects and “what-if” exploration
 
+**Roadmap relation:** Research backlog.
+
 Goal: make the evaluator a real exploration tool, not only read-only.
 
 **Supported**
@@ -228,6 +254,8 @@ Goal: make the evaluator a real exploration tool, not only read-only.
 ---
 
 ### Phase 4 — Advanced query workflows and helpers
+
+**Roadmap relation:** Research backlog.
 
 Goal: bridge the gap to “Rider-grade data exploration.”
 
@@ -288,7 +316,7 @@ We’ll measure success through a mix of usability, reliability, and coverage:
 ### Reliability & safety
 
 * Crash-free evaluation rate
-* Evaluation timeouts rate (should be low; if high, our defaults are too permissive or UX encourages heavy queries)
+* Deterministic budget-exhaustion and host-cancellation rates, tracked separately
 * Instances of blocked side-effect attempts (signals rule clarity and user needs)
 
 ### Adoption
@@ -302,13 +330,7 @@ We’ll measure success through a mix of usability, reliability, and coverage:
 
 ### “Purity” / trust UI
 
-Every evaluated expression carries a badge:
-
-* **Pure (Read-only)**: derived from snapshot data only
-* **Pure (Executed)**: executed under sandbox rules
-* **Partial**: truncated due to budgets/limits
-* **Blocked**: disallowed API/operation
-* **Unavailable**: context missing (locals not present, corrupted heap, etc.)
+Every evaluated expression exposes the result axes from §6. A compact UI might render `Derived query · complete · exact evidence · read-only` or `Counterfactual execution · partial · modeled effects`; it should not call both cases merely “Pure.” Budget exhaustion, cancellation, unavailable evidence, and policy blocking remain distinct outcomes.
 
 ### Cancelability
 
@@ -337,40 +359,39 @@ All evaluation is cancelable and doesn’t block the rest of the UI.
 
 4. **Security/privacy concerns (dumps may contain secrets)**
 
-   * Mitigation: evaluation is local-only by default; no implicit external access; any symbol/source retrieval is transparent and configurable.
+   * Mitigation: treat dump/PE/PDB/source inputs as untrusted; keep network retrieval off by default; bound reads, traversal, parsing, and decompression; never place dump values in telemetry by default; redact diagnostics; require explicit consent for source/symbol egress; and isolate artifact processing before external use. “Interpreter sandbox” policy is not a substitute for a parser/host security boundary.
 
 ---
 
 ## 13) Milestones (Proposed)
 
-* **M1: MVP read-only evaluator**
+The authoritative sequence is in `docs/plans/future-work-planning.md`:
 
-  * field/property-as-data, operators, indexers, formatting, watch/immediate integration
-* **M2: Safe execution**
+* **W0:** truthful baseline, CI, and deterministic smoke evidence.
+* **W1:** real dump-memory field/string read with typed evidence outcomes.
+* **W2:** restricted expression/query slice with no user-IL execution.
+* **W3:** scenario-derived concrete IL slice plus CoreCLR differential oracle.
+* **W4:** decomposed, evidence-gated unknown-aware counterfactual method evaluation.
 
-  * allow a controlled set of getter/method evaluations + sandbox budgets + trust badges
-* **M3: Virtual scratchpad**
-
-  * `new`, virtual delegates, persistent scratch variables, clear virtual labeling
-* **M4: Queries and visualization**
-
-  * safe LINQ-like workflows with tables/grouping and strong truncation UX
+Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 
 ---
 
 ## 14) Open Questions (for product decisions)
 
+Only questions needed by W1/W2 should be decided now; the rest stay with their research phase.
+
 1. **Default safety stance**
 
    * Should method execution be opt-in per session/dump, or enabled with strict limits by default?
 
-2. **How “C#-complete” should syntax be**
+2. **First restricted syntax closure**
 
-   * Expressions only vs allowing statements (`var x = ...; x`) in Immediate.
+   * Which member, null-handling, literal, and operator forms belong in the first W2 fixture corpus? Statements remain research backlog.
 
 3. **Symbol/source retrieval policy**
 
-   * Should we auto-download symbols by default, prompt, or require explicit configuration?
+   * Network access remains off by default. If retrieval is later enabled, what explicit consent, allowlist, cache, and credential policy should the host require?
 
 4. **Team workflows**
 

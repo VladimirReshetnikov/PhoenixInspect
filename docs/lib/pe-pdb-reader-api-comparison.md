@@ -1,5 +1,7 @@
 # PE/PDB reader API comparison and onboarding guide (source-driven draft)
 
+> **Historical research (2026-02).** This comparison predates the executable SRM adapter and is retained for source-level reference. Its candidate recommendations are not current implementation guidance. SRM/PEReader is the active backend under `mvp-backend-decision-record.md`; an alternative is considered only after a checked-in fixture demonstrates a material gap.
+
 This document compares PE/metadata/IL/PDB reader stacks represented in `lib/` with a specific goal:
 
 - accelerate onboarding when moving between stacks,

@@ -1,195 +1,107 @@
-# Opcode Support Matrix Proposal
+# Opcode Admission and Evidence Matrix
 
-## Status
+**Lifecycle:** Current supporting plan
+**Roadmap relation:** Active only for W3 and later
 
-Draft
+## 1. Principle
 
-## Scope
+Opcode support is admitted by compiled product scenarios, not by percentage coverage or perceived opcode popularity. Each executable slice is a **dependency-closed set**: every instruction, prefix, stack shape, metadata operation, memory operation, and exceptional behavior used by its fixtures is either implemented and tested or the fixture is rejected before execution.
 
-This proposal defines a planning matrix for IL opcode support in the conceptual-design phase, including:
+An opcode is not “supported” because it appears in a proposal. The companion evidence is executable tests.
 
-- support tiers and readiness criteria,
-- deterministic fallback behavior for unsupported opcodes,
-- sequencing priorities across milestones,
-- documentation and testing expectations tied to each opcode family.
+## 2. Status vocabulary
 
-The goal is to replace ad-hoc opcode discussions with a shared artifact that is easy to review and update as design assumptions evolve.
+| Status | Meaning |
+|---|---|
+| `Exact` | Transfer semantics are implemented for the admitted operand/stack/type shapes and checked by unit plus differential tests. |
+| `Conservative` | The admitted shape intentionally loses precision and emits a provenance-bearing diagnostic. This is not used by the first concrete slice. |
+| `RecognizedBlocked` | Decode is deterministic, no semantic effects occur, and execution stops with an opcode/offset/reason diagnostic. |
+| `Unadmitted` | No execution claim. A body containing the instruction is rejected by the slice admission check. |
 
----
+Promotion requires an evidence link, not a documentation edit alone.
 
-## 1) Why an opcode matrix is needed now
+## 3. Executable slices
 
-Current architecture proposals define interpreter contracts, state models, and testing strategy, but they do not yet provide a single answer to:
+### E0 — Walking-skeleton return
 
-1. Which opcodes are in MVP scope?
-2. Which opcodes are intentionally deferred?
-3. How should unsupported behavior surface to hosts?
+Purpose: prove method-body acquisition, deterministic budget accounting, and root-frame completion.
 
-Without this matrix, planning conversations risk drift and inconsistent assumptions across product, architecture, and integration documents.
+| Instruction | Admitted shape | Status |
+|---|---|---|
+| `ret` | `void` root method with empty evaluation stack | `Exact` |
 
----
+This was the original prototype slice. Its disk-PE method body is artifact evidence, not dump-memory IL evidence.
 
-## 2) Design principles
+### E1 — Concrete arithmetic
 
-1. **Determinism over breadth**: supporting fewer opcodes with predictable outcomes is better than broad but unstable behavior.
-2. **Explainability by default**: every unsupported/approximated opcode must produce structured diagnostics and provenance.
-3. **Family-level planning, opcode-level tracking**: sequence work by semantic families while still tracking per-opcode status.
-4. **Safety-first fallback**: unsupported operations never silently execute best-effort concrete side effects.
-5. **Incremental graduation**: opcodes move through explicit support tiers with test evidence.
+Purpose: exercise the domain-parametric engine with real values and establish the CoreCLR differential oracle.
 
----
+The exact set is generated from checked-in compiled fixtures. Expected initial families are:
 
-## 3) Support tiers
+- `ldc.i4.*`, `ldc.i4.s`, `ldc.i4`;
+- `ldarg.*` for admitted static primitive parameters;
+- `ldloc.*` and `stloc.*` for admitted primitive locals;
+- `add`, `sub`, and `mul` for `int32` shapes;
+- `ret` for `int32` and `void` roots.
 
-Each opcode is assigned exactly one tier at any point in time.
+Required dependencies:
 
-### Tier A — Supported (Deterministic)
+- evaluation-stack validation and deterministic instruction decoding;
+- arguments, locals, instruction offset, root return value, and immutable/persistent memory in machine state;
+- concrete-domain extraction and arithmetic semantics;
+- no exception regions, calls, branches, byrefs, floating point, overflow prefixes, or implicit exceptional cases in admitted fixtures.
 
-- Defined transfer/execution semantics in interpreter spec.
-- Covered by unit + component tests.
-- Participates in end-to-end scenario tests.
-- Emits stable explainability artifacts.
+Exit evidence:
 
-### Tier B — Supported (Conservative Approximation)
+1. edge-focused transfer tests;
+2. domain law tests, including `IsLessThanOrEqual`, `Join`, `Meet`, and `Widen` coverage laws;
+3. repeated-run transcript equality;
+4. compiled fixture results equal CoreCLR results over an input corpus.
 
-- Opcode is executable but may widen precision.
-- Approximation is explicit in diagnostics/provenance.
-- Determinism and budget accounting requirements still apply.
+### E2 — Dump-backed field getter
 
-### Tier C — Recognized but Blocked
+Purpose: connect interpreter execution to product evidence without broadening to arbitrary methods.
 
-- Opcode is recognized and decoded.
-- Execution halts or call path is blocked according to policy.
-- Host receives structured unsupported-opcode reason and location.
+Expected candidate instructions are `ldarg.0`, `ldfld`, and `ret`, plus only the signature/token decoding forced by fixtures. Entry is gated on W1/W2 providing typed dump object/field evidence and identity mapping.
 
-### Tier D — Not Yet Modeled
+Admission requirements:
 
-- No committed behavior beyond parse/decode safety.
-- Treated as design backlog; not eligible for MVP claims.
+- branchless, call-free, EH-free instance getter;
+- exact receiver identity and field-token resolution;
+- dump-backed field read returns an explicit evidence outcome;
+- missing/sparse data produces partial/unavailable evidence, never a fabricated concrete value;
+- target exceptions stop the path; handler transfer is unavailable.
 
----
+The final set is the union of instructions emitted by the checked-in getter fixtures, not this expected list.
 
-## 4) Proposed MVP family matrix
+## 4. Later gates
 
-The table below is a **planning baseline**, not a final commitment.
+- **Branches:** require explicit condition semantics, deterministic path policy, and closed fixtures.
+- **Calls:** require a scenario-narrowed call/effect contract and admitted callee policy.
+- **Indirect/byref operations:** require an addressable model and dump-layout evidence. Span is not an MVP commitment.
+- **Exception regions:** first add stop-on-throw; handler search/unwind is a separate milestone required before `leave`, `endfinally`, filters, or debugger-grade Step Out claims.
+- **Async/dynamic:** require their ordinary prerequisite opcode and EH sets before semantic lifting can be evaluated.
 
-| Opcode family | Representative opcodes | Proposed MVP tier | Rationale |
-|---|---|---|---|
-| Constants and locals | `ldc.*`, `ldloc.*`, `stloc.*`, `ldarg.*`, `starg.*` | A | Required for almost all expression and stepping scenarios. |
-| Stack manipulation | `dup`, `pop` | A | Core stack-machine mechanics; low semantic risk. |
-| Arithmetic and comparisons | `add`, `sub`, `mul`, `div`, `rem`, `ceq`, `cgt`, `clt` | A/B | Mostly deterministic; overflow/NaN and numeric-width edges may begin in B. |
-| Branching and control flow | `br*`, `switch`, `ret` | A | Required for path exploration and deterministic stepping. |
-| Conversions | `conv.*`, `box`, `unbox.any` | B | Precision and exception-mode details need explicit conservative rules. |
-| Object model basics | `newobj`, `ldfld`, `stfld`, `ldsfld`, `stsfld` | B/C | Needs policy and memory-model coupling for side effects and static state assumptions. |
-| Calls (direct) | `call`, `callvirt`, `newobj` dispatch aspects | B | Call-model proposal defines effect lattice; initial behavior may block impure/unknown calls. |
-| Arrays | `newarr`, `ldlen`, `ldelem.*`, `stelem.*` | B/C | Core for many methods, but bounds/type/runtime checks need phased precision. |
-| Exceptions and EH flow | `throw`, `rethrow`, `leave`, handler transitions | C | Important but can be deferred from MVP if surfaced as explicit blocked behavior. |
-| Indirect memory/pointers | `ldind.*`, `stind.*`, `cpblk`, `initblk`, `localloc` | C/D | Higher safety risk; likely post-MVP unless constrained subset is proven safe. |
-| Concurrency and memory model hints | `volatile.`, `readonly.`, `constrained.` prefixes | C | Prefix semantics should be handled deliberately after baseline execution is stable. |
-| Dynamic/async lowered machinery | call-site and state-machine related IL patterns | B/C | Prefer lifted semantics (`Dyn*`, virtual task ops) rather than literal opcode-only execution. |
+## 5. Unsupported behavior
 
----
+For a body already admitted to a slice, an unexpected or malformed instruction produces:
 
-## 5) Fallback contract for unsupported opcodes
+- machine status `Blocked` or `InvalidProgram` as appropriate;
+- stable diagnostic code, method identity, opcode bytes, and IL offset;
+- no `InstructionExecuted` event;
+- no evaluation-stack, local, or memory mutation;
+- no instruction-budget consumption for an instruction that did not execute.
 
-When encountering Tier C/D opcodes in an active execution path, the engine should:
+The engine does not inject an unknown for an unsupported instruction unless a later hybrid slice defines and proves that continuation is sound for that exact stack/effect shape.
 
-1. Emit a deterministic diagnostic envelope with:
-   - opcode,
-   - method and IL offset,
-   - support tier,
-   - policy branch taken (`blocked`, `unknown`, or `terminate-path`).
-2. Emit provenance/event entries so hosts can explain *why* evaluation is partial.
-3. Apply policy-defined continuation behavior:
-   - terminate current path,
-   - or inject unknown value (only when contractually safe),
-   - never perform unmodeled concrete side effects.
+## 6. Evidence table maintenance
 
-This contract aligns unsupported-opcode behavior with the broader explainability model used for missing metadata or blocked calls.
+As each slice lands, maintain a small generated or hand-checked table containing:
 
----
-
-## 6) Governance: where and how to track status
-
-Maintain opcode status in two layers:
-
-1. **This proposal**: family-level sequencing and principles.
-2. **Companion matrix artifact** (future doc): opcode-by-opcode status with evidence links to tests/fixtures.
-
-Recommended fields for the companion matrix:
-
-- opcode name,
-- family,
-- current tier,
-- first milestone introduced,
-- known limitations,
-- evidence links (unit/component/e2e fixture IDs),
-- owner/reviewer.
-
----
-
-## 7) Milestone alignment (initial draft)
-
-### M1 — Core deterministic expression lane
-
-Target families:
-
-- constants/locals,
-- stack manipulation,
-- branching,
-- baseline arithmetic/comparisons.
-
-Exit signal:
-
-- deterministic replay hash stability on core fixture corpus.
-
-### M2 — Calls, objects, and arrays with conservative semantics
-
-Target families:
-
-- direct calls,
-- object model basics,
-- arrays,
-- conversion hardening.
-
-Exit signal:
-
-- policy-governed blocked/unknown behavior validated in end-to-end scenarios.
-
-### M3 — Advanced control and lowered-language features
-
-Target families:
-
-- exception flow,
-- selected prefixes,
-- lifted dynamic/async semantics integration.
-
-Exit signal:
-
-- stable diagnostics and step behavior on virtual debugger scenarios.
-
----
-
-## 8) Testing implications
-
-For any opcode family promoted to Tier A/B, require:
-
-1. unit tests for transfer semantics and edge cases,
-2. component tests for state transitions across merged control flow,
-3. end-to-end fixtures asserting status labels and diagnostics,
-4. determinism checks across repeated runs.
-
-For Tier C/D, require at minimum:
-
-- decode/recognition tests,
-- fallback contract tests that verify stable blocked/unknown diagnostics.
-
----
-
-## 9) Open questions
-
-1. Should EH flow (`throw`/handlers) be mandatory for MVP, or acceptable as explicit blocked behavior?
-2. Which pointer/indirect opcodes can be safely approximated without violating trust guarantees?
-3. Should `constrained.` and `readonly.` be treated as first-class semantics early, or initially lowered into conservative call/model decisions?
-4. What minimum opcode coverage threshold should gate preview readiness: percentage by opcode count, by scenario relevance, or both?
-
+- opcode and admitted operand/type shapes;
+- first slice;
+- unit test IDs;
+- differential fixture IDs;
+- limitations and exceptional behavior.
+
+Do not create a full ~200-opcode tracking bureaucracy before implemented coverage makes it useful.

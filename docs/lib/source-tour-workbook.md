@@ -1,5 +1,7 @@
 # Source Tour Workbook for `lib/` Snapshots
 
+> **Research reference.** Use this workbook only when an active scenario triggers a backend or front-end investigation. Completing a source tour is not implementation or validation evidence and does not reopen the SRM/PEReader decision.
+
 This workbook is a practical, source-driven tutorial companion for contributors who need to move from **"library familiarity"** to **"adapter decision readiness"** quickly.
 
 Use it when preparing architecture notes, adapter contract updates, or conformance test proposals.

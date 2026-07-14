@@ -1,5 +1,7 @@
 # Mono.Cecil usage notes for this project
 
+> **Historical backend research (2026-02).** This source review is retained for a future evidence-triggered comparison. SRM/PEReader is the active implementation; see `../mvp-backend-decision-record.md`.
+
 ## Why it matters
 
 Mono.Cecil is a mature .NET assembly inspection and rewriting library with first-class CIL and symbol abstractions.

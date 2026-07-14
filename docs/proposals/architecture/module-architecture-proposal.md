@@ -1,11 +1,13 @@
-Below is a **granular package/module architecture** for the IL interpreter framework and its ecosystem (metadata, symbols, decompilation, dump/live hosts, analysis, and “semantic models” like async/dynamic/collections). The point is to make dependency directions *obvious* and keep the core VM reusable across:
+> **Superseded as a physical package plan (2026-07-13).** The catalog below is retained as a historical logical-decomposition exercise, not as a target solution layout. The active topology and split criteria are defined in `architecture-overview-proposal.md`: logical seams do not receive assemblies until implementation and tests justify them. Empty placeholder projects have been removed.
+
+Below is a **granular logical architecture catalog** for the interpreter framework and its possible ecosystem (metadata, symbols, decompilation, dump/live hosts, analysis, and semantic models). It can inform later splits without committing those splits today:
 
 * post-mortem dump debugging
 * speculative/live debugging
 * static analysis
 * “no JIT” execution hosts / sandboxes
 
-You can merge projects later, but starting granular keeps the seams clean.
+The catalog is a vocabulary of possible logical seams. A seam becomes a physical project only when current implementation, dependency direction, and independently useful tests justify that split.
 
 ---
 
