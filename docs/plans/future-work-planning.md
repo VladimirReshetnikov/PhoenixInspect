@@ -8,7 +8,7 @@ This is the active delivery plan for the interpreter and dump-time evaluation in
 
 The only active product target is a **deterministic, read-only expression evaluator grounded in a .NET dump**.
 
-The current proof generates and opens a dump read-only, finds a strongly GCHandle-rooted object through bounded dump enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a primitive field, bounded/null strings, metadata, and the complete tiny `RetOnly` body from dump memory. It obtains the MethodDef RVA from counted dump metadata, reads the header/code/declared extra sections from dump memory, and executes the exact dump-sourced `ret`; fast parser fixtures separately cover fat headers and chained EH sections, and the full-content-identified disk PE is only an independent oracle. Separately, a concrete branchless `Int32` kernel is checked against compiler-emitted methods running on CoreCLR. These are architectural proofs, not a production evaluator.
+The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a primitive field, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. It obtains each MethodDef RVA from counted dump metadata and reads the header, code, locals token, padding, and declared extra sections from dump memory; the tiny exact dump-sourced `ret` is executable, while the fat body proves locals and two EH regions without claiming interpreter support for them. The full-content-identified disk PE is only an independent oracle. Separately, a concrete branchless `Int32` kernel is checked against compiler-emitted methods running on CoreCLR. These are architectural proofs, not a production evaluator.
 
 Until W1 and W2 pass their exit criteria, the following remain research backlog rather than delivery commitments:
 
@@ -20,7 +20,11 @@ Until W1 and W2 pass their exit criteria, the following remain research backlog 
 
 Scope expands only through an explicit decision gate backed by executable evidence.
 
-**Current active milestone:** harden the implemented W1–W2 generated-dump vertical slice for external artifacts and representative incident evidence. W0 and the bounded W2 root-field query are present in-tree; local and remote-run verification remain recorded separately. The concrete W3 work is a bounded architecture-risk spike, not permission to skip the remaining product/security gates; W3 remains incomplete and W4 remains gated.
+**Current active milestone:** close the non-security W1 evidence slice on exact-HEAD hosted CI. W0, the bounded W2
+root-field query, and the required W1 implementation/local gates are present in-tree. External-input cybersecurity and
+representative private-production measurement are outside W1; already-landed worker/corpus code is retained only as
+non-gating prototype work. The concrete W3 work is a bounded architecture-risk spike, W3 remains incomplete, and W4
+remains gated.
 
 ## 2) LOC sizing and work-in-progress
 
@@ -44,6 +48,10 @@ Work-in-progress limit:
 
 The ranges make large milestones decomposable and expose scope growth without converting uncertain architecture work into
 a calendar forecast. A milestone total is the sum of its non-overlapping package ranges.
+
+The W1 rows below preserve the original planning assumptions for calibration only. They are superseded by the
+attributable realized-work ledger in the W1 section and must not be read as either current scope or remaining work.
+Cybersecurity portions of the original third row are no longer W1 requirements.
 
 | Milestone | Work package | Estimated implementation LOC |
 |---|---|---:|
@@ -102,15 +110,66 @@ dependent real-dump job passed 3 dump tests.
 
 ### W1 — Real dump-evidence slice
 
-**Estimated implementation surface:** 2,600–4,200 LOC across the independently deliverable packages above
+**Original forecast (superseded):** 2,600–4,200 LOC across the independently deliverable packages above
 
-**Status:** the generated trusted-fixture slice is implemented in-tree and its checked-in fast/dump lanes have passed
-service-side CI on the exact pushed W0 completion commit recorded above. It covers fully dump-sourced method-body facts,
-metadata-root conflicts, whole-file disk-artifact identity, typed malformed dump/PE admission, opened-stream dump/PE
-size-limit regressions, foreign-snapshot rejection, one Normal-vs-Full sparse-memory case, common result axes, and
-canonical replay. A representative corrupt/hostile corpus, representative incident evidence, and the external
-no-network/access-control worker plus trusted-DAC boundary remain hardening gates; local caps, locator refusal, and
-generated fixtures are not hostile-input isolation.
+**Realized architecture-review implementation surface through `f85545c0c`:** 7,423 hand-written additions and 89
+deletions. The exact cumulative diff from the preceding W0 evidence commit `7c6bf91f2` is 7,719 additions and 98
+deletions. Classify generated churn first: five package-lock files contribute 236 additions/9 deletions and
+`Interpreter.sln` contributes 60 additions/0 deletions. No documentation or generated `bin`/`obj` output is included.
+The remaining paths are hand-written implementation/test/harness/configuration work. Dedicated package commits make the
+additions attributable without assigning the same line to two packages:
+
+| Landed package | W1 relation | Realized attributable LOC |
+|---|---|---:|
+| Explicit-DAC session seam and corrupt backend normalization | W1 dump-session/evidence behavior | 344 |
+| Versioned malformed-minidump mutation corpus and fast contract tests | Non-gating prototype work outside W1 | 1,153 |
+| Compiler-emitted fat method-body dump-evidence proof | W1 evidence | 266 |
+| Repository-wide managed headless launch controls | W1 evidence | 212 |
+| Explicit result evidence context and canonical replay | W1 evidence | 813 |
+| Versioned optimized modeled-incident measurement | W1 generated modeled-context evidence; representative production measurement is non-gating | 908 |
+| Canonical runtime-module identity projection coverage | W1 evidence | 20 |
+| One-shot AppContainer broker, runner, protocol, and containment tests | Non-gating prototype work outside W1 | 2,889 |
+| Headless solution/CI wiring and workflow guard | W1 evidence; solution-file churn excluded | 88† |
+| Path-accurate bounds, no-answer completeness, and fresh-session replay | W1 evidence | 730‡ |
+| **Current total** |  | **7,423** |
+
+† The final CI package introduced 23 workflow lines and 66 guard-script lines; one workflow line superseded a line
+already attributed to the earlier headless package. Cumulative current-diff accounting therefore assigns 88 LOC to
+this row instead of double-counting the replaced line.
+
+This total records the full review implementation stream, including separately landed non-gating prototypes; it is not
+a claim that every row remains part of W1. After generated files are removed, the disjoint malformed-corpus and
+external-worker paths contribute 4,042 additions/0 deletions (1,153 + 2,889) as now-non-gating security prototypes.
+The remaining **3,381 additions/89 deletions are attributable to active non-security W1**. Do
+not revise the original forecast into a post-hoc estimate. No further W1 implementation package is currently forecast:
+**0 additional implementation LOC** is planned for the remaining hosted verification step. If that run exposes a
+defect, estimate and record the resulting corrective package separately.
+
+‡ Corrective commit `f85545c0c` contains 781 additions and 105 deletions. Against the original W0 baseline, 51 of
+those additions replace lines already attributed to earlier W1 packages; cumulative current-diff accounting therefore
+assigns 730 LOC to this row and counts every delivered line once.
+
+**Status:** the generated trusted-fixture slice and its checked-in fast/dump lanes are implemented and locally verified.
+It covers fully dump-sourced tiny and compiler-emitted fat method-body facts, metadata-root conflicts, whole-file
+disk-artifact identity, typed malformed evidence, foreign-snapshot rejection, Normal-vs-Full sparse memory, explicit result
+evidence context, path-accurate actually-applied bounds, honest no-answer completeness, and canonical replay across a
+disposed/reopened dump session. Repository-owned headless launch policy and its workflow guard are implemented. Hosted
+CI on the exact current commit remains the only W1 closure gate.
+
+Local verification at `f85545c0c` on 2026-07-14 used only `Invoke-HeadlessProcess` and passed locked restore; a strict
+15-project Release build with 0 warnings/errors; 64/64 core tests; 63/63 fast integration tests; 3/3 ordinary dump
+tests; and 1/1 optimized-context test, with no skips or UI.
+
+[GitHub Actions run 29352271781](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29352271781) passed
+all four revised-scope jobs at exact semantic corrective commit `f85545c0c`: documentation/headless consistency, the
+15-project zero-warning Release build and fast suites, ordinary real-dump evidence, and optimized-context evidence. It
+is the strongest hosted implementation baseline, but this documentation advances HEAD; a post-documentation exact-HEAD
+run is still required.
+
+The checked-in malformed-minidump corpus and one-shot Windows worker remain useful separately landed evidence, but they
+are not W1 completion requirements. The optimized generated modeled-incident report is active W1 context evidence;
+representative private-production measurement remains a later, non-gating product-readiness question. External-input
+cybersecurity is explicitly outside W1.
 
 **Goal:** prove the product's highest-risk evidence path before expanding IL semantics.
 
@@ -125,19 +184,26 @@ Given a generated dump containing a known object graph, locate a root and read a
 - Separate identities for the counted dump metadata root (MVID, metadata length, metadata SHA-256) and a complete disk artifact (whole-file length and SHA-256); metadata agreement never authenticates disk body bytes as dump evidence.
 - Dump-backed MethodDef RVA, tiny/fat header, code, local-signature token, and declared extra-section reads; a normalized body is available only when all required evidence is exact.
 - Typed evidence outcomes such as exact, partial, unavailable, conflict, and invalid, each with provenance and a stable miss reason.
+- Backend-neutral result context carrying evidence source, explicit snapshot/module identity availability, fallback,
+  and only the deterministic bounds whose guarded operation was actually reached, all included in canonical replay.
+- Projection rules that keep a retained partial observation wrapper/provenance distinct from a decoded scalar answer.
 - Tests for sparse/unreadable memory, invalid addresses, truncation, and identity mismatch.
-- Security defaults for this generated-fixture slice: locator-backed acquisition refused, project-owned reads/traversals bounded, secret-safe diagnostics, no dump contents in telemetry, an 8 GiB dump-admission limit, a 256 MiB ClrMD dump cache with stack-derived caches disabled, and a 512 MiB managed-PE limit at the typed external `Open` boundary. This does not prevent ClrMD full-path probes or unsigned full-path DAC loading.
+- Fresh-session replay that disposes/reopens the dump, rediscovers module/root identity, and compares complete canonical
+  result bytes and fingerprints.
+- Repository-wide headless test launch policy and a workflow guard that rejects unwrapped `dotnet` test entry points.
 
 **Exit criteria**
 
 - The scenario returns the expected field/string values from dump memory without executing user IL.
 - Missing or corrupt evidence produces a deterministic non-success outcome rather than an exception or guess.
 - The result identifies evidence source, completeness, and every fallback used.
-- Before any public CLI/server/UI accepts caller-supplied artifacts, a one-shot worker is atomically placed in a
-  Windows Job Object with one inherited read-only artifact handle, bounded framed IPC, process/child/memory/CPU limits,
-  kill-on-close/timeout behavior, a cleared environment, private scratch, diagnostics/network acquisition disabled,
-  payload-safe telemetry, and containment tests. A Job Object alone is not described as a security sandbox; hostile
-  parser/DAC compromise additionally requires a proven AppContainer, low-privilege account, or VM boundary.
+- A retained partial observation with no decoded value reports no answer while preserving its evidence and provenance.
+- Canonical replay includes stable identity, result context, provenance, and every actually applied deterministic bound,
+  and remains byte-identical after reopening the same dump in a fresh session.
+- Every managed test/CI launch is headless, and the exact pushed W1 commit passes its required hosted jobs.
+
+External-input cybersecurity is explicitly excluded from W1. The existing mutation corpus and worker are non-gating
+prototype work, and W1 completion by itself does not admit an external artifact product surface.
 
 ### W2 — Restricted expression/query slice
 
@@ -277,7 +343,7 @@ A UI trust badge may summarize them but never replaces them in contracts or test
 | A single maintainer cannot sustain a platform-sized surface | High | Critical | Give every active slice an implementation-LOC envelope; split slices above 3,500 LOC; prefer one product path. |
 | Maintainer unavailability leaves the active slice without continuity | Medium | Critical | Keep one canonical vertical-slice path, executable fixtures, explicit evidence boundaries, and a current handoff map; avoid private operational knowledge. |
 | Optimized dumps omit roots, locals, arguments, or `this` | High | High | Make unavailable/partial expected outcomes; measure scenario recovery rather than guessing. |
-| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Bounded project-owned parsing/traversal, refused locator acquisition, secret-safe output, and no-network/access-control worker plus trusted-DAC policy before external use. |
+| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Keep external-input cybersecurity outside W1 and admit no external artifact product surface through W1 completion; any future initiative owns its separate requirements and evidence. |
 | Documentation volume is mistaken for capability | High | High | Track implementation and validation separately; design just ahead of code. |
 | Backend or identity mismatch yields plausible wrong reads | Medium | Critical | Identity validation, conflict outcomes, real-dump fixtures, no silent fallback. |
 | The evaluator does not materially improve incident workflows | Medium | High | Test W1/W2 against concrete user questions before funding method execution. |
@@ -304,7 +370,11 @@ Before starting any W4 slice:
 
 ### Optimized-dump recoverability measurement
 
-The generated strong-handle fixture proves decoding, not incident recoverability, and therefore contributes no percentage to a frame-context claim. The first representative measurement must use an explicitly versioned corpus of optimized Release dumps and record, for every predeclared expression scenario:
+This is a supporting product-readiness measurement, not a W1 completion gate.
+
+The generated strong-handle fixture proves decoding, not incident recoverability, and therefore contributes no
+percentage to a frame-context claim. The first checked-in measurement now uses an explicitly versioned generated
+optimized Release modeled-incident dump and records, for every predeclared expression scenario:
 
 1. the target/runtime/build profile and capture mechanism;
 2. whether the required root, `this`, argument, local, and member bytes are present independently;
@@ -312,7 +382,16 @@ The generated strong-handle fixture proves decoding, not incident recoverability
 4. the exact query result axes and stable diagnostic code; and
 5. the numerator and denominator for each context kind, with unsupported scenarios retained in the denominator.
 
-Report raw counts and corpus composition before any aggregate percentage. Do not extrapolate from synthetic roots to production incidents, and do not set a readiness threshold until a representative incident corpus exists. Until then, the honest baseline is: strong-handle object queries are validated for the generated fixture; optimized frame-context recovery is unmeasured and unsupported.
+Its canonical v1 report retains `this`, argument, local, static, and strong-root axes and records raw member bytes at
+5/5, attributable context at 1/5, and product-query availability at 1/5. The exact attributable/product result is the
+strong root. Stack-slot observation for `this`, argument, and local is deliberately not admitted under the pinned
+.NET 10 DAC safety boundary, and static attribution remains unavailable. These are raw counts from one generated
+modeled dump, not a representative private-production corpus and not a production recoverability rate.
+
+Continue to report raw counts and corpus composition before any aggregate percentage. Do not extrapolate from the
+modeled fixture to production incidents, and do not set a readiness threshold until a representative
+private-production incident corpus exists. Until then, optimized frame-context support remains unavailable outside the
+validated strong-root path even though the measurement machinery itself is implemented and versioned.
 
 ## 8) Documentation policy
 

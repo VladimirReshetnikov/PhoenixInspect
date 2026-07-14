@@ -21,6 +21,14 @@ Use these terms consistently in test plans, traceability tables, and PR descript
 
 A planned test is not validation. A test name without an execution result proves only that the artifact is checked in.
 
+### Headless execution policy
+
+Every repository-owned managed restore, build, and test launch uses
+`./eng/Invoke-HeadlessProcess.ps1 dotnet ...`. The wrapper establishes .NET no-GUI policy and the Windows error-mode
+mask before starting the child on Windows; a module initializer linked into every managed test assembly reasserts Win32, thread,
+WER, and .NET no-dialog state inside the test process. Child targets and the external worker additionally launch with
+hidden/no-window process policy. A raw `dotnet test` command is not an approved unattended test entry point.
+
 ## 2) Present executable evidence
 
 ### Fast concrete, admission, determinism, and metadata proofs
@@ -46,10 +54,13 @@ The differential harness proves only its closed, branchless, EH-free, `Int32` fi
 3. decodes the dump metadata-root identity and validates its MVID, exact metadata length, and metadata SHA-256 against an independently opened SRM artifact, whose separate whole-file length/SHA-256 identity is also retained;
 4. discovers a strong GCHandle under an explicit scan cap, validates its slot pointer and the selected object's method-table header through counted raw-memory reads, and reads an `Int32`, a bounded string prefix, and a null string through counted evidence;
 5. distinguishes exact, partial, unavailable, and conflict outcomes with stable issue codes;
-6. reads the `Program.RetOnly` MethodDef RVA from counted dump metadata, decodes its complete tiny header and code from counted dump memory, and executes only the normalized exact dump-backed body; fast parser fixtures separately cover fat headers, local-signature tokens, and chained EH sections, while the disk body is an independent equality oracle and supplies no constructor input;
-7. verifies deterministic scan/instruction budgets, cleanup, disposal, and invalid-address behavior.
+6. reads the `Program.RetOnly` MethodDef RVA from counted dump metadata, decodes its complete tiny header and code from counted dump memory, and executes only the normalized exact dump-backed body;
+7. independently proves a compiler-emitted fat method body from counted dump metadata/memory, including its 12-byte header, code, padding, local-signature token, and two declared EH regions; the disk body remains an equality oracle and supplies no constructor input;
+8. carries evidence source, explicit snapshot/module identity availability, fallback, and only bounds whose guarded operation was actually reached through every query result and canonical replay;
+9. disposes and reopens the same dump, rediscovers the module/root, and reproduces complete canonical result bytes and their SHA-256 fingerprint; and
+10. verifies deterministic scan/instruction budgets, cleanup, disposal, and invalid-address behavior.
 
-This fixture does not prove arbitrary root/frame recovery, a representative corrupt/hostile-dump corpus, chained expression binding, broad IL semantics, or debugger stepping. It does prove the common result envelope, the first bounded root-field query surface, and one fully dump-sourced tiny method body; fast tests prove the bounded fat/chained-section parser seam without claiming real-dump coverage for those shapes. A separate Normal-vs-Full fixture proves that an omitted page remains partial/unavailable rather than being zero-filled; it is not yet a representative hostile corpus.
+These fixtures do not prove arbitrary root/frame recovery, chained expression binding, broad IL semantics, or debugger stepping. They do prove the common result envelope, the first bounded root-field query surface, a fully dump-sourced tiny method body, and a compiler-emitted real-dump fat body with locals and two EH regions; broader malformed/chained-section shapes remain fast parser evidence. A separate Normal-vs-Full fixture proves that an omitted page remains partial/unavailable rather than being zero-filled.
 
 ### Restricted dump-query proof
 
@@ -59,7 +70,37 @@ while rejecting `?.`, calls, indexing, chaining, arithmetic, oversized inputs, m
 escapes with stable payload-safe codes. The real dump covers `Int32`, exact and partial strings, exact nullable-field
 null, coalescing, `?.` rejection, missing root/member evidence, case sensitivity, unsupported field type,
 incompatible coalescing, ordered provenance, and repeated canonical replay. Missing or partial evidence is never
-reclassified as null merely to apply `??`.
+reclassified as null merely to apply `??`. Parser, missing-root/member, foreign-snapshot, null, scalar, and string paths
+report only the bounds they reached. A generic partial Int32 observation retains its evidence/provenance while exposing
+no decoded scalar answer.
+
+### Corrupt-backend normalization and non-gating malformed-input corpus
+
+Backend memory-read exceptions are normalized into typed invalid evidence rather than escaping as incidental
+exceptions; this is part of W1's deterministic malformed-evidence behavior.
+
+Separately, the versioned malformed-minidump corpus deterministically covers every 0–31-byte header truncation, bounded garbage,
+signature/version failures, stream-directory overflow/overlap, `MemoryList`/`Memory64List` truncation, bounded header
+and directory bit flips, appended junk, and a sparse artifact just above the 8 GiB admission limit. Its canonical
+manifest and hard case/count/size caps have fast tests. This corpus is retained as non-gating prototype work outside
+W1; no additional cybersecurity validation belongs to W1.
+
+### One-shot external-worker proof
+
+`tests/Interpreter.Host.ExternalWorker.Tests` exercises the separately landed Windows x64 broker/runner prototype. Its
+four-test package, including one real malformed-artifact process boundary, passed locally at checkpoint `9fcf00934`
+under the headless wrapper. The worker remains non-gating prototype work outside W1; its presence and test result do not
+admit an external artifact product surface.
+
+### Optimized modeled-incident measurement
+
+One generated optimized Release full dump keeps predeclared `this`, argument, local, static, and strong-root probes in
+a versioned canonical v1 report. It records raw member bytes at 5/5, attributable context at 1/5, and product-query
+availability at 1/5. Unavailable cases remain in every denominator; the report contains no percentage. Stack-slot
+observation is deliberately not admitted under the pinned .NET 10 DAC safety boundary, static attribution remains
+unavailable, and the exact attributable/queryable case is the strong root. This is W1 generated-context evidence, not
+a representative private-production corpus or a production recoverability rate; representative production measurement
+is not a W1 gate.
 
 ### W0 signal status
 
@@ -68,24 +109,28 @@ reclassified as null merely to apply `??`.
 | Repository build | Stable .NET 10.0.2xx feature-band/minimum-patch pin, central versions, committed lock files, deterministic Release build, warnings-as-errors under `CI=true`. | `CI-enforced` for exact completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: locked restore and the zero-warning Release build passed in GitHub run 29309374548. |
 | Fast tests | Unit/domain/admission/differential/determinism/metadata suite plus payload-safe harness start/readiness failure coverage is checked in. | The same run passed 60 semantic/differential tests and 40 fast adapter/harness tests. |
 | Dump integration | Required Windows dump category and a bounded target/dump harness are checked in. | The dependent Windows job passed 3/3 dump tests. An inability to create/load the dump remains a failure, not a passing skip. |
-| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes, plus stable identity/content-hash assertions, are checked in. | Add a fresh-process replay runner when a stable external host protocol exists. |
+| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes, explicit replayable evidence context, plus stable identity/content-hash assertions are checked in. The same dump reopened in a fresh session reproduces module/root selection and complete replay bytes/fingerprint. | Passed at exact semantic commit `f85545c0c` in run 29352271781; repeat after the documentation commit for final exact-HEAD closure. |
 | Documentation truth | The evidence matrix distinguishes raw dump bytes, dump metadata-derived facts, ClrMD-decoded runtime structures, whole-file-identified disk oracle facts, and explicit fixture inputs. `eng/verify-markdown-links.ps1` validates repository-local inline/reference destinations with stable file/line diagnostics. | The dedicated documentation-consistency job passed on the exact completion commit. Keep the evidence matrix synchronized whenever an evidence fallback changes. |
 
-The workflow in `.github/workflows/ci.yml` is checked in and has reported a successful exact-commit run, recorded
-below. `CI-enforced` applies only to the gates that the successful workflow actually executed; it does not close the
-external-worker, hostile-corpus, or representative optimized-context gates.
+The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
+`CI-enforced` applies only to the gates that the successful workflow actually executed. The semantic implementation
+commit is green; the documentation commit still needs its own exact-HEAD run. External-input cybersecurity and
+representative private-production measurement are outside W1.
 
 ### Local verification record — 2026-07-13
 
 On Windows with the SDK selected by `global.json`:
 
+The result column is the historical record. The command column uses the current approved headless equivalent; it does
+not imply that the later wrapper existed when the original W0 run was recorded.
+
 | Gate | Command shape | Result |
 |---|---|---|
-| Locked dependency graph | `dotnet restore Interpreter.sln --locked-mode --disable-parallel --disable-build-servers` | Passed. |
-| Full prototype build | `dotnet build Interpreter.sln -c Release --no-restore --disable-build-servers -m:1 -p:UseSharedCompilation=false` | Passed, 0 warnings / 0 errors. |
-| Semantic/admission/differential suite | `dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj -c Release --no-build --no-restore` | Passed, 60/60. |
-| Fast adapter suite | `dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast"` | Passed, 40/40. |
-| Real dump evidence | same integration project with `--filter "Category=Dump"` | Passed, 3/3 on the W0 completion tree; the earlier reset tree also passed three consecutive runs (9/9 executions). |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode --disable-parallel --disable-build-servers` | Passed. |
+| Full prototype build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln -c Release --no-restore --disable-build-servers -m:1 /p:UseSharedCompilation=false` | Passed, 0 warnings / 0 errors. |
+| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj -c Release --no-build --no-restore` | Passed, 60/60. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast"` | Passed, 40/40. |
+| Real dump evidence | the same wrapped integration-project command with `--filter "Category=Dump"` | Passed, 3/3 on the W0 completion tree; the earlier reset tree also passed three consecutive runs (9/9 executions). |
 
 This table records local verification only; the independent service-side evidence follows.
 
@@ -100,8 +145,31 @@ executed exact pushed completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed0
 | Build and fast tests | Passed: locked restore; Release build with 0 warnings / 0 errors; 60/60 semantic and differential tests; 40/40 fast adapter/harness tests. |
 | Real dump evidence | Passed after the fast job: locked restore; Release build with 0 warnings / 0 errors; 3/3 required Windows dump tests. |
 
-This closes the W0 service-side documentation/build/fast/dump evidence distinction. It does not broaden the generated-fixture
-proof boundary or satisfy any later arbitrary-artifact security gate.
+This closes the W0 service-side documentation/build/fast/dump evidence distinction. It does not broaden the
+generated-fixture proof boundary.
+
+### Current revised-scope service evidence — 2026-07-14
+
+[GitHub Actions run 29352271781](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29352271781)
+passed all four revised-scope jobs at exact semantic corrective commit `f85545c0c`: documentation/headless consistency;
+the 15-project zero-warning Release build and fast suites; ordinary real-dump evidence; and optimized-context evidence.
+It is the strongest hosted implementation baseline, not final W1 completion evidence, because this documentation
+advances HEAD.
+
+### Current local W1 verification — 2026-07-14
+
+Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was skipped and no UI was displayed.
+
+| Gate | Headless command shape | Result |
+|---|---|---|
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore` | Passed, 64/64. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 63/63. |
+| Ordinary real-dump evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 3/3. |
+| Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1. |
+
+These are local results. W1 remains open until the post-documentation exact-HEAD hosted run passes.
 
 ## 3) Active test layers
 
@@ -151,6 +219,12 @@ The first scenarios are active. Each includes input expression, admitted syntax,
 ### E. Differential tests (W3+)
 
 For each admitted concrete opcode/method shape, run a tiny compiled fixture on CoreCLR and through the interpreter, then compare normalized value or exception outcomes. Reject unsupported bodies before execution; never treat partial execution as a differential pass.
+
+### F. Non-gating external-worker prototype tests
+
+The separately landed package launches a fresh worker and checks its normalized outcome and termination. Its current
+malformed-artifact test is implemented and locally verified. This layer is retained as a prototype regression suite,
+not a W1 exit criterion.
 
 ## 4) Fixture policy
 
@@ -213,12 +287,18 @@ Negative fixtures are first-class acceptance cases. Missing pages, bad addresses
 
 ## 7) CI shape
 
-The W0 pipeline targets `net10.0` and should remain small enough to diagnose:
+The pipeline targets `net10.0` and should remain small enough to diagnose:
 
 1. locked restore and Release build;
 2. fast semantic/contract tests;
-3. a Windows dump-integration lane;
-4. documentation/link consistency checks with stable signal.
+3. an ordinary Windows dump-evidence lane;
+4. a separate Windows optimized modeled-context lane; and
+5. documentation/link and headless-workflow consistency checks with stable signal.
+
+The external-worker projects remain solution-build inputs, but their test project is outside the default W1 workflow.
+
+The historical W0 run below proves only its original jobs. New W1 jobs and tests become `CI-enforced` only after a
+successful hosted run names the exact pushed commit; checked-in workflow text or local execution alone is insufficient.
 
 Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/hybrid modes, or multiple operating systems until those dimensions have distinct implemented behavior and fixtures. Performance jobs become scheduled or gating only after a representative corpus and baseline exist.
 
@@ -237,8 +317,13 @@ Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/
 - A generated dump yields a known primitive field and bounded string from dump memory, without user-IL execution.
 - Exact, capped-partial, unavailable, invalid-address, unreadable-memory, and identity-conflict paths have deterministic assertions.
 - A normalized method body is exposed only after its MethodDef RVA, complete header, code, and declared extra sections are exact counted dump evidence; the disk PE remains an independent test oracle.
-- Every result identifies snapshot/module identity, evidence source, completeness, fallback, and bound.
-- Reads and traversals are bounded; diagnostics do not disclose dump contents by default.
+- Every result identifies snapshot/module identity, evidence source, completeness, fallback, and only the deterministic
+  bounds whose operations were reached.
+- A partial observation wrapper with no decoded scalar reports no answer while preserving explanatory evidence.
+- Fresh-session evaluation over the same dump reproduces canonical result bytes and fingerprint.
+- Reads and traversals are bounded; diagnostics use stable reason codes.
+- The exact pushed W1 closure commit passes all required hosted jobs.
+- Repository workflow guards reject managed restore/build/test commands that bypass the headless wrapper.
 
 ### W2 — restricted expression/query slice
 
@@ -289,6 +374,8 @@ Record the failing fixture/test, exact command and environment, expected versus 
 
 ## 11) Open decisions
 
-1. Should the Windows dump lane generate every negative fixture on demand, or should hard-to-generate sparse/corrupt cases use one small, non-sensitive, provenance-recorded artifact?
-2. Which stable external host protocol should own the first fresh-process W2 replay test?
-3. What representative optimized incident corpus can supply an honest root/frame-context denominator?
+1. Which representative private-production optimized incident corpus can supply an honest root/frame-context denominator?
+2. What corpus composition would justify setting a recoverability readiness threshold without hiding unavailable cases?
+
+Both are post-W1 product-readiness questions. External-input cybersecurity is separately scoped and is not an open W1
+testing decision.

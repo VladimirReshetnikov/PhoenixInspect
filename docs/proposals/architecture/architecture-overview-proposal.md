@@ -2,7 +2,7 @@
 
 **Lifecycle:** Current design direction
 **Roadmap relation:** Active and supporting
-**Last reset:** 2026-07-13
+**Last reset:** 2026-07-14
 
 ## 1. Product and scope lock
 
@@ -35,9 +35,13 @@ An evaluation result keeps these axes separate:
 - **evidence:** exact, partial, unavailable, conflicting, or invalid;
 - **effects:** none, virtual-only, modeled, or unsupported;
 - **provenance:** the dump ranges, runtime identities, artifacts, policies, and transformations that support the value;
-- **diagnostics:** stable reason codes plus actionable explanations.
+- **diagnostics:** stable reason codes plus actionable explanations; and
+- **evidence context:** the top-level source, explicit snapshot/module identity availability, fallback outcome, and
+  only deterministic bounds whose guarded operations were actually reached on this result path.
 
 Hosts may project those axes into a compact badge, but the projection never replaces the underlying fields.
+Canonical replay includes the complete evidence context and normalizes bound ordering; an unavailable identity or
+no-fallback outcome is explicit rather than inferred from a missing property.
 
 ## 3. Active data flow
 
@@ -67,6 +71,9 @@ query plan -> interpreter kernel -> concrete/hybrid domain
 
 The dump path is not an implementation detail after the interpreter. It is the primary product path and therefore lands first.
 
+The active W1 path uses generated trusted fixtures directly. The worker described in section 4.5 is a separately landed,
+non-gating prototype outside W1 and is not part of this active data flow.
+
 ## 4. Active components
 
 ### 4.1 Dump evidence adapter
@@ -74,6 +81,11 @@ The dump path is not an implementation detail after the interpreter. It is the p
 The ClrMD adapter owns dump loading, runtime/module discovery, heap layout queries, and raw target-memory reads. Reads return a count and a typed outcome; they do not collapse sparse memory, corruption, invalid addresses, and policy rejection into `false` or a default value.
 
 Runtime module-instance evidence includes the runtime/app-domain identity, module address, image base and size, and metadata address when present. An on-disk path is only a hint to artifact acquisition and never proves that bytes came from the dump.
+
+The generated optimized Release modeled-incident measurement keeps five predeclared context axes separate from raw
+member-byte discovery. Its v1 report records raw member bytes at 5/5, attributable context at 1/5, and product-query
+availability at 1/5. Only the strong-root case is attributable/queryable; this evidence does not represent
+private-production incident recoverability.
 
 ### 4.2 Artifact and metadata adapter
 
@@ -103,9 +115,16 @@ Method calls, construction, reflection, implicit assembly loading, user-defined 
 
 ### 4.4 Read-only query evaluator
 
-The query evaluator executes a finite project-owned plan, not synthesized user code. The one-hop grammar is structurally bounded and subject to deterministic expression, identifier, literal, handle-scan, field-catalog, and string-read caps; each evidence read produces either a value or a typed partial/unavailable outcome. It has no filesystem, network, process, native, or target-mutation capability.
+The query evaluator executes a finite project-owned plan, not synthesized user code. The one-hop grammar is structurally bounded and subject to deterministic expression, identifier, literal, handle-scan, field-catalog, and string-read caps; each evidence read produces either a value or a typed partial/unavailable outcome. Result context records a cap only when its guarded operation was reached, so a reserved-name collision, a missing field, and a foreign-snapshot root report different applied-bound sets. A retained partial primitive-field wrapper remains explanatory evidence with no decoded scalar answer; generic projection does not overstate completeness. It has no filesystem, network, process, native, or target-mutation capability.
 
-### 4.5 Interpreter kernel
+### 4.5 Non-gating one-shot external-artifact prototype
+
+Two separately landed Windows x64 projects provide a trusted broker/protocol boundary and a one-request runner. They
+have a dedicated headless test project; its four-test package, including a real malformed-artifact process checkpoint,
+passed locally at `9fcf00934`. The projects remain useful topology and process-boundary experiments, but cybersecurity
+work is outside W1 and this prototype is not a W1 completion requirement or an admitted external product surface.
+
+### 4.6 Interpreter kernel
 
 The product delivery sequence admits method interpretation after the observation and query path. A bounded concrete arithmetic spike exists now because it retired a load-bearing architecture risk; it does not move W3 ahead of W1/W2. Its executable corpus determines the closed opcode set—opcode popularity or a desired percentage does not.
 
@@ -162,6 +181,10 @@ Memory used for undo or branch snapshots must expose a documented persistent-sna
 
 Determinism means identical normalized inputs, policies, artifacts, dump evidence, and engine version produce identical values, statuses, ordered diagnostics, and transcript fingerprints. Wall-clock timeout and host cancellation are operational interruptions and are not interchangeable with deterministic budget exhaustion.
 
+The W1 replay proof crosses session lifetime rather than comparing two evaluations over shared adapter state: it closes
+and reopens the same dump, rediscovers the module and selected root, and requires byte-identical complete canonical
+results plus the same SHA-256 fingerprint.
+
 ## 8. Status protocols
 
 Different layers use different, explicitly mapped vocabularies:
@@ -177,46 +200,13 @@ Machine `BudgetExhausted` maps to session `BudgetStop`; `Ready` may map to `Step
 
 The first interpreted-method slice rejects bodies with exception regions and bodies that require exception transfer. A target throw may initially terminate the admitted path with an explicit stop-on-throw outcome. Handler search/unwind, filters, `fault`, `finally`, and cross-frame propagation are a later milestone and are prerequisites for debugger-grade Step Out and async `MoveNext` claims.
 
-## 10. Security and data handling
+## 10. External-input scope boundary
 
-Dumps, PE/PDB files, SourceLink documents, and symbol responses are untrusted, secret-bearing inputs.
-
-Active generated-fixture defaults are:
-
-- locator-backed acquisition is refused: the adapter replaces ClrMD's ambient/default locator immediately after dump construction and before runtime discovery;
-- project-owned reads, strings, names, query shape, method bodies, and post-projection item scans have deterministic caps;
-- no target code execution, native calls, or target mutation;
-- no dump values, source text, paths, environment values, or expression results in telemetry by default;
-- stable diagnostics redact payloads unless a local interactive host opts in;
-- dump and disk metadata-root identities are verified before correlating their evidence, while whole-file artifact identity keeps distinct PE files distinct; neither comparison relabels disk bytes as dump evidence.
-- external dump files are rejected above 8 GiB, ClrMD's dump cache is capped at 256 MiB with stack-trace/root caching disabled, and externally opened managed PE files are rejected above 512 MiB.
-
-Those defaults are not a claim that in-process ClrMD is network-off or filesystem-confined. In the pinned version,
-`DataTarget.LoadDump` constructs its default locator before replacement; CLR discovery and PE/DAC callbacks may probe
-target-reported full paths outside `IFileLocator`; and parameterless runtime creation can accept a full-path DAC without
-signature verification. ClrMD/DAC may also perform internal traversal before an adapter post-projection cap can apply.
-Therefore only the generated same-toolchain fixture is admitted in-process. Arbitrary incident dumps require the
-no-network/access-control worker and trusted-DAC policy below.
-
-Generated full-dump fixtures also clear the target's inherited environment and use isolated working and temporary
-directories. This prevents developer/CI credentials from becoming test evidence merely because the dump type includes
-the environment block.
-
-Before this library accepts arbitrary external artifacts in a product host, parsing/evaluation must run in a constrained worker process with resource limits and a narrow IPC contract. “Runs locally” is not a sandbox boundary.
-
-The external-exposure gate permits one additional executable project, not a generic hosting subsystem. It must accept
-one bounded request, an inherited read-only artifact handle, and return one bounded result frame before exiting. The
-Windows launcher must atomically create the worker inside a Job Object, restrict inherited handles, cap process/job
-memory and CPU time, forbid child processes, kill on job close/timeout/malformed IPC, clear the environment, use an
-isolated working directory, disable .NET diagnostics, and retain the replacement no-acquisition ClrMD locator. IPC never carries an
-ambient path authority or arbitrary memory-read operation. Telemetry is limited to operation/outcome and coarse
-resource buckets; it excludes paths, dump identities, addresses, expressions, names, values, exception payloads, and
-canonical replay bytes.
-
-A Job Object is crash and resource containment, not a security sandbox: the worker otherwise retains the caller's
-Windows token. If the threat model includes a compromised parser or DAC, product exposure additionally requires a
-proven AppContainer with no network capability, a separate low-privilege account, or VM isolation. The project must
-not claim hostile-artifact isolation until that access-control boundary and trusted-DAC policy have executable tests.
+W1 is restricted to generated, source-controlled fixture artifacts and non-security evidence behavior. Its deterministic
+read, identity, context, provenance, replay, and resource-bound contracts remain active. External-input cybersecurity is
+explicitly outside W1, and W1 completion does not create an external artifact product surface. The already-landed
+malformed corpus and one-shot worker are retained only as non-gating prototypes; any future external-input initiative
+must establish its own scope and evidence independently.
 
 ## 11. Physical topology
 
@@ -225,8 +215,10 @@ The prototype retains only projects containing behavior or contracts exercised b
 - `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body shapes, domain/memory contracts, and the interpreter kernel;
 - `Interpreter.Domain.Concrete` — concrete validation domain and persistent memory;
 - `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts and active SRM adapter;
-- `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence and ClrMD adapter.
-- `Interpreter.Product.DumpQuery` — the bounded W2 parser, read-only evaluator, and closed result-value projection.
+- `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence and ClrMD adapter;
+- `Interpreter.Product.DumpQuery` — the bounded W2 parser, read-only evaluator, and closed result-value projection;
+- `Interpreter.Host.ExternalWorker` and `Interpreter.Host.ExternalWorker.Runner` — the narrow Windows broker/protocol
+  and one-request AppContainer executable; they are not a generic hosting framework.
 
 Logical seams may be documented without creating assemblies. A new project is justified only when it contains implementation, has an independently useful dependency boundary, and at least one test exercises that boundary. Empty product/model/backend projects are not placeholders.
 

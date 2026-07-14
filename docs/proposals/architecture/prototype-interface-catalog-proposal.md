@@ -70,7 +70,20 @@ Paths and names are display or acquisition hints, never identity. A disk module 
 
 The dump body obtains its MethodDef RVA from counted dump metadata and its header, code, local-signature token, and declared extra sections from counted dump memory. A disk body's SRM decode is only an independent test oracle. Dump evidence and disk-artifact evidence remain distinct even when their complete metadata-root identities agree; MVID alone is not a sufficient binding.
 
-The size/cache caps are deterministic resource controls, not hostile-input isolation. The external worker plus a proven AppContainer, low-privilege account, or VM boundary remains a product-exposure gate.
+The size/cache caps are deterministic resource controls. A narrow Windows x64 external-worker prototype has locally passed one real malformed-artifact checkpoint, but it is non-gating work outside W1 and does not create an admitted external artifact product surface.
+
+### Read-only dump query
+
+`Interpreter.Product.DumpQuery` exposes the bounded `DumpQueryEngine` and the closed `DumpQueryValue` projection for one
+host-selected root, one direct field, and an optional admitted coalescing literal. Evaluation returns the shared
+`EvaluationResult<DumpQueryValue>` envelope rather than collapsing completion, answer completeness, evidence status,
+effects, provenance, diagnostics, and evidence context into one success flag.
+
+The evidence context records explicit snapshot/module availability, source and fallback, and only bounds whose guarded
+operations were reached on that result path. Exact null, unavailable evidence, a partial string prefix, and a retained
+partial primitive-field wrapper remain distinct: the wrapper can explain a failure but cannot become a decoded scalar
+answer. Canonical replay covers the complete result envelope; the integration proof closes and reopens the same dump,
+rediscovers the module/root, and reproduces both its canonical bytes and SHA-256 fingerprint.
 
 ## Deliberately absent
 

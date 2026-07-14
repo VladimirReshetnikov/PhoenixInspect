@@ -76,8 +76,16 @@ Current prototype structure:
   - typed dump-memory/evidence contracts.
 - `src/Interpreter.Host.Dump.ClrMD`
   - dump loading, runtime discovery, and raw evidence reads.
-- `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, and `tests/Interpreter.TestTarget`
-  - fast semantic/contract tests and real dump evidence.
+- `src/Interpreter.Product.DumpQuery`
+  - the closed, bounded root-field query evaluator and result projection.
+- `src/Interpreter.Host.ExternalWorker` and `src/Interpreter.Host.ExternalWorker.Runner`
+  - a separately landed, non-gating Windows process-boundary prototype outside W1.
+- `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, `tests/Interpreter.TestTarget`, and
+  `tests/Interpreter.OptimizedContextTestTarget`
+  - fast semantic/contract tests, real dump evidence, and the generated optimized-context report.
+
+Every repository-managed restore/build/test invocation runs through `./eng/Invoke-HeadlessProcess.ps1 dotnet ...` so
+the same no-dialog process policy applies locally and in CI.
 
 ### Package boundaries
 
@@ -169,8 +177,14 @@ Use standard .NET DI for host-facing composition while allowing direct construct
    - Assert project-owned identity, evidence status, provenance, bounds, and stable miss reasons.
 3. **Windows dump integration tests**
    - Exercise real dump creation/loading and state exactly which evidence came from dump memory versus disk artifacts.
+   - Reopen the same dump in a fresh session and compare complete canonical result bytes and SHA-256 after
+     module/root rediscovery.
+   - Run the optimized modeled-context target separately from ordinary dump evidence.
 4. **Differential tests (W3+)**
    - Compare the fixture-derived concrete opcode subset with CoreCLR.
+
+The external-worker regression project is build-checked through the solution but its tests, like the malformed-artifact
+corpus it exercises, are non-gating prototype work outside the default W1 workflow.
 
 CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad performance suites remain research until their roadmap entry gates pass. `testing-strategy-proposal.md` is the source of truth for current evidence and milestone gates.
 
@@ -209,7 +223,11 @@ CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad 
 
 ---
 
-## 10) Security and supply-chain posture
+## 10) Future external-input and supply-chain posture
+
+Cybersecurity work for external artifacts is explicitly outside W1. The following remains product-entry guidance, not a
+current completion gate; the landed worker and malformed corpus are non-gating prototypes and do not admit an external
+artifact product surface.
 
 - Treat dumps, PE/PDB files, symbol responses, SourceLink documents, and expression text as hostile and potentially secret-bearing.
 - Keep network acquisition off unless a host/user explicitly enables it; verify identity before combining remote/disk artifacts with dump evidence.
@@ -238,6 +256,14 @@ SHAs rather than movable major tags.
 3. real dump integration evidence on Windows;
 4. deterministic local-Markdown-link consistency with repository-owned diagnostics.
 
+### Revised W1 CI target
+
+The current workflow uses the same headless wrapper for locked restore, the strict 15-project Release build, fast tests,
+ordinary real-dump evidence, and optimized-context evidence; worker tests are outside the default W1 lane. At semantic
+corrective commit `f85545c0c`, all four revised-scope jobs passed in [GitHub Actions run
+29352271781](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29352271781). This is the strongest hosted
+implementation baseline. A post-documentation exact-HEAD run remains the final W1 closure gate.
+
 Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.
 
 ### Platforms
@@ -257,16 +283,20 @@ Formatting/analyzers, dependency audit, and scheduled benchmarks are added when 
 
 ## 13) Prototype implementation snapshot (draft)
 
-> **Draft status notice:** The current solution is a reduced eight-project prototype organized around executable evidence and a small set of dependency boundaries.
+> **Draft status notice:** The current solution is a reduced ten-project prototype organized around executable evidence and a small set of dependency boundaries.
 > Project names, dependencies, and interfaces are exploratory and may change without compatibility guarantees.
 
 Current facts:
 
-- The solution retains eight `src/` projects with active code/contracts plus test projects; 33 empty placeholders were removed and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
-- Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, and `Interpreter.Product.DumpQuery`.
+- The solution retains ten `src/` projects with active code/contracts plus test projects; 33 empty placeholders were removed and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
+- Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Host.ExternalWorker`, and `Interpreter.Host.ExternalWorker.Runner`.
 - Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code, `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. The independently opened disk PE carries exact whole-file length/SHA-256 identity and serves only as a comparison oracle; its body contributes no fact to the dump-backed executable body.
 - External-input resource ceilings are 8 GiB per dump before hashing/ClrMD parsing, a 256 MiB ClrMD dump cache with stack-trace/root caching disabled, and 512 MiB at the typed external-PE `Open` boundary before SRM parsing. These bounds reduce resource-exhaustion risk but are not a parser/DAC sandbox; trusted-fixture convenience APIs are not external admission boundaries.
+- The Windows x64 one-shot worker and malformed-minidump corpus are separately landed, non-gating prototypes outside W1. The worker's malformed-artifact checkpoint is locally verified, but the projects do not create an admitted external artifact product surface.
 - `Interpreter.Core.Execution` depends on core abstractions, not on a concrete metadata backend. `MetadataResolutionServices` supplies the current bridge.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
+- Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
+  operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
+  and fresh-session replay reproduces complete canonical result bytes and SHA-256.
 
 This snapshot is a plumbing proof, not evidence that the proposed package decomposition or public contracts have converged.

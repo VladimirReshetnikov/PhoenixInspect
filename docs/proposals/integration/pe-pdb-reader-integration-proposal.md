@@ -193,7 +193,7 @@ The original `dotnet/symstore` repo is archived, and there’s an explicit conti
   * supports Microsoft public symbol server and private servers
 * Whether you literally reuse `Microsoft.SymbolStore` or reimplement the minimal subset, the important point is: **keep acquisition separate from parsing.**
 
-**Security boundary:** acquisition is network-off by default and requires explicit host/user policy. The active local SRM opener rejects managed PEs above 512 MiB before parsing. Clients must verify PE/PDB identity before admission, constrain schemes/hosts and redirects, bound download and decompression sizes, defend cache paths against traversal/collision, and record provenance. SourceLink URLs are untrusted input and must not become ambient network authority. Dump/source bytes and paths are excluded from telemetry by default. These controls do not replace the external worker plus access-control gate for hostile inputs.
+**External-input scope:** the active W1 slice does not admit externally acquired PE/PDB/SourceLink artifacts. The local SRM opener's 512 MiB bound remains a deterministic evidence contract. The separately landed dump-query worker is non-gating prototype work outside W1 and does not change this scope.
 
 ---
 
