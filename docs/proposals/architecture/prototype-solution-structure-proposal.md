@@ -66,6 +66,11 @@ A desired namespace, future product, candidate backend, or possible plugin is no
 - Stable .NET 10 LTS SDK selected through `global.json`.
 - `net10.0` development target; consumer multi-targeting deferred until demanded.
 - Central package versions and committed restore lock files.
-- Checked-in CI target: locked restore, Release build with warnings as errors, fast tests, then the supported Windows dump test. It is CI-enforced only after a workflow run is recorded; existence of the YAML alone is not that evidence.
+- CI-enforced target: local-Markdown-link consistency, locked restore, Release build with warnings as errors, fast
+  tests, then the supported Windows dump test. Exact pushed completion commit
+  `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` passed the documentation job, the build/fast job (60
+  semantic/differential and 40 fast adapter/harness tests), and the dependent 3-test dump job in
+  [GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+  completed 2026-07-14 UTC (2026-07-13 PDT). Third-party actions are pinned to verified release commit SHAs.
 
 The physical layout and contracts remain prototype hypotheses. They may change freely as W1–W4 force better boundaries.

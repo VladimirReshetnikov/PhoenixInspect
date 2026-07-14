@@ -46,11 +46,17 @@ Status axes:
 
 ## 4) Current evidence gaps, in order
 
+The W0 service-side gates are no longer an evidence gap: exact pushed completion commit
+`3ece32a36eccc06a61025b1b35b58c09f6e4ed09` passed documentation consistency, locked restore, a zero-warning Release
+build, 60 semantic and differential tests, 40 fast adapter/harness tests, and 3 required Windows dump tests in
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+completed 2026-07-14 UTC (2026-07-13 PDT). This run includes the harness start/readiness failure regressions and the
+repository-owned local-Markdown-link gate; it supersedes the narrower initial service baseline.
+
 1. A representative corrupt/hostile artifact corpus plus a constrained external worker and proven AppContainer, low-privilege account, or VM policy before arbitrary artifact exposure.
-2. A successful service-side CI run; checked-in workflow YAML and local results are separate evidence.
-3. Representative optimized-dump context-recovery measurements; the current deliberately strong-GCHandle fixture cannot supply a rate.
-4. Signature-derived frame admission and the first scenario-required memory opcode before expanding interpreted methods.
-5. A second meaningful value domain before any shared multi-mode-engine claim.
+2. Representative optimized-dump context-recovery measurements; the current deliberately strong-GCHandle fixture cannot supply a rate.
+3. Signature-derived frame admission and the first scenario-required memory opcode before expanding interpreted methods.
+4. A second meaningful value domain before any shared multi-mode-engine claim.
 
 These are implementation-and-test gaps, not requests for additional standalone specifications.
 

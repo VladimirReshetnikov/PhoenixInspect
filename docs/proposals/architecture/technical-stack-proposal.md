@@ -224,11 +224,19 @@ CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad 
 
 ### W0 CI target
 
-The stages below are required by the W0 exit gate. The workflow is checked in and the successful local 2026-07-13 command results are recorded in `testing-strategy-proposal.md`; the first GitHub service-side run remains pending, so the gate is not yet described as remotely CI-enforced.
+The stages below are required by the W0 exit gate. Successful local 2026-07-13 command results are recorded in
+`testing-strategy-proposal.md`. The same gates are now service-side `CI-enforced` for exact pushed commit
+`3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: documentation consistency passed; the build/fast job passed locked
+restore, a zero-warning Release build, 60 semantic/differential tests, and 40 fast adapter/harness tests; and the
+dependent Windows job passed 3 real-dump tests in
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+completed 2026-07-14 UTC (2026-07-13 PDT). Checkout and .NET setup actions are pinned to verified release commit
+SHAs rather than movable major tags.
 
 1. locked restore and Release build under stable .NET 10;
 2. fast unit/domain/determinism tests;
-3. real dump integration evidence on Windows.
+3. real dump integration evidence on Windows;
+4. deterministic local-Markdown-link consistency with repository-owned diagnostics.
 
 Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.
 

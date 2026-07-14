@@ -64,7 +64,25 @@ a calendar forecast. A milestone total is the sum of its non-overlapping package
 
 **Estimated implementation surface:** 1,050–1,950 LOC
 
-**Status:** implementation and local verification complete on 2026-07-13; first GitHub workflow result still pending before the remote CI exit claim is closed.
+**Realized implementation surface:** 2,502–5,304 LOC
+
+The realized range is deliberately bounded rather than reduced to a false point count. In reset commit `c35f1e97a`,
+1,605 changed LOC are in files exclusively attributable to W0's toolchain, identity, status, persistence, lattice,
+and contract/test work. Another 2,802 changed LOC are in mixed W0–W3 files such as the machine, frame/body helpers,
+common result envelope, harness, and machine tests; the history cannot defensibly assign those lines more narrowly.
+Dedicated W0 closure commits `24d860678` and `3ece32a36` add 897 attributable LOC after their combined diff counts
+the one line rewritten by both commits only once. The lower bound excludes every
+mixed line and the upper bound includes all of them. Counts use the larger of additions or deletions per materially
+changed hand-written file, while excluding documentation, generated output, locks, solution churn, and deletion-only
+scaffolding as required by this plan's convention. Even the lower bound exceeded the estimate, so future milestone
+ranges must be recalibrated from this evidence and kept attributable through dedicated commits or a path manifest.
+
+**Status:** **Complete.** Implementation and local verification completed on 2026-07-13. All service-side W0 gates
+passed for exact pushed commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` in
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+completed 2026-07-14 UTC (2026-07-13 PDT): documentation consistency passed; the build/fast job passed locked
+restore, a zero-warning Release build, 60 semantic/differential tests, and 40 fast adapter/harness tests; and the
+dependent real-dump job passed 3 dump tests.
 
 **Goal:** make the existing proof repeatable and ensure repository claims match executable behavior.
 
@@ -86,7 +104,13 @@ a calendar forecast. A milestone total is the sum of its non-overlapping package
 
 **Estimated implementation surface:** 2,600–4,200 LOC across the independently deliverable packages above
 
-**Status:** the generated trusted-fixture slice is implemented in-tree. It covers fully dump-sourced method-body facts, metadata-root conflicts, whole-file disk-artifact identity, typed malformed dump/PE admission, opened-stream dump/PE size-limit regressions, foreign-snapshot rejection, one Normal-vs-Full sparse-memory case, common result axes, and canonical replay. A representative corrupt/hostile corpus, representative incident evidence, service-side CI, and the external no-network/access-control worker plus trusted-DAC boundary remain hardening gates; local caps, locator refusal, and generated fixtures are not hostile-input isolation.
+**Status:** the generated trusted-fixture slice is implemented in-tree and its checked-in fast/dump lanes have passed
+service-side CI on the exact pushed W0 completion commit recorded above. It covers fully dump-sourced method-body facts,
+metadata-root conflicts, whole-file disk-artifact identity, typed malformed dump/PE admission, opened-stream dump/PE
+size-limit regressions, foreign-snapshot rejection, one Normal-vs-Full sparse-memory case, common result axes, and
+canonical replay. A representative corrupt/hostile corpus, representative incident evidence, and the external
+no-network/access-control worker plus trusted-DAC boundary remain hardening gates; local caps, locator refusal, and
+generated fixtures are not hostile-input isolation.
 
 **Goal:** prove the product's highest-risk evidence path before expanding IL semantics.
 

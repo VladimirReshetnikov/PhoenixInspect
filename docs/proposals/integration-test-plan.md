@@ -80,10 +80,25 @@ The dump test must prove all of the following in one bounded run:
 
 ## CI policy
 
-The workflow uses the pinned .NET 10 SDK and locked packages, builds Release with warnings as errors, runs the fast suite first, and then runs the dump category on `windows-latest`. The dump job has an explicit timeout. A missing DAC or inability to write/load the required dump is a failing infrastructure signal, not a passing skip.
+The workflow uses the pinned .NET 10 SDK and locked packages, runs a repository-owned local-Markdown-link consistency
+job, builds Release with warnings as errors, runs the fast suite first, and then runs the dump category on
+`windows-latest`. Third-party actions are pinned to verified release commit SHAs. The dump job has an explicit
+timeout. A missing DAC or inability to write/load the required dump is a failing infrastructure signal, not a passing
+skip.
+
+That workflow passed service-side for exact pushed completion commit
+`3ece32a36eccc06a61025b1b35b58c09f6e4ed09` in
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+completed 2026-07-14 UTC (2026-07-13 PDT). Documentation consistency passed; the build/fast job passed locked restore,
+a zero-warning Release build, 60 semantic/differential tests, and 40 fast adapter/harness tests; and the dependent
+Windows job passed 3/3 required dump tests.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
 ## Next evidence gates
 
-The generated-fixture W1–W2 path, foreign-snapshot rejection, and one Normal-vs-Full sparse-memory case are implemented in-tree. Remaining hardening gates are a representative corrupt/hostile artifact corpus, the constrained external-worker plus access-control boundary, representative optimized-context measurement, and service-side CI evidence. W3 expands the differential corpus only from scenario-derived compiler IL; opcode counts or percentage targets do not define readiness.
+The generated-fixture W1–W2 path, foreign-snapshot rejection, and one Normal-vs-Full sparse-memory case are implemented
+in-tree and have passed their checked-in service-side lanes. Remaining hardening gates are a representative
+corrupt/hostile artifact corpus, the constrained external-worker plus access-control boundary, and representative
+optimized-context measurement. W3 expands the differential corpus only from scenario-derived compiler IL; opcode
+counts or percentage targets do not define readiness.

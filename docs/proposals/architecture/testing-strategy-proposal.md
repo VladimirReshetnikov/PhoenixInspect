@@ -63,15 +63,17 @@ reclassified as null merely to apply `??`.
 
 ### W0 signal status
 
-| Signal | In-tree evidence | Remaining evidence distinction |
+| Signal | In-tree evidence | Service-side evidence / remaining distinction |
 |---|---|---|
-| Repository build | Stable .NET 10.0.2xx feature-band/minimum-patch pin, central versions, committed lock files, deterministic Release build, warnings-as-errors under `CI=true`. | Record the exact local result after changes and a GitHub run before calling it remotely enforced. |
-| Fast tests | Unit/domain/admission/differential/determinism/metadata suite is checked in. | A successful local run is `Verified`; the workflow's successful run is `CI-enforced`. |
-| Dump integration | Required Windows dump category and a bounded target/dump harness are checked in. | An inability to create/load the dump fails the required lane; it is not converted to a passing skip. |
+| Repository build | Stable .NET 10.0.2xx feature-band/minimum-patch pin, central versions, committed lock files, deterministic Release build, warnings-as-errors under `CI=true`. | `CI-enforced` for exact completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: locked restore and the zero-warning Release build passed in GitHub run 29309374548. |
+| Fast tests | Unit/domain/admission/differential/determinism/metadata suite plus payload-safe harness start/readiness failure coverage is checked in. | The same run passed 60 semantic/differential tests and 40 fast adapter/harness tests. |
+| Dump integration | Required Windows dump category and a bounded target/dump harness are checked in. | The dependent Windows job passed 3/3 dump tests. An inability to create/load the dump remains a failure, not a passing skip. |
 | Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes, plus stable identity/content-hash assertions, are checked in. | Add a fresh-process replay runner when a stable external host protocol exists. |
-| Documentation truth | The evidence matrix distinguishes raw dump bytes, dump metadata-derived facts, ClrMD-decoded runtime structures, whole-file-identified disk oracle facts, and explicit fixture inputs. | Keep this synchronized whenever an evidence fallback changes. |
+| Documentation truth | The evidence matrix distinguishes raw dump bytes, dump metadata-derived facts, ClrMD-decoded runtime structures, whole-file-identified disk oracle facts, and explicit fixture inputs. `eng/verify-markdown-links.ps1` validates repository-local inline/reference destinations with stable file/line diagnostics. | The dedicated documentation-consistency job passed on the exact completion commit. Keep the evidence matrix synchronized whenever an evidence fallback changes. |
 
-The workflow in `.github/workflows/ci.yml` is checked in. That establishes intended automation, not a successful service-side run; `CI-enforced` is claimed only after GitHub reports one.
+The workflow in `.github/workflows/ci.yml` is checked in and has reported a successful exact-commit run, recorded
+below. `CI-enforced` applies only to the gates that the successful workflow actually executed; it does not close the
+external-worker, hostile-corpus, or representative optimized-context gates.
 
 ### Local verification record — 2026-07-13
 
@@ -82,10 +84,24 @@ On Windows with the SDK selected by `global.json`:
 | Locked dependency graph | `dotnet restore Interpreter.sln --locked-mode --disable-parallel --disable-build-servers` | Passed. |
 | Full prototype build | `dotnet build Interpreter.sln -c Release --no-restore --disable-build-servers -m:1 -p:UseSharedCompilation=false` | Passed, 0 warnings / 0 errors. |
 | Semantic/admission/differential suite | `dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj -c Release --no-build --no-restore` | Passed, 60/60. |
-| Fast adapter suite | `dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast"` | Passed, 35/35. |
-| Real dump evidence | same integration project with `--filter "Category=Dump"` | Passed, 3/3 on three consecutive final-tree runs (9/9 executions). |
+| Fast adapter suite | `dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast"` | Passed, 40/40. |
+| Real dump evidence | same integration project with `--filter "Category=Dump"` | Passed, 3/3 on the W0 completion tree; the earlier reset tree also passed three consecutive runs (9/9 executions). |
 
-This is a local verification record, not evidence that GitHub has run the checked-in workflow.
+This table records local verification only; the independent service-side evidence follows.
+
+### Service-side verification record — 2026-07-14 UTC (2026-07-13 PDT)
+
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548)
+executed exact pushed completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` under .NET SDK 10.0.201:
+
+| Job | Service-side result |
+|---|---|
+| Documentation consistency | Passed: 59 authored Markdown files and all 6 repository-local destinations validated with the repository-owned verifier. |
+| Build and fast tests | Passed: locked restore; Release build with 0 warnings / 0 errors; 60/60 semantic and differential tests; 40/40 fast adapter/harness tests. |
+| Real dump evidence | Passed after the fast job: locked restore; Release build with 0 warnings / 0 errors; 3/3 required Windows dump tests. |
+
+This closes the W0 service-side documentation/build/fast/dump evidence distinction. It does not broaden the generated-fixture
+proof boundary or satisfy any later arbitrary-artifact security gate.
 
 ## 3) Active test layers
 
