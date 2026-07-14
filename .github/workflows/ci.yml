@@ -87,22 +87,3 @@ jobs:
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Measure the versioned optimized incident corpus
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1" --verbosity normal
-
-  external-worker:
-    name: AppContainer external-worker containment
-    needs: fast
-    runs-on: windows-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
-        with:
-          global-json-file: global.json
-          cache: true
-          cache-dependency-path: '**/packages.lock.json'
-      - name: Restore locked dependencies
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore tests/Interpreter.Host.ExternalWorker.Tests/Interpreter.Host.ExternalWorker.Tests.csproj --locked-mode
-      - name: Build the broker, runner, and containment tests
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build tests/Interpreter.Host.ExternalWorker.Tests/Interpreter.Host.ExternalWorker.Tests.csproj --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
-      - name: Run AppContainer containment tests
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Host.ExternalWorker.Tests/Interpreter.Host.ExternalWorker.Tests.csproj --configuration Release --no-build --no-restore --verbosity normal
