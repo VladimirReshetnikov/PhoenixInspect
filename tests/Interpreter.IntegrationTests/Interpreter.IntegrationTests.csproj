@@ -14,6 +14,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,6 +23,9 @@
     <ProjectReference Include="../../src/Interpreter.Metadata.SRM/Interpreter.Metadata.SRM.csproj" />
     <ProjectReference Include="../../src/Interpreter.Host.Dump.ClrMD/Interpreter.Host.Dump.ClrMD.csproj" />
     <ProjectReference Include="../../src/Interpreter.Product.DumpQuery/Interpreter.Product.DumpQuery.csproj" />
+    <ProjectReference Include="../Interpreter.OptimizedContextTestTarget/Interpreter.OptimizedContextTestTarget.csproj"
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="Configuration=Release" />
     <ProjectReference Include="../Interpreter.TestTarget/Interpreter.TestTarget.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

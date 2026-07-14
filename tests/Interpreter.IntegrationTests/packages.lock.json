@@ -12,6 +12,15 @@
           "Microsoft.Extensions.Logging": "2.1.1"
         }
       },
+      "Microsoft.Diagnostics.Runtime": {
+        "type": "Direct",
+        "requested": "[3.1.455904, )",
+        "resolved": "3.1.455904",
+        "contentHash": "8LsZvlFOh2hYlKo2+hbkPMre+f11xagLv5nD4lbVUDfTcV61ETeghu1sgePjVFuvV4bH9OyfzuT/nU5vJwti5Q==",
+        "dependencies": {
+          "Microsoft.Diagnostics.NETCore.Client": "0.2.410101"
+        }
+      },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
         "requested": "[17.11.1, )",
@@ -210,15 +219,6 @@
         "dependencies": {
           "Interpreter.Core.Abstractions": "[1.0.0, )",
           "Interpreter.Host.Dump.ClrMD": "[1.0.0, )"
-        }
-      },
-      "Microsoft.Diagnostics.Runtime": {
-        "type": "CentralTransitive",
-        "requested": "[3.1.455904, )",
-        "resolved": "3.1.455904",
-        "contentHash": "8LsZvlFOh2hYlKo2+hbkPMre+f11xagLv5nD4lbVUDfTcV61ETeghu1sgePjVFuvV4bH9OyfzuT/nU5vJwti5Q==",
-        "dependencies": {
-          "Microsoft.Diagnostics.NETCore.Client": "0.2.410101"
         }
       }
     }
