@@ -4,11 +4,16 @@ This directory contains conceptual design artifacts for the IL interpreter and d
 
 ## Current delivery focus
 
-The only active product target is a deterministic, read-only expression evaluator grounded in a .NET dump. The W0 repository/toolchain reset and W1–W2 generated-dump vertical slice are implemented in-tree: exact/partial evidence; fully dump-sourced tiny and compiler-emitted fat method bodies; a bounded dot-access root-field query grammar; exact-null field/coalescing behavior; explicit snapshot/module identity availability, evidence source, fallback, and path-accurate actually-applied bounds; honest no-answer completeness with retained explanatory evidence; fresh-session canonical replay; and a concrete differential kernel are executable proofs. A whole-file-identified disk PE remains only an independent oracle.
+The only active product target is a deterministic, read-only expression evaluator grounded in a .NET dump. The W0 repository/toolchain reset and W1–W2 generated-dump vertical slice are implemented in-tree: exact/partial evidence; fully dump-sourced tiny and compiler-emitted fat method bodies; a closed root-field query grammar; typed snapshot-scoped root bindings; immutable plans that select their field once; exact-null and compatible coalescing over `String` and `Nullable<Int32>` alongside direct `Int32`; canonical request/root-selection/plan identities; explicit snapshot/module identity availability, evidence source, fallback, and path-accurate actually-applied bounds; honest no-answer completeness with retained explanatory evidence; and a concrete differential kernel are executable proofs. The versioned W2 corpus contains 22 cases spanning 20 distinct expression texts and reproduces the complete canonical result byte sequence/SHA-256 for all cases plus the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after a fresh open and rebind. W2 implementation and local headless verification are complete; exact-final-HEAD hosted evidence remains pending. A whole-file-identified disk PE remains only an independent oracle.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
-A versioned malformed-minidump mutation corpus and a Windows x64 one-shot external-worker prototype are retained as separately landed, non-gating work outside W1. The worker's malformed-artifact checkpoint passed locally. Their presence does not admit arbitrary external artifacts, and no additional cybersecurity work is an active W1 gate.
+A versioned malformed-minidump mutation corpus and a Windows x64 one-shot external-worker prototype are retained as
+separately landed, non-gating work outside W1 and W2. The worker's malformed-artifact checkpoint passed locally. Their
+five hostile-corpus facts and the ExternalWorker test project provide no milestone validation: all current W1/W2 test
+invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide across all 15 projects,
+including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
+cybersecurity behavioral evidence. Their presence does not admit arbitrary external artifacts.
 
 The versioned optimized Release modeled-incident report is W1 generated-context evidence and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5 while retaining all unavailable cases. It explicitly describes one generated modeled dump, not a representative private-production incident corpus, and therefore establishes no production recoverability rate; representative production measurement is not a W1 gate. Current in-process resource admission still limits dumps to 8 GiB, ClrMD's dump cache to 256 MiB with stack-derived caches disabled, and managed PEs to 512 MiB on the actually opened stream before hashing. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, multi-application hosting, and other platform extensions are research backlog until their entry gates pass.
 
@@ -36,6 +41,7 @@ docs/
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
+| `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
@@ -94,14 +100,15 @@ docs/
 
 1. `../DESIGN-ARCHITECTURE-REVIEW.md`
 2. `proposals/product/post-mortem-debugging-feature-proposal.md`
-3. `proposals/architecture/architecture-overview-proposal.md`
-4. `proposals/architecture/prototype-solution-structure-proposal.md`
-5. `lib/mvp-backend-decision-record.md`
-6. `plans/future-work-planning.md`
-7. `proposals/architecture/testing-strategy-proposal.md`
-8. `proposals/integration-test-plan.md`
-9. `proposals/integration/clrmd-integration-proposal.md`
-10. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+3. `proposals/architecture/restricted-dump-query-contract-proposal.md`
+4. `proposals/architecture/architecture-overview-proposal.md`
+5. `proposals/architecture/prototype-solution-structure-proposal.md`
+6. `lib/mvp-backend-decision-record.md`
+7. `plans/future-work-planning.md`
+8. `proposals/architecture/testing-strategy-proposal.md`
+9. `proposals/integration-test-plan.md`
+10. `proposals/integration/clrmd-integration-proposal.md`
+11. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 

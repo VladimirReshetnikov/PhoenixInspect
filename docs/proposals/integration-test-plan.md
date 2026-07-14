@@ -12,12 +12,12 @@ The current plan has three execution lanes:
 
 - a fast, dump-free semantics lane for every change;
 - a supported Windows lane that generates real full dumps and exercises the evidence boundary; and
-- an independent Windows x64 external-worker prototype-regression lane outside W1.
+- an independent Windows x64 external-worker prototype-regression lane outside W1 and W2.
 
-The Windows lane now also evaluates the first W2 product grammar over that evidence. Parser/admission negatives remain
-in the fast category even though they live with integration tests because they require no DAC, process, dump, clock,
-or network. The worker lane retains a locally passing malformed-artifact checkpoint, but it is non-gating prototype
-work and no additional cybersecurity validation belongs to W1.
+The Windows lane now also evaluates the complete W2 v1 product grammar over that evidence. Dump-free parser, root,
+and plan-identity checks remain in the fast category because they require no DAC, process, dump, clock, or network.
+The worker lane retains a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside
+the non-security W1/W2 closure.
 
 ## Fast semantics lane
 
@@ -42,12 +42,16 @@ These tests may use fixed IL where a C# compiler cannot conveniently emit the in
 `tests/Interpreter.IntegrationTests/DumpMemoryEvidenceIntegrationTests.cs` generates one full dump from `Interpreter.TestTarget`. The target keeps one object alive through a strong GCHandle; that object contains:
 
 - a known `Int32` marker;
+- a known present and a known null `Nullable<Int32>`;
 - a known non-null string;
 - a null optional string;
 - a one-instruction `Program.RetOnly` method; and
 - a compiler-emitted fat method with locals and two EH regions.
 
-The dump test must prove all of the following in one bounded run:
+The combined fast and ordinary dump lanes must prove all of the following through bounded runs. The omnibus
+`DumpMemoryEvidenceIntegrationTests` run anchors the memory/evidence path; `ClrmdInstanceFieldInfoTests` proves the
+layout-admission part of item 15, `ForeignSnapshotIsolationIntegrationTests` supplies the separate case in item 17, and
+`ClrmdEvaluationResultExtensionsTests` proves item 18. Item 19 is the separately versioned scenario-corpus dump/run:
 
 1. The dump is opened read-only and receives a path-independent SHA-256 snapshot identity.
 2. The runtime-module catalog is immutable and preserves app-domain/module/image/metadata addresses separately from a target path hint.
@@ -63,16 +67,29 @@ The dump test must prove all of the following in one bounded run:
 12. Failure cleanup terminates the target, closes the dump, and removes the temporary file without blocking on redirected output.
 13. The target process starts with a cleared, allowlisted environment plus isolated working/TEMP directories, so full dumps do not inherit analysis-process credentials.
 14. ClrMD's file locator is replaced before CLR discovery with a no-acquisition locator; the test proves only that every request routed through that seam is refused. Pinned ClrMD can probe target-reported full paths before or outside the locator, so this is not network/filesystem isolation.
-15. W2 evaluates marker/string/exact-null-field/coalescing queries, rejects null-conditional syntax, refuses missing and unsupported evidence, preserves partial strings without erroneous coalescing, and produces deterministic multi-axis replay fingerprints.
+15. W2 parses, prepares, and evaluates marker/string/nullable/exact-null/coalescing queries through a typed root and an
+    immutable field-bound plan; it rejects null-conditional syntax, refuses missing and unsupported evidence,
+    preserves partial strings without erroneous coalescing, and identifies each plan/request canonically. Nullable
+    identity includes both child tokens, addresses, and sizes; duplicate/overlapping/out-of-extent/overflow layouts
+    and forged same-snapshot owner address/method-table descriptors are rejected before value reads.
 16. Deterministic admission rejects dumps above 8 GiB before hashing/ClrMD parsing and managed PEs above 512 MiB before SRM parsing; ClrMD's dump cache is capped at 256 MiB with stack-trace/root caching disabled.
 17. Every dump-query outcome carries evidence source, explicit snapshot/module identity availability, explicit fallback,
     and only the deterministic bounds whose guarded operations were actually reached; canonical replay changes when
     this context changes and never fabricates a module or scan bound for an unavailable root. Reserved-name
-    collisions, a missing field, and a foreign-snapshot root prove the distinct path-sensitive cases.
+    collisions, a missing field, and a foreign-snapshot root prove the distinct path-sensitive cases. Search-backed
+    bindings retain the exact ordinal selector, disposition, issue, counters/caps, retained-match count/limit state,
+    reads, and bounds. Canonical root-selection policy provenance hashes the selector, search/binding statuses and
+    issue, counters/caps, retained-match count, and limit flag; reads and bounds remain separate provenance/context.
 18. Generic field projection does not turn a retained partial `ClrmdInt32FieldObservation` wrapper into a decoded scalar
     answer. The wrapper remains explanatory evidence, while answer completeness is `None`.
-19. Deterministic replay closes and reopens the same dump in a fresh session, rediscovers the module and root, evaluates
-    the query again, and compares both the complete canonical result bytes and their SHA-256 fingerprint.
+19. `DumpQueryScenarioCorpusIntegrationTests` executes 22 versioned product cases spanning 20 distinct expression
+    texts twice in one session, closes and
+    reopens the same dump, rediscovers/rebinds the root, and reproduces the complete canonical result byte
+    sequence/SHA-256 for all 22 cases
+    plus the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds. It also asserts
+    exact axes, diagnostics, module/source context, independently expected path bounds, full ordered provenance
+    payload, and value-read geometry. Distinct unpaired UTF-16 literals remain plan-distinct even when their fallbacks
+    are unselected and their returned values match.
 
 A separate dump test generates an optimized Release modeled-incident target, retains `this`, argument, local, static,
 and strong-root axes, and emits a canonical report with raw member bytes at 5/5, attributable context at 1/5, and
@@ -86,15 +103,15 @@ all 0–31-byte header truncations, bounded garbage, invalid signature/version, 
 `MemoryList`/`Memory64List` truncation, bounded header/directory bit flips, appended junk, and a sparse file just above
 the 8 GiB admission boundary. Fast tests prove stable names/order/bytes, coverage, and case/count/size ceilings.
 
-This already-landed corpus is retained as a non-gating prototype outside W1. Its future scope is not an active W1 test
-decision.
+This already-landed corpus is retained as a non-gating prototype outside W1 and W2. Its future scope is not an active
+test decision for either milestone.
 
 ## Non-gating one-shot external-worker lane
 
 The implemented Windows x64 broker/runner projects occupy real solution boundaries and have their own headless test
 project. Its four-test package, including a real malformed-artifact process checkpoint, passed locally at
-`9fcf00934`. The projects and regression lane are retained as non-gating prototype work outside W1; their presence does
-not admit an external artifact product surface.
+`9fcf00934`. The projects and regression lane are retained as non-gating prototype work outside W1 and W2; their
+presence does not admit an external artifact product surface.
 
 ## Evidence matrix
 
@@ -110,9 +127,9 @@ not admit an external artifact product surface.
 | Disk method body | Independent SRM decoding from the whole-file-identified test artifact | Any fact in the dump-backed executable body's construction |
 | Evaluation evidence context | Explicit dump snapshot/module identities, evaluator source/fallback policy, and only bounds whose guarded operations were reached | That an unavailable module/root was recovered or that an unapplied limit constrained the result |
 | Generic partial-field projection | Retained typed wrapper, provenance, issue code, and `None` answer completeness | A decoded scalar value |
-| Fresh-session replay | Complete canonical result bytes and SHA-256 after dump close/reopen and module/root rediscovery | Historical process replay or equivalence across different snapshots |
-| Malformed corpus fast result | Deterministic generated mutation bytes and in-process admission outcome | Any W1 completion requirement; this corpus is non-gating prototype work |
-| Worker prototype checkpoint | One locally verified malformed-artifact process result | Any W1 completion requirement or external product admission |
+| Fresh-session replay | Complete canonical result byte sequence/SHA-256 for all 22 cases and canonical plan projection string/SHA-256 for the 13 prepared cases after dump close/reopen and module/root rediscovery | Historical process replay or equivalence across different snapshots |
+| Malformed corpus fast result | Historical deterministic generated mutation bytes and in-process admission outcome; its five facts are now excluded by `Scope!=Cybersecurity` | Any W1/W2 completion requirement; this corpus is non-gating prototype work |
+| Worker prototype checkpoint | One historical locally verified malformed-artifact process result; its test project is not invoked now | Any W1/W2 completion requirement or external product admission |
 | Modeled optimized report | One generated optimized Release full dump with five predeclared axes | Representative private-production context recoverability or a readiness percentage |
 | Live result in differential tests | CoreCLR invocation in the test process | Dump recoverability |
 | Interpreter result | Explicit frame, policy, domain, memory, and admitted body | Historical replay or product-level expression evaluation |
@@ -122,10 +139,11 @@ not admit an external artifact product surface.
 Every managed restore/build/test step uses `./eng/Invoke-HeadlessProcess.ps1 dotnet ...`; repository policy rejects raw
 workflow `dotnet` launches. The workflow uses the pinned .NET 10 SDK and locked packages, runs repository-owned
 local-Markdown-link and headless-workflow consistency checks, builds Release with warnings as errors, runs the fast suite,
-and then runs the required ordinary-dump and optimized-context Windows lanes. The worker projects remain build-checked
-through the solution, but their tests are outside the default W1 workflow. Third-party actions are pinned to verified
-release commit SHAs. A missing DAC or inability to write/load a required W1 dump is a failing infrastructure signal,
-not a passing skip.
+and then runs the required ordinary-dump and optimized-context Windows lanes. Every current test command includes
+`Scope!=Cybersecurity`; the worker test project is not invoked and the five hostile-corpus facts are excluded. Restore
+and build intentionally remain repository-wide across all 15 projects as topology/compilation-health evidence only,
+not cybersecurity behavioral evidence. Third-party actions are pinned to verified release commit SHAs. A missing DAC
+or inability to write/load a required dump is a failing infrastructure signal, not a passing skip.
 
 That workflow passed service-side for exact pushed completion commit
 `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` in
@@ -143,17 +161,24 @@ successful hosted run records their exact pushed commit; the external-worker pac
 at exact W1 closure commit `e2580a8a8`: documentation/headless consistency, the 15-project Release build and fast
 suites, ordinary real-dump evidence, and optimized-context evidence.
 
-Current local verification on 2026-07-14 passed locked restore; a strict 15-project Release build with 0 warnings and
-0 errors; 64/64 `Interpreter.Tests`; 63/63 `Category=Fast` integration tests; 3/3 ordinary dump tests; and 1/1 modeled
-optimized-context test. Every managed command used `Invoke-HeadlessProcess`; there were no skips or UI.
+Current local verification on 2026-07-14 at W2 implementation commit `ff7cd1965` passed locked restore; a strict
+15-project Release build with 0 warnings and 0 errors; 64/64 non-cybersecurity `Interpreter.Tests`; 67/67
+`Category=Fast&Scope!=Cybersecurity` integration
+tests; 4/4 ordinary dump tests (including the 22-case W2 corpus); and 1/1 modeled optimized-context test. Every
+managed command used `Invoke-HeadlessProcess`; there were no skips or UI. Exact pushed-HEAD hosted W2 evidence remains
+pending until the documentation reconciliation commit runs through all four required jobs.
+
+Restore and build remain repository-wide, so all 15 projects are compiled as topology/compilation-health evidence.
+Every current test invocation includes `Scope!=Cybersecurity`; the five dedicated hostile-artifact corpus facts are
+excluded and no cybersecurity validation is claimed.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
 ## Next evidence gates
 
-The generated-fixture W1–W2 path, foreign-snapshot rejection, Normal-vs-Full sparse-memory case, explicit replayable
-result context, path-accurate bounds, honest no-answer projection, fresh-session replay, headless workflow guard, and
-optimized modeled-incident report are implemented in-tree.
-W1 is complete for its revised scope. The malformed corpus and external worker are separately landed, non-gating
-prototypes; representative private-production measurement is a later product-readiness question. W3 expands the
+The generated-fixture W1–W2 path, typed root and immutable plan boundary, nullable-`Int32` evidence, 22-case complete
+replay, foreign-snapshot rejection, Normal-vs-Full sparse-memory case, path-accurate bounds, honest no-answer
+projection, headless workflow guard, and optimized modeled-incident report are implemented and locally verified.
+W1 is complete for its revised scope; W2 awaits only exact pushed-HEAD hosted evidence. Separately landed malformed
+corpus/worker prototypes and representative private-production measurement are not W2 gates. W3 expands the
 differential corpus only from scenario-derived compiler IL; opcode counts or percentage targets do not define readiness.

@@ -193,7 +193,9 @@ The original `dotnet/symstore` repo is archived, and there’s an explicit conti
   * supports Microsoft public symbol server and private servers
 * Whether you literally reuse `Microsoft.SymbolStore` or reimplement the minimal subset, the important point is: **keep acquisition separate from parsing.**
 
-**External-input scope:** the active W1 slice does not admit externally acquired PE/PDB/SourceLink artifacts. The local SRM opener's 512 MiB bound remains a deterministic evidence contract. The separately landed dump-query worker is non-gating prototype work outside W1 and does not change this scope.
+**External-input scope:** the active W1 and W2 slices do not admit externally acquired PE/PDB/SourceLink artifacts. The
+local SRM opener's 512 MiB bound remains a deterministic evidence contract. The separately landed dump-query worker is
+non-gating prototype work outside W1 and W2 and does not change this scope.
 
 ---
 

@@ -79,7 +79,7 @@ Current prototype structure:
 - `src/Interpreter.Product.DumpQuery`
   - the closed, bounded root-field query evaluator and result projection.
 - `src/Interpreter.Host.ExternalWorker` and `src/Interpreter.Host.ExternalWorker.Runner`
-  - a separately landed, non-gating Windows process-boundary prototype outside W1.
+  - a separately landed, non-gating Windows process-boundary prototype outside W1 and W2.
 - `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, `tests/Interpreter.TestTarget`, and
   `tests/Interpreter.OptimizedContextTestTarget`
   - fast semantic/contract tests, real dump evidence, and the generated optimized-context report.
@@ -177,14 +177,17 @@ Use standard .NET DI for host-facing composition while allowing direct construct
    - Assert project-owned identity, evidence status, provenance, bounds, and stable miss reasons.
 3. **Windows dump integration tests**
    - Exercise real dump creation/loading and state exactly which evidence came from dump memory versus disk artifacts.
-   - Reopen the same dump in a fresh session and compare complete canonical result bytes and SHA-256 after
-     module/root rediscovery.
+   - For W2, reopen the same dump and reproduce the complete canonical result byte sequence/SHA-256 for all 22 cases
+     plus the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds after module/root
+     rediscovery.
    - Run the optimized modeled-context target separately from ordinary dump evidence.
 4. **Differential tests (W3+)**
    - Compare the fixture-derived concrete opcode subset with CoreCLR.
 
-The external-worker regression project is build-checked through the solution but its tests, like the malformed-artifact
-corpus it exercises, are non-gating prototype work outside the default W1 workflow.
+The external-worker regression project is compiled through the solution, but its tests are not invoked. The five
+hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1/W2 test commands
+exclude that scope. Repository-wide compilation is topology/compilation-health evidence only, not cybersecurity
+behavioral validation.
 
 CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad performance suites remain research until their roadmap entry gates pass. `testing-strategy-proposal.md` is the source of truth for current evidence and milestone gates.
 
@@ -225,9 +228,9 @@ CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad 
 
 ## 10) Future external-input and supply-chain posture
 
-Cybersecurity work for external artifacts is explicitly outside W1. The following remains product-entry guidance, not a
-current completion gate; the landed worker and malformed corpus are non-gating prototypes and do not admit an external
-artifact product surface.
+Cybersecurity work for external artifacts is explicitly outside W1 and W2. The following remains product-entry
+guidance, not a current completion gate; the landed worker and malformed corpus are non-gating prototypes and do not
+admit an external artifact product surface.
 
 - Treat dumps, PE/PDB files, symbol responses, SourceLink documents, and expression text as hostile and potentially secret-bearing.
 - Keep network acquisition off unless a host/user explicitly enables it; verify identity before combining remote/disk artifacts with dump evidence.
@@ -263,6 +266,10 @@ ordinary real-dump evidence, and optimized-context evidence; worker tests are ou
 required jobs passed at exact W1 closure commit `e2580a8a8` in [GitHub Actions run
 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889).
 
+That historical W1 run predates the explicit scope filter. At W2 implementation checkpoint `ff7cd1965`, every current
+test command includes `Scope!=Cybersecurity`; restore/build intentionally remains repository-wide across all 15
+projects as topology/compilation-health evidence. Exact-final-HEAD hosted W2 closure remains pending.
+
 Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.
 
 ### Platforms
@@ -291,11 +298,15 @@ Current facts:
 - Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Host.ExternalWorker`, and `Interpreter.Host.ExternalWorker.Runner`.
 - Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code, `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. The independently opened disk PE carries exact whole-file length/SHA-256 identity and serves only as a comparison oracle; its body contributes no fact to the dump-backed executable body.
 - External-input resource ceilings are 8 GiB per dump before hashing/ClrMD parsing, a 256 MiB ClrMD dump cache with stack-trace/root caching disabled, and 512 MiB at the typed external-PE `Open` boundary before SRM parsing. These bounds reduce resource-exhaustion risk but are not a parser/DAC sandbox; trusted-fixture convenience APIs are not external admission boundaries.
-- The Windows x64 one-shot worker and malformed-minidump corpus are separately landed, non-gating prototypes outside W1. The worker's malformed-artifact checkpoint is locally verified, but the projects do not create an admitted external artifact product surface.
+- The Windows x64 one-shot worker and malformed-minidump corpus are separately landed, non-gating prototypes outside
+  W1 and W2. The five hostile-corpus facts and worker test project provide no current milestone validation; all W1/W2
+  test invocations exclude `Scope=Cybersecurity`, while repository-wide compilation retains the projects only as
+  topology/compilation-health evidence. The projects do not create an admitted external artifact product surface.
 - `Interpreter.Core.Execution` depends on core abstractions, not on a concrete metadata backend. `MetadataResolutionServices` supplies the current bridge.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
-  and fresh-session replay reproduces complete canonical result bytes and SHA-256.
+  and the 22-case/20-expression fresh-session corpus reproduces all result identities plus all 13 prepared-plan
+  identities.
 
 This snapshot is a plumbing proof, not evidence that the proposed package decomposition or public contracts have converged.

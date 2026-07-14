@@ -77,8 +77,12 @@ The host supplies one ordinal name and one typed binding state:
 | Invalid | Captured root evidence violates a supported invariant. | No |
 
 A partial search never chooses a retained candidate merely because one happens to be present. An exact search with
-multiple candidates is conflict/ambiguity. Root-search evidence, reason code, ordered counted reads, and the bounds
-actually applied by that search remain visible through a failed preparation/evaluation result.
+multiple candidates is conflict/ambiguity. A search-backed binding retains the exact ordinal type selector, adapter
+search status and issue, handles scanned and scan cap, match cap, retained-match count, match-limit flag, ordered
+counted reads, and the bounds actually applied by that search. Failed preparation/evaluation results retain the reads
+and bounds plus a canonical root-selection policy provenance identity that hashes the selector/search state. Distinct
+absent or partial predicates and search dispositions therefore cannot alias even though the result exposes the hash
+rather than the selector and counters directly.
 
 Exact absence and exact null are different concepts. W2 represents the former; an exact-null root is not admitted in
 v1. Missing, partial, conflicting, or invalid root evidence never becomes null for the purpose of `??`.
@@ -89,13 +93,18 @@ The bound plan is immutable and object-specific. Its canonical v1 projection is 
 
 - grammar version;
 - root and field identifiers;
-- selected snapshot, owner, and field identity;
+- selected snapshot and owner identity;
+- the complete outer field descriptor and, for `Nullable<Int32>`, both child metadata tokens, addresses, and sizes;
 - admitted field value kind; and
 - optional literal kind and exact literal value.
 
 The plan exposes a SHA-256 fingerprint of that projection. Product result provenance includes the plan identity, so
 two requests that happen to return the same value but contain different fallback literals do not have the same
 machine-readable explanation.
+
+Descriptor admission rejects duplicate nullable child tokens, overlapping storage, storage outside the outer field,
+and address/extent arithmetic overflow. Evaluation revalidates snapshot, owner address, owner method table, and
+descriptor ownership before memory reads; a forged same-snapshot descriptor is a conflict rather than a read attempt.
 
 Canonical plan/result projections can contain expression literals or target-derived values. They are test/replay
 artifacts and are not telemetry-safe display strings.
@@ -140,6 +149,10 @@ Successful evaluation provenance identifies the canonical plan, root-selection e
 structures, counted value reads, and any reached coalescing transformation in deterministic order. A failure retains
 all explanation available before its stopping stage. Configured policies for unvisited paths are absent.
 
+Successfully parsed requests have canonical request identity. Bounded invalid input retains a canonical raw-input
+identity; input rejected for exceeding the expression cap deliberately retains no raw identity. Successful preparation
+additionally supplies plan identity.
+
 ## 8) Diagnostic stages
 
 Stable diagnostics distinguish at least:
@@ -156,7 +169,7 @@ identity, and all result axes participate in canonical replay.
 
 ## 9) W2 scenario and replay gate
 
-W2 closes only with a versioned corpus of at least ten product scenarios covering:
+The checked-in W2 v1 gate is a versioned corpus of 22 cases over 20 distinct expression texts covering:
 
 - direct exact `Int32` and string observations;
 - exact-null string and nullable-`Int32` observations;
@@ -169,9 +182,11 @@ W2 closes only with a versioned corpus of at least ten product scenarios coverin
 - a partial bounded string that is not reclassified as null.
 
 For every corpus case, the test constructs root and policy inputs explicitly, evaluates repeatedly in one session,
-and compares complete canonical result bytes and SHA-256. It then closes and reopens the same dump, rediscovers and
-rebinds the root, and reproduces every case's canonical plan/result bytes and fingerprint. A value-only equality check
-or replay of one representative query does not satisfy this gate.
+and compares the complete canonical result byte sequence and result SHA-256. It then closes and reopens the same dump,
+rediscovers and rebinds the root, and reproduces all 22 results; the 13 cases whose preparation succeeds additionally
+reproduce the plan's canonical projection string and plan SHA-256. The corpus asserts exact result axes, diagnostics,
+module/source context, independently expected path bounds, full ordered provenance payload, and value-read geometry;
+value-only equality, replay-only equality, or one representative query does not satisfy this gate.
 
 ## 10) Expansion rule
 

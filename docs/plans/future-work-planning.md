@@ -10,7 +10,7 @@ The only active product target is a **deterministic, read-only expression evalua
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a primitive field, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. It obtains each MethodDef RVA from counted dump metadata and reads the header, code, locals token, padding, and declared extra sections from dump memory; the tiny exact dump-sourced `ret` is executable, while the fat body proves locals and two EH regions without claiming interpreter support for them. The full-content-identified disk PE is only an independent oracle. Separately, a concrete branchless `Int32` kernel is checked against compiler-emitted methods running on CoreCLR. These are architectural proofs, not a production evaluator.
 
-Until W1 and W2 pass their exit criteria, the following remain research backlog rather than delivery commitments:
+Until W2 passes its remaining exact-HEAD hosted exit gate, the following remain research backlog rather than delivery commitments:
 
 - virtual Step Into/Over/Out, undo, and branch exploration,
 - whole-method CFG/fixpoint abstract interpretation,
@@ -21,10 +21,12 @@ Until W1 and W2 pass their exit criteria, the following remain research backlog 
 Scope expands only through an explicit decision gate backed by executable evidence.
 
 **Current milestone status:** W1 is complete for its revised non-security evidence scope at exact closure commit
-`e2580a8a8`. No additional implementation milestone is opened by this completion record. The bounded W2 root-field
-query is present and verified; its next increment requires an explicit scope decision. Representative
-private-production measurement is outside W1, already-landed worker/corpus code remains non-gating prototype work, the
-concrete W3 work is a bounded architecture-risk spike, W3 remains incomplete, and W4 remains gated.
+`e2580a8a8`. W2 v1 implementation and local headless verification are complete at `ff7cd1965`; exact-HEAD hosted
+verification is still pending, so W2 is not yet recorded as closed. Its deliberately narrow contract is the
+[Restricted Dump Query v1 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any
+increment beyond that contract requires an explicit scope decision. Representative private-production measurement is
+outside W1, already-landed worker/corpus code remains separately scoped non-gating prototype work, the concrete W3 work
+is a bounded architecture-risk spike, W3 remains incomplete, and W4 remains gated.
 
 ## 2) LOC sizing and work-in-progress
 
@@ -49,9 +51,10 @@ Work-in-progress limit:
 The ranges make large milestones decomposable and expose scope growth without converting uncertain architecture work into
 a calendar forecast. A milestone total is the sum of its non-overlapping package ranges.
 
-The W1 rows below preserve the original planning assumptions for calibration only. They are superseded by the
-attributable realized-work ledger in the W1 section and must not be read as either current scope or remaining work.
-Cybersecurity portions of the original third row are no longer W1 requirements.
+The W1 and W2 rows below preserve the original planning assumptions for calibration only. They are superseded by the
+attributable realized-work ledgers in their milestone sections and must not be read as either current scope or remaining
+work. Cybersecurity portions of the original W1 work and any security-policy fixture work formerly implied by W2 are
+excluded from these milestones.
 
 | Milestone | Work package | Estimated implementation LOC |
 |---|---|---:|
@@ -64,7 +67,7 @@ Cybersecurity portions of the original third row are no longer W1 requirements.
 | W2 | Closed grammar and deterministic parse/admission diagnostics | 350–600 |
 | W2 | Root/member binder and immutable read-only query plan | 350–700 |
 | W2 | Bounded evaluator plus honest result/provenance envelope | 500–900 |
-| W2 | Ten-plus scenario, negative, replay, and security-policy fixtures | 500–900 |
+| W2 | Versioned ten-plus scenario, negative, and complete canonical replay corpus | 500–900 |
 
 ## 3) Evidence-led roadmap
 
@@ -204,9 +207,41 @@ prototype work, and W1 completion by itself does not admit an external artifact 
 
 ### W2 — Restricted expression/query slice
 
-**Estimated implementation surface:** 1,700–3,100 LOC
+**Original forecast (superseded):** 1,700–3,100 LOC
 
-**Status:** implemented and locally verified for the generated strong-root fixture. The first grammar intentionally supports exactly one exact non-null ordinal root, one direct field through `.`, and optional bounded null/`Int32`/string coalescing; broader C# syntax, null-conditional access, and frame roots are not implied.
+**Realized implementation surface:** 5,301–5,361 LOC
+
+The realized range combines the **1,520–1,580 LOC** attributable to the pre-closure W2 parser, value projection,
+initial evaluator, and tests with **3,781 additions** in the dedicated closure stream. The pre-closure range reflects
+the remaining attribution uncertainty in mixed files; the dedicated commits are exact path-level diff evidence. Under
+this plan's convention, additions and replacement lines are counted once as delivered implementation while deletions
+are reported as churn, not added again to the delivered total. Documentation is excluded:
+
+| Landed package | Commit | Diff evidence | Realized attributable LOC |
+|---|---|---:|---:|
+| Pre-closure closed grammar, evaluator, projection, and tests | Before `09e980502` | Attribution range | 1,520–1,580 |
+| Snapshot/owner-bound field descriptors and exact nullable-`Int32` evidence | `572c47781` | +857/−107 | 857 |
+| Typed root binding, staged preparation, immutable plan, and single-bind product evaluation | `24f305474` | +1,182/−156 | 1,182 |
+| Versioned 22-case complete replay corpus and fixture fields | `bf5642c09` | +489/−0 | 489 |
+| Final identity, explanation, descriptor, replay, and local-gate hardening | `ff7cd1965` | +1,306/−59 | 1,253 |
+| Normative v1 contract | `09e980502` | Documentation; excluded | 0 |
+| **Total** |  | **+3,781/−269 cumulative dedicated closure diff** | **5,301–5,361** |
+
+The final hardening commit's raw diff includes 53 additions that replace lines already counted in earlier closure
+commits. Its attributable-current-surface column therefore records 1,253 LOC; the total is the exact cumulative
+`.github`/`src`/`tests` diff from `09e980502` through `ff7cd1965`, so each delivered line is counted once.
+
+**Status:** **Implementation complete; local verification complete; exact-HEAD hosted closure pending.** The generated
+strong-root fixture and dump-free contract tests pass headlessly at the `ff7cd1965` implementation state. The eventual
+documentation-closure HEAD has not yet completed its required hosted jobs, so this plan does not claim W2 complete or
+CI green.
+
+The first grammar intentionally supports exactly one exact non-null ordinal root, one direct field through `.`, and
+optional bounded null/`Int32`/string coalescing. The staged parse/bind/plan/evaluate pipeline consumes a typed root
+binding, selects and freezes the outer field descriptor once, and evaluates the immutable object-specific plan without
+repeating member lookup. Broader C# syntax, null-conditional access, and frame roots are not implied. The normative
+language, evidence, binding, type, diagnostic, and replay rules are in the
+[Restricted Dump Query v1 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md).
 
 **Goal:** turn W1's evidence operations into the first useful product interaction.
 
@@ -217,22 +252,43 @@ Evaluate a restricted expression such as `root.OptionalMessage ?? "<missing>"` a
 **Deliverables**
 
 - Deterministic parsing of an admitted C# expression subset.
-- Binding against host-provided roots and the dump/metadata universe.
-- A read-only query plan for direct field access, exact nullable-field observation/coalescing, and bounded literals.
+- Typed host root binding that distinguishes one exact object from exhaustive absence, partial, unavailable, conflict,
+  and invalid evidence without converting missing evidence to null, while retaining the exact selector, search
+  disposition, issue, counters/caps, retained-match state, reads, bounds, and canonical selection provenance.
+- Staged binding against the immutable snapshot and dump/metadata universe, with one ordinal outer-field selection and
+  explicit snapshot, owner, method-table, and descriptor conflict checks.
+- An immutable, object-specific read-only plan for direct field access, exact string/nullable-`Int32`
+  observation/coalescing, bounded literals, and an injective canonical v1 identity over the complete selected field
+  layout. Invalid/overlapping/overflowing layouts and forged owner descriptors fail before value reads.
 - Stable parse, bind, unsupported-syntax, and missing-evidence diagnostics.
 - A host-facing result carrying semantic mode, completion, completeness, evidence status, effects, value, and provenance.
+- A versioned 22-case/20-expression product corpus that compares the complete canonical result byte sequence and result
+  SHA-256 for all cases and, for the 13 cases whose preparation succeeds, the canonical plan projection string and plan
+  SHA-256, both within one session and after dump disposal, reopen, root rediscovery, and rebinding.
 
 **Non-goals for W2**
 
 - Compiling a synthetic method or executing user IL.
 - Method/getter invocation, overload resolution, construction, reflection, implicit assembly loading, LINQ, or loops.
 - IDE completion and polished debugger UI.
+- External-input cybersecurity, hostile-artifact policy, isolation, and security validation. They are separately scoped,
+  excluded from W2 estimates and completion gates, and are not implied by the closed functional grammar. Every current
+  test invocation excludes `Scope=Cybersecurity`; repository-wide restore/build remains topology/compilation-health
+  evidence only.
 
 **Exit criteria**
 
-- At least ten scenario expressions cover success, exact null/coalescing, unavailable roots, invalid syntax, unsupported syntax (including `?.`), and partial evidence.
-- Results are classified as `Observation` or `DerivedQuery`; no result language implies historical or counterfactual execution.
-- Repeated runs produce identical values and machine-readable explanations.
+- The versioned 22 cases over 20 distinct expression texts cover direct `Int32`, direct/coalesced
+  `Nullable<Int32>`, exact/null/partial strings, selected and unselected compatible fallbacks, `?? null`, exhaustive
+  and partial roots, missing/wrong-case/unsupported fields, incompatible coalescing, invalid syntax, unsupported syntax
+  including `?.`, and a partial string that is not reclassified as null.
+- Product results are `DerivedQuery`; their underlying adapter reads remain `Observation`. No result language implies
+  historical or counterfactual execution.
+- All 22 corpus cases produce an identical complete canonical result byte sequence and result SHA-256 within one
+  session and after reopening the same dump and reconstructing its root binding. The 13 cases whose preparation
+  succeeds additionally reproduce an equivalent fresh plan's canonical projection string and plan SHA-256 before
+  evaluation.
+- The exact pushed documentation-closure HEAD passes the required hosted jobs. This final gate remains pending.
 
 ### W3 — Concrete IL semantics and differential oracle
 
@@ -340,7 +396,7 @@ A UI trust badge may summarize them but never replaces them in contracts or test
 | A single maintainer cannot sustain a platform-sized surface | High | Critical | Give every active slice an implementation-LOC envelope; split slices above 3,500 LOC; prefer one product path. |
 | Maintainer unavailability leaves the active slice without continuity | Medium | Critical | Keep one canonical vertical-slice path, executable fixtures, explicit evidence boundaries, and a current handoff map; avoid private operational knowledge. |
 | Optimized dumps omit roots, locals, arguments, or `this` | High | High | Make unavailable/partial expected outcomes; measure scenario recovery rather than guessing. |
-| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Keep external-input cybersecurity outside W1 and admit no external artifact product surface through W1 completion; any future initiative owns its separate requirements and evidence. |
+| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Keep external-input cybersecurity outside W1 and W2 and admit no external artifact product surface through their completion; any future initiative owns its separate requirements and evidence. |
 | Documentation volume is mistaken for capability | High | High | Track implementation and validation separately; design just ahead of code. |
 | Backend or identity mismatch yields plausible wrong reads | Medium | Critical | Identity validation, conflict outcomes, real-dump fixtures, no silent fallback. |
 | The evaluator does not materially improve incident workflows | Medium | High | Test W1/W2 against concrete user questions before funding method execution. |
@@ -352,6 +408,12 @@ W2 decisions now applied:
 1. The supported subset is a project-owned bounded parser for one root/field and optional literal coalescing.
 2. Project-owned immutable parse/query shapes stay internal; no Roslyn object enters a core contract.
 3. Diagnostics use stable payload-safe text, value display is redacted, and canonical replay is explicitly not telemetry-safe.
+4. Typed root binding and an immutable, snapshot/object-specific plan make parse, bind, plan, and evaluate distinct stages;
+   outer-member selection occurs once during preparation.
+5. The first value domain admits exact/null `Nullable<Int32>` and string semantics; missing or partial evidence never
+   selects a coalescing fallback.
+6. Every case in the versioned corpus, not one representative expression, must replay canonically after reopening and
+   rebinding the dump.
 
 Before starting W3:
 

@@ -67,12 +67,23 @@ These fixtures do not prove arbitrary root/frame recovery, chained expression bi
 `Interpreter.Product.DumpQuery` is exercised both without a dump and through the generated full-dump scenario. The
 fast corpus admits exactly one exact non-null ordinal root, `.`, one field, and optional bounded literal coalescing,
 while rejecting `?.`, calls, indexing, chaining, arithmetic, oversized inputs, malformed literals, and unsupported
-escapes with stable payload-safe codes. The real dump covers `Int32`, exact and partial strings, exact nullable-field
-null, coalescing, `?.` rejection, missing root/member evidence, case sensitivity, unsupported field type,
-incompatible coalescing, ordered provenance, and repeated canonical replay. Missing or partial evidence is never
-reclassified as null merely to apply `??`. Parser, missing-root/member, foreign-snapshot, null, scalar, and string paths
-report only the bounds they reached. A generic partial Int32 observation retains its evidence/provenance while exposing
-no decoded scalar answer.
+escapes with stable payload-safe codes. Preparation consumes a typed, snapshot-bound root result and selects the outer
+field once into an immutable object-specific plan; evaluation reads only through that frozen descriptor. Exact
+absence, bounded partial search, ambiguity, invalid evidence, and a foreign snapshot remain distinct and never expose
+a retained partial candidate as an exact root.
+
+The versioned `w2-root-field-v1` real-dump corpus contains 22 cases spanning 20 distinct expression texts. It covers
+direct `Int32`, direct and coalesced `Nullable<Int32>`, exact and partial strings, exact null, selected and unselected
+fallbacks, `?? null`, bounded root
+search, `?.` rejection, missing/wrong-case members, unsupported types, incompatible coalescing, invalid syntax, and
+root-name mismatch. Every case compares its complete canonical result byte sequence/result SHA-256 and, for the 13
+cases whose preparation succeeds, the canonical plan projection string/plan SHA-256 twice in one session and again
+after closing, reopening, rediscovering,
+and rebinding the same dump. Distinct unpaired UTF-16 fallback literals prove plan hashing is injective even when the
+fallback is not selected and the returned value is identical. Exact root-selection provenance retains the ordinal
+selector, search disposition, issue, counters, caps, and retained-match state. Missing or partial evidence is never
+reclassified as null merely to apply `??`; generic partial primitive wrappers retain explanation without becoming
+decoded scalar answers.
 
 ### Corrupt-backend normalization and non-gating malformed-input corpus
 
@@ -83,14 +94,15 @@ Separately, the versioned malformed-minidump corpus deterministically covers eve
 signature/version failures, stream-directory overflow/overlap, `MemoryList`/`Memory64List` truncation, bounded header
 and directory bit flips, appended junk, and a sparse artifact just above the 8 GiB admission limit. Its canonical
 manifest and hard case/count/size caps have fast tests. This corpus is retained as non-gating prototype work outside
-W1; no additional cybersecurity validation belongs to W1.
+W1 and W2. Its five facts are tagged `Scope=Cybersecurity` and excluded from every current milestone test invocation;
+they provide no W1/W2 validation.
 
 ### One-shot external-worker proof
 
 `tests/Interpreter.Host.ExternalWorker.Tests` exercises the separately landed Windows x64 broker/runner prototype. Its
 four-test package, including one real malformed-artifact process boundary, passed locally at checkpoint `9fcf00934`
-under the headless wrapper. The worker remains non-gating prototype work outside W1; its presence and test result do not
-admit an external artifact product surface.
+under the headless wrapper. The worker remains non-gating prototype work outside W1 and W2; its presence and test result
+do not admit an external artifact product surface. Its test project is not invoked by the current milestone workflow.
 
 ### Optimized modeled-incident measurement
 
@@ -114,7 +126,11 @@ is not a W1 gate.
 
 The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
 `CI-enforced` applies only to the gates that the successful workflow actually executed. The exact W1 closure commit is
-green. External-input cybersecurity and representative private-production measurement are outside W1.
+green, but its historical fast totals predate the explicit scope filter and must not be retroactively described as a
+filtered cybersecurity result. The current workflow formalizes the exclusion with `Scope!=Cybersecurity` on all four
+test commands. Repository-wide restore/build still compiles all 15 projects as topology/compilation-health evidence,
+not cybersecurity behavioral evidence. Representative private-production measurement remains a separate
+product-readiness question.
 
 ### Local verification record — 2026-07-13
 
@@ -127,9 +143,9 @@ not imply that the later wrapper existed when the original W0 run was recorded.
 |---|---|---|
 | Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode --disable-parallel --disable-build-servers` | Passed. |
 | Full prototype build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln -c Release --no-restore --disable-build-servers -m:1 /p:UseSharedCompilation=false` | Passed, 0 warnings / 0 errors. |
-| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj -c Release --no-build --no-restore` | Passed, 60/60. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast"` | Passed, 40/40. |
-| Real dump evidence | the same wrapped integration-project command with `--filter "Category=Dump"` | Passed, 3/3 on the W0 completion tree; the earlier reset tree also passed three consecutive runs (9/9 executions). |
+| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj -c Release --no-build --no-restore --filter "Scope!=Cybersecurity"` | Passed, 60/60. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast&Scope!=Cybersecurity"` | Passed, 40/40. |
+| Real dump evidence | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 3/3 on the W0 completion tree; the earlier reset tree also passed three consecutive runs (9/9 executions). |
 
 This table records local verification only; the independent service-side evidence follows.
 
@@ -153,7 +169,7 @@ generated-fixture proof boundary.
 passed all four required jobs at exact W1 closure commit `e2580a8a8`: documentation/headless consistency; the
 15-project zero-warning Release build and fast suites; ordinary real-dump evidence; and optimized-context evidence.
 
-### Current local W1 verification — 2026-07-14
+### Current local W1–W2 verification — 2026-07-14
 
 Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was skipped and no UI was displayed.
 
@@ -161,12 +177,16 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 |---|---|---|
 | Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
 | Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
-| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore` | Passed, 64/64. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 63/63. |
-| Ordinary real-dump evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 3/3. |
-| Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1. |
+| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --filter "Scope!=Cybersecurity"` | Passed, 64/64 at W2 implementation commit `ff7cd1965`. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast&Scope!=Cybersecurity"` | Passed, 67/67 at W2 implementation commit `ff7cd1965`. |
+| Ordinary real-dump evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 4/4 at W2 implementation commit `ff7cd1965`, including the 22-case W2 corpus. |
+| Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
 
-These local results are corroborated by the exact-commit hosted closure run above; W1 is complete for its revised scope.
+The W1 portion of these local results is corroborated by the exact-commit hosted closure run above, so W1 remains
+complete for its revised scope. The added W2 results are local evidence only until the exact pushed W2 closure commit
+passes the required hosted jobs. Restore and build remain repository-wide and compile all 15 projects as topology and
+compilation-health evidence. Every current test command excludes `Scope=Cybersecurity`; the five dedicated hostile-
+artifact corpus facts therefore contribute neither W2 validation nor a cybersecurity claim.
 
 ## 3) Active test layers
 
@@ -211,7 +231,10 @@ Rules:
 
 ### D. Product scenario tests (W2)
 
-The first scenarios are active. Each includes input expression, admitted syntax, roots, policy, value/evidence result, diagnostics, provenance, and canonical replay output. Later syntax expands only from a scenario whose evidence and resource behavior are explicit.
+The checked-in `w2-root-field-v1` corpus contains 22 cases over 20 distinct expression texts. Each includes input expression, typed root evidence,
+policy, preparation/plan outcome, value/evidence result, diagnostics, provenance, and canonical replay output. Every
+case is repeated in-session and after fresh-session rebind; the 13 prepared plans carry an injective canonical identity.
+Later syntax expands only from a scenario whose evidence and resource behavior are explicit.
 
 ### E. Differential tests (W3+)
 
@@ -292,7 +315,9 @@ The pipeline targets `net10.0` and should remain small enough to diagnose:
 4. a separate Windows optimized modeled-context lane; and
 5. documentation/link and headless-workflow consistency checks with stable signal.
 
-The external-worker projects remain solution-build inputs, but their test project is outside the default W1 workflow.
+All four current `dotnet test` commands include `Scope!=Cybersecurity`; the external-worker test project is not
+invoked. Its projects remain solution-build inputs only because restore/build stays repository-wide across all 15
+projects as topology/compilation-health evidence. That compilation is not cybersecurity behavioral validation.
 
 The historical W0 run below proves only its original jobs. New W1 jobs and tests become `CI-enforced` only after a
 successful hosted run names the exact pushed commit; checked-in workflow text or local execution alone is insufficient.
@@ -324,8 +349,14 @@ Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/
 
 ### W2 — restricted expression/query slice
 
-- At least ten scenario expressions cover success, exact nullable-field null/coalescing, unavailable roots, invalid syntax, unsupported syntax (including `?.`), and partial evidence.
-- Parse/bind/query behavior is deterministic and results are classified as `Observation` or `DerivedQuery`.
+- Twenty-two versioned cases spanning 20 distinct expression texts cover direct `Int32`, direct/coalesced
+  `Nullable<Int32>`, exact nullable-field null/coalescing, exhaustive and partial roots, invalid syntax, unsupported
+  syntax (including `?.`), and partial value evidence.
+- Parse/prepare/bound-plan/query behavior is deterministic; every product result is `DerivedQuery`, while its direct
+  adapter reads remain `Observation` evidence.
+- Every scenario reproduces complete result bytes/fingerprint across same-session repetition and fresh-session
+  close/reopen/rebind; successfully prepared scenarios also reproduce the canonical plan string
+  projection/fingerprint.
 - Member access remains read-only and never silently invokes getters, reflection, or user IL.
 
 ### W3 — concrete IL semantics and differential oracle
@@ -375,4 +406,4 @@ Record the failing fixture/test, exact command and environment, expected versus 
 2. What corpus composition would justify setting a recoverability readiness threshold without hiding unavailable cases?
 
 Both are post-W1 product-readiness questions. External-input cybersecurity is separately scoped and is not an open W1
-testing decision.
+or W2 testing decision.

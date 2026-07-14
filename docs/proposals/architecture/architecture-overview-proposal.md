@@ -8,10 +8,12 @@
 
 The funded product direction is a **deterministic, read-only expression evaluator grounded in a .NET dump**. The interpreter is enabling technology for expressions that eventually require user IL; it is not presently a general-purpose execution platform.
 
-The proof obligations are deliberately ordered; the first two now have executable generated-dump slices:
+The proof obligations are deliberately ordered. The first has exact-HEAD hosted closure evidence; the second has a
+complete implementation and local headless verification, with exact-final-HEAD hosted evidence still pending:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
-2. lower a restricted expression into a read-only query plan and evaluate it over that evidence;
+2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
+   plan over dump evidence without repeating member selection;
 3. execute a small, scenario-derived, EH-free IL subset through a concrete value and memory domain, checked against CoreCLR;
 4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy.
 
@@ -46,24 +48,27 @@ no-fallback outcome is explicit rather than inferred from a missing property.
 ## 3. Active data flow
 
 ```text
-Expression + selected dump context + deterministic policy
-                         |
-                         v
-Restricted parser/binder -> admitted read-only query plan
-                         |
-              +----------+----------+
-              |                     |
-              v                     v
-      Dump evidence adapter    Artifact/metadata adapter
-      (ClrMD + raw reads)      (SRM/PEReader)
-              |                     |
-              +----------+----------+
-                         |
-                         v
-                Read-only query evaluator
-                         |
-                         v
-       Result axes + value + provenance + diagnostics
+Expression + typed host root evidence + deterministic policy
+                             |
+                             v
+                     Parse closed grammar
+                             |
+                             v
+Bind snapshot/root -> select field exactly once -> immutable plan + identity
+                             |
+                  +----------+----------+
+                  |                     |
+                  v                     v
+          Dump evidence adapter    Artifact/metadata adapter
+          (ClrMD + raw reads)      (SRM/PEReader)
+                  |                     |
+                  +----------+----------+
+                             |
+                             v
+                     Evaluate(bound plan)
+                             |
+                             v
+           Result axes + value + provenance + diagnostics
 
 Later, only for admitted method bodies:
 query plan -> interpreter kernel -> concrete/hybrid domain
@@ -71,8 +76,8 @@ query plan -> interpreter kernel -> concrete/hybrid domain
 
 The dump path is not an implementation detail after the interpreter. It is the primary product path and therefore lands first.
 
-The active W1 path uses generated trusted fixtures directly. The worker described in section 4.5 is a separately landed,
-non-gating prototype outside W1 and is not part of this active data flow.
+The active W1/W2 path uses generated trusted fixtures directly. The worker described in section 4.5 is a separately
+landed, non-gating prototype outside both milestones and is not part of this active data flow.
 
 ## 4. Active components
 
@@ -97,32 +102,64 @@ Dump bytes and artifact bytes remain distinct evidence sources even when identit
 
 ### 4.3 Restricted expression front end
 
-The first front end accepts only syntax that can be lowered to a bounded, read-only query plan. Roslyn may parse syntax, but the project owns binding, admission, lowering, and diagnostic policy.
+The first front end accepts only syntax that can be lowered to a bounded, read-only query plan. Roslyn may parse syntax, but the project owns binding, admission, lowering, and diagnostic policy. The normative language, binding, value, identity, and replay rules are consolidated in the [Restricted Dump Query v1 Contract](restricted-dump-query-contract-proposal.md).
 
 The implemented W2 grammar is intentionally smaller than the eventual restricted-expression surface:
 
-- one exact, ordinal host-provided root name bound to an explicitly selected non-null heap object;
+- one exact, ordinal host-provided root name whose typed binding is `ExactObject`, `ExhaustiveAbsence`, `Partial`,
+  `Unavailable`, `Conflict`, or `Invalid`; only the exact non-null object state can produce a plan;
 - one direct instance field selected with `.`; `?.` is rejected until the root model can carry exact null;
 - an optional `??` literal restricted to `null`, `Int32`, or a bounded string;
+- fields restricted to `Int32`, `Nullable<Int32>`, or `String`, with type-compatible coalescing decided during
+  preparation; and
 - result values restricted to exact `Int32`, exact null, exact string, or an explicitly partial bounded string prefix.
 
-The parser caps expression, identifier, and decoded-literal length. The evaluator caps string reads and preserves
-missing or partial evidence instead of treating it as null. A selected nullable field may produce exact null and may
-then be coalesced. Null-conditional access, chained traversal, backing-field projection, arrays, operators other than
-coalescing, and frame roots remain later scenario-driven increments.
+The parser caps expression, identifier, and decoded-literal length. Preparation verifies the binding's snapshot,
+selects the exact outer field once, classifies its decoder and coalescing combination, and freezes those choices into
+an object-specific plan. The evaluator caps string reads and preserves missing or partial evidence instead of treating
+it as null. A selected nullable field may produce exact null and may then be coalesced; unavailable or partial evidence
+never triggers a fallback. Null-conditional access, chained traversal, backing-field projection, arrays, operators
+other than coalescing, and frame roots remain later scenario-driven increments.
 
 Method calls, construction, reflection, implicit assembly loading, user-defined conversions, and unbounded enumeration are rejected in this slice. Parse, bind, admission, and evidence failures use different reason codes.
 
 ### 4.4 Read-only query evaluator
 
-The query evaluator executes a finite project-owned plan, not synthesized user code. The one-hop grammar is structurally bounded and subject to deterministic expression, identifier, literal, handle-scan, field-catalog, and string-read caps; each evidence read produces either a value or a typed partial/unavailable outcome. Result context records a cap only when its guarded operation was reached, so a reserved-name collision, a missing field, and a foreign-snapshot root report different applied-bound sets. A retained partial primitive-field wrapper remains explanatory evidence with no decoded scalar answer; generic projection does not overstate completeness. It has no filesystem, network, process, native, or target-mutation capability.
+The query evaluator executes a finite project-owned plan, not synthesized user code. `Prepare` consumes the parse result
+and typed root evidence, performs the only outer-field lookup, and returns either an immutable `DumpQueryPlan` or a
+complete multi-axis failure result. `Evaluate(session, plan)` validates the plan's snapshot/owner/field relationship
+and reads through the already selected descriptor; it never repeats outer member lookup. The convenience evaluation
+entry point is composition over these stages rather than a separate semantic path.
+
+The one-hop grammar is structurally bounded and subject to deterministic expression, identifier, literal,
+handle-scan, field-catalog, and string-read caps; each evidence read produces either a value or a typed
+partial/unavailable outcome. Result context records a cap only when its guarded operation was reached, so a
+root-name mismatch, a missing field, and a foreign-snapshot root report different applied-bound sets. A retained
+partial primitive-field wrapper remains explanatory evidence with no decoded scalar answer; generic projection does
+not overstate completeness. It has no filesystem, network, process, native, or target-mutation capability.
+
+Each admitted plan has a canonical v1 projection and SHA-256 identity that includes the grammar version, exact root
+and field names, snapshot/owner identity, the complete selected field descriptor (including nullable child layout),
+decoder kind, and exact optional literal. Successfully parsed requests have canonical request identity; bounded invalid
+input retains a canonical raw-input identity, while deliberately oversized input is rejected before raw identity is
+retained. Exact root-selection policy provenance independently preserves the ordinal selector, disposition, issue,
+scan counters, caps, retained-match count, and match-limit state. Failures before plan creation and successful values
+whose unused fallbacks differ therefore remain distinguishable. Results from successful plan evaluation carry the plan
+identity in ordered provenance, and all product results are `DerivedQuery`; adapter reads beneath them remain
+`Observation` results. The versioned corpus has 22 cases spanning 20 distinct expression texts and covers exact, null,
+fallback, typed-root, binding, syntax, type, and partial-string outcomes. Every result and every successfully prepared
+plan projection/fingerprint is identical when repeated within one session and when the dump is reopened, its root
+rediscovered, and the query rebound. This implementation and corpus pass locally; exact-final-HEAD hosted evidence
+remains pending.
 
 ### 4.5 Non-gating one-shot external-artifact prototype
 
 Two separately landed Windows x64 projects provide a trusted broker/protocol boundary and a one-request runner. They
 have a dedicated headless test project; its four-test package, including a real malformed-artifact process checkpoint,
 passed locally at `9fcf00934`. The projects remain useful topology and process-boundary experiments, but cybersecurity
-work is outside W1 and this prototype is not a W1 completion requirement or an admitted external product surface.
+work is outside W1 and W2; this prototype is not a completion requirement for either milestone or an admitted external
+product surface. Its test project is not invoked by the current milestone workflow, and the five hostile-corpus facts
+in the integration assembly are tagged `Scope=Cybersecurity` and excluded from all current test commands.
 
 ### 4.6 Interpreter kernel
 
@@ -141,6 +178,8 @@ Identity and location are separate concepts:
 - a **runtime module instance** identifies one loaded instance in one dump/runtime/app-domain;
 - a **method definition** is the relevant module-content handle plus its MethodDef token; a disk-backed handle includes complete-artifact identity, while dump evidence retains the runtime-module instance and its independently observed metadata-root identity;
 - a **constructed method/type context** adds a deterministic generic-instantiation identity;
+- a **bound dump-query plan** adds the grammar version, ordinal root/field names, snapshot-scoped owner and selected
+  field identities, admitted decoder kind, and exact optional literal value;
 - file paths, display names, enumeration order, process-random string hashes, and allocation counters are not stable identities.
 
 Mappings between runtime instances and artifacts carry evidence status and mismatch diagnostics. Handles used in replay or tests must be derived from these identities, not from discovery order.
@@ -185,6 +224,14 @@ The W1 replay proof crosses session lifetime rather than comparing two evaluatio
 and reopens the same dump, rediscovers the module and selected root, and requires byte-identical complete canonical
 results plus the same SHA-256 fingerprint.
 
+The W2 proof applies that stronger test to every case in its versioned corpus, not only to one representative success.
+For each of 22 cases spanning 20 distinct expression texts it repeats the pipeline in one session; the 13 cases whose
+preparation succeeds proceed to bound-plan evaluation. It compares the complete canonical result byte sequence and
+result SHA-256 plus those 13 plans' canonical projection strings and plan SHA-256 values, then closes and reopens the
+dump, reconstructs typed root bindings, and reproduces those
+artifacts. Input, request, root-selection, plan, and result identities are versioned and content-derived rather than
+enumeration- or allocation-derived.
+
 ## 8. Status protocols
 
 Different layers use different, explicitly mapped vocabularies:
@@ -202,11 +249,13 @@ The first interpreted-method slice rejects bodies with exception regions and bod
 
 ## 10. External-input scope boundary
 
-W1 is restricted to generated, source-controlled fixture artifacts and non-security evidence behavior. Its deterministic
-read, identity, context, provenance, replay, and resource-bound contracts remain active. External-input cybersecurity is
-explicitly outside W1, and W1 completion does not create an external artifact product surface. The already-landed
-malformed corpus and one-shot worker are retained only as non-gating prototypes; any future external-input initiative
-must establish its own scope and evidence independently.
+W1 and W2 are restricted to generated, source-controlled fixture artifacts and non-security evidence behavior. Their
+deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. External-input
+cybersecurity is explicitly outside both milestones, and their completion does not create an external artifact product
+surface. The already-landed malformed corpus and one-shot worker are retained only as non-gating prototypes; any future
+external-input initiative must establish its own scope and evidence independently. Restore/build intentionally remains
+repository-wide across all 15 projects, including the worker projects and integration assembly, as topology and
+compilation-health evidence only. It is not cybersecurity behavioral evidence.
 
 ## 11. Physical topology
 
@@ -216,7 +265,8 @@ The prototype retains only projects containing behavior or contracts exercised b
 - `Interpreter.Domain.Concrete` — concrete validation domain and persistent memory;
 - `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts and active SRM adapter;
 - `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence and ClrMD adapter;
-- `Interpreter.Product.DumpQuery` — the bounded W2 parser, read-only evaluator, and closed result-value projection;
+- `Interpreter.Product.DumpQuery` — the bounded W2 parser, typed root binding, immutable prepared plan, read-only
+  `Evaluate(plan)` path, canonical identities, and closed result-value projection;
 - `Interpreter.Host.ExternalWorker` and `Interpreter.Host.ExternalWorker.Runner` — the narrow Windows broker/protocol
   and one-request AppContainer executable; they are not a generic hosting framework.
 

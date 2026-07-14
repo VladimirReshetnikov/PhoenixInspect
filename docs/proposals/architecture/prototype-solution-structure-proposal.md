@@ -23,12 +23,14 @@ The solution retains ten source projects, each containing contracts or behavior 
 | `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter. |
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
 | `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, and raw memory evidence through ClrMD. |
-| `Interpreter.Product.DumpQuery` | Closed W2 grammar, ordinal root/member binding, bounded read-only evaluation, redacted value projection, and replay integration. |
+| `Interpreter.Product.DumpQuery` | Closed W2 grammar, typed snapshot-root binding, one-time field selection into immutable canonical plans, bounded `Evaluate(plan)`, closed value projection, and complete-corpus replay. |
 | `Interpreter.Host.ExternalWorker` | Trusted Windows x64 staging broker, bounded protocol/contracts, response validation, AppContainer/Job/handle policy, payload-free telemetry projection, and observable cleanup. |
 | `Interpreter.Host.ExternalWorker.Runner` | One-request framework-dependent AppContainer executable that re-verifies containment, pins the trusted DAC, disables ambient capabilities, evaluates the admitted dump query, and exits. |
 
 Tests are separated into a fast semantic/contract suite, a real dump integration suite, a Windows external-worker
-suite, and two generated target executables: the general dump target and the optimized modeled-incident target.
+suite, and two generated target executables: the general dump target and the optimized modeled-incident target. The
+real-dump suite contains an independently versioned 22-case/20-expression W2 corpus rather than treating one query in the W1
+omnibus test as query-product closure evidence.
 
 ## 3. Dependency rules
 
@@ -47,19 +49,35 @@ write full dump
   -> content-identify and open it read-only
   -> discover a runtime module and bounded strong-GCHandle root
   -> perform counted dump-memory reads for primitive/string/metadata/IL evidence
+  -> convert root-search evidence into exact-object/absence/partial/unavailable/conflict/invalid typed binding state
+  -> parse the closed W2 grammar and select the requested instance field exactly once during preparation
+  -> freeze snapshot, owner, field, decoder, optional literal, and reached bounds into an immutable canonical plan
+  -> evaluate that plan through its selected Int32, Nullable<Int32>, or String decoder without member rebinding
   -> decode MethodDef RVA, tiny/fat header, code, locals, padding, and declared extra sections from counted dump evidence
   -> compare with a full-content-identified disk artifact as an independent fixture oracle
   -> execute the normalized body built solely from exact dump evidence
   -> report explicit snapshot/module availability, source, fallback, and only bounds whose operation was reached
   -> preserve partial wrappers as explanatory evidence without manufacturing a scalar answer
-  -> close/reopen the dump, rediscover module/root, and reproduce canonical result bytes and their SHA-256
+  -> repeat all 22 versioned query cases in one session, then close/reopen and reconstruct the root binding
+  -> reproduce every canonical result byte sequence/SHA-256 and each successfully prepared plan projection/SHA-256
 ```
 
-The runtime binding identity is the counted metadata root's MVID, exact metadata length, and metadata SHA-256. The independently opened disk PE additionally has a whole-file identity (exact artifact length plus SHA-256), so changing IL outside the metadata root changes artifact/module/method handles even if an incorrectly preserved MVID and metadata root would not. That disk identity is not derivable from the dump metadata root and does not authenticate dump code. The disk bodies are used only to assert equality: the MethodDef RVA, tiny/fat header, `maxstack`, init-locals flag, local-signature token, code, padding, and exception sections are decoded from exact counted dump metadata and memory reads. The real-dump evidence now includes tiny `RetOnly` and a compiler-emitted fat body with locals and two EH regions. W2 proves bounded binding/evaluation for one selected root and one field; it does not prove frame recovery, arbitrary heap-root discovery, chained expressions, broad IL semantics, or debugger stepping.
+The runtime binding identity is the counted metadata root's MVID, exact metadata length, and metadata SHA-256. The independently opened disk PE additionally has a whole-file identity (exact artifact length plus SHA-256), so changing IL outside the metadata root changes artifact/module/method handles even if an incorrectly preserved MVID and metadata root would not. That disk identity is not derivable from the dump metadata root and does not authenticate dump code. The disk bodies are used only to assert equality: the MethodDef RVA, tiny/fat header, `maxstack`, init-locals flag, local-signature token, code, padding, and exception sections are decoded from exact counted dump metadata and memory reads. The real-dump evidence now includes tiny `RetOnly` and a compiler-emitted fat body with locals and two EH regions.
+
+W2 proves typed binding and bounded evaluation for one host-named, exactly selected non-null object and one exact
+instance field. Its admitted value domain is `String`, `Int32`, and `Nullable<Int32>` with only compatible literal
+coalescing. A canonical plan includes the grammar version, root/field names, snapshot-scoped owner and field identity,
+decoder, and exact optional literal; request identity also preserves bounded failures that never produce a plan. The
+full 22-case/20-expression corpus reproduces every result byte sequence/fingerprint and the 13 successfully prepared
+plan projection strings/fingerprints within and across dump sessions. This
+implementation and local headless verification are complete, while exact-final-HEAD hosted evidence remains pending.
+It does not prove exact-null roots, frame/local/argument/static recovery, arbitrary heap-root discovery, chained or
+null-conditional access, properties/getters, calls, indexers, arrays, reflection, construction, general operators,
+user-IL execution, broad IL semantics, or debugger stepping.
 
 The external-worker projects are separately executable, and their four-test package includes a locally passing real
-malformed-artifact process checkpoint. This is non-gating prototype work outside W1; its presence does not admit an
-external artifact product surface.
+malformed-artifact process checkpoint. This is non-gating prototype work outside W1 and W2; its presence does not admit
+an external artifact product surface.
 
 ## 5. Rule for adding a project
 
@@ -87,12 +105,19 @@ A desired namespace, future product, candidate backend, or possible plugin is no
   completed 2026-07-14 UTC (2026-07-13 PDT). Third-party actions are pinned to verified release commit SHAs.
 
 That hosted run is the W0 baseline. The malformed corpus and external worker are separately landed, non-gating
-prototypes outside W1.
+prototypes outside W1 and W2.
 
-Local verification on 2026-07-14 passed locked restore, the strict 15-project Release build with 0 warnings/errors,
-64/64 core tests, 63/63 fast integration tests, 3/3 ordinary dump tests, and 1/1 optimized-context test through the
-headless wrapper. [Hosted run
+Historical unfiltered local verification on 2026-07-14 passed locked restore, the strict 15-project Release build with
+0 warnings/errors, 64/64 core tests, 63/63 fast integration tests, 3/3 ordinary dump tests, and 1/1 optimized-context
+test through the headless wrapper. [Hosted run
 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs
 at exact W1 closure commit `e2580a8a8`.
+
+The later filtered W2 v1 local checkpoint `ff7cd1965` passes the 15-project zero-warning build, 64 core tests, 67 fast
+integration tests, 4 ordinary dump tests (including its 22-case corpus), and 1 optimized-context test. All test
+invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide, including worker
+projects and the integration assembly, as topology/compilation-health evidence only; worker projects/tests provide no
+cybersecurity or milestone behavioral evidence. Exact-final-HEAD hosted evidence has not yet been recorded, so the W1
+run above must not be read as W2 hosted closure evidence.
 
 The physical layout and contracts remain prototype hypotheses. They may change freely as W1–W4 force better boundaries.

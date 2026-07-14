@@ -120,12 +120,15 @@ The active slice starts with snapshot-grounded navigation and simple derived que
 
 ### Context selection model
 
-Evaluation runs in a specific **context**:
+The end-state product runs evaluation in a specific **context**:
 
 * Selected dump
 * Selected thread and stack frame (when available)
 * `this`, locals, and arguments (to the extent recoverable)
 * Imported namespaces and type aliases (configurable)
+
+W2 v1 deliberately uses only the selected dump plus one host-named, exactly selected non-null heap object. It does
+not discover frame roots, locals, arguments, statics, or exact-null roots.
 
 ### Output and trust indicators
 
@@ -150,12 +153,41 @@ This is intentionally phased so we can deliver value early without promising “
 
 Goal: prove that a small expression/query surface materially improves common “what’s in here?” investigations.
 
-The following is the target Phase 1 capability set, admitted incrementally. W2 intentionally begins with a smaller
-closed syntax/operator subset: one exact non-null root, one direct field through `.`, and optional literal `??` over
-an exact nullable field. Null-conditional access remains outside the admitted grammar until the root value model can
-distinguish exact null from unavailable root evidence.
+The Phase 1 capability set is admitted incrementally. W2 v1 is now a closed implemented subset, not a claim that the
+broader Phase 1 candidates below are already available. Its normative definition is the
+[Restricted Dump Query v1 Contract](../architecture/restricted-dump-query-contract-proposal.md).
 
-**Supported**
+**W2 v1 implemented subset**
+
+The product question is intentionally singular: given one host-named, exactly selected non-null object in one
+immutable dump, return one exact instance field, optionally replacing an exactly observed null with one bounded
+literal.
+
+- Grammar: one ordinal, case-sensitive `root.field`, optionally followed by `?? null`, a signed decimal `Int32`, or
+  a bounded string literal.
+- Root evidence: typed `ExactObject`, `ExhaustiveAbsence`, `Partial`, `Unavailable`, `Conflict`, and `Invalid` states.
+  Only an exact non-null object can produce a plan; missing or non-exact evidence is never treated as null.
+- Pipeline: parse, prepare/bind, freeze an immutable object-specific plan, then evaluate that plan. Preparation selects
+  the outer field exactly once; evaluation reads through the selected descriptor without rebinding it.
+- Field domain: direct `Int32`; exact/null `Nullable<Int32>` with `Int32` or `null` coalescing; and exact/null/partial
+  `String` with string or `null` coalescing. A fallback is selected only for exact null.
+- Identity and explanation: canonical versioned request, root-selection policy, and plan projections; complete nullable
+  child layout in descriptor/plan identity; SHA-256 plan identity in successful provenance; stable diagnostic stages;
+  complete result axes; and only bounds whose guarded operation was reached.
+- Admission: duplicate/overlapping/out-of-extent nullable layouts, extent overflow, foreign snapshots, and forged
+  same-snapshot owner address/method-table descriptors fail before value memory is read.
+- Truth: every product-level result is a read-only `DerivedQuery`; its underlying counted field reads remain
+  independently available `Observation` results. Neither mode implies historical or counterfactual execution.
+- Replay: a versioned 22-case corpus over 20 distinct expression texts compares the complete canonical result byte
+  sequence/fingerprint for all cases and the canonical plan projection string/fingerprint for the 13 cases whose
+  preparation succeeds after repeated same-session evaluation and after the dump is reopened, rediscovered, and
+  rebound. It also asserts exact axes,
+  diagnostics, context, path bounds, ordered provenance payload, and value-read geometry.
+
+The implementation and full corpus are locally headless-verified. Exact-final-HEAD hosted evidence remains pending,
+so W2 does not yet have a hosted closure claim.
+
+**Later Phase 1 candidates (not W2 v1)**
 
 * Names: `this`, locals/args (when available), statics
 * Member access: fields, auto-properties (as data, not code)
@@ -168,26 +200,30 @@ distinguish exact null from unavailable root evidence.
 * `typeof(T)`, `default(T)`, literal values
 * Safe pretty-printing of common BCL types
 
-**Expression front-end boundary**
+**W2 v1 front-end and plan boundary**
 
-* Parse a deliberately admitted C# expression subset with deterministic options.
-* Bind only against host-provided roots and the dump/metadata universe; do not load assemblies implicitly.
-* Lower admitted syntax into a read-only query plan rather than compiling a synthetic method.
-* Reject method/getter execution, construction, reflection, unsupported syntax, and unavailable context with stable diagnostics.
-* Treat an auto-property as data only when a backing-field projection is explicitly recognized and reported.
+* Parse only the closed one-hop grammar with deterministic expression, identifier, and decoded-string caps.
+* Bind only the supplied typed root and dump runtime/metadata evidence; do not discover roots or load assemblies.
+* Select one exact instance-field descriptor during preparation and lower it to an immutable read-only plan rather
+  than compiling a synthetic method.
+* Preserve the exact snapshot, owner, selected field, decoder, optional literal, reached bounds, and canonical plan
+  identity through evaluation and replay.
+* Reject method/getter execution, backing-field inference, construction, reflection, unsupported syntax and types,
+  foreign identity, and unavailable/partial/conflicting/invalid evidence with stable diagnostics.
 
-**Not supported (MVP)**
+**Not admitted in W2 v1**
 
-* Calling user code (methods/getters with IL bodies)
-* `new` object creation
-* `await`, async execution, tasks “running”
-* Reflection that discovers/loading types beyond what’s already known
-* Anything that can loop arbitrarily (LINQ, iterators, recursion)
+* Null-conditional access, member chains, exact-null roots, and frame/local/argument/static discovery.
+* Properties/getters, including auto-property backing-field inference; calls; constructors; indexers; and arrays.
+* Reflection, implicit assembly loading, conversions, arithmetic, comparisons, Boolean operators, assignments,
+  statements, `typeof`, `default`, and general pretty-printing/intrinsics.
+* `await`, async execution, tasks “running,” LINQ, iterators, recursion, and every interpreter execution entry point.
 
 **Why MVP is valuable**
 
-* Most dump work is navigating + null-safe access + simple computation.
-* We can provide “immediate relief” with minimal ambiguity.
+* A single typed, replayable root-field query validates the product's parse/bind/evidence/explanation seam without
+  pretending a dump is a live C# execution context.
+* The closed type and syntax boundary gives later scenario-driven increments a trustworthy compatibility baseline.
 
 ---
 
@@ -369,7 +405,9 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
 
 * **W0:** truthful baseline, CI, and deterministic smoke evidence.
 * **W1:** real dump-memory field/string read with typed evidence outcomes.
-* **W2:** restricted expression/query slice with no user-IL execution.
+* **W2:** restricted query v1 with typed snapshot roots, immutable object/field plans, exact
+  `String`/`Int32`/`Nullable<Int32>` behavior, and complete-corpus canonical replay; implementation and local
+  headless verification are complete, while exact-final-HEAD hosted evidence remains pending.
 * **W3:** scenario-derived concrete IL slice plus CoreCLR differential oracle.
 * **W4:** decomposed, evidence-gated unknown-aware counterfactual method evaluation.
 
@@ -377,17 +415,19 @@ Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual st
 
 ---
 
-## 14) Open Questions (for product decisions)
+## 14) Open Questions (for later product increments)
 
-Only questions needed by W1/W2 should be decided now; the rest stay with their research phase.
+The W2 v1 grammar, typed-root model, value domain, plan identity, and replay gate are closed decisions. The following
+questions stay with later Phase 1 increments or their research phase and do not reopen W2.
 
 1. **Default safety stance**
 
    * Should method execution be opt-in per session/dump, or enabled with strict limits by default?
 
-2. **First restricted syntax closure**
+2. **Next restricted syntax increment**
 
-   * Which member, null-handling, literal, and operator forms belong in the first W2 fixture corpus? Statements remain research backlog.
+   * Which concrete incident question justifies the next member, root, null-handling, literal, or operator form, and
+     what evidence/type/diagnostic/replay rules must accompany it? Statements remain research backlog.
 
 3. **Symbol/source retrieval policy**
 
