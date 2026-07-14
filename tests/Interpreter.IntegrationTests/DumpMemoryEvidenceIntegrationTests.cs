@@ -14,7 +14,7 @@ namespace Interpreter.IntegrationTests;
 /// <summary>
 /// Exercises the first real dump-memory evidence slice against a generated full process dump.
 /// </summary>
-public sealed class DumpMemoryEvidenceIntegrationTests
+public sealed partial class DumpMemoryEvidenceIntegrationTests
 {
     private const int ExpectedMarker = 0x13579BDF;
     private const string ExpectedMessage = "dump-memory-evidence:\uD83D\uDE80 exact rooted string";
@@ -319,6 +319,9 @@ public sealed class DumpMemoryEvidenceIntegrationTests
                 dumpBackedMethodBody.LocalVariablesInitialized);
             Assert.Equal(diskMethodBody.LocalSignatureToken, dumpBackedMethodBody.LocalSignatureToken);
             Assert.Equal(diskMethodBody.ExceptionRegionCount, dumpBackedMethodBody.ExceptionRegionCount);
+
+            AssertFatMethodBodyEvidence(session, module, targetAssemblyPath);
+
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 session.ReadMethodBody(module, new string('T', 4_097), "RetOnly"));
             Assert.Throws<ArgumentOutOfRangeException>(() =>

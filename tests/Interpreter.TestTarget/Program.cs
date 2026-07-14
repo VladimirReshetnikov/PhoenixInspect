@@ -8,6 +8,26 @@ internal static class Program
     {
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static int FatBodyWithLocalsAndExceptionRegions(int value)
+    {
+        int result;
+        try
+        {
+            result = checked(value + 1);
+        }
+        catch (OverflowException)
+        {
+            result = int.MaxValue;
+        }
+        finally
+        {
+            GC.KeepAlive(value);
+        }
+
+        return result;
+    }
+
     private static int Main(string[] args)
     {
         if (args is ["--harness-invalid-readiness"])
@@ -42,6 +62,11 @@ internal static class Program
         }
 
         RetOnly();
+        if (FatBodyWithLocalsAndExceptionRegions(41) != 42)
+        {
+            return 74;
+        }
+
         var dumpProbeRoot = GCHandle.Alloc(
             new DumpProbe(
                 marker: 0x13579BDF,
