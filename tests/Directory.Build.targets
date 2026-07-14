@@ -1,0 +1,11 @@
+<Project>
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' Or '$(MSBuildProjectName)' == 'Interpreter.TestTarget'">
+    <Compile Include="$(MSBuildThisFileDirectory)TestInfrastructure\HeadlessTestProcess.cs"
+             Link="TestInfrastructure\HeadlessTestProcess.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)TestInfrastructure\HeadlessTestProcessTests.cs"
+             Link="TestInfrastructure\HeadlessTestProcessTests.cs" />
+  </ItemGroup>
+</Project>

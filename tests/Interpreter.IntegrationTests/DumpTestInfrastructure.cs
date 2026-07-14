@@ -126,6 +126,9 @@ internal sealed class TestTargetRunner : IDisposable
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                ErrorDialog = false,
             },
         };
         foreach (var argument in arguments)
@@ -225,6 +228,7 @@ internal sealed class TestTargetRunner : IDisposable
         startInfo.Environment["TEMP"] = isolatedDirectory;
         startInfo.Environment["TMP"] = isolatedDirectory;
         startInfo.Environment["DOTNET_EnableDiagnostics"] = "1";
+        startInfo.Environment["DOTNET_DISABLE_GUI_ERRORS"] = "1";
     }
 
     private static void CopyEnvironmentVariableIfPresent(ProcessStartInfo startInfo, string name)

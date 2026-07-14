@@ -3,6 +3,7 @@
     <AssemblyName>Interpreter.IntegrationTests</AssemblyName>
     <RootNamespace>Interpreter.IntegrationTests</RootNamespace>
     <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
