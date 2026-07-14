@@ -51,10 +51,19 @@ internal sealed class ClrmdProcessMemoryReader : IProcessMemoryReader, IDisposab
         var buffer = ArrayPool<byte>.Shared.Rent(length);
         try
         {
-            var bytesRead = _reader.Read(address, buffer.AsSpan(0, length));
+            int bytesRead;
+            try
+            {
+                bytesRead = _reader.Read(address, buffer.AsSpan(0, length));
+            }
+            catch (Exception exception) when (IsExpectedBackendReadFailure(exception))
+            {
+                return MemoryReadResult.Create(SourceId, address, length, ReadOnlySpan<byte>.Empty);
+            }
+
             if ((uint)bytesRead > (uint)length)
             {
-                throw new InvalidDataException($"ClrMD returned an invalid byte count {bytesRead} for a {length}-byte read.");
+                return MemoryReadResult.Create(SourceId, address, length, ReadOnlySpan<byte>.Empty);
             }
 
             return MemoryReadResult.Create(SourceId, address, length, buffer.AsSpan(0, bytesRead));
@@ -69,4 +78,12 @@ internal sealed class ClrmdProcessMemoryReader : IProcessMemoryReader, IDisposab
     {
         _disposed = true;
     }
+
+    private static bool IsExpectedBackendReadFailure(Exception exception) =>
+        exception is ClrDiagnosticsException or
+            BadImageFormatException or
+            InvalidDataException or
+            IOException or
+            UnauthorizedAccessException or
+            OverflowException;
 }
