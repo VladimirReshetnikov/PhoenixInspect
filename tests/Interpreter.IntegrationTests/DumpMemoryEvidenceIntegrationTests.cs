@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using Interpreter.Core.Abstractions;
 using Interpreter.Core.Execution;
 using Interpreter.Domain.Concrete;
@@ -373,6 +374,20 @@ public sealed class DumpMemoryEvidenceIntegrationTests
                 Assert.Single(session.FindModulesByFileName("Interpreter.TestTarget.dll")).Identity);
             Assert.Throws<ObjectDisposedException>(() => sessionOwnedMemory.Read(module.MetadataAddress, 1));
             session.Dispose();
+
+            var trustedDacPath = Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "mscordaccore.dll");
+            Assert.True(File.Exists(trustedDacPath), "The supported Windows runner must carry its matching DAC.");
+            var brokeredStream = new FileStream(dumpPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var brokeredOpen = ClrmdDumpSession.OpenBrokered(
+                brokeredStream,
+                "inherited-dump",
+                trustedDacPath);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, brokeredOpen.Status);
+            using var brokeredSession = brokeredOpen.Value
+                ?? throw new InvalidOperationException("Exact brokered dump-open result carried no session.");
+            Assert.True(brokeredSession.UsesExplicitDac);
+            Assert.True(brokeredSession.IsOfflineLocatorInstalled);
+            Assert.Equal(session.Snapshot, brokeredSession.Snapshot);
         }
         finally
         {

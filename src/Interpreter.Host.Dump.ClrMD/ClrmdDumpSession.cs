@@ -35,7 +35,7 @@ public sealed class ClrmdDumpSession : IDisposable
     private const int MaximumStringCharacters = 1_048_576;
     private const long MaximumExternalDumpFileSize = 8L * 1_024 * 1_024 * 1_024;
     private const long MaximumClrmdDumpCacheSize = 256L * 1_024 * 1_024;
-    private readonly FileStream _dumpStream;
+    private readonly Stream _dumpStream;
     private readonly DataTarget _dataTarget;
     private readonly ClrRuntime _runtime;
     private readonly ClrmdProcessMemoryReader _memory;
@@ -44,7 +44,7 @@ public sealed class ClrmdDumpSession : IDisposable
     private bool _disposed;
 
     private ClrmdDumpSession(
-        FileStream dumpStream,
+        Stream dumpStream,
         DataTarget dataTarget,
         ClrRuntime runtime,
         ClrmdSnapshotIdentity snapshot,
@@ -102,6 +102,12 @@ public sealed class ClrmdDumpSession : IDisposable
         _dataTarget.CacheOptions.MaxDumpCacheSize == MaximumClrmdDumpCacheSize &&
         !_dataTarget.CacheOptions.CacheStackTraces &&
         !_dataTarget.CacheOptions.CacheStackRoots;
+
+    /// <summary>
+    /// Gets whether runtime creation used a broker-selected explicit DAC rather than ClrMD's ambient DAC search.
+    /// </summary>
+    /// <remarks>This internal diagnostic exists for the external-worker containment tests.</remarks>
+    internal bool UsesExplicitDac { get; private init; }
 
     /// <summary>
     /// Gets managed module-instance evidence sorted by snapshot-scoped runtime identity.
@@ -202,6 +208,96 @@ public sealed class ClrmdDumpSession : IDisposable
         }
 
         var dumpStream = new FileStream(dumpPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return LoadCore(dumpStream, GetTargetFileName(dumpPath), explicitDacPath: null);
+    }
+
+    /// <summary>
+    /// Opens a broker-owned read-only dump stream and creates the runtime with one explicitly selected DAC.
+    /// </summary>
+    /// <param name="dumpStream">
+    /// A readable, seekable, non-writable stream. Ownership transfers to the returned session or, on failure, to
+    /// this method for disposal.
+    /// </param>
+    /// <param name="displayName">A payload-safe display name used only by ClrMD diagnostics.</param>
+    /// <param name="explicitDacPath">
+    /// Full path selected and trust-validated by the external broker. ClrMD mismatch checks remain enabled.
+    /// </param>
+    /// <returns>An exact session or a typed non-success result; artifact content never escapes through exceptions.</returns>
+    /// <remarks>
+    /// This is intentionally internal: the public path-based opener remains limited to trusted fixtures, while the
+    /// external worker owns handle inheritance, AppContainer confinement, and DAC allowlisting.
+    /// </remarks>
+    internal static ClrmdEvidenceResult<ClrmdDumpSession> OpenBrokered(
+        Stream dumpStream,
+        string displayName,
+        string explicitDacPath)
+    {
+        ArgumentNullException.ThrowIfNull(dumpStream);
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            throw new ArgumentException("A payload-safe dump display name is required.", nameof(displayName));
+        }
+
+        if (string.IsNullOrWhiteSpace(explicitDacPath) || !Path.IsPathFullyQualified(explicitDacPath))
+        {
+            throw new ArgumentException("A fully qualified trusted DAC path is required.", nameof(explicitDacPath));
+        }
+
+        try
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Exact,
+                ClrmdValueIssue.None,
+                LoadCore(dumpStream, GetTargetFileName(displayName), explicitDacPath));
+        }
+        catch (DumpArtifactLimitExceededException)
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.LimitExceeded);
+        }
+        catch (NotSupportedException)
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.RuntimeUnsupported);
+        }
+        catch (Exception exception) when (
+            exception is BadImageFormatException or InvalidDataException or ClrDiagnosticsException or
+            ArgumentException or InvalidOperationException or OverflowException)
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.ArtifactInvalid);
+        }
+        catch (IOException)
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.ArtifactUnavailable);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.ArtifactUnavailable);
+        }
+    }
+
+    private static ClrmdDumpSession LoadCore(
+        Stream dumpStream,
+        string displayName,
+        string? explicitDacPath)
+    {
+        ArgumentNullException.ThrowIfNull(dumpStream);
+        if (!dumpStream.CanRead || !dumpStream.CanSeek || dumpStream.CanWrite)
+        {
+            dumpStream.Dispose();
+            throw new ArgumentException(
+                "Dump evidence must arrive through a readable, seekable, non-writable stream.",
+                nameof(dumpStream));
+        }
+
         DataTarget? dataTarget = null;
         ClrRuntime? runtime = null;
 
@@ -220,7 +316,7 @@ public sealed class ClrmdDumpSession : IDisposable
                 CacheStackRoots = false,
             };
             dataTarget = DataTarget.LoadDump(
-                GetTargetFileName(dumpPath),
+                displayName,
                 dumpStream,
                 cacheOptions,
                 leaveOpen: true);
@@ -237,7 +333,9 @@ public sealed class ClrmdDumpSession : IDisposable
                     $"The walking-skeleton adapter requires one CLR runtime, but the dump contains {dataTarget.ClrVersions.Length}.");
             }
 
-            runtime = dataTarget.ClrVersions[0].CreateRuntime();
+            runtime = explicitDacPath is null
+                ? dataTarget.ClrVersions[0].CreateRuntime()
+                : dataTarget.ClrVersions[0].CreateRuntime(explicitDacPath, ignoreMismatch: false);
             var projectedModules = new List<(ClrmdModuleInfo Info, ClrModule RuntimeModule)>();
 
             foreach (var module in runtime.EnumerateModules())
@@ -284,7 +382,10 @@ public sealed class ClrmdDumpSession : IDisposable
                 memory,
                 modules,
                 runtimeModules,
-                moduleInfos);
+                moduleInfos)
+            {
+                UsesExplicitDac = explicitDacPath is not null,
+            };
         }
         catch
         {
