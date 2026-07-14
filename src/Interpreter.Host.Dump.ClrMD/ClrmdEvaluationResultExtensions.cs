@@ -55,18 +55,23 @@ public static class ClrmdEvaluationResultExtensions
     /// <typeparam name="TValue">The immutable adapter value projection.</typeparam>
     /// <param name="result">The adapter result to project.</param>
     /// <returns>
-    /// An observation result with no effects and stable issue diagnostics. For an integer-field observation, retained
-    /// partial bytes do not constitute a scalar answer unless the integer was decoded. Operation-specific deterministic
-    /// bounds remain available through <see cref="ClrmdEvidenceResult{TValue}.AppliedBounds"/> for the caller to place in its
-    /// evidence context.
+    /// An observation result with no effects and stable issue diagnostics. For integer and nullable-integer field
+    /// observations, retained partial bytes do not constitute a scalar answer unless the integer was decoded; an
+    /// exactly observed nullable absence is itself a complete answer. Operation-specific deterministic bounds remain
+    /// available through <see cref="ClrmdEvidenceResult{TValue}.AppliedBounds"/> for the caller to place in its evidence
+    /// context.
     /// </returns>
     public static EvaluationResult<TValue> ToObservationResult<TValue>(this ClrmdEvidenceResult<TValue> result)
         where TValue : class
     {
         ArgumentNullException.ThrowIfNull(result);
-        var hasAnswer = result.Value is ClrmdInt32FieldObservation integerObservation
-            ? integerObservation.Value is not null
-            : result.HasValue;
+        var hasAnswer = result.Value switch
+        {
+            ClrmdInt32FieldObservation integerObservation => integerObservation.Value is not null,
+            ClrmdNullableInt32FieldObservation nullableObservation =>
+                nullableObservation.IsNull || nullableObservation.Value is not null,
+            _ => result.HasValue,
+        };
         return ProjectEvidenceResult(result, hasAnswer);
     }
 

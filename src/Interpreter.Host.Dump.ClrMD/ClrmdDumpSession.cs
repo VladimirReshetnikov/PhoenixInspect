@@ -717,6 +717,7 @@ public sealed class ClrmdDumpSession : IDisposable
                 : ClrmdValueIssue.None;
 
         return new ClrmdHeapObjectSearchResult(
+            Snapshot,
             status,
             issue,
             handlesScanned,
@@ -811,14 +812,39 @@ public sealed class ClrmdDumpSession : IDisposable
                     appliedBounds: appliedBounds);
             }
 
+            var runtimeFieldType = runtimeField.Type;
+            ClrmdNullableInt32FieldLayout? nullableInt32Layout = null;
+            if (IsNullableInt32RuntimeField(runtimeField, runtimeFieldType))
+            {
+                var nullableLayoutResult = SelectNullableInt32FieldLayout(
+                    runtimeFieldType!,
+                    address,
+                    runtimeField.Size);
+                appliedBounds = MergeAppliedBounds(appliedBounds, nullableLayoutResult.AppliedBounds);
+                if (nullableLayoutResult.Status != ClrmdEvidenceStatus.Exact)
+                {
+                    return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(
+                        nullableLayoutResult.Status,
+                        nullableLayoutResult.Issue,
+                        appliedBounds: appliedBounds);
+                }
+
+                nullableInt32Layout = nullableLayoutResult.Value;
+            }
+
             var field = new ClrmdInstanceFieldInfo(
+                Snapshot,
+                obj.Address,
+                obj.MethodTable,
+                obj.TypeName,
                 runtimeField.Name ?? fieldName,
                 runtimeField.Token,
                 address,
                 runtimeField.Size,
                 runtimeField.IsObjectReference,
                 runtimeField.ElementType.ToString(),
-                runtimeField.Type?.Name);
+                runtimeFieldType?.Name,
+                nullableInt32Layout);
             return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(
                 ClrmdEvidenceStatus.Exact,
                 ClrmdValueIssue.None,
@@ -859,14 +885,57 @@ public sealed class ClrmdDumpSession : IDisposable
                 appliedBounds: fieldResult.AppliedBounds);
         }
 
-        var field = fieldResult.Value!;
+        return ReadInt32FieldCore(obj, fieldResult.Value!, fieldResult.AppliedBounds);
+    }
+
+    /// <summary>
+    /// Reads and decodes one already-selected Int32 instance field without repeating runtime member selection.
+    /// </summary>
+    /// <param name="obj">The exact immutable owner against which <paramref name="field"/> was selected.</param>
+    /// <param name="field">
+    /// An immutable descriptor returned by <see cref="GetInstanceField(ClrmdHeapObjectInfo, string)"/> for
+    /// <paramref name="obj"/>.
+    /// </param>
+    /// <returns>
+    /// An exact decoded value, or typed conflict/unavailable/invalid evidence. A short raw read is retained in a
+    /// non-exact observation but is never decoded with a fabricated suffix. No field-catalog traversal bound is
+    /// reported because this overload consumes an already-selected descriptor.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="obj"/> or <paramref name="field"/> is <see langword="null"/>.
+    /// </exception>
+    public ClrmdEvidenceResult<ClrmdInt32FieldObservation> ReadInt32Field(
+        ClrmdHeapObjectInfo obj,
+        ClrmdInstanceFieldInfo field) =>
+        ReadInt32FieldCore(
+            obj,
+            field,
+            ImmutableArray<EvaluationDeterministicBound>.Empty);
+
+    private ClrmdEvidenceResult<ClrmdInt32FieldObservation> ReadInt32FieldCore(
+        ClrmdHeapObjectInfo obj,
+        ClrmdInstanceFieldInfo field,
+        ImmutableArray<EvaluationDeterministicBound> appliedBounds)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(obj);
+        ArgumentNullException.ThrowIfNull(field);
+        var ownerIssue = ValidateBoundFieldOwner(obj, field);
+        if (ownerIssue != ClrmdValueIssue.None)
+        {
+            return ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ownerIssue,
+                appliedBounds: appliedBounds);
+        }
+
         if (field.Size != sizeof(int) || field.IsObjectReference ||
             !string.Equals(field.ElementType, nameof(ClrElementType.Int32), StringComparison.Ordinal))
         {
             return ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 ClrmdEvidenceStatus.Conflict,
                 ClrmdValueIssue.TypeMismatch,
-                appliedBounds: fieldResult.AppliedBounds);
+                appliedBounds: appliedBounds);
         }
 
         MemoryReadResult memory;
@@ -879,7 +948,7 @@ public sealed class ClrmdDumpSession : IDisposable
             return ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
-                appliedBounds: fieldResult.AppliedBounds);
+                appliedBounds: appliedBounds);
         }
         var value = memory.Status == MemoryReadStatus.Exact
             ? BinaryPrimitives.ReadInt32LittleEndian(memory.Bytes.AsSpan())
@@ -893,19 +962,220 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdValueIssue.None,
                 observation,
                 ImmutableArray.Create(memory),
-                fieldResult.AppliedBounds),
+                appliedBounds),
             MemoryReadStatus.Partial => ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 ClrmdEvidenceStatus.Partial,
                 ClrmdValueIssue.MemoryUnavailable,
                 observation,
                 ImmutableArray.Create(memory),
-                fieldResult.AppliedBounds),
+                appliedBounds),
             _ => ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 ClrmdEvidenceStatus.Unavailable,
                 ClrmdValueIssue.MemoryUnavailable,
                 observation,
                 ImmutableArray.Create(memory),
-                fieldResult.AppliedBounds),
+                appliedBounds),
+        };
+    }
+
+    /// <summary>
+    /// Selects and decodes one supported nullable Int32 instance field from counted dump-memory evidence.
+    /// </summary>
+    /// <param name="obj">Object selected from this session.</param>
+    /// <param name="fieldName">Exact metadata name of a <see cref="Nullable{T}"/> field specialized with Int32.</param>
+    /// <returns>
+    /// An exact present integer, exact null, or typed partial/unavailable/conflicting/invalid evidence. Exact null
+    /// reads only the nested presence flag; the payload is neither required nor read.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="obj"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="fieldName"/> is empty or whitespace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="fieldName"/> exceeds the deterministic lookup bound.
+    /// </exception>
+    public ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation> ReadNullableInt32Field(
+        ClrmdHeapObjectInfo obj,
+        string fieldName)
+    {
+        var fieldResult = GetInstanceField(obj, fieldName);
+        if (fieldResult.Status != ClrmdEvidenceStatus.Exact)
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                fieldResult.Status,
+                fieldResult.Issue,
+                appliedBounds: fieldResult.AppliedBounds);
+        }
+
+        return ReadNullableInt32FieldCore(obj, fieldResult.Value!, fieldResult.AppliedBounds);
+    }
+
+    /// <summary>
+    /// Decodes one already-selected nullable Int32 field without repeating outer or nested member selection.
+    /// </summary>
+    /// <param name="obj">The exact immutable owner against which <paramref name="field"/> was selected.</param>
+    /// <param name="field">
+    /// An immutable descriptor whose nullable child layout was selected and frozen by
+    /// <see cref="GetInstanceField(ClrmdHeapObjectInfo, string)"/>.
+    /// </param>
+    /// <returns>
+    /// An exact present integer, exact null, or typed partial/unavailable/conflicting/invalid evidence. This overload
+    /// performs counted memory reads only and reports no member-traversal bound of its own.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="obj"/> or <paramref name="field"/> is <see langword="null"/>.
+    /// </exception>
+    public ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation> ReadNullableInt32Field(
+        ClrmdHeapObjectInfo obj,
+        ClrmdInstanceFieldInfo field) =>
+        ReadNullableInt32FieldCore(
+            obj,
+            field,
+            ImmutableArray<EvaluationDeterministicBound>.Empty);
+
+    private ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation> ReadNullableInt32FieldCore(
+        ClrmdHeapObjectInfo obj,
+        ClrmdInstanceFieldInfo field,
+        ImmutableArray<EvaluationDeterministicBound> appliedBounds)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(obj);
+        ArgumentNullException.ThrowIfNull(field);
+        var ownerIssue = ValidateBoundFieldOwner(obj, field);
+        if (ownerIssue != ClrmdValueIssue.None)
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ownerIssue,
+                appliedBounds: appliedBounds);
+        }
+
+        var layout = field.NullableInt32Layout;
+        if (!field.IsNullableInt32 || layout is null ||
+            field.IsObjectReference ||
+            !string.Equals(field.ElementType, nameof(ClrElementType.Struct), StringComparison.Ordinal) ||
+            layout.HasValueSize != sizeof(byte) ||
+            layout.ValueSize != sizeof(int))
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch,
+                appliedBounds: appliedBounds);
+        }
+
+        MemoryReadResult hasValueMemory;
+        try
+        {
+            hasValueMemory = Memory.Read(layout.HasValueAddress, sizeof(byte));
+        }
+        catch (Exception exception) when (exception is InvalidDataException or ArgumentOutOfRangeException)
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                appliedBounds: appliedBounds);
+        }
+
+        var evidence = ImmutableArray.CreateBuilder<MemoryReadResult>(2);
+        evidence.Add(hasValueMemory);
+        if (hasValueMemory.Status != MemoryReadStatus.Exact)
+        {
+            var unavailableObservation = new ClrmdNullableInt32FieldObservation(
+                field,
+                hasValueMemory,
+                valueMemory: null,
+                hasValue: null,
+                value: null);
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ToEvidenceStatus(hasValueMemory.Status),
+                ClrmdValueIssue.MemoryUnavailable,
+                unavailableObservation,
+                evidence.ToImmutable(),
+                appliedBounds);
+        }
+
+        var flagByte = hasValueMemory.Bytes[0];
+        if (flagByte is not (0 or 1))
+        {
+            var invalidObservation = new ClrmdNullableInt32FieldObservation(
+                field,
+                hasValueMemory,
+                valueMemory: null,
+                hasValue: null,
+                value: null);
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                invalidObservation,
+                evidence.ToImmutable(),
+                appliedBounds);
+        }
+
+        if (flagByte == 0)
+        {
+            var nullObservation = new ClrmdNullableInt32FieldObservation(
+                field,
+                hasValueMemory,
+                valueMemory: null,
+                hasValue: false,
+                value: null);
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Exact,
+                ClrmdValueIssue.None,
+                nullObservation,
+                evidence.ToImmutable(),
+                appliedBounds);
+        }
+
+        MemoryReadResult valueMemory;
+        try
+        {
+            valueMemory = Memory.Read(layout.ValueAddress, sizeof(int));
+        }
+        catch (Exception exception) when (exception is InvalidDataException or ArgumentOutOfRangeException)
+        {
+            var invalidObservation = new ClrmdNullableInt32FieldObservation(
+                field,
+                hasValueMemory,
+                valueMemory: null,
+                hasValue: true,
+                value: null);
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                invalidObservation,
+                evidence.ToImmutable(),
+                appliedBounds);
+        }
+
+        evidence.Add(valueMemory);
+        var value = valueMemory.Status == MemoryReadStatus.Exact
+            ? BinaryPrimitives.ReadInt32LittleEndian(valueMemory.Bytes.AsSpan())
+            : (int?)null;
+        var observation = new ClrmdNullableInt32FieldObservation(
+            field,
+            hasValueMemory,
+            valueMemory,
+            hasValue: true,
+            value);
+        return valueMemory.Status switch
+        {
+            MemoryReadStatus.Exact => ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Exact,
+                ClrmdValueIssue.None,
+                observation,
+                evidence.ToImmutable(),
+                appliedBounds),
+            MemoryReadStatus.Partial => ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Partial,
+                ClrmdValueIssue.MemoryUnavailable,
+                observation,
+                evidence.ToImmutable(),
+                appliedBounds),
+            _ => ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.MemoryUnavailable,
+                observation,
+                evidence.ToImmutable(),
+                appliedBounds),
         };
     }
 
@@ -930,19 +1200,50 @@ public sealed class ClrmdDumpSession : IDisposable
         string fieldName,
         int maximumCharacters)
     {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(obj);
-        if (string.IsNullOrWhiteSpace(fieldName))
+        if (maximumCharacters < 0)
         {
-            throw new ArgumentException("A field name is required.", nameof(fieldName));
+            throw new ArgumentOutOfRangeException(nameof(maximumCharacters));
         }
 
-        if (fieldName.Length > MaximumRuntimeFieldNameCharacters)
+        var fieldResult = GetInstanceField(obj, fieldName);
+        if (fieldResult.Status != ClrmdEvidenceStatus.Exact)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(fieldName),
-                $"Runtime field names are limited to {MaximumRuntimeFieldNameCharacters} characters.");
+            return CreateStringObservation(
+                fieldResult.Status,
+                fieldResult.Issue,
+                obj,
+                fieldName,
+                ImmutableArray.CreateBuilder<MemoryReadResult>());
         }
+
+        return ReadStringField(obj, fieldResult.Value!, maximumCharacters);
+    }
+
+    /// <summary>
+    /// Reads an already-selected string instance field without repeating runtime member selection.
+    /// </summary>
+    /// <param name="obj">The exact immutable owner against which <paramref name="field"/> was selected.</param>
+    /// <param name="field">
+    /// An immutable descriptor returned by <see cref="GetInstanceField(ClrmdHeapObjectInfo, string)"/> for
+    /// <paramref name="obj"/>.
+    /// </param>
+    /// <param name="maximumCharacters">Caller observation cap. Values above the adapter hard cap are still bounded.</param>
+    /// <returns>
+    /// An exact string or null observation, a known prefix with partial status, or an unavailable observation with a
+    /// structured issue. No missing byte is interpreted as a default character, length, reference, or null.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="obj"/> or <paramref name="field"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maximumCharacters"/> is negative.</exception>
+    public ClrmdStringFieldObservation ReadStringField(
+        ClrmdHeapObjectInfo obj,
+        ClrmdInstanceFieldInfo field,
+        int maximumCharacters)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(obj);
+        ArgumentNullException.ThrowIfNull(field);
 
         if (maximumCharacters < 0)
         {
@@ -952,66 +1253,31 @@ public sealed class ClrmdDumpSession : IDisposable
         var evidence = ImmutableArray.CreateBuilder<MemoryReadResult>();
         try
         {
-        if (obj.Snapshot != Snapshot)
+        var ownerIssue = ValidateBoundFieldOwner(obj, field);
+        if (ownerIssue != ClrmdValueIssue.None)
         {
             return CreateStringObservation(
                 ClrmdEvidenceStatus.Conflict,
-                ClrmdValueIssue.SnapshotMismatch,
+                ownerIssue,
                 obj,
-                fieldName,
-                evidence);
+                field.Name,
+                evidence,
+                field.MetadataToken,
+                field.Address);
         }
 
-        var runtimeObject = _runtime.Heap.GetObject(obj.Address);
-        var runtimeType = runtimeObject.Type;
-        if (!runtimeObject.IsValid || runtimeType is null)
-        {
-            return CreateStringObservation(
-                ClrmdEvidenceStatus.Unavailable,
-                ClrmdValueIssue.ObjectUnavailable,
-                obj,
-                fieldName,
-                evidence);
-        }
-
-        if (runtimeType.MethodTable != obj.MethodTable ||
-            !string.Equals(runtimeType.Name, obj.TypeName, StringComparison.Ordinal))
+        var fieldAddress = field.Address;
+        if (!field.IsObjectReference ||
+            field.Size != Memory.PointerSize ||
+            !string.Equals(field.ElementType, nameof(ClrElementType.String), StringComparison.Ordinal))
         {
             return CreateStringObservation(
                 ClrmdEvidenceStatus.Conflict,
                 ClrmdValueIssue.TypeMismatch,
                 obj,
-                fieldName,
-                evidence);
-        }
-
-        var fieldSelection = SelectInstanceField(runtimeType, fieldName);
-        if (fieldSelection.Status != ClrmdEvidenceStatus.Exact)
-        {
-            return CreateStringObservation(
-                fieldSelection.Status,
-                fieldSelection.Issue,
-                obj,
-                fieldName,
-                evidence);
-        }
-
-        var runtimeField = fieldSelection.Value!;
-        var fieldAddress = runtimeField.GetAddress(obj.Address, interior: false);
-        if (runtimeField.ElementType != ClrElementType.String ||
-            !IsRangeWithinExtent(obj.Address, runtimeObject.Size, fieldAddress, Memory.PointerSize))
-        {
-            return CreateStringObservation(
-                runtimeField.ElementType == ClrElementType.String
-                    ? ClrmdEvidenceStatus.Invalid
-                    : ClrmdEvidenceStatus.Conflict,
-                runtimeField.ElementType == ClrElementType.String
-                    ? ClrmdValueIssue.InvalidData
-                    : ClrmdValueIssue.TypeMismatch,
-                obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress);
         }
 
@@ -1023,9 +1289,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ToEvidenceStatus(referenceRead.Status),
                 ClrmdValueIssue.MemoryUnavailable,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress);
         }
 
@@ -1035,9 +1301,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress);
         }
 
@@ -1050,8 +1316,8 @@ public sealed class ClrmdDumpSession : IDisposable
                 value: null,
                 targetLength: null,
                 obj.Address,
-                fieldName,
-                runtimeField.Token,
+                field.Name,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress: null,
                 evidence.ToImmutable());
@@ -1065,9 +1331,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ToEvidenceStatus(methodTableRead.Status),
                 ClrmdValueIssue.MemoryUnavailable,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress);
         }
@@ -1078,9 +1344,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress);
         }
@@ -1092,9 +1358,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress);
         }
@@ -1105,9 +1371,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Conflict,
                 ClrmdValueIssue.TypeMismatch,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress);
         }
@@ -1118,9 +1384,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress);
         }
@@ -1131,9 +1397,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress);
         }
@@ -1146,9 +1412,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ToEvidenceStatus(lengthRead.Status),
                 ClrmdValueIssue.MemoryUnavailable,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress);
         }
@@ -1160,9 +1426,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress,
                 targetLength);
@@ -1178,9 +1444,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress,
                 targetLength);
@@ -1193,9 +1459,9 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
+                field.Name,
                 evidence,
-                runtimeField.Token,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress,
                 targetLength);
@@ -1215,8 +1481,8 @@ public sealed class ClrmdDumpSession : IDisposable
                 value,
                 targetLength,
                 obj.Address,
-                fieldName,
-                runtimeField.Token,
+                field.Name,
+                field.MetadataToken,
                 fieldAddress,
                 stringAddress,
                 evidence.ToImmutable());
@@ -1231,8 +1497,8 @@ public sealed class ClrmdDumpSession : IDisposable
             value,
             targetLength,
             obj.Address,
-            fieldName,
-            runtimeField.Token,
+            field.Name,
+            field.MetadataToken,
             fieldAddress,
             stringAddress,
             evidence.ToImmutable());
@@ -1244,8 +1510,10 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Invalid,
                 ClrmdValueIssue.InvalidData,
                 obj,
-                fieldName,
-                evidence);
+                field.Name,
+                evidence,
+                field.MetadataToken,
+                field.Address);
         }
     }
 
@@ -1589,6 +1857,166 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdValueIssue.None,
                 match,
                 appliedBounds: appliedBounds);
+    }
+
+    private static bool IsNullableInt32RuntimeField(
+        ClrInstanceField runtimeField,
+        ClrType? runtimeFieldType) =>
+        runtimeField.ElementType == ClrElementType.Struct &&
+        runtimeFieldType?.IsValueType == true &&
+        string.Equals(
+            runtimeFieldType.Name,
+            "System.Nullable<System.Int32>",
+            StringComparison.Ordinal);
+
+    private static ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout> SelectNullableInt32FieldLayout(
+        ClrType runtimeType,
+        ulong outerFieldAddress,
+        int outerFieldSize)
+    {
+        var fields = runtimeType.Fields;
+        if (fields.IsDefault)
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData);
+        }
+
+        var appliedBounds = InstanceFieldTraversalBounds;
+        if (fields.Length > MaximumRuntimeInstanceFieldCount)
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout>.Create(
+                ClrmdEvidenceStatus.Partial,
+                ClrmdValueIssue.LimitExceeded,
+                appliedBounds: appliedBounds);
+        }
+
+        ClrInstanceField? hasValueField = null;
+        ClrInstanceField? valueField = null;
+        foreach (var candidate in fields)
+        {
+            if (string.Equals(candidate.Name, "hasValue", StringComparison.Ordinal))
+            {
+                if (hasValueField is not null)
+                {
+                    return ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout>.Create(
+                        ClrmdEvidenceStatus.Conflict,
+                        ClrmdValueIssue.AmbiguousMatch,
+                        appliedBounds: appliedBounds);
+                }
+
+                hasValueField = candidate;
+            }
+            else if (string.Equals(candidate.Name, "value", StringComparison.Ordinal))
+            {
+                if (valueField is not null)
+                {
+                    return ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout>.Create(
+                        ClrmdEvidenceStatus.Conflict,
+                        ClrmdValueIssue.AmbiguousMatch,
+                        appliedBounds: appliedBounds);
+                }
+
+                valueField = candidate;
+            }
+        }
+
+        if (hasValueField is null || valueField is null)
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.FieldUnavailable,
+                appliedBounds: appliedBounds);
+        }
+
+        if (hasValueField.IsObjectReference ||
+            hasValueField.Size != sizeof(byte) ||
+            hasValueField.ElementType != ClrElementType.Boolean ||
+            valueField.IsObjectReference ||
+            valueField.Size != sizeof(int) ||
+            valueField.ElementType != ClrElementType.Int32)
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch,
+                appliedBounds: appliedBounds);
+        }
+
+        var hasValueAddress = hasValueField.GetAddress(outerFieldAddress, interior: true);
+        var valueAddress = valueField.GetAddress(outerFieldAddress, interior: true);
+        if (!IsRangeWithinExtent(
+                outerFieldAddress,
+                (ulong)Math.Max(outerFieldSize, 0),
+                hasValueAddress,
+                hasValueField.Size) ||
+            !IsRangeWithinExtent(
+                outerFieldAddress,
+                (ulong)Math.Max(outerFieldSize, 0),
+                valueAddress,
+                valueField.Size))
+        {
+            return ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                appliedBounds: appliedBounds);
+        }
+
+        return ClrmdEvidenceResult<ClrmdNullableInt32FieldLayout>.Create(
+            ClrmdEvidenceStatus.Exact,
+            ClrmdValueIssue.None,
+            new ClrmdNullableInt32FieldLayout(
+                hasValueField.Token,
+                hasValueAddress,
+                hasValueField.Size,
+                valueField.Token,
+                valueAddress,
+                valueField.Size),
+            appliedBounds: appliedBounds);
+    }
+
+    private ClrmdValueIssue ValidateBoundFieldOwner(
+        ClrmdHeapObjectInfo obj,
+        ClrmdInstanceFieldInfo field)
+    {
+        if (obj.Snapshot != Snapshot || field.Snapshot != Snapshot)
+        {
+            return ClrmdValueIssue.SnapshotMismatch;
+        }
+
+        return field.OwnerAddress != obj.Address ||
+            field.OwnerMethodTable != obj.MethodTable ||
+            !string.Equals(field.OwnerTypeName, obj.TypeName, StringComparison.Ordinal)
+                ? ClrmdValueIssue.TypeMismatch
+                : ClrmdValueIssue.None;
+    }
+
+    private static ImmutableArray<EvaluationDeterministicBound> MergeAppliedBounds(
+        ImmutableArray<EvaluationDeterministicBound> first,
+        ImmutableArray<EvaluationDeterministicBound> second)
+    {
+        if (first.IsDefaultOrEmpty)
+        {
+            return second.IsDefault
+                ? ImmutableArray<EvaluationDeterministicBound>.Empty
+                : second;
+        }
+
+        if (second.IsDefaultOrEmpty)
+        {
+            return first;
+        }
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        var builder = ImmutableArray.CreateBuilder<EvaluationDeterministicBound>(first.Length + second.Length);
+        foreach (var bound in first.Concat(second))
+        {
+            if (names.Add(bound.Name))
+            {
+                builder.Add(bound);
+            }
+        }
+
+        return builder.ToImmutable();
     }
 
     private static ClrmdSnapshotIdentity ComputeSnapshotIdentity(Stream dumpStream)

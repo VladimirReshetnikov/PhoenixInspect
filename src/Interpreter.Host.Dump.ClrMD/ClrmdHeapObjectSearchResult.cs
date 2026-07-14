@@ -9,6 +9,7 @@ namespace Interpreter.Host.Dump.ClrMD;
 public sealed class ClrmdHeapObjectSearchResult
 {
     internal ClrmdHeapObjectSearchResult(
+        ClrmdSnapshotIdentity snapshot,
         ClrmdEvidenceStatus status,
         ClrmdValueIssue issue,
         int handlesScanned,
@@ -18,6 +19,7 @@ public sealed class ClrmdHeapObjectSearchResult
         ImmutableArray<ClrmdHeapObjectInfo> matches,
         ImmutableArray<MemoryReadResult> evidence)
     {
+        Snapshot = snapshot;
         Status = status;
         Issue = issue;
         HandlesScanned = handlesScanned;
@@ -27,6 +29,16 @@ public sealed class ClrmdHeapObjectSearchResult
         Matches = matches;
         Evidence = evidence;
     }
+
+    /// <summary>
+    /// Gets the immutable dump identity whose handle catalog produced this result, including an exhaustive or
+    /// truncated result with no retained matches.
+    /// </summary>
+    /// <remarks>
+    /// Hosts must validate this identity before reusing absence, ambiguity, or truncation evidence in another
+    /// evaluation session; an empty match set does not otherwise carry object-level snapshot identity.
+    /// </remarks>
+    public ClrmdSnapshotIdentity Snapshot { get; }
 
     /// <summary>
     /// Gets whether handle traversal was exhaustive, budget-truncated, or invalidated by corrupt runtime evidence.

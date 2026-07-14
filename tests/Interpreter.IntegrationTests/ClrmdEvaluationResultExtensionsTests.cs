@@ -28,13 +28,18 @@ public sealed class ClrmdEvaluationResultExtensionsTests
         var bytes = Enumerable.Range(1, bytesRead).Select(static value => (byte)value).ToArray();
         var memory = MemoryReadResult.Create("dump-sha256:fixture", 0x1020, sizeof(int), bytes);
         var field = new ClrmdInstanceFieldInfo(
-            "Marker",
+            new ClrmdSnapshotIdentity(new string('0', 64)),
+            ownerAddress: 0x1000,
+            ownerMethodTable: 0x2000,
+            ownerTypeName: "Fixture",
+            name: "Marker",
             metadataToken: 0x04000001,
             address: memory.Address,
             size: sizeof(int),
             isObjectReference: false,
             elementType: "Int32",
-            fieldTypeName: "System.Int32");
+            fieldTypeName: "System.Int32",
+            nullableInt32Layout: null);
         var observation = new ClrmdInt32FieldObservation(field, memory, value: null);
         var adapterResult = ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
             adapterStatus,
@@ -68,13 +73,18 @@ public sealed class ClrmdEvaluationResultExtensionsTests
             sizeof(int),
             new byte[] { 0x78, 0x56, 0x34, 0x12 });
         var field = new ClrmdInstanceFieldInfo(
-            "Marker",
+            new ClrmdSnapshotIdentity(new string('0', 64)),
+            ownerAddress: 0x2000,
+            ownerMethodTable: 0x3000,
+            ownerTypeName: "Fixture",
+            name: "Marker",
             metadataToken: 0x04000001,
             address: memory.Address,
             size: sizeof(int),
             isObjectReference: false,
             elementType: "Int32",
-            fieldTypeName: "System.Int32");
+            fieldTypeName: "System.Int32",
+            nullableInt32Layout: null);
         var observation = new ClrmdInt32FieldObservation(field, memory, 0x12345678);
         var adapterResult = ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
             ClrmdEvidenceStatus.Exact,
@@ -90,6 +100,107 @@ public sealed class ClrmdEvaluationResultExtensionsTests
         Assert.Same(observation, projected);
         Assert.Equal(0x12345678, projected.Value);
         Assert.Empty(result.Diagnostics);
+    }
+
+    /// <summary>
+    /// Checks that an exact false nullable flag is a complete null answer and does not require a payload read.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Exact_nullable_false_flag_projects_a_complete_null_without_payload_evidence()
+    {
+        var field = CreateNullableField();
+        var flag = MemoryReadResult.Create(
+            field.Snapshot.MemorySourceId,
+            field.NullableInt32Layout!.HasValueAddress,
+            sizeof(byte),
+            new byte[] { 0 });
+        var observation = new ClrmdNullableInt32FieldObservation(
+            field,
+            flag,
+            valueMemory: null,
+            hasValue: false,
+            value: null);
+        var adapterResult = ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+            ClrmdEvidenceStatus.Exact,
+            ClrmdValueIssue.None,
+            observation,
+            ImmutableArray.Create(flag));
+
+        var result = adapterResult.ToObservationResult();
+
+        Assert.True(observation.IsNull);
+        Assert.Null(observation.ValueMemory);
+        Assert.Equal(EvaluationCompleteness.Complete, result.Completeness);
+        Assert.Same(observation, result.Value);
+        Assert.Single(result.Provenance);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    /// <summary>
+    /// Checks that a true nullable flag plus partial payload remains explanatory evidence without a scalar answer.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Partial_nullable_payload_retains_wrapper_but_projects_no_answer()
+    {
+        var field = CreateNullableField();
+        var layout = field.NullableInt32Layout!;
+        var flag = MemoryReadResult.Create(
+            field.Snapshot.MemorySourceId,
+            layout.HasValueAddress,
+            sizeof(byte),
+            new byte[] { 1 });
+        var payload = MemoryReadResult.Create(
+            field.Snapshot.MemorySourceId,
+            layout.ValueAddress,
+            sizeof(int),
+            new byte[] { 0x34, 0x12 });
+        var observation = new ClrmdNullableInt32FieldObservation(
+            field,
+            flag,
+            payload,
+            hasValue: true,
+            value: null);
+        var adapterResult = ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation>.Create(
+            ClrmdEvidenceStatus.Partial,
+            ClrmdValueIssue.MemoryUnavailable,
+            observation,
+            ImmutableArray.Create(flag, payload));
+
+        var result = adapterResult.ToObservationResult();
+
+        Assert.Same(observation, adapterResult.Value);
+        Assert.False(observation.IsNull);
+        Assert.Equal(EvaluationCompleteness.None, result.Completeness);
+        Assert.Equal(EvaluationEvidenceStatus.Partial, result.Evidence);
+        Assert.Null(result.Value);
+        Assert.Equal(2, result.Provenance.Length);
+        Assert.Equal("DUMP_MEMORY_UNAVAILABLE", Assert.Single(result.Diagnostics).Code);
+    }
+
+    private static ClrmdInstanceFieldInfo CreateNullableField()
+    {
+        var snapshot = new ClrmdSnapshotIdentity(new string('1', 64));
+        return new ClrmdInstanceFieldInfo(
+            snapshot,
+            ownerAddress: 0x4000,
+            ownerMethodTable: 0x5000,
+            ownerTypeName: "Fixture",
+            name: "OptionalMarker",
+            metadataToken: 0x04000002,
+            address: 0x4020,
+            size: 8,
+            isObjectReference: false,
+            elementType: "Struct",
+            fieldTypeName: "System.Nullable<System.Int32>",
+            nullableInt32Layout: new ClrmdNullableInt32FieldLayout(
+                HasValueMetadataToken: 0x04000001,
+                HasValueAddress: 0x4020,
+                HasValueSize: sizeof(byte),
+                ValueMetadataToken: 0x04000002,
+                ValueAddress: 0x4024,
+                ValueSize: sizeof(int)));
     }
 
     private static EvaluationResult<TValue> ProjectGenerically<TValue>(ClrmdEvidenceResult<TValue> result)
