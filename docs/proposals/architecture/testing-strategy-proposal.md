@@ -169,6 +169,10 @@ generated-fixture proof boundary.
 passed all four required jobs at exact W1 closure commit `e2580a8a8`: documentation/headless consistency; the
 15-project zero-warning Release build and fast suites; ordinary real-dump evidence; and optimized-context evidence.
 
+[GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178)
+passed the same four required jobs at exact W2 closure commit `5bed47100`, with all test commands filtered by
+`Scope!=Cybersecurity`.
+
 ### Current local W1–W2 verification — 2026-07-14
 
 Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was skipped and no UI was displayed.
@@ -182,11 +186,10 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 | Ordinary real-dump evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 4/4 at W2 implementation commit `ff7cd1965`, including the 22-case W2 corpus. |
 | Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
 
-The W1 portion of these local results is corroborated by the exact-commit hosted closure run above, so W1 remains
-complete for its revised scope. The added W2 results are local evidence only until the exact pushed W2 closure commit
-passes the required hosted jobs. Restore and build remain repository-wide and compile all 15 projects as topology and
-compilation-health evidence. Every current test command excludes `Scope=Cybersecurity`; the five dedicated hostile-
-artifact corpus facts therefore contribute neither W2 validation nor a cybersecurity claim.
+Both W1 and W2 local results are corroborated by their exact-commit hosted closure runs above. Restore and build remain
+repository-wide and compile all 15 projects as topology and compilation-health evidence. Every current test command
+excludes `Scope=Cybersecurity`; the five dedicated hostile-artifact corpus facts therefore contribute neither W2
+validation nor a cybersecurity claim.
 
 ## 3) Active test layers
 
@@ -355,9 +358,11 @@ Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/
 - Parse/prepare/bound-plan/query behavior is deterministic; every product result is `DerivedQuery`, while its direct
   adapter reads remain `Observation` evidence.
 - Every scenario reproduces complete result bytes/fingerprint across same-session repetition and fresh-session
-  close/reopen/rebind; successfully prepared scenarios also reproduce the canonical plan string
-  projection/fingerprint.
+  close/reopen/rebind; the 13 cases whose preparation succeeds also reproduce the canonical plan projection
+  string/fingerprint.
 - Member access remains read-only and never silently invokes getters, reflection, or user IL.
+- Exact closure commit `5bed47100` passes all required hosted jobs in [GitHub Actions run
+  29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
 
 ### W3 — concrete IL semantics and differential oracle
 

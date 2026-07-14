@@ -184,8 +184,9 @@ literal.
   rebound. It also asserts exact axes,
   diagnostics, context, path bounds, ordered provenance payload, and value-read geometry.
 
-The implementation and full corpus are locally headless-verified. Exact-final-HEAD hosted evidence remains pending,
-so W2 does not yet have a hosted closure claim.
+The implementation and full corpus are locally headless-verified. [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at
+exact W2 closure commit `5bed47100`.
 
 **Later Phase 1 candidates (not W2 v1)**
 
@@ -406,8 +407,8 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
 * **W0:** truthful baseline, CI, and deterministic smoke evidence.
 * **W1:** real dump-memory field/string read with typed evidence outcomes.
 * **W2:** restricted query v1 with typed snapshot roots, immutable object/field plans, exact
-  `String`/`Int32`/`Nullable<Int32>` behavior, and complete-corpus canonical replay; implementation and local
-  headless verification are complete, while exact-final-HEAD hosted evidence remains pending.
+  `String`/`Int32`/`Nullable<Int32>` behavior, and complete-corpus canonical replay; complete for its
+  non-cybersecurity scope at exact closure commit `5bed47100`.
 * **W3:** scenario-derived concrete IL slice plus CoreCLR differential oracle.
 * **W4:** decomposed, evidence-gated unknown-aware counterfactual method evaluation.
 

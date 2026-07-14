@@ -154,7 +154,7 @@ Windows job passed 3/3 required dump tests.
 
 That service run is the historical W0 baseline only. It does not contain the later result-context, optimized
 modeled-incident, headless-policy, topology, or external-worker packages. Do not call the later W1 packages CI-enforced until a
-successful hosted run records their exact pushed commit; the external-worker package remains non-gating for W1.
+successful hosted run records their exact pushed commit; the external-worker package remains non-gating for W1 and W2.
 
 [GitHub Actions run
 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs
@@ -165,8 +165,9 @@ Current local verification on 2026-07-14 at W2 implementation commit `ff7cd1965`
 15-project Release build with 0 warnings and 0 errors; 64/64 non-cybersecurity `Interpreter.Tests`; 67/67
 `Category=Fast&Scope!=Cybersecurity` integration
 tests; 4/4 ordinary dump tests (including the 22-case W2 corpus); and 1/1 modeled optimized-context test. Every
-managed command used `Invoke-HeadlessProcess`; there were no skips or UI. Exact pushed-HEAD hosted W2 evidence remains
-pending until the documentation reconciliation commit runs through all four required jobs.
+managed command used `Invoke-HeadlessProcess`; there were no skips or UI. [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) then passed all four required
+jobs at exact W2 closure commit `5bed47100`.
 
 Restore and build remain repository-wide, so all 15 projects are compiled as topology/compilation-health evidence.
 Every current test invocation includes `Scope!=Cybersecurity`; the five dedicated hostile-artifact corpus facts are
@@ -179,6 +180,6 @@ No workflow uploads dumps, target output, heap values, paths, or expression resu
 The generated-fixture W1–W2 path, typed root and immutable plan boundary, nullable-`Int32` evidence, 22-case complete
 replay, foreign-snapshot rejection, Normal-vs-Full sparse-memory case, path-accurate bounds, honest no-answer
 projection, headless workflow guard, and optimized modeled-incident report are implemented and locally verified.
-W1 is complete for its revised scope; W2 awaits only exact pushed-HEAD hosted evidence. Separately landed malformed
-corpus/worker prototypes and representative private-production measurement are not W2 gates. W3 expands the
+W1 and W2 are complete for their revised non-cybersecurity scopes. Separately landed malformed corpus/worker prototypes
+and representative private-production measurement are not W2 gates. W3 expands the
 differential corpus only from scenario-derived compiler IL; opcode counts or percentage targets do not define readiness.

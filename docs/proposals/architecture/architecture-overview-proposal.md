@@ -8,8 +8,8 @@
 
 The funded product direction is a **deterministic, read-only expression evaluator grounded in a .NET dump**. The interpreter is enabling technology for expressions that eventually require user IL; it is not presently a general-purpose execution platform.
 
-The proof obligations are deliberately ordered. The first has exact-HEAD hosted closure evidence; the second has a
-complete implementation and local headless verification, with exact-final-HEAD hosted evidence still pending:
+The proof obligations are deliberately ordered. The first two have exact-HEAD hosted closure evidence for their
+revised non-cybersecurity scopes:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -149,8 +149,9 @@ identity in ordered provenance, and all product results are `DerivedQuery`; adap
 `Observation` results. The versioned corpus has 22 cases spanning 20 distinct expression texts and covers exact, null,
 fallback, typed-root, binding, syntax, type, and partial-string outcomes. Every result and every successfully prepared
 plan projection/fingerprint is identical when repeated within one session and when the dump is reopened, its root
-rediscovered, and the query rebound. This implementation and corpus pass locally; exact-final-HEAD hosted evidence
-remains pending.
+rediscovered, and the query rebound. This implementation and corpus pass locally and at exact W2 closure commit
+`5bed47100` in [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
 
 ### 4.5 Non-gating one-shot external-artifact prototype
 
@@ -228,9 +229,10 @@ The W2 proof applies that stronger test to every case in its versioned corpus, n
 For each of 22 cases spanning 20 distinct expression texts it repeats the pipeline in one session; the 13 cases whose
 preparation succeeds proceed to bound-plan evaluation. It compares the complete canonical result byte sequence and
 result SHA-256 plus those 13 plans' canonical projection strings and plan SHA-256 values, then closes and reopens the
-dump, reconstructs typed root bindings, and reproduces those
-artifacts. Input, request, root-selection, plan, and result identities are versioned and content-derived rather than
-enumeration- or allocation-derived.
+dump, reconstructs typed root bindings, and reproduces those artifacts. Input, request, root-selection, plan, and
+result identities are versioned and content-derived rather than enumeration- or allocation-derived. [GitHub Actions
+run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required
+jobs at exact W2 closure commit `5bed47100`.
 
 ## 8. Status protocols
 

@@ -188,6 +188,9 @@ reproduce the plan's canonical projection string and plan SHA-256. The corpus as
 module/source context, independently expected path bounds, full ordered provenance payload, and value-read geometry;
 value-only equality, replay-only equality, or one representative query does not satisfy this gate.
 
+This gate is satisfied for the non-cybersecurity W2 v1 scope at exact closure commit `5bed47100`; [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs.
+
 ## 10) Expansion rule
 
 W2 v1 is complete when the contract above is implemented, its full scenario corpus is green locally and on the exact

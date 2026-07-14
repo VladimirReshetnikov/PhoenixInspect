@@ -116,7 +116,8 @@ reconstructed; 13 cases proceed from preparation to bound-plan evaluation. Compl
 canonical result byte sequences and result SHA-256 values for all 22 cases, plus canonical plan projection strings and
 plan SHA-256 values for the 13 cases whose preparation succeeds, must match. The same corpus asserts exact axes,
 diagnostics, context, path bounds, ordered provenance payload, and memory-read geometry. The implementation and full
-corpus are locally verified; exact-final-HEAD hosted evidence remains pending.
+corpus are locally verified and passed all four required hosted jobs at exact closure commit `5bed47100` in [GitHub
+Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
 
 ## Deliberately absent
 

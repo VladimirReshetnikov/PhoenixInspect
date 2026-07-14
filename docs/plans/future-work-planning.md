@@ -10,7 +10,7 @@ The only active product target is a **deterministic, read-only expression evalua
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a primitive field, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. It obtains each MethodDef RVA from counted dump metadata and reads the header, code, locals token, padding, and declared extra sections from dump memory; the tiny exact dump-sourced `ret` is executable, while the fat body proves locals and two EH regions without claiming interpreter support for them. The full-content-identified disk PE is only an independent oracle. Separately, a concrete branchless `Int32` kernel is checked against compiler-emitted methods running on CoreCLR. These are architectural proofs, not a production evaluator.
 
-Until W2 passes its remaining exact-HEAD hosted exit gate, the following remain research backlog rather than delivery commitments:
+With W2 closed, the following remain research backlog rather than delivery commitments until their own entry gates pass:
 
 - virtual Step Into/Over/Out, undo, and branch exploration,
 - whole-method CFG/fixpoint abstract interpretation,
@@ -21,12 +21,13 @@ Until W2 passes its remaining exact-HEAD hosted exit gate, the following remain 
 Scope expands only through an explicit decision gate backed by executable evidence.
 
 **Current milestone status:** W1 is complete for its revised non-security evidence scope at exact closure commit
-`e2580a8a8`. W2 v1 implementation and local headless verification are complete at `ff7cd1965`; exact-HEAD hosted
-verification is still pending, so W2 is not yet recorded as closed. Its deliberately narrow contract is the
-[Restricted Dump Query v1 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any
-increment beyond that contract requires an explicit scope decision. Representative private-production measurement is
-outside W1, already-landed worker/corpus code remains separately scoped non-gating prototype work, the concrete W3 work
-is a bounded architecture-risk spike, W3 remains incomplete, and W4 remains gated.
+`e2580a8a8`. W2 v1 is complete for its non-cybersecurity scope at exact closure commit `5bed47100`; [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs.
+Its deliberately narrow contract is the [Restricted Dump Query v1
+Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any increment beyond that contract
+requires an explicit scope decision. Representative private-production measurement is outside W1, already-landed
+worker/corpus code remains separately scoped non-gating prototype work, the concrete W3 work is a bounded
+architecture-risk spike, W3 remains incomplete, and W4 remains gated.
 
 ## 2) LOC sizing and work-in-progress
 
@@ -231,10 +232,10 @@ The final hardening commit's raw diff includes 53 additions that replace lines a
 commits. Its attributable-current-surface column therefore records 1,253 LOC; the total is the exact cumulative
 `.github`/`src`/`tests` diff from `09e980502` through `ff7cd1965`, so each delivered line is counted once.
 
-**Status:** **Implementation complete; local verification complete; exact-HEAD hosted closure pending.** The generated
-strong-root fixture and dump-free contract tests pass headlessly at the `ff7cd1965` implementation state. The eventual
-documentation-closure HEAD has not yet completed its required hosted jobs, so this plan does not claim W2 complete or
-CI green.
+**Status:** **Complete for the non-cybersecurity W2 v1 scope.** The generated strong-root fixture and dump-free contract
+tests pass headlessly at the `ff7cd1965` implementation state. Documentation closure commit `5bed47100` passed all four
+required hosted jobs in [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
 
 The first grammar intentionally supports exactly one exact non-null ordinal root, one direct field through `.`, and
 optional bounded null/`Int32`/string coalescing. The staged parse/bind/plan/evaluate pipeline consumes a typed root
@@ -288,7 +289,8 @@ Evaluate a restricted expression such as `root.OptionalMessage ?? "<missing>"` a
   session and after reopening the same dump and reconstructing its root binding. The 13 cases whose preparation
   succeeds additionally reproduce an equivalent fresh plan's canonical projection string and plan SHA-256 before
   evaluation.
-- The exact pushed documentation-closure HEAD passes the required hosted jobs. This final gate remains pending.
+- The exact pushed documentation-closure commit passes the required hosted jobs. Satisfied by `5bed47100` in [GitHub
+  Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
 
 ### W3 — Concrete IL semantics and differential oracle
 

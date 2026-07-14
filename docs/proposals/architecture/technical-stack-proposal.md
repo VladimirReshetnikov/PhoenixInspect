@@ -268,7 +268,9 @@ required jobs passed at exact W1 closure commit `e2580a8a8` in [GitHub Actions r
 
 That historical W1 run predates the explicit scope filter. At W2 implementation checkpoint `ff7cd1965`, every current
 test command includes `Scope!=Cybersecurity`; restore/build intentionally remains repository-wide across all 15
-projects as topology/compilation-health evidence. Exact-final-HEAD hosted W2 closure remains pending.
+projects as topology/compilation-health evidence. [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
+at exact W2 closure commit `5bed47100`.
 
 Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.
 

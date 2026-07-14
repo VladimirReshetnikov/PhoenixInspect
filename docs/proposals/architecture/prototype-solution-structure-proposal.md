@@ -69,8 +69,9 @@ instance field. Its admitted value domain is `String`, `Int32`, and `Nullable<In
 coalescing. A canonical plan includes the grammar version, root/field names, snapshot-scoped owner and field identity,
 decoder, and exact optional literal; request identity also preserves bounded failures that never produce a plan. The
 full 22-case/20-expression corpus reproduces every result byte sequence/fingerprint and the 13 successfully prepared
-plan projection strings/fingerprints within and across dump sessions. This
-implementation and local headless verification are complete, while exact-final-HEAD hosted evidence remains pending.
+plan projection strings/fingerprints within and across dump sessions. This implementation and local headless
+verification passed all four required hosted jobs at exact closure commit `5bed47100` in [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
 It does not prove exact-null roots, frame/local/argument/static recovery, arbitrary heap-root discovery, chained or
 null-conditional access, properties/getters, calls, indexers, arrays, reflection, construction, general operators,
 user-IL execution, broad IL semantics, or debugger stepping.
@@ -117,7 +118,8 @@ The later filtered W2 v1 local checkpoint `ff7cd1965` passes the 15-project zero
 integration tests, 4 ordinary dump tests (including its 22-case corpus), and 1 optimized-context test. All test
 invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide, including worker
 projects and the integration assembly, as topology/compilation-health evidence only; worker projects/tests provide no
-cybersecurity or milestone behavioral evidence. Exact-final-HEAD hosted evidence has not yet been recorded, so the W1
-run above must not be read as W2 hosted closure evidence.
+cybersecurity or milestone behavioral evidence. [GitHub Actions run
+29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
+at exact W2 closure commit `5bed47100`; the W1 run above remains W1-only history.
 
 The physical layout and contracts remain prototype hypotheses. They may change freely as W1–W4 force better boundaries.
