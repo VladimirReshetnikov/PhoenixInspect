@@ -23,6 +23,7 @@ public static class DumpQueryEngine
     private const int MaximumObservedStringCharacters = 4096;
     private const string GrammarProvenanceId = "dump-query:grammar-v1";
     private const string CoalesceProvenanceId = "dump-query:null-coalesce-v1";
+    private const string RootSelectionProvenanceVersion = "dump-query-root-selection-v1";
     private const string RawMemoryReadBoundName = "dump.memory-read.bytes";
 
     private static readonly EvaluationDeterministicBound ExpressionLengthBound = new(
@@ -54,6 +55,8 @@ public static class DumpQueryEngine
     /// <param name="rootBinding">
     /// Typed host root-selection evidence. Only <see cref="DumpQueryRootBindingStatus.ExactObject"/> can produce a
     /// plan; every other status produces a blocked result that preserves its distinct evidence and applied bounds.
+    /// Search-backed bindings additionally retain the exact type-name predicate, adapter status, and traversal counters
+    /// in deterministic policy provenance.
     /// </param>
     /// <returns>
     /// A successful immutable plan whose member descriptor was selected once, or a complete invalid/blocked result
@@ -125,6 +128,8 @@ public static class DumpQueryEngine
         {
             AppendMemoryProvenance(provenance, rootBinding.Evidence);
         }
+
+        AppendRootSelectionProvenance(provenance, rootBinding);
 
         provenance.Add(new EvaluationProvenance(
             EvaluationProvenanceKind.Policy,
@@ -214,8 +219,9 @@ public static class DumpQueryEngine
     /// <param name="session">The immutable dump session that must contain the plan's bound object and field.</param>
     /// <param name="plan">The exact object-specific plan returned by <see cref="Prepare"/>.</param>
     /// <returns>
-    /// A multi-axis derived-query result. Every outcome includes the plan fingerprint as policy provenance; exact null,
-    /// partial or missing evidence, and decoded scalar/string answers remain distinct.
+    /// A multi-axis derived-query result. Every outcome includes the plan fingerprint and, for a search-backed root,
+    /// the canonical selection predicate/status/counters as policy provenance; exact null, partial or missing evidence,
+    /// and decoded scalar/string answers remain distinct.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="session"/> or <paramref name="plan"/> is <see langword="null"/>.
@@ -234,6 +240,8 @@ public static class DumpQueryEngine
         {
             AppendMemoryProvenance(provenance, plan.RootBinding.Evidence);
         }
+
+        AppendRootSelectionProvenance(provenance, plan.RootBinding);
 
         provenance.Add(new EvaluationProvenance(
             EvaluationProvenanceKind.RuntimeStructure,
@@ -800,6 +808,53 @@ public static class DumpQueryEngine
         foreach (var character in value)
         {
             builder.Append(((int)character).ToString("X4", CultureInfo.InvariantCulture));
+        }
+    }
+
+    internal static EvaluationProvenance? CreateRootSelectionProvenance(DumpQueryRootBinding binding)
+    {
+        ArgumentNullException.ThrowIfNull(binding);
+        if (binding.TypeNameSelector is null)
+        {
+            return null;
+        }
+
+        if (binding.SearchStatus is null ||
+            binding.HandlesScanned is null ||
+            binding.MaximumHandlesScanned is null ||
+            binding.MaximumMatches is null ||
+            binding.MatchesRetained is null ||
+            binding.MatchLimitReached is null)
+        {
+            throw new InvalidOperationException(
+                "A search-backed root binding must retain the complete selector status and traversal counters.");
+        }
+
+        var builder = new StringBuilder();
+        AppendCanonicalString(builder, RootSelectionProvenanceVersion);
+        AppendCanonicalString(builder, binding.TypeNameSelector);
+        AppendCanonicalString(builder, ((int)binding.SearchStatus.Value).ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalString(builder, ((int)binding.Status).ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalString(builder, ((int)binding.Issue).ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalString(builder, binding.HandlesScanned.Value.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalString(builder, binding.MaximumHandlesScanned.Value.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalString(builder, binding.MaximumMatches.Value.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalString(builder, binding.MatchesRetained.Value.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalString(builder, binding.MatchLimitReached.Value ? "1" : "0");
+        var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())))
+            .ToLowerInvariant();
+        return new EvaluationProvenance(
+            EvaluationProvenanceKind.Policy,
+            $"dump-query-root-selection:sha256:{digest}");
+    }
+
+    private static void AppendRootSelectionProvenance(
+        ImmutableArray<EvaluationProvenance>.Builder builder,
+        DumpQueryRootBinding binding)
+    {
+        if (CreateRootSelectionProvenance(binding) is { } provenance)
+        {
+            builder.Add(provenance);
         }
     }
 

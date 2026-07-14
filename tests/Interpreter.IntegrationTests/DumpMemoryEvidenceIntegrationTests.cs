@@ -109,6 +109,13 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             Assert.Equal(ClrmdValueIssue.LimitExceeded, cappedSearch.Issue);
             Assert.Equal(1, cappedSearch.HandlesScanned);
             Assert.InRange(cappedSearch.Matches.Length, 0, 1);
+            var alternateCappedSearch = session.FindStrongHandleObjectsByTypeName(
+                "Missing.Partial.DumpProbe",
+                maximumMatches: 8,
+                maximumHandlesScanned: 1);
+            Assert.Equal(ClrmdEvidenceStatus.Partial, alternateCappedSearch.Status);
+            Assert.Equal(ClrmdValueIssue.LimitExceeded, alternateCappedSearch.Issue);
+            Assert.Equal(1, alternateCappedSearch.HandlesScanned);
 
             var objectSearch = session.FindStrongHandleObjectsByTypeName(
                 "DumpProbe",
@@ -129,6 +136,76 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             Assert.Equal(probe.Address, probe.Evidence[1].Address);
             Assert.Equal(session.Memory.SourceId, probe.Evidence[0].SourceId);
             Assert.Equal(objectSearch.Evidence.ToArray(), probe.Evidence.ToArray());
+
+            var absentAlphaSearch = session.FindStrongHandleObjectsByTypeName(
+                "Missing.Exhaustive.Alpha",
+                maximumMatches: 8,
+                maximumHandlesScanned: 100_000);
+            var absentBetaSearch = session.FindStrongHandleObjectsByTypeName(
+                "Missing.Exhaustive.Beta",
+                maximumMatches: 8,
+                maximumHandlesScanned: 100_000);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, absentAlphaSearch.Status);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, absentBetaSearch.Status);
+            Assert.Empty(absentAlphaSearch.Matches);
+            Assert.Empty(absentBetaSearch.Matches);
+
+            var absentAlphaResult = Assert.IsType<EvaluationResult<DumpQueryValue>>(
+                DumpQueryEngine.Prepare(
+                    session,
+                    "root.Marker",
+                    DumpQueryRootBinding.FromSearchResult("root", absentAlphaSearch)).Failure);
+            var absentBetaResult = Assert.IsType<EvaluationResult<DumpQueryValue>>(
+                DumpQueryEngine.Prepare(
+                    session,
+                    "root.Marker",
+                    DumpQueryRootBinding.FromSearchResult("root", absentBetaSearch)).Failure);
+            var partialResult = Assert.IsType<EvaluationResult<DumpQueryValue>>(
+                DumpQueryEngine.Prepare(
+                    session,
+                    "root.Marker",
+                    DumpQueryRootBinding.FromSearchResult("root", cappedSearch)).Failure);
+            var alternatePartialResult = Assert.IsType<EvaluationResult<DumpQueryValue>>(
+                DumpQueryEngine.Prepare(
+                    session,
+                    "root.Marker",
+                    DumpQueryRootBinding.FromSearchResult("root", alternateCappedSearch)).Failure);
+            Assert.NotEqual(
+                EvaluationResultReplay.ComputeSha256(
+                    absentAlphaResult,
+                    static value => value.ToCanonicalReplayProjection()),
+                EvaluationResultReplay.ComputeSha256(
+                    absentBetaResult,
+                    static value => value.ToCanonicalReplayProjection()));
+            Assert.NotEqual(
+                EvaluationResultReplay.ComputeSha256(
+                    partialResult,
+                    static value => value.ToCanonicalReplayProjection()),
+                EvaluationResultReplay.ComputeSha256(
+                    alternatePartialResult,
+                    static value => value.ToCanonicalReplayProjection()));
+            Assert.NotEqual(
+                Assert.Single(
+                    absentAlphaResult.Provenance,
+                    static item => item.SourceId.StartsWith(
+                        "dump-query-root-selection:sha256:",
+                        StringComparison.Ordinal)).SourceId,
+                Assert.Single(
+                    absentBetaResult.Provenance,
+                    static item => item.SourceId.StartsWith(
+                        "dump-query-root-selection:sha256:",
+                        StringComparison.Ordinal)).SourceId);
+            Assert.NotEqual(
+                Assert.Single(
+                    partialResult.Provenance,
+                    static item => item.SourceId.StartsWith(
+                        "dump-query-root-selection:sha256:",
+                        StringComparison.Ordinal)).SourceId,
+                Assert.Single(
+                    alternatePartialResult.Provenance,
+                    static item => item.SourceId.StartsWith(
+                        "dump-query-root-selection:sha256:",
+                        StringComparison.Ordinal)).SourceId);
 
             var rootSelectionBounds = ImmutableArray.Create(
                 new EvaluationDeterministicBound(
@@ -448,6 +525,42 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             var markerTraversalBound = Assert.Single(marker.AppliedBounds);
             Assert.Equal("dump.instance-fields.traversed", markerTraversalBound.Name);
             Assert.Equal(ClrmdDumpSession.InstanceFieldTraversalBound, markerTraversalBound);
+
+            var markerField = marker.Value.Field;
+            var wrongOwnerAddressField = new ClrmdInstanceFieldInfo(
+                markerField.Snapshot,
+                markerField.OwnerAddress + 1,
+                markerField.OwnerMethodTable,
+                markerField.OwnerTypeName,
+                markerField.Name,
+                markerField.MetadataToken,
+                markerField.Address,
+                markerField.Size,
+                markerField.IsObjectReference,
+                markerField.ElementType,
+                markerField.FieldTypeName,
+                nullableInt32Layout: null);
+            var wrongMethodTableField = new ClrmdInstanceFieldInfo(
+                markerField.Snapshot,
+                markerField.OwnerAddress,
+                markerField.OwnerMethodTable + 1,
+                markerField.OwnerTypeName,
+                markerField.Name,
+                markerField.MetadataToken,
+                markerField.Address,
+                markerField.Size,
+                markerField.IsObjectReference,
+                markerField.ElementType,
+                markerField.FieldTypeName,
+                nullableInt32Layout: null);
+            foreach (var forgedField in new[] { wrongOwnerAddressField, wrongMethodTableField })
+            {
+                var ownerConflict = session.ReadInt32Field(probe, forgedField);
+                Assert.Equal(ClrmdEvidenceStatus.Conflict, ownerConflict.Status);
+                Assert.Equal(ClrmdValueIssue.TypeMismatch, ownerConflict.Issue);
+                Assert.Empty(ownerConflict.Evidence);
+                Assert.False(ownerConflict.HasValue);
+            }
 
             var absentField = session.GetInstanceField(probe, "AbsentField");
             Assert.Equal(ClrmdEvidenceStatus.Unavailable, absentField.Status);

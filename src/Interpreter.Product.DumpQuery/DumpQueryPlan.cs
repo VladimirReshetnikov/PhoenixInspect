@@ -130,6 +130,7 @@ public sealed class DumpQueryPlan
         Append(builder, Field.IsObjectReference ? "1" : "0");
         Append(builder, Field.ElementType);
         Append(builder, Field.FieldTypeName ?? string.Empty);
+        Append(builder, Field.ToCanonicalReplayProjection());
         Append(builder, FieldKind.ToString());
         Append(builder, SemanticMode.ToString());
         Append(builder, ((int)ParserBounds).ToString(CultureInfo.InvariantCulture));

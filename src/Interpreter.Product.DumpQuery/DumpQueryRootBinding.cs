@@ -33,8 +33,9 @@ public enum DumpQueryRootBindingStatus
 /// </summary>
 /// <remarks>
 /// This is a draft W2 contract for the deliberately single-root grammar. A non-exact binding never exposes one of a
-/// partial search's matches as though it were uniquely selected. Raw evidence and applied search bounds remain
-/// available so preparation failures can preserve the explanation produced before query binding began.
+/// partial search's matches as though it were uniquely selected. Search-backed bindings retain the exact ordinal type
+/// predicate, adapter status, traversal counters, raw evidence, and applied bounds so every preparation or evaluation
+/// result can preserve the explanation produced before query binding began.
 /// </remarks>
 public sealed class DumpQueryRootBinding
 {
@@ -47,6 +48,7 @@ public sealed class DumpQueryRootBinding
         DumpQueryRootBindingStatus status,
         ClrmdHeapObjectInfo? root,
         ClrmdValueIssue issue,
+        ClrmdHeapObjectSearchResult? search,
         ImmutableArray<MemoryReadResult> evidence,
         ImmutableArray<EvaluationDeterministicBound> appliedBounds)
     {
@@ -55,6 +57,13 @@ public sealed class DumpQueryRootBinding
         Status = status;
         Root = root;
         Issue = issue;
+        TypeNameSelector = search?.TypeNameSelector;
+        SearchStatus = search?.Status;
+        HandlesScanned = search?.HandlesScanned;
+        MaximumHandlesScanned = search?.MaximumHandlesScanned;
+        MaximumMatches = search?.MaximumMatches;
+        MatchesRetained = search?.MatchesRetained;
+        MatchLimitReached = search?.MatchLimitReached;
         Evidence = evidence;
         AppliedBounds = NormalizeBounds(appliedBounds);
     }
@@ -86,6 +95,52 @@ public sealed class DumpQueryRootBinding
     /// </summary>
     public ClrmdValueIssue Issue { get; }
 
+    /// <summary>
+    /// Gets the exact ordinal runtime type-name predicate when this binding was classified from a bounded adapter
+    /// search; otherwise, gets <see langword="null"/> for a directly supplied object or compatibility-only miss.
+    /// </summary>
+    /// <remarks>
+    /// The predicate is retained without case folding or display-name substitution so non-object outcomes remain
+    /// attributable to the selection request that produced them.
+    /// </remarks>
+    public string? TypeNameSelector { get; }
+
+    /// <summary>
+    /// Gets the adapter search status before it was mapped to <see cref="DumpQueryRootBindingStatus"/>, or
+    /// <see langword="null"/> when this binding did not originate from a search.
+    /// </summary>
+    public ClrmdEvidenceStatus? SearchStatus { get; }
+
+    /// <summary>
+    /// Gets the number of runtime handles inspected by the originating search, or <see langword="null"/> when no
+    /// search produced this binding.
+    /// </summary>
+    public int? HandlesScanned { get; }
+
+    /// <summary>
+    /// Gets the enforced handle-inspection cap from the originating search, or <see langword="null"/> when no search
+    /// produced this binding.
+    /// </summary>
+    public int? MaximumHandlesScanned { get; }
+
+    /// <summary>
+    /// Gets the enforced retained-match cap from the originating search, or <see langword="null"/> when no search
+    /// produced this binding.
+    /// </summary>
+    public int? MaximumMatches { get; }
+
+    /// <summary>
+    /// Gets the number of validated candidates retained by the originating search before unique-root classification,
+    /// or <see langword="null"/> when no search produced this binding.
+    /// </summary>
+    public int? MatchesRetained { get; }
+
+    /// <summary>
+    /// Gets whether the originating traversal observed a candidate beyond its retained-match cap, or
+    /// <see langword="null"/> when no search produced this binding.
+    /// </summary>
+    public bool? MatchLimitReached { get; }
+
     /// <summary>Gets ordered raw reads retained by the root-selection operation.</summary>
     public ImmutableArray<MemoryReadResult> Evidence { get; }
 
@@ -99,7 +154,10 @@ public sealed class DumpQueryRootBinding
     /// Bounds actually applied while selecting <paramref name="root"/>. A default array means that no upstream bound
     /// is claimed; intended but unenforced limits must not be supplied.
     /// </param>
-    /// <returns>An exact binding retaining the object's root-selection reads and supplied bounds.</returns>
+    /// <returns>
+    /// An exact binding retaining the object's root-selection reads and supplied bounds. Because no adapter search is
+    /// supplied, the search predicate, status, and counter properties are <see langword="null"/>.
+    /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="appliedBounds"/> contains a null or duplicate name.</exception>
     public static DumpQueryRootBinding FromExactObject(
@@ -114,6 +172,7 @@ public sealed class DumpQueryRootBinding
             DumpQueryRootBindingStatus.ExactObject,
             root,
             ClrmdValueIssue.None,
+            search: null,
             root.Evidence,
             appliedBounds.IsDefault ? ImmutableArray<EvaluationDeterministicBound>.Empty : appliedBounds);
     }
@@ -127,6 +186,8 @@ public sealed class DumpQueryRootBinding
     /// <returns>
     /// An exact object only for one match from an exact search; exact zero-match evidence becomes exhaustive absence,
     /// exact multiple matches become conflict, and every non-exact search preserves its status, issue, reads, and caps.
+    /// The exact ordinal type-name predicate and traversal counters are retained for deterministic explanation even
+    /// when the search contains no selected object.
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="search"/> is <see langword="null"/>.</exception>
     public static DumpQueryRootBinding FromSearchResult(string? name, ClrmdHeapObjectSearchResult search)
@@ -146,6 +207,7 @@ public sealed class DumpQueryRootBinding
                     DumpQueryRootBindingStatus.ExhaustiveAbsence,
                     null,
                     ClrmdValueIssue.None,
+                    search,
                     search.Evidence,
                     bounds),
                 1 => new DumpQueryRootBinding(
@@ -154,6 +216,7 @@ public sealed class DumpQueryRootBinding
                     DumpQueryRootBindingStatus.ExactObject,
                     search.Matches[0],
                     ClrmdValueIssue.None,
+                    search,
                     search.Evidence,
                     bounds),
                 _ => new DumpQueryRootBinding(
@@ -162,6 +225,7 @@ public sealed class DumpQueryRootBinding
                     DumpQueryRootBindingStatus.Conflict,
                     null,
                     ClrmdValueIssue.AmbiguousMatch,
+                    search,
                     search.Evidence,
                     bounds),
             };
@@ -181,6 +245,7 @@ public sealed class DumpQueryRootBinding
             status,
             null,
             search.Issue,
+            search,
             search.Evidence,
             bounds);
     }
@@ -193,6 +258,7 @@ public sealed class DumpQueryRootBinding
         DumpQueryRootBindingStatus.Unavailable,
         null,
         ClrmdValueIssue.ObjectUnavailable,
+        search: null,
         ImmutableArray<MemoryReadResult>.Empty,
         ImmutableArray<EvaluationDeterministicBound>.Empty);
 

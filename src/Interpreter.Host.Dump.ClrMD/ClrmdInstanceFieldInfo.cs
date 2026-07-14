@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace Interpreter.Host.Dump.ClrMD;
 
 /// <summary>
@@ -5,6 +8,8 @@ namespace Interpreter.Host.Dump.ClrMD;
 /// </summary>
 public sealed class ClrmdInstanceFieldInfo
 {
+    private const string CanonicalVersion = "clrmd-instance-field-v1";
+
     internal ClrmdInstanceFieldInfo(
         ClrmdSnapshotIdentity snapshot,
         ulong ownerAddress,
@@ -104,9 +109,69 @@ public sealed class ClrmdInstanceFieldInfo
     public bool IsNullableInt32 => NullableInt32Layout is not null;
 
     /// <summary>
+    /// Produces an injective, versioned projection of the complete immutable field descriptor for canonical query-plan
+    /// identity and deterministic replay.
+    /// </summary>
+    /// <returns>
+    /// A length-delimited representation of the snapshot and owner identity, outer field identity and type facts, and,
+    /// for a supported nullable Int32 field, every frozen discriminator and payload token, address, and size.
+    /// </returns>
+    /// <remarks>
+    /// The projection contains target addresses and target-derived metadata. It is replay material, not telemetry-safe
+    /// display text. Nullable child storage participates because changing either child descriptor changes which bytes
+    /// the decoder observes even when every outer-field property remains identical.
+    /// </remarks>
+    public string ToCanonicalReplayProjection()
+    {
+        var builder = new StringBuilder();
+        AppendCanonicalValue(builder, CanonicalVersion);
+        AppendCanonicalValue(builder, Snapshot.Sha256);
+        AppendCanonicalValue(builder, OwnerAddress.ToString("x16", CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, OwnerMethodTable.ToString("x16", CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, OwnerTypeName);
+        AppendCanonicalValue(builder, Name);
+        AppendCanonicalValue(builder, MetadataToken.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, Address.ToString("x16", CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, Size.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, IsObjectReference ? "1" : "0");
+        AppendCanonicalValue(builder, ElementType);
+        AppendCanonicalValue(builder, FieldTypeName is null ? "none" : "value");
+        AppendCanonicalValue(builder, FieldTypeName ?? string.Empty);
+
+        if (NullableInt32Layout is not { } nullableLayout)
+        {
+            AppendCanonicalValue(builder, "none");
+            return builder.ToString();
+        }
+
+        AppendCanonicalValue(builder, "nullable-int32-v1");
+        AppendCanonicalValue(
+            builder,
+            nullableLayout.HasValueMetadataToken.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalValue(
+            builder,
+            nullableLayout.HasValueAddress.ToString("x16", CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, nullableLayout.HasValueSize.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, nullableLayout.ValueMetadataToken.ToString(CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, nullableLayout.ValueAddress.ToString("x16", CultureInfo.InvariantCulture));
+        AppendCanonicalValue(builder, nullableLayout.ValueSize.ToString(CultureInfo.InvariantCulture));
+        return builder.ToString();
+    }
+
+    /// <summary>
     /// Gets the immutable, backend-neutral nested layout frozen while the outer field was selected.
     /// </summary>
     internal ClrmdNullableInt32FieldLayout? NullableInt32Layout { get; }
+
+    private static void AppendCanonicalValue(StringBuilder builder, string value)
+    {
+        builder.Append(value.Length.ToString(CultureInfo.InvariantCulture));
+        builder.Append(':');
+        foreach (var character in value)
+        {
+            builder.Append(((int)character).ToString("X4", CultureInfo.InvariantCulture));
+        }
+    }
 }
 
 /// <summary>
@@ -119,4 +184,71 @@ internal sealed record ClrmdNullableInt32FieldLayout(
     int HasValueSize,
     int ValueMetadataToken,
     ulong ValueAddress,
-    int ValueSize);
+    int ValueSize)
+{
+    /// <summary>
+    /// Checks that two nested field descriptors are distinct and occupy complete, non-overlapping ranges inside their
+    /// outer nullable field.
+    /// </summary>
+    internal static bool HasValidDistinctStorage(
+        ulong outerAddress,
+        int outerSize,
+        int hasValueMetadataToken,
+        ulong hasValueAddress,
+        int hasValueSize,
+        int valueMetadataToken,
+        ulong valueAddress,
+        int valueSize)
+    {
+        if (outerSize < 0 ||
+            (ulong)outerSize > ulong.MaxValue - outerAddress ||
+            hasValueSize <= 0 ||
+            valueSize <= 0 ||
+            hasValueMetadataToken == valueMetadataToken ||
+            !TryGetRelativeRange(
+                outerAddress,
+                (ulong)outerSize,
+                hasValueAddress,
+                hasValueSize,
+                out var hasValueStart,
+                out var hasValueEnd) ||
+            !TryGetRelativeRange(
+                outerAddress,
+                (ulong)outerSize,
+                valueAddress,
+                valueSize,
+                out var valueStart,
+                out var valueEnd))
+        {
+            return false;
+        }
+
+        return hasValueEnd <= valueStart || valueEnd <= hasValueStart;
+    }
+
+    private static bool TryGetRelativeRange(
+        ulong outerAddress,
+        ulong outerSize,
+        ulong rangeAddress,
+        int rangeSize,
+        out ulong rangeStart,
+        out ulong rangeEnd)
+    {
+        rangeStart = 0;
+        rangeEnd = 0;
+        if (rangeSize < 0 || rangeAddress < outerAddress)
+        {
+            return false;
+        }
+
+        rangeStart = rangeAddress - outerAddress;
+        var unsignedRangeSize = (ulong)rangeSize;
+        if (rangeStart > outerSize || unsignedRangeSize > outerSize - rangeStart)
+        {
+            return false;
+        }
+
+        rangeEnd = rangeStart + unsignedRangeSize;
+        return true;
+    }
+}

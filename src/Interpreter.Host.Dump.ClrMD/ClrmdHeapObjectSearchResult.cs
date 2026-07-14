@@ -4,12 +4,14 @@ using Interpreter.Host.Abstractions;
 namespace Interpreter.Host.Dump.ClrMD;
 
 /// <summary>
-/// Reports a bounded strong-handle search without implying that a truncated traversal was exhaustive.
+/// Reports the exact type predicate and outcome of a bounded strong-handle search without implying that a truncated
+/// traversal was exhaustive.
 /// </summary>
 public sealed class ClrmdHeapObjectSearchResult
 {
     internal ClrmdHeapObjectSearchResult(
         ClrmdSnapshotIdentity snapshot,
+        string typeNameSelector,
         ClrmdEvidenceStatus status,
         ClrmdValueIssue issue,
         int handlesScanned,
@@ -19,7 +21,9 @@ public sealed class ClrmdHeapObjectSearchResult
         ImmutableArray<ClrmdHeapObjectInfo> matches,
         ImmutableArray<MemoryReadResult> evidence)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(typeNameSelector);
         Snapshot = snapshot;
+        TypeNameSelector = typeNameSelector;
         Status = status;
         Issue = issue;
         HandlesScanned = handlesScanned;
@@ -39,6 +43,16 @@ public sealed class ClrmdHeapObjectSearchResult
     /// evaluation session; an empty match set does not otherwise carry object-level snapshot identity.
     /// </remarks>
     public ClrmdSnapshotIdentity Snapshot { get; }
+
+    /// <summary>
+    /// Gets the exact ordinal runtime type-name predicate used to select candidates.
+    /// </summary>
+    /// <remarks>
+    /// The adapter preserves the validated caller input without case folding or display-name substitution. Retaining
+    /// this predicate keeps exhaustive absence and bounded partial results attributable even when no object carries
+    /// the requested type name into <see cref="Matches"/>.
+    /// </remarks>
+    public string TypeNameSelector { get; }
 
     /// <summary>
     /// Gets whether handle traversal was exhaustive, budget-truncated, or invalidated by corrupt runtime evidence.
@@ -69,6 +83,11 @@ public sealed class ClrmdHeapObjectSearchResult
     /// Gets whether traversal found an additional match beyond the retained-match bound.
     /// </summary>
     public bool MatchLimitReached { get; }
+
+    /// <summary>
+    /// Gets the number of validated candidates retained in <see cref="Matches"/>.
+    /// </summary>
+    public int MatchesRetained => Matches.Length;
 
     /// <summary>
     /// Gets bounded matches sorted by object address and then root address.

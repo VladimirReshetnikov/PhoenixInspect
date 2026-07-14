@@ -15,6 +15,7 @@ public sealed class HostileArtifactCorpusTests
     /// <summary>Checks manifest stability, schema versioning, case-count/size bounds, and secret exclusion.</summary>
     [Fact]
     [Trait("Category", "Fast")]
+    [Trait("Scope", "Cybersecurity")]
     public void Canonical_manifest_is_versioned_deterministic_bounded_and_payload_free()
     {
         var seed = CreateStructuredSeed();
@@ -60,6 +61,7 @@ public sealed class HostileArtifactCorpusTests
     /// <summary>Checks that structure-aware truncations and patches affect only their declared byte ranges.</summary>
     [Fact]
     [Trait("Category", "Fast")]
+    [Trait("Scope", "Cybersecurity")]
     public void Structure_aware_mutations_change_only_the_declared_regions()
     {
         var seed = CreateStructuredSeed();
@@ -116,6 +118,7 @@ public sealed class HostileArtifactCorpusTests
     /// <summary>Checks that the over-limit artifact uses logical sparse length rather than an allocated payload.</summary>
     [Fact]
     [Trait("Category", "Fast")]
+    [Trait("Scope", "Cybersecurity")]
     public void Sparse_limit_case_materializes_by_length_without_allocating_payload()
     {
         var seed = CreateStructuredSeed();
@@ -135,6 +138,7 @@ public sealed class HostileArtifactCorpusTests
     /// <summary>Checks that corpus planning fails closed for invalid seeds and seeds without memory evidence.</summary>
     [Fact]
     [Trait("Category", "Fast")]
+    [Trait("Scope", "Cybersecurity")]
     public void Generator_rejects_non_minidumps_and_seeds_without_memory_ranges()
     {
         using var shortSeed = new MemoryStream(new byte[HostileArtifactCorpus.HeaderSize - 1], writable: false);
@@ -153,6 +157,7 @@ public sealed class HostileArtifactCorpusTests
     /// <summary>Checks that the alternate MINIDUMP_MEMORY64_LIST layout produces equivalent bounded truncations.</summary>
     [Fact]
     [Trait("Category", "Fast")]
+    [Trait("Scope", "Cybersecurity")]
     public void Generator_understands_memory64_descriptor_and_contiguous_payload_layout()
     {
         var seed = CreateMemory64Seed();

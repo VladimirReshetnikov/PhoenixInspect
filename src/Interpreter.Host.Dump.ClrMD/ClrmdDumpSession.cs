@@ -525,7 +525,10 @@ public sealed class ClrmdDumpSession : IDisposable
     /// <summary>
     /// Searches a bounded prefix of strong runtime handles for objects whose type name exactly matches the request.
     /// </summary>
-    /// <param name="typeName">Full runtime type display name as reported by ClrMD.</param>
+    /// <param name="typeName">
+    /// Full runtime type display name as reported by ClrMD. Matching is ordinal and the validated predicate is
+    /// retained exactly in the returned result, including for exhaustive absence and partial traversal.
+    /// </param>
     /// <param name="maximumMatches">Maximum number of matches to retain before stopping traversal.</param>
     /// <param name="maximumHandlesScanned">Maximum number of runtime handles to inspect.</param>
     /// <returns>
@@ -718,6 +721,7 @@ public sealed class ClrmdDumpSession : IDisposable
 
         return new ClrmdHeapObjectSearchResult(
             Snapshot,
+            typeName,
             status,
             issue,
             handlesScanned,
@@ -1944,14 +1948,13 @@ public sealed class ClrmdDumpSession : IDisposable
 
         var hasValueAddress = hasValueField.GetAddress(outerFieldAddress, interior: true);
         var valueAddress = valueField.GetAddress(outerFieldAddress, interior: true);
-        if (!IsRangeWithinExtent(
+        if (!ClrmdNullableInt32FieldLayout.HasValidDistinctStorage(
                 outerFieldAddress,
-                (ulong)Math.Max(outerFieldSize, 0),
+                outerFieldSize,
+                hasValueField.Token,
                 hasValueAddress,
-                hasValueField.Size) ||
-            !IsRangeWithinExtent(
-                outerFieldAddress,
-                (ulong)Math.Max(outerFieldSize, 0),
+                hasValueField.Size,
+                valueField.Token,
                 valueAddress,
                 valueField.Size))
         {
