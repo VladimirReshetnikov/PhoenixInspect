@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Interpreter.Core.Abstractions;
 using Interpreter.Host.Abstractions;
 
 namespace Interpreter.Host.Dump.ClrMD;
@@ -19,12 +20,14 @@ public sealed class ClrmdEvidenceResult<T>
         ClrmdEvidenceStatus status,
         ClrmdValueIssue issue,
         T? value,
-        ImmutableArray<MemoryReadResult> evidence)
+        ImmutableArray<MemoryReadResult> evidence,
+        ImmutableArray<EvaluationDeterministicBound> appliedBounds)
     {
         Status = status;
         Issue = issue;
         Value = value;
         Evidence = evidence;
+        AppliedBounds = appliedBounds;
     }
 
     /// <summary>
@@ -52,11 +55,18 @@ public sealed class ClrmdEvidenceResult<T>
     /// </summary>
     public ImmutableArray<MemoryReadResult> Evidence { get; }
 
+    /// <summary>
+    /// Gets only deterministic bounds whose guarded adapter operation was reached while producing this result.
+    /// Configured limits on unvisited paths are absent, and entries are normalized into ordinal name order.
+    /// </summary>
+    public ImmutableArray<EvaluationDeterministicBound> AppliedBounds { get; }
+
     internal static ClrmdEvidenceResult<T> Create(
         ClrmdEvidenceStatus status,
         ClrmdValueIssue issue,
         T? value = null,
-        ImmutableArray<MemoryReadResult> evidence = default)
+        ImmutableArray<MemoryReadResult> evidence = default,
+        ImmutableArray<EvaluationDeterministicBound> appliedBounds = default)
     {
         if ((status == ClrmdEvidenceStatus.Exact) != (issue == ClrmdValueIssue.None))
         {
@@ -68,10 +78,32 @@ public sealed class ClrmdEvidenceResult<T>
             throw new ArgumentNullException(nameof(value), "An exact evidence result requires a value.");
         }
 
+        var normalizedBounds = appliedBounds.IsDefault
+            ? ImmutableArray<EvaluationDeterministicBound>.Empty
+            : appliedBounds;
+        if (normalizedBounds.Any(static bound => bound is null))
+        {
+            throw new ArgumentException("Applied bounds cannot contain null entries.", nameof(appliedBounds));
+        }
+
+        normalizedBounds = normalizedBounds
+            .OrderBy(static bound => bound.Name, StringComparer.Ordinal)
+            .ToImmutableArray();
+        for (var index = 1; index < normalizedBounds.Length; index++)
+        {
+            if (string.Equals(normalizedBounds[index - 1].Name, normalizedBounds[index].Name, StringComparison.Ordinal))
+            {
+                throw new ArgumentException(
+                    $"The applied bound name '{normalizedBounds[index].Name}' occurs more than once.",
+                    nameof(appliedBounds));
+            }
+        }
+
         return new ClrmdEvidenceResult<T>(
             status,
             issue,
             value,
-            evidence.IsDefault ? ImmutableArray<MemoryReadResult>.Empty : evidence);
+            evidence.IsDefault ? ImmutableArray<MemoryReadResult>.Empty : evidence,
+            normalizedBounds);
     }
 }

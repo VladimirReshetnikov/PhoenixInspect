@@ -17,10 +17,22 @@ internal sealed record ParsedDumpQuery(
     string FieldName,
     DumpQueryLiteral? CoalesceLiteral);
 
+/// <summary>Identifies the deterministic parser bounds reached while parsing one expression.</summary>
+[Flags]
+internal enum DumpQueryParserBounds
+{
+    None = 0,
+    ExpressionLength = 1 << 0,
+    RootNameLength = 1 << 1,
+    FieldNameLength = 1 << 2,
+    StringLiteralLength = 1 << 3,
+}
+
 internal sealed record DumpQueryParseResult(
     ParsedDumpQuery? Query,
     string? DiagnosticCode,
-    string? DiagnosticMessage)
+    string? DiagnosticMessage,
+    DumpQueryParserBounds AppliedBounds)
 {
     internal bool IsSuccess => Query is not null;
 }
@@ -33,33 +45,58 @@ internal static class DumpQueryParser
 
     internal static DumpQueryParseResult Parse(string? expression, string? expectedRootName)
     {
-        if (string.IsNullOrWhiteSpace(expression))
+        if (expression is null)
         {
-            return Failure("QUERY_EXPRESSION_REQUIRED", "A dump-query expression is required.");
+            return Failure(
+                "QUERY_EXPRESSION_REQUIRED",
+                "A dump-query expression is required.",
+                DumpQueryParserBounds.None);
         }
 
+        var appliedBounds = DumpQueryParserBounds.ExpressionLength;
         if (expression.Length > MaximumExpressionLength)
         {
-            return Failure("QUERY_EXPRESSION_TOO_LONG", "The dump-query expression exceeds the deterministic length limit.");
+            return Failure(
+                "QUERY_EXPRESSION_TOO_LONG",
+                "The dump-query expression exceeds the deterministic length limit.",
+                appliedBounds);
         }
 
+        if (string.IsNullOrWhiteSpace(expression))
+        {
+            return Failure(
+                "QUERY_EXPRESSION_REQUIRED",
+                "A dump-query expression is required.",
+                appliedBounds);
+        }
+
+        appliedBounds |= DumpQueryParserBounds.RootNameLength;
         if (!IsValidIdentifier(expectedRootName, out var rootIssue))
         {
             return rootIssue == IdentifierIssue.TooLong
-                ? Failure("QUERY_ROOT_NAME_TOO_LONG", "The configured root name exceeds the deterministic identifier limit.")
-                : Failure("QUERY_ROOT_NAME_INVALID", "The configured root name is not a supported identifier.");
+                ? Failure(
+                    "QUERY_ROOT_NAME_TOO_LONG",
+                    "The configured root name exceeds the deterministic identifier limit.",
+                    appliedBounds)
+                : Failure(
+                    "QUERY_ROOT_NAME_INVALID",
+                    "The configured root name is not a supported identifier.",
+                    appliedBounds);
         }
 
         var reader = new Reader(expression);
         reader.SkipWhiteSpace();
         if (!reader.TryReadIdentifier(out var rootName, out var identifierIssue))
         {
-            return IdentifierFailure(identifierIssue);
+            return IdentifierFailure(identifierIssue, appliedBounds);
         }
 
         if (!string.Equals(rootName, expectedRootName, StringComparison.Ordinal))
         {
-            return Failure("QUERY_ROOT_MISMATCH", "The expression does not reference the configured root name exactly.");
+            return Failure(
+                "QUERY_ROOT_MISMATCH",
+                "The expression does not reference the configured root name exactly.",
+                appliedBounds);
         }
 
         reader.SkipWhiteSpace();
@@ -67,18 +104,23 @@ internal static class DumpQueryParser
         {
             return Failure(
                 "QUERY_SYNTAX_UNSUPPORTED",
-                "The expression contains syntax outside the supported dump-query grammar.");
+                "The expression contains syntax outside the supported dump-query grammar.",
+                appliedBounds);
         }
 
         if (!reader.TryRead("."))
         {
-            return Failure("QUERY_MEMBER_ACCESS_REQUIRED", "The supported grammar requires one instance-field access.");
+            return Failure(
+                "QUERY_MEMBER_ACCESS_REQUIRED",
+                "The supported grammar requires one instance-field access.",
+                appliedBounds);
         }
 
         reader.SkipWhiteSpace();
+        appliedBounds |= DumpQueryParserBounds.FieldNameLength;
         if (!reader.TryReadIdentifier(out var fieldName, out identifierIssue))
         {
-            return IdentifierFailure(identifierIssue);
+            return IdentifierFailure(identifierIssue, appliedBounds);
         }
 
         reader.SkipWhiteSpace();
@@ -87,9 +129,17 @@ internal static class DumpQueryParser
         {
             reader.SkipWhiteSpace();
             var literalResult = reader.TryReadLiteral();
+            if (literalResult.AppliedStringLiteralBound)
+            {
+                appliedBounds |= DumpQueryParserBounds.StringLiteralLength;
+            }
+
             if (!literalResult.IsSuccess)
             {
-                return Failure(literalResult.DiagnosticCode!, literalResult.DiagnosticMessage!);
+                return Failure(
+                    literalResult.DiagnosticCode!,
+                    literalResult.DiagnosticMessage!,
+                    appliedBounds);
             }
 
             literal = literalResult.Literal;
@@ -98,30 +148,41 @@ internal static class DumpQueryParser
 
         if (!reader.IsAtEnd)
         {
-            return Failure("QUERY_SYNTAX_UNSUPPORTED", "The expression contains syntax outside the supported dump-query grammar.");
+            return Failure(
+                "QUERY_SYNTAX_UNSUPPORTED",
+                "The expression contains syntax outside the supported dump-query grammar.",
+                appliedBounds);
         }
 
         return new DumpQueryParseResult(
             new ParsedDumpQuery(rootName!, fieldName!, literal),
             null,
-            null);
+            null,
+            appliedBounds);
     }
 
-    private static DumpQueryParseResult IdentifierFailure(IdentifierIssue issue) => issue switch
+    private static DumpQueryParseResult IdentifierFailure(
+        IdentifierIssue issue,
+        DumpQueryParserBounds appliedBounds) => issue switch
     {
         IdentifierIssue.TooLong => Failure(
             "QUERY_IDENTIFIER_TOO_LONG",
-            "An expression identifier exceeds the deterministic identifier limit."),
+            "An expression identifier exceeds the deterministic identifier limit.",
+            appliedBounds),
         _ => Failure(
             "QUERY_IDENTIFIER_INVALID",
-            "The expression contains a missing or unsupported identifier."),
+            "The expression contains a missing or unsupported identifier.",
+            appliedBounds),
     };
 
-    private static DumpQueryParseResult Failure(string code, string message) => new(null, code, message);
+    private static DumpQueryParseResult Failure(
+        string code,
+        string message,
+        DumpQueryParserBounds appliedBounds) => new(null, code, message, appliedBounds);
 
     private static bool IsValidIdentifier(string? value, out IdentifierIssue issue)
     {
-        if (string.IsNullOrEmpty(value) || !IsIdentifierStart(value[0]))
+        if (string.IsNullOrEmpty(value))
         {
             issue = IdentifierIssue.Invalid;
             return false;
@@ -130,6 +191,12 @@ internal static class DumpQueryParser
         if (value.Length > MaximumIdentifierLength)
         {
             issue = IdentifierIssue.TooLong;
+            return false;
+        }
+
+        if (!IsIdentifierStart(value[0]))
+        {
+            issue = IdentifierIssue.Invalid;
             return false;
         }
 
@@ -223,7 +290,8 @@ internal static class DumpQueryParser
             {
                 return LiteralReadResult.Failure(
                     "QUERY_LITERAL_REQUIRED",
-                    "Null coalescing requires one supported literal.");
+                    "Null coalescing requires one supported literal.",
+                    appliedStringLiteralBound: false);
             }
 
             if (_text[_position] == '"')
@@ -255,7 +323,8 @@ internal static class DumpQueryParser
                 _position = start;
                 return LiteralReadResult.Failure(
                     "QUERY_LITERAL_UNSUPPORTED",
-                    "The expression uses a literal outside the supported null, Int32, and string set.");
+                    "The expression uses a literal outside the supported null, Int32, and string set.",
+                    appliedStringLiteralBound: false);
             }
 
             var token = _text[start.._position];
@@ -263,7 +332,8 @@ internal static class DumpQueryParser
             {
                 return LiteralReadResult.Failure(
                     "QUERY_INT32_LITERAL_INVALID",
-                    "The integer literal is outside the supported Int32 range.");
+                    "The integer literal is outside the supported Int32 range.",
+                    appliedStringLiteralBound: false);
             }
 
             return LiteralReadResult.Success(new DumpQueryLiteral(DumpQueryLiteralKind.Int32, value, null));
@@ -288,7 +358,8 @@ internal static class DumpQueryParser
                 {
                     return LiteralReadResult.Failure(
                         "QUERY_STRING_LITERAL_INVALID",
-                        "String literals cannot contain unescaped line breaks.");
+                        "String literals cannot contain unescaped line breaks.",
+                        appliedStringLiteralBound: true);
                 }
 
                 if (character == '\\')
@@ -297,7 +368,8 @@ internal static class DumpQueryParser
                     {
                         return LiteralReadResult.Failure(
                             "QUERY_STRING_LITERAL_INVALID",
-                            "The string literal has an incomplete escape sequence.");
+                            "The string literal has an incomplete escape sequence.",
+                            appliedStringLiteralBound: true);
                     }
 
                     character = _text[_position++] switch
@@ -314,7 +386,8 @@ internal static class DumpQueryParser
                     {
                         return LiteralReadResult.Failure(
                             "QUERY_STRING_ESCAPE_UNSUPPORTED",
-                            "The string literal contains an unsupported escape sequence.");
+                            "The string literal contains an unsupported escape sequence.",
+                            appliedStringLiteralBound: true);
                     }
                 }
 
@@ -323,25 +396,36 @@ internal static class DumpQueryParser
                 {
                     return LiteralReadResult.Failure(
                         "QUERY_STRING_LITERAL_TOO_LONG",
-                        "The string literal exceeds the deterministic decoded-length limit.");
+                        "The string literal exceeds the deterministic decoded-length limit.",
+                        appliedStringLiteralBound: true);
                 }
             }
 
             return LiteralReadResult.Failure(
                 "QUERY_STRING_LITERAL_INVALID",
-                "The string literal is not terminated.");
+                "The string literal is not terminated.",
+                appliedStringLiteralBound: true);
         }
     }
 
     internal sealed record LiteralReadResult(
         DumpQueryLiteral? Literal,
         string? DiagnosticCode,
-        string? DiagnosticMessage)
+        string? DiagnosticMessage,
+        bool AppliedStringLiteralBound)
     {
         internal bool IsSuccess => Literal is not null;
 
-        internal static LiteralReadResult Success(DumpQueryLiteral literal) => new(literal, null, null);
+        internal static LiteralReadResult Success(DumpQueryLiteral literal) =>
+            new(
+                literal,
+                null,
+                null,
+                literal.Kind == DumpQueryLiteralKind.String);
 
-        internal static LiteralReadResult Failure(string code, string message) => new(null, code, message);
+        internal static LiteralReadResult Failure(
+            string code,
+            string message,
+            bool appliedStringLiteralBound) => new(null, code, message, appliedStringLiteralBound);
     }
 }

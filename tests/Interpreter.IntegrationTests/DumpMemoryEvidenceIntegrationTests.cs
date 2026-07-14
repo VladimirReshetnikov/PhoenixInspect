@@ -155,6 +155,9 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             Assert.Equal(EvaluationProvenanceKind.DumpMemory, markerQuery.Provenance[0].Kind);
             Assert.Contains(markerQuery.Provenance, item => item.Kind == EvaluationProvenanceKind.RuntimeStructure);
             Assert.DoesNotContain(ExpectedMarker.ToString(), markerQuery.Value.ToString(), StringComparison.Ordinal);
+            var markerReplay = EvaluationResultReplay.SerializeCanonical(
+                markerQuery,
+                static value => value.ToCanonicalReplayProjection());
             var markerFingerprint = EvaluationResultReplay.ComputeSha256(
                 markerQuery,
                 static value => value.ToCanonicalReplayProjection());
@@ -280,21 +283,131 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             Assert.Equal(EvaluationProvenanceKind.Policy, Assert.Single(nullConditionalQuery.Provenance).Kind);
             Assert.Equal("QUERY_SYNTAX_UNSUPPORTED", Assert.Single(nullConditionalQuery.Diagnostics).Code);
 
-            AssertDumpQueryContext(markerQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(messageQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(coalescedQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(nullQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(partialStringQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(absentQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(caseSensitiveQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(unsupportedTypeQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(invalidCoalesceQuery, session, module.Identity.SourceId, rootSelectionBounds);
-            AssertDumpQueryContext(nullConditionalQuery, session, module.Identity.SourceId, rootSelectionBounds);
+            var blankExpressionQuery = DumpQueryEngine.Evaluate(
+                session,
+                "   ",
+                "root",
+                probe,
+                rootSelectionBounds);
+            Assert.Equal(EvaluationCompletionStatus.Invalid, blankExpressionQuery.Completion);
+            Assert.Equal("QUERY_EXPRESSION_REQUIRED", Assert.Single(blankExpressionQuery.Diagnostics).Code);
+
+            AssertDumpQueryContext(
+                markerQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters");
+            AssertDumpQueryContext(
+                messageQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.observed-string.characters",
+                "query.root-name.characters");
+            AssertDumpQueryContext(
+                coalescedQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters",
+                "query.string-literal.characters");
+            AssertDumpQueryContext(
+                nullQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters");
+            AssertDumpQueryContext(
+                partialStringQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.observed-string.characters",
+                "query.root-name.characters",
+                "query.string-literal.characters");
+            AssertDumpQueryContext(
+                absentQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters",
+                "query.string-literal.characters");
+            AssertDumpQueryContext(
+                caseSensitiveQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters");
+            AssertDumpQueryContext(
+                unsupportedTypeQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters");
+            AssertDumpQueryContext(
+                invalidCoalesceQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters");
+            AssertDumpQueryContext(
+                nullConditionalQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "query.expression.characters",
+                "query.root-name.characters");
+            AssertDumpQueryContext(
+                blankExpressionQuery,
+                session,
+                module.Identity.SourceId,
+                rootSelectionBounds,
+                "query.expression.characters");
             AssertDumpQueryContext(
                 missingRootQuery,
                 session,
                 expectedModuleSourceId: null,
-                ImmutableArray<EvaluationDeterministicBound>.Empty);
+                ImmutableArray<EvaluationDeterministicBound>.Empty,
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters");
             Assert.Throws<ArgumentException>(() => DumpQueryEngine.Evaluate(
                 session,
                 "root.Marker",
@@ -303,6 +416,12 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
                 ImmutableArray.Create(new EvaluationDeterministicBound(
                     "query.expression.characters",
                     1))));
+            Assert.Throws<ArgumentException>(() => DumpQueryEngine.Evaluate(
+                session,
+                "   ",
+                "root",
+                probe,
+                ImmutableArray.Create(ClrmdDumpSession.InstanceFieldTraversalBound)));
 
             var marker = session.ReadInt32Field(probe, "Marker");
             Assert.Equal(ClrmdEvidenceStatus.Exact, marker.Status);
@@ -313,11 +432,17 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             Assert.Equal(sizeof(int), marker.Value.Memory.BytesRead);
             Assert.Equal(session.Memory.SourceId, marker.Value.Memory.SourceId);
             Assert.Equal(marker.Value.Field.Address, marker.Value.Memory.Address);
+            var markerTraversalBound = Assert.Single(marker.AppliedBounds);
+            Assert.Equal("dump.instance-fields.traversed", markerTraversalBound.Name);
+            Assert.Equal(ClrmdDumpSession.InstanceFieldTraversalBound, markerTraversalBound);
 
             var absentField = session.GetInstanceField(probe, "AbsentField");
             Assert.Equal(ClrmdEvidenceStatus.Unavailable, absentField.Status);
             Assert.Equal(ClrmdValueIssue.FieldUnavailable, absentField.Issue);
             Assert.False(absentField.HasValue);
+            var absentTraversalBound = Assert.Single(absentField.AppliedBounds);
+            Assert.Equal("dump.instance-fields.traversed", absentTraversalBound.Name);
+            Assert.Equal(ClrmdDumpSession.InstanceFieldTraversalBound, absentTraversalBound);
 
             var typeConflict = session.ReadInt32Field(probe, "Message");
             Assert.Equal(ClrmdEvidenceStatus.Conflict, typeConflict.Status);
@@ -353,6 +478,7 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
             Assert.Equal(ClrmdValueIssue.None, nullMessage.Issue);
             Assert.True(nullMessage.IsNull);
             Assert.Null(nullMessage.Value);
+            Assert.NotEmpty(nullMessage.Evidence);
 
             var methodBody = session.ReadMethodBody(module, "Program", "RetOnly");
             Assert.Equal(ClrmdEvidenceStatus.Exact, methodBody.Status);
@@ -447,6 +573,69 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
                 Assert.Single(session.FindModulesByFileName("Interpreter.TestTarget.dll")).Identity);
             Assert.Throws<ObjectDisposedException>(() => sessionOwnedMemory.Read(module.MetadataAddress, 1));
             session.Dispose();
+
+            var replayOpen = ClrmdDumpSession.Open(dumpPath);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, replayOpen.Status);
+            Assert.Equal(ClrmdValueIssue.None, replayOpen.Issue);
+            using var replaySession = replayOpen.Value
+                ?? throw new InvalidOperationException("Exact replay dump-open result carried no session.");
+            Assert.Equal(session.Snapshot, replaySession.Snapshot);
+
+            var replayModule = Assert.Single(replaySession.FindModulesByFileName("Interpreter.TestTarget.dll"));
+            Assert.Equal(module.Identity, replayModule.Identity);
+
+            var replayObjectSearch = replaySession.FindStrongHandleObjectsByTypeName(
+                "DumpProbe",
+                maximumMatches: 8,
+                maximumHandlesScanned: 100_000);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, replayObjectSearch.Status);
+            Assert.Equal(ClrmdValueIssue.None, replayObjectSearch.Issue);
+            var replayProbe = Assert.Single(replayObjectSearch.Matches);
+            Assert.Equal(probe.Snapshot, replayProbe.Snapshot);
+            Assert.Equal(probe.Module.Identity, replayProbe.Module.Identity);
+            Assert.Equal(probe.RootAddress, replayProbe.RootAddress);
+            Assert.Equal(probe.Address, replayProbe.Address);
+            Assert.Equal(probe.MethodTable, replayProbe.MethodTable);
+
+            var replayRootSelectionBounds = ImmutableArray.Create(
+                new EvaluationDeterministicBound(
+                    "root-selection.maximum-handles",
+                    replayObjectSearch.MaximumHandlesScanned),
+                new EvaluationDeterministicBound(
+                    "root-selection.maximum-matches",
+                    replayObjectSearch.MaximumMatches));
+            Assert.Equal(rootSelectionBounds.ToArray(), replayRootSelectionBounds.ToArray());
+
+            var replayMarkerQuery = DumpQueryEngine.Evaluate(
+                replaySession,
+                "root.Marker",
+                "root",
+                replayProbe,
+                replayRootSelectionBounds);
+            Assert.Equal(EvaluationCompletionStatus.Completed, replayMarkerQuery.Completion);
+            Assert.Equal(EvaluationCompleteness.Complete, replayMarkerQuery.Completeness);
+            Assert.Equal(EvaluationEvidenceStatus.Exact, replayMarkerQuery.Evidence);
+            Assert.Equal(ExpectedMarker, replayMarkerQuery.Value?.Int32Value);
+            AssertDumpQueryContext(
+                replayMarkerQuery,
+                replaySession,
+                replayModule.Identity.SourceId,
+                replayRootSelectionBounds,
+                "dump.memory-read.bytes",
+                "dump.instance-fields.traversed",
+                "query.expression.characters",
+                "query.field-name.characters",
+                "query.root-name.characters");
+
+            var replayMarkerBytes = EvaluationResultReplay.SerializeCanonical(
+                replayMarkerQuery,
+                static value => value.ToCanonicalReplayProjection());
+            Assert.Equal(markerReplay, replayMarkerBytes);
+            Assert.Equal(
+                markerFingerprint,
+                EvaluationResultReplay.ComputeSha256(
+                    replayMarkerQuery,
+                    static value => value.ToCanonicalReplayProjection()));
 
             var trustedDacPath = Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "mscordaccore.dll");
             Assert.True(File.Exists(trustedDacPath), "The supported Windows runner must carry its matching DAC.");
@@ -558,7 +747,8 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
         EvaluationResult<DumpQueryValue> result,
         ClrmdDumpSession session,
         string? expectedModuleSourceId,
-        ImmutableArray<EvaluationDeterministicBound> upstreamBounds)
+        ImmutableArray<EvaluationDeterministicBound> upstreamBounds,
+        params string[] expectedOperationBoundNames)
     {
         Assert.Equal(EvaluationEvidenceSourceKind.DumpSnapshot, result.Context.SourceKind);
         Assert.Equal(EvaluationIdentityAvailability.Available, result.Context.Snapshot.Availability);
@@ -577,15 +767,24 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
         Assert.Equal(EvaluationFallbackStatus.None, result.Context.Fallback.Status);
         Assert.Equal("none", result.Context.Fallback.Name);
 
-        var expectedBounds = new Dictionary<string, long>(StringComparer.Ordinal)
+        var expectedBounds = new Dictionary<string, long>(StringComparer.Ordinal);
+        foreach (var name in expectedOperationBoundNames)
         {
-            ["dump.memory-read.bytes"] = session.Memory.MaximumReadLength,
-            ["query.expression.characters"] = 512,
-            ["query.field-name.characters"] = 64,
-            ["query.observed-string.characters"] = 4096,
-            ["query.root-name.characters"] = 64,
-            ["query.string-literal.characters"] = 256,
-        };
+            expectedBounds.Add(
+                name,
+                name switch
+                {
+                    "dump.memory-read.bytes" => session.Memory.MaximumReadLength,
+                    "dump.instance-fields.traversed" => ClrmdDumpSession.InstanceFieldTraversalBound.Value,
+                    "query.expression.characters" => 512,
+                    "query.field-name.characters" => 64,
+                    "query.observed-string.characters" => 4096,
+                    "query.root-name.characters" => 64,
+                    "query.string-literal.characters" => 256,
+                    _ => throw new InvalidOperationException($"Unknown dump-query test bound '{name}'."),
+                });
+        }
+
         foreach (var bound in upstreamBounds)
         {
             expectedBounds.Add(bound.Name, bound.Value);

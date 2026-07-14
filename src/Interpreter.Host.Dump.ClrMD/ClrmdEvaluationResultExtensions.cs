@@ -49,14 +49,32 @@ public static class ClrmdEvaluationResultExtensions
             diagnostics);
     }
 
-    /// <summary>Preserves every evidence axis and counted memory range from a ClrMD adapter operation.</summary>
+    /// <summary>
+    /// Projects adapter evidence status, diagnostics, and counted memory ranges into a neutral observation envelope.
+    /// </summary>
     /// <typeparam name="TValue">The immutable adapter value projection.</typeparam>
     /// <param name="result">The adapter result to project.</param>
-    /// <returns>An observation result with no effects and stable issue diagnostics.</returns>
+    /// <returns>
+    /// An observation result with no effects and stable issue diagnostics. For an integer-field observation, retained
+    /// partial bytes do not constitute a scalar answer unless the integer was decoded. Operation-specific deterministic
+    /// bounds remain available through <see cref="ClrmdEvidenceResult{TValue}.AppliedBounds"/> for the caller to place in its
+    /// evidence context.
+    /// </returns>
     public static EvaluationResult<TValue> ToObservationResult<TValue>(this ClrmdEvidenceResult<TValue> result)
         where TValue : class
     {
         ArgumentNullException.ThrowIfNull(result);
+        var hasAnswer = result.Value is ClrmdInt32FieldObservation integerObservation
+            ? integerObservation.Value is not null
+            : result.HasValue;
+        return ProjectEvidenceResult(result, hasAnswer);
+    }
+
+    private static EvaluationResult<TValue> ProjectEvidenceResult<TValue>(
+        ClrmdEvidenceResult<TValue> result,
+        bool hasAnswer)
+        where TValue : class
+    {
         var provenance = result.Evidence
             .Select(static read => new EvaluationProvenance(
                 EvaluationProvenanceKind.DumpMemory,
@@ -71,9 +89,9 @@ public static class ClrmdEvaluationResultExtensions
                 GetDiagnosticCode(result.Issue),
                 GetDiagnosticMessage(result.Issue)));
 
-        var completeness = result.Status == ClrmdEvidenceStatus.Exact
+        var completeness = result.Status == ClrmdEvidenceStatus.Exact && hasAnswer
             ? EvaluationCompleteness.Complete
-            : result.HasValue
+            : hasAnswer
                 ? EvaluationCompleteness.Partial
                 : EvaluationCompleteness.None;
 
@@ -83,7 +101,7 @@ public static class ClrmdEvaluationResultExtensions
             completeness,
             MapEvidence(result.Status),
             EvaluationEffectStatus.None,
-            result.Value,
+            completeness == EvaluationCompleteness.None ? null : result.Value,
             provenance,
             diagnostics);
     }

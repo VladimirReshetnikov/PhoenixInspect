@@ -41,6 +41,35 @@ public sealed class DumpQueryParserTests
         Assert.DoesNotContain("Secret_9283", secretBearingFailure.DiagnosticMessage!, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Verifies that parser outcomes attest only the deterministic length checks reached before success or rejection.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Parser_records_only_length_bounds_reached_by_each_path()
+    {
+        Assert.Equal(
+            DumpQueryParserBounds.None,
+            DumpQueryParser.Parse(expression: null, "root").AppliedBounds);
+        Assert.Equal(
+            DumpQueryParserBounds.ExpressionLength,
+            DumpQueryParser.Parse("   ", "root").AppliedBounds);
+        Assert.Equal(
+            DumpQueryParserBounds.ExpressionLength | DumpQueryParserBounds.RootNameLength,
+            DumpQueryParser.Parse("root?.Field", "root").AppliedBounds);
+        Assert.Equal(
+            DumpQueryParserBounds.ExpressionLength |
+            DumpQueryParserBounds.RootNameLength |
+            DumpQueryParserBounds.FieldNameLength,
+            DumpQueryParser.Parse("root.Field ?? 1", "root").AppliedBounds);
+        Assert.Equal(
+            DumpQueryParserBounds.ExpressionLength |
+            DumpQueryParserBounds.RootNameLength |
+            DumpQueryParserBounds.FieldNameLength |
+            DumpQueryParserBounds.StringLiteralLength,
+            DumpQueryParser.Parse("root.Field ?? \"fallback\"", "root").AppliedBounds);
+    }
+
     /// <summary>Checks stable, secret-safe rejection codes for malformed, oversized, and expanded syntax.</summary>
     /// <param name="expression">The untrusted input scenario.</param>
     /// <param name="rootName">The configured root name.</param>

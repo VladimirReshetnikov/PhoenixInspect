@@ -65,12 +65,14 @@ public sealed class ForeignSnapshotIsolationIntegrationTests
             Assert.Equal(ClrmdValueIssue.SnapshotMismatch, field.Issue);
             Assert.False(field.HasValue);
             Assert.Empty(field.Evidence);
+            Assert.Empty(field.AppliedBounds);
 
             var integer = secondSession.ReadInt32Field(foreignObject, "Marker");
             Assert.Equal(ClrmdEvidenceStatus.Conflict, integer.Status);
             Assert.Equal(ClrmdValueIssue.SnapshotMismatch, integer.Issue);
             Assert.False(integer.HasValue);
             Assert.Empty(integer.Evidence);
+            Assert.Empty(integer.AppliedBounds);
 
             var text = secondSession.ReadStringField(foreignObject, "Message", maximumCharacters: 1024);
             Assert.Equal(ClrmdEvidenceStatus.Conflict, text.Status);
@@ -97,6 +99,12 @@ public sealed class ForeignSnapshotIsolationIntegrationTests
             Assert.Equal(EvaluationIdentityAvailability.Unavailable, query.Context.Module.Availability);
             Assert.Null(query.Context.Module.SourceId);
             Assert.Equal(EvaluationFallbackStatus.None, query.Context.Fallback.Status);
+            Assert.DoesNotContain(
+                query.Context.Bounds,
+                static bound => bound.Name is "dump.instance-fields.traversed" or "dump.memory-read.bytes");
+            Assert.DoesNotContain(
+                query.Provenance,
+                static provenance => provenance.Kind == EvaluationProvenanceKind.DumpMemory);
             Assert.Equal("DUMP_SNAPSHOT_MISMATCH", Assert.Single(query.Diagnostics).Code);
         }
         finally

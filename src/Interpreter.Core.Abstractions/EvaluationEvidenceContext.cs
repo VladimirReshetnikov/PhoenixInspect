@@ -231,7 +231,10 @@ public sealed class EvaluationEvidenceContext
     /// <summary>Gets the explicit named fallback outcome, including the no-fallback outcome.</summary>
     public EvaluationFallback Fallback { get; }
 
-    /// <summary>Gets applied deterministic bounds in ordinal name order.</summary>
+    /// <summary>
+    /// Gets only the deterministic bounds actually applied on this outcome's execution path, in ordinal name order.
+    /// Configured limits whose guarded operation was not reached are intentionally absent.
+    /// </summary>
     public ImmutableArray<EvaluationDeterministicBound> Bounds { get; }
 
     /// <summary>Creates a validated immutable evidence context.</summary>

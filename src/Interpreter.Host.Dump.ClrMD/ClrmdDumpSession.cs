@@ -35,6 +35,10 @@ public sealed class ClrmdDumpSession : IDisposable
     private const int MaximumStringCharacters = 1_048_576;
     private const long MaximumExternalDumpFileSize = 8L * 1_024 * 1_024 * 1_024;
     private const long MaximumClrmdDumpCacheSize = 256L * 1_024 * 1_024;
+    private static readonly ImmutableArray<EvaluationDeterministicBound> InstanceFieldTraversalBounds =
+        ImmutableArray.Create(new EvaluationDeterministicBound(
+            "dump.instance-fields.traversed",
+            MaximumRuntimeInstanceFieldCount));
     private readonly Stream _dumpStream;
     private readonly DataTarget _dataTarget;
     private readonly ClrRuntime _runtime;
@@ -64,6 +68,16 @@ public sealed class ClrmdDumpSession : IDisposable
         TargetPlatform = dataTarget.DataReader.TargetPlatform.ToString();
         TargetArchitecture = dataTarget.DataReader.Architecture.ToString();
     }
+
+    /// <summary>
+    /// Gets the stable deterministic bound applied when one ordinal field-selection operation reaches the runtime
+    /// instance-field catalog.
+    /// </summary>
+    /// <remarks>
+    /// Results report this cap only after field-catalog selection reaches the count check; snapshot, object, or type
+    /// rejection before that point does not claim that the traversal bound was applied.
+    /// </remarks>
+    public static EvaluationDeterministicBound InstanceFieldTraversalBound => InstanceFieldTraversalBounds[0];
 
     /// <summary>
     /// Gets the content identity of the loaded dump.
@@ -757,6 +771,7 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdValueIssue.SnapshotMismatch);
         }
 
+        var appliedBounds = ImmutableArray<EvaluationDeterministicBound>.Empty;
         try
         {
             var runtimeObject = _runtime.Heap.GetObject(obj.Address);
@@ -777,11 +792,13 @@ public sealed class ClrmdDumpSession : IDisposable
             }
 
             var fieldSelection = SelectInstanceField(runtimeType, fieldName);
+            appliedBounds = fieldSelection.AppliedBounds;
             if (fieldSelection.Status != ClrmdEvidenceStatus.Exact)
             {
                 return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(
                     fieldSelection.Status,
-                    fieldSelection.Issue);
+                    fieldSelection.Issue,
+                    appliedBounds: appliedBounds);
             }
 
             var runtimeField = fieldSelection.Value!;
@@ -790,7 +807,8 @@ public sealed class ClrmdDumpSession : IDisposable
             {
                 return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(
                     ClrmdEvidenceStatus.Invalid,
-                    ClrmdValueIssue.InvalidData);
+                    ClrmdValueIssue.InvalidData,
+                    appliedBounds: appliedBounds);
             }
 
             var field = new ClrmdInstanceFieldInfo(
@@ -804,14 +822,16 @@ public sealed class ClrmdDumpSession : IDisposable
             return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(
                 ClrmdEvidenceStatus.Exact,
                 ClrmdValueIssue.None,
-                field);
+                field,
+                appliedBounds: appliedBounds);
         }
         catch (Exception exception) when (
             exception is ClrDiagnosticsException or InvalidDataException or ArgumentOutOfRangeException)
         {
             return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(
                 ClrmdEvidenceStatus.Invalid,
-                ClrmdValueIssue.InvalidData);
+                ClrmdValueIssue.InvalidData,
+                appliedBounds: appliedBounds);
         }
     }
 
@@ -835,7 +855,8 @@ public sealed class ClrmdDumpSession : IDisposable
         {
             return ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 fieldResult.Status,
-                fieldResult.Issue);
+                fieldResult.Issue,
+                appliedBounds: fieldResult.AppliedBounds);
         }
 
         var field = fieldResult.Value!;
@@ -844,7 +865,8 @@ public sealed class ClrmdDumpSession : IDisposable
         {
             return ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 ClrmdEvidenceStatus.Conflict,
-                ClrmdValueIssue.TypeMismatch);
+                ClrmdValueIssue.TypeMismatch,
+                appliedBounds: fieldResult.AppliedBounds);
         }
 
         MemoryReadResult memory;
@@ -856,7 +878,8 @@ public sealed class ClrmdDumpSession : IDisposable
         {
             return ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 ClrmdEvidenceStatus.Invalid,
-                ClrmdValueIssue.InvalidData);
+                ClrmdValueIssue.InvalidData,
+                appliedBounds: fieldResult.AppliedBounds);
         }
         var value = memory.Status == MemoryReadStatus.Exact
             ? BinaryPrimitives.ReadInt32LittleEndian(memory.Bytes.AsSpan())
@@ -869,17 +892,20 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdEvidenceStatus.Exact,
                 ClrmdValueIssue.None,
                 observation,
-                ImmutableArray.Create(memory)),
+                ImmutableArray.Create(memory),
+                fieldResult.AppliedBounds),
             MemoryReadStatus.Partial => ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 ClrmdEvidenceStatus.Partial,
                 ClrmdValueIssue.MemoryUnavailable,
                 observation,
-                ImmutableArray.Create(memory)),
+                ImmutableArray.Create(memory),
+                fieldResult.AppliedBounds),
             _ => ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
                 ClrmdEvidenceStatus.Unavailable,
                 ClrmdValueIssue.MemoryUnavailable,
                 observation,
-                ImmutableArray.Create(memory)),
+                ImmutableArray.Create(memory),
+                fieldResult.AppliedBounds),
         };
     }
 
@@ -1524,11 +1550,14 @@ public sealed class ClrmdDumpSession : IDisposable
                 ClrmdValueIssue.InvalidData);
         }
 
+        var appliedBounds = InstanceFieldTraversalBounds;
+
         if (fields.Length > MaximumRuntimeInstanceFieldCount)
         {
             return ClrmdEvidenceResult<ClrInstanceField>.Create(
                 ClrmdEvidenceStatus.Partial,
-                ClrmdValueIssue.LimitExceeded);
+                ClrmdValueIssue.LimitExceeded,
+                appliedBounds: appliedBounds);
         }
 
         ClrInstanceField? match = null;
@@ -1543,7 +1572,8 @@ public sealed class ClrmdDumpSession : IDisposable
             {
                 return ClrmdEvidenceResult<ClrInstanceField>.Create(
                     ClrmdEvidenceStatus.Conflict,
-                    ClrmdValueIssue.AmbiguousMatch);
+                    ClrmdValueIssue.AmbiguousMatch,
+                    appliedBounds: appliedBounds);
             }
 
             match = candidate;
@@ -1552,11 +1582,13 @@ public sealed class ClrmdDumpSession : IDisposable
         return match is null
             ? ClrmdEvidenceResult<ClrInstanceField>.Create(
                 ClrmdEvidenceStatus.Unavailable,
-                ClrmdValueIssue.FieldUnavailable)
+                ClrmdValueIssue.FieldUnavailable,
+                appliedBounds: appliedBounds)
             : ClrmdEvidenceResult<ClrInstanceField>.Create(
                 ClrmdEvidenceStatus.Exact,
                 ClrmdValueIssue.None,
-                match);
+                match,
+                appliedBounds: appliedBounds);
     }
 
     private static ClrmdSnapshotIdentity ComputeSnapshotIdentity(Stream dumpStream)

@@ -19,24 +19,30 @@ public static class DumpQueryEngine
     private const int MaximumObservedStringCharacters = 4096;
     private const string GrammarProvenanceId = "dump-query:grammar-v1";
     private const string CoalesceProvenanceId = "dump-query:null-coalesce-v1";
+    private const string RawMemoryReadBoundName = "dump.memory-read.bytes";
 
+    private static readonly EvaluationDeterministicBound ExpressionLengthBound = new(
+        "query.expression.characters",
+        DumpQueryParser.MaximumExpressionLength);
+    private static readonly EvaluationDeterministicBound RootNameLengthBound = new(
+        "query.root-name.characters",
+        DumpQueryParser.MaximumIdentifierLength);
+    private static readonly EvaluationDeterministicBound FieldNameLengthBound = new(
+        "query.field-name.characters",
+        DumpQueryParser.MaximumIdentifierLength);
+    private static readonly EvaluationDeterministicBound StringLiteralLengthBound = new(
+        "query.string-literal.characters",
+        DumpQueryParser.MaximumStringLiteralLength);
+    private static readonly EvaluationDeterministicBound ObservedStringLengthBound = new(
+        "query.observed-string.characters",
+        MaximumObservedStringCharacters);
     private static readonly ImmutableArray<EvaluationDeterministicBound> EngineBounds =
         ImmutableArray.Create(
-            new EvaluationDeterministicBound(
-                "query.expression.characters",
-                DumpQueryParser.MaximumExpressionLength),
-            new EvaluationDeterministicBound(
-                "query.root-name.characters",
-                DumpQueryParser.MaximumIdentifierLength),
-            new EvaluationDeterministicBound(
-                "query.field-name.characters",
-                DumpQueryParser.MaximumIdentifierLength),
-            new EvaluationDeterministicBound(
-                "query.string-literal.characters",
-                DumpQueryParser.MaximumStringLiteralLength),
-            new EvaluationDeterministicBound(
-                "query.observed-string.characters",
-                MaximumObservedStringCharacters));
+            ExpressionLengthBound,
+            RootNameLengthBound,
+            FieldNameLengthBound,
+            StringLiteralLengthBound,
+            ObservedStringLengthBound);
 
     /// <summary>Evaluates one closed-grammar expression over a caller-selected dump root.</summary>
     /// <param name="session">The immutable dump session from which <paramref name="root"/> was selected.</param>
@@ -48,9 +54,9 @@ public static class DumpQueryEngine
     /// </param>
     /// <param name="upstreamBounds">
     /// Optional immutable bounds that the caller actually enforced before this operation, such as strong-handle scan
-    /// and retained-match caps used to select <paramref name="root"/>. The engine adds its parser, root-name,
-    /// field-name, literal, observed-string, and raw-read bounds. Callers must not report intended or unenforced
-    /// policies; a default array means no upstream bound is claimed.
+    /// and retained-match caps used to select <paramref name="root"/>. The engine adds only parser, identifier,
+    /// literal, observed-string, and raw-read bounds whose guarded operation this execution path actually reaches.
+    /// Callers must not report intended or unenforced policies; a default array means no upstream bound is claimed.
     /// </param>
     /// <returns>
     /// A multi-axis derived-query result. Exact null, partial or missing evidence, unsupported field types, and
@@ -59,7 +65,7 @@ public static class DumpQueryEngine
     /// <exception cref="ArgumentNullException"><paramref name="session"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// <paramref name="upstreamBounds"/> contains a null entry, a duplicate name, or a name reserved by an
-    /// engine-applied bound.
+    /// engine- or adapter-applied bound.
     /// </exception>
     public static EvaluationResult<DumpQueryValue> Evaluate(
         ClrmdDumpSession session,
@@ -69,8 +75,16 @@ public static class DumpQueryEngine
         ImmutableArray<EvaluationDeterministicBound> upstreamBounds = default)
     {
         ArgumentNullException.ThrowIfNull(session);
-        var context = CreateEvidenceContext(session, root, upstreamBounds);
+        ValidateUpstreamBounds(upstreamBounds);
         var parsed = DumpQueryParser.Parse(expression, rootName);
+        var context = CreateEvidenceContext(
+            session,
+            root,
+            upstreamBounds,
+            ImmutableArray<EvaluationDeterministicBound>.Empty,
+            parsed.AppliedBounds,
+            rawMemoryReadBoundApplied: false,
+            observedStringBoundApplied: false);
         if (!parsed.IsSuccess)
         {
             return CreateResult(
@@ -103,13 +117,28 @@ public static class DumpQueryEngine
 
         var query = parsed.Query!;
         var provenance = ImmutableArray.CreateBuilder<EvaluationProvenance>();
-        AppendMemoryProvenance(provenance, root.Evidence);
+        var rootEvidenceBelongsToSession = RootEvidenceBelongsToSession(session, root);
+        if (rootEvidenceBelongsToSession)
+        {
+            AppendMemoryProvenance(provenance, root.Evidence);
+        }
+
+        var rootMemoryReadBoundApplied =
+            rootEvidenceBelongsToSession && ReturnedOutcomeReachedRawMemoryRead(root.Evidence);
         provenance.Add(new EvaluationProvenance(
             EvaluationProvenanceKind.RuntimeStructure,
             root.Snapshot.MemorySourceId,
             root.Address));
 
         var fieldResult = session.GetInstanceField(root, query.FieldName);
+        context = CreateEvidenceContext(
+            session,
+            root,
+            upstreamBounds,
+            fieldResult.AppliedBounds,
+            parsed.AppliedBounds,
+            rawMemoryReadBoundApplied: rootMemoryReadBoundApplied,
+            observedStringBoundApplied: false);
         if (fieldResult.Status != ClrmdEvidenceStatus.Exact)
         {
             var observation = fieldResult.ToObservationResult();
@@ -139,7 +168,15 @@ public static class DumpQueryEngine
                 return InvalidCoalesceType(context, provenance);
             }
 
-            return EvaluateInt32(session, root, query.FieldName, context, provenance);
+            return EvaluateInt32(
+                session,
+                root,
+                query.FieldName,
+                upstreamBounds,
+                fieldResult.AppliedBounds,
+                parsed.AppliedBounds,
+                rootMemoryReadBoundApplied,
+                provenance);
         }
 
         if (string.Equals(field.ElementType, "String", StringComparison.Ordinal))
@@ -149,7 +186,15 @@ public static class DumpQueryEngine
                 return InvalidCoalesceType(context, provenance);
             }
 
-            return EvaluateString(session, root, query, context, provenance);
+            return EvaluateString(
+                session,
+                root,
+                query,
+                upstreamBounds,
+                fieldResult.AppliedBounds,
+                parsed.AppliedBounds,
+                rootMemoryReadBoundApplied,
+                provenance);
         }
 
         return CreateResult(
@@ -168,10 +213,22 @@ public static class DumpQueryEngine
         ClrmdDumpSession session,
         ClrmdHeapObjectInfo root,
         string fieldName,
-        EvaluationEvidenceContext context,
+        ImmutableArray<EvaluationDeterministicBound> upstreamBounds,
+        ImmutableArray<EvaluationDeterministicBound> adapterBounds,
+        DumpQueryParserBounds parserBounds,
+        bool rootMemoryReadBoundApplied,
         ImmutableArray<EvaluationProvenance>.Builder provenance)
     {
         var fieldRead = session.ReadInt32Field(root, fieldName);
+        var context = CreateEvidenceContext(
+            session,
+            root,
+            upstreamBounds,
+            adapterBounds,
+            parserBounds,
+            rawMemoryReadBoundApplied:
+                rootMemoryReadBoundApplied || ReturnedOutcomeReachedRawMemoryRead(fieldRead.Evidence),
+            observedStringBoundApplied: false);
         var observation = fieldRead.ToObservationResult();
         AppendProvenance(provenance, observation.Provenance);
         if (fieldRead.Status == ClrmdEvidenceStatus.Exact && fieldRead.Value?.Value is int value)
@@ -200,10 +257,22 @@ public static class DumpQueryEngine
         ClrmdDumpSession session,
         ClrmdHeapObjectInfo root,
         ParsedDumpQuery query,
-        EvaluationEvidenceContext context,
+        ImmutableArray<EvaluationDeterministicBound> upstreamBounds,
+        ImmutableArray<EvaluationDeterministicBound> adapterBounds,
+        DumpQueryParserBounds parserBounds,
+        bool rootMemoryReadBoundApplied,
         ImmutableArray<EvaluationProvenance>.Builder provenance)
     {
         var fieldRead = session.ReadStringField(root, query.FieldName, MaximumObservedStringCharacters);
+        var context = CreateEvidenceContext(
+            session,
+            root,
+            upstreamBounds,
+            adapterBounds,
+            parserBounds,
+            rawMemoryReadBoundApplied:
+                rootMemoryReadBoundApplied || ReturnedOutcomeReachedRawMemoryRead(fieldRead.Evidence),
+            observedStringBoundApplied: fieldRead.TargetLength is >= 0);
         var observation = fieldRead.ToObservationResult();
         AppendProvenance(provenance, observation.Provenance);
 
@@ -302,17 +371,38 @@ public static class DumpQueryEngine
     private static EvaluationEvidenceContext CreateEvidenceContext(
         ClrmdDumpSession session,
         ClrmdHeapObjectInfo? root,
-        ImmutableArray<EvaluationDeterministicBound> upstreamBounds)
+        ImmutableArray<EvaluationDeterministicBound> upstreamBounds,
+        ImmutableArray<EvaluationDeterministicBound> adapterBounds,
+        DumpQueryParserBounds parserBounds,
+        bool rawMemoryReadBoundApplied,
+        bool observedStringBoundApplied)
     {
         var bounds = ImmutableArray.CreateBuilder<EvaluationDeterministicBound>(
-            EngineBounds.Length + 1 + (upstreamBounds.IsDefault ? 0 : upstreamBounds.Length));
-        bounds.AddRange(EngineBounds);
-        bounds.Add(new EvaluationDeterministicBound(
-            "dump.memory-read.bytes",
-            session.Memory.MaximumReadLength));
+            EngineBounds.Length +
+            1 +
+            (upstreamBounds.IsDefault ? 0 : upstreamBounds.Length) +
+            (adapterBounds.IsDefault ? 0 : adapterBounds.Length));
         if (!upstreamBounds.IsDefault)
         {
             bounds.AddRange(upstreamBounds);
+        }
+
+        if (!adapterBounds.IsDefault)
+        {
+            bounds.AddRange(adapterBounds);
+        }
+
+        AddParserBounds(bounds, parserBounds);
+        if (rawMemoryReadBoundApplied)
+        {
+            bounds.Add(new EvaluationDeterministicBound(
+                RawMemoryReadBoundName,
+                session.Memory.MaximumReadLength));
+        }
+
+        if (observedStringBoundApplied)
+        {
+            bounds.Add(ObservedStringLengthBound);
         }
 
         var module = root is not null &&
@@ -327,6 +417,89 @@ public static class DumpQueryEngine
             EvaluationFallback.None,
             bounds.ToImmutable());
     }
+
+    private static void AddParserBounds(
+        ImmutableArray<EvaluationDeterministicBound>.Builder bounds,
+        DumpQueryParserBounds parserBounds)
+    {
+        if ((parserBounds & DumpQueryParserBounds.ExpressionLength) != 0)
+        {
+            bounds.Add(ExpressionLengthBound);
+        }
+
+        if ((parserBounds & DumpQueryParserBounds.RootNameLength) != 0)
+        {
+            bounds.Add(RootNameLengthBound);
+        }
+
+        if ((parserBounds & DumpQueryParserBounds.FieldNameLength) != 0)
+        {
+            bounds.Add(FieldNameLengthBound);
+        }
+
+        if ((parserBounds & DumpQueryParserBounds.StringLiteralLength) != 0)
+        {
+            bounds.Add(StringLiteralLengthBound);
+        }
+    }
+
+    private static void ValidateUpstreamBounds(
+        ImmutableArray<EvaluationDeterministicBound> upstreamBounds)
+    {
+        if (upstreamBounds.IsDefault)
+        {
+            return;
+        }
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var bound in upstreamBounds)
+        {
+            if (bound is null)
+            {
+                throw new ArgumentException(
+                    "Upstream deterministic bounds cannot contain null entries.",
+                    nameof(upstreamBounds));
+            }
+
+            if (string.Equals(
+                    bound.Name,
+                    ClrmdDumpSession.InstanceFieldTraversalBound.Name,
+                    StringComparison.Ordinal) ||
+                string.Equals(bound.Name, RawMemoryReadBoundName, StringComparison.Ordinal) ||
+                EngineBounds.Any(engineBound =>
+                    string.Equals(engineBound.Name, bound.Name, StringComparison.Ordinal)))
+            {
+                throw new ArgumentException(
+                    $"The upstream deterministic bound name '{bound.Name}' is reserved by the dump-query operation.",
+                    nameof(upstreamBounds));
+            }
+
+            if (!names.Add(bound.Name))
+            {
+                throw new ArgumentException(
+                    $"The upstream deterministic bound name '{bound.Name}' occurs more than once.",
+                    nameof(upstreamBounds));
+            }
+        }
+    }
+
+    private static bool ReturnedOutcomeReachedRawMemoryRead(
+        ImmutableArray<Interpreter.Host.Abstractions.MemoryReadResult> evidence)
+    {
+        // ClrmdProcessMemoryReader turns every expected backend read failure into a MemoryReadResult. The admitted
+        // primitive and string paths validate their sizes and address ranges before calling it. Consequently, every
+        // returned outcome that reached Memory.Read retains at least one read; disposal or an unexpected runtime
+        // exception escapes instead of producing an EvaluationResult whose applied bounds could be understated.
+        return !evidence.IsEmpty;
+    }
+
+    private static bool RootEvidenceBelongsToSession(
+        ClrmdDumpSession session,
+        ClrmdHeapObjectInfo root) =>
+        root.Snapshot == session.Snapshot &&
+        root.Module.Identity.Snapshot == session.Snapshot &&
+        root.Evidence.All(read =>
+            string.Equals(read.SourceId, session.Memory.SourceId, StringComparison.Ordinal));
 
     private static void AppendMemoryProvenance(
         ImmutableArray<EvaluationProvenance>.Builder builder,
