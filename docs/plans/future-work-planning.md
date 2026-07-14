@@ -20,11 +20,11 @@ Until W1 and W2 pass their exit criteria, the following remain research backlog 
 
 Scope expands only through an explicit decision gate backed by executable evidence.
 
-**Current active milestone:** close the non-security W1 evidence slice on exact-HEAD hosted CI. W0, the bounded W2
-root-field query, and the required W1 implementation/local gates are present in-tree. External-input cybersecurity and
-representative private-production measurement are outside W1; already-landed worker/corpus code is retained only as
-non-gating prototype work. The concrete W3 work is a bounded architecture-risk spike, W3 remains incomplete, and W4
-remains gated.
+**Current milestone status:** W1 is complete for its revised non-security evidence scope at exact closure commit
+`e2580a8a8`. No additional implementation milestone is opened by this completion record. The bounded W2 root-field
+query is present and verified; its next increment requires an explicit scope decision. Representative
+private-production measurement is outside W1, already-landed worker/corpus code remains non-gating prototype work, the
+concrete W3 work is a bounded architecture-risk spike, W3 remains incomplete, and W4 remains gated.
 
 ## 2) LOC sizing and work-in-progress
 
@@ -141,30 +141,27 @@ This total records the full review implementation stream, including separately l
 a claim that every row remains part of W1. After generated files are removed, the disjoint malformed-corpus and
 external-worker paths contribute 4,042 additions/0 deletions (1,153 + 2,889) as now-non-gating security prototypes.
 The remaining **3,381 additions/89 deletions are attributable to active non-security W1**. Do
-not revise the original forecast into a post-hoc estimate. No further W1 implementation package is currently forecast:
-**0 additional implementation LOC** is planned for the remaining hosted verification step. If that run exposes a
-defect, estimate and record the resulting corrective package separately.
+not revise the original forecast into a post-hoc estimate. Hosted closure required **0 additional implementation LOC**,
+and no further W1 implementation package is forecast. Any later defect correction must be estimated and recorded as a
+separate package.
 
 ‡ Corrective commit `f85545c0c` contains 781 additions and 105 deletions. Against the original W0 baseline, 51 of
 those additions replace lines already attributed to earlier W1 packages; cumulative current-diff accounting therefore
 assigns 730 LOC to this row and counts every delivered line once.
 
-**Status:** the generated trusted-fixture slice and its checked-in fast/dump lanes are implemented and locally verified.
+**Status:** **Complete.** The generated trusted-fixture slice and its checked-in fast/dump lanes are implemented and verified.
 It covers fully dump-sourced tiny and compiler-emitted fat method-body facts, metadata-root conflicts, whole-file
 disk-artifact identity, typed malformed evidence, foreign-snapshot rejection, Normal-vs-Full sparse memory, explicit result
 evidence context, path-accurate actually-applied bounds, honest no-answer completeness, and canonical replay across a
-disposed/reopened dump session. Repository-owned headless launch policy and its workflow guard are implemented. Hosted
-CI on the exact current commit remains the only W1 closure gate.
+disposed/reopened dump session. Repository-owned headless launch policy and its workflow guard are implemented.
 
 Local verification at `f85545c0c` on 2026-07-14 used only `Invoke-HeadlessProcess` and passed locked restore; a strict
 15-project Release build with 0 warnings/errors; 64/64 core tests; 63/63 fast integration tests; 3/3 ordinary dump
 tests; and 1/1 optimized-context test, with no skips or UI.
 
-[GitHub Actions run 29352271781](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29352271781) passed
-all four revised-scope jobs at exact semantic corrective commit `f85545c0c`: documentation/headless consistency, the
-15-project zero-warning Release build and fast suites, ordinary real-dump evidence, and optimized-context evidence. It
-is the strongest hosted implementation baseline, but this documentation advances HEAD; a post-documentation exact-HEAD
-run is still required.
+[GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed
+all four required jobs at exact closure commit `e2580a8a8`: documentation/headless consistency, the 15-project
+zero-warning Release build and fast suites, ordinary real-dump evidence, and optimized-context evidence.
 
 The checked-in malformed-minidump corpus and one-shot Windows worker remain useful separately landed evidence, but they
 are not W1 completion requirements. The optimized generated modeled-incident report is active W1 context evidence;

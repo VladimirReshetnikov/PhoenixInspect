@@ -138,11 +138,10 @@ That service run is the historical W0 baseline only. It does not contain the lat
 modeled-incident, headless-policy, topology, or external-worker packages. Do not call the later W1 packages CI-enforced until a
 successful hosted run records their exact pushed commit; the external-worker package remains non-gating for W1.
 
-At semantic corrective commit `f85545c0c`, [GitHub Actions run
-29352271781](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29352271781) passed all four revised-scope
-jobs: documentation/headless consistency, the 15-project Release build and fast suites, ordinary real-dump evidence,
-and optimized-context evidence. This is the strongest hosted implementation baseline, but it is not final W1
-completion evidence because this documentation advances HEAD; a post-documentation exact-HEAD run remains required.
+[GitHub Actions run
+29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs
+at exact W1 closure commit `e2580a8a8`: documentation/headless consistency, the 15-project Release build and fast
+suites, ordinary real-dump evidence, and optimized-context evidence.
 
 Current local verification on 2026-07-14 passed locked restore; a strict 15-project Release build with 0 warnings and
 0 errors; 64/64 `Interpreter.Tests`; 63/63 `Category=Fast` integration tests; 3/3 ordinary dump tests; and 1/1 modeled
@@ -155,7 +154,6 @@ No workflow uploads dumps, target output, heap values, paths, or expression resu
 The generated-fixture W1–W2 path, foreign-snapshot rejection, Normal-vs-Full sparse-memory case, explicit replayable
 result context, path-accurate bounds, honest no-answer projection, fresh-session replay, headless workflow guard, and
 optimized modeled-incident report are implemented in-tree.
-The only remaining W1 gate is hosted CI on the exact pushed commit. The malformed corpus and external worker are
-separately landed, non-gating prototypes; representative private-production measurement is a later product-readiness
-question. W3 expands the differential corpus only from scenario-derived compiler IL; opcode counts or percentage
-targets do not define readiness.
+W1 is complete for its revised scope. The malformed corpus and external worker are separately landed, non-gating
+prototypes; representative private-production measurement is a later product-readiness question. W3 expands the
+differential corpus only from scenario-derived compiler IL; opcode counts or percentage targets do not define readiness.

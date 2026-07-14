@@ -259,10 +259,9 @@ SHAs rather than movable major tags.
 ### Revised W1 CI target
 
 The current workflow uses the same headless wrapper for locked restore, the strict 15-project Release build, fast tests,
-ordinary real-dump evidence, and optimized-context evidence; worker tests are outside the default W1 lane. At semantic
-corrective commit `f85545c0c`, all four revised-scope jobs passed in [GitHub Actions run
-29352271781](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29352271781). This is the strongest hosted
-implementation baseline. A post-documentation exact-HEAD run remains the final W1 closure gate.
+ordinary real-dump evidence, and optimized-context evidence; worker tests are outside the default W1 lane. All four
+required jobs passed at exact W1 closure commit `e2580a8a8` in [GitHub Actions run
+29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889).
 
 Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.
 

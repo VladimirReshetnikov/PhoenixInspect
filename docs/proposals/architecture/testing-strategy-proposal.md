@@ -109,13 +109,12 @@ is not a W1 gate.
 | Repository build | Stable .NET 10.0.2xx feature-band/minimum-patch pin, central versions, committed lock files, deterministic Release build, warnings-as-errors under `CI=true`. | `CI-enforced` for exact completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: locked restore and the zero-warning Release build passed in GitHub run 29309374548. |
 | Fast tests | Unit/domain/admission/differential/determinism/metadata suite plus payload-safe harness start/readiness failure coverage is checked in. | The same run passed 60 semantic/differential tests and 40 fast adapter/harness tests. |
 | Dump integration | Required Windows dump category and a bounded target/dump harness are checked in. | The dependent Windows job passed 3/3 dump tests. An inability to create/load the dump remains a failure, not a passing skip. |
-| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes, explicit replayable evidence context, plus stable identity/content-hash assertions are checked in. The same dump reopened in a fresh session reproduces module/root selection and complete replay bytes/fingerprint. | Passed at exact semantic commit `f85545c0c` in run 29352271781; repeat after the documentation commit for final exact-HEAD closure. |
+| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes, explicit replayable evidence context, plus stable identity/content-hash assertions are checked in. The same dump reopened in a fresh session reproduces module/root selection and complete replay bytes/fingerprint. | Passed at exact W1 closure commit `e2580a8a8` in run 29353198889. |
 | Documentation truth | The evidence matrix distinguishes raw dump bytes, dump metadata-derived facts, ClrMD-decoded runtime structures, whole-file-identified disk oracle facts, and explicit fixture inputs. `eng/verify-markdown-links.ps1` validates repository-local inline/reference destinations with stable file/line diagnostics. | The dedicated documentation-consistency job passed on the exact completion commit. Keep the evidence matrix synchronized whenever an evidence fallback changes. |
 
 The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
-`CI-enforced` applies only to the gates that the successful workflow actually executed. The semantic implementation
-commit is green; the documentation commit still needs its own exact-HEAD run. External-input cybersecurity and
-representative private-production measurement are outside W1.
+`CI-enforced` applies only to the gates that the successful workflow actually executed. The exact W1 closure commit is
+green. External-input cybersecurity and representative private-production measurement are outside W1.
 
 ### Local verification record — 2026-07-13
 
@@ -150,11 +149,9 @@ generated-fixture proof boundary.
 
 ### Current revised-scope service evidence — 2026-07-14
 
-[GitHub Actions run 29352271781](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29352271781)
-passed all four revised-scope jobs at exact semantic corrective commit `f85545c0c`: documentation/headless consistency;
-the 15-project zero-warning Release build and fast suites; ordinary real-dump evidence; and optimized-context evidence.
-It is the strongest hosted implementation baseline, not final W1 completion evidence, because this documentation
-advances HEAD.
+[GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889)
+passed all four required jobs at exact W1 closure commit `e2580a8a8`: documentation/headless consistency; the
+15-project zero-warning Release build and fast suites; ordinary real-dump evidence; and optimized-context evidence.
 
 ### Current local W1 verification — 2026-07-14
 
@@ -169,7 +166,7 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 | Ordinary real-dump evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 3/3. |
 | Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1. |
 
-These are local results. W1 remains open until the post-documentation exact-HEAD hosted run passes.
+These local results are corroborated by the exact-commit hosted closure run above; W1 is complete for its revised scope.
 
 ## 3) Active test layers
 

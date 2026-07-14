@@ -91,8 +91,8 @@ prototypes outside W1.
 
 Local verification on 2026-07-14 passed locked restore, the strict 15-project Release build with 0 warnings/errors,
 64/64 core tests, 63/63 fast integration tests, 3/3 ordinary dump tests, and 1/1 optimized-context test through the
-headless wrapper. At semantic corrective commit `f85545c0c`, [hosted run
-29352271781](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29352271781) passed all four revised-scope
-jobs. This is the strongest hosted implementation baseline; an exact-HEAD post-documentation run remains required.
+headless wrapper. [Hosted run
+29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs
+at exact W1 closure commit `e2580a8a8`.
 
 The physical layout and contracts remain prototype hypotheses. They may change freely as W1–W4 force better boundaries.
