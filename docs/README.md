@@ -42,6 +42,7 @@ docs/
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
+| `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
@@ -101,14 +102,15 @@ docs/
 1. `../DESIGN-ARCHITECTURE-REVIEW.md`
 2. `proposals/product/post-mortem-debugging-feature-proposal.md`
 3. `proposals/architecture/restricted-dump-query-contract-proposal.md`
-4. `proposals/architecture/architecture-overview-proposal.md`
-5. `proposals/architecture/prototype-solution-structure-proposal.md`
-6. `lib/mvp-backend-decision-record.md`
-7. `plans/future-work-planning.md`
-8. `proposals/architecture/testing-strategy-proposal.md`
-9. `proposals/integration-test-plan.md`
-10. `proposals/integration/clrmd-integration-proposal.md`
-11. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+4. `proposals/architecture/concrete-il-execution-contract-proposal.md`
+5. `proposals/architecture/architecture-overview-proposal.md`
+6. `proposals/architecture/prototype-solution-structure-proposal.md`
+7. `lib/mvp-backend-decision-record.md`
+8. `plans/future-work-planning.md`
+9. `proposals/architecture/testing-strategy-proposal.md`
+10. `proposals/integration-test-plan.md`
+11. `proposals/integration/clrmd-integration-proposal.md`
+12. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 
