@@ -238,3 +238,121 @@ public sealed class FieldLoadTransformLineageNode : LineageNode
     /// <summary>Gets the sole imported-field origin predecessor.</summary>
     public LineageNodeId InputOrigin { get; }
 }
+
+/// <summary>
+/// Represents one explained <c>Int32</c> crossing into a metadata-ordered parameter of an interpreted direct call.
+/// </summary>
+/// <remarks>
+/// The exact caller MethodDef, call IL offset, callee MethodDef, and zero-based parameter index are identity-bearing.
+/// The node has exactly one predecessor: the explanation attached to the caller-stack value before the call boundary.
+/// Exact arguments do not receive this node.
+/// </remarks>
+public sealed class CallArgumentTransformLineageNode : LineageNode
+{
+    internal CallArgumentTransformLineageNode(
+        LineageNodeId id,
+        DirectCallSiteIdentity callSite,
+        int parameterIndex,
+        LineageNodeId predecessor,
+        ImmutableArray<byte> canonicalBytes)
+        : base(
+            id,
+            LineageNodeKind.CallArgumentTransform,
+            TypeSig.Int32,
+            ImmutableArray.Create(predecessor),
+            canonicalBytes)
+    {
+        ValidateCallSite(callSite);
+        if (parameterIndex is < 0 or > 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(parameterIndex),
+                "The closed W4.5 call profile requires metadata parameter index zero or one.");
+        }
+
+        if (!predecessor.IsValid)
+        {
+            throw new ArgumentException(
+                "A call-argument lineage transform requires a non-default predecessor.",
+                nameof(predecessor));
+        }
+
+        CallSite = callSite;
+        ParameterIndex = parameterIndex;
+        Predecessor = predecessor;
+    }
+
+    /// <summary>Gets the exact caller, call IL offset, and interpreted callee identity.</summary>
+    public DirectCallSiteIdentity CallSite { get; }
+
+    /// <summary>Gets the zero-based metadata parameter index assigned to the transformed argument.</summary>
+    public int ParameterIndex { get; }
+
+    /// <summary>Gets the caller-side explanation that existed before the argument crossed the call boundary.</summary>
+    public LineageNodeId Predecessor { get; }
+
+    private static void ValidateCallSite(DirectCallSiteIdentity callSite)
+    {
+        if (callSite.Caller == default ||
+            callSite.Callee == default ||
+            callSite.CallIlOffset < 0 ||
+            callSite.Caller.Module != callSite.Callee.Module)
+        {
+            throw new ArgumentException(
+                "A call-argument lineage transform requires one valid same-module direct-call identity.",
+                nameof(callSite));
+        }
+    }
+}
+
+/// <summary>
+/// Represents one explained <c>Int32</c> returned from an interpreted callee to its frozen caller continuation.
+/// </summary>
+/// <remarks>
+/// The node retains the complete direct-call identity, including the actual callee, and exactly one predecessor: the
+/// explanation produced inside that callee. Exact returns cross the boundary without allocating a lineage node.
+/// </remarks>
+public sealed class InterpretedReturnTransformLineageNode : LineageNode
+{
+    internal InterpretedReturnTransformLineageNode(
+        LineageNodeId id,
+        DirectCallSiteIdentity callSite,
+        LineageNodeId predecessor,
+        ImmutableArray<byte> canonicalBytes)
+        : base(
+            id,
+            LineageNodeKind.InterpretedReturnTransform,
+            TypeSig.Int32,
+            ImmutableArray.Create(predecessor),
+            canonicalBytes)
+    {
+        if (callSite.Caller == default ||
+            callSite.Callee == default ||
+            callSite.CallIlOffset < 0 ||
+            callSite.Caller.Module != callSite.Callee.Module)
+        {
+            throw new ArgumentException(
+                "An interpreted-return lineage transform requires one valid same-module direct-call identity.",
+                nameof(callSite));
+        }
+
+        if (!predecessor.IsValid)
+        {
+            throw new ArgumentException(
+                "An interpreted-return lineage transform requires a non-default predecessor.",
+                nameof(predecessor));
+        }
+
+        CallSite = callSite;
+        Predecessor = predecessor;
+    }
+
+    /// <summary>Gets the exact caller, call IL offset, and interpreted callee identity.</summary>
+    public DirectCallSiteIdentity CallSite { get; }
+
+    /// <summary>Gets the exact MethodDef that produced the returned value.</summary>
+    public MethodHandle Callee => CallSite.Callee;
+
+    /// <summary>Gets the callee-side explanation that existed before the result crossed the return boundary.</summary>
+    public LineageNodeId Predecessor { get; }
+}

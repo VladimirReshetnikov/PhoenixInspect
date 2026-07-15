@@ -1,4 +1,7 @@
+using System.Buffers.Binary;
 using System.Collections.Immutable;
+using System.Security.Cryptography;
+using System.Text;
 using Interpreter.Core.Abstractions;
 using Interpreter.Core.Execution;
 using Interpreter.Domain.Concrete;
@@ -9,7 +12,7 @@ using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 namespace Interpreter.Tests;
 
 /// <summary>
-/// Exercises exact W4.5 prepared-graph activation, interpreted frame transfer, return sites, and call-depth facts.
+/// Exercises W4.5 prepared-graph activation, interpreted frame transfer, call lineage, return sites, and depth facts.
 /// </summary>
 public sealed class PreparedGraphExecutionTests
 {
@@ -678,10 +681,10 @@ public sealed class PreparedGraphExecutionTests
     }
 
     /// <summary>
-    /// Proves an empty completed call stack is terminal only when it retains the root's exact typed result.
+    /// Proves an empty completed call stack is terminal only when it retains the root's typed executable result.
     /// </summary>
     [Fact]
-    public void CompletedStateRequiresTheRootExactTypedResult()
+    public void CompletedStateRequiresTheRootTypedExecutableResult()
     {
         var resolver = ConstantCallResolver();
         var graph = Prepare(resolver, Root);
@@ -998,6 +1001,520 @@ public sealed class PreparedGraphExecutionTests
     }
 
     /// <summary>
+    /// Proves two explained field arguments receive metadata-ordered call nodes, arithmetic retains both, return adds
+    /// the frozen call-site node, and the complete ten-instruction run preserves memory, events, depth, and resolution.
+    /// </summary>
+    [Fact]
+    public void ExplainedUnknownCallAndReturnProduceCompleteFrozenLineageWithoutReresolution()
+    {
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+        var resolutionCount = resolver.TotalCallCount;
+        resolver.ThrowOnUse = true;
+        var domain = new ProvenanceConcreteDomain();
+        var receiver = domain.ObjectReference(1, RootType);
+        var memoryModel = new ProvenanceMemoryModel(
+            domain,
+            receiver,
+            FieldObservation.Partial,
+            FieldObservation.Unavailable);
+        var machine = ProvenanceMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivatePreparedGraph(
+            graph,
+            maximumLogicalCallDepth: 2,
+            ImmutableArray.Create(receiver),
+            ProvenanceMemory.Instance);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+
+        var run = RunProvenance(machine, activation.State!, instructionBudget: 10);
+
+        Assert.Equal(MachineRunStatus.Completed, run.Outcome.Status);
+        Assert.Empty(run.Outcome.State.CallStack);
+        Assert.Same(ProvenanceMemory.Instance, run.Outcome.State.Memory);
+        Assert.Equal(0, run.Outcome.OperationalState.Budget.InstructionBudget);
+        Assert.Equal(2, run.Outcome.OperationalState.ObservedLogicalDepthHighWater);
+        Assert.Equal(2, run.Outcome.OperationalState.ActiveFrameDepthHighWater);
+        Assert.Equal(10, run.Events.Count(static item => item.Kind == DebugEventKind.InstructionExecuted));
+        Assert.Single(run.Events, static item => item.Kind == DebugEventKind.FramePushed);
+        Assert.Equal(2, run.Events.Count(static item => item.Kind == DebugEventKind.FramePopped));
+        Assert.Equal(2, memoryModel.LoadCount);
+        Assert.Equal(resolutionCount, resolver.TotalCallCount);
+
+        var result = run.Outcome.State.ReturnValue.Value;
+        var lineage = domain.CaptureLineage(result);
+        Assert.Equal(8, lineage.Nodes.Length);
+        Assert.Equal(2, lineage.Nodes.Count(static node => node.Kind == LineageNodeKind.InputOrigin));
+        var fieldLoads = lineage.Nodes
+            .OfType<FieldLoadTransformLineageNode>()
+            .ToDictionary(static node => node.Field.Handle);
+        var callArguments = lineage.Nodes
+            .OfType<CallArgumentTransformLineageNode>()
+            .OrderBy(static node => node.ParameterIndex)
+            .ToArray();
+        Assert.Collection(
+            callArguments,
+            node =>
+            {
+                Assert.Equal(new DirectCallSiteIdentity(Root, 12, Helper), node.CallSite);
+                Assert.Equal(0, node.ParameterIndex);
+                Assert.Equal(fieldLoads[FirstField.Handle].Id, node.Predecessor);
+            },
+            node =>
+            {
+                Assert.Equal(new DirectCallSiteIdentity(Root, 12, Helper), node.CallSite);
+                Assert.Equal(1, node.ParameterIndex);
+                Assert.Equal(fieldLoads[SecondField.Handle].Id, node.Predecessor);
+            });
+        var binary = Assert.Single(lineage.Nodes.OfType<BinaryTransformLineageNode>());
+        Assert.Equal(callArguments[0].Id, binary.Left.Predecessor);
+        Assert.Equal(callArguments[1].Id, binary.Right.Predecessor);
+        var returned = Assert.Single(lineage.Nodes.OfType<InterpretedReturnTransformLineageNode>());
+        Assert.Equal(new DirectCallSiteIdentity(Root, 12, Helper), returned.CallSite);
+        Assert.Equal(Helper, returned.Callee);
+        Assert.Equal(binary.Id, returned.Predecessor);
+        Assert.Equal(returned.Id, lineage.Root);
+
+        var callEventIndex = run.Events
+            .Select(static (item, index) => (Item: item, Index: index))
+            .Single(pair =>
+                pair.Item.Kind == DebugEventKind.InstructionExecuted &&
+                pair.Item.Method == Root &&
+                pair.Item.IlOffset == 12)
+            .Index;
+        AssertEvent(run.Events[callEventIndex + 1], DebugEventKind.FramePushed, Helper, 0, "Entry");
+        var returnEventIndex = run.Events
+            .Select(static (item, index) => (Item: item, Index: index))
+            .Single(pair =>
+                pair.Item.Kind == DebugEventKind.InstructionExecuted &&
+                pair.Item.Method == Helper &&
+                pair.Item.IlOffset == 3)
+            .Index;
+        AssertEvent(run.Events[returnEventIndex + 1], DebugEventKind.FramePopped, Helper, 3, "Return");
+    }
+
+    /// <summary>Proves one exact argument passes unchanged while its unknown peer alone receives a call node.</summary>
+    [Fact]
+    public void MixedExactAndUnknownCallTransformsOnlyTheUnknownArgument()
+    {
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+        var domain = new ProvenanceConcreteDomain();
+        var receiver = domain.ObjectReference(2, RootType);
+        var memoryModel = new ProvenanceMemoryModel(
+            domain,
+            receiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact,
+            secondExact: 9);
+        var machine = ProvenanceMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(receiver),
+            ProvenanceMemory.Instance);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+
+        var call = RunProvenanceReadySteps(
+            machine,
+            activation.State!,
+            machine.CreatePreparedOperationalState(new BudgetState(10)),
+            stepCount: 5);
+
+        Assert.Equal(2, call.State.CallStack.Length);
+        var callee = call.State.CallStack[^1];
+        Assert.True(callee.Arguments[0].TryGetLineageRoot(out var callRoot));
+        Assert.True(domain.TryGetConstInt32(callee.Arguments[1], out var exact));
+        Assert.Equal(9, exact);
+        var callGraph = domain.CaptureLineage(callee.Arguments[0]);
+        var callNode = Assert.Single(callGraph.Nodes.OfType<CallArgumentTransformLineageNode>());
+        Assert.Equal(0, callNode.ParameterIndex);
+        Assert.Equal(callRoot, callNode.Id);
+        Assert.Equal(3, callGraph.Nodes.Length);
+        Assert.Equal(5, call.OperationalState.Budget.InstructionBudget);
+        Assert.Equal(2, call.OperationalState.ObservedLogicalDepthHighWater);
+        Assert.Equal(2, memoryModel.LoadCount);
+        Assert.Collection(
+            call.Events,
+            item => AssertEvent(item, DebugEventKind.InstructionExecuted, Root, 12, "Call"),
+            item => AssertEvent(item, DebugEventKind.FramePushed, Helper, 0, "Entry"));
+    }
+
+    /// <summary>Proves exact execution never requires or invokes the optional lineage capability.</summary>
+    [Fact]
+    public void ExactPreparedCallBypassesThrowingLineageCapability()
+    {
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+        var domain = new ConfigurableCallLineageDomain
+        {
+            CallBehavior = CallLineageBehavior.Throw,
+            ReturnBehavior = ReturnLineageBehavior.Throw,
+        };
+        var receiver = domain.Inner.ObjectReference(3, RootType);
+        var memoryModel = new ProvenanceMemoryModel(
+            domain.Inner,
+            receiver,
+            FieldObservation.Exact,
+            FieldObservation.Exact,
+            firstExact: 4,
+            secondExact: 5);
+        var machine = ProvenanceMachine(
+            domain,
+            resolver,
+            memoryModel,
+            UnknownExecutionPolicy.ExactOnly);
+        var activation = machine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(receiver),
+            ProvenanceMemory.Instance);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+
+        var run = RunProvenance(machine, activation.State!, instructionBudget: 10);
+
+        Assert.Equal(MachineRunStatus.Completed, run.Outcome.Status);
+        Assert.True(domain.TryGetConstInt32(run.Outcome.State.ReturnValue.Value, out var result));
+        Assert.Equal(9, result);
+        Assert.Equal(0, domain.CallArgumentTransformCount);
+        Assert.Equal(0, domain.ReturnTransformCount);
+        Assert.Equal(0, domain.Inner.InternedNodeCount);
+        Assert.Equal(2, memoryModel.LoadCount);
+    }
+
+    /// <summary>Proves an explained call blocks atomically when the optional capability is absent.</summary>
+    [Fact]
+    public void MissingCallLineageCapabilityBlocksWithoutTransfer()
+    {
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+        var domain = new PrecisionOnlyProvenanceDomain();
+        var receiver = domain.Inner.ObjectReference(4, RootType);
+        var memoryModel = new ProvenanceMemoryModel(
+            domain.Inner,
+            receiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var machine = ProvenanceMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(receiver),
+            ProvenanceMemory.Instance);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var atCall = RunProvenanceReadySteps(
+            machine,
+            activation.State!,
+            machine.CreatePreparedOperationalState(new BudgetState(10)),
+            stepCount: 4);
+        var nodesBefore = domain.Inner.InternedNodeCount;
+
+        var blocked = machine.StepOne(atCall.State, atCall.OperationalState);
+
+        AssertProvenanceFailureWithoutTransfer(
+            atCall.State,
+            atCall.OperationalState,
+            blocked,
+            MachineRunStatus.Blocked,
+            "EXEC_CALL_LINEAGE_UNAVAILABLE");
+        Assert.Equal(nodesBefore, domain.Inner.InternedNodeCount);
+        Assert.Same(ProvenanceMemory.Instance, blocked.State.Memory);
+        Assert.Equal(2, memoryModel.LoadCount);
+    }
+
+    /// <summary>Proves call and return capability exceptions are blocked at their own atomic frame boundaries.</summary>
+    [Fact]
+    public void ThrowingCallAndReturnLineageCapabilitiesAreBlockedAtomically()
+    {
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+
+        var callDomain = new ConfigurableCallLineageDomain { CallBehavior = CallLineageBehavior.Throw };
+        var callReceiver = callDomain.Inner.ObjectReference(5, RootType);
+        var callMemoryModel = new ProvenanceMemoryModel(
+            callDomain.Inner,
+            callReceiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var callMachine = ProvenanceMachine(callDomain, resolver, callMemoryModel);
+        var callActivation = callMachine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(callReceiver),
+            ProvenanceMemory.Instance);
+        Assert.True(callActivation.IsSuccess, callActivation.Failure?.Code);
+        var atCall = RunProvenanceReadySteps(
+            callMachine,
+            callActivation.State!,
+            callMachine.CreatePreparedOperationalState(new BudgetState(20)),
+            stepCount: 4);
+        var callNodesBefore = callDomain.Inner.InternedNodeCount;
+        AssertProvenanceFailureWithoutTransfer(
+            atCall.State,
+            atCall.OperationalState,
+            callMachine.StepOne(atCall.State, atCall.OperationalState),
+            MachineRunStatus.Blocked,
+            "EXEC_DOMAIN_FAILURE");
+        Assert.Equal(1, callDomain.CallArgumentTransformCount);
+        Assert.Equal(0, callDomain.ReturnTransformCount);
+        Assert.Equal(callNodesBefore, callDomain.Inner.InternedNodeCount);
+
+        var returnDomain = new ConfigurableCallLineageDomain { ReturnBehavior = ReturnLineageBehavior.Throw };
+        var returnReceiver = returnDomain.Inner.ObjectReference(6, RootType);
+        var returnMemoryModel = new ProvenanceMemoryModel(
+            returnDomain.Inner,
+            returnReceiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var returnMachine = ProvenanceMachine(returnDomain, resolver, returnMemoryModel);
+        var returnActivation = returnMachine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(returnReceiver),
+            ProvenanceMemory.Instance);
+        Assert.True(returnActivation.IsSuccess, returnActivation.Failure?.Code);
+        var atReturn = RunProvenanceReadySteps(
+            returnMachine,
+            returnActivation.State!,
+            returnMachine.CreatePreparedOperationalState(new BudgetState(20)),
+            stepCount: 8);
+        var nodesBeforeReturn = returnDomain.Inner.InternedNodeCount;
+        AssertProvenanceFailureWithoutTransfer(
+            atReturn.State,
+            atReturn.OperationalState,
+            returnMachine.StepOne(atReturn.State, atReturn.OperationalState),
+            MachineRunStatus.Blocked,
+            "EXEC_DOMAIN_FAILURE");
+        Assert.Equal(1, returnDomain.CallArgumentTransformCount);
+        Assert.Equal(1, returnDomain.ReturnTransformCount);
+        Assert.Equal(nodesBeforeReturn, returnDomain.Inner.InternedNodeCount);
+    }
+
+    /// <summary>Proves domain failures during semantic-equivalence validation remain blocked capability failures.</summary>
+    [Fact]
+    public void ThrowingCallAndReturnLineageValidationIsBlockedAtomically()
+    {
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+
+        var callDomain = new ConfigurableCallLineageDomain
+        {
+            CallBehavior = CallLineageBehavior.ThrowDuringValidation,
+        };
+        var callReceiver = callDomain.Inner.ObjectReference(7, RootType);
+        var callMemoryModel = new ProvenanceMemoryModel(
+            callDomain.Inner,
+            callReceiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var callMachine = ProvenanceMachine(callDomain, resolver, callMemoryModel);
+        var callActivation = callMachine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(callReceiver),
+            ProvenanceMemory.Instance);
+        Assert.True(callActivation.IsSuccess, callActivation.Failure?.Code);
+        var atCall = RunProvenanceReadySteps(
+            callMachine,
+            callActivation.State!,
+            callMachine.CreatePreparedOperationalState(new BudgetState(20)),
+            stepCount: 4);
+        var callNodesBefore = callDomain.Inner.InternedNodeCount;
+
+        AssertProvenanceFailureWithoutTransfer(
+            atCall.State,
+            atCall.OperationalState,
+            callMachine.StepOne(atCall.State, atCall.OperationalState),
+            MachineRunStatus.Blocked,
+            "EXEC_DOMAIN_FAILURE");
+        Assert.Equal(1, callDomain.CallArgumentTransformCount);
+        Assert.Equal(0, callDomain.ReturnTransformCount);
+        Assert.Equal(callNodesBefore, callDomain.Inner.InternedNodeCount);
+
+        var returnDomain = new ConfigurableCallLineageDomain
+        {
+            ReturnBehavior = ReturnLineageBehavior.ThrowDuringValidation,
+        };
+        var returnReceiver = returnDomain.Inner.ObjectReference(8, RootType);
+        var returnMemoryModel = new ProvenanceMemoryModel(
+            returnDomain.Inner,
+            returnReceiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var returnMachine = ProvenanceMachine(returnDomain, resolver, returnMemoryModel);
+        var returnActivation = returnMachine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(returnReceiver),
+            ProvenanceMemory.Instance);
+        Assert.True(returnActivation.IsSuccess, returnActivation.Failure?.Code);
+        var atReturn = RunProvenanceReadySteps(
+            returnMachine,
+            returnActivation.State!,
+            returnMachine.CreatePreparedOperationalState(new BudgetState(20)),
+            stepCount: 8);
+        var returnNodesBefore = returnDomain.Inner.InternedNodeCount;
+
+        AssertProvenanceFailureWithoutTransfer(
+            atReturn.State,
+            atReturn.OperationalState,
+            returnMachine.StepOne(atReturn.State, atReturn.OperationalState),
+            MachineRunStatus.Blocked,
+            "EXEC_DOMAIN_FAILURE");
+        Assert.Equal(1, returnDomain.CallArgumentTransformCount);
+        Assert.Equal(1, returnDomain.ReturnTransformCount);
+        Assert.Equal(returnNodesBefore, returnDomain.Inner.InternedNodeCount);
+    }
+
+    /// <summary>Proves malformed and semantic-changing call outputs are invalid without committing a frame push.</summary>
+    [Theory]
+    [InlineData((int)CallLineageBehavior.DefaultVector)]
+    [InlineData((int)CallLineageBehavior.ShortVector)]
+    [InlineData((int)CallLineageBehavior.NullElement)]
+    [InlineData((int)CallLineageBehavior.ForeignValue)]
+    [InlineData((int)CallLineageBehavior.SemanticMutation)]
+    public void MalformedCallLineageOutputsAreInvalidAndAtomic(int behaviorCode)
+    {
+        var behavior = (CallLineageBehavior)behaviorCode;
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+        var domain = new ConfigurableCallLineageDomain { CallBehavior = behavior };
+        var receiver = domain.Inner.ObjectReference(10 + behaviorCode, RootType);
+        var memoryModel = new ProvenanceMemoryModel(
+            domain.Inner,
+            receiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var machine = ProvenanceMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(receiver),
+            ProvenanceMemory.Instance);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var atCall = RunProvenanceReadySteps(
+            machine,
+            activation.State!,
+            machine.CreatePreparedOperationalState(new BudgetState(20)),
+            stepCount: 4);
+        var nodesBefore = domain.Inner.InternedNodeCount;
+
+        var invalid = machine.StepOne(atCall.State, atCall.OperationalState);
+
+        AssertProvenanceFailureWithoutTransfer(
+            atCall.State,
+            atCall.OperationalState,
+            invalid,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_CALL_LINEAGE_INVALID");
+        Assert.Equal(1, domain.CallArgumentTransformCount);
+        Assert.Equal(0, domain.ReturnTransformCount);
+        Assert.Equal(nodesBefore, domain.Inner.InternedNodeCount);
+    }
+
+    /// <summary>Proves malformed and semantic-changing return outputs are invalid without popping the helper.</summary>
+    [Theory]
+    [InlineData((int)ReturnLineageBehavior.NullValue)]
+    [InlineData((int)ReturnLineageBehavior.ForeignValue)]
+    [InlineData((int)ReturnLineageBehavior.SemanticMutation)]
+    public void MalformedReturnLineageOutputsAreInvalidAndAtomic(int behaviorCode)
+    {
+        var behavior = (ReturnLineageBehavior)behaviorCode;
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+        var domain = new ConfigurableCallLineageDomain { ReturnBehavior = behavior };
+        var receiver = domain.Inner.ObjectReference(20 + behaviorCode, RootType);
+        var memoryModel = new ProvenanceMemoryModel(
+            domain.Inner,
+            receiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var machine = ProvenanceMachine(domain, resolver, memoryModel);
+        var activation = machine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(receiver),
+            ProvenanceMemory.Instance);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var atReturn = RunProvenanceReadySteps(
+            machine,
+            activation.State!,
+            machine.CreatePreparedOperationalState(new BudgetState(20)),
+            stepCount: 8);
+        var nodesBefore = domain.Inner.InternedNodeCount;
+
+        var invalid = machine.StepOne(atReturn.State, atReturn.OperationalState);
+
+        AssertProvenanceFailureWithoutTransfer(
+            atReturn.State,
+            atReturn.OperationalState,
+            invalid,
+            MachineRunStatus.InvalidProgram,
+            "EXEC_CALL_LINEAGE_INVALID");
+        Assert.Equal(1, domain.CallArgumentTransformCount);
+        Assert.Equal(1, domain.ReturnTransformCount);
+        Assert.Equal(nodesBefore, domain.Inner.InternedNodeCount);
+    }
+
+    /// <summary>Proves zero instruction budget prevents both call and return lineage capability invocation.</summary>
+    [Fact]
+    public void ZeroBudgetPrecedesCallAndReturnLineageCapabilities()
+    {
+        var resolver = FieldCallResolver();
+        var graph = Prepare(resolver, Root);
+
+        var callDomain = new ConfigurableCallLineageDomain { CallBehavior = CallLineageBehavior.Throw };
+        var callReceiver = callDomain.Inner.ObjectReference(30, RootType);
+        var callMemoryModel = new ProvenanceMemoryModel(
+            callDomain.Inner,
+            callReceiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var callMachine = ProvenanceMachine(callDomain, resolver, callMemoryModel);
+        var callActivation = callMachine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(callReceiver),
+            ProvenanceMemory.Instance);
+        Assert.True(callActivation.IsSuccess, callActivation.Failure?.Code);
+        var atCall = RunProvenanceReadySteps(
+            callMachine,
+            callActivation.State!,
+            callMachine.CreatePreparedOperationalState(new BudgetState(4)),
+            stepCount: 4);
+        AssertProvenanceBudgetExhausted(
+            atCall.State,
+            atCall.OperationalState,
+            callMachine.StepOne(atCall.State, atCall.OperationalState));
+        Assert.Equal(0, callDomain.CallArgumentTransformCount);
+
+        var returnDomain = new ConfigurableCallLineageDomain { ReturnBehavior = ReturnLineageBehavior.Throw };
+        var returnReceiver = returnDomain.Inner.ObjectReference(31, RootType);
+        var returnMemoryModel = new ProvenanceMemoryModel(
+            returnDomain.Inner,
+            returnReceiver,
+            FieldObservation.Partial,
+            FieldObservation.Exact);
+        var returnMachine = ProvenanceMachine(returnDomain, resolver, returnMemoryModel);
+        var returnActivation = returnMachine.ActivatePreparedGraph(
+            graph,
+            2,
+            ImmutableArray.Create(returnReceiver),
+            ProvenanceMemory.Instance);
+        Assert.True(returnActivation.IsSuccess, returnActivation.Failure?.Code);
+        var atReturn = RunProvenanceReadySteps(
+            returnMachine,
+            returnActivation.State!,
+            returnMachine.CreatePreparedOperationalState(new BudgetState(8)),
+            stepCount: 8);
+        AssertProvenanceBudgetExhausted(
+            atReturn.State,
+            atReturn.OperationalState,
+            returnMachine.StepOne(atReturn.State, atReturn.OperationalState));
+        Assert.Equal(1, returnDomain.CallArgumentTransformCount);
+        Assert.Equal(0, returnDomain.ReturnTransformCount);
+    }
+
+    /// <summary>
     /// Proves semantic machine-state equality includes structural return-site content while ignoring independent
     /// immutable-array materialization.
     /// </summary>
@@ -1064,6 +1581,17 @@ public sealed class PreparedGraphExecutionTests
         return resolver;
     }
 
+    private static GraphResolver FieldCallResolver()
+    {
+        var resolver = Resolver(
+            RootDefinition(Root, ExactRootBody(Helper)),
+            HelperDefinition(Helper, AddBody()));
+        resolver.Fields[(Root, FirstField.Handle.MetadataToken)] = FirstField;
+        resolver.Fields[(Root, SecondField.Handle.MetadataToken)] = SecondField;
+        resolver.Calls[(Root, Helper.MetadataToken)] = Target(Helper);
+        return resolver;
+    }
+
     private static GraphResolver Resolver(params ResolvedMethodDefinition[] definitions)
     {
         var resolver = new GraphResolver();
@@ -1087,6 +1615,18 @@ public sealed class PreparedGraphExecutionTests
         IResolutionServices resolver,
         IMemoryModel<ConcreteValue, ConcreteMemory> memoryModel) =>
         new(domain, resolver, memoryModel, new InstructionBudgetPolicy());
+
+    private static IlMachine<ProvenanceConcreteValue, ProvenanceMemory> ProvenanceMachine(
+        IValueDomain<ProvenanceConcreteValue> domain,
+        IResolutionServices resolver,
+        IMemoryModel<ProvenanceConcreteValue, ProvenanceMemory> memoryModel,
+        UnknownExecutionPolicy policy = UnknownExecutionPolicy.ExplainedInt32) =>
+        new(
+            domain,
+            resolver,
+            memoryModel,
+            new InstructionBudgetPolicy(),
+            policy);
 
     private static MachineActivationResult<ConcreteValue, ConcreteMemory> ActivateWithReceiver(
         IlMachine<ConcreteValue, ConcreteMemory> machine,
@@ -1141,6 +1681,37 @@ public sealed class PreparedGraphExecutionTests
         return new RunResult(outcome, events.ToImmutable(), outcomes.ToImmutable());
     }
 
+    private static ProvenanceRunResult RunProvenance(
+        IlMachine<ProvenanceConcreteValue, ProvenanceMemory> machine,
+        MachineState<ProvenanceConcreteValue, ProvenanceMemory> state,
+        int instructionBudget) =>
+        RunProvenance(
+            machine,
+            state,
+            machine.CreatePreparedOperationalState(new BudgetState(instructionBudget)));
+
+    private static ProvenanceRunResult RunProvenance(
+        IlMachine<ProvenanceConcreteValue, ProvenanceMemory> machine,
+        MachineState<ProvenanceConcreteValue, ProvenanceMemory> state,
+        MachineOperationalState operations)
+    {
+        var events = ImmutableArray.CreateBuilder<DebugEvent>();
+        var outcomes = ImmutableArray.CreateBuilder<StepOutcome<ProvenanceConcreteValue, ProvenanceMemory>>();
+        StepOutcome<ProvenanceConcreteValue, ProvenanceMemory> outcome;
+        do
+        {
+            outcome = machine.StepOne(state, operations);
+            outcomes.Add(outcome);
+            events.AddRange(outcome.Events);
+            state = outcome.State;
+            operations = outcome.OperationalState;
+        }
+        while (outcome.Status == MachineRunStatus.Ready && outcomes.Count < 100);
+
+        Assert.True(outcomes.Count < 100, "Prepared provenance execution did not terminate within the test ceiling.");
+        return new ProvenanceRunResult(outcome, events.ToImmutable(), outcomes.ToImmutable());
+    }
+
     private static StepOutcome<ConcreteValue, ConcreteMemory> RunReadySteps(
         IlMachine<ConcreteValue, ConcreteMemory> machine,
         MachineState<ConcreteValue, ConcreteMemory> state,
@@ -1148,6 +1719,24 @@ public sealed class PreparedGraphExecutionTests
         int stepCount)
     {
         StepOutcome<ConcreteValue, ConcreteMemory>? outcome = null;
+        for (var index = 0; index < stepCount; index++)
+        {
+            outcome = machine.StepOne(state, operations);
+            Assert.Equal(MachineRunStatus.Ready, outcome.Status);
+            state = outcome.State;
+            operations = outcome.OperationalState;
+        }
+
+        return outcome!;
+    }
+
+    private static StepOutcome<ProvenanceConcreteValue, ProvenanceMemory> RunProvenanceReadySteps(
+        IlMachine<ProvenanceConcreteValue, ProvenanceMemory> machine,
+        MachineState<ProvenanceConcreteValue, ProvenanceMemory> state,
+        MachineOperationalState operations,
+        int stepCount)
+    {
+        StepOutcome<ProvenanceConcreteValue, ProvenanceMemory>? outcome = null;
         for (var index = 0; index < stepCount; index++)
         {
             outcome = machine.StepOne(state, operations);
@@ -1205,6 +1794,34 @@ public sealed class PreparedGraphExecutionTests
         Assert.Same(operations, outcome.OperationalState);
         Assert.Equal(status, outcome.Status);
         Assert.Equal(code, Assert.IsType<ExecutionFailure>(outcome.Failure).Code);
+        Assert.Empty(outcome.Events);
+    }
+
+    private static void AssertProvenanceFailureWithoutTransfer(
+        MachineState<ProvenanceConcreteValue, ProvenanceMemory> state,
+        MachineOperationalState operations,
+        StepOutcome<ProvenanceConcreteValue, ProvenanceMemory> outcome,
+        MachineRunStatus status,
+        string code)
+    {
+        Assert.Same(state, outcome.State);
+        Assert.Same(operations, outcome.OperationalState);
+        Assert.Same(state.Memory, outcome.State.Memory);
+        Assert.Equal(status, outcome.Status);
+        Assert.Equal(code, Assert.IsType<ExecutionFailure>(outcome.Failure).Code);
+        Assert.Empty(outcome.Events);
+    }
+
+    private static void AssertProvenanceBudgetExhausted(
+        MachineState<ProvenanceConcreteValue, ProvenanceMemory> state,
+        MachineOperationalState operations,
+        StepOutcome<ProvenanceConcreteValue, ProvenanceMemory> outcome)
+    {
+        Assert.Same(state, outcome.State);
+        Assert.Same(operations, outcome.OperationalState);
+        Assert.Same(state.Memory, outcome.State.Memory);
+        Assert.Equal(MachineRunStatus.BudgetExhausted, outcome.Status);
+        Assert.Null(outcome.Failure);
         Assert.Empty(outcome.Events);
     }
 
@@ -1375,6 +1992,319 @@ public sealed class PreparedGraphExecutionTests
         StepOutcome<ConcreteValue, ConcreteMemory> Outcome,
         ImmutableArray<DebugEvent> Events,
         ImmutableArray<StepOutcome<ConcreteValue, ConcreteMemory>> Outcomes);
+
+    private sealed record ProvenanceRunResult(
+        StepOutcome<ProvenanceConcreteValue, ProvenanceMemory> Outcome,
+        ImmutableArray<DebugEvent> Events,
+        ImmutableArray<StepOutcome<ProvenanceConcreteValue, ProvenanceMemory>> Outcomes);
+
+    private enum CallLineageBehavior
+    {
+        Delegate,
+        Throw,
+        ThrowDuringValidation,
+        DefaultVector,
+        ShortVector,
+        NullElement,
+        ForeignValue,
+        SemanticMutation,
+    }
+
+    private enum ReturnLineageBehavior
+    {
+        Delegate,
+        Throw,
+        ThrowDuringValidation,
+        NullValue,
+        ForeignValue,
+        SemanticMutation,
+    }
+
+    private enum FieldObservation
+    {
+        Exact,
+        Partial,
+        Unavailable,
+    }
+
+    private class PrecisionOnlyProvenanceDomain :
+        IValuePrecisionDomain<ProvenanceConcreteValue>,
+        IFieldLoadApproximationDomain<ProvenanceConcreteValue>
+    {
+        internal ProvenanceConcreteDomain Inner { get; } = new();
+
+        public ProvenanceConcreteValue Bottom(TypeSig type) => Inner.Bottom(type);
+
+        public bool IsBottom(ProvenanceConcreteValue value) => Inner.IsBottom(value);
+
+        public ProvenanceConcreteValue Top(TypeSig type) => Inner.Top(type);
+
+        public ProvenanceConcreteValue DefaultValue(TypeSig type) => Inner.DefaultValue(type);
+
+        public ProvenanceConcreteValue ConstInt32(int value) => Inner.ConstInt32(value);
+
+        public ProvenanceConcreteValue Join(ProvenanceConcreteValue a, ProvenanceConcreteValue b) =>
+            Inner.Join(a, b);
+
+        public virtual bool IsLessThanOrEqual(ProvenanceConcreteValue a, ProvenanceConcreteValue b) =>
+            Inner.IsLessThanOrEqual(a, b);
+
+        public ProvenanceConcreteValue Meet(ProvenanceConcreteValue a, ProvenanceConcreteValue b) =>
+            Inner.Meet(a, b);
+
+        public ProvenanceConcreteValue Widen(ProvenanceConcreteValue prev, ProvenanceConcreteValue next) =>
+            Inner.Widen(prev, next);
+
+        public TypeSig GetStaticType(ProvenanceConcreteValue value) => Inner.GetStaticType(value);
+
+        public StackKind GetStackKind(ProvenanceConcreteValue value) => Inner.GetStackKind(value);
+
+        public bool TryGetConstInt32(ProvenanceConcreteValue value, out int c) =>
+            Inner.TryGetConstInt32(value, out c);
+
+        public ProvenanceConcreteValue ApplyBinary(
+            BinaryOp op,
+            ProvenanceConcreteValue a,
+            ProvenanceConcreteValue b) =>
+            Inner.ApplyBinary(op, a, b);
+
+        public ValuePrecisionKind GetPrecision(ProvenanceConcreteValue value) => Inner.GetPrecision(value);
+
+        public ProvenanceConcreteValue CreateFieldLoadUnknown(
+            ProvenanceConcreteValue receiver,
+            FieldLoadEvidence evidence) =>
+            Inner.CreateFieldLoadUnknown(receiver, evidence);
+    }
+
+    private sealed class ConfigurableCallLineageDomain :
+        PrecisionOnlyProvenanceDomain,
+        IInterpretedCallLineageDomain<ProvenanceConcreteValue>
+    {
+        private bool throwDuringValidation;
+
+        internal CallLineageBehavior CallBehavior { get; init; }
+
+        internal ReturnLineageBehavior ReturnBehavior { get; init; }
+
+        internal int CallArgumentTransformCount { get; private set; }
+
+        internal int ReturnTransformCount { get; private set; }
+
+        public override bool IsLessThanOrEqual(
+            ProvenanceConcreteValue a,
+            ProvenanceConcreteValue b) => throwDuringValidation
+            ? throw new SyntheticCapabilityException()
+            : base.IsLessThanOrEqual(a, b);
+
+        public ImmutableArray<ProvenanceConcreteValue> TransformInterpretedCallArguments(
+            DirectCallSiteIdentity callSite,
+            ImmutableArray<ProvenanceConcreteValue> arguments)
+        {
+            CallArgumentTransformCount++;
+            return CallBehavior switch
+            {
+                CallLineageBehavior.Delegate => Inner.TransformInterpretedCallArguments(callSite, arguments),
+                CallLineageBehavior.Throw => throw new SyntheticCapabilityException(),
+                CallLineageBehavior.ThrowDuringValidation => ArmValidationFailure(arguments),
+                CallLineageBehavior.DefaultVector => default,
+                CallLineageBehavior.ShortVector => ImmutableArray.Create(arguments[0]),
+                CallLineageBehavior.NullElement => arguments.SetItem(0, null!),
+                CallLineageBehavior.ForeignValue => arguments.SetItem(
+                    0,
+                    ForeignExplainedUnknown("foreign call output")),
+                CallLineageBehavior.SemanticMutation => arguments.SetItem(0, Inner.ConstInt32(123456)),
+                _ => throw new InvalidOperationException("Undefined synthetic call-lineage behavior."),
+            };
+        }
+
+        public ProvenanceConcreteValue TransformInterpretedReturn(
+            DirectCallSiteIdentity callSite,
+            ProvenanceConcreteValue returnedValue)
+        {
+            ReturnTransformCount++;
+            return ReturnBehavior switch
+            {
+                ReturnLineageBehavior.Delegate => Inner.TransformInterpretedReturn(callSite, returnedValue),
+                ReturnLineageBehavior.Throw => throw new SyntheticCapabilityException(),
+                ReturnLineageBehavior.ThrowDuringValidation => ArmValidationFailure(returnedValue),
+                ReturnLineageBehavior.NullValue => null!,
+                ReturnLineageBehavior.ForeignValue => ForeignExplainedUnknown("foreign return output"),
+                ReturnLineageBehavior.SemanticMutation => Inner.ConstInt32(654321),
+                _ => throw new InvalidOperationException("Undefined synthetic return-lineage behavior."),
+            };
+        }
+
+        private ImmutableArray<ProvenanceConcreteValue> ArmValidationFailure(
+            ImmutableArray<ProvenanceConcreteValue> values)
+        {
+            throwDuringValidation = true;
+            return values;
+        }
+
+        private ProvenanceConcreteValue ArmValidationFailure(ProvenanceConcreteValue value)
+        {
+            throwDuringValidation = true;
+            return value;
+        }
+
+        private static ProvenanceConcreteValue ForeignExplainedUnknown(string source)
+        {
+            var foreign = new ProvenanceConcreteDomain();
+            return foreign.CreateInputUnknown(new ProvenanceInputOrigin(
+                ProvenanceInputKind.RequestArgument,
+                0,
+                EvaluationEvidenceStatus.Partial,
+                ProvenanceSourceKey.Hash(Encoding.UTF8.GetBytes(source)),
+                "W4.Call.Foreign",
+                TypeSig.Int32));
+        }
+    }
+
+    private sealed record ProvenanceMemory : IPersistentMemoryState<ProvenanceMemory>
+    {
+        internal static ProvenanceMemory Instance { get; } = new();
+
+        public ProvenanceMemory Fork() => this;
+    }
+
+    private sealed class ProvenanceMemoryModel :
+        IMemoryModel<ProvenanceConcreteValue, ProvenanceMemory>
+    {
+        private static readonly string EvidenceSourceSha256 = HashUtf8(
+            "W4.5b prepared-graph unit evidence source");
+        private static readonly string ImportedObjectSha256 = HashUtf8(
+            "W4.5b prepared-graph unit imported receiver");
+
+        private readonly ProvenanceConcreteDomain domain;
+        private readonly ProvenanceConcreteValue receiver;
+        private readonly FieldObservation firstObservation;
+        private readonly FieldObservation secondObservation;
+        private readonly int firstExact;
+        private readonly int secondExact;
+        private readonly FieldLoadEvidence? firstEvidence;
+        private readonly FieldLoadEvidence? secondEvidence;
+
+        internal ProvenanceMemoryModel(
+            ProvenanceConcreteDomain domain,
+            ProvenanceConcreteValue receiver,
+            FieldObservation firstObservation,
+            FieldObservation secondObservation,
+            int firstExact = 4,
+            int secondExact = 5)
+        {
+            this.domain = domain;
+            this.receiver = receiver;
+            this.firstObservation = firstObservation;
+            this.secondObservation = secondObservation;
+            this.firstExact = firstExact;
+            this.secondExact = secondExact;
+            firstEvidence = CreateEvidence(0, FirstField, firstObservation, firstExact);
+            secondEvidence = CreateEvidence(1, SecondField, secondObservation, secondExact);
+        }
+
+        internal int LoadCount { get; private set; }
+
+        public bool CanAllocate => false;
+
+        public (ProvenanceConcreteValue objRef, ProvenanceMemory mem) NewObject(
+            ProvenanceMemory mem,
+            TypeSig type) =>
+            throw new NotSupportedException();
+
+        public (ProvenanceConcreteValue arrRef, ProvenanceMemory mem) NewArray(
+            ProvenanceMemory mem,
+            TypeSig elemType,
+            ProvenanceConcreteValue length) =>
+            throw new NotSupportedException();
+
+        public MemoryLoadResult<ProvenanceConcreteValue> LoadField(
+            ProvenanceMemory mem,
+            ProvenanceConcreteValue objRef,
+            ResolvedField field)
+        {
+            Assert.Same(ProvenanceMemory.Instance, mem);
+            Assert.Same(receiver, objRef);
+            LoadCount++;
+            if (field.Handle == FirstField.Handle)
+            {
+                return Load(firstObservation, firstEvidence, firstExact);
+            }
+
+            if (field.Handle == SecondField.Handle)
+            {
+                return Load(secondObservation, secondEvidence, secondExact);
+            }
+
+            throw new InvalidOperationException("The prepared graph requested an unexpected field.");
+        }
+
+        public ProvenanceMemory StoreField(
+            ProvenanceMemory mem,
+            ProvenanceConcreteValue objRef,
+            ResolvedField field,
+            ProvenanceConcreteValue value) =>
+            throw new NotSupportedException();
+
+        public ProvenanceConcreteValue LoadElement(
+            ProvenanceMemory mem,
+            ProvenanceConcreteValue arrRef,
+            ProvenanceConcreteValue index) =>
+            throw new NotSupportedException();
+
+        public ProvenanceMemory StoreElement(
+            ProvenanceMemory mem,
+            ProvenanceConcreteValue arrRef,
+            ProvenanceConcreteValue index,
+            ProvenanceConcreteValue value) =>
+            throw new NotSupportedException();
+
+        private MemoryLoadResult<ProvenanceConcreteValue> Load(
+            FieldObservation observation,
+            FieldLoadEvidence? evidence,
+            int exact) => observation switch
+        {
+            FieldObservation.Exact => MemoryLoadResult<ProvenanceConcreteValue>.Exact(
+                domain.ConstInt32(exact)),
+            FieldObservation.Partial or FieldObservation.Unavailable =>
+                MemoryLoadResult<ProvenanceConcreteValue>.FromFieldEvidence(evidence!),
+            _ => throw new InvalidOperationException("The field observation fixture is undefined."),
+        };
+
+        private static FieldLoadEvidence? CreateEvidence(
+            int ordinal,
+            ResolvedField field,
+            FieldObservation observation,
+            int exact)
+        {
+            if (observation == FieldObservation.Exact)
+            {
+                return null;
+            }
+
+            Span<byte> exactBytes = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32LittleEndian(exactBytes, exact);
+            var observedBytes = observation == FieldObservation.Partial
+                ? exactBytes[..2]
+                : ReadOnlySpan<byte>.Empty;
+            return new FieldLoadEvidence(
+                ordinal,
+                field,
+                observation == FieldObservation.Partial
+                    ? EvaluationEvidenceStatus.Partial
+                    : EvaluationEvidenceStatus.Unavailable,
+                observation == FieldObservation.Partial
+                    ? "W4.PreparedGraph.Partial"
+                    : "W4.PreparedGraph.Unavailable",
+                EvidenceSourceSha256,
+                ImportedObjectSha256,
+                0x0000_0001_2345_0000UL + checked((ulong)ordinal * 0x10UL),
+                sizeof(int),
+                observedBytes);
+        }
+
+        private static string HashUtf8(string value) =>
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+    }
 
     private sealed class ThrowingConcreteDomain : IValueDomain<ConcreteValue>
     {

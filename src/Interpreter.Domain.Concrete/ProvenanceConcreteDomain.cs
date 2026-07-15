@@ -4,17 +4,21 @@ using Interpreter.Core.Abstractions;
 namespace Interpreter.Domain.Concrete;
 
 /// <summary>
-/// Implements the W4.2/W4.3 lifted-flat concrete semantics with a separate content-addressed explanation channel.
+/// Implements the W4.2–W4.5 lifted-flat concrete semantics with a separate content-addressed explanation channel.
 /// </summary>
 /// <remarks>
 /// Semantic operations delegate to <see cref="ConcreteDomain"/>. Lineage never participates in value equality,
 /// hashing, ordering, joins, meets, or widening. Runtime arithmetic creates a <see cref="BinaryTransformLineageNode"/>
 /// only when a complete explanation can be derived from every unknown operand; bare lattice top remains deliberately
 /// ungrounded and is rejected by execution through <see cref="IValuePrecisionDomain{TValue}"/>.
+/// W4.3 field approximation atomically introduces an imported-field origin and field-load transform. W4.5 interpreted
+/// calls atomically wrap the complete two-argument batch by metadata parameter index and wrap an explained callee
+/// result at return, while exact values cross either boundary unchanged.
 /// </remarks>
 public sealed class ProvenanceConcreteDomain :
     IValuePrecisionDomain<ProvenanceConcreteValue>,
-    IFieldLoadApproximationDomain<ProvenanceConcreteValue>
+    IFieldLoadApproximationDomain<ProvenanceConcreteValue>,
+    IInterpretedCallLineageDomain<ProvenanceConcreteValue>
 {
     private readonly ConcreteDomain semanticDomain = new();
     private readonly object lineageGate = new();
@@ -150,6 +154,89 @@ public sealed class ProvenanceConcreteDomain :
             originCandidate.Id);
         var fieldNode = InternFieldLoadPair(originCandidate, fieldCandidate);
         return new ProvenanceConcreteValue(semanticDomain.Top(TypeSig.Int32), fieldNode.Id);
+    }
+
+    /// <inheritdoc />
+    public ImmutableArray<ProvenanceConcreteValue> TransformInterpretedCallArguments(
+        DirectCallSiteIdentity callSite,
+        ImmutableArray<ProvenanceConcreteValue> arguments)
+    {
+        ValidateCallSite(callSite);
+        if (arguments.IsDefault)
+        {
+            throw new ArgumentException(
+                "An interpreted-call argument vector must be initialized.",
+                nameof(arguments));
+        }
+
+        if (arguments.Length != 2)
+        {
+            throw new ArgumentException(
+                "The closed W4.5 interpreted-call profile requires exactly two metadata-ordered arguments.",
+                nameof(arguments));
+        }
+
+        var candidates = ImmutableArray.CreateBuilder<LineageNode>();
+        var transformedPositions = ImmutableArray.CreateBuilder<int>();
+        for (var parameterIndex = 0; parameterIndex < arguments.Length; parameterIndex++)
+        {
+            var predecessor = PreflightCallBoundaryValue(arguments[parameterIndex], nameof(arguments));
+            if (predecessor is not { } root)
+            {
+                continue;
+            }
+
+            candidates.Add(ProvenanceLineageCodec.CreateCallArgumentTransform(
+                callSite,
+                parameterIndex,
+                root));
+            transformedPositions.Add(parameterIndex);
+        }
+
+        if (candidates.Count == 0)
+        {
+            return arguments;
+        }
+
+        var interned = InternBatch(candidates.ToImmutable());
+        var result = arguments.ToBuilder();
+        for (var index = 0; index < interned.Length; index++)
+        {
+            if (interned[index] is not CallArgumentTransformLineageNode node)
+            {
+                throw new InvalidOperationException(
+                    "A canonical call-argument identity is bound to an incompatible node kind.");
+            }
+
+            var parameterIndex = transformedPositions[index];
+            result[parameterIndex] = new ProvenanceConcreteValue(
+                arguments[parameterIndex].SemanticValue,
+                node.Id);
+        }
+
+        return result.ToImmutable();
+    }
+
+    /// <inheritdoc />
+    public ProvenanceConcreteValue TransformInterpretedReturn(
+        DirectCallSiteIdentity callSite,
+        ProvenanceConcreteValue returnedValue)
+    {
+        ValidateCallSite(callSite);
+        var predecessor = PreflightCallBoundaryValue(returnedValue, nameof(returnedValue));
+        if (predecessor is not { } root)
+        {
+            return returnedValue;
+        }
+
+        var node = Intern(ProvenanceLineageCodec.CreateInterpretedReturnTransform(callSite, root));
+        if (node is not InterpretedReturnTransformLineageNode interpretedReturn)
+        {
+            throw new InvalidOperationException(
+                "A canonical interpreted-return identity is bound to an incompatible node kind.");
+        }
+
+        return new ProvenanceConcreteValue(returnedValue.SemanticValue, interpretedReturn.Id);
     }
 
     /// <inheritdoc />
@@ -402,6 +489,72 @@ public sealed class ProvenanceConcreteDomain :
         }
     }
 
+    private ImmutableArray<LineageNode> InternBatch(ImmutableArray<LineageNode> candidates)
+    {
+        if (candidates.IsDefaultOrEmpty || candidates.Any(static candidate => candidate is null))
+        {
+            throw new ArgumentException(
+                "A lineage batch requires initialized non-null candidates.",
+                nameof(candidates));
+        }
+
+        lock (lineageGate)
+        {
+            var candidatesById = new Dictionary<LineageNodeId, LineageNode>();
+            foreach (var candidate in candidates)
+            {
+                if (!ProvenanceLineageCodec.IsCanonical(candidate))
+                {
+                    throw new ArgumentException("A lineage batch contains a noncanonical node.", nameof(candidates));
+                }
+
+                if (lineageNodes.TryGetValue(candidate.Id, out var existing) &&
+                    !existing.CanonicalBytes.AsSpan().SequenceEqual(candidate.CanonicalBytes.AsSpan()))
+                {
+                    throw new InvalidOperationException(
+                        "A lineage SHA-256 identity collided with different canonical bytes.");
+                }
+
+                if (candidatesById.TryGetValue(candidate.Id, out var duplicate) &&
+                    !duplicate.CanonicalBytes.AsSpan().SequenceEqual(candidate.CanonicalBytes.AsSpan()))
+                {
+                    throw new InvalidOperationException(
+                        "One lineage batch contains conflicting canonical bytes for the same identity.");
+                }
+
+                candidatesById[candidate.Id] = candidate;
+            }
+
+            foreach (var candidate in candidates)
+            {
+                foreach (var dependency in candidate.Dependencies)
+                {
+                    if (!lineageNodes.ContainsKey(dependency))
+                    {
+                        throw new ArgumentException(
+                            "A lineage batch refers to a predecessor not interned in this domain.",
+                            nameof(candidates));
+                    }
+                }
+            }
+
+            var interned = ImmutableArray.CreateBuilder<LineageNode>(candidates.Length);
+            foreach (var candidate in candidates)
+            {
+                if (lineageNodes.TryGetValue(candidate.Id, out var existing))
+                {
+                    interned.Add(existing);
+                    continue;
+                }
+
+                lineageNodes.Add(candidate.Id, candidate);
+                interned.Add(candidate);
+            }
+
+            return interned.MoveToImmutable();
+        }
+    }
+
     private FieldLoadTransformLineageNode InternFieldLoadPair(
         InputOriginLineageNode origin,
         FieldLoadTransformLineageNode fieldLoad)
@@ -517,6 +670,58 @@ public sealed class ProvenanceConcreteDomain :
             {
                 pending.Push(node.Dependencies[index]);
             }
+        }
+    }
+
+    private LineageNodeId? PreflightCallBoundaryValue(
+        ProvenanceConcreteValue value,
+        string parameterName)
+    {
+        value = RequireValue(value);
+        ValuePrecisionKind precision;
+        try
+        {
+            precision = GetPrecision(value);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new ArgumentException(
+                "An interpreted-call boundary requires a locally owned executable value.",
+                parameterName,
+                exception);
+        }
+
+        if (value.SemanticValue.StaticType != TypeSig.Int32 ||
+            semanticDomain.GetStackKind(value.SemanticValue) != StackKind.I4)
+        {
+            throw new ArgumentException(
+                "The current interpreted-call lineage profile admits only structural Int32 values.",
+                parameterName);
+        }
+
+        return precision switch
+        {
+            ValuePrecisionKind.Exact => null,
+            ValuePrecisionKind.ExplainedUnknown when value.LineageRoot is { } root => root,
+            ValuePrecisionKind.UnexplainedUnknown => throw new ArgumentException(
+                "An interpreted-call boundary cannot continue from an unexplained unknown.",
+                parameterName),
+            _ => throw new ArgumentException(
+                "An interpreted-call boundary received an unsupported precision classification.",
+                parameterName),
+        };
+    }
+
+    private static void ValidateCallSite(DirectCallSiteIdentity callSite)
+    {
+        if (callSite.Caller == default ||
+            callSite.Callee == default ||
+            callSite.CallIlOffset < 0 ||
+            callSite.Caller.Module != callSite.Callee.Module)
+        {
+            throw new ArgumentException(
+                "Interpreted-call lineage requires one valid same-module direct-call identity.",
+                nameof(callSite));
         }
     }
 

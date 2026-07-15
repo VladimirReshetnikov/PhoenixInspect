@@ -14,10 +14,12 @@ namespace Interpreter.Core.Execution;
 /// unchecked add/subtract/multiply, ordinary instance-Int32 <c>ldfld</c>, <c>nop</c>, and <c>ret</c>. Legacy activation
 /// retains W3's call-free, one-field getter boundary. <see cref="ActivatePreparedGraph"/> instead consumes a graph whose
 /// complete method, field, and direct-call closure was already resolved and typed; execution never re-resolves it and
-/// can push/pop exact interpreted frames. Field loads remain exact by default and may continue from canonical partial
-/// or unavailable evidence only through the explicit unknown policy and approximation-domain capability. W4.5a call
-/// boundaries remain exact-value-only until the separately versioned lineage capability lands. Unsupported bodies or
-/// incomplete graphs execute no prefix.
+/// can push/pop structurally frozen interpreted frames. Field loads remain exact by default and may continue from
+/// canonical partial or unavailable evidence only through the explicit unknown policy and approximation-domain
+/// capability. Interpreted call boundaries bypass lineage work for exact values; explained <c>Int32</c> arguments
+/// and returns require
+/// <see cref="IInterpretedCallLineageDomain{TValue}"/> to preserve canonical boundary explanations. Unsupported bodies
+/// or incomplete graphs execute no prefix.
 /// </remarks>
 public sealed partial class IlMachine<TValue, TMemory>
     where TMemory : IPersistentMemoryState<TMemory>

@@ -179,9 +179,13 @@ public sealed class ProvenanceLineageGraph
                     throw new ArgumentException("A lineage dependency is absent from the graph.");
                 }
 
-                if (node is BinaryTransformLineageNode && dependencyNode.StaticType != TypeSig.Int32)
+                if ((node is BinaryTransformLineageNode or
+                    CallArgumentTransformLineageNode or
+                    InterpretedReturnTransformLineageNode) &&
+                    dependencyNode.StaticType != TypeSig.Int32)
                 {
-                    throw new ArgumentException("A W4.2 binary predecessor must have the structural Int32 type.");
+                    throw new ArgumentException(
+                        "An arithmetic or interpreted-call predecessor must have the structural Int32 type.");
                 }
 
                 colors.TryGetValue(dependency, out var dependencyColor);
@@ -207,11 +211,46 @@ public sealed class ProvenanceLineageGraph
         LineageNode node,
         IReadOnlyDictionary<LineageNodeId, LineageNode> validatedNodesById)
     {
-        if (node is not FieldLoadTransformLineageNode fieldLoad)
+        switch (node)
         {
-            return;
-        }
+            case FieldLoadTransformLineageNode fieldLoad:
+                ValidateFieldLoad(fieldLoad, validatedNodesById);
+                break;
+            case CallArgumentTransformLineageNode callArgument:
+                ValidateCallBoundary(
+                    callArgument,
+                    callArgument.CallSite,
+                    callArgument.Predecessor,
+                    "call-argument",
+                    validatedNodesById);
+                if (callArgument.ParameterIndex is < 0 or > 1)
+                {
+                    throw new ArgumentException(
+                        "The closed W4.5 call profile requires parameter index zero or one.");
+                }
 
+                break;
+            case InterpretedReturnTransformLineageNode interpretedReturn:
+                ValidateCallBoundary(
+                    interpretedReturn,
+                    interpretedReturn.CallSite,
+                    interpretedReturn.Predecessor,
+                    "interpreted-return",
+                    validatedNodesById);
+                if (interpretedReturn.Callee != interpretedReturn.CallSite.Callee)
+                {
+                    throw new ArgumentException(
+                        "An interpreted-return transform's callee must agree with its complete call-site identity.");
+                }
+
+                break;
+        }
+    }
+
+    private static void ValidateFieldLoad(
+        FieldLoadTransformLineageNode fieldLoad,
+        IReadOnlyDictionary<LineageNodeId, LineageNode> validatedNodesById)
+    {
         if (fieldLoad.StaticType != TypeSig.Int32 ||
             fieldLoad.Field.FieldType != TypeSig.Int32 ||
             fieldLoad.Field.IsStatic ||
@@ -239,6 +278,39 @@ public sealed class ProvenanceLineageGraph
         {
             throw new ArgumentException(
                 "A W4.3 field-load transform must depend on one partial or unavailable imported-field Int32 origin.");
+        }
+    }
+
+    private static void ValidateCallBoundary(
+        LineageNode node,
+        DirectCallSiteIdentity callSite,
+        LineageNodeId predecessor,
+        string boundaryName,
+        IReadOnlyDictionary<LineageNodeId, LineageNode> validatedNodesById)
+    {
+        if (node.StaticType != TypeSig.Int32 ||
+            callSite.Caller == default ||
+            callSite.Callee == default ||
+            callSite.CallIlOffset < 0 ||
+            callSite.Caller.Module != callSite.Callee.Module)
+        {
+            throw new ArgumentException(
+                $"A W4.5 {boundaryName} transform requires structural Int32 and one valid same-module call site.");
+        }
+
+        if (node.Dependencies.Length != 1 ||
+            node.Dependencies[0] != predecessor ||
+            !predecessor.IsValid)
+        {
+            throw new ArgumentException(
+                $"A W4.5 {boundaryName} transform requires exactly its prior unknown predecessor.");
+        }
+
+        if (!validatedNodesById.TryGetValue(predecessor, out var predecessorNode) ||
+            predecessorNode.StaticType != TypeSig.Int32)
+        {
+            throw new ArgumentException(
+                $"A W4.5 {boundaryName} predecessor must be one reachable structural Int32 explanation.");
         }
     }
 }

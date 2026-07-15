@@ -543,7 +543,7 @@ public sealed partial class IlMachine<TValue, TMemory>
                 new ExecutionFailure(
                     ExecutionFailureKind.InvalidStack,
                     "EXEC_CALL_TERMINAL_RESULT_INVALID",
-                    "Completed prepared execution requires the root's exact typed return value.",
+                    "Completed prepared execution requires the root's typed executable return value.",
                     graph.Root,
                     rootPlan.Definition.Body.CodeBytes.Length));
         }
@@ -1063,20 +1063,6 @@ public sealed partial class IlMachine<TValue, TMemory>
         var arguments = frame.EvalStack
             .Skip(frame.EvalStack.Length - parameterCount)
             .ToImmutableArray();
-        if (arguments.Any(IsExplainedUnknown))
-        {
-            return Failed(
-                state,
-                operationalState,
-                MachineRunStatus.Blocked,
-                new ExecutionFailure(
-                    ExecutionFailureKind.DomainFailure,
-                    "EXEC_CALL_LINEAGE_UNAVAILABLE",
-                    "Explained-unknown call arguments require the W4.5b call-lineage capability.",
-                    frame.Method,
-                    frame.IlOffset));
-        }
-
         var localsResult = CreateInitializedLocals(calleePlan, frame.Method, frame.IlOffset);
         if (localsResult.Failure is not null)
         {
@@ -1089,6 +1075,56 @@ public sealed partial class IlMachine<TValue, TMemory>
 
         var callSite = new DirectCallSiteIdentity(frame.Method, frame.IlOffset, target.Method);
         var resumeOffset = checked(frame.IlOffset + instruction.Size);
+        var calleeArguments = arguments;
+        if (arguments.Any(IsExplainedUnknown))
+        {
+            if (_domain is not IInterpretedCallLineageDomain<TValue> lineageDomain)
+            {
+                return Failed(
+                    state,
+                    operationalState,
+                    MachineRunStatus.Blocked,
+                    CallLineageFailure(
+                        "EXEC_CALL_LINEAGE_UNAVAILABLE",
+                        "Explained-unknown call arguments require the interpreted-call lineage capability.",
+                        frame.Method,
+                        frame.IlOffset));
+            }
+
+            try
+            {
+                calleeArguments = lineageDomain.TransformInterpretedCallArguments(callSite, arguments);
+            }
+            catch (Exception exception) when (IsCapabilityException(exception))
+            {
+                return Failed(
+                    state,
+                    operationalState,
+                    MachineRunStatus.Blocked,
+                    CallLineageFailure(
+                        "EXEC_DOMAIN_FAILURE",
+                        "The interpreted-call lineage capability failed while transforming the complete argument batch.",
+                        frame.Method,
+                        frame.IlOffset));
+            }
+
+            var transformFailure = ValidateCallLineageValues(
+                arguments,
+                calleeArguments,
+                target.Signature.ParameterTypes,
+                frame.Method,
+                frame.IlOffset,
+                "call argument");
+            if (transformFailure is not null)
+            {
+                return Failed(
+                    state,
+                    operationalState,
+                    MachineRunStatus.InvalidProgram,
+                    transformFailure);
+            }
+        }
+
         var suspendedCaller = frame with
         {
             IlOffset = resumeOffset,
@@ -1097,7 +1133,7 @@ public sealed partial class IlMachine<TValue, TMemory>
         var callee = new FrameState<TValue>(
             target.Method,
             0,
-            arguments,
+            calleeArguments,
             localsResult.Locals,
             ImmutableArray<TValue>.Empty)
         {
@@ -1154,20 +1190,6 @@ public sealed partial class IlMachine<TValue, TMemory>
         }
 
         var result = frame.EvalStack[0];
-        if (IsExplainedUnknown(result))
-        {
-            return Failed(
-                state,
-                operationalState,
-                MachineRunStatus.Blocked,
-                new ExecutionFailure(
-                    ExecutionFailureKind.DomainFailure,
-                    "EXEC_CALL_LINEAGE_UNAVAILABLE",
-                    "An explained-unknown helper result requires the W4.5b interpreted-return lineage capability.",
-                    frame.Method,
-                    frame.IlOffset));
-        }
-
         var caller = state.CallStack[^2];
         if (caller is null ||
             !graph.TryGetAdmittedMethodPlan(caller.Method, out var callerPlan) ||
@@ -1181,9 +1203,9 @@ public sealed partial class IlMachine<TValue, TMemory>
                 PlanInvalid(frame.Method, frame.IlOffset, "The nested return has no retained caller continuation plan."));
         }
 
-        var callerStack = caller.EvalStack.Add(result);
-        if (callerStack.Length > callerPlan.Definition.Body.MaxStack ||
-            callerStack.Length != continuationBoundary.ExpectedStackTypes.Length)
+        var callerStackLength = checked(caller.EvalStack.Length + 1);
+        if (callerStackLength > callerPlan.Definition.Body.MaxStack ||
+            callerStackLength != continuationBoundary.ExpectedStackTypes.Length)
         {
             return Failed(
                 state,
@@ -1196,6 +1218,58 @@ public sealed partial class IlMachine<TValue, TMemory>
                     caller.Method,
                     caller.IlOffset));
         }
+
+        var callerResult = result;
+        if (IsExplainedUnknown(result))
+        {
+            if (_domain is not IInterpretedCallLineageDomain<TValue> lineageDomain)
+            {
+                return Failed(
+                    state,
+                    operationalState,
+                    MachineRunStatus.Blocked,
+                    CallLineageFailure(
+                        "EXEC_CALL_LINEAGE_UNAVAILABLE",
+                        "An explained-unknown helper result requires the interpreted-call lineage capability.",
+                        frame.Method,
+                        frame.IlOffset));
+            }
+
+            try
+            {
+                callerResult = lineageDomain.TransformInterpretedReturn(frame.ReturnSite.CallSite, result);
+            }
+            catch (Exception exception) when (IsCapabilityException(exception))
+            {
+                return Failed(
+                    state,
+                    operationalState,
+                    MachineRunStatus.Blocked,
+                    CallLineageFailure(
+                        "EXEC_DOMAIN_FAILURE",
+                        "The interpreted-call lineage capability failed while transforming the helper result.",
+                        frame.Method,
+                        frame.IlOffset));
+            }
+
+            var transformFailure = ValidateCallLineageValues(
+                ImmutableArray.Create(result),
+                ImmutableArray.Create(callerResult),
+                ImmutableArray.Create(TypeSig.Int32),
+                frame.Method,
+                frame.IlOffset,
+                "interpreted return");
+            if (transformFailure is not null)
+            {
+                return Failed(
+                    state,
+                    operationalState,
+                    MachineRunStatus.InvalidProgram,
+                    transformFailure);
+            }
+        }
+
+        var callerStack = caller.EvalStack.Add(callerResult);
 
         for (var index = 0; index < callerStack.Length; index++)
         {
@@ -1262,6 +1336,85 @@ public sealed partial class IlMachine<TValue, TMemory>
     private bool IsExplainedUnknown(TValue value) =>
         _domain is IValuePrecisionDomain<TValue> precisionDomain &&
         precisionDomain.GetPrecision(value) == ValuePrecisionKind.ExplainedUnknown;
+
+    private ExecutionFailure? ValidateCallLineageValues(
+        ImmutableArray<TValue> inputs,
+        ImmutableArray<TValue> outputs,
+        ImmutableArray<TypeSig> expectedTypes,
+        MethodHandle method,
+        int ilOffset,
+        string boundaryName)
+    {
+        if (inputs.IsDefault ||
+            outputs.IsDefault ||
+            expectedTypes.IsDefault ||
+            outputs.Length != inputs.Length ||
+            expectedTypes.Length != inputs.Length)
+        {
+            return CallLineageInvalid(
+                method,
+                ilOffset,
+                $"The {boundaryName} lineage capability returned a default or incorrectly sized vector.");
+        }
+
+        for (var index = 0; index < outputs.Length; index++)
+        {
+            ExecutionFailure? valueFailure;
+            try
+            {
+                valueFailure = ValidateValue(
+                    outputs[index],
+                    expectedTypes[index],
+                    $"transformed {boundaryName}",
+                    index,
+                    method,
+                    ilOffset,
+                    ValuePrecisionRequirement.Executable);
+            }
+            catch (ArgumentException)
+            {
+                return CallLineageInvalid(
+                    method,
+                    ilOffset,
+                    $"The transformed {boundaryName} at index {index} is not a locally owned executable value.");
+            }
+
+            if (valueFailure is not null ||
+                !_domain.IsLessThanOrEqual(inputs[index], outputs[index]) ||
+                !_domain.IsLessThanOrEqual(outputs[index], inputs[index]))
+            {
+                return CallLineageInvalid(
+                    method,
+                    ilOffset,
+                    $"The transformed {boundaryName} at index {index} does not preserve its validated semantic value.");
+            }
+        }
+
+        return null;
+    }
+
+    private static ExecutionFailure CallLineageFailure(
+        string code,
+        string message,
+        MethodHandle method,
+        int ilOffset) =>
+        new(
+            ExecutionFailureKind.DomainFailure,
+            code,
+            message,
+            method,
+            ilOffset);
+
+    private static ExecutionFailure CallLineageInvalid(
+        MethodHandle method,
+        int ilOffset,
+        string message) =>
+        new(
+            ExecutionFailureKind.DomainFailure,
+            "EXEC_CALL_LINEAGE_INVALID",
+            message,
+            method,
+            ilOffset);
 
     private static ExecutionFailure PlanInvalid(
         MethodHandle method,

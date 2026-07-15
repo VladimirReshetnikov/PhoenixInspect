@@ -16,7 +16,7 @@ public enum ProvenanceInputKind
     ImportedField = 3,
 }
 
-/// <summary>Classifies the call-independent lineage nodes implemented through the W4.3 kernel.</summary>
+/// <summary>Classifies the append-only lineage-node vocabulary implemented through the W4.5 kernel.</summary>
 public enum LineageNodeKind
 {
     /// <summary>A partial or unavailable request input.</summary>
@@ -27,6 +27,12 @@ public enum LineageNodeKind
 
     /// <summary>An approximate imported-field read through one exact imported receiver.</summary>
     FieldLoadTransform = 3,
+
+    /// <summary>An explained unknown crossing into one metadata-ordered interpreted-call parameter.</summary>
+    CallArgumentTransform = 4,
+
+    /// <summary>An explained unknown returning from one interpreted callee to its frozen caller continuation.</summary>
+    InterpretedReturnTransform = 5,
 }
 
 /// <summary>Classifies one operand embedded in an arithmetic lineage node.</summary>

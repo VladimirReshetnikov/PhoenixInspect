@@ -69,6 +69,32 @@ internal static class ProvenanceLineageCodec
             bytes);
     }
 
+    internal static CallArgumentTransformLineageNode CreateCallArgumentTransform(
+        DirectCallSiteIdentity callSite,
+        int parameterIndex,
+        LineageNodeId predecessor)
+    {
+        var bytes = EncodeCallArgument(callSite, parameterIndex, predecessor);
+        return new CallArgumentTransformLineageNode(
+            LineageNodeId.Hash(bytes.AsSpan()),
+            callSite,
+            parameterIndex,
+            predecessor,
+            bytes);
+    }
+
+    internal static InterpretedReturnTransformLineageNode CreateInterpretedReturnTransform(
+        DirectCallSiteIdentity callSite,
+        LineageNodeId predecessor)
+    {
+        var bytes = EncodeInterpretedReturn(callSite, predecessor);
+        return new InterpretedReturnTransformLineageNode(
+            LineageNodeId.Hash(bytes.AsSpan()),
+            callSite,
+            predecessor,
+            bytes);
+    }
+
     internal static bool IsCanonical(LineageNode node)
     {
         ArgumentNullException.ThrowIfNull(node);
@@ -84,6 +110,13 @@ internal static class ProvenanceLineageCodec
                 fieldLoad.Receiver,
                 fieldLoad.Field,
                 fieldLoad.InputOrigin),
+            CallArgumentTransformLineageNode callArgument => EncodeCallArgument(
+                callArgument.CallSite,
+                callArgument.ParameterIndex,
+                callArgument.Predecessor),
+            InterpretedReturnTransformLineageNode interpretedReturn => EncodeInterpretedReturn(
+                interpretedReturn.CallSite,
+                interpretedReturn.Predecessor),
             _ => ImmutableArray<byte>.Empty,
         };
         return !encoded.IsDefaultOrEmpty &&
@@ -184,6 +217,51 @@ internal static class ProvenanceLineageCodec
         return writer.ToImmutableArray();
     }
 
+    private static ImmutableArray<byte> EncodeCallArgument(
+        DirectCallSiteIdentity callSite,
+        int parameterIndex,
+        LineageNodeId predecessor)
+    {
+        if (parameterIndex is < 0 or > 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(parameterIndex),
+                "The closed W4.5 call profile requires metadata parameter index zero or one.");
+        }
+
+        if (!predecessor.IsValid)
+        {
+            throw new ArgumentException(
+                "A call-argument lineage transform requires a non-default predecessor.",
+                nameof(predecessor));
+        }
+
+        var writer = StartNode(LineageNodeKind.CallArgumentTransform);
+        WriteType(writer, TypeSig.Int32, 0);
+        WriteCallSite(writer, callSite);
+        writer.WriteInt32(parameterIndex);
+        writer.WriteDigest(predecessor.Sha256);
+        return writer.ToImmutableArray();
+    }
+
+    private static ImmutableArray<byte> EncodeInterpretedReturn(
+        DirectCallSiteIdentity callSite,
+        LineageNodeId predecessor)
+    {
+        if (!predecessor.IsValid)
+        {
+            throw new ArgumentException(
+                "An interpreted-return lineage transform requires a non-default predecessor.",
+                nameof(predecessor));
+        }
+
+        var writer = StartNode(LineageNodeKind.InterpretedReturnTransform);
+        WriteType(writer, TypeSig.Int32, 0);
+        WriteCallSite(writer, callSite);
+        writer.WriteDigest(predecessor.Sha256);
+        return writer.ToImmutableArray();
+    }
+
     private static CanonicalWriter StartNode(LineageNodeKind kind)
     {
         var writer = new CanonicalWriter();
@@ -209,6 +287,27 @@ internal static class ProvenanceLineageCodec
             default:
                 throw new ArgumentException("A lineage operand violates its discriminated-union shape.", nameof(operand));
         }
+    }
+
+    private static void WriteCallSite(CanonicalWriter writer, DirectCallSiteIdentity callSite)
+    {
+        if (callSite.Caller == default ||
+            callSite.Callee == default ||
+            callSite.CallIlOffset < 0 ||
+            callSite.Caller.Module != callSite.Callee.Module)
+        {
+            throw new ArgumentException(
+                "Call lineage requires one valid same-module direct-call identity.",
+                nameof(callSite));
+        }
+
+        writer.WriteUInt64(callSite.Caller.Module.High);
+        writer.WriteUInt64(callSite.Caller.Module.Low);
+        writer.WriteInt32(callSite.Caller.MetadataToken);
+        writer.WriteInt32(callSite.CallIlOffset);
+        writer.WriteUInt64(callSite.Callee.Module.High);
+        writer.WriteUInt64(callSite.Callee.Module.Low);
+        writer.WriteInt32(callSite.Callee.MetadataToken);
     }
 
     private static void WriteType(CanonicalWriter writer, TypeSig type, int depth)
@@ -249,6 +348,8 @@ internal static class ProvenanceLineageCodec
         LineageNodeKind.InputOrigin => 1,
         LineageNodeKind.BinaryTransform => 2,
         LineageNodeKind.FieldLoadTransform => 3,
+        LineageNodeKind.CallArgumentTransform => 4,
+        LineageNodeKind.InterpretedReturnTransform => 5,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
