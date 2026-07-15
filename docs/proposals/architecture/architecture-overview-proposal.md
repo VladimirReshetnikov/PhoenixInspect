@@ -11,7 +11,7 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.6a have since landed.
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.6d have since landed.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -50,10 +50,37 @@ Exact-checkpoint validation passed locked restore; strict Release 0/0; contract 
 planner 35/35; SRM 1/1; lineage 2/2; unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; both guards;
 and zero skips under `Scope!=Cybersecurity`. Independent audits found no behavioral findings.
 
-W4.6a realizes 2,959 LOC (1,210 production plus 1,749 tests/fixture support), bringing W4.1–W4.6a to 19,776 LOC and
-exceeding its 2,600 upper estimate by 359 LOC. Combined W4.6a/b/c projects to 6,109–7,709 LOC. Remaining
-W4.6b–W4.9 is 9,050–13,950 LOC and full W4 now projects to 28,826–33,726 LOC. Preserve the original
-16,860–25,310 baseline and historical projections through 27,217–32,117, 28,376–32,476, and 28,876–33,276:
+Pushed W4.6b checkpoint `fd723a912` adds optional modeled-return lineage. Schema-v1 kind 6 embeds exact arguments,
+retains kind-4 boundary nodes for explained arguments, and atomically validates/interns the complete dependency vector
+without changing kinds 1–5. It realizes 1,003 LOC (481 production plus 522 tests), bringing W4.1–W4.6b to 20,779 LOC.
+
+Pushed W4.6c checkpoint `877c9fb55` invokes only the capability frozen with the prepared leaf. Execution never rereads
+a resolver, registry, descriptor, target body, or selector and never falls back to interpretation. Exact and grounded-
+unknown returns transfer atomically in the caller, preserve memory, consume one instruction, and emit one instruction
+event without a helper frame. Non-transferring outcomes preserve semantic state, memory, budget, and semantic events
+but append a deterministic operational attempt. Logical depth records every entered model boundary—including a failed
+attempt—while active-frame depth does not advance; terminal invariants validate attempt chronology and exact counts.
+It realizes 2,734 LOC: 1,425 production additions plus 1,309 unit-test additions.
+
+Pushed W4.6d checkpoint `da5346813` proves real SRM/compiler exact and degraded conformance. Exact model execution
+agrees with interpretation and CoreCLR; mixed partial/exact and partial/unavailable model executions agree with
+interpretation. The exact path consumes six caller instructions/two field loads, records one completed attempt, reaches
+logical/frame high water 2/1, preserves memory, acquires no helper body/frame, and performs no execution-time reread.
+The mixed case freezes graph SHA-256 `451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`.
+Repeated and fresh SRM/domain/machine runs reproduce the dual-unknown graph SHA-256
+`31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f` over PDB-free TestTarget SHA-256
+`fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`. It realizes 956 integration-test additions.
+
+W4.6 closure passed locked restore; the strict fifteen-project Release build and strict unit/integration builds with
+zero warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integration 13/13; complete unit 413/413;
+fast 80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4, all headlessly with zero skips and
+`Scope!=Cybersecurity` on behavioral filters.
+
+W4.6a/b/c/d realize 2,959/1,003/2,734/956 LOC, so W4.6 totals 7,652 LOC and W4.1–W4.6d total 24,469 LOC. Remaining
+W4.7–W4.9 is 6,600–9,850 LOC: W4.7 is recalibrated to 2,200–3,150, W4.8 remains 2,400–3,500, and W4.9 remains
+2,000–3,200. Full W4 now projects to 31,069–34,319 LOC. Preserve the original 16,860–25,310 baseline and historical
+18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476,
+28,876–33,276, 28,826–33,726, 28,879–33,279, and 30,079–33,729 projections:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -62,9 +89,10 @@ W4.6b–W4.9 is 9,050–13,950 LOC and full W4 now projects to 28,826–33,726 L
 4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy; W4.2 proves their
    branchless dump-free arithmetic transport, and W4.3 proves structured non-exact field continuation plus canonical
    precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation; and
-   W4.5 executes exact and explained-unknown direct calls with deterministic frames, depth accounting, and canonical
-   call/return lineage; and W4.6a freezes the exact/no-effect structural pure-model leaf. Modeled execution/lineage,
-   product, ClrMD dump grounding, and hosted closure remain W4.6b–W4.9 work.
+    W4.5 executes exact and explained-unknown direct calls with deterministic frames, depth accounting, and canonical
+    call/return lineage; and W4.6 freezes and executes the exact/no-effect pure-model leaf with atomic lineage/attempt
+    accounting and compiler conformance. W4.7 is not implemented; target-outcome projection, product, ClrMD dump
+    grounding, and hosted closure remain W4.7–W4.9 work.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -361,11 +389,24 @@ published lineage.
 
 The W4.5 compiler fixtures execute ten instructions, perform two field loads, reach logical and active-frame high water
 two, leave memory unchanged, and make no resolution call after graph preparation. Their mixed exact/partial five-node
-and partial/unavailable eight-node graphs replay in the same and fresh sessions. Call models, the counterfactual
-W4.6a separately freezes the same structural helper as a body-free pure-model leaf after caller typing and before
-helper-body acquisition. Its canonical graph contains one node, one leaf, two fields, and one edge, with five units and
-depth two; the machine blocks it before activation. Modeled transfer/attempts/lineage, the counterfactual
-facade/request/plan/result, ClrMD dump-grounded execution, and hosted umbrella closure remain W4.6b–W4.9 work.
+and partial/unavailable eight-node graphs replay in the same and fresh sessions.
+
+W4.6a freezes the same structural helper as a body-free pure-model leaf after caller typing and before helper-body
+acquisition. Its canonical graph contains one node, one leaf, two fields, and one edge, with five units and depth two.
+W4.6b's optional `IPureCallModelLineageDomain<TValue>` appends atomic kind-6 `ModeledReturnTransform` nodes over
+canonical exact atoms and explained argument predecessors while preserving every kind-1–5 byte and identity.
+
+W4.6c binds the frozen capability into the prepared session. A successful exact or grounded-unknown model outcome is
+one frame-free call-instruction transfer; a non-transferring outcome changes no semantic state, memory, instruction
+budget, or semantic event but remains visible as an ordered model attempt. Invocation/completion counters distinguish
+attempted capability entry from completed transfer. Required and observed logical depth include the opaque model
+boundary, while active-frame depth reports only real frames. Runtime invariant validation rejects forged call sites,
+model identities, attempt chronology, depth, counters, or terminal witnesses.
+
+W4.6d executes the compiler-emitted root through that boundary in exact, mixed partial/exact, and dual-unknown cases.
+Its frozen capability is the only runtime model authority: graph execution does not consult the registry, resolver,
+descriptor, target body, or selector again. The counterfactual facade/request/plan/result, standalone target-outcome
+projection, ClrMD dump-grounded execution, and hosted umbrella closure remain W4.7–W4.9 work.
 
 ## 5. Identity model
 
@@ -483,6 +524,18 @@ instances, canonicalizes node/field/edge order independently of discovery storag
 topology plus diamond sharing, cycles, conflicts, malformed targets, and fixed-cap failures. Preparation returns either
 the complete graph or no plan. This is deterministic dependency preparation, not a canonical product replay result.
 
+W4.5 adds resolver-free prepared-machine replay. Exact runs reproduce structural call/return sites, frame chronology,
+instruction accounting, memory, terminal result, and depth witnesses; explained runs additionally reproduce canonical
+kind-4/5 call/return lineage through fresh domains and machines.
+
+W4.6 adds body-free model replay and frame-free model execution replay. Fresh SRM/planner/registry objects reconstruct
+the same structural leaf without helper-body acquisition. Execution then uses only the frozen capability and reproduces
+attempt chronology, invocation/completion counts, caller result, instruction/event accounting, unchanged memory,
+logical/frame depth witnesses, and kind-6 modeled-return lineage. The mixed and dual-unknown literal graph hashes are
+`451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff` and
+`31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`, respectively. This is still dump-free
+machine evidence, not canonical product request/plan/result or dump close/reopen/rebind replay.
+
 ## 8. Status protocols
 
 Different layers use different, explicitly mapped vocabularies:
@@ -522,10 +575,11 @@ The prototype retains only projects containing behavior or contracts exercised b
 
 - `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body/call-target shapes,
   domain/memory contracts, optional value-precision and field-approximation capabilities, canonical structured field
-  evidence, exact-only-by-default unknown policy, precision events, complete direct-call graph preparation, and the
-  interpreter kernel;
+  evidence, exact-only-by-default unknown policy, precision events, complete direct-call/model graph preparation,
+  frozen pure-model capability binding, deterministic model attempts, and the interpreter kernel;
 - `Interpreter.Domain.Concrete` — concrete validation semantics and persistent memory plus W4.2–W4.3's
-  provenance-aware value/domain and canonical input, binary, and field lineage graph;
+  provenance-aware value/domain and canonical input, binary, field, call, interpreted-return, and modeled-return
+  lineage graph;
 - `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts, including
   body-independent contextual direct-MethodDef resolution, and the active SRM adapter;
 - `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, and exact

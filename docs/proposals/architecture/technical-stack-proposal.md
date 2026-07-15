@@ -21,7 +21,8 @@ The objective is to pick technologies that maximize:
    64-method and 1,024 method/field/edge-unit safety caps; those are not the later configurable product traversal
    budget. W4.5 separately admits a configured logical-call-depth limit before activation and records required,
    observed, and active-frame depth facts without charging them as instruction budget. Allocation, path, join, and
-   widening budgets remain later requirements.
+   widening budgets remain later requirements. W4.6 preserves active-frame depth across atomic modeled calls while
+   recording capability-entry logical depth and immutable attempt chronology separately.
    Cooperative `CancellationToken` cancellation remains a separate host-responsiveness mechanism and must not replace
    replay-stable budgets.
 2. **Low-level metadata/IL fidelity**
@@ -243,12 +244,23 @@ Use standard .NET DI for host-facing composition while allowing direct construct
     - Exercise `IPureCallModelLineageDomain<TValue>` directly: embed exact operands, wrap explained operands with
       unchanged kind-4 nodes, and publish one schema-v1 kind-6 modeled-return node in a single prevalidated batch.
     - Assert kinds 1–5 byte/identity compatibility, acyclicity, structural capture/replay validation, fresh-domain
-      continuation, and failure atomicity. Model invocation and machine transfer remain outside this lane.
+      continuation, and failure atomicity. Model invocation and machine transfer remain outside this historical lane.
+11. **Frozen pure-model machine conformance (W4.6c)**
+    - Invoke only the capability frozen in the modeled leaf; prohibit registry/resolver/descriptor/body rereads,
+      reselection, interpretation fallback, model frames/events, and memory mutation.
+    - Assert atomic exact/grounded-unknown caller transfer, one-instruction charging, pre-entry budget rejection,
+      immutable attempts, invocation/completion counters, independent logical/active depth witnesses, exact terminal
+      depth retention, stable failure taxonomy, and forged-chronology rejection. The focused lane passes 34/34.
+12. **Compiler/SRM modeled-call conformance (W4.6d)**
+    - Prove direct interpreted/model/CoreCLR exact agreement and interpreted/model degraded-evidence agreement across
+      repeated and fresh metadata-reader/domain/machine sessions, including frozen graph fingerprints.
+    - The focused lane passes 3/3, aggregate W4 integration 13/13, and Fast 80/80. Every behavioral lane is headless
+      and includes `Scope!=Cybersecurity`.
 
-The external-worker regression project is compiled through the solution, but its tests are not invoked. The five
-hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W4 milestone test commands
-exclude that scope. Repository-wide compilation is topology/compilation-health evidence only, not cybersecurity
-behavioral validation.
+The non-cybersecurity external-worker regression lane passes 4/4 headlessly. The five hostile-corpus facts in the
+integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W4 milestone test commands exclude that
+scope. Repository-wide compilation is topology/compilation-health evidence only, not cybersecurity behavioral
+validation.
 
 CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad performance suites remain research until their roadmap entry gates pass. `testing-strategy-proposal.md` is the source of truth for current evidence and milestone gates.
 
@@ -374,8 +386,9 @@ Current facts:
   MethodDef helper signature. W4.5 activates interpreted graphs for exact direct `call`/`ret` frames and, through an
   optional value-domain capability, propagates canonical explained-unknown argument and return lineage while the
   legacy single-body path remains call-free. W4.6a adds a separate exact/no-effect structural pure-model planning
-  profile with body-free opaque leaves, then blocks those graphs before activation; W4.6b adds modeled-return lineage
-  construction without invoking a model. These profiles do not imply branches, model execution, EH, statics outside
+  profile with body-free opaque leaves; W4.6b adds modeled-return lineage; W4.6c atomically executes the frozen
+  capability with attempts/counters/depth witnesses; and W4.6d proves compiler/SRM exact and degraded conformance.
+  These profiles do not imply branches, broader model dispatch, EH, statics outside
   the exact callee, byrefs, generics, or arbitrary instance methods.
 - Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code,
   `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. It projects
@@ -446,13 +459,27 @@ Current facts:
   errors; focused 8/8, combined legacy-plus-modeled lineage 44/44, and the standard single-node integration build plus
   W4 call-lineage 2/2 passed with zero skips and `Scope!=Cybersecurity`. It realizes 1,003 added LOC (481 production
   plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC. It does not execute a model.
+- W4.6c exact commit `877c9fb55` executes only the capability retained by the frozen modeled leaf. Exact and lineage-
+  grounded unknown outcomes transfer atomically to the caller, with one instruction event, unchanged memory, and no
+  model frame/event. Budget rejection precedes entry; actual entries produce immutable attempts and logical-depth
+  witnesses. No registry/resolver/descriptor/body reread, reselection, or fallback is possible. Invocation/completion
+  counters, active/logical high-water marks, exact terminal depth retention, and stable capability/outcome/lineage/
+  invariant taxonomy are resume-validated. It realizes 2,734 added LOC (1,425 production plus 1,309 tests); strict
+  affected builds passed at zero warnings/errors and focused conformance passed 34/34.
+- W4.6d exact commit `da5346813` adds 956 test LOC. It directly proves compiler/SRM interpreted/model/CoreCLR exact
+  agreement and interpreted/model agreement for both partial/unavailable shapes. The target PE SHA-256 remains
+  `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; the mixed case freezes graph hash
+  `451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`, while repeated and fresh sessions reproduce
+  the both-unknown graph hash `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`. Focused W4.6d passed 3/3 and aggregate
+  W4 integration 13/13. Full exact-checkpoint closure passed locked restore, strict fifteen-project build at zero
+  warnings/errors, unit 413/413, Fast 80/80, ordinary dump 5/5, optimized dump 1/1, and external worker 4/4, with
+  zero skips. Every behavioral invocation used the headless wrapper and `Scope!=Cybersecurity`.
+- W4.6 realizes 7,652 LOC and brings cumulative W4 realization to 24,469 LOC.
 - Historical later full-W4 projections are W4.5 closure 25,017–29,417, post-design-audit 27,217–32,117, W4.6a
   checkpoint 28,376–32,476, first concrete W4.6b recalibration 28,876–33,276, post-W4.6b-split 28,826–33,726,
-  and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan leaves W4.6c machine execution/
-  transfer, attempt records, depth witnesses, and unit conformance at 2,550–2,750 LOC and W4.6d compiler/SRM exact,
-  degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized W4.6a/b
-  plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC and current full W4 is
-  30,079–33,729 LOC.
+  post-W4.6b checkpoint 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d realized 3,690 LOC
+  against their historical 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC, W4.8 at
+  2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC for full W4.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,

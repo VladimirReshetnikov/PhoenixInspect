@@ -36,8 +36,9 @@ pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is i
 body-free direct MethodDef resolution is implemented at pushed checkpoint `2e596c117`, and W4.4b's complete frozen
 graph is implemented at pushed checkpoint `742ef2c4f`. W4.5a's exact prepared-graph execution is implemented at pushed
 checkpoint `356c07037`, and W4.5b's explained-unknown call/return lineage is implemented at pushed checkpoint
-`c72f6ee9e`. W4.6a structural pure-model admission is implemented at pushed checkpoint `77c92789b`. W4.6b–W4.9,
-counterfactual product execution, and dump-grounded W4 behavior have not landed.
+`c72f6ee9e`. W4.6a structural pure-model admission is implemented at pushed checkpoint `77c92789b`, W4.6b modeled-
+return lineage at `fd723a912`, W4.6c machine invocation/transfer at `877c9fb55`, and W4.6d compiler/SRM conformance at
+`da5346813`. W4.7–W4.9, counterfactual product execution, and dump-grounded W4 behavior have not landed.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
@@ -133,8 +134,9 @@ W4.6a adds bounded non-generic model identity/version, descriptor, invocation/ou
 body access; default `Prepare` remains interpret-only. Canonical call disposition, `ModeledLeaves`, lookup,
 deduplication, traversal, and depth freeze one body-free opaque leaf. Selection failures expose no partial plan or
 fallback; capability identity is excluded from structural equality/hash; legacy interpreted hashes remain frozen.
-The compiler graph contains one root, one modeled leaf, two fields, and one edge: five units at depth two. Machine
-activation blocks it as `EXEC_MODEL_EXECUTION_UNAVAILABLE`, so no model executes before W4.6b/c.
+The compiler graph contains one root, one modeled leaf, two fields, and one edge: five units at depth two. At that
+checkpoint machine activation still blocked it as `EXEC_MODEL_EXECUTION_UNAVAILABLE`; W4.6c later replaces that
+temporary boundary with the frozen-capability-only execution described below.
 
 At exact pushed checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41`, locked restore; strict Release build
 0/0; contract 49/49; model planner 25/25; legacy planner 35/35; SRM 1/1; lineage 2/2; unit 371/371; fast 77/77;
@@ -142,12 +144,39 @@ ordinary dump 5/5; optimized dump 1/1; Markdown 62/41; and workflow guard 1 all 
 filters used `Scope!=Cybersecurity`, and independent audits found no behavioral findings. The deterministic PDB-free
 TestTarget PE SHA-256 is `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`.
 
-W4.5b realizes 2,804 added LOC (766 production plus 2,038 tests). W4.6a adds 2,959 LOC (1,210 production plus 1,749
-tests/fixture support), 359 above its 2,600 upper estimate, bringing W4.1–W4.6a to 19,776 LOC. Combined W4.6a/b/c now
-projects to 6,109–7,709 LOC. Remaining W4.6b–W4.9 is 9,050–13,950 LOC and current W4 is 28,826–33,726 LOC. Preserve
-the original 16,860–25,310 baseline and historical 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313,
-25,017–29,417, 27,217–32,117, 28,376–32,476, and 28,876–33,276 projections. Model execution, configurable request traversal
-policy, product results, ClrMD dump grounding, and hosted closure remain pending.
+W4.6b adds optional modeled-return lineage/domain behavior. Exact arguments are embedded in canonical kind-6
+`ModeledReturnTransform` nodes; explained arguments first retain their unchanged kind-4 call transforms. The complete
+dependency batch is validated and interned atomically, and schema-v1 kinds 1–5 preserve their bytes and identities.
+W4.6b realizes 1,003 LOC (481 production plus 522 tests), bringing W4.1–W4.6b to 20,779 LOC.
+
+W4.6c checkpoint `877c9fb55` executes only the capability frozen into the opaque leaf: it performs no resolver,
+registry, target-body, descriptor, or selection reread and has no interpretation fallback. Exact and grounded-unknown
+returns transfer atomically in the caller, preserve memory, consume one instruction, and emit one instruction event
+without a helper frame. A blocked, invalid, malformed, or normalized capability outcome leaves semantic state, memory,
+budget, and semantic events unchanged but records one deterministic operational attempt. Logical-depth high water
+advances for an entered model boundary, even when it does not transfer; active-frame depth does not. Attempt chronology,
+model/call counts, and exact terminal witnesses are invariant-checked. W4.6c realizes 2,734 LOC: 1,425 production
+additions plus 1,309 unit-test additions.
+
+W4.6d checkpoint `da5346813` proves compiler/SRM conformance. Model execution agrees with interpreted execution and
+CoreCLR for exact values, and with interpreted execution for mixed partial/exact and partial/unavailable values. The
+exact run uses six caller instructions, two field loads, logical/frame high water 2/1, one completed attempt, unchanged
+memory, no helper body/frame, and no execution-time reread. The mixed case freezes graph SHA-256
+`451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`; repeated and fresh SRM/domain/machine runs
+reproduce the dual-unknown graph SHA-256 `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`.
+W4.6d realizes 956 integration-test additions. W4.6 closure passed locked restore; strict fifteen-project and
+unit/integration Release builds at zero
+warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integration 13/13; complete unit 413/413; fast
+80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4, all headlessly with zero skips and
+`Scope!=Cybersecurity` on behavioral filters.
+
+W4.5b realizes 2,804 added LOC (766 production plus 2,038 tests). W4.6a/b/c/d realize 2,959/1,003/2,734/956 LOC,
+respectively, so combined W4.6 realizes 7,652 LOC and W4.1–W4.6d realize 24,469 LOC. Recalibrated W4.7 is
+2,200–3,150 LOC; W4.8 remains 2,400–3,500 and W4.9 remains 2,000–3,200. Remaining W4.7–W4.9 is 6,600–9,850 LOC
+and current W4 is 31,069–34,319 LOC. Preserve the original 16,860–25,310 baseline and historical 18,532–26,132,
+19,228–25,728, 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
+28,826–33,726, 28,879–33,279, and 30,079–33,729 projections. W4.7 is not implemented. Target-outcome projection,
+configurable request traversal policy, product results, ClrMD dump grounding, and hosted closure remain pending.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
@@ -180,13 +209,13 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4.1–W4.5's landed execution kernel, W4.6a's structural modeled-leaf admission, the pending W4.6b–W4.9 slices, and explicitly gated research phases. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4.1–W4.6's landed execution/model kernel, pending W4.7–W4.9 product/dump closure, and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
-| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; W4.1–W4.6a evidence is local/pushed and W4.6b–W4.9 remain pending. |
+| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; W4.1–W4.6 evidence is local/pushed and W4.7–W4.9 remain pending. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |

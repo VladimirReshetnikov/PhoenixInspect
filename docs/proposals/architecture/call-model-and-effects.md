@@ -2,12 +2,13 @@
 
 > **Roadmap status: supporting research plus one implemented W4 profile.** W4.5 executes one closed interpreted direct-
 > MethodDef call shape. Exact W4.6a commit `77c92789b16d9258c907d5026a36e39f8c957b41` freezes one narrower
-> structural pure-model admission profile, and exact W4.6b commit `fd723a912` freezes its modeled-return lineage/domain
-> contract. Neither W4.6 checkpoint executes a model. The broad taxonomy, effect lattice, fallbacks, intrinsic catalog,
+> structural pure-model admission profile, exact W4.6b commit `fd723a912` freezes its modeled-return lineage/domain
+> contract, exact W4.6c commit `877c9fb55` makes that frozen capability executable, and exact W4.6d commit
+> `da5346813` closes compiler/SRM conformance. The broad taxonomy, effect lattice, fallbacks, intrinsic catalog,
 > dynamic/async lifting, and host trust vocabulary below remain research unless the current-profile section explicitly
 > says otherwise.
 
-## Current implemented W4.6a/b profile
+## Current implemented W4.6 profile
 
 The normative W4 contract, not this document's broad research taxonomy, controls the active slice. Its model boundary
 is deliberately closed:
@@ -37,13 +38,27 @@ is deliberately closed:
   real compiler graph is one interpreted root plus one modeled leaf, two fields, and one edge: five units and required
   depth two. Its deterministic PDB-free target PE SHA-256 is
   `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`.
-- `ActivatePreparedGraph` rejects any graph containing modeled leaves with `EXEC_MODEL_EXECUTION_UNAVAILABLE` before
-  depth, arguments, state, resolver, or runtime-model access. W4.6a therefore has no model call, attempt record,
-  modeled return transfer, or modeled lineage.
+- W4.6c activation dispatches only the already-frozen call disposition and invokes only the capability retained by the
+  prepared modeled leaf. It never re-queries the registry or resolver, reselects a descriptor, reads the target body,
+  or falls back to interpretation. A modeled call pushes no callee frame and emits no frame event.
 - W4.6b adds optional `IPureCallModelLineageDomain<TValue>` and append-only schema-v1 kind-6
   `ModeledReturnTransform`. It embeds exact operands, wraps explained operands with unchanged kind-4 call nodes,
   prevalidates and interns the complete acyclic batch atomically, and validates structural replay plus fresh-domain
-  continuation. Kinds 1–5 retain their exact bytes and identities. This domain operation is not machine execution.
+  continuation. Kinds 1–5 retain their exact bytes and identities.
+- W4.6c transfers exact or lineage-grounded unknown model returns atomically into the caller. One modeled call consumes
+  one instruction event, leaves memory unchanged, and advances logical depth without changing active-frame depth.
+  Budget rejection occurs before capability entry. A capability that blocks, fails, throws, or returns a malformed
+  outcome transfers no semantic state and receives no fallback.
+- Every actual capability entry appends one immutable `PureModelAttempt` with frozen callsite/model identity, entered
+  logical depth, outcome, transfer status, and stable payload-safe code. Operational counters distinguish invocations
+  from completed modeled calls; attempt chronology and logical-depth high-water witnesses are validated on resume.
+  The stable taxonomy separates capability failure, invalid/malformed outcome, lineage unavailability/invalidity,
+  and forged attempt invariants. Exact terminal activation additionally preserves the completed depth witness.
+- W4.6d binds this same profile through the real compiler and SRM path. It directly proves interpreted/model/CoreCLR
+  agreement for exact evidence and interpreted/model agreement for both partial/unavailable shapes. The mixed case
+  freezes canonical graph SHA-256 `451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`;
+  repeated and fresh metadata-reader/domain/machine runs reproduce the both-unknown graph SHA-256
+  `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`.
 
 W4.6a exact-checkpoint headless evidence passed locked restore; a strict fifteen-project Release build at zero
 warnings/errors; unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; pure-model contracts 49/49; model
@@ -53,14 +68,20 @@ W4.1–W4.6a to 19,776 LOC. W4.6b strict headless builds passed at zero warnings
 plus-modeled lineage 44/44, and integration call-lineage 2/2 passed with zero skips and `Scope!=Cybersecurity`. It
 realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC.
 
+W4.6c exact commit `877c9fb55` realizes 2,734 added LOC (1,425 production plus 1,309 tests). Strict affected builds
+passed at zero warnings/errors and its focused machine lane passed 34/34. W4.6d exact commit `da5346813` realizes
+956 test LOC. Its compiler/SRM lane passed 3/3, the aggregate W4 integration lane passed 13/13, and the Fast lane
+passed 80/80. Every behavioral invocation used `eng/Invoke-HeadlessProcess.ps1`, included
+`Scope!=Cybersecurity`, and recorded zero skips. W4.6 realizes 7,652 LOC in total and brings W4.1–W4.6 to
+24,469 LOC.
+
 Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532–26,132; post-W4.3
 19,228–25,728; post-W4.4 21,179–26,779; post-W4.5a 24,013–29,313; W4.5 closure 25,017–29,417; design audit
 27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
-28,826–33,726; and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan leaves W4.6c actual
-invocation/transfer, attempts, depth witnesses, and unit conformance at 2,550–2,750 LOC and W4.6d compiler/SRM exact,
-degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized W4.6a/b
-plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC and current full W4 is
-30,079–33,729 LOC.
+28,826–33,726; post-W4.6b checkpoint 28,879–33,279; and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
+realized 3,690 LOC against their 3,400–3,750 estimate, and W4.6 as a whole realizes 7,652 LOC. The current remaining
+plan is W4.7 at 2,200–3,150 LOC, W4.8 at 2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC
+remaining and 31,069–34,319 LOC for full W4.
 
 ## Purpose
 
@@ -90,8 +111,8 @@ It covers:
 ## 2) Call classification
 
 The following is a future classification taxonomy, not the current W4 dispatcher. Current W4 graphs distinguish only
-interpreted edges and the one required exact pure-model leaf described above; W4.6c has not yet made the latter
-executable. A later broad dispatcher may classify calls into:
+interpreted edges and the one required executable exact pure-model leaf described above. A later broad dispatcher may
+classify calls into:
 
 1. **PureIntrinsic**
    - Predefined semantic model exists for target member and is side-effect free.
@@ -145,8 +166,8 @@ Confidence labels are mandatory for host trust synthesis and regression assertio
 
 ## 3) Dispatch contract
 
-This section is a future generalized envelope. It is not implemented by W4.6a/b, whose non-generic model boundary has
-no memory/ambient inputs and whose machine rejects modeled graphs before invocation.
+This section is a future generalized envelope. It is not implemented by the narrow W4.6 profile, whose non-generic
+model boundary has no memory/ambient inputs and whose frozen exact/no-effect capability has no fallback.
 
 ### 3.1 Inputs
 
@@ -305,8 +326,8 @@ All outcomes must carry provenance linking back to callsite IL offset, lifted si
 
 - **W4.6a (implemented):** structural exact/no-effect selection, opaque modeled leaves, and fail-closed activation.
 - **W4.6b (implemented):** atomic modeled-return lineage/domain vocabulary with schema-v1 compatibility.
-- **W4.6c (pending):** invoke the selected model, transfer exact/unknown results, and prove atomic attempts, depth,
+- **W4.6c (implemented):** invoke the selected model, transfer exact/unknown results, and prove atomic attempts, depth,
   charging, event, and unit conformance without broadening the active profile.
-- **W4.6d (pending):** prove compiler/SRM exact, degraded, and fresh-session execution conformance.
+- **W4.6d (implemented):** prove compiler/SRM exact, degraded, and fresh-session execution conformance.
 - **Later research:** generalized fallback diagnostics, effect joins/fixpoint integration, intrinsic catalog and summary
   governance, and host trust/UX tuning using dump-backed validation data.

@@ -17,8 +17,8 @@ The solution retains ten source projects, each containing contracts or behavior 
 | Project | Current responsibility |
 |---|---|
 | `Interpreter.Core.Abstractions` | Structural type/method/field and direct-call-site identities, atomic body and body-independent direct-call resolution shapes, non-generic structural pure-model descriptor/invocation/outcome/registry contracts, value-domain plus optional value-precision/field-approximation/interpreted-call-lineage/modeled-return-lineage capabilities, canonical structured field evidence, typed memory-result, persistent-memory, and budget contracts. |
-| `Interpreter.Core.Execution` | Metadata-derived legacy and prepared-graph activation, frozen typed whole-body admission, deterministic rooted direct-call graph preparation, opt-in exact body-free pure-model selection, exact/explained-unknown interpreted multi-frame execution, fail-closed modeled-graph activation, structural return sites, exact-only-by-default unknown policy, policy-gated approximate field/call transfer, precision/frame events, and deterministic micro-step/machine-outcome protocol. |
-| `Interpreter.Domain.Concrete` | Concrete validation values, persistent allocated/imported object and field memory, and W4.2–W4.6b's provenance-aware value/domain plus canonical input, binary, field, call-argument, interpreted-return, and modeled-return lineage graph. |
+| `Interpreter.Core.Execution` | Metadata-derived legacy and prepared-graph activation, frozen typed whole-body admission, deterministic rooted direct-call graph preparation, opt-in exact body-free pure-model selection/execution, exact/explained-unknown interpreted multi-frame execution, atomic modeled caller transfer, immutable model attempts/counters/depth witnesses, structural return sites, exact-only-by-default unknown policy, policy-gated approximate field/call transfer, precision/frame events, and deterministic micro-step/machine-outcome protocol. |
+| `Interpreter.Domain.Concrete` | Concrete validation values, persistent allocated/imported object and field memory, and W4.2–W4.6's provenance-aware value/domain plus canonical input, binary, field, call-argument, interpreted-return, and modeled-return lineage graph. |
 | `Interpreter.Metadata.Abstractions` | Project-owned metadata identities and complete method/field plus contextual direct-MethodDef projection contracts. |
 | `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter and reusable body, body-independent call-signature, local, and field projection over a `MetadataReader`. |
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
@@ -46,7 +46,10 @@ depth facts, high-water integrity, event and budget ordering, resolver-free repl
   tests add bounded non-generic model vocabulary, exact/no-effect body-free selection, opaque modeled-leaf deduplication,
   traversal/depth accounting, fail-closed activation, deterministic PDB-free fixture identity, and legacy-plan
   compatibility. W4.6b domain tests add atomic kind-6 modeled-return lineage over exact and explained arguments,
-  unchanged kinds 1–5, structural replay validation, and fresh-domain continuation.
+  unchanged kinds 1–5, structural replay validation, and fresh-domain continuation. W4.6c machine tests add frozen-
+  capability exact/unknown transfer, attempt chronology, failure atomicity, and independent logical/active depth
+  witnesses. W4.6d compiler/SRM tests add direct interpreted/model/CoreCLR exact agreement, interpreted/model degraded
+  agreement, and repeated/fresh-session graph identity.
 
 ## 3. Dependency rules
 
@@ -83,7 +86,7 @@ write full dump
   -> close/reopen/rebind the W3 module, root, method, field, and import, then reproduce execution transcripts
 ```
 
-W4.2–W4.4 add separate dump-free evidence boundaries within the existing core and metadata projects:
+W4.2–W4.6 add separate dump-free evidence boundaries within the existing core and metadata projects:
 
 ```text
 bounded partial/unavailable input origin
@@ -115,13 +118,21 @@ root MethodDef + required exact structural target + IPureCallModelRegistry
   -> select exact-confidence, no-effect descriptor matching the complete body-independent target
   -> freeze one opaque deduplicated FrozenPureModelLeaf and PureModel call disposition
   -> include modeled leaves and call edges in canonical traversal/depth accounting
-  -> block prepared activation with EXEC_MODEL_EXECUTION_UNAVAILABLE before all runtime access
+  -> W4.6a checkpoint only: block prepared activation with EXEC_MODEL_EXECUTION_UNAVAILABLE before runtime access
 
 owned explained Int32 call inputs + selected PureCallModelIdentity
   -> optional IPureCallModelLineageDomain capability
   -> one atomic batch of unchanged kind-4 argument nodes plus kind-6 ModeledReturnTransform
   -> exact operands embedded directly; complete acyclic graph validated before publication
-  -> structural capture/replay and fresh-domain continuation without executing a model
+  -> W4.6b checkpoint: structural capture/replay and fresh-domain continuation before model execution landed
+
+frozen PureModel call disposition + caller operands
+  -> validate exact callsite/model identity, budget, logical depth, and attempt chronology
+  -> invoke only the frozen capability without resolver, registry, descriptor, target-body, or selector access
+  -> atomically transfer an exact or grounded explained-unknown result in the caller and consume one instruction
+  -> append one operational attempt for every entered capability, including a non-transferring outcome
+  -> advance logical-depth high water without allocating a model frame or changing active-frame high water
+  -> prove exact and degraded agreement plus repeated/fresh dual-unknown graph identity through compiler/SRM sessions
 ```
 
 Semantic equality, hashing, lattice order, join, meet, and widening ignore the optional lineage root. The default
@@ -164,7 +175,7 @@ documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
 at that exact commit.
 
-W4.1–W4.6b are landed. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
+W4.1–W4.6 are landed. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
 `UnknownExecutionPolicy`, `ProvenanceConcreteDomain`/`ProvenanceConcreteValue`, canonical `InputOrigin` and
 `BinaryTransform` lineage, and shared-handler unknown arithmetic. That historical implementation checkpoint is 3,454
 LOC: 3,429 LOC for W4.2 plus a 25-LOC scope correction; cumulative W4 realization through W4.2 was 3,932 LOC.
@@ -243,22 +254,38 @@ plus fresh-domain continuation. It does not execute a model. Strict headless bui
 focused 8/8 and combined legacy-plus-modeled lineage 44/44 passed with zero skips and `Scope!=Cybersecurity`.
 W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC.
 
+Exact W4.6c checkpoint `877c9fb55` dispatches only the capability frozen in the modeled leaf, with no registry,
+resolver, descriptor, or target-body reread and no fallback. Exact and lineage-grounded unknown results transfer
+atomically to the caller, charge one instruction, preserve memory, and create no callee frame or frame event. Every
+actual capability entry records one immutable attempt and advances logical depth; budget rejection happens before
+entry. Invocation/completion counters, active-frame/logical-depth witnesses, failure taxonomy, and chronology
+validation make nontransfer and forged-state outcomes auditable. W4.6c realizes 2,734 added LOC (1,425 production plus
+1,309 tests); strict affected builds passed with zero warnings/errors and focused tests passed 34/34.
+
+Exact W4.6d checkpoint `da5346813` adds 956 test LOC. Through the real compiler/SRM path, exact execution agrees
+directly among interpreted execution, model execution, and CoreCLR, while both partial/unavailable shapes agree
+between interpreted and model paths. The mixed case freezes graph SHA-256
+`451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`; repeated and fresh
+metadata-reader/domain/machine sessions reproduce the both-unknown graph SHA-256
+`31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`. Focused W4.6d passed 3/3, aggregate W4
+integration 13/13, and Fast 80/80. Every behavioral lane used `eng/Invoke-HeadlessProcess.ps1` and
+`Scope!=Cybersecurity`; strict affected builds passed at zero warnings/errors. W4.6 totals 7,652 LOC and cumulative
+W4 realization is 24,469 LOC.
+
 Historical full-W4 projections remain original 16,860–25,310, post-W4.2 18,532–26,132, post-W4.3
 19,228–25,728, post-W4.4 21,179–26,779, post-W4.5a 24,013–29,313, W4.5 closure 25,017–29,417, design audit
 27,217–32,117, W4.6a checkpoint 28,376–32,476, first W4.6b recalibration 28,876–33,276, post-W4.6b-split
-28,826–33,726, and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan leaves W4.6c machine
-invocation/transfer, attempt records, depth witnesses, and unit conformance at 2,550–2,750 LOC, then W4.6d compiler/
-SRM exact, degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized
-W4.6a/b plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC and current full
-W4 is 30,079–33,729 LOC.
+28,826–33,726, post-W4.6b checkpoint 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
+realized 3,690 LOC against their historical 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC,
+W4.8 at 2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC
+for full W4.
 
 The existing ClrMD field descriptor remains exact-only; W4.3 adds no partial-field dump producer or generated-dump
-counterfactual result. W4.5 executes exact and explained-unknown values across interpreted call boundaries; W4.6a
-prepares a structurally selected pure-model leaf; and W4.6b constructs modeled-return lineage independently of
-execution. W4.6c model invocation/transfer, attempt records, depth witnesses, and unit conformance plus W4.6d compiler/
-SRM exact/degraded/fresh-session conformance, the counterfactual facade/product result, generated-dump execution, and
-hosted closure remain absent and are W4.6c–W4.9 work. The legacy `IlMachine` still rejects the W4
-fixture before the call, while the opt-in prepared session consumes interpreted graphs and fail-closes modeled graphs.
+counterfactual result. W4.5 executes exact and explained-unknown values across interpreted call boundaries; W4.6
+executes the one structurally selected pure-model leaf with modeled-return lineage and compiler/SRM conformance. The
+counterfactual facade/product result, generated-dump execution, and hosted closure remain absent and are W4.7–W4.9
+work. The legacy `IlMachine` still rejects the W4 fixture before the call, while the opt-in prepared session consumes
+both interpreted and modeled graphs.
 
 The external-worker projects are separately executable, and their four-test package includes a locally passing real
 malformed-artifact process checkpoint. This is non-gating prototype work outside W1–W4; its presence does not admit
@@ -313,4 +340,4 @@ implementation commit. Formal W3 closure is recorded at exact documentation comm
 run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required
 jobs.
 
-The physical layout and contracts remain prototype hypotheses. They may change freely as W4.6c–W4.9 force better boundaries.
+The physical layout and contracts remain prototype hypotheses. They may change freely as W4.7–W4.9 force better boundaries.

@@ -1,7 +1,7 @@
 # Opcode Admission and Evidence Matrix
 
 **Lifecycle:** Current
-**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 direct-call admission, completed W4.5 exact/explained-unknown prepared-call execution, W4.6a structural pure-model admission, and gates later expansion
+**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 direct-call admission, completed W4.5 exact/explained-unknown prepared-call execution, completed W4.6 pure-model execution/conformance, and gates later expansion
 
 ## 1. Principle
 
@@ -274,19 +274,50 @@ errors; focused 8/8, combined legacy-plus-modeled lineage 44/44, and integration
 and `Scope!=Cybersecurity`. W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing
 W4.1–W4.6b realization to 20,779 LOC. This adds no executable opcode or model invocation.
 
+### W4.6c — Frozen pure-model invocation and caller transfer
+
+Exact checkpoint `877c9fb55` removes W4.6a's temporary activation lockout without broadening opcode admission. The
+machine dispatches only the frozen `PureModel` disposition and retained capability: it never re-queries the registry or
+resolver, reselects a descriptor, reads the modeled target body, or falls back to interpretation. Exact and lineage-
+grounded unknown outcomes transfer atomically into the caller, charge one instruction event, leave memory unchanged,
+and create no callee frame or frame event.
+
+Budget rejection occurs before capability entry. Every actual entry records frozen callsite/model identity, entered
+logical depth, outcome, transfer status, and a stable code. Capability failure, blocked/invalid/malformed outcome, and
+lineage failure preserve semantic state while remaining visible in immutable attempt chronology. Invocation/completion
+counters and distinct logical-depth/active-frame high-water witnesses reject forged resume state; exact terminal state
+retains the completed logical-depth witness. W4.6c realizes 2,734 added LOC (1,425 production plus 1,309 tests). Strict
+affected builds passed with zero warnings/errors and focused conformance passed 34/34, headlessly with
+`Scope!=Cybersecurity`.
+
+### W4.6d — Compiler/SRM exact and degraded conformance
+
+Exact checkpoint `da5346813` adds 956 test LOC and proves the frozen model through the real compiler and SRM path.
+Exact evidence agrees directly among interpreted execution, model execution, and CoreCLR; both partial/unavailable
+shapes agree directly between interpreted and model execution. The mixed case freezes graph SHA-256
+`451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`; repeated and fresh
+metadata-reader/domain/machine runs reproduce the both-unknown graph SHA-256
+`31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`. The deterministic target PE remains
+`fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`. Strict affected builds passed at zero
+warnings/errors; focused W4.6d passed 3/3, aggregate W4 integration 13/13, and Fast 80/80. Every behavioral invocation
+used the headless wrapper and `Scope!=Cybersecurity`.
+
+W4.6 totals 7,652 LOC and brings cumulative W4 realization to 24,469 LOC.
+
 Historical full-W4 projections remain original 16,860–25,310, post-W4.2 18,532–26,132, post-W4.3
 19,228–25,728, post-W4.4 21,179–26,779, post-W4.5a 24,013–29,313, W4.5 closure 25,017–29,417, post-design-audit
 27,217–32,117, W4.6a checkpoint 28,376–32,476, first W4.6b recalibration 28,876–33,276, post-split
-28,826–33,726, and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan splits remaining model
-work into W4.6c machine invocation/transfer, attempts, depth witnesses, and unit conformance at 2,550–2,750 LOC and
-W4.6d compiler/SRM exact, degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is
-3,400–3,750 LOC; realized W4.6a/b plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is
-9,300–12,950 LOC and current full W4 is 30,079–33,729 LOC.
+28,826–33,726, post-W4.6b checkpoint 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
+realized 3,690 LOC against their historical 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC,
+W4.8 at 2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC
+for full W4.
 
 ## 4. Later gates
 
 - **Branches:** require explicit condition semantics, deterministic path policy, and closed fixtures.
-- **Calls:** W4.5 completes exact and explained-unknown values for one frozen interpreted shape. W4.6a structurally admits one exact no-effect pure-model leaf but deliberately blocks activation; W4.6b supplies its modeled-return lineage relation without invoking it. W4.6c machine execution/attempt/depth conformance and W4.6d compiler/SRM conformance remain gated, as does every broader call/effect policy.
+- **Calls:** W4.5 completes exact and explained-unknown values for one frozen interpreted shape. W4.6 completes one
+  frozen exact/no-effect pure-model shape, including atomic exact/unknown caller transfer, attempts/depth witnesses,
+  and compiler/SRM conformance. Every broader call/effect policy remains gated.
 - **Indirect/byref operations:** require an addressable model and dump-layout evidence. Span is not an MVP commitment.
 - **Exception regions:** first add stop-on-throw; handler search/unwind is a separate milestone required before `leave`, `endfinally`, filters, or debugger-grade Step Out claims.
 - **Async/dynamic:** require their ordinary prerequisite opcode and EH sets before semantic lifting can be evaluated.

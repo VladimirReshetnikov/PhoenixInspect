@@ -4,8 +4,9 @@
 > 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
 > at that exact closure commit. W4.2–W4.5 now prove a narrow dump-free explained-unknown, graph-preparation, and
 > interpreted-call path. Exact W4.6a commit `77c92789b16d9258c907d5026a36e39f8c957b41` adds structural pure-model
-> selection with fail-closed activation, and exact W4.6b commit `fd723a912` adds modeled-return lineage construction;
-> neither executes a model. CFG/fixpoint analysis, broad unknown propagation, generalized call dispatch, and abstract-
+> selection, exact W4.6b commit `fd723a912` adds modeled-return lineage construction, exact W4.6c commit `877c9fb55`
+> executes the frozen capability, and exact W4.6d commit `da5346813` closes compiler/SRM conformance. CFG/fixpoint
+> analysis, broad unknown propagation, generalized call dispatch, and abstract-
 > analysis reuse remain gated research. API sketches below are illustrative, not current contracts.
 
 Below is a **low-level technical proposal** for a reusable **CIL (ECMA-335) interpreter framework** whose distinguishing hypothesis is that incomplete concrete state, provenance-bearing unknowns, and later abstract interpretation can share opcode semantics.
@@ -26,14 +27,23 @@ it selects one exact-confidence/no-effect structural model and freezes a body-fr
 planner remains interpreted-only; rejected selection never falls back to the target body or exposes a partial graph.
 The real compiler graph has one interpreted root, one modeled leaf, two fields, one edge, five traversal units, and
 required depth two. Its deterministic PDB-free target PE SHA-256 is
-`fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`. Prepared activation returns
-`EXEC_MODEL_EXECUTION_UNAVAILABLE` before depth, arguments, state, resolver, or model access.
+`fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`.
 
 W4.6b adds optional `IPureCallModelLineageDomain<TValue>` and schema-v1 kind-6 `ModeledReturnTransform`: exact operands
 are embedded, explained operands receive unchanged kind-4 call nodes, and the complete acyclic batch is interned
 atomically and validated for structural replay/fresh-domain continuation. Kinds 1–5 retain their bytes and identities.
-This remains a domain/lineage contract; actual model invocation, transfer, attempt records, depth witnesses, and unit
-conformance are W4.6c, while compiler/SRM exact, degraded, and fresh-session conformance is W4.6d.
+W4.6c dispatches only that frozen disposition/capability, with no registry/resolver/descriptor/body reread and no
+fallback. Exact or lineage-grounded unknown returns transfer atomically into the caller, memory is unchanged, one
+instruction is charged, and no callee frame or frame event is created. Budget rejection occurs before capability
+entry. Every actual entry produces an immutable attempt record and advances the logical-depth witness; invocations,
+completed transfers, active-frame depth, and logical depth remain separately auditable. Failed or malformed outcomes
+leave semantic state unchanged and receive stable capability/outcome/lineage/invariant failure codes.
+
+W4.6d proves the resulting path through the real compiler and SRM adapter: interpreted/model/CoreCLR exact agreement
+and interpreted/model agreement for both degraded-evidence shapes. The mixed case freezes modeled graph SHA-256
+`451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`; repeated and fresh
+metadata-reader/domain/machine runs reproduce the both-unknown graph SHA-256
+`31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`.
 
 W4.6a realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support) and brings W4.1–W4.6a to
 19,776 LOC. Its headless matrix passed the strict fifteen-project Release build at zero warnings/errors; unit 371/371;
@@ -43,12 +53,16 @@ compiler 1/1; lineage 2/2; both guards; and zero skips with `Scope!=Cybersecurit
 at zero warnings/errors; focused 8/8, combined legacy-plus-modeled lineage 44/44, and integration call-lineage 2/2
 passed with zero skips and `Scope!=Cybersecurity`.
 
+W4.6c realizes 2,734 added LOC (1,425 production plus 1,309 tests) at `877c9fb55`; strict affected builds passed at
+zero warnings/errors and its focused lane passed 34/34. W4.6d realizes 956 test LOC at `da5346813`; its focused lane
+passed 3/3, aggregate W4 integration passed 13/13, and Fast passed 80/80. Every behavioral invocation used the
+headless wrapper and `Scope!=Cybersecurity`. W4.6 totals 7,652 LOC and brings W4.1–W4.6 to 24,469 LOC.
+
 Historical full-W4 projections remain 16,860–25,310, 18,532–26,132, 19,228–25,728, 21,179–26,779,
 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276, 28,826–33,726, and
-28,879–33,279 LOC. The current fourteen-row plan estimates W4.6c machine invocation/transfer, attempts, depth
-witnesses, and unit conformance at 2,550–2,750 LOC and W4.6d compiler/SRM exact, degraded, and fresh-session
-conformance at 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized W4.6a/b plus projected W4.6c/d totals
-7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC and current full W4 is 30,079–33,729 LOC.
+28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d realized 3,690 LOC against their historical
+3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC, W4.8 at 2,400–3,500 LOC, and W4.9 at
+2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC for full W4.
 
 This is written as if you were going to **build and maintain this as a core library**—usable for:
 
@@ -67,7 +81,7 @@ This is written as if you were going to **build and maintain this as a core libr
 
 Build a library that can **execute IL in a virtual machine**. The first bullet is implemented in W3/W4.5. W4.2–W4.5
 implement the branchless, dump-free explained-unknown subset of the second bullet across one interpreted call;
-W4.6a/b add a structural modeled boundary and its lineage relation without executing that model. Branching, fixpoint,
+W4.6 adds a frozen executable pure-model boundary and canonical modeled-return lineage. Branching, fixpoint,
 broader unknown-source behavior, and generalized modeled dispatch still describe gated research modes:
 
 * For some operations, produce a **concrete result** (e.g., `1 + 2 = 3`)
@@ -87,8 +101,8 @@ A design goal: **the same instruction semantics** should serve all modes; only t
 ### G1: First-class “unknownness” with provenance
 
 For the landed W4.2–W4.5 profile, admitted arithmetic, one exact-shape `ldfld`, and one interpreted direct call may
-continue from a validated explained unknown. W4.6b can construct the canonical relation for a future modeled unknown
-return, but the machine does not use it until W4.6c. Any later missing-state or modeled boundary may continue only
+continue from a validated explained unknown. W4.6 can also construct and transfer the canonical relation for its one
+frozen pure-model boundary. Any later missing-state or broader modeled boundary may continue only
 after its own scenario-specific admission. Such a value is:
 
 * typed (at least as well as IL types allow)
@@ -172,8 +186,8 @@ Implements instruction semantics in terms of:
 
 The dependency-closed current subset is `nop`, I4 constants, argument/local loads, local stores, unchecked
 `add`/`sub`/`mul`, exact or admitted explained-unknown `ldfld`, one prepared static direct `call`, and `ret`. W4.5
-executes that call only for frozen interpreted edges. W4.6a can instead freeze the required exact/no-effect target as a
-body-free modeled edge, but activation blocks before model execution. Branches, allocation opcodes, writes, EH,
+executes that call for frozen interpreted edges. W4.6 can instead freeze and execute the required exact/no-effect
+target as a body-free modeled edge. Branches, allocation opcodes, writes, EH,
 byrefs, generalized calls, and broader unknown-aware continuation remain research. Whole-body admission rejects an
 unsupported suffix before any prefix executes.
 
@@ -348,9 +362,9 @@ Other members in the sketch are concrete-memory experiments or later opcode requ
 
 ### 4.4 Calls and effects
 
-The following generic dispatcher is a research sketch, not the implemented W4 contract. Current W4.5 call execution
-is bound directly to a frozen graph; W4.6a's non-generic pure-model contract is selected during preparation and then
-fail-closes activation; W4.6b adds lineage construction only.
+The following generic dispatcher is a research sketch, not the implemented W4 contract. Current W4.5 interpreted-call
+execution and W4.6 non-generic pure-model execution are bound directly to a frozen graph; the latter has one exact,
+no-effect capability and no fallback.
 
 ```csharp
 public interface ICallDispatcher<TValue, TMem>
@@ -562,8 +576,8 @@ This makes the framework usable for:
 Current W4 resolution is intentionally narrower than the generalized design below. `call` accepts only one exact
 same-module static `Int32(Int32,Int32)` MethodDef shape. Default preparation recursively admits its interpreted body;
 explicit W4.6a preparation selects the required exact/no-effect descriptor after edge resolution/typing and before
-target-body access. There is no fallback: all failed selections reject atomically. W4.6c must execute the already
-frozen model boundary before any of the broader dispatch policies become candidates.
+target-body access. There is no fallback: all failed selections reject atomically. W4.6c executes the already-frozen
+model boundary without making any of the broader dispatch policies candidates.
 
 ### 8.1 Dispatch resolution
 
@@ -771,11 +785,11 @@ Not formal proofs, but “no false negatives” checks:
 
 ### 13.3 Model correctness tests
 
-W4.6a currently tests structural model contracts and planning rather than model output: 49/49 contract cases, 25/25
+W4.6a tests structural model contracts and planning rather than model output: 49/49 contract cases, 25/25
 model-planner cases, 35/35 legacy-planner cases, and one real SRM compiler case. W4.6b tests the lineage operation in
-focused 8/8, combined 44/44, and integration 2/2 lanes. W4.6c must add exact/unknown output agreement, attempt,
-charging, depth, atomicity, and unit conformance; W4.6d must add compiler/SRM exact, degraded, and fresh-session
-execution conformance. For each later intrinsic/BCL model:
+focused 8/8, combined 44/44, and integration 2/2 lanes. W4.6c adds exact/unknown output agreement, attempt, charging,
+depth, atomicity, and unit conformance in a 34/34 lane; W4.6d adds compiler/SRM exact, degraded, and fresh-session
+execution conformance in a 3/3 lane. For each later intrinsic/BCL model:
 
 * property-based tests comparing model vs real execution on random inputs
 * explicitly test “effects emitted match expectations”
@@ -784,9 +798,9 @@ execution conformance. For each later intrinsic/BCL model:
 
 ## 14. Proposed deliverables / packages
 
-This is a capability catalog, not the active package plan. Current W3–W4.6b realizes the core single-path E1/E2
-semantics, one prepared interpreted call, structural pure-model contracts/planning, `ConcreteDomain`, provenance-
-aware modeled-return lineage, persistent allocated/imported `ConcreteMemory`, and two resolver adapters inside the ten
+This is a capability catalog, not the active package plan. Current W3–W4.6 realizes the core single-path E1/E2
+semantics, one prepared interpreted call, one prepared pure-model call, `ConcreteDomain`, provenance-aware modeled-
+return lineage, persistent allocated/imported `ConcreteMemory`, and two resolver adapters inside the ten
 evidence-bearing source projects. It does not create the speculative generalized domain/model/analysis packages below.
 
 1. **Core**
@@ -827,9 +841,8 @@ evidence-bearing source projects. It does not create the speculative generalized
 The long-term design aims to avoid two classic failure modes:
 
 1. **“We can’t evaluate that, stop.”**
-   W4.2–W4.5 now return an explained unknown and continue for their closed arithmetic, structured-field, and
-   interpreted-call shapes. W4.6b freezes the modeled-return lineage relation, while W4.6a/default modeled activation
-   still blocks before transfer. Unsupported IL/non-exact evidence and broader continuation require separately admitted
+   W4.2–W4.6 now return an explained unknown and continue for their closed arithmetic, structured-field, interpreted-
+   call, and pure-model shapes. Unsupported IL/non-exact evidence and broader continuation require separately admitted
    contracts.
 
 2. **“We built a concrete interpreter and now want static analysis.”**

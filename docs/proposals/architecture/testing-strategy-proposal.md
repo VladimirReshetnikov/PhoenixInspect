@@ -15,9 +15,10 @@ commit `c72f6ee9e5545240433294cdca4f350808339aef` closes the dump-free execution
 explained-unknown argument and return lineage through the same prepared call. These are prerequisite W4 implementation
 checkpoints. W4.6a commit `77c92789b16d9258c907d5026a36e39f8c957b41` adds exact structural pure-model
 selection and opaque body-free leaves while deliberately blocking model execution. W4.6b commit `fd723a912` adds
-atomic modeled-return lineage construction without invoking a model. None creates a counterfactual product/dump
-result or CI-enforced umbrella gate. Section 8 separates the completed W4.1–W4.6b kernel from the remaining
-W4.6c–W4.9 capability.
+atomic modeled-return lineage construction. W4.6c commit `877c9fb55` executes only the frozen capability with atomic
+return transfer and attempt/depth evidence; W4.6d commit `da5346813` closes compiler/SRM exact/degraded/fresh-session
+conformance. None creates a counterfactual product/dump result or CI-enforced umbrella gate. Section 8 separates the
+completed W4.1–W4.6 kernel from the remaining W4.7–W4.9 capability.
 
 ## 1) Evidence language
 
@@ -497,11 +498,42 @@ W4.6b realizes 1,003 added LOC: 481 production plus 522 tests, with 23 deletions
 20,779 LOC. Historical projections remain original 16,860–25,310; post-W4.2 18,532–26,132; post-W4.3
 19,228–25,728; post-W4.4 21,179–26,779; post-W4.5a 24,013–29,313; W4.5 closure 25,017–29,417; post-design-audit
 27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
-28,826–33,726; and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan estimates W4.6c machine
-invocation/transfer, attempts, depth witnesses, and unit conformance at 2,550–2,750 LOC and W4.6d compiler/SRM exact,
-degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized W4.6a/b
-plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC, and current full W4 is
-30,079–33,729 LOC.
+28,826–33,726; post-W4.6b checkpoint 28,879–33,279; and pre-W4.6c/d closure 30,079–33,729 LOC.
+
+### Current local W4.6c/d implementation verification — 2026-07-15
+
+Exact commits `877c9fb55` and `da5346813` complete the narrow pure-model execution profile. W4.6c invokes only the
+capability frozen in the leaf, never re-reads registry/resolver/descriptor/body state, and never falls back. Exact and
+lineage-grounded unknown returns transfer atomically to the caller with one instruction event, unchanged memory, and
+no model frame/event. Pre-entry budget rejection, immutable attempts, invocation/completion counters, independent
+logical/active depth witnesses, exact terminal depth retention, stable failure taxonomy, and resume chronology are
+covered by the focused 34/34 lane.
+
+W4.6d directly proves compiler/SRM interpreted/model/CoreCLR exact agreement and interpreted/model agreement for both
+partial/unavailable shapes. The deterministic target PE SHA-256 is
+`fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; the mixed case freezes graph hash
+`451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`, while repeated and fresh
+metadata-reader/domain/machine sessions reproduce the both-unknown graph hash
+`31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`.
+
+| Gate | Evidence scope | Result |
+|---|---|---|
+| Locked dependency graph | repository restore in locked mode through the headless wrapper | Passed. |
+| Strict solution build | fifteen-project Release solution build with warnings as errors | Passed, 0 warnings / 0 errors. |
+| W4.6c focused machine conformance | invocation/transfer, attempts, failures, counters, depth, chronology, and exact terminal witness | Passed, 34/34. |
+| W4.6d compiler/SRM conformance | exact, degraded, repeated, and fresh-session differential evidence | Passed, 3/3. |
+| Aggregate W4 integration | fixture, call lineage, model planning, and model execution | Passed, 13/13. |
+| Complete semantic/admission/differential suite | wrapped unit project with `Scope!=Cybersecurity` | Passed, 413/413. |
+| Fast adapter suite | wrapped integration project with `Category=Fast&Scope!=Cybersecurity` | Passed, 80/80. |
+| Ordinary real-dump regression | wrapped non-modeled dump selection with `Scope!=Cybersecurity` | Passed, 5/5; regression only. |
+| Optimized real-dump regression | wrapped modeled-incident dump selection with `Scope!=Cybersecurity` | Passed, 1/1; regression only. |
+| External-worker regression | separately admitted non-milestone worker lane | Passed, 4/4; regression only. |
+
+Every behavioral invocation used `eng/Invoke-HeadlessProcess.ps1`, included `Scope!=Cybersecurity`, and recorded zero
+skips. W4.6c realizes 2,734 added LOC (1,425 production plus 1,309 tests), W4.6d realizes 956 test LOC, W4.6 totals
+7,652 LOC, and cumulative W4 realization is 24,469 LOC. W4.6c/d realized 3,690 LOC against their historical
+3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC, W4.8 at 2,400–3,500 LOC, and W4.9 at
+2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC for full W4.
 
 ## 3) Active test layers
 
@@ -768,18 +800,19 @@ W4.6a checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41` delivers the structu
 body-independent descriptor selection, opaque modeled-leaf planning, traversal/depth accounting, and fail-closed
 activation. Its exact matrix is recorded above. W4.6b checkpoint `fd723a912` delivers the atomic modeled-return
 lineage/domain portion, appending kind 6 while preserving kinds 1–5. W4.6a realizes 2,959 added LOC and W4.6b realizes
-1,003, bringing W4 to 20,779 realized LOC. Neither checkpoint executes a model.
+1,003, bringing W4 to 20,779 realized LOC. Neither historical checkpoint executes a model.
 
-The remaining W4.6c machine execution/attempt/depth/unit-conformance slice is 2,550–2,750 LOC; W4.6d compiler/SRM
-exact/degraded/fresh-session conformance is 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized W4.6a/b
-plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 work is 9,300–12,950 LOC and current full W4
-is 30,079–33,729 LOC. The earlier 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
-28,826–33,726, and 28,879–33,279 projections remain historical.
+W4.6c checkpoint `877c9fb55` delivers frozen-capability execution, atomic exact/unknown transfer, attempts, counters,
+depth witnesses, failure taxonomy, and unit conformance in 2,734 LOC. W4.6d checkpoint `da5346813` delivers 956 test
+LOC of compiler/SRM exact, degraded, repeated, and fresh-session conformance. Combined W4.6 realizes 7,652 LOC and
+brings W4 to 24,469 realized LOC. The current remaining W4.7–W4.9 plan is 6,600–9,850 LOC and full W4 is
+31,069–34,319 LOC. The earlier 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
+28,826–33,726, 28,879–33,279, and 30,079–33,729 projections remain historical.
 
-The remaining W4.6c–W4.9 slices must finish all of the following before the umbrella is described as implemented or
-verified. W4.4 satisfies interpreted structural graph preparation; W4.5 satisfies exact and explained-unknown
-interpreted direct-call/depth/lineage behavior; W4.6a satisfies structural model selection; and W4.6b satisfies
-modeled-return lineage construction:
+The remaining W4.7–W4.9 slices must finish the product/dump/closure portions below before the umbrella is described as
+implemented or verified. W4.4 satisfies interpreted structural graph preparation; W4.5 satisfies exact and explained-
+unknown interpreted direct-call/depth/lineage behavior; and W4.6 satisfies structural model selection, modeled-return
+lineage, machine invocation/transfer/attempt/depth behavior, and compiler/SRM conformance:
 
 1. The complete root and reachable helper bodies are admitted before instruction zero from counted dump body and
    metadata evidence; a disk PE and direct CoreCLR invocation remain independent oracles, never execution inputs.
@@ -792,11 +825,10 @@ modeled-return lineage construction:
    propagate the unknown.
 4. The direct helper call has deterministic frame/return behavior, pre-execution call-depth enforcement, normalized
    effects, and stable call diagnostics. Unsupported call shapes block before a misleading partial execution.
-5. A separate mandatory conformance request uses W4.6a's one selected structural pure model and W4.6b's modeled-
-   return lineage to prove exact/unknown agreement with interpretation plus blocked, invalid, capability, effect, and
-   fallback outcomes. W4.6c tests must still assert actual invocation, model-attempt records, state/memory atomicity,
-   instruction charging, depth witnesses, and semantic-event truthfulness; W4.6d must then prove exact, degraded, and
-   fresh-session compiler/SRM conformance.
+5. The separate mandatory conformance request uses W4.6a's selected structural pure model and W4.6b's modeled-return
+   lineage. W4.6c proves actual invocation, atomic exact/unknown transfer and nontransfer, model attempts, state/memory
+   atomicity, instruction charging, depth witnesses, and semantic-event truthfulness; W4.6d proves exact, degraded,
+   repeated, and fresh-session compiler/SRM agreement. Broader fallback/effect policies remain outside W4.
 6. Retained exact typed-null `ldfld` behavior is projected as the only W4 target-exception outcome through a standalone
    dump-free conformance fragment, not a fabricated rooted request. It stops without handler transfer, preserves exact
    exception location, charges and emits the promised instruction/event outcome once, carries no request/plan identity,

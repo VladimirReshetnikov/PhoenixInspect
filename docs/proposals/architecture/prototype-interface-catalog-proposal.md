@@ -7,8 +7,8 @@
 ## Purpose
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
-W3 concrete-IL, and W4.2–W4.6b dump-free explained-unknown, graph-preparation, interpreted-call, structural pure-model,
-and modeled-return-lineage proofs. It is descriptive, not a promise of compatibility.
+W3 concrete-IL, and W4.2–W4.6 dump-free explained-unknown, graph-preparation, interpreted-call, and pure-model
+execution proofs. It is descriptive, not a promise of compatibility.
 Hardened W3 checkpoint `19c292f9f`
 passed the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
@@ -51,13 +51,28 @@ headless builds passed at zero warnings/errors, focused modeled-lineage tests pa
 modeled lineage passed 44/44 with zero skips and `Scope!=Cybersecurity`. W4.6b realizes 1,003 added LOC (481
 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b realization to 20,779 LOC.
 
+Exact W4.6c implementation checkpoint `877c9fb55` executes only the capability retained by the frozen modeled leaf.
+It adds atomic exact/grounded-unknown caller transfer, immutable attempt chronology, separate invocation/completion
+counters, logical-depth and active-frame witnesses, and stable capability/outcome/lineage/invariant failure taxonomy.
+There is no registry/resolver/descriptor/body reread, fallback, callee frame, frame event, or memory mutation. W4.6c
+realizes 2,734 added LOC (1,425 production plus 1,309 tests); strict affected builds passed at zero warnings/errors
+and its focused headless lane passed 34/34 with `Scope!=Cybersecurity`.
+
+Exact W4.6d checkpoint `da5346813` adds 956 test LOC and proves compiler/SRM interpreted/model/CoreCLR exact
+agreement plus interpreted/model agreement for both partial/unavailable shapes. Its mixed case freezes one canonical
+graph, while its both-unknown case repeats across same and fresh sessions. The focused lane
+passed 3/3, aggregate W4 integration 13/13, and Fast 80/80, all through the headless wrapper with
+`Scope!=Cybersecurity`. W4.6 totals 7,652 LOC and brings W4.1–W4.6 to 24,469 LOC. The target PE SHA-256 remains
+`fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; the mixed and both-unknown graph hashes are
+`451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff` and
+`31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`.
+
 The original full-W4 baseline 16,860–25,310 and checkpoint projections 18,532–26,132, 19,228–25,728,
 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
-28,826–33,726, and 28,879–33,279 LOC remain historical calibration. The current fourteen-row plan leaves W4.6c
-machine invocation/transfer, attempt records, depth witnesses, and unit conformance at 2,550–2,750 LOC, followed by
-W4.6d compiler/SRM exact, degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is
-3,400–3,750 LOC; W4.6a/b plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC
-and current full W4 is 30,079–33,729 LOC. A contract is added only with an executable consumer and is removed when it
+28,826–33,726, 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC remain historical calibration. W4.6c/d
+realized 3,690 LOC against their 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC, W4.8 at
+2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC for full
+W4. A contract is added only with an executable consumer and is removed when it
 gets ahead of code.
 
 ## Active contracts
@@ -127,8 +142,9 @@ gets ahead of code.
   after call resolution/typing and before target-body acquisition. Successful modeled edges expose disposition
   `PureModel`, one canonical body-free `FrozenPureModelLeaf`, `ModeledLeaves`, and `TryGetModeledLeaf`; missing,
   throwing, invalid, mismatched, non-exact, or unsupported-effect selection cannot fall back to the target body;
-- prepared activation's W4.6a fail-closed modeled-leaf guard, which returns
-  `EXEC_MODEL_EXECUTION_UNAVAILABLE` before depth, argument, state, resolver, or runtime-model access; and
+- W4.6c prepared modeled-call execution, which invokes only the capability retained by the frozen leaf, transfers an
+  exact or lineage-grounded unknown return atomically, records immutable attempts/counters/depth witnesses, and has no
+  target-body fallback or registry/resolver/descriptor reread;
 - `IlMachine.StepOne`, whose current closed set is `nop`, integer constants, argument/local loads, local stores,
   `add`, `sub`, `mul`, one ordinary-instance `Int32` `ldfld`, direct `call` only in a bound prepared graph, and `ret`;
 - `UnknownExecutionPolicy`, whose default `ExactOnly` value preserves the W3 execution boundary and whose opt-in
@@ -176,8 +192,8 @@ and emits ordered instruction/frame-push events; helper `ret` propagates the exa
 site and emits ordered instruction/frame-pop events. Every prepared step revalidates graph, frame, return-site, and
 configured/required/high-water facts. Instruction availability has precedence and all failed transfers preserve state,
 memory, operational facts, and events. The legacy path remains call-free and still rejects the W4 fixture before the call.
-Arbitrary signatures, generic contexts, MemberRefs/MethodSpecs, branches, explained-unknown call/return transfer,
-modeled calls, EH, byrefs, statics outside the exact callee profile, and broader instance methods remain rejected.
+Arbitrary signatures, generic contexts, MemberRefs/MethodSpecs, branches, broader modeled calls, EH, byrefs, statics
+outside the exact callee profile, and broader instance methods remain rejected.
 
 ### Concrete validation domain
 
@@ -208,7 +224,7 @@ explained helper result becomes an `InterpretedReturnTransform` over that call s
 mutation. Missing capability, capability exceptions, and malformed/non-equivalent capability output map to distinct
 stable blocked/invalid machine results without partial frame, state, memory, budget, event, or node publication.
 
-The implemented lineage vocabulary is deliberately closed through W4.6b to canonical `InputOrigin`, ordered
+The implemented lineage vocabulary is deliberately closed through W4.6 to canonical `InputOrigin`, ordered
 `BinaryTransform`, `FieldLoadTransform`, `CallArgumentTransform`, `InterpretedReturnTransform`, and
 `ModeledReturnTransform` nodes. W4.6b appends kind 6 under schema v1; kinds 1–5 retain their exact bytes and IDs.
 The modeled-return operation validates and interns its complete call-node/return-node batch atomically, preserves
@@ -325,13 +341,12 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 
 The query product surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
 null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
-loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.6b's provenance-aware
-domain/machine, graph, interpreted-call, structural-model, and modeled-lineage extensions are architecture proofs,
-not query-language features or a counterfactual-method facade. W4.6a supplies structural pure-model contracts and
-selection, and W4.6b supplies modeled-return lineage construction; neither executes a model. A ClrMD producer for
-W4.3 structured non-exact field evidence remains absent, as do W4.6c model transfer/attempt/depth conformance, W4.6d
-compiler/SRM exact/degraded/fresh conformance, the W4 request/plan/result and facade, and a generated-dump product
-result with reopen/replay or hosted closure. Those are W4.6c–W4.9 work. Speculative
+loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.6's provenance-aware
+domain/machine, graph, interpreted-call, and pure-model extensions are architecture proofs, not query-language
+features or a counterfactual-method facade. W4.6 supplies structural selection, modeled-return lineage, frozen-
+capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. A ClrMD producer
+for W4.3 structured non-exact field evidence remains absent, as do the W4 request/plan/result and facade and a
+generated-dump product result with reopen/replay or hosted closure. Those are W4.7–W4.9 work. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 
