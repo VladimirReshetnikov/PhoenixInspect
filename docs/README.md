@@ -36,7 +36,8 @@ pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is i
 body-free direct MethodDef resolution is implemented at pushed checkpoint `2e596c117`, and W4.4b's complete frozen
 graph is implemented at pushed checkpoint `742ef2c4f`. W4.5a's exact prepared-graph execution is implemented at pushed
 checkpoint `356c07037`, and W4.5b's explained-unknown call/return lineage is implemented at pushed checkpoint
-`c72f6ee9e`. W4.6a–W4.9, counterfactual product execution, and dump-grounded W4 behavior have not landed.
+`c72f6ee9e`. W4.6a structural pure-model admission is implemented at pushed checkpoint `77c92789b`. W4.6b–W4.9,
+counterfactual product execution, and dump-grounded W4 behavior have not landed.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
@@ -127,13 +128,25 @@ cases; compiler lineage 2/2; aggregate W4 integration 9/9; complete unit 297/297
 dump 5/5; and optimized dump 1/1. All behavioral filters used `Scope!=Cybersecurity`, there were zero skips, and an
 independent audit found no remaining finding.
 
-W4.5b realizes 2,804 added LOC (766 production plus 2,038 tests). Combined W4.5 realizes 6,138 LOC and W4.1–W4.5
-cumulatively realize 16,817 LOC. The historical 1,800–2,700 W4.5b estimate and 5,134–6,034 combined W4.5 projection
-were each exceeded at the upper bound by 104 LOC. The W4.5-closure projection was 25,017–29,417 LOC. A subsequent
-design audit split W4.6 into W4.6a at 1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined); this is
-planning recalibration, not delivered work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC and the current W4 projection
-is 27,217–32,117 LOC. This preserves the original 16,860–25,310 baseline and historical
-18,532–26,132, 19,228–25,728, 21,179–26,779, and 24,013–29,313 projections. Models, configurable request traversal
+W4.6a adds bounded non-generic model identity/version, descriptor, invocation/outcome, and registry contracts. Explicit
+`RequirePureModel` selects only exact/no-effect structural descriptors after call resolution/typing and before target
+body access; default `Prepare` remains interpret-only. Canonical call disposition, `ModeledLeaves`, lookup,
+deduplication, traversal, and depth freeze one body-free opaque leaf. Selection failures expose no partial plan or
+fallback; capability identity is excluded from structural equality/hash; legacy interpreted hashes remain frozen.
+The compiler graph contains one root, one modeled leaf, two fields, and one edge: five units at depth two. Machine
+activation blocks it as `EXEC_MODEL_EXECUTION_UNAVAILABLE`, so no model executes before W4.6b/c.
+
+At exact pushed checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41`, locked restore; strict Release build
+0/0; contract 49/49; model planner 25/25; legacy planner 35/35; SRM 1/1; lineage 2/2; unit 371/371; fast 77/77;
+ordinary dump 5/5; optimized dump 1/1; Markdown 62/41; and workflow guard 1 all passed with zero skips. Behavioral
+filters used `Scope!=Cybersecurity`, and independent audits found no behavioral findings. The deterministic PDB-free
+TestTarget PE SHA-256 is `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`.
+
+W4.5b realizes 2,804 added LOC (766 production plus 2,038 tests). W4.6a adds 2,959 LOC (1,210 production plus 1,749
+tests/fixture support), 359 above its 2,600 upper estimate, bringing W4.1–W4.6a to 19,776 LOC. Combined W4.6a/b/c now
+projects to 6,109–7,709 LOC. Remaining W4.6b–W4.9 is 9,050–13,950 LOC and current W4 is 28,826–33,726 LOC. Preserve
+the original 16,860–25,310 baseline and historical 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313,
+25,017–29,417, 27,217–32,117, 28,376–32,476, and 28,876–33,276 projections. Model execution, configurable request traversal
 policy, product results, ClrMD dump grounding, and hosted closure remain pending.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
@@ -167,13 +180,13 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4.1's landed fixture gate, W4.2's landed provenance-aware kernel, W4.3's landed dump-free field seam, W4.4's landed direct-call graph admission, W4.5's landed exact and explained-unknown graph execution, the pending W4.6a–W4.9 slices, and explicitly gated research phases. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4.1–W4.5's landed execution kernel, W4.6a's structural modeled-leaf admission, the pending W4.6b–W4.9 slices, and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
-| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; W4.1–W4.5 evidence is local/pushed and W4.6a–W4.9 remain pending. |
+| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; W4.1–W4.6a evidence is local/pushed and W4.6b–W4.9 remain pending. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |

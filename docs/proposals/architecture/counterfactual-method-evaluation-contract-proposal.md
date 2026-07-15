@@ -8,7 +8,7 @@
 > `e89e43498`; W4.3 structured field-evidence continuation implemented at `7479b1ad4`; W4.4a body-free direct
 > MethodDef resolution implemented at `2e596c117`; W4.4b frozen transitive graph implemented at `742ef2c4f`;
 > W4.5a exact prepared-graph execution implemented at `356c07037`; W4.5b explained-unknown call/return lineage
-> implemented at `c72f6ee9e`; W4.6a–W4.9 pending
+> implemented at `c72f6ee9e`; W4.6a structural pure-model admission implemented at `77c92789b`; W4.6b–W4.9 pending
 
 ## 1) Purpose and authority
 
@@ -34,7 +34,9 @@ safety caps. W4.5 executes the frozen interpreted graph through structural call/
 machine-supplied logical-depth limit before activation, records logical/frame high water without re-resolution, and
 carries exact or explained-unknown `Int32` values through canonical call/return lineage. It does not select a model,
 enforce a request-supplied traversal limit, ground the graph or non-exact fields in ClrMD dump evidence, or produce a
-product result. W4.6 and every later behavior remain requirements, not implementation claims, until the traceability map names passing executable evidence. API names shown here are provisional design
+product result. W4.6a now selects and freezes one structurally exact, side-effect-free pure model as a body-free opaque
+leaf but deliberately does not execute it. W4.6b and every later behavior remain requirements, not implementation
+claims until the traceability map names passing executable evidence. API names shown here are provisional design
 names; public prototype APIs that land must carry detailed XML documentation.
 
 ## 2) Product-value gate
@@ -96,7 +98,9 @@ through two metadata-derived frames without consulting a resolver, reproduces th
 deterministic instruction, frame-event, return-site, and depth facts. This is still dump-free machine evidence: the
 model, product facade, and dump-grounded W4 answer remain pending. Pushed W4.5b checkpoint `c72f6ee9e` carries
 explained unknowns across that same call and return, freezes append-only canonical lineage, and proves same/fresh-
-session compiler replay. It adds no model, product, or ClrMD dump-grounded answer.
+session compiler replay. Pushed W4.6a checkpoint `77c92789b` adds structural model contracts, required pure-model
+selection, and a body-free opaque modeled leaf with real SRM/compiler replay. The machine rejects that graph before
+activation; it adds no model execution, product, or ClrMD dump-grounded answer.
 
 ## 3) Closed W4 profile
 
@@ -148,7 +152,9 @@ W4.4b implements that distinction as explicit legacy and W4 graph-admission mode
 `IlMachine` retains W3's call-free, one-field/getter restrictions. The graph planner's W4 mode admits both fixed
 instance fields in the primary root and direct `call` with exact two-`Int32` pop/one-`Int32` push typing, then requires
 the helper's exact branchless body. W4.5 adds an opt-in prepared-graph machine mode that executes exact and
-explained-unknown values across that admitted call while leaving legacy activation unchanged.
+explained-unknown values across that admitted call while leaving legacy activation unchanged. W4.6a adds a separate
+`RequirePureModel` preparation entry point for the same structural target; default `Prepare` remains interpret-only,
+and modeled graphs remain non-executable until W4.6b/W4.6c.
 
 ### 3.3 Explicit exclusions
 
@@ -216,12 +222,12 @@ when a later instruction, dependency, call disposition, or graph rule fails. Pre
 budget or call-depth capacity and does not call the persistent memory model.
 
 W4.4 implements the interpreted-only subset of these phases. W4.4a's `ResolvedMethodCallTarget` deliberately contains
-no body/RVA/local facts, so the future W4.6 disposition selector can classify an exact structural target before a
-prospective body read. W4.4b currently chooses only the explicit interpreted graph mode and then acquires and admits
-every reachable definition. It has no model catalog or blocked/model leaf representation yet. Preparation failures
-return `MethodGraphPreparationResult` without a plan and leave the legacy machine entirely unactivated. W4.5 consumes
-only a successful frozen interpreted graph through a separate activation mode; it performs no resolution or graph
-mutation during execution and still introduces no model/catalog disposition.
+no body/RVA/local facts, enabling W4.6a to select a disposition after the caller's call is resolved and typed but before
+a prospective target-body read. W4.6a's explicit `RequirePureModel(root, target, registry)` freezes only an exact,
+`None`-effect selection as an opaque `FrozenPureModelLeaf`; default `Prepare(root)` remains interpreted-only. Missing,
+blocked, invalid, throwing, mismatched, non-exact-confidence, or unsupported-effect selection returns
+`MethodGraphPreparationResult` without a plan and never falls back to an available target body. W4.5 consumes only a
+successful fully interpreted graph; W4.6a modeled graphs are inspectable but preactivation-blocked.
 
 ### 4.3 Preparation traversal units
 
@@ -481,6 +487,30 @@ field-load transforms, two parameter-indexed call transforms, one arithmetic tra
 Both preserve ten-instruction/two-load execution, unchanged memory, event order, depth high water 2/2, and zero
 execution-time resolver calls; repeated and fresh sessions reproduce the canonical graph and terminal value.
 
+### 7.6 W4.6a structural pure-model checkpoint
+
+W4.6a checkpoint `77c92789b` implements the preparation half of the mandatory conformance disposition. Its
+non-generic contracts include bounded `PureCallModelIdentity`/three-component version, structural descriptor,
+lineage-free exact-or-explained-unknown two-`Int32` invocation atoms, closed typed outcomes, and a scenario-owned
+registry. Stable IDs are bounded canonical lowercase ASCII; version components are bounded; payload-safe failure codes
+are bounded canonical `W4.Model.*` values. A descriptor can represent `Exact`, `BestEffort`, `Partial`, or
+`UnsupportedLayout` confidence, but W4.6a admission accepts only `Exact`. `None` effect is admitted,
+`Unsupported` is representable but blocked, and `VirtualOnly`/`Modeled` cannot be constructed as descriptor effects.
+
+`RequirePureModel` queries the registry only after exact caller-side call resolution and typing and before target-body
+acquisition. A successful selection terminates discovery at one body-free `FrozenPureModelLeaf`; the call edge freezes
+`PureModel` disposition and the descriptor, while canonical `ModeledLeaves` and `TryGetModeledLeaf` expose the opaque
+boundary. Repeated edges deduplicate the leaf and selection, while each edge remains retained/charged. Capability
+object identity is excluded from structural equality/hash, and the historical interpreted call-site hash remains
+unchanged. Selection or descriptor failure exposes neither fallback interpretation nor a partial plan.
+
+The exact compiler graph contains one interpreted root, one modeled leaf, two fields, and one direct edge: five
+traversal units and required logical depth two. It reconstructs identically through fresh SRM/planner/registry objects
+without reading the helper body. The current machine rejects a graph containing any modeled leaf before argument
+validation or state creation with `EXEC_MODEL_EXECUTION_UNAVAILABLE`; it invokes neither resolver nor model. W4.6b
+owns modeled-return lineage/domain semantics, and W4.6c owns machine transfer, attempt records, depth witnesses, and
+compiler conformance.
+
 ## 8) Call execution, models, and effects
 
 ### 8.1 Interpreted call
@@ -514,7 +544,7 @@ classification, and normalized effect declaration. Runtime lookup by display nam
 The model returns one typed outcome:
 
 - `ExactReturn(Int32)`;
-- `UnknownReturn(Int32, lineage)`;
+- `UnknownReturn(Int32)` without model-authored lineage;
 - `Blocked(stable code)`; or
 - `Invalid(stable code)`.
 
@@ -548,6 +578,11 @@ No model outcome mutates persistent memory. Exact and unknown outcomes count as 
 call. Blocked, invalid, and capability outcomes count as one attempted model invocation but zero executed instructions.
 These counts and ordered model-attempt records participate in canonical product replay.
 
+W4.6a implements the immutable descriptor/invocation/outcome/registry vocabulary and structural selection only. It
+does not call `IPureCallModel.Invoke`, create a model attempt, produce `ModeledReturnTransform`, mutate a frame, or
+consume an instruction. W4.6b owns atomic modeled-return lineage/domain behavior; W4.6c owns model invocation and the
+machine/accounting/conformance rules above.
+
 ### 8.3 Fallback and effects
 
 Call disposition never changes at runtime. If exact interpretation and the selected model are both unavailable, the
@@ -558,6 +593,10 @@ The primary interpreted call and admitted pure model have `EvaluationEffectStatu
 model axis independently of effects. A call classified as requiring a write, allocation, I/O, time, thread, process,
 native, reflection, or other ambient effect is blocked with `EvaluationEffectStatus.Unsupported`. W4 does not claim
 `VirtualOnly` or `Modeled` effects because no admitted operation represents a write.
+
+W4.6a enforces this at descriptor and planner boundaries: `None` is the only successful frozen edge/leaf effect;
+`Unsupported` may be declared so preparation can block truthfully; `VirtualOnly` and `Modeled` declarations are
+rejected at descriptor construction. No failure falls back to interpretation.
 
 ## 9) Deterministic budgets
 
@@ -788,14 +827,17 @@ W4 closure requires all of the following, headlessly and with `Scope!=Cybersecur
 12. the repository-wide locked restore, zero-warning Release build, Markdown/headless guards, non-cybersecurity fast,
     ordinary-dump, optimized-dump, and focused W4 lanes with zero skips at the exact pushed closure commit.
 
-Through W4.5, item 2, the dump-free field-boundary core of item 3, the dump-free frozen interpreted-admission core of
-item 5, the exact and explained-unknown interpreted subset of item 6, the interpreted-depth subset of item 9, and corresponding same/fresh-object
+Through W4.6a, item 2, the dump-free field-boundary core of item 3, the dump-free frozen interpreted/model-admission core of
+item 5, the exact and explained-unknown interpreted subset of item 6, the structural selection subset of item 7, the interpreted/model-boundary depth subset of item 9, and corresponding same/fresh-object
 subsets of item 11 are implemented. W4.4 proves direct MethodDef token/signature negatives, unsupported
 dispatch/suffixes, self/mutual cycles, shared-callee deduplication, fixed graph caps, complete no-prefix admission, and
 required-depth calculation. W4.5a adds exact multi-frame execution, return-site and event ordering, pre-activation
 logical-depth enforcement, runtime invariant checking, depth high-water reporting, and resolver-free replay. W4.5b
 adds atomic parameter-indexed call/return lineage, append-only canonical node kinds, frozen legacy identities, stable
 failure taxonomy, and same/fresh-session compiler replay.
+W4.6a adds bounded structural pure-model contracts, exact/no-effect required selection, body-free modeled leaves,
+canonical disposition/lookup, deduplicated selection and accounting, no-fallback/no-partial-plan failures, and
+preactivation machine blocking. It does not satisfy modeled execution, attempt, lineage, or product-result evidence.
 
 Checkpoints `2e596c117` and `742ef2c4f` together passed locked restore; the strict fifteen-project Release build with
 zero warnings/errors; planner 35/35; W4 fixture 6/6; complete unit 250/250; fast 73/73; ordinary dump 5/5; optimized
@@ -814,6 +856,15 @@ combined lineage/audit lane passed 76/76, including 29 frozen legacy identity ca
 aggregate W4 integration passed 9/9; complete unit passed 297/297; fast integration passed 76/76; ordinary dump passed
 5/5; and optimized dump passed 1/1. Every behavioral filter used `Scope!=Cybersecurity`, there were zero skips, and an
 independent audit found no remaining production or test finding.
+
+At exact pushed checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41`, locked restore and the strict
+fifteen-project Release build passed with 0 warnings/0 errors. Model-contract tests passed 49/49; model-planner 25/25;
+legacy planner 35/35; real SRM/compiler planning 1/1; lineage 2/2; complete unit 371/371; fast integration 77/77;
+ordinary dump 5/5; optimized dump 1/1; Markdown 62 files/41 destinations; and the one-workflow headless guard. There
+were zero skips, every behavioral filter used `Scope!=Cybersecurity`, and independent audits found no behavioral
+findings. The PDB-free TestTarget PE SHA-256 is
+`fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; W4.5 lineage hashes were deliberately
+re-frozen to that deterministic artifact.
 
 Dump-sourced evidence in item 4, models, product projection, dump
 reopen/rebind replay, and hosted exact-commit umbrella closure remain pending; no ClrMD W4 producer, product result,
@@ -838,12 +889,13 @@ and materially rewritten lines are counted once. These ranges describe implement
 | W4.4b | Explicit graph admission, deterministic resolution/discovery, canonical acyclic closure, fixed safety caps, and required depth | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 2,608 |
 | W4.5a | Exact multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, invariant replay, and depth high-water reporting | Post-audit sub-slice of original combined W4.5 estimate, 2,300–3,500 | 3,334 |
 | W4.5b | Explained-unknown call/return boundary capability, `CallArgumentTransform`/`InterpretedReturnTransform`, and canonical replay | 1,800–2,700 | 2,804 |
-| W4.6a | Structural model registry, opaque modeled leaf, and effect/fallback admission | 1,800–2,600 | — |
-| W4.6b | Typed model execution, attempts, modeled lineage, and conformance tests | 2,700–3,500 | — |
+| W4.6a | Structural model registry, opaque modeled leaf, and effect/fallback admission | 1,800–2,600 | 2,959 |
+| W4.6b | Atomic modeled-return lineage/domain behavior | 950–1,450 | — |
+| W4.6c | Machine transfer, attempts, depth witnesses, and compiler conformance | 2,200–3,300 | — |
 | W4.7 | Retained-null target-outcome contract, terminal projection, canonical fragment without request/plan identity, and dump-free differential/idempotence tests | 1,500–2,500 | — |
 | W4.8 | Canonical product request/plan/result/runner, configurable traversal charging, target-fragment result-projector integration, and product tests | 2,400–3,500 | — |
 | W4.9 | Generated-dump exact/degraded/model corpus, CoreCLR integration oracle, reopen/rebind replay, CI closure, and realized LOC ledger | 2,000–3,200 | — |
-| **Initial umbrella** | **Nine original work slices; W4.4, W4.5, and W4.6 were later split into independently tracked sub-slices** | **16,860–25,310** | **16,817 through W4.5** |
+| **Initial umbrella** | **Nine original work slices; W4.4 and W4.5 were split once and W4.6 twice into independently tracked sub-slices** | **16,860–25,310** | **19,776 through W4.6a** |
 
 The original **16,860–25,310 LOC** baseline remains recorded above rather than being rewritten after implementation
 evidence. The historical projection after W4.2 was **18,532–26,132 LOC**; replacing W4.3's estimate with its realized
@@ -860,15 +912,17 @@ rewritten. The later 1,800–2,700 W4.5b estimate and 5,134–6,034 combined W4.
 upper bound by 104 LOC.
 
 At W4.5 closure, the remaining W4.6–W4.9 envelope was **8,200–12,600 LOC**, giving the historical total projection
-of **25,017–29,417 LOC**. A subsequent design audit split the former W4.6 **2,300–3,400 LOC** estimate into W4.6a at
-**1,800–2,600 LOC** and W4.6b at **2,700–3,500 LOC**, or **4,500–6,100 LOC** combined. This is planning
-recalibration, not delivered work. Remaining W4.6a–W4.9 is now **10,400–15,300 LOC**, giving a current full-W4
-projection of **27,217–32,117 LOC**. The W4.2 checkpoint remains 3,454 realized LOC: 3,429 attributable implementation LOC (1,521
+of **25,017–29,417 LOC**. A subsequent design audit produced the historical **27,217–32,117 LOC** projection. W4.6a
+then realized **2,959 LOC** (1,210 production plus 1,749 tests/fixture support), 359 LOC above its 2,600 upper estimate,
+bringing W4.1–W4.6a to **19,776 LOC**. Its first remaining-work projection was **28,376–32,476 LOC**; a concrete W4.6b
+audit next produced **28,876–33,276 LOC**. The refined plan splits remaining model work into W4.6b at
+**950–1,450 LOC** and W4.6c at **2,200–3,300 LOC**. Combined W4.6a/b/c is now **6,109–7,709 LOC**; remaining
+W4.6b–W4.9 is **9,050–13,950 LOC**, giving the current full-W4 projection **28,826–33,726 LOC**. The W4.2 checkpoint remains 3,454 realized LOC: 3,429 attributable implementation LOC (1,521
 production plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. W4.3
-remains 3,096 realized LOC: 1,100 production plus 1,996 tests. The current table contains twelve implementation rows
-because the originally admitted W4.4, W4.5, and W4.6 rows are now a/b pairs. The original nine-slice umbrella baseline
-and historical 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, and 25,017–29,417 projections remain
-calibration facts.
+remains 3,096 realized LOC: 1,100 production plus 1,996 tests. The current table contains thirteen implementation rows
+because W4.4 and W4.5 are a/b pairs and W4.6 is an a/b/c sequence. The original nine-slice umbrella baseline and
+historical 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117,
+28,376–32,476, and 28,876–33,276 projections remain calibration facts.
 
 Ownership boundaries are explicit. W4.1 freezes the fixture and current W3 rejection only. W4.2 owns the second
 domain, execution-boundary precision policy, and `InputOrigin`/`BinaryTransform` lineage only; it keeps exact E2 field
@@ -879,7 +933,9 @@ managed-IL/signature certification; W4.4b owns interpreted-call admission, canon
 first-result caching, per-edge retention/charging, required-depth calculation, and fixed internal safety caps. W4.5a
 owns exact interpreted call/return transfer, frames, machine-level logical-depth enforcement, invariant replay, and
 depth high-water reporting. W4.5b owns explained-unknown call/return lineage; W4.8 owns configurable traversal charging
-and product projection. W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
+and product projection. W4.6a owns structural model contracts, required selection, and opaque leaves; W4.6b owns
+modeled-return lineage/domain behavior; W4.6c owns machine transfer, attempts, depth witnesses, and conformance.
+W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
 target-outcome/canonical fragment; W4.8
 integrates it into the common result projector without inventing rooted-facade reachability, and W4.9 only aggregates
 the already-tested behavior into closure evidence. Realized LOC is attributed once.

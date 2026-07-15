@@ -26,7 +26,8 @@ Core principles:
   branchless counterfactual-method contract, a validated W4.1 value-gate fixture, a validated W4.2
   provenance-aware execution kernel, a validated W4.3 dump-free non-exact field seam, and W4.4's validated body-free
   direct-MethodDef resolution plus complete frozen call graph. W4.5 now executes exact and explained-unknown values
-  across frozen direct-call graphs with deterministic multi-frame accounting and canonical call/return lineage;
+  across frozen direct-call graphs with deterministic multi-frame accounting and canonical call/return lineage. W4.6a
+  now freezes one exact/no-effect structural pure model as a body-free opaque graph leaf, while modeled execution remains blocked;
   counterfactual product and dump-grounded W4 execution have not landed.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. CoreCLR remains an outcome oracle, not an input to interpreter shape or dump evidence.
 - **Physical scope:** ten source projects contain active contracts or behavior; the two newest projects implement the narrow broker/runner boundary for one-shot external dump queries. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
@@ -139,6 +140,24 @@ compiler lineage 2/2; aggregate W4 integration 9/9; complete unit 297/297; fast 
 and optimized dump 1/1. There were zero skips, every behavioral filter used `Scope!=Cybersecurity`, and an independent
 audit found no remaining production or test finding.
 
+Pushed W4.6a checkpoint `77c92789b` adds bounded, non-generic pure-model identity/version, descriptor, typed
+invocation/outcome, and structural registry contracts. Explicit `RequirePureModel` selects only an exact,
+`EvaluationEffectStatus.None` descriptor after caller call resolution/typing and before target-body acquisition;
+default `Prepare` stays interpret-only. The frozen graph exposes canonical `PureModel` call disposition,
+`ModeledLeaves`, and lookup over a body-free opaque leaf. Selection is deduplicated, traversal/depth remain truthful,
+no failure falls back to target interpretation or exposes a partial plan, runtime capability identity is excluded from
+graph equality/hash, and the legacy interpreted call hash remains unchanged. The exact compiler graph is root plus
+modeled leaf, two fields, and one edge: five units at depth two.
+
+W4.6a does not execute a model. `ActivatePreparedGraph` rejects every modeled graph before argument validation or
+state creation with `EXEC_MODEL_EXECUTION_UNAVAILABLE`. Headless validation at exact commit
+`77c92789b16d9258c907d5026a36e39f8c957b41` passed locked restore; strict fifteen-project Release build 0/0;
+contract 49/49; model planner 25/25; legacy planner 35/35; SRM 1/1; lineage 2/2; unit 371/371; fast 77/77; ordinary
+dump 5/5; optimized dump 1/1; Markdown 62/41; workflow guard 1; and zero skips. Behavioral filters used
+`Scope!=Cybersecurity`, and independent audits found no behavioral findings. The deterministic PDB-free TestTarget PE
+SHA-256 is `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; W4.5 lineage hashes were deliberately
+re-frozen to it.
+
 The historical W4.2 checkpoint records 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production
 plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. Together with
 W4.1, that checkpoint had realized 3,932 LOC and projected 18,532–26,132 LOC. W4.3 realizes 3,096 LOC (1,100
@@ -150,12 +169,11 @@ therefore cumulatively realize 10,679 LOC and produced the historical 21,179–2
 LOC (1,590 production plus 1,744 tests). W4.5b realizes 2,804 added LOC (766 production plus 2,038 tests), so combined
 W4.5 realizes 6,138 LOC and W4.1–W4.5 cumulatively realize 16,817 LOC. The historical W4.5b estimate of
 1,800–2,700 LOC and combined W4.5 projection of 5,134–6,034 LOC were each exceeded at the upper bound by 104 LOC.
-The W4.5-closure projection was 25,017–29,417 LOC. A subsequent design audit split the former W4.6
-2,300–3,400 LOC estimate into W4.6a at 1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined).
-This is planning recalibration, not delivered work. Remaining W4.6a–W4.9 is now 10,400–15,300 LOC, giving a current
-projection of 27,217–32,117 LOC while
-preserving the original 16,860–25,310 baseline and the earlier 18,532–26,132, 19,228–25,728, 21,179–26,779, and
-24,013–29,313 projections. This remains machine/kernel evidence, not counterfactual product execution. The pure model, configurable request
+The W4.5-closure projection was 25,017–29,417 LOC, followed by historical 27,217–32,117, 28,376–32,476, and
+28,876–33,276 projections. W4.6a realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), 359
+above its 2,600 upper estimate, bringing W4.1–W4.6a to 19,776 LOC. The refined W4.6b/c split projects combined W4.6
+at 6,109–7,709 LOC; remaining W4.6b–W4.9 is 9,050–13,950 LOC and current full W4 is 28,826–33,726 LOC. Preserve the
+original 16,860–25,310 baseline and every earlier projection. This remains machine/kernel evidence, not counterfactual product execution. Modeled execution/lineage/attempts, configurable request
 traversal budget, product facade, ClrMD non-exact-field adapter, generated-dump W4 result/corpus, hosted exact-commit
 evidence, and umbrella closure remain pending. Allocation remains unadmitted and its bound is therefore absent/not
 applied until a later allocation scenario. Closure requires the specified exact, degraded-evidence, budget,

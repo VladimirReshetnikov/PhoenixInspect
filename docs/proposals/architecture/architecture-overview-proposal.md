@@ -11,7 +11,7 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.5 have since landed.
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.6a have since landed.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -39,12 +39,21 @@ lineage/audit 76/76 including 29 legacy identity cases, compiler lineage 2/2, W4
 76/76, ordinary dump 5/5, and optimized dump 1/1 with zero skips and `Scope!=Cybersecurity` on behavioral filters.
 Independent audit found no remaining finding.
 
-W4.5b realizes 2,804 LOC (766 production plus 2,038 tests), so combined W4.5 realizes 6,138 LOC and W4.1–W4.5
-realize 16,817 LOC. The historical W4.5b estimate of 1,800–2,700 and combined projection of 5,134–6,034 were each
-exceeded at the upper bound by 104 LOC. The W4.5-closure projection was 25,017–29,417 LOC. A later design audit split
-W4.6 into W4.6a at 1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined); this is planning
-recalibration, not delivered work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC and full W4 now projects to
-27,217–32,117 LOC while the original 16,860–25,310 baseline and every earlier projection remain preserved:
+Pushed W4.6a checkpoint `77c92789b` freezes the structural pure-model boundary without executing it. Bounded
+non-generic contracts, explicit `RequirePureModel`, exact/no-effect selection before target-body acquisition, opaque
+modeled leaves, canonical dispositions/lookup, and deduplicated traversal/depth accounting preserve no-fallback and
+no-partial-plan behavior. Default preparation stays interpret-only; capability identity is absent from graph
+equality/hash; and modeled graphs block before activation with `EXEC_MODEL_EXECUTION_UNAVAILABLE`. The compiler graph
+is root plus modeled leaf, two fields, and one edge: five units at depth two.
+
+Exact-checkpoint validation passed locked restore; strict Release 0/0; contract 49/49; model planner 25/25; legacy
+planner 35/35; SRM 1/1; lineage 2/2; unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; both guards;
+and zero skips under `Scope!=Cybersecurity`. Independent audits found no behavioral findings.
+
+W4.6a realizes 2,959 LOC (1,210 production plus 1,749 tests/fixture support), bringing W4.1–W4.6a to 19,776 LOC and
+exceeding its 2,600 upper estimate by 359 LOC. Combined W4.6a/b/c projects to 6,109–7,709 LOC. Remaining
+W4.6b–W4.9 is 9,050–13,950 LOC and full W4 now projects to 28,826–33,726 LOC. Preserve the original
+16,860–25,310 baseline and historical projections through 27,217–32,117, 28,376–32,476, and 28,876–33,276:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -54,7 +63,8 @@ recalibration, not delivered work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC
    branchless dump-free arithmetic transport, and W4.3 proves structured non-exact field continuation plus canonical
    precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation; and
    W4.5 executes exact and explained-unknown direct calls with deterministic frames, depth accounting, and canonical
-   call/return lineage. Models, product, ClrMD dump grounding, and hosted closure remain W4.6a–W4.9 work.
+   call/return lineage; and W4.6a freezes the exact/no-effect structural pure-model leaf. Modeled execution/lineage,
+   product, ClrMD dump grounding, and hosted closure remain W4.6b–W4.9 work.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -349,10 +359,13 @@ the call site and callee-side predecessor. Missing capability is blocked, capabi
 blocked failures, and malformed/non-equivalent output is invalid; all preserve state, memory, budget, events, and
 published lineage.
 
-The compiler fixtures execute ten instructions, perform two field loads, reach logical and active-frame high water
+The W4.5 compiler fixtures execute ten instructions, perform two field loads, reach logical and active-frame high water
 two, leave memory unchanged, and make no resolution call after graph preparation. Their mixed exact/partial five-node
 and partial/unavailable eight-node graphs replay in the same and fresh sessions. Call models, the counterfactual
-facade/request/plan/result, ClrMD dump-grounded execution, and hosted umbrella closure remain W4.6a–W4.9 work.
+W4.6a separately freezes the same structural helper as a body-free pure-model leaf after caller typing and before
+helper-body acquisition. Its canonical graph contains one node, one leaf, two fields, and one edge, with five units and
+depth two; the machine blocks it before activation. Modeled transfer/attempts/lineage, the counterfactual
+facade/request/plan/result, ClrMD dump-grounded execution, and hosted umbrella closure remain W4.6b–W4.9 work.
 
 ## 5. Identity model
 
