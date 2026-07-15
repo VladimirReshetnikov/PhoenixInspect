@@ -366,9 +366,7 @@ public sealed class CounterfactualMethodRequestPlanTests
             request,
             forgedGraph,
             preparation.TraversalAccounting!,
-            observations,
-            ConcreteMemory.Empty,
-            new object()));
+            CreateRuntimeBundle(request, observations)));
     }
 
     private static CounterfactualMethodRequest CreateRequest(
@@ -441,9 +439,26 @@ public sealed class CounterfactualMethodRequestPlanTests
             request,
             preparation.Plan!,
             preparation.TraversalAccounting!,
-            fieldObservations ?? CreateExactObservations(request, preparation.Plan!),
-            ConcreteMemory.Empty,
-            new object());
+            CreateRuntimeBundle(
+                request,
+                fieldObservations ?? CreateExactObservations(request, preparation.Plan!)));
+    }
+
+    private static CounterfactualRuntimeBundle<ConcreteMemory> CreateRuntimeBundle(
+        CounterfactualMethodRequest request,
+        ImmutableArray<CounterfactualFieldObservation> fieldObservations)
+    {
+        var domain = new ProvenanceConcreteDomain();
+        return CounterfactualMethodExecutionInput<ConcreteMemory>.CreateSynthetic(
+                request,
+                CreateResolver(adjust: false),
+                domain,
+                new UnreachableMemoryModel(),
+                ConcreteMemory.Empty,
+                domain.ObjectReference(1, Owner),
+                fieldObservations)
+            .RuntimeBundle
+            .MaterializeRootArguments();
     }
 
     private static MethodGraphPreparationResult CreateGraph(bool adjust)
@@ -548,6 +563,46 @@ public sealed class CounterfactualMethodRequestPlanTests
     {
         public PureCallModelSelectionResult Select(ResolvedMethodCallTarget target) =>
             PureCallModelSelectionResult.Selected(model);
+    }
+
+    private sealed class UnreachableMemoryModel : IMemoryModel<ProvenanceConcreteValue, ConcreteMemory>
+    {
+        public bool CanAllocate => false;
+
+        public (ProvenanceConcreteValue objRef, ConcreteMemory mem) NewObject(
+            ConcreteMemory mem,
+            TypeSig type) => throw new InvalidOperationException("Plan tests do not execute memory operations.");
+
+        public (ProvenanceConcreteValue arrRef, ConcreteMemory mem) NewArray(
+            ConcreteMemory mem,
+            TypeSig elemType,
+            ProvenanceConcreteValue length) =>
+            throw new InvalidOperationException("Plan tests do not execute memory operations.");
+
+        public MemoryLoadResult<ProvenanceConcreteValue> LoadField(
+            ConcreteMemory mem,
+            ProvenanceConcreteValue objRef,
+            ResolvedField field) => throw new InvalidOperationException("Plan tests do not execute memory operations.");
+
+        public ConcreteMemory StoreField(
+            ConcreteMemory mem,
+            ProvenanceConcreteValue objRef,
+            ResolvedField field,
+            ProvenanceConcreteValue value) =>
+            throw new InvalidOperationException("Plan tests do not execute memory operations.");
+
+        public ProvenanceConcreteValue LoadElement(
+            ConcreteMemory mem,
+            ProvenanceConcreteValue arrRef,
+            ProvenanceConcreteValue index) =>
+            throw new InvalidOperationException("Plan tests do not execute memory operations.");
+
+        public ConcreteMemory StoreElement(
+            ConcreteMemory mem,
+            ProvenanceConcreteValue arrRef,
+            ProvenanceConcreteValue index,
+            ProvenanceConcreteValue value) =>
+            throw new InvalidOperationException("Plan tests do not execute memory operations.");
     }
 
 }

@@ -10,6 +10,12 @@
         "dependencies": {
           "Interpreter.Core.Abstractions": "[1.0.0, )"
         }
+      },
+      "interpreter.domain.concrete": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.Core.Abstractions": "[1.0.0, )"
+        }
       }
     }
   }

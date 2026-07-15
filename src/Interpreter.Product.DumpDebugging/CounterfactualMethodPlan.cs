@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Text;
 using Interpreter.Core.Abstractions;
 using Interpreter.Core.Execution;
 
@@ -51,10 +50,10 @@ public sealed class CounterfactualPlanCallSite
 }
 
 /// <summary>
-/// Freezes one successfully prepared structural method graph, traversal transcript, and private runtime seed for a
-/// bounded counterfactual request.
+/// Freezes one successfully prepared structural method graph, traversal transcript, and private typed runtime
+/// binding for a bounded counterfactual request.
 /// </summary>
-/// <typeparam name="TMemory">The persistent memory snapshot type retained privately for the future runner.</typeparam>
+/// <typeparam name="TMemory">The persistent memory snapshot type retained privately for the rooted runner.</typeparam>
 /// <remarks>
 /// Construction and runtime fields are internal. Public identity contains no resolver, registry, capability, memory
 /// reference, issuer token, dictionary order, process-random hash, or display-only method name.
@@ -66,8 +65,7 @@ public sealed class CounterfactualMethodPlan<TMemory>
     public const int CanonicalSchemaVersion = 1;
 
     private readonly object issuer;
-    private readonly TMemory runtimeSeed;
-    private readonly object runtimeCapabilities;
+    private readonly CounterfactualRuntimeBundle<TMemory> runtimeBundle;
     private readonly ImmutableArray<MethodHandle> interpretedMethods;
     private readonly ImmutableArray<MethodHandle> modeledMethods;
     private readonly ImmutableArray<ResolvedField> fields;
@@ -81,17 +79,18 @@ public sealed class CounterfactualMethodPlan<TMemory>
         CounterfactualMethodRequest request,
         FrozenMethodGraphPlan graph,
         MethodGraphTraversalAccounting traversalAccounting,
-        ImmutableArray<CounterfactualFieldObservation> fieldObservations,
-        TMemory runtimeSeed,
-        object runtimeCapabilities)
+        CounterfactualRuntimeBundle<TMemory> runtimeBundle)
     {
         ArgumentNullException.ThrowIfNull(issuer);
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(traversalAccounting);
-        ArgumentNullException.ThrowIfNull(runtimeSeed);
-        ArgumentNullException.ThrowIfNull(runtimeCapabilities);
-        if (request.RootMethod != graph.Root ||
+        ArgumentNullException.ThrowIfNull(runtimeBundle);
+        if (!ReferenceEquals(request, runtimeBundle.Request) ||
+            !runtimeBundle.HasMaterializedRootArguments ||
+            runtimeBundle.RootArguments.Length != request.Arguments.Length + 1 ||
+            !ReferenceEquals(runtimeBundle.RootArguments[0], runtimeBundle.Receiver) ||
+            request.RootMethod != graph.Root ||
             request.LogicalDepthLimit < graph.RequiredLogicalDepth ||
             request.TraversalLimit != traversalAccounting.Limit ||
             traversalAccounting.IsExhausted ||
@@ -121,7 +120,10 @@ public sealed class CounterfactualMethodPlan<TMemory>
                 nameof(graph));
         }
 
-        var copiedFieldObservations = ValidateFieldObservations(request, graph, fieldObservations);
+        var copiedFieldObservations = ValidateFieldObservations(
+            request,
+            graph,
+            runtimeBundle.FieldObservations);
 
         SchemaVersion = CanonicalSchemaVersion;
         this.issuer = issuer;
@@ -139,8 +141,7 @@ public sealed class CounterfactualMethodPlan<TMemory>
         traversalCharges = CounterfactualCanonical.Copy(traversalAccounting.Charges);
         this.fieldObservations = copiedFieldObservations;
         RequiredLogicalDepth = graph.RequiredLogicalDepth;
-        this.runtimeSeed = runtimeSeed;
-        this.runtimeCapabilities = runtimeCapabilities;
+        this.runtimeBundle = runtimeBundle;
         canonicalBytes = EncodeCanonical();
         Sha256 = CounterfactualCanonical.Hash(canonicalBytes.AsSpan());
     }
@@ -197,10 +198,8 @@ public sealed class CounterfactualMethodPlan<TMemory>
         CounterfactualMethodRequest request,
         FrozenMethodGraphPlan graph,
         MethodGraphTraversalAccounting traversalAccounting,
-        ImmutableArray<CounterfactualFieldObservation> fieldObservations,
-        TMemory runtimeSeed,
-        object runtimeCapabilities) =>
-        new(issuer, request, graph, traversalAccounting, fieldObservations, runtimeSeed, runtimeCapabilities);
+        CounterfactualRuntimeBundle<TMemory> runtimeBundle) =>
+        new(issuer, request, graph, traversalAccounting, runtimeBundle);
 
     internal bool IsIssuedBy(object candidate) => ReferenceEquals(issuer, candidate);
 
@@ -210,9 +209,7 @@ public sealed class CounterfactualMethodPlan<TMemory>
 
     internal ImmutableArray<CounterfactualFieldObservation> RuntimeFieldObservations => fieldObservations;
 
-    internal TMemory RuntimeSeed => runtimeSeed;
-
-    internal object RuntimeCapabilities => runtimeCapabilities;
+    internal CounterfactualRuntimeBundle<TMemory> RuntimeBundle => runtimeBundle;
 
     private ImmutableArray<byte> EncodeCanonical()
     {
@@ -236,12 +233,7 @@ public sealed class CounterfactualMethodPlan<TMemory>
         FrozenMethodGraphPlan graph,
         ImmutableArray<CounterfactualFieldObservation> observations)
     {
-        if (observations.IsDefault)
-        {
-            throw new ArgumentException("Field observations must be initialized.", nameof(observations));
-        }
-
-        var copied = CounterfactualCanonical.Copy(observations);
+        var copied = CounterfactualMethodExecutionInput<TMemory>.ValidateObservationBinding(request, observations);
         if (copied.Length != graph.Fields.Length || copied.Any(static observation => observation is null))
         {
             throw new ArgumentException(
@@ -249,29 +241,12 @@ public sealed class CounterfactualMethodPlan<TMemory>
                 nameof(observations));
         }
 
-        var sourceIdentity = request.EvidenceSource switch
-        {
-            EvaluationEvidenceSourceKind.Synthetic => request.SyntheticEvidenceId,
-            EvaluationEvidenceSourceKind.DumpSnapshot => request.SnapshotIdentity.SourceId,
-            _ => null,
-        };
-        if (sourceIdentity is null)
-        {
-            throw new ArgumentException("The request has no canonical evidence-source identity.", nameof(request));
-        }
-
-        var expectedSourceSha256 = CounterfactualCanonical.Hash(Encoding.UTF8.GetBytes(sourceIdentity));
         for (var index = 0; index < copied.Length; index++)
         {
             var observation = copied[index];
             if (observation.DependencyOrdinal != index ||
                 observation.Field != graph.Fields[index] ||
-                observation.Field.DeclaringType != request.Receiver.StaticType ||
-                !string.Equals(observation.SourceSha256, expectedSourceSha256, StringComparison.Ordinal) ||
-                !string.Equals(
-                    observation.ImportedObjectSha256,
-                    request.Receiver.EvidenceSha256,
-                    StringComparison.Ordinal))
+                observation.Field.DeclaringType != request.Receiver.StaticType)
             {
                 throw new ArgumentException(
                     "Field observations must match graph order, source identity, and imported receiver evidence.",
