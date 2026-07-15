@@ -5,7 +5,9 @@ namespace Interpreter.Core.Abstractions;
 /// </summary>
 /// <param name="InstructionBudget">Remaining instruction budget.</param>
 /// <remarks>
-/// Allocation, call-depth, fork, and traversal budgets are introduced only with the operations that consume them;
-/// carrying unenforced limit fields would create a false safety contract.
+/// W4.5 maximum logical call depth is a prepared nonconsumable bound, not a decreasing budget, and is therefore kept
+/// with the bound graph session while observed high-water facts live in the operational envelope. Allocation, fork,
+/// and configurable traversal budgets are introduced only with operations that consume them; carrying unenforced
+/// counters here would create a false safety contract.
 /// </remarks>
 public sealed record BudgetState(long InstructionBudget);

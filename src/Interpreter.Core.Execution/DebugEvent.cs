@@ -8,18 +8,24 @@ namespace Interpreter.Core.Execution;
 public enum DebugEventKind
 {
     /// <summary>An IL instruction was fully decoded and its semantic transfer completed.</summary>
-    InstructionExecuted,
+    InstructionExecuted = 0,
 
     /// <summary>A <c>ret</c> transfer removed an activation frame.</summary>
-    FramePopped,
+    FramePopped = 1,
 
     /// <summary>An admitted instruction terminated at a modeled target-exception boundary.</summary>
-    TargetExceptionRaised,
+    TargetExceptionRaised = 2,
 
     /// <summary>
     /// An admitted instruction completed by producing an explained unknown from canonical non-exact evidence.
     /// </summary>
-    ValuePrecisionLost,
+    ValuePrecisionLost = 3,
+
+    /// <summary>
+    /// A completed interpreted <c>call</c> transfer pushed one real callee activation frame.
+    /// </summary>
+    /// <remarks>Model-covered calls do not push frames and must not emit this event.</remarks>
+    FramePushed = 4,
 }
 
 /// <summary>

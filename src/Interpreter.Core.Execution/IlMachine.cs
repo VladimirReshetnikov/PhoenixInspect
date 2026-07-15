@@ -4,16 +4,20 @@ using Interpreter.Core.Abstractions;
 namespace Interpreter.Core.Execution;
 
 /// <summary>
-/// Executes deterministic single-instruction transfers from an immutable, metadata-derived W3 method plan.
+/// Executes deterministic single-instruction transfers from either a legacy W3 method plan or an opt-in prepared W4
+/// direct-call graph.
 /// </summary>
 /// <typeparam name="TValue">The value-domain representation used by frame slots and return values.</typeparam>
 /// <typeparam name="TMemory">The persistent memory snapshot threaded through machine state.</typeparam>
 /// <remarks>
-/// The admitted profile is scenario-derived: primitive Int32 constants, arguments, initialized locals, unchecked
-/// add/subtract/multiply, one instance-Int32 <c>ldfld</c> shape, <c>nop</c>, and <c>ret</c>. Field loads remain exact
-/// by default and may continue from canonical partial or unavailable evidence only through the explicit unknown
-/// policy and approximation-domain capability. Complete method metadata and every field operand are resolved and
-/// typed before activation. Unsupported bodies execute no prefix.
+/// The shared scenario-derived instruction profile contains primitive Int32 constants, arguments, initialized locals,
+/// unchecked add/subtract/multiply, ordinary instance-Int32 <c>ldfld</c>, <c>nop</c>, and <c>ret</c>. Legacy activation
+/// retains W3's call-free, one-field getter boundary. <see cref="ActivatePreparedGraph"/> instead consumes a graph whose
+/// complete method, field, and direct-call closure was already resolved and typed; execution never re-resolves it and
+/// can push/pop exact interpreted frames. Field loads remain exact by default and may continue from canonical partial
+/// or unavailable evidence only through the explicit unknown policy and approximation-domain capability. W4.5a call
+/// boundaries remain exact-value-only until the separately versioned lineage capability lands. Unsupported bodies or
+/// incomplete graphs execute no prefix.
 /// </remarks>
 public sealed partial class IlMachine<TValue, TMemory>
     where TMemory : IPersistentMemoryState<TMemory>
@@ -270,10 +274,25 @@ public sealed partial class IlMachine<TValue, TMemory>
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(operationalState);
 
+        if (TryGetPreparedGraphSession(out var preparedGraph, out var maximumLogicalCallDepth))
+        {
+            return StepPreparedGraph(
+                state,
+                operationalState,
+                preparedGraph!,
+                maximumLogicalCallDepth);
+        }
+
         var envelopeFailure = ValidateStateEnvelope(state, operationalState);
         if (envelopeFailure is not null)
         {
             return Failed(state, operationalState, MachineRunStatus.InvalidProgram, envelopeFailure);
+        }
+
+        var legacyEnvelopeFailure = ValidateLegacyExecutionEnvelope(state, operationalState);
+        if (legacyEnvelopeFailure is not null)
+        {
+            return Failed(state, operationalState, MachineRunStatus.InvalidProgram, legacyEnvelopeFailure);
         }
 
         if (state.TerminalTargetException is { } terminalTargetException)
@@ -468,7 +487,14 @@ public sealed partial class IlMachine<TValue, TMemory>
 
         try
         {
-            return Execute(state, operationalState, frame, plan, instruction, updatedBudget);
+            return Execute(
+                state,
+                operationalState,
+                frame,
+                plan,
+                instruction,
+                updatedBudget,
+                MachineRunStatus.InvalidProgram);
         }
         catch (Exception exception) when (IsCapabilityException(exception))
         {
@@ -490,6 +516,18 @@ public sealed partial class IlMachine<TValue, TMemory>
         Lazy<PlanPreparationResult> lazy;
         lock (_sessionGate)
         {
+            if (_preparedGraph is not null)
+            {
+                return PlanPreparationResult.Failed(
+                    MachineRunStatus.Blocked,
+                    new ExecutionFailure(
+                        ExecutionFailureKind.ResourceLimit,
+                        "EXEC_MACHINE_SESSION_MISMATCH",
+                        "One bounded machine cannot mix legacy and prepared-graph execution sessions.",
+                        method,
+                        0));
+            }
+
             if (_sessionMethod is null)
             {
                 _sessionMethod = method;
@@ -764,6 +802,26 @@ public sealed partial class IlMachine<TValue, TMemory>
                 ExecutionFailureKind.InvalidInstruction,
                 "EXEC_INVALID_TARGET_TERMINATION",
                 "A target-terminated state must have an empty call stack and no return value.");
+        }
+
+
+        return null;
+    }
+
+    private static ExecutionFailure? ValidateLegacyExecutionEnvelope(
+        MachineState<TValue, TMemory> state,
+        MachineOperationalState operationalState)
+    {
+        if (operationalState.ConfiguredMaximumLogicalCallDepth is not null ||
+            operationalState.RequiredLogicalCallDepth is not null ||
+            operationalState.ObservedLogicalDepthHighWater != 1 ||
+            operationalState.ActiveFrameDepthHighWater != 1 ||
+            state.CallStack.Any(frame => frame?.ReturnSite is not null))
+        {
+            return new ExecutionFailure(
+                ExecutionFailureKind.InvalidInstruction,
+                "EXEC_EXECUTION_MODE_STATE_MISMATCH",
+                "A legacy call-free execution state cannot carry prepared-graph return sites or depth facts.");
         }
 
         return null;

@@ -3,7 +3,7 @@ using Interpreter.Core.Abstractions;
 namespace Interpreter.Core.Execution;
 
 /// <summary>
-/// Reports whether metadata-derived root activation produced a valid initial semantic state.
+/// Reports whether metadata-derived legacy or prepared-graph root activation produced a valid initial semantic state.
 /// </summary>
 /// <typeparam name="TValue">The value-domain representation carried by the state.</typeparam>
 /// <typeparam name="TMemory">The persistent-memory snapshot representation.</typeparam>
@@ -13,9 +13,10 @@ namespace Interpreter.Core.Execution;
 /// </param>
 /// <param name="Failure">The activation or admission failure when no state was created.</param>
 /// <remarks>
-/// Activation consumes no instruction budget and emits no execution event. It resolves the complete method shape,
-/// validates supplied receiver/argument values, derives local defaults, and fixes IL offset zero plus an empty
-/// evaluation stack before exposing a state.
+/// Activation consumes no instruction budget and emits no execution event. Legacy activation resolves and freezes its
+/// complete method shape; prepared-graph activation consumes the already retained root plan without re-resolution.
+/// Both validate supplied receiver/argument values, derive local defaults, and fix IL offset zero plus an empty
+/// evaluation stack before exposing a state. The result shape is provisional during conceptual design.
 /// </remarks>
 public sealed record MachineActivationResult<TValue, TMemory>(
     MachineState<TValue, TMemory>? State,

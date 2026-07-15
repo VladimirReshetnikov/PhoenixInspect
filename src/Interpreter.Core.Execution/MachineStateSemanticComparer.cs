@@ -82,6 +82,7 @@ public sealed class MachineStateSemanticComparer<TValue, TMemory> : IEqualityCom
     private bool FramesEquivalent(FrameState<TValue> left, FrameState<TValue> right) =>
         left.Method == right.Method &&
         left.IlOffset == right.IlOffset &&
+        left.ReturnSite == right.ReturnSite &&
         SequencesEquivalent(left.Arguments, right.Arguments) &&
         SequencesEquivalent(left.Locals, right.Locals) &&
         SequencesEquivalent(left.EvalStack, right.EvalStack);

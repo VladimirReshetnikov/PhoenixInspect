@@ -11,7 +11,8 @@ public sealed partial class IlMachine<TValue, TMemory>
         FrameState<TValue> frame,
         AdmittedMethodPlan plan,
         AdmittedInstruction instruction,
-        BudgetState updatedBudget)
+        BudgetState updatedBudget,
+        MachineRunStatus capabilityFailureStatus)
     {
         return instruction.Kind switch
         {
@@ -87,7 +88,8 @@ public sealed partial class IlMachine<TValue, TMemory>
                 frame,
                 plan,
                 instruction,
-                updatedBudget),
+                updatedBudget,
+                capabilityFailureStatus),
             AdmittedInstructionKind.Return => Return(
                 state,
                 operationalState,
@@ -210,7 +212,8 @@ public sealed partial class IlMachine<TValue, TMemory>
         FrameState<TValue> frame,
         AdmittedMethodPlan plan,
         AdmittedInstruction instruction,
-        BudgetState updatedBudget)
+        BudgetState updatedBudget,
+        MachineRunStatus capabilityFailureStatus)
     {
         if (instruction.Field is not { } field)
         {
@@ -247,7 +250,7 @@ public sealed partial class IlMachine<TValue, TMemory>
             return Failed(
                 state,
                 operationalState,
-                MachineRunStatus.InvalidProgram,
+                capabilityFailureStatus,
                 new ExecutionFailure(
                     ExecutionFailureKind.MemoryFailure,
                     "EXEC_MEMORY_MODEL_FAILURE",
@@ -355,7 +358,8 @@ public sealed partial class IlMachine<TValue, TMemory>
                     field,
                     receiver,
                     load,
-                    updatedBudget);
+                    updatedBudget,
+                    capabilityFailureStatus);
 
             case MemoryLoadKind.Conflict:
                 return MemoryFailed(state, operationalState, frame, load, MachineRunStatus.Blocked);
@@ -386,7 +390,8 @@ public sealed partial class IlMachine<TValue, TMemory>
         ResolvedField field,
         TValue receiver,
         MemoryLoadResult<TValue> load,
-        BudgetState updatedBudget)
+        BudgetState updatedBudget,
+        MachineRunStatus capabilityFailureStatus)
     {
         if (load.FieldEvidence is not { } evidence)
         {
@@ -435,7 +440,7 @@ public sealed partial class IlMachine<TValue, TMemory>
             return Failed(
                 state,
                 operationalState,
-                MachineRunStatus.InvalidProgram,
+                capabilityFailureStatus,
                 new ExecutionFailure(
                     ExecutionFailureKind.DomainFailure,
                     "EXEC_FIELD_APPROXIMATION_FAILURE",

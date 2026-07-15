@@ -250,6 +250,180 @@ public sealed class W4GateFixtureTests
     }
 
     /// <summary>
+    /// Verifies that the exact prepared SRM graph executes through one interpreted helper frame without resolving
+    /// metadata again, mutating imported memory, or exceeding the graph's prepared logical depth.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void PreparedGraphExecutesTheExactW4ClosureWithoutReresolution()
+    {
+        var targetAssemblyPath = ResolveTargetAssemblyPath();
+        using var module = SrmMetadataModule.LoadFromFile(targetAssemblyPath);
+        var caller = ResolveMethodHandle(module, CallerName);
+        var helper = ResolveMethodHandle(module, HelperName);
+        var resolution = new CountingResolutionServices(new MetadataResolutionServices(module));
+        var preparation = new MethodGraphPlanner(resolution).Prepare(caller);
+
+        Assert.True(preparation.IsSuccess, preparation.Failure?.Code);
+        var plan = Assert.IsType<FrozenMethodGraphPlan>(preparation.Plan);
+        Assert.Equal(2, plan.RequiredLogicalDepth);
+        Assert.True(plan.TryGetNode(caller, out var callerNode));
+        Assert.NotNull(callerNode);
+
+        var domain = new ConcreteDomain();
+        var concreteMemory = new ConcreteMemoryModel(domain);
+        var countingMemory = new CountingMemoryModel(concreteMemory);
+        var evidenceIdentity = new ImportedObjectEvidenceIdentity(
+            "w4.5a-fast-srm:GetMarkerSummary:exact-marker-pair");
+        var (receiver, memoryWithReceiver) = concreteMemory.ImportObject(
+            ConcreteMemory.Empty,
+            callerNode.Definition.Signature.DeclaringType,
+            evidenceIdentity);
+        var markerToken = ReadToken(callerNode.Definition.Body.CodeBytes, 2);
+        var alternateMarkerToken = ReadToken(callerNode.Definition.Body.CodeBytes, 8);
+        var markerField = plan.Fields.Single(field => field.Handle.MetadataToken == markerToken);
+        var alternateMarkerField = plan.Fields.Single(
+            field => field.Handle.MetadataToken == alternateMarkerToken);
+        var memoryWithMarker = concreteMemory.ImportField(
+            memoryWithReceiver,
+            receiver,
+            markerField,
+            domain.ConstInt32(ExpectedMarker));
+        var initialMemory = concreteMemory.ImportField(
+            memoryWithMarker,
+            receiver,
+            alternateMarkerField,
+            domain.ConstInt32(ExpectedAlternateMarker));
+        var arguments = ImmutableArray.Create(receiver);
+        var resolutionCountsAfterPreparation = (
+            resolution.GetMethodDefinitionCount,
+            resolution.ResolveFieldCount,
+            resolution.ResolveMethodCount);
+
+        var insufficientDepthMachine = new IlMachine<ConcreteValue, ConcreteMemory>(
+            domain,
+            resolution,
+            countingMemory,
+            new InstructionBudgetPolicy());
+        var insufficientDepth = insufficientDepthMachine.ActivatePreparedGraph(
+            plan,
+            maximumLogicalCallDepth: 1,
+            arguments,
+            initialMemory);
+
+        Assert.False(insufficientDepth.IsSuccess);
+        Assert.Null(insufficientDepth.State);
+        Assert.Equal(MachineRunStatus.BudgetExhausted, insufficientDepth.Status);
+        var depthFailure = Assert.IsType<ExecutionFailure>(insufficientDepth.Failure);
+        Assert.Equal(ExecutionFailureKind.ResourceLimit, depthFailure.Kind);
+        Assert.Equal("EXEC_CALL_DEPTH_EXHAUSTED", depthFailure.Code);
+        Assert.Equal(caller, depthFailure.Method);
+        Assert.Equal(0, depthFailure.IlOffset);
+        Assert.Equal(
+            resolutionCountsAfterPreparation,
+            (
+                resolution.GetMethodDefinitionCount,
+                resolution.ResolveFieldCount,
+                resolution.ResolveMethodCount));
+        Assert.Equal(0, countingMemory.LoadFieldCount);
+
+        var machine = new IlMachine<ConcreteValue, ConcreteMemory>(
+            domain,
+            resolution,
+            countingMemory,
+            new InstructionBudgetPolicy());
+        var activation = machine.ActivatePreparedGraph(
+            plan,
+            maximumLogicalCallDepth: 2,
+            arguments,
+            initialMemory);
+        var run = RunPreparedGraphToStop(machine, activation);
+
+        Assert.Equal(MachineRunStatus.Completed, run.Outcome.Status);
+        Assert.Null(run.Outcome.Failure);
+        Assert.Null(run.Outcome.TargetException);
+        Assert.Empty(run.Outcome.State.CallStack);
+        Assert.True(run.Outcome.State.ReturnValue.HasValue);
+        Assert.True(domain.TryGetConstInt32(run.Outcome.State.ReturnValue.Value, out var actual));
+
+        var probeType = LoadProbeType(targetAssemblyPath);
+        var constructor = probeType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null,
+            [typeof(int), typeof(string)],
+            modifiers: null) ??
+            throw new InvalidOperationException("Could not find the DumpProbe constructor.");
+        var coreClrProbe = constructor.Invoke([ExpectedMarker, "w4.5a-coreclr-oracle"]);
+        var coreClrCaller = GetMethod(probeType, CallerName, BindingFlags.Instance | BindingFlags.NonPublic);
+        var coreClrOracle = Assert.IsType<int>(coreClrCaller.Invoke(coreClrProbe, parameters: null));
+        Assert.Equal(ExpectedSummary, coreClrOracle);
+        Assert.Equal(coreClrOracle, actual);
+
+        Assert.Equal(90, run.Outcome.OperationalState.Budget.InstructionBudget);
+        Assert.Equal(2, run.Outcome.OperationalState.ConfiguredMaximumLogicalCallDepth);
+        Assert.Equal(2, run.Outcome.OperationalState.RequiredLogicalCallDepth);
+        Assert.Equal(2, run.Outcome.OperationalState.ObservedLogicalDepthHighWater);
+        Assert.Equal(2, run.Outcome.OperationalState.ActiveFrameDepthHighWater);
+        Assert.Equal(2, countingMemory.LoadFieldCount);
+        Assert.Equal(initialMemory, run.Outcome.State.Memory);
+        Assert.Equal(
+            resolutionCountsAfterPreparation,
+            (
+                resolution.GetMethodDefinitionCount,
+                resolution.ResolveFieldCount,
+                resolution.ResolveMethodCount));
+
+        var executed = run.Events
+            .Where(item => item.Kind == DebugEventKind.InstructionExecuted)
+            .Select(item => (item.Method, item.IlOffset))
+            .ToArray();
+        Assert.Equal(
+            new[]
+            {
+                (caller, 0),
+                (caller, 1),
+                (caller, 6),
+                (caller, 7),
+                (caller, CallOffset),
+                (helper, 0),
+                (helper, 1),
+                (helper, 2),
+                (helper, 3),
+                (caller, 17),
+            },
+            executed);
+
+        var eventProjection = run.Events
+            .Select(item => (item.Kind, item.Method, item.IlOffset, item.Instruction))
+            .ToArray();
+        var callIndex = Array.FindIndex(
+            eventProjection,
+            item => item is (DebugEventKind.InstructionExecuted, var method, CallOffset, "Call") &&
+                method == caller);
+        Assert.True(callIndex >= 0);
+        Assert.Equal(
+            (DebugEventKind.FramePushed, helper, 0),
+            (
+                eventProjection[callIndex + 1].Kind,
+                eventProjection[callIndex + 1].Method,
+                eventProjection[callIndex + 1].IlOffset));
+
+        var helperReturnIndex = Array.FindIndex(
+            eventProjection,
+            item => item is (DebugEventKind.InstructionExecuted, var method, 3, "Return") &&
+                method == helper);
+        Assert.True(helperReturnIndex >= 0);
+        Assert.Equal(
+            (DebugEventKind.FramePopped, helper, 3),
+            (
+                eventProjection[helperReturnIndex + 1].Kind,
+                eventProjection[helperReturnIndex + 1].Method,
+                eventProjection[helperReturnIndex + 1].IlOffset));
+        Assert.Single(run.Events, item => item.Kind == DebugEventKind.FramePushed);
+        Assert.Equal(2, run.Events.Count(item => item.Kind == DebugEventKind.FramePopped));
+    }
+
+    /// <summary>
     /// Verifies that W3 executes the arithmetic helper exactly but rejects the caller before activation at its second
     /// field load, leaving no caller state, no memory observation, and the later call opcode unexecuted.
     /// </summary>
@@ -540,6 +714,32 @@ public sealed class W4GateFixtureTests
         }
 
         throw new InvalidOperationException("The W4 gate helper did not stop within 100 deterministic steps.");
+    }
+
+    private static (
+        StepOutcome<ConcreteValue, ConcreteMemory> Outcome,
+        ImmutableArray<DebugEvent> Events) RunPreparedGraphToStop(
+        IlMachine<ConcreteValue, ConcreteMemory> machine,
+        MachineActivationResult<ConcreteValue, ConcreteMemory> activation)
+    {
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        var state = activation.State!;
+        var operationalState = machine.CreatePreparedOperationalState(new BudgetState(100));
+        var events = ImmutableArray.CreateBuilder<DebugEvent>();
+        for (var step = 0; step < 100; step++)
+        {
+            var outcome = machine.StepOne(state, operationalState);
+            events.AddRange(outcome.Events);
+            if (outcome.Status != MachineRunStatus.Ready)
+            {
+                return (outcome, events.ToImmutable());
+            }
+
+            state = outcome.State;
+            operationalState = outcome.OperationalState;
+        }
+
+        throw new InvalidOperationException("The W4 prepared graph did not stop within 100 deterministic steps.");
     }
 
     private sealed record PeGateMetadata(
