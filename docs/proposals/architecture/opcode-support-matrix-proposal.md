@@ -1,7 +1,7 @@
 # Opcode Admission and Evidence Matrix
 
 **Lifecycle:** Current
-**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 direct-call admission, W4.5a exact prepared-call execution, and gates later expansion
+**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 direct-call admission, completed W4.5 exact/explained-unknown prepared-call execution, and gates later expansion
 
 ## 1. Principle
 
@@ -14,7 +14,7 @@ An opcode is not “supported” because it appears in a proposal. The companion
 | Status | Meaning |
 |---|---|
 | `Exact` | Transfer semantics are implemented for the admitted operand/stack/type shapes and checked by unit plus differential tests. |
-| `Conservative` | The admitted shape intentionally loses precision and emits provenance-bearing evidence. W4.3 uses this only for its closed, dump-free partial/unavailable `Int32` field shape. |
+| `Conservative` | The admitted shape intentionally loses precision and emits provenance-bearing evidence. W4.3 uses this for its closed partial/unavailable `Int32` field shape; W4.5 carries that typed unknown through its closed interpreted call/return shape. |
 | `PreparationOnly` | Decode, resolution, typing, and immutable dependency-graph freezing are implemented, but no machine transfer or execution claim exists. W4.4 uses this for its exact direct `call` shape. |
 | `RecognizedBlocked` | Decode is deterministic, no semantic effects occur, and execution stops with an opcode/offset/reason diagnostic. |
 | `Unadmitted` | No execution claim. A body containing the instruction is rejected by the slice admission check. |
@@ -201,18 +201,46 @@ agrees with CoreCLR. Locked restore, the strict fifteen-project Release solution
 project builds at zero warnings/errors, focused prepared-graph tests 25/25, the W4 fixture 7/7, complete unit 275/275,
 fast integration 74/74, ordinary dump 5/5, optimized dump 1/1, and both documentation guards passed headlessly with
 `Scope!=Cybersecurity` on behavioral filters and zero skips. Independent audit closed with no remaining production finding. W4.5a realizes 3,334 LOC (1,590
-production plus 1,744 tests); cumulative W4.1–W4.5a realization is 14,013 LOC. W4.5b remains estimated at
+production plus 1,744 tests); cumulative W4.1–W4.5a realization is 14,013 LOC. W4.5b was then estimated at
 1,800–2,700 LOC, projecting combined W4.5 at 5,134–6,034 LOC and full W4 at 24,013–29,313 LOC while preserving the
 original 16,860–25,310 baseline, historical combined W4.5 estimate of 2,300–3,500 LOC, and earlier projections.
 
-This promotion is exact-only. Explained-unknown call arguments and interpreted returns still stop at
-`EXEC_CALL_LINEAGE_UNAVAILABLE`; their canonical transforms remain W4.5b. Models, product projection, dump-grounded
-W4 execution, and hosted closure also remain absent.
+This W4.5a promotion was exact-only. At that checkpoint, explained-unknown call arguments and interpreted returns
+stopped at `EXEC_CALL_LINEAGE_UNAVAILABLE`; their canonical transforms remained W4.5b. Models, product projection,
+dump-grounded W4 execution, and hosted closure also remained absent.
+
+### W4.5b — Explained-unknown prepared-call lineage
+
+Pushed checkpoint `c72f6ee9e` completes W4.5 without admitting another opcode or call shape:
+
+| Instruction family | Admitted W4.5b execution shape | Status |
+|---|---|---|
+| `call <MethodDef>` | The frozen W4.5a edge with any metadata-ordered exact or owned explained-unknown `Int32` argument; exact positions remain unchanged and each explained position receives one atomic parameter-indexed call transform before frame creation | `Conservative` |
+| Nested `ret` | An exact helper result unchanged, or one owned explained-unknown `Int32` result receiving an interpreted-return transform before caller mutation | `Conservative` |
+| Existing exact paths | Every W4.5a exact call/return identity, event, budget, memory, depth, and CoreCLR result | `Exact` |
+
+`IInterpretedCallLineageDomain<TValue>` is optional and extends value precision rather than instruction admission.
+Kind-4 `CallArgumentTransform` freezes caller/call-offset/callee, metadata parameter index, and predecessor; kind-5
+`InterpretedReturnTransform` freezes the same call site and callee-side predecessor. Both append to schema v1 while
+all prior bytes and identities remain frozen. Whole-batch preflight, output semantic-equivalence checks, reachable
+capture, and fresh replay prevent partial lineage or frame mutation. Missing/throwing capability is blocked with stable
+taxonomy; malformed, foreign, non-executable, or semantically changed output is invalid atomically.
+
+Exact-commit headless evidence passed locked restore; the strict fifteen-project Release build at zero
+warnings/errors; prepared graph 40/40; combined lineage/audit 76/76 including 29 legacy frozen identity cases;
+compiler lineage 2/2; W4 integration 9/9; unit 297/297; fast 76/76; ordinary dump 5/5; and optimized dump 1/1, with
+zero skips and `Scope!=Cybersecurity` on behavioral filters. Independent audit found no remaining finding. W4.5b
+realizes 2,804 LOC (766 production plus 2,038 tests); combined W4.5 realizes 6,138 LOC and cumulative W4.1–W4.5
+realization is 16,817 LOC. Historical W4.5b 1,800–2,700 and combined 5,134–6,034 upper estimates were exceeded by
+104 LOC. The W4.5-closure projection was 25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at
+1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined); this is planning recalibration, not delivered
+work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC, projecting full W4 at 27,217–32,117 LOC while preserving the
+original baseline and all older projections including 24,013–29,313.
 
 ## 4. Later gates
 
 - **Branches:** require explicit condition semantics, deterministic path policy, and closed fixtures.
-- **Calls:** W4.5b adds explained-unknown argument/return lineage only to W4.5a's frozen interpreted shape; W4.6's pure model and every broader call/effect policy remain gated.
+- **Calls:** W4.5 completes exact and explained-unknown values for one frozen interpreted shape; W4.6's pure model and every broader call/effect policy remain gated.
 - **Indirect/byref operations:** require an addressable model and dump-layout evidence. Span is not an MVP commitment.
 - **Exception regions:** first add stop-on-throw; handler search/unwind is a separate milestone required before `leave`, `endfinally`, filters, or debugger-grade Step Out claims.
 - **Async/dynamic:** require their ordinary prerequisite opcode and EH sets before semantic lifting can be evaluated.

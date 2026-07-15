@@ -20,8 +20,9 @@ W3's rejection boundary; W4.2 adds the dump-free unknown-aware E1/E2 domain kern
 creating a product/dump result; W4.3 adds dump-free backend-neutral structured field evidence, approximation-domain
 capability, precision events, and `FieldLoadTransform` continuation; and W4.4 adds body-independent exact direct-
 MethodDef resolution plus deterministic complete graph preparation. W4.5a adds exact frame execution over that frozen
-graph with no metadata re-resolution. It still adds no explained-unknown call/return lineage, ClrMD evidence producer,
-product facade, or dump-grounded W4 result. Dump-free parser, root, plan-identity, SRM projection, activation/admission,
+graph with no metadata re-resolution, and W4.5b adds canonical explained-unknown argument/return lineage through the
+same call. W4.5 still adds no model selection, ClrMD evidence producer, product facade, or dump-grounded W4 result.
+Dump-free parser, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 The worker lane retains a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside
 non-cybersecurity W1–W4 milestone evidence.
@@ -60,6 +61,10 @@ Current proof obligations are:
   creation, executes exact direct `call`/`ret` with canonical return sites, charges one instruction per transfer, leaves
   memory unchanged, orders instruction events before frame events, records observed/active depth high-water facts, and
   rejects malformed replay state without re-resolving metadata;
+- W4.5b probes an optional interpreted-call lineage capability only for explained unknowns; transforms the complete
+  two-argument vector before publication and the return before caller mutation; preserves exact values; appends
+  canonical parameter-indexed call/return transform nodes without changing legacy identities; distinguishes absent,
+  failing, and invalid capability output atomically; and validates reachable-DAG capture/replay before mutation;
 - metadata-derived activation receives only the method, ordered values, and persistent memory; caller counts, local
   values/counts, and return disposition are rejected as inputs;
 - whole-body typed admission rejects unsupported signatures, field identities/storage, suffixes, EH,
@@ -320,7 +325,7 @@ headless-workflow guard over one workflow. Every managed command was headless, e
 `Scope!=Cybersecurity`, there were zero skips, and no UI was displayed.
 
 W4.5a realizes 3,334 added LOC: 1,590 production LOC plus 1,744 test LOC. W4 has 14,013 realized LOC through W4.5a.
-W4.5b remains estimated at 1,800–2,700 LOC, projecting combined W4.5 at 5,134–6,034 LOC and full W4 at
+W4.5b was then estimated at 1,800–2,700 LOC, projecting combined W4.5 at 5,134–6,034 LOC and full W4 at
 24,013–29,313 LOC while preserving the original 16,860–25,310 baseline and all earlier checkpoint estimates.
 
 The exact integration fixture now reaches the CoreCLR oracle through 10 executed instructions and two field loads,
@@ -329,16 +334,44 @@ and proves that the prepared execution path performs no metadata re-resolution. 
 before execution. An independent audit found no remaining production findings after the checkpoint fixes, including
 active/unwound/terminal depth and terminal empty-stack validation, failure classification, budget precedence, and
 atomic session compatibility/rebinding. Explained-unknown call/return lineage still reports
-`EXEC_CALL_LINEAGE_UNAVAILABLE`; models, product, dump, and hosted closure remain pending.
+`EXEC_CALL_LINEAGE_UNAVAILABLE` at that checkpoint; models, product, dump, and hosted closure remain pending.
 
-Roadmap restore and umbrella-build gates remain repository-wide topology/compilation-health checks. The current W4.5a
+Current local W4.5b verification at exact pushed commit `c72f6ee9e5545240433294cdca4f350808339aef` passed locked
+restore; focused prepared-graph tests 40/40; the combined lineage/audit set 76/76, including 29 frozen legacy identity
+cases; compiler-lineage fixtures 2/2; the W4 integration aggregate 9/9; complete unit 297/297; fast integration 76/76;
+ordinary dump regression 5/5; optimized dump regression 1/1; the strict single-node 15-project Release build with
+0 warnings and 0 errors; and both documentation guards. Every managed command was headless, every behavioral filter
+used `Scope!=Cybersecurity`, there were zero skips, and no UI was displayed. An independent audit found no production
+or test findings.
+
+W4.5b realizes 2,804 added LOC: 766 production LOC plus 2,038 test LOC. Combined W4.5 realizes 6,138 LOC, bringing
+W4.1–W4.5 to 16,817 realized LOC. The historical W4.5b estimate was 1,800–2,700 LOC and the combined W4.5 projection
+was 5,134–6,034 LOC; each upper bound was exceeded by 104 LOC. The W4.5-closure full-W4 projection was
+25,017–29,417 LOC, preserving the original 16,860–25,310 baseline, original combined-W4.5 estimate of
+2,300–3,500 LOC, and prior checkpoint projections of 18,532–26,132, 19,228–25,728, 21,179–26,779, and
+24,013–29,313 LOC.
+
+The mixed partial/exact compiler graph captures five reachable nodes: origin, field transform, parameter-zero call
+transform, binary transform with the exact operand embedded, and return transform. The partial/unavailable graph
+captures eight: two origins, two field transforms, two parameter-indexed call transforms, binary transform, and return
+transform. Each executes 10 instructions, performs two field loads, leaves memory unchanged, reaches depth high-water
+2/2, avoids metadata re-resolution, and replays in the same or a fresh session.
+
+A subsequent W4.6 design audit split the former 2,300–3,400 LOC model estimate into W4.6a structural
+registry/opaque modeled-leaf/effect-and-fallback admission at 1,800–2,600 LOC and W4.6b typed
+execution/attempts/modeled-lineage/conformance at 2,700–3,500 LOC, or 4,500–6,100 LOC combined. This recalibrates
+planning only; no W4.6 capability has been delivered. Remaining W4.6a–W4.9 work is now estimated at
+10,400–15,300 LOC and current full W4 at 27,217–32,117 LOC. Preserve 25,017–29,417 as the historical
+W4.5-closure projection.
+
+Roadmap restore and umbrella-build gates remain repository-wide topology/compilation-health checks. The current W4.5
 closure evidence includes both the solution-wide restore/build and focused strict unit/integration project builds.
 Every current test invocation includes `Scope!=Cybersecurity`; the five dedicated hostile-artifact corpus facts are
 excluded and no cybersecurity validation is claimed.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
-## Post-W4.5a evidence gates
+## Post-W4.5 evidence gates
 
 The generated-fixture W1–W2 path and its prior exact-commit hosted closure evidence remain unchanged. W3's structural
 identity, SRM projection, metadata-derived activation, typed whole-body admission, concrete-domain/persistent-memory
@@ -365,8 +398,12 @@ W4.5a now demonstrates deterministic exact frame push/return execution over that
 request-depth enforcement, canonical return-site replay, high-water accounting, and no metadata re-resolution at
 `356c07037`. It is exact-value kernel evidence only, not counterfactual product execution.
 
-W4.5b is the next evidence gate: explained-unknown argument/return lineage across the interpreted call. W4.5b–W4.9
-remain pending; in particular, models and product
+W4.5b now demonstrates canonical explained-unknown argument/return lineage across the interpreted call at
+`c72f6ee9e`, including atomic whole-vector transformation, an append-only schema, stable failure taxonomy, and
+same/fresh-session reachable-DAG replay. It completes the interpreted-call kernel, not counterfactual product execution.
+
+W4.6a is the next evidence gate: structural model registry, opaque modeled leaves, and effect/fallback admission.
+W4.6a–W4.9 remain pending; in particular, typed model execution/conformance and product
 request/plan/result projection and generated-dump ClrMD production plus close/reopen/rebind evidence remain later-slice
 obligations. New opcodes or method families enter only through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed

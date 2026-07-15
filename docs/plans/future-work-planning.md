@@ -39,8 +39,8 @@ Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md),
 requires an explicit scope decision. Representative private-production measurement is outside W1, and already-landed
 worker/corpus code remains separately scoped non-gating prototype work. W4 is now active and admitted around the
 `GetMarkerSummary` workflow below; W4.1's fixture gate, W4.2's unknown E1/E2 kernel, W4.3's dump-free non-exact
-field seam, W4.4's body-free call resolution/frozen graph, and W4.5a's exact prepared-graph execution have landed,
-while W4.5b–W4.9 remain admitted work. W3 is complete for its defined non-cybersecurity architecture-validation scope
+field seam, W4.4's body-free call resolution/frozen graph, and W4.5's exact plus explained-unknown prepared-graph
+execution have landed, while W4.6a–W4.9 remain admitted work. W3 is complete for its defined non-cybersecurity architecture-validation scope
 at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
@@ -366,14 +366,14 @@ owns the exact behavior. Closure requires all of these executable gates:
 
 ### W4 — Unknown-aware method evaluation
 
-**Status:** **Active; W4.1–W4.5a are implemented and locally validated, while W4.5b–W4.9 remain admitted work.**
+**Status:** **Active; W4.1–W4.5 are implemented and locally validated, while W4.6a–W4.9 remain admitted work.**
 
-**Current projected hand-written implementation surface:** 24,013–29,313 LOC: 14,013 realized through W4.5a plus an
-estimated 10,000–15,300 across five remaining non-overlapping, independently valuable slices. The admitted baseline
-was 16,860–25,310 LOC. The original nine-slice plan now has eleven tracked rows because realized W4.4 and W4.5 were
+**Current projected hand-written implementation surface:** 27,217–32,117 LOC: 16,817 realized through W4.5 plus an
+estimated 10,400–15,300 across five remaining non-overlapping, independently valuable slices. The admitted baseline
+was 16,860–25,310 LOC. The original nine-slice plan now has twelve tracked rows because W4.4, W4.5, and W4.6 were each
 split into independently delivered or independently valuable sub-slices; every remaining slice has an upper estimate
-of at most 3,500 LOC, and the umbrella is not one work package. The earlier 18,532–26,132, 19,228–25,728, and
-21,179–26,779 projections remain historical calibration.
+of at most 3,500 LOC, and the umbrella is not one work package. The earlier 18,532–26,132, 19,228–25,728,
+21,179–26,779, 24,013–29,313, and W4.5-closure 25,017–29,417 projections remain historical calibration.
 
 **Goal:** extend the product from read-only derived queries to explicitly counterfactual method evaluation.
 
@@ -467,9 +467,9 @@ envelope records configured depth, required graph depth, logical-depth high wate
 underflow rejects before activation, every step rechecks graph/state agreement atomically, and legacy W3 activation
 remains call-free and isolated.
 
-W4.5a intentionally permits only exact values across call and interpreted-return boundaries. Explained unknowns block
+At the W4.5a checkpoint, only exact values crossed call and interpreted-return boundaries. Explained unknowns blocked
 with `EXEC_CALL_LINEAGE_UNAVAILABLE`; canonical `CallArgumentTransform` and `InterpretedReturnTransform` lineage is
-W4.5b work. An independent audit closed every identified W4.5a blocker. Headless validation passed locked restore;
+recorded here as the then-pending W4.5b work. An independent audit closed every identified W4.5a blocker. Headless validation passed locked restore;
 the strict fifteen-project Release solution build and strict Release builds of the unit and integration projects, all
 with zero warnings/errors;
 prepared-graph tests 25/25; W4 fixture 7/7; complete unit 275/275; fast integration 74/74; ordinary dump 5/5;
@@ -478,12 +478,42 @@ workflow. Every test lane had zero skips and every behavioral command used `Scop
 The ordinary and optimized dump filters were `Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity`
 and `Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity`, respectively.
 
-W4.5a realizes 3,334 LOC: 1,590 production plus 1,744 tests. W4.1–W4.5a therefore cumulatively realize 14,013 LOC.
-The original combined W4.5 estimate of 2,300–3,500 remains historical calibration; its realized audit splits the
-landed exact execution core from W4.5b's independently valuable 1,800–2,700 LOC lineage package. Combined W4.5 is now
-projected at 5,134–6,034 LOC. The remaining W4.5b–W4.9 envelope is 10,000–15,300 LOC, producing the current
-24,013–29,313 LOC projection. Explained-unknown call/return lineage, models, configurable request traversal limits,
-product projection, ClrMD non-exact import, dump-grounded W4 results, and hosted exact-commit closure remain pending.
+Pushed W4.5b checkpoint `c72f6ee9e` adds optional `IInterpretedCallLineageDomain<TValue>` and completes the admitted
+interpreted-call kernel. Exact arguments and returns bypass the capability unchanged. The complete metadata-ordered
+two-argument vector is validated before any new node is interned; each explained unknown receives one
+`CallArgumentTransform` containing the exact direct-call site, parameter index, and predecessor. An explained unknown
+returned by the helper receives one `InterpretedReturnTransform` containing the call site and callee-side predecessor
+before the caller changes. These are append-only schema-v1 node kinds 4 and 5; legacy kinds 1–3, canonical bytes, and
+identities remain frozen.
+
+The domain rejects default or malformed batches and bare, foreign, bottom, or wrong-type values before publishing a
+partial batch. Machine failures remain atomic with stable taxonomy: missing optional capability is
+`Blocked`/`EXEC_CALL_LINEAGE_UNAVAILABLE`; capability exceptions normalize to `Blocked`/`EXEC_DOMAIN_FAILURE`; and
+default, incorrectly sized, foreign, non-executable, or semantically changed output is
+`InvalidProgram`/`EXEC_CALL_LINEAGE_INVALID`. Reachable graph capture and fresh-domain replay validate canonical
+bytes/identities, dependency order, `Int32` typing, complete call-site identity, and parameter indices before mutation,
+then permit deterministic continuation. Compiler integration freezes the mixed exact/partial five-node graph and the
+partial/unavailable eight-node graph and replays them across same and fresh sessions without metadata re-resolution.
+
+Exact-commit headless validation at `c72f6ee9e5545240433294cdca4f350808339aef` passed locked restore; the strict
+fifteen-project Release build with 0 warnings/0 errors; prepared-graph execution 40/40; the combined lineage/audit lane
+76/76, including 29 frozen legacy identity cases; compiler lineage 2/2; aggregate W4 integration 9/9; complete unit
+297/297; fast integration 76/76; ordinary dump 5/5; and optimized dump 1/1. Every behavioral filter used
+`Scope!=Cybersecurity`, there were zero skips, and an independent audit found no remaining finding.
+
+W4.5a realizes 3,334 LOC (1,590 production plus 1,744 tests); W4.5b realizes 2,804 LOC (766 production plus 2,038
+tests). Combined W4.5 therefore realizes 6,138 LOC, and W4.1–W4.5 cumulatively realize 16,817 LOC. The original
+combined W4.5 estimate of 2,300–3,500 remains historical calibration. The later W4.5b estimate of 1,800–2,700 LOC and
+combined 5,134–6,034 projection were each exceeded at the upper bound by 104 LOC. At W4.5 closure, the remaining
+W4.6–W4.9 envelope was 8,200–12,600 LOC, producing the now-historical 25,017–29,417 LOC projection.
+
+A subsequent design audit split the former W4.6 2,300–3,400 LOC estimate into W4.6a structural registry, opaque
+modeled-leaf, effect, and fallback admission at 1,800–2,600 LOC and W4.6b typed execution, attempts, modeled lineage,
+and conformance at 2,700–3,500 LOC. The combined W4.6 estimate is now 4,500–6,100 LOC. This is planning
+recalibration, not delivered work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC, producing the current
+27,217–32,117 LOC projection while preserving every older projection. Models,
+configurable request traversal limits, product projection, ClrMD non-exact import/dump grounding, dump-grounded W4
+results, and hosted exact-commit closure remain pending.
 
 **Admitted work slices**
 
@@ -495,16 +525,17 @@ product projection, ClrMD non-exact import, dump-grounded W4 results, and hosted
 | W4.4a — Body-free direct-call metadata | Resolve and certify the exact ordinary managed-IL MethodDef/signature without acquiring prospective body/local facts, preserving disposition-before-body selection. | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 1,043 |
 | W4.4b — Frozen transitive graph | Admit the interpreted call closure, retain/deduplicate structural dependencies, validate the canonical acyclic graph, calculate required depth, and enforce fixed internal safety caps. | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 2,608 |
 | W4.5a — Exact multi-frame execution and call depth | Push/pop exact interpreted frames at discrete observable boundaries, preserve return-site identity, enforce the prepared maximum logical depth, validate replay invariants, and record logical/frame high water. | Post-audit sub-slice of original combined W4.5 estimate, 2,300–3,500 | 3,334 |
-| W4.5b — Explained-unknown call/return lineage | Add the call-boundary capability, canonical `CallArgumentTransform`/`InterpretedReturnTransform`, and same/fresh-object replay without changing exact transfer. | 1,800–2,700 | — |
-| W4.6 — Typed pure model, effects, and fallback | Add the scenario-narrowed typed model outcome, normalized effect summary, and explicit blocked/unknown fallback behavior without admitting ambient or arbitrary target execution. | 2,300–3,400 | — |
+| W4.5b — Explained-unknown call/return lineage | Add the call-boundary capability, canonical `CallArgumentTransform`/`InterpretedReturnTransform`, and same/fresh-object replay without changing exact transfer. | 1,800–2,700 | 2,804 |
+| W4.6a — Structural model admission | Add the scenario-narrowed structural registry, opaque modeled leaf, normalized effect contract, and explicit fallback admission without executing a model or admitting ambient/arbitrary target behavior. | 1,800–2,600 | — |
+| W4.6b — Typed model execution and conformance | Add typed model execution outcomes, attempt records, canonical modeled lineage, exact/unknown agreement, and effect/fallback conformance over the W4.6a admission surface. | 2,700–3,500 | — |
 | W4.7 — Target-outcome stop-on-throw contract | Define the standalone target-outcome/canonical fragment for W3's exact-null latch without admitting a fabricated helper/model throw; handler search and transfer remain excluded. | 1,500–2,500 | — |
 | W4.8 — Product canonical facade, runner, and traversal budget | Expose a bounded `CounterfactualExecution` result with assumptions, models, effects, reached bounds, stable diagnostics, and common-projector integration of W4.7's standalone target fragment; add configurable traversal charging to graph preparation without claiming the non-null rooted facade reaches that fragment. | 2,400–3,500 | — |
 | W4.9 — Dump corpus, replay, and CI closure | Execute exact and degraded generated-dump cases, compare CoreCLR where applicable, reproduce canonical results after reopen/rebind, and close the headless hosted gate. | 2,000–3,200 | — |
 
 Instruction budget remains the implemented W3 baseline. W4.4 computes required logical depth and graph traversal
-usage under fixed internal safety caps, but does not apply request policy. W4.5a applies a machine-supplied maximum
-logical call depth before prepared-graph activation and reports logical/frame high water for exact interpreted
-execution; W4.5b extends those boundaries to explained unknowns. W4.8 adds configurable traversal charging and ordered
+usage under fixed internal safety caps, but does not apply request policy. W4.5 applies a machine-supplied maximum
+logical call depth before prepared-graph activation, reports logical/frame high water, and carries exact or explained
+unknown values across admitted interpreted calls. W4.8 adds configurable traversal charging and ordered
 charge/result context to the already frozen graph discovery.
 Allocation is unadmitted by the selected workflow, so no allocation operation consumes a budget and W4 adds no
 dormant allocation counter. A later allocation scenario must define the operation, charging point, result behavior, and
@@ -516,7 +547,7 @@ tests before an allocation budget becomes an applied contract.
 - The selected `GetMarkerSummary` workflow demonstrates method-execution value beyond W2's one-root/one-field query.
   **Satisfied for roadmap admission and fixture evidence by W4.1; product execution belongs to later slices.**
 - Effects, deterministic budgets, degraded-evidence behavior, product truth language, and explicit exclusions are fixed
-  by the normative W4 contract. **Satisfied for design admission; W4.1–W4.5a implementation evidence is recorded above.**
+  by the normative W4 contract. **Satisfied for design admission; W4.1–W4.5 implementation evidence is recorded above.**
 - Each admitted work slice has an explicit estimate of at most 3,500 hand-written implementation LOC before work begins.
   **Satisfied by the table above.**
 
@@ -639,8 +670,9 @@ W4 admission decisions now applied:
    precision-loss events, and `FieldLoadTransform` through the same generic `ldfld` handler while preserving exact
    behavior. W4.4 adds body-free direct MethodDef resolution and complete interpreted-graph admission with fixed
    internal safety caps. W4.5a adds resolver-free exact multi-frame call execution, retained return sites, atomic
-   depth enforcement, frame events, and logical/frame high-water reporting. Explained-unknown call/return lineage,
-   models, configurable request traversal policy, product projection, ClrMD non-exact import, dump-grounded W4
+   depth enforcement, frame events, and logical/frame high-water reporting. W4.5b adds atomic explained-unknown
+   call/return lineage, append-only canonical node kinds, and same/fresh-session replay. Models, configurable request
+   traversal policy, product projection, ClrMD non-exact import, dump-grounded W4
    results, and hosted umbrella closure remain later work.
 
 ### Optimized-dump recoverability measurement

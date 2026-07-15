@@ -19,7 +19,7 @@ The objective is to pick technologies that maximize:
    Deterministic resource counters are required from the first executable slices; the prototype currently accounts
    for admitted instruction transfers. W4.4 additionally records fixed internal graph-construction use under
    64-method and 1,024 method/field/edge-unit safety caps; those are not the later configurable product traversal
-   budget. W4.5a separately admits a configured logical-call-depth limit before activation and records required,
+   budget. W4.5 separately admits a configured logical-call-depth limit before activation and records required,
    observed, and active-frame depth facts without charging them as instruction budget. Allocation, path, join, and
    widening budgets remain later requirements.
    Cooperative `CancellationToken` cancellation remains a separate host-responsiveness mechanism and must not replace
@@ -219,6 +219,19 @@ Use standard .NET DI for host-facing composition while allowing direct construct
      observed/active depth high-water facts, terminal replay invariants, and failure atomicity.
    - Keep explained-unknown call/return lineage, call models, counterfactual product contracts, dump integration, and
      hosted closure outside this lane.
+8. **Explained-unknown prepared-call lineage tests (W4.5b)**
+   - Probe the optional `IInterpretedCallLineageDomain<TValue>` only for explained-unknown values after all ordinary
+     graph, stack, type, budget, and depth checks pass. Exact values continue through the W4.5a path unchanged.
+   - Require complete metadata-ordered two-argument transformation before either argument is published, and transform
+     an explained-unknown return before caller mutation. Canonical `CallArgumentTransform` and
+     `InterpretedReturnTransform` nodes retain complete call-site identity and predecessor links.
+   - Assert the three-way failure taxonomy: missing capability is blocked with `EXEC_CALL_LINEAGE_UNAVAILABLE`,
+     capability exceptions are blocked with `EXEC_DOMAIN_FAILURE`, and malformed or semantically changed output is
+     invalid with `EXEC_CALL_LINEAGE_INVALID`. Every rejection preserves state, memory, budget, events, frames, and
+     published lineage.
+   - Capture only the reachable lineage DAG and prevalidate canonical bytes/hashes, ordering, dependencies,
+     reachability, type, call-site identity, parameter index, and acyclicity before same-session or fresh-session replay.
+     Keep modeled calls, product counterfactual contracts, dump integration, and hosted closure outside this lane.
 
 The external-worker regression project is compiled through the solution, but its tests are not invoked. The five
 hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W4 milestone test commands
@@ -346,10 +359,10 @@ Current facts:
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
   terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct
-  MethodDef helper signature; W4.5a adds an explicitly activated prepared-graph path that executes exact direct
-  `call`/`ret` frames while the legacy single-body path remains call-free. These profiles do not imply branches,
-  explained-unknown call/return lineage, modeled calls, EH, statics outside the exact callee, byrefs,
-  generics, or arbitrary instance methods.
+  MethodDef helper signature. W4.5 activates that prepared graph for exact direct `call`/`ret` frames and, through an
+  optional value-domain capability, propagates canonical explained-unknown argument and return lineage while the
+  legacy single-body path remains call-free. These profiles do not imply branches, modeled calls, EH, statics outside
+  the exact callee, byrefs, generics, or arbitrary instance methods.
 - Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code,
   `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. It projects
   the signature and exact `ldfld` FieldDef from the same metadata, correlates one exact runtime field observation, and
@@ -371,14 +384,32 @@ Current facts:
 - Exact W4.5a commit `356c07037` activates that frozen graph for exact direct calls with canonical call-site/return-site
   identity, configured and required logical-depth facts, observed and active-frame high-water accounting, ordered frame
   events, one-instruction call/return charging, unchanged memory, and no metadata re-resolution. It realizes 3,334
-  added LOC (1,590 production plus 1,744 tests), bringing W4.1–W4.5a to 14,013 realized LOC. W4.5b remains estimated at
+  added LOC (1,590 production plus 1,744 tests), bringing W4.1–W4.5a to 14,013 realized LOC. W4.5b was then estimated at
   1,800–2,700 LOC; combined W4.5 is projected at 5,134–6,034 LOC and full W4 at 24,013–29,313 LOC, with the original
   16,860–25,310 baseline preserved. Headless evidence passed locked restore, the strict fifteen-project Release
   solution build and strict unit/integration project builds at 0 warnings/0 errors, focused prepared-graph tests 25/25,
   the W4 fixture 7/7, complete unit 275/275, fast integration 74/74, ordinary dump 5/5, optimized dump 1/1, and both
   documentation guards, with zero skips and `Scope!=Cybersecurity` on every behavioral filter. An independent audit found no
-  remaining production findings after the checkpoint fixes. Explained-unknown call/return lineage, models, product,
-  dump, and hosted closure remain pending.
+  remaining production findings after the checkpoint fixes. This is retained as the historical first-half checkpoint.
+- W4.5b commit `c72f6ee9e5545240433294cdca4f350808339aef` closes explained-unknown direct-call propagation through
+  `IInterpretedCallLineageDomain<TValue>`. Complete metadata-ordered argument vectors and returns receive canonical
+  `CallArgumentTransform` (kind 4) and `InterpretedReturnTransform` (kind 5) nodes; schema version 1 and kinds 1–3
+  remain byte-for-byte frozen across all 29 legacy identity cases. Capability absence, exceptions, and invalid output
+  remain distinct blocked/invalid outcomes, and capture/replay validates the reachable DAG before mutation.
+  The checkpoint realizes 2,804 added LOC (766 production plus 2,038 tests), bringing combined W4.5 to 6,138 LOC and
+  cumulative W4.1–W4.5 realization to 16,817 LOC. The historical W4.5b estimate was 1,800–2,700 LOC and the combined
+  W4.5 projection was 5,134–6,034 LOC; each upper bound was exceeded by 104 LOC. The W4.5-closure projection was
+  25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at 1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC
+  (4,500–6,100 combined); this is planning recalibration, not delivered work. Remaining W4.6a–W4.9 is
+  10,400–15,300 LOC, for a current full-W4 projection of 27,217–32,117 LOC. Preserve the original
+  16,860–25,310 baseline, the original combined-W4.5 estimate of 2,300–3,500 LOC, and the successive full-W4
+  projections of 18,532–26,132, 19,228–25,728, 21,179–26,779, and 24,013–29,313 LOC as historical planning facts.
+  Headless evidence at the exact commit passed locked restore; the strict single-node fifteen-project Release build at
+  0 warnings/0 errors; prepared-graph tests 40/40; combined audit/lineage tests 76/76, including 29 legacy identity
+  cases; compiler lineage tests 2/2; the W4 integration aggregate 9/9; complete unit 297/297; fast integration 76/76;
+  ordinary dump 5/5; optimized dump 1/1; and both documentation guards, with zero skips and
+  `Scope!=Cybersecurity` on every behavioral filter. An independent audit found no production or test findings.
+  Models, product counterfactual contracts, ClrMD dump grounding, and hosted closure remain W4.6a–W4.9 work.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,

@@ -7,7 +7,7 @@ hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-ch
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
-at that exact commit. W4.1–W4.5a are now implemented. Exact W4.2 commit `e89e43498` adds the dump-free
+at that exact commit. W4.1–W4.5 are now implemented. Exact W4.2 commit `e89e43498` adds the dump-free
 provenance-aware `Int32` arithmetic kernel; exact W4.3 commit `7479b1ad4` adds structured non-exact field continuation
 through that same machine; and W4.4 checkpoints `2e596c117`/`742ef2c4f` add complete direct-MethodDef graph
 preparation without changing machine state. Exact W4.5a commit `356c07037` now consumes those frozen graphs for exact
@@ -17,10 +17,22 @@ passed locked restore, the strict fifteen-project Release solution build and str
 0 warnings/0 errors, focused prepared-graph tests 25/25, the W4 fixture 7/7, the complete unit suite 275/275, the fast
 integration suite 74/74, ordinary dump 5/5, optimized dump 1/1, and both documentation guards with zero skips under
 `Scope!=Cybersecurity`. An independent audit found no remaining production findings after the checkpoint fixes.
-W4.5a realizes 3,334 added LOC (1,590 production plus 1,744 tests), bringing W4.1–W4.5a to 14,013 realized LOC.
-W4.5b remains estimated at 1,800–2,700 LOC, projecting combined W4.5 at 5,134–6,034 LOC and full W4 at
-24,013–29,313 LOC while the original 16,860–25,310 baseline and earlier checkpoint estimates remain preserved.
-Explained-unknown call/return lineage, call models, product contracts, dump integration, hosted closure, and fixpoint,
+W4.5a realizes 3,334 added LOC (1,590 production plus 1,744 tests).
+
+Exact W4.5b commit `c72f6ee9e` adds atomic explained-unknown call/return transforms, append-only canonical lineage kinds
+4/5, stable blocked/invalid capability taxonomy, and same/fresh-session compiler replay while preserving every earlier
+identity. Exact-commit headless evidence passed locked restore, the strict fifteen-project Release build at 0
+warnings/errors, prepared graph 40/40, combined lineage/audit 76/76 including 29 legacy identities, compiler lineage
+2/2, W4 integration 9/9, unit 297/297, fast 76/76, ordinary dump 5/5, and optimized dump 1/1 with zero skips under
+`Scope!=Cybersecurity`. Independent audit found no remaining finding.
+
+W4.5b realizes 2,804 LOC (766 production plus 2,038 tests), so combined W4.5 realizes 6,138 LOC and W4.1–W4.5
+cumulatively realize 16,817 LOC. Historical W4.5b 1,800–2,700 and combined 5,134–6,034 upper estimates were exceeded
+by 104 LOC. The W4.5-closure projection was 25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at
+1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined); this is planning recalibration, not delivered
+work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC, projecting full W4 at 27,217–32,117 LOC while the
+original 16,860–25,310 baseline and every earlier projection, including 24,013–29,313, remain preserved. Call models,
+product contracts, ClrMD dump integration, hosted closure, and fixpoint,
 async, dynamic, and virtual-debug state remain pending or gated research.
 
 ## Scope
@@ -45,9 +57,9 @@ optional precision capability, an opt-in explained-`Int32` policy, and dump-free
 adds a second optional capability for structured partial/unavailable ordinary-instance `Int32` field loads plus their
 precision event and canonical lineage. W4.4 adds a separate body-independent target and immutable graph-preparation
 contract that freezes complete definitions, typed boundaries, canonical dependencies, and required logical depth; it
-does not change `MachineState` or execute a call. W4.5a adds a prepared-graph activation path and exact interpreted
-frame transfer without broadening the legacy single-body path. Broader shapes in this document are research
-generalizations, not claims that the current machine supports CFG joins, explained-unknown call/return lineage, call
+does not change `MachineState` or execute a call. W4.5 adds a prepared-graph activation path and exact or
+explained-unknown interpreted frame transfer without broadening the legacy single-body path. Broader shapes in this document are research
+generalizations, not claims that the current machine supports CFG joins, call
 models, writes, EH, a counterfactual product surface, or a dump adapter that produces W4.3 evidence.
 
 ---
@@ -267,8 +279,16 @@ state equality, and are checked across active, unwound, and terminal states. A n
 `FrameReturnSite` that binds the canonical direct-call identity to the caller's resume offset; the root carries none.
 Exact `call` and `ret` each consume one instruction, leave memory unchanged, and emit their instruction event before
 the corresponding frame-entered or frame-exited event. Admission, capability, depth, invariant, or budget failure is
-atomic and creates no partial frame transition. Explained-unknown arguments or returns still stop at the explicit
-`EXEC_CALL_LINEAGE_UNAVAILABLE` boundary pending W4.5b.
+atomic and creates no partial frame transition.
+
+W4.5b applies the optional `IInterpretedCallLineageDomain<TValue>` only to validated explained unknowns. A complete
+metadata-ordered argument batch transforms before caller/callee mutation; each unknown gains a call-site- and
+parameter-indexed predecessor node while exact positions remain unchanged. An explained return transforms against the
+frozen `FrameReturnSite.CallSite` before either frame changes. Node kinds 4/5 extend schema v1 without changing legacy
+canonical identities. Direct domain rejection publishes no partial nodes; machine missing/throwing capability is
+blocked, malformed/non-equivalent output is invalid, and every failure preserves semantic and operational state,
+memory, budget, and events. Reachable capture/replay validates identity, type, dependency, call-site, and index facts
+before fresh-domain mutation.
 
 ### 2.7 AsyncState and LiftedCallState (research)
 
@@ -443,9 +463,9 @@ Rules for the future controller and product layers follow. The W4.2 kernel reuse
 local store, arithmetic, and return handlers and their instruction events; W4.3 extends the existing `ldfld` transfer
 rather than introducing a second pipeline:
 
-1. W4.4 prepares only exact direct `call` edges; W4.5a pushes an interpreted frame as a discrete, observable event
-   (the callee body does not execute in the same micro-step) and unwinds it through the frozen return site. W4.5b still
-   owns explained-unknown call/return lineage. `callvirt` and `newobj` remain unadmitted.
+1. W4.4 prepares only exact direct `call` edges; W4.5 pushes an interpreted frame as a discrete, observable event
+   (the callee body does not execute in the same micro-step), carries exact or explained values through canonical
+   boundary transforms, and unwinds it through the frozen return site. `callvirt` and `newobj` remain unadmitted.
 2. W4.3 field precision loss emits `InstructionExecuted` first and then `ValuePrecisionLost` at the same method and IL
    offset; the latter carries the exact `FieldLoadEvidence`, and the pushed value carries the corresponding
    provenance root. Any later source of unknownness must define an equally truthful concrete event contract rather
@@ -518,7 +538,7 @@ Versioning rules:
 
 ## 8) Implemented constraints and deferred capabilities
 
-Implemented through W4.5a:
+Implemented through W4.5:
 
 - exact `Int32`, structural object references, typed null, and lifted-flat per-type top/bottom values,
 - a persistent memory snapshot contract with allocated defaults and exact imported-field absence,
@@ -549,12 +569,17 @@ Implemented through W4.5a:
 - exact direct `call`/`ret` frame execution with one-instruction accounting, unchanged memory, deterministic
   instruction/frame-event order, and no metadata re-resolution; and
 - operational observed-logical and active-frame depth high-water facts validated through active, unwound, and
-  terminal states while remaining outside semantic equality.
+  terminal states while remaining outside semantic equality;
+- optional `IInterpretedCallLineageDomain<TValue>` with exact pass-through, atomic two-argument transformation, and
+  one return transformation across the already admitted direct-call boundary;
+- append-only schema-v1 `CallArgumentTransform` kind 4 and `InterpretedReturnTransform` kind 5 nodes containing the
+  complete call-site/predecessor facts and metadata parameter index where applicable, without changing kinds 1–3;
+- stable missing/throwing/malformed capability classification with no partial machine or lineage mutation; and
+- reachable call-lineage capture, validation, fresh-domain replay, and deterministic post-replay continuation.
 
-Deferred to W4.5b–W4.9 or later research gates:
+Deferred to W4.6a–W4.9 or later research gates:
 
 - hybrid nullness/constant/type/taint products,
-- explained-unknown call/return lineage and replay,
 - call models, counterfactual request/plan/result and facade, and generated-dump product closure,
 - a ClrMD producer for structured W4.3 field evidence,
 - coarse and summary heap abstractions,
@@ -584,13 +609,14 @@ dump-free structured non-exact field-transfer, precision-event, and lineage/repl
 commit `7479b1ad4`; and W4.4 satisfies complete dump-free direct-call graph preparation at exact checkpoints
 `2e596c117`/`742ef2c4f`. W4.5a satisfies exact prepared-graph activation, direct-call frame execution, return-site
 replay, configured-depth enforcement, high-water accounting, and deterministic frame-event portions at exact commit
-`356c07037`. None is an end-to-end dump product, and W4.5a intentionally stops before explained-unknown call/return
-lineage, call models, product contracts, dump integration, and hosted closure. The broader research proposal is ready
+`356c07037`; W4.5b satisfies atomic explained-unknown call/return lineage, stable capability taxonomy, append-only
+canonical identity, and same/fresh-session replay at exact commit `c72f6ee9e`. None is an end-to-end dump product, and
+W4.5 intentionally stops before call models, product contracts, ClrMD dump integration, and hosted closure. The broader research proposal is ready
 for sign-off when:
 
 1. Core interfaces include explicit `MachineState`/`FrameState`, while any session controller keeps its transition and pause protocol distinct from the machine result.
-2. At least one product-level dump sample can emit and replay provenance-bearing unknowns; W4.2–W4.5a prove only the
-   dump-free domain, evidence, machine, preparation, and exact-call seams, and the existing ClrMD field descriptor
+2. At least one product-level dump sample can emit and replay provenance-bearing unknowns; W4.2–W4.5 prove only the
+   dump-free domain, evidence, machine, preparation, and interpreted-call seams, and the existing ClrMD field descriptor
    remains exact-only.
 3. Merge/join behavior is validated on a curated CFG fixture set.
 4. Host API can surface session pause reason, machine status, debug events, and approximation diagnostics without conflating their vocabularies or leaking internal types.

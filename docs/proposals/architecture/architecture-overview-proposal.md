@@ -11,7 +11,7 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.5a have since landed.
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.5 have since landed.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -28,9 +28,23 @@ Release solution build and strict unit/integration project builds at zero warnin
 25/25, the W4 fixture 7/7, the full unit suite 275/275, fast integration 74/74, ordinary dump 5/5, optimized dump 1/1,
 and both documentation guards with zero skips. Independent audit found no remaining production issue after capability-failure, depth-envelope,
 high-water, budget-precedence, terminal-validation, and session-binding corrections. W4.5a realizes 3,334 LOC (1,590
-production plus 1,744 tests), bringing W4.1–W4.5a to 14,013 realized LOC. W4.5b is recalibrated to 1,800–2,700 LOC;
-combined W4.5 projects to 5,134–6,034 LOC, and full W4 now projects to 24,013–29,313 LOC while the original
-16,860–25,310 baseline and earlier projections remain preserved:
+production plus 1,744 tests).
+
+Pushed W4.5b checkpoint `c72f6ee9e` adds the optional interpreted-call lineage capability and canonical kind-4
+argument/kind-5 return transforms while preserving exact values and all schema-v1 identities. Its atomic batch and
+return boundaries retain stable missing/throwing/malformed capability taxonomy; reachable capture and fresh replay
+validate types, call sites, parameter indices, dependencies, bytes, and hashes before mutation. Exact-commit evidence
+passed locked restore, the strict fifteen-project Release build at 0 warnings/errors, prepared graph 40/40, combined
+lineage/audit 76/76 including 29 legacy identity cases, compiler lineage 2/2, W4 integration 9/9, unit 297/297, fast
+76/76, ordinary dump 5/5, and optimized dump 1/1 with zero skips and `Scope!=Cybersecurity` on behavioral filters.
+Independent audit found no remaining finding.
+
+W4.5b realizes 2,804 LOC (766 production plus 2,038 tests), so combined W4.5 realizes 6,138 LOC and W4.1–W4.5
+realize 16,817 LOC. The historical W4.5b estimate of 1,800–2,700 and combined projection of 5,134–6,034 were each
+exceeded at the upper bound by 104 LOC. The W4.5-closure projection was 25,017–29,417 LOC. A later design audit split
+W4.6 into W4.6a at 1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined); this is planning
+recalibration, not delivered work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC and full W4 now projects to
+27,217–32,117 LOC while the original 16,860–25,310 baseline and every earlier projection remain preserved:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -39,8 +53,8 @@ combined W4.5 projects to 5,134–6,034 LOC, and full W4 now projects to 24,013�
 4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy; W4.2 proves their
    branchless dump-free arithmetic transport, and W4.3 proves structured non-exact field continuation plus canonical
    precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation; and
-   W4.5a executes exact direct calls with deterministic frames and depth accounting. Explained-unknown call/return
-   lineage in W4.5b and W4.6–W4.9 remain pending.
+   W4.5 executes exact and explained-unknown direct calls with deterministic frames, depth accounting, and canonical
+   call/return lineage. Models, product, ClrMD dump grounding, and hosted closure remain W4.6a–W4.9 work.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -327,12 +341,18 @@ and emits `InstructionExecuted` then `FramePopped`. Instruction availability pre
 depth mismatch and forged return state fail atomically, memory remains persistent, and terminal states retain exact
 root-result or target-boundary evidence.
 
-The emitted `GetMarkerSummary` fixture now executes ten exact instructions through `CombineMarkers`, performs exactly
-two field loads, reaches logical and active-frame high water two, agrees with CoreCLR, and makes no resolution call
-after graph preparation. Explained-unknown arguments and helper results still stop at the explicit
-`EXEC_CALL_LINEAGE_UNAVAILABLE` seam: canonical `CallArgumentTransform`/`InterpretedReturnTransform` lineage is
-W4.5b. Call models, the counterfactual facade/request/plan/result, dump-grounded execution, and hosted umbrella closure
-remain W4.6–W4.9 work.
+W4.5b checkpoint `c72f6ee9e` probes `IInterpretedCallLineageDomain<TValue>` only when a validated value is an explained
+unknown. It batch-transforms metadata-ordered arguments before the caller advances or a callee exists, and transforms
+an explained helper result before either frame changes. Exact positions pass unchanged. `CallArgumentTransform`
+records the complete `DirectCallSiteIdentity`, parameter index, and predecessor; `InterpretedReturnTransform` records
+the call site and callee-side predecessor. Missing capability is blocked, capability exceptions are normalized
+blocked failures, and malformed/non-equivalent output is invalid; all preserve state, memory, budget, events, and
+published lineage.
+
+The compiler fixtures execute ten instructions, perform two field loads, reach logical and active-frame high water
+two, leave memory unchanged, and make no resolution call after graph preparation. Their mixed exact/partial five-node
+and partial/unavailable eight-node graphs replay in the same and fresh sessions. Call models, the counterfactual
+facade/request/plan/result, ClrMD dump-grounded execution, and hosted umbrella closure remain W4.6a–W4.9 work.
 
 ## 5. Identity model
 
