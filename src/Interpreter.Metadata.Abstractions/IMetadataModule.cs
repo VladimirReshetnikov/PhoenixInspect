@@ -8,9 +8,10 @@ namespace Interpreter.Metadata.Abstractions;
 /// </summary>
 /// <remarks>
 /// Method activation uses one atomic definition projection so a body cannot be combined with a signature observed
-/// at a different point in time. Field resolution is contextual to the containing method and deliberately accepts
-/// only the closed same-module FieldDef profile required by W3. The body-only member remains available to W1 dump
-/// evidence callers that compare independently acquired method bytes and do not activate the interpreter.
+/// at a different point in time. Method-operand resolution is separately body-free so a caller can select an opaque
+/// model disposition before acquiring a prospective callee body. Field resolution is contextual to the containing
+/// method and deliberately accepts only the closed same-module FieldDef profile required by W3. The body-only member
+/// remains available to W1 dump evidence callers that compare independently acquired method bytes.
 /// </remarks>
 public interface IMetadataModule
 {
@@ -31,9 +32,21 @@ public interface IMetadataModule
     /// <summary>Resolves a complete MethodDef body and activation shape as one immutable observation.</summary>
     /// <param name="method">The deterministic same-module method-definition handle.</param>
     /// <returns>
-    /// The atomic method definition, or a structured unavailable, unsupported, invalid, or conflict result.
+    /// The atomic ordinary managed-IL method definition, or a structured unavailable, unsupported, invalid, or
+    /// conflict result. Excluded CLR implementation kinds remain unsupported even when a caller can supply bytes.
     /// </returns>
     ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method);
+
+    /// <summary>Resolves a same-module MethodDef call operand without acquiring its body or local signature.</summary>
+    /// <param name="contextMethod">The MethodDef whose IL contains the InlineMethod operand.</param>
+    /// <param name="metadataToken">The raw four-byte InlineMethod metadata token.</param>
+    /// <returns>
+    /// An exact managed-IL target and body-independent call signature, or a structured unsupported, invalid, or
+    /// conflict result. In-range MemberRef and MethodSpec operands are unsupported without resolution; malformed,
+    /// nil, out-of-range, and unrelated tokens are invalid. Cross-module, generic, instance, and name-based
+    /// resolution are never promoted into a successful target.
+    /// </returns>
+    ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(MethodHandle contextMethod, int metadataToken);
 
     /// <summary>Resolves a same-module FieldDef operand in the context of a containing MethodDef.</summary>
     /// <param name="contextMethod">The method whose IL contains the field operand.</param>

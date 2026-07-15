@@ -222,6 +222,33 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
     }
 
     /// <inheritdoc />
+    public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+        MethodHandle contextMethod,
+        int metadataToken)
+    {
+        try
+        {
+            using var provider = MetadataReaderProvider.FromMetadataImage(metadataImage);
+            return SrmMetadataProjection.ProjectMethodCallTarget(
+                provider.GetMetadataReader(),
+                ModuleHandle,
+                contextMethod,
+                metadataToken);
+        }
+        catch (Exception exception) when (
+            exception is BadImageFormatException or
+            InvalidOperationException or
+            ArgumentException or
+            ArgumentOutOfRangeException)
+        {
+            return ResolutionResult<ResolvedMethodCallTarget>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_CALL_TARGET_METADATA_INVALID",
+                "The counted dump metadata could not project the requested direct-call target.");
+        }
+    }
+
+    /// <inheritdoc />
     public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken)
     {
         if (contextMethod != Method)

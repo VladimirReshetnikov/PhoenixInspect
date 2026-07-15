@@ -340,6 +340,19 @@ public sealed class SrmMetadataModule : IMetadataModule, IDisposable
     }
 
     /// <inheritdoc />
+    public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+        MethodHandle contextMethod,
+        int metadataToken)
+    {
+        ThrowIfDisposed();
+        return SrmMetadataProjection.ProjectMethodCallTarget(
+            _metadataReader,
+            ModuleHandle,
+            contextMethod,
+            metadataToken);
+    }
+
+    /// <inheritdoc />
     public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken)
     {
         ThrowIfDisposed();
@@ -374,14 +387,14 @@ public sealed class SrmMetadataModule : IMetadataModule, IDisposable
 
             var methodDefinitionHandle = MetadataTokens.MethodDefinitionHandle(method.MetadataToken & 0x00FFFFFF);
             var methodDefinition = _metadataReader.GetMethodDefinition(methodDefinitionHandle);
-            var implementationAttributes = methodDefinition.ImplAttributes;
-            if ((implementationAttributes & System.Reflection.MethodImplAttributes.CodeTypeMask) != System.Reflection.MethodImplAttributes.IL ||
-                (implementationAttributes & System.Reflection.MethodImplAttributes.ManagedMask) != System.Reflection.MethodImplAttributes.Managed)
+            if (!SrmMetadataProjection.IsOrdinaryManagedIlImplementation(
+                    methodDefinition.Attributes,
+                    methodDefinition.ImplAttributes))
             {
                 return ResolutionResult<MethodBody>.Failed(
                     ResolutionFailureKind.Unsupported,
                     "META_METHOD_IMPLEMENTATION_UNSUPPORTED",
-                    "The selected method is not implemented as managed IL.");
+                    "The selected method is not an ordinary managed-IL MethodDef.");
             }
 
             if (methodDefinition.RelativeVirtualAddress == 0)

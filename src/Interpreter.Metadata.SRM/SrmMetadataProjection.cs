@@ -24,8 +24,10 @@ public static class SrmMetadataProjection
     private const int TokenTypeMask = unchecked((int)0xFF000000);
     private const int RowIdMask = 0x00FFFFFF;
     private const int MethodDefinitionTokenType = 0x06000000;
+    private const int MemberReferenceTokenType = 0x0A000000;
     private const int FieldDefinitionTokenType = 0x04000000;
     private const int StandaloneSignatureTokenType = 0x11000000;
+    private const int MethodSpecificationTokenType = 0x2B000000;
     private const int MaximumExplicitParameterCount = 256;
     private const int MaximumLocalCount = 1_024;
     private const int MaximumTypeAncestryDepth = 128;
@@ -42,7 +44,7 @@ public static class SrmMetadataProjection
     /// </param>
     /// <returns>
     /// An atomic resolved definition, or a stable structured failure for conflicting identities, invalid metadata,
-    /// unsupported signatures, or bounded-profile limits.
+    /// non-ordinary managed-IL implementations, unsupported signatures, or bounded-profile limits.
     /// </returns>
     public static ResolutionResult<ResolvedMethodDefinition> ProjectMethodDefinition(
         MetadataReader metadataReader,
@@ -79,121 +81,21 @@ public static class SrmMetadataProjection
 
         try
         {
-            var methodHandle = MetadataTokens.MethodDefinitionHandle(method.MetadataToken & RowIdMask);
-            var methodDefinition = metadataReader.GetMethodDefinition(methodHandle);
-            var isStatic = (methodDefinition.Attributes & MethodAttributes.Static) != 0;
-            var declaringTypeResult = ProjectDeclaringType(
-                metadataReader,
-                module,
-                methodDefinition.GetDeclaringType(),
-                rejectGenericType: true);
-            if (!declaringTypeResult.IsSuccess)
+            var callMetadataResult = ProjectMethodCallMetadata(metadataReader, module, method);
+            if (!callMetadataResult.IsSuccess)
             {
-                return Propagate<ResolvedMethodDefinition>(declaringTypeResult.Failure!);
+                return Propagate<ResolvedMethodDefinition>(callMetadataResult.Failure!);
             }
 
-            if (methodDefinition.GetGenericParameters().Count != 0)
+            var callMetadata = callMetadataResult.Value;
+            if (!IsOrdinaryManagedIlImplementation(
+                    callMetadata.Attributes,
+                    callMetadata.ImplementationAttributes))
             {
                 return Failure<ResolvedMethodDefinition>(
                     ResolutionFailureKind.Unsupported,
-                    "META_GENERIC_METHOD_UNSUPPORTED",
-                    "Generic method definitions are outside the W3 execution profile.");
-            }
-
-            var preflightResult = PreflightMethodSignature(metadataReader, methodDefinition.Signature);
-            if (!preflightResult.IsSuccess)
-            {
-                return Propagate<ResolvedMethodDefinition>(preflightResult.Failure!);
-            }
-
-            MethodSignature<TypeSig> signature;
-            try
-            {
-                signature = methodDefinition.DecodeSignature(ClosedTypeProvider.Instance, GenericContext.Empty);
-            }
-            catch (UnsupportedSignatureShapeException exception)
-            {
-                return UnsupportedSignature<ResolvedMethodDefinition>(exception);
-            }
-
-            if (signature.Header.Kind != SignatureKind.Method)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Invalid,
-                    "META_METHOD_SIGNATURE_KIND_INVALID",
-                    "The MethodDef signature does not use the method signature kind.");
-            }
-
-            if (signature.Header.CallingConvention == SignatureCallingConvention.VarArgs)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Unsupported,
-                    "META_VARARGS_METHOD_UNSUPPORTED",
-                    "Variable-argument method signatures are outside the W3 execution profile.");
-            }
-
-            if (signature.Header.CallingConvention != SignatureCallingConvention.Default)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Unsupported,
-                    "META_CALLING_CONVENTION_UNSUPPORTED",
-                    "The method calling convention is outside the W3 execution profile.");
-            }
-
-            if (signature.Header.HasExplicitThis)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Unsupported,
-                    "META_EXPLICIT_THIS_UNSUPPORTED",
-                    "Explicit-this method signatures are outside the W3 execution profile.");
-            }
-
-            if (signature.Header.IsGeneric || signature.GenericParameterCount != 0)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Unsupported,
-                    "META_GENERIC_METHOD_UNSUPPORTED",
-                    "Generic method signatures are outside the W3 execution profile.");
-            }
-
-            if (signature.Header.IsInstance == isStatic)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Invalid,
-                    "META_METHOD_THIS_MISMATCH",
-                    "Method attributes and signature disagree about the implicit receiver.");
-            }
-
-            if (signature.ParameterTypes.Length > MaximumExplicitParameterCount)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Unsupported,
-                    "META_PARAMETER_COUNT_LIMIT",
-                    "The method signature exceeds the deterministic explicit-parameter limit.");
-            }
-
-            if (signature.RequiredParameterCount != signature.ParameterTypes.Length)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Unsupported,
-                    "META_OPTIONAL_PARAMETERS_UNSUPPORTED",
-                    "Optional or sentinel-delimited parameters are outside the W3 execution profile.");
-            }
-
-            if (signature.ParameterTypes.Any(type => type != TypeSig.Int32))
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Unsupported,
-                    "META_PARAMETER_TYPE_UNSUPPORTED",
-                    "W3 method parameters must have the exact CLI Int32 type.");
-            }
-
-            if (signature.ReturnType != TypeSig.Void && signature.ReturnType != TypeSig.Int32)
-            {
-                return Failure<ResolvedMethodDefinition>(
-                    ResolutionFailureKind.Unsupported,
-                    "META_RETURN_TYPE_UNSUPPORTED",
-                    "W3 methods must return void or the exact CLI Int32 type.");
+                    "META_METHOD_IMPLEMENTATION_UNSUPPORTED",
+                    "The selected method is not an ordinary managed-IL MethodDef.");
             }
 
             var localsResult = ProjectLocals(metadataReader, body.LocalSignatureToken);
@@ -202,15 +104,7 @@ public static class SrmMetadataProjection
                 return Propagate<ResolvedMethodDefinition>(localsResult.Failure!);
             }
 
-            var shape = new MethodSignatureShape(
-                declaringTypeResult.Value,
-                MethodCallingConventionKind.Default,
-                signature.Header.IsInstance,
-                hasExplicitThis: false,
-                genericParameterCount: 0,
-                signature.ParameterTypes,
-                signature.ReturnType,
-                localsResult.Value);
+            var shape = new MethodSignatureShape(callMetadata.Signature, localsResult.Value);
             return ResolutionResult<ResolvedMethodDefinition>.Success(
                 new ResolvedMethodDefinition(method, body, shape));
         }
@@ -220,6 +114,155 @@ public static class SrmMetadataProjection
                 ResolutionFailureKind.Invalid,
                 "META_METHOD_DEFINITION_INVALID",
                 "The managed metadata contains an invalid method definition or signature.");
+        }
+    }
+
+    /// <summary>
+    /// Resolves one body-free InlineMethod operand to the closed direct-call MethodDef profile.
+    /// </summary>
+    /// <param name="metadataReader">The reader over the exact metadata image that defines both methods.</param>
+    /// <param name="module">The content- or snapshot-derived identity assigned to that metadata image.</param>
+    /// <param name="contextMethod">The same-module MethodDef whose IL contains the operand.</param>
+    /// <param name="metadataToken">The raw four-byte InlineMethod operand.</param>
+    /// <returns>
+    /// An exact static managed-IL <c>Int32 (Int32, Int32)</c> MethodDef target, or a stable structured failure.
+    /// In-range MemberRef and MethodSpec operands are reported as unsupported without being resolved; malformed,
+    /// nil, out-of-range, and unrelated token kinds are invalid. Generic substitution, cross-module binding, and
+    /// name lookup are never attempted.
+    /// </returns>
+    /// <remarks>
+    /// This operation reads only metadata tables and signature blobs. It never inspects an RVA, PE method body,
+    /// local signature, or local types, so an opaque model disposition can be selected before body acquisition.
+    /// </remarks>
+    public static ResolutionResult<ResolvedMethodCallTarget> ProjectMethodCallTarget(
+        MetadataReader metadataReader,
+        ModuleHandle module,
+        MethodHandle contextMethod,
+        int metadataToken)
+    {
+        ArgumentNullException.ThrowIfNull(metadataReader);
+
+        if (module == default)
+        {
+            return Failure<ResolvedMethodCallTarget>(
+                ResolutionFailureKind.Invalid,
+                "META_MODULE_HANDLE_INVALID",
+                "Metadata projection requires a non-default module identity.");
+        }
+
+        if (contextMethod.Module != module)
+        {
+            return Failure<ResolvedMethodCallTarget>(
+                ResolutionFailureKind.Conflict,
+                "META_METHOD_CONTEXT_MODULE_CONFLICT",
+                "The containing method identity does not match the projected metadata module.");
+        }
+
+        if (!IsValidToken(
+                contextMethod.MetadataToken,
+                MethodDefinitionTokenType,
+                metadataReader.MethodDefinitions.Count))
+        {
+            return Failure<ResolvedMethodCallTarget>(
+                ResolutionFailureKind.Invalid,
+                "META_INVALID_CONTEXT_METHOD_TOKEN",
+                "The call context is not a valid MethodDef in this module.");
+        }
+
+        if (IsValidToken(metadataToken, MemberReferenceTokenType, metadataReader.MemberReferences.Count) ||
+            IsValidToken(
+                metadataToken,
+                MethodSpecificationTokenType,
+                metadataReader.GetTableRowCount(TableIndex.MethodSpec)))
+        {
+            return Failure<ResolvedMethodCallTarget>(
+                ResolutionFailureKind.Unsupported,
+                "META_CALL_TOKEN_KIND_UNSUPPORTED",
+                "The direct-call profile does not resolve MemberRef or MethodSpec operands.");
+        }
+
+        if (!IsValidToken(metadataToken, MethodDefinitionTokenType, metadataReader.MethodDefinitions.Count))
+        {
+            return Failure<ResolvedMethodCallTarget>(
+                ResolutionFailureKind.Invalid,
+                "META_INVALID_CALL_METHOD_TOKEN",
+                "The InlineMethod operand is not a valid same-module MethodDef token.");
+        }
+
+        try
+        {
+            var contextHandle = MetadataTokens.MethodDefinitionHandle(contextMethod.MetadataToken & RowIdMask);
+            var contextDefinition = metadataReader.GetMethodDefinition(contextHandle);
+            if (contextDefinition.GetGenericParameters().Count != 0 ||
+                DeclaringTypeIsGeneric(metadataReader, contextDefinition.GetDeclaringType()))
+            {
+                return Failure<ResolvedMethodCallTarget>(
+                    ResolutionFailureKind.Unsupported,
+                    "META_GENERIC_METHOD_CONTEXT_UNSUPPORTED",
+                    "Generic method or declaring-type contexts are outside the direct-call profile.");
+            }
+
+            var target = new MethodHandle(module, metadataToken);
+            var callMetadataResult = ProjectMethodCallMetadata(metadataReader, module, target);
+            if (!callMetadataResult.IsSuccess)
+            {
+                return Propagate<ResolvedMethodCallTarget>(callMetadataResult.Failure!);
+            }
+
+            var callMetadata = callMetadataResult.Value;
+            var attributes = callMetadata.Attributes;
+            var implementationAttributes = callMetadata.ImplementationAttributes;
+            if ((attributes & MethodAttributes.Static) == 0)
+            {
+                return Failure<ResolvedMethodCallTarget>(
+                    ResolutionFailureKind.Unsupported,
+                    "META_CALL_TARGET_INSTANCE_UNSUPPORTED",
+                    "The direct-call profile requires a static MethodDef target.");
+            }
+
+            if (!IsOrdinaryManagedIlImplementation(attributes, implementationAttributes))
+            {
+                return Failure<ResolvedMethodCallTarget>(
+                    ResolutionFailureKind.Unsupported,
+                    "META_CALL_TARGET_IMPLEMENTATION_UNSUPPORTED",
+                    "The direct-call target is not an ordinary managed-IL MethodDef.");
+            }
+
+            var targetDefinitionHandle = MetadataTokens.MethodDefinitionHandle(metadataToken & RowIdMask);
+            if (HasOptionalExplicitParameter(
+                    metadataReader,
+                    metadataReader.GetMethodDefinition(targetDefinitionHandle)))
+            {
+                return Failure<ResolvedMethodCallTarget>(
+                    ResolutionFailureKind.Unsupported,
+                    "META_OPTIONAL_PARAMETERS_UNSUPPORTED",
+                    "Optional direct-call parameters are outside the closed MethodDef profile.");
+            }
+
+            var signature = callMetadata.Signature;
+            if (signature.HasImplicitThis ||
+                signature.HasExplicitThis ||
+                signature.GenericParameterCount != 0 ||
+                signature.CallingConvention != MethodCallingConventionKind.Default ||
+                signature.ParameterTypes.Length != 2 ||
+                signature.ParameterTypes.Any(static type => type != TypeSig.Int32) ||
+                signature.ReturnType != TypeSig.Int32)
+            {
+                return Failure<ResolvedMethodCallTarget>(
+                    ResolutionFailureKind.Unsupported,
+                    "META_CALL_TARGET_SIGNATURE_UNSUPPORTED",
+                    "The direct-call target must have the exact static Int32 (Int32, Int32) signature.");
+            }
+
+            return ResolutionResult<ResolvedMethodCallTarget>.Success(
+                new ResolvedMethodCallTarget(target, signature));
+        }
+        catch (Exception exception) when (IsInvalidMetadataException(exception))
+        {
+            return Failure<ResolvedMethodCallTarget>(
+                ResolutionFailureKind.Invalid,
+                "META_CALL_TARGET_INVALID",
+                "The managed metadata contains an invalid direct-call context, target, or signature.");
         }
     }
 
@@ -374,6 +417,165 @@ public static class SrmMetadataProjection
                 "The managed metadata contains an invalid field definition or signature.");
         }
     }
+
+    private static ResolutionResult<ProjectedMethodCallMetadata> ProjectMethodCallMetadata(
+        MetadataReader metadataReader,
+        ModuleHandle module,
+        MethodHandle method)
+    {
+        var methodHandle = MetadataTokens.MethodDefinitionHandle(method.MetadataToken & RowIdMask);
+        var methodDefinition = metadataReader.GetMethodDefinition(methodHandle);
+        var isStatic = (methodDefinition.Attributes & MethodAttributes.Static) != 0;
+        var declaringTypeResult = ProjectDeclaringType(
+            metadataReader,
+            module,
+            methodDefinition.GetDeclaringType(),
+            rejectGenericType: true);
+        if (!declaringTypeResult.IsSuccess)
+        {
+            return Propagate<ProjectedMethodCallMetadata>(declaringTypeResult.Failure!);
+        }
+
+        if (methodDefinition.GetGenericParameters().Count != 0)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_GENERIC_METHOD_UNSUPPORTED",
+                "Generic method definitions are outside the W3 execution profile.");
+        }
+
+        var preflightResult = PreflightMethodSignature(metadataReader, methodDefinition.Signature);
+        if (!preflightResult.IsSuccess)
+        {
+            return Propagate<ProjectedMethodCallMetadata>(preflightResult.Failure!);
+        }
+
+        MethodSignature<TypeSig> signature;
+        try
+        {
+            signature = methodDefinition.DecodeSignature(ClosedTypeProvider.Instance, GenericContext.Empty);
+        }
+        catch (UnsupportedSignatureShapeException exception)
+        {
+            return UnsupportedSignature<ProjectedMethodCallMetadata>(exception);
+        }
+
+        if (signature.Header.Kind != SignatureKind.Method)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Invalid,
+                "META_METHOD_SIGNATURE_KIND_INVALID",
+                "The MethodDef signature does not use the method signature kind.");
+        }
+
+        if (signature.Header.CallingConvention == SignatureCallingConvention.VarArgs)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_VARARGS_METHOD_UNSUPPORTED",
+                "Variable-argument method signatures are outside the W3 execution profile.");
+        }
+
+        if (signature.Header.CallingConvention != SignatureCallingConvention.Default)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_CALLING_CONVENTION_UNSUPPORTED",
+                "The method calling convention is outside the W3 execution profile.");
+        }
+
+        if (signature.Header.HasExplicitThis)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_EXPLICIT_THIS_UNSUPPORTED",
+                "Explicit-this method signatures are outside the W3 execution profile.");
+        }
+
+        if (signature.Header.IsGeneric || signature.GenericParameterCount != 0)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_GENERIC_METHOD_UNSUPPORTED",
+                "Generic method signatures are outside the W3 execution profile.");
+        }
+
+        if (signature.Header.IsInstance == isStatic)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Invalid,
+                "META_METHOD_THIS_MISMATCH",
+                "Method attributes and signature disagree about the implicit receiver.");
+        }
+
+        if (signature.ParameterTypes.Length > MaximumExplicitParameterCount)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_PARAMETER_COUNT_LIMIT",
+                "The method signature exceeds the deterministic explicit-parameter limit.");
+        }
+
+        if (signature.RequiredParameterCount != signature.ParameterTypes.Length)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_OPTIONAL_PARAMETERS_UNSUPPORTED",
+                "Optional or sentinel-delimited parameters are outside the W3 execution profile.");
+        }
+
+        if (signature.ParameterTypes.Any(static type => type != TypeSig.Int32))
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_PARAMETER_TYPE_UNSUPPORTED",
+                "W3 method parameters must have the exact CLI Int32 type.");
+        }
+
+        if (signature.ReturnType != TypeSig.Void && signature.ReturnType != TypeSig.Int32)
+        {
+            return Failure<ProjectedMethodCallMetadata>(
+                ResolutionFailureKind.Unsupported,
+                "META_RETURN_TYPE_UNSUPPORTED",
+                "W3 methods must return void or the exact CLI Int32 type.");
+        }
+
+        var callSignature = new MethodCallSignatureShape(
+            declaringTypeResult.Value,
+            MethodCallingConventionKind.Default,
+            signature.Header.IsInstance,
+            hasExplicitThis: false,
+            genericParameterCount: 0,
+            signature.ParameterTypes,
+            signature.ReturnType);
+        return ResolutionResult<ProjectedMethodCallMetadata>.Success(
+            new ProjectedMethodCallMetadata(
+                callSignature,
+                methodDefinition.Attributes,
+                methodDefinition.ImplAttributes));
+    }
+
+    private static bool HasOptionalExplicitParameter(
+        MetadataReader metadataReader,
+        MethodDefinition methodDefinition)
+    {
+        foreach (var parameterHandle in methodDefinition.GetParameters())
+        {
+            var parameter = metadataReader.GetParameter(parameterHandle);
+            if (parameter.SequenceNumber != 0 &&
+                (parameter.Attributes & (ParameterAttributes.Optional | ParameterAttributes.HasDefault)) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool DeclaringTypeIsGeneric(
+        MetadataReader metadataReader,
+        TypeDefinitionHandle declaringTypeHandle) =>
+        metadataReader.GetTypeDefinition(declaringTypeHandle).GetGenericParameters().Count != 0;
 
     private static ResolutionResult<TypeSig> ProjectDeclaringType(
         MetadataReader metadataReader,
@@ -747,6 +949,17 @@ public static class SrmMetadataProjection
         return rowId > 0 && rowId <= tableRowCount;
     }
 
+    internal static bool IsOrdinaryManagedIlImplementation(
+        MethodAttributes attributes,
+        MethodImplAttributes implementationAttributes) =>
+        (attributes & (MethodAttributes.PinvokeImpl | MethodAttributes.Abstract)) == 0 &&
+        (implementationAttributes & MethodImplAttributes.CodeTypeMask) == MethodImplAttributes.IL &&
+        (implementationAttributes & MethodImplAttributes.ManagedMask) == MethodImplAttributes.Managed &&
+        (implementationAttributes &
+            (MethodImplAttributes.InternalCall |
+             MethodImplAttributes.ForwardRef |
+             MethodImplAttributes.Synchronized)) == 0;
+
     private static bool IsInvalidMetadataException(Exception exception) =>
         exception is BadImageFormatException or ArgumentOutOfRangeException or InvalidOperationException;
 
@@ -766,6 +979,11 @@ public static class SrmMetadataProjection
     {
         internal static GenericContext Empty => default;
     }
+
+    private readonly record struct ProjectedMethodCallMetadata(
+        MethodCallSignatureShape Signature,
+        MethodAttributes Attributes,
+        MethodImplAttributes ImplementationAttributes);
 
     private sealed class ClosedTypeProvider : ISignatureTypeProvider<TypeSig, GenericContext>
     {

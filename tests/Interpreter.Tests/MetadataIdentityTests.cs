@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -173,6 +174,269 @@ public sealed class MetadataIdentityTests
         Assert.False(invalid.IsSuccess);
         Assert.Equal(ResolutionFailureKind.Invalid, invalid.Failure!.Kind);
         Assert.Equal("META_INVALID_METHOD_TOKEN", invalid.Failure.Code);
+    }
+
+    /// <summary>
+    /// Checks content equality for body-independent call signatures and managed-IL targets across independent arrays.
+    /// </summary>
+    [Fact]
+    public void MethodCallSignaturesAndTargetsUseStructuralContentEquality()
+    {
+        var module = new ModuleHandle(0x4400000000000001, 0x4400000000000002);
+        var declaringType = TypeSig.CreateTypeDefinition(module, 0x02000002, "Fixture.CallOwner");
+        var firstSignature = new MethodCallSignatureShape(
+            declaringType,
+            MethodCallingConventionKind.Default,
+            hasImplicitThis: false,
+            hasExplicitThis: false,
+            genericParameterCount: 0,
+            ImmutableArray.Create(TypeSig.Int32, TypeSig.Int32),
+            TypeSig.Int32);
+        var secondSignature = new MethodCallSignatureShape(
+            TypeSig.CreateTypeDefinition(module, 0x02000002, "Renamed.DiagnosticsOnly"),
+            MethodCallingConventionKind.Default,
+            hasImplicitThis: false,
+            hasExplicitThis: false,
+            genericParameterCount: 0,
+            ImmutableArray.CreateRange(new[] { TypeSig.Int32, TypeSig.Int32 }),
+            TypeSig.Int32);
+        var method = new MethodHandle(module, 0x06000002);
+        var firstTarget = new ResolvedMethodCallTarget(method, firstSignature);
+        var secondTarget = new ResolvedMethodCallTarget(method, secondSignature);
+
+        Assert.Equal(firstSignature, secondSignature);
+        Assert.True(firstSignature == secondSignature);
+        Assert.False(firstSignature != secondSignature);
+        Assert.Equal(firstSignature.GetHashCode(), secondSignature.GetHashCode());
+        Assert.Equal(firstTarget, secondTarget);
+        Assert.Equal(firstTarget.GetHashCode(), secondTarget.GetHashCode());
+        Assert.True(firstTarget.IsManagedIl);
+        Assert.Throws<ArgumentException>(() => new ResolvedMethodCallTarget(
+            new MethodHandle(new ModuleHandle(7, 8), 0x06000002),
+            firstSignature));
+    }
+
+    /// <summary>
+    /// Checks exact contextual MethodDef resolution and correlation with the independently acquired full definition.
+    /// </summary>
+    [Fact]
+    public void DirectMethodResolutionReturnsExactBodyIndependentTarget()
+    {
+        using var module = SrmMetadataModule.LoadFromFile(Assembly.GetExecutingAssembly().Location);
+        var contextToken = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(UniqueFixtureMethod)).Value;
+        var targetToken = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(ExactDirectCallTargetFixture)).Value;
+        var context = module.GetMethodHandle(contextToken).Value;
+
+        var resolved = module.ResolveMethod(context, targetToken);
+
+        Assert.True(resolved.IsSuccess, resolved.Failure?.Code);
+        Assert.Equal(new MethodHandle(module.ModuleHandle, targetToken), resolved.Value.Method);
+        Assert.True(resolved.Value.IsManagedIl);
+        Assert.Equal(MethodCallingConventionKind.Default, resolved.Value.Signature.CallingConvention);
+        Assert.False(resolved.Value.Signature.HasImplicitThis);
+        Assert.False(resolved.Value.Signature.HasExplicitThis);
+        Assert.Equal(0, resolved.Value.Signature.GenericParameterCount);
+        Assert.Equal(new[] { TypeSig.Int32, TypeSig.Int32 }, resolved.Value.Signature.ParameterTypes);
+        Assert.Equal(TypeSig.Int32, resolved.Value.Signature.ReturnType);
+
+        var definition = module.GetMethodDefinition(resolved.Value.Method);
+        Assert.True(definition.IsSuccess, definition.Failure?.Code);
+        Assert.Equal(resolved.Value.Signature, definition.Value.Signature.CallSignature);
+
+        IResolutionServices forwarded = new MetadataResolutionServices(module);
+        var forwardedResult = forwarded.ResolveMethod(context, targetToken);
+        Assert.True(forwardedResult.IsSuccess, forwardedResult.Failure?.Code);
+        Assert.Equal(resolved.Value, forwardedResult.Value);
+    }
+
+    /// <summary>
+    /// Checks stable classifications for forbidden token kinds, nil/out-of-range operands, foreign or generic
+    /// contexts, and valid MethodDefs whose invocation shapes are outside the direct-call profile.
+    /// </summary>
+    [Fact]
+    public void DirectMethodResolutionRejectsInvalidIdentityAndUnsupportedShapeMatrix()
+    {
+        var path = Assembly.GetExecutingAssembly().Location;
+        using var module = SrmMetadataModule.LoadFromFile(path);
+        using var stream = File.OpenRead(path);
+        using var peReader = new PEReader(stream);
+        var metadataReader = peReader.GetMetadataReader();
+        Assert.True(metadataReader.MemberReferences.Count > 0);
+        Assert.True(metadataReader.GetTableRowCount(TableIndex.MethodSpec) > 0);
+
+        var contextToken = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(UniqueFixtureMethod)).Value;
+        var context = module.GetMethodHandle(contextToken).Value;
+        var exactTargetToken = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(ExactDirectCallTargetFixture)).Value;
+
+        AssertFailure(
+            module.ResolveMethod(context, 0x06000000),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_CALL_METHOD_TOKEN");
+        AssertFailure(
+            module.ResolveMethod(context, 0x0A000001),
+            ResolutionFailureKind.Unsupported,
+            "META_CALL_TOKEN_KIND_UNSUPPORTED");
+        AssertFailure(
+            module.ResolveMethod(context, 0x2B000001),
+            ResolutionFailureKind.Unsupported,
+            "META_CALL_TOKEN_KIND_UNSUPPORTED");
+        AssertFailure(
+            module.ResolveMethod(context, 0x0A000000),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_CALL_METHOD_TOKEN");
+        AssertFailure(
+            module.ResolveMethod(context, 0x0AFFFFFF),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_CALL_METHOD_TOKEN");
+        AssertFailure(
+            module.ResolveMethod(context, 0x2B000000),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_CALL_METHOD_TOKEN");
+        AssertFailure(
+            module.ResolveMethod(context, 0x2BFFFFFF),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_CALL_METHOD_TOKEN");
+        AssertFailure(
+            module.ResolveMethod(context, 0x06FFFFFF),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_CALL_METHOD_TOKEN");
+        AssertFailure(
+            module.ResolveMethod(context, 0x04000001),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_CALL_METHOD_TOKEN");
+        AssertFailure(
+            module.ResolveMethod(new MethodHandle(module.ModuleHandle, 0x06FFFFFF), exactTargetToken),
+            ResolutionFailureKind.Invalid,
+            "META_INVALID_CONTEXT_METHOD_TOKEN");
+        AssertFailure(
+            module.ResolveMethod(new MethodHandle(new ModuleHandle(3, 4), contextToken), exactTargetToken),
+            ResolutionFailureKind.Conflict,
+            "META_METHOD_CONTEXT_MODULE_CONFLICT");
+
+        var instanceTarget = module.FindMethodDefinition(
+            nameof(ProjectionFixture),
+            nameof(ProjectionFixture.InstanceMethodWithLocal)).Value;
+        AssertFailure(
+            module.ResolveMethod(context, instanceTarget),
+            ResolutionFailureKind.Unsupported,
+            "META_CALL_TARGET_INSTANCE_UNSUPPORTED");
+
+        AssertFailure(
+            module.ResolveMethod(context, contextToken),
+            ResolutionFailureKind.Unsupported,
+            "META_CALL_TARGET_SIGNATURE_UNSUPPORTED");
+        var voidTarget = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(StaticVoidProjectionFixture)).Value;
+        AssertFailure(
+            module.ResolveMethod(context, voidTarget),
+            ResolutionFailureKind.Unsupported,
+            "META_CALL_TARGET_SIGNATURE_UNSUPPORTED");
+        var optionalTarget = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(OptionalDirectCallTargetFixture)).Value;
+        AssertFailure(
+            module.ResolveMethod(context, optionalTarget),
+            ResolutionFailureKind.Unsupported,
+            "META_OPTIONAL_PARAMETERS_UNSUPPORTED");
+
+        var genericTarget = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(GenericMethodProjectionFixture)).Value;
+        AssertFailure(
+            module.ResolveMethod(context, genericTarget),
+            ResolutionFailureKind.Unsupported,
+            "META_GENERIC_METHOD_UNSUPPORTED");
+        var varArgTarget = module.FindMethodDefinition(
+            nameof(MetadataIdentityTests),
+            nameof(VarArgProjectionFixture)).Value;
+        AssertFailure(
+            module.ResolveMethod(context, varArgTarget),
+            ResolutionFailureKind.Unsupported,
+            "META_VARARGS_METHOD_UNSUPPORTED");
+
+        var genericMethodContext = module.GetMethodHandle(genericTarget).Value;
+        AssertFailure(
+            module.ResolveMethod(genericMethodContext, exactTargetToken),
+            ResolutionFailureKind.Unsupported,
+            "META_GENERIC_METHOD_CONTEXT_UNSUPPORTED");
+        var genericOwnerContextToken = module.FindMethodDefinition(
+            "GenericProjectionFixture`1",
+            nameof(GenericProjectionFixture<int>.Identity)).Value;
+        AssertFailure(
+            module.ResolveMethod(module.GetMethodHandle(genericOwnerContextToken).Value, exactTargetToken),
+            ResolutionFailureKind.Unsupported,
+            "META_GENERIC_METHOD_CONTEXT_UNSUPPORTED");
+    }
+
+    /// <summary>
+    /// Proves that direct-call resolution needs no RVA while both body-free and supplied-body projection reject
+    /// every excluded CLR implementation-flag family rather than admitting it as executable managed IL.
+    /// </summary>
+    [Fact]
+    public void MethodProjectionsRequireManagedIlFlagsAndDirectResolutionNeverRequiresBodyOrRva()
+    {
+        var bodyFree = ProjectSyntheticCallTarget(
+            MethodAttributes.Public | MethodAttributes.Static,
+            MethodImplAttributes.IL | MethodImplAttributes.Managed);
+        Assert.Equal(0, bodyFree.RelativeVirtualAddress);
+        Assert.True(bodyFree.Result.IsSuccess, bodyFree.Result.Failure?.Code);
+        Assert.True(bodyFree.Result.Value.IsManagedIl);
+        Assert.Equal(TypeSig.Int32, bodyFree.Result.Value.Signature.ReturnType);
+        Assert.Equal(2, bodyFree.Result.Value.Signature.ParameterTypes.Length);
+        Assert.True(bodyFree.DefinitionResult.IsSuccess, bodyFree.DefinitionResult.Failure?.Code);
+
+        var excludedFlags = new[]
+        {
+            (
+                MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.PinvokeImpl,
+                MethodImplAttributes.IL | MethodImplAttributes.Managed),
+            (
+                MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.Abstract,
+                MethodImplAttributes.IL | MethodImplAttributes.Managed),
+            (
+                MethodAttributes.Public | MethodAttributes.Static,
+                MethodImplAttributes.IL | MethodImplAttributes.Unmanaged),
+            (
+                MethodAttributes.Public | MethodAttributes.Static,
+                MethodImplAttributes.Native | MethodImplAttributes.Managed),
+            (
+                MethodAttributes.Public | MethodAttributes.Static,
+                MethodImplAttributes.OPTIL | MethodImplAttributes.Managed),
+            (
+                MethodAttributes.Public | MethodAttributes.Static,
+                MethodImplAttributes.Runtime | MethodImplAttributes.Managed),
+            (
+                MethodAttributes.Public | MethodAttributes.Static,
+                MethodImplAttributes.IL | MethodImplAttributes.Managed | MethodImplAttributes.InternalCall),
+            (
+                MethodAttributes.Public | MethodAttributes.Static,
+                MethodImplAttributes.IL | MethodImplAttributes.Managed | MethodImplAttributes.ForwardRef),
+            (
+                MethodAttributes.Public | MethodAttributes.Static,
+                MethodImplAttributes.IL | MethodImplAttributes.Managed | MethodImplAttributes.Synchronized),
+        };
+        foreach (var (attributes, implementationAttributes) in excludedFlags)
+        {
+            var rejected = ProjectSyntheticCallTarget(attributes, implementationAttributes);
+            Assert.Equal(0, rejected.RelativeVirtualAddress);
+            AssertFailure(
+                rejected.Result,
+                ResolutionFailureKind.Unsupported,
+                "META_CALL_TARGET_IMPLEMENTATION_UNSUPPORTED");
+            AssertFailure(
+                rejected.DefinitionResult,
+                ResolutionFailureKind.Unsupported,
+                "META_METHOD_IMPLEMENTATION_UNSUPPORTED");
+        }
     }
 
     /// <summary>
@@ -416,6 +680,7 @@ public sealed class MetadataIdentityTests
             nameof(UniqueFixtureMethod)));
         Assert.Throws<ObjectDisposedException>(() => module.GetMethodHandle(token));
         Assert.Throws<ObjectDisposedException>(() => module.GetMethodDefinition(method));
+        Assert.Throws<ObjectDisposedException>(() => module.ResolveMethod(method, token));
         Assert.Throws<ObjectDisposedException>(() => module.GetMethodBody(method));
         Assert.Throws<ObjectDisposedException>(() => module.ResolveField(method, 0x04000001));
     }
@@ -527,6 +792,10 @@ public sealed class MetadataIdentityTests
     private static int UniqueFixtureMethod() => 42;
 
     private static int OtherFixtureMethod() => 43;
+
+    private static int ExactDirectCallTargetFixture(int left, int right) => unchecked(left + right);
+
+    private static int OptionalDirectCallTargetFixture(int left, int right = 0) => unchecked(left + right);
 
     private static int OverloadedFixture(int value) => value;
 
@@ -684,6 +953,110 @@ public sealed class MetadataIdentityTests
             IlMethodBody.Create(maxStack: 1, [0x16, 0x2A]));
     }
 
+    private static SyntheticCallProjection ProjectSyntheticCallTarget(
+        MethodAttributes targetAttributes,
+        MethodImplAttributes targetImplementationAttributes)
+    {
+        var metadata = new MetadataBuilder();
+        _ = metadata.AddModule(
+            generation: 0,
+            metadata.GetOrAddString("SyntheticCallTarget.dll"),
+            metadata.GetOrAddGuid(new Guid("94000000-0000-0000-0000-000000000001")),
+            encId: default,
+            encBaseId: default);
+        var baseAssembly = metadata.AddAssemblyReference(
+            metadata.GetOrAddString("System.Runtime"),
+            new Version(10, 0, 0, 0),
+            culture: default,
+            publicKeyOrToken: default,
+            (AssemblyFlags)0,
+            hashValue: default);
+        var objectType = metadata.AddTypeReference(
+            baseAssembly,
+            metadata.GetOrAddString("System"),
+            metadata.GetOrAddString("Object"));
+        var firstField = MetadataTokens.FieldDefinitionHandle(1);
+        var firstMethod = MetadataTokens.MethodDefinitionHandle(1);
+        _ = metadata.AddTypeDefinition(
+            TypeAttributes.NotPublic,
+            metadata.GetOrAddString(string.Empty),
+            metadata.GetOrAddString("<Module>"),
+            baseType: default,
+            firstField,
+            firstMethod);
+        _ = metadata.AddTypeDefinition(
+            TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit,
+            metadata.GetOrAddString("Synthetic"),
+            metadata.GetOrAddString("CallOwner"),
+            objectType,
+            firstField,
+            firstMethod);
+
+        var contextSignatureBuilder = new BlobBuilder();
+        new BlobEncoder(contextSignatureBuilder)
+            .MethodSignature(
+                SignatureCallingConvention.Default,
+                genericParameterCount: 0,
+                isInstanceMethod: false)
+            .Parameters(
+                parameterCount: 0,
+                returnType => returnType.Void(),
+                _ => { });
+        var contextDefinition = metadata.AddMethodDefinition(
+            MethodAttributes.Public | MethodAttributes.Static,
+            MethodImplAttributes.IL | MethodImplAttributes.Managed,
+            metadata.GetOrAddString("Context"),
+            metadata.GetOrAddBlob(contextSignatureBuilder),
+            bodyOffset: 0,
+            MetadataTokens.ParameterHandle(1));
+
+        var targetSignatureBuilder = new BlobBuilder();
+        new BlobEncoder(targetSignatureBuilder)
+            .MethodSignature(
+                SignatureCallingConvention.Default,
+                genericParameterCount: 0,
+                isInstanceMethod: false)
+            .Parameters(
+                parameterCount: 2,
+                returnType => returnType.Type(isByRef: false).Int32(),
+                parameters =>
+                {
+                    parameters.AddParameter().Type(isByRef: false).Int32();
+                    parameters.AddParameter().Type(isByRef: false).Int32();
+                });
+        var targetDefinition = metadata.AddMethodDefinition(
+            targetAttributes,
+            targetImplementationAttributes,
+            metadata.GetOrAddString("Target"),
+            metadata.GetOrAddBlob(targetSignatureBuilder),
+            bodyOffset: 0,
+            MetadataTokens.ParameterHandle(1));
+        _ = metadata.AddParameter(
+            ParameterAttributes.None,
+            metadata.GetOrAddString("left"),
+            sequenceNumber: 1);
+        _ = metadata.AddParameter(
+            ParameterAttributes.None,
+            metadata.GetOrAddString("right"),
+            sequenceNumber: 2);
+
+        var metadataImage = new BlobBuilder();
+        new MetadataRootBuilder(metadata).Serialize(metadataImage, methodBodyStreamRva: 0, mappedFieldDataStreamRva: 0);
+        using var provider = MetadataReaderProvider.FromMetadataImage(metadataImage.ToImmutableArray());
+        var reader = provider.GetMetadataReader();
+        var module = new ModuleHandle(0x9400000000000001, 0x9400000000000002);
+        var context = new MethodHandle(module, MetadataTokens.GetToken(contextDefinition));
+        var targetToken = MetadataTokens.GetToken(targetDefinition);
+        return new SyntheticCallProjection(
+            SrmMetadataProjection.ProjectMethodCallTarget(reader, module, context, targetToken),
+            SrmMetadataProjection.ProjectMethodDefinition(
+                reader,
+                module,
+                new MethodHandle(module, targetToken),
+                IlMethodBody.Create(maxStack: 1, [0x16, 0x2A])),
+            reader.GetMethodDefinition(targetDefinition).RelativeVirtualAddress);
+    }
+
     private sealed class ProjectionFixture
     {
         private const int LiteralInt32 = 41;
@@ -739,6 +1112,11 @@ public sealed class MetadataIdentityTests
     {
         internal int Identity(int value) => value;
     }
+
+    private sealed record SyntheticCallProjection(
+        ResolutionResult<ResolvedMethodCallTarget> Result,
+        ResolutionResult<ResolvedMethodDefinition> DefinitionResult,
+        int RelativeVirtualAddress);
 
     private static void PatchUniqueFixtureConstant(string path)
     {

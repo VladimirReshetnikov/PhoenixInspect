@@ -52,68 +52,60 @@ public sealed class MethodSignatureShape : IEquatable<MethodSignatureShape>
         ImmutableArray<TypeSig> parameterTypes,
         TypeSig returnType,
         ImmutableArray<TypeSig> localTypes)
+        : this(
+            new MethodCallSignatureShape(
+                declaringType,
+                callingConvention,
+                hasImplicitThis,
+                hasExplicitThis,
+                genericParameterCount,
+                parameterTypes,
+                returnType),
+            localTypes)
     {
-        ArgumentNullException.ThrowIfNull(declaringType);
-        ArgumentNullException.ThrowIfNull(returnType);
-        if (!declaringType.IsMetadataTypeDefinition)
-        {
-            throw new ArgumentException(
-                "A resolved method declaring type must carry an exact TypeDef identity.",
-                nameof(declaringType));
-        }
+    }
 
-        if (!Enum.IsDefined(callingConvention))
-        {
-            throw new ArgumentOutOfRangeException(nameof(callingConvention));
-        }
+    /// <summary>Creates an immutable activation shape from a body-independent call signature and body locals.</summary>
+    /// <param name="callSignature">The exact metadata-derived signature that does not depend on a method body.</param>
+    /// <param name="localTypes">Ordered local types decoded from the body's StandAloneSig.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="callSignature"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="localTypes"/> is default or contains a null or void type.
+    /// </exception>
+    public MethodSignatureShape(
+        MethodCallSignatureShape callSignature,
+        ImmutableArray<TypeSig> localTypes)
+    {
+        ArgumentNullException.ThrowIfNull(callSignature);
+        MethodCallSignatureShape.ValidateTypes(localTypes, nameof(localTypes));
 
-        if (hasImplicitThis && hasExplicitThis)
-        {
-            throw new ArgumentException(
-                "Implicit-this and explicit-this are mutually exclusive signature facts.",
-                nameof(hasExplicitThis));
-        }
-
-        if (genericParameterCount < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(genericParameterCount),
-                "Generic parameter count cannot be negative.");
-        }
-
-        ValidateTypes(parameterTypes, nameof(parameterTypes), allowVoid: false);
-        ValidateTypes(localTypes, nameof(localTypes), allowVoid: false);
-
-        DeclaringType = declaringType;
-        CallingConvention = callingConvention;
-        HasImplicitThis = hasImplicitThis;
-        HasExplicitThis = hasExplicitThis;
-        GenericParameterCount = genericParameterCount;
-        ParameterTypes = parameterTypes;
-        ReturnType = returnType;
+        CallSignature = callSignature;
         LocalTypes = localTypes;
     }
 
+    /// <summary>Gets the body-independent declaring-type, calling-convention, parameter, and return signature.</summary>
+    public MethodCallSignatureShape CallSignature { get; }
+
     /// <summary>Gets the exact TypeDef that declares the method.</summary>
-    public TypeSig DeclaringType { get; }
+    public TypeSig DeclaringType => CallSignature.DeclaringType;
 
     /// <summary>Gets the decoded managed calling-convention family.</summary>
-    public MethodCallingConventionKind CallingConvention { get; }
+    public MethodCallingConventionKind CallingConvention => CallSignature.CallingConvention;
 
     /// <summary>Gets a value indicating whether activation requires an implicit receiver at argument slot zero.</summary>
-    public bool HasImplicitThis { get; }
+    public bool HasImplicitThis => CallSignature.HasImplicitThis;
 
     /// <summary>Gets a value indicating whether the unsupported explicit-this convention was decoded.</summary>
-    public bool HasExplicitThis { get; }
+    public bool HasExplicitThis => CallSignature.HasExplicitThis;
 
     /// <summary>Gets the decoded generic arity retained for admission.</summary>
-    public int GenericParameterCount { get; }
+    public int GenericParameterCount => CallSignature.GenericParameterCount;
 
     /// <summary>Gets ordered explicit parameter types, excluding any implicit receiver.</summary>
-    public ImmutableArray<TypeSig> ParameterTypes { get; }
+    public ImmutableArray<TypeSig> ParameterTypes => CallSignature.ParameterTypes;
 
     /// <summary>Gets the exact return type, including explicit <see cref="TypeSig.Void"/>.</summary>
-    public TypeSig ReturnType { get; }
+    public TypeSig ReturnType => CallSignature.ReturnType;
 
     /// <summary>Gets ordered local types decoded from the body's StandAloneSig.</summary>
     public ImmutableArray<TypeSig> LocalTypes { get; }
@@ -122,13 +114,7 @@ public sealed class MethodSignatureShape : IEquatable<MethodSignatureShape>
     public bool Equals(MethodSignatureShape? other) =>
         ReferenceEquals(this, other) ||
         other is not null &&
-        DeclaringType == other.DeclaringType &&
-        CallingConvention == other.CallingConvention &&
-        HasImplicitThis == other.HasImplicitThis &&
-        HasExplicitThis == other.HasExplicitThis &&
-        GenericParameterCount == other.GenericParameterCount &&
-        ParameterTypes.SequenceEqual(other.ParameterTypes) &&
-        ReturnType == other.ReturnType &&
+        CallSignature == other.CallSignature &&
         LocalTypes.SequenceEqual(other.LocalTypes);
 
     /// <inheritdoc />
@@ -137,44 +123,13 @@ public sealed class MethodSignatureShape : IEquatable<MethodSignatureShape>
     /// <inheritdoc />
     public override int GetHashCode()
     {
-        var hash = DeclaringType.GetHashCode();
-        hash = unchecked((hash * 397) ^ (int)CallingConvention);
-        hash = unchecked((hash * 397) ^ (HasImplicitThis ? 1 : 0));
-        hash = unchecked((hash * 397) ^ (HasExplicitThis ? 1 : 0));
-        hash = unchecked((hash * 397) ^ GenericParameterCount);
-        foreach (var parameter in ParameterTypes)
-        {
-            hash = unchecked((hash * 397) ^ parameter.GetHashCode());
-        }
-
-        hash = unchecked((hash * 397) ^ ReturnType.GetHashCode());
+        var hash = CallSignature.GetHashCode();
         foreach (var local in LocalTypes)
         {
             hash = unchecked((hash * 397) ^ local.GetHashCode());
         }
 
         return hash;
-    }
-
-    private static void ValidateTypes(ImmutableArray<TypeSig> types, string parameterName, bool allowVoid)
-    {
-        if (types.IsDefault)
-        {
-            throw new ArgumentException("A resolved signature type vector cannot be default.", parameterName);
-        }
-
-        foreach (var type in types)
-        {
-            if (type is null)
-            {
-                throw new ArgumentException("A resolved signature type vector cannot contain null.", parameterName);
-            }
-
-            if (!allowVoid && type.Kind == TypeSigKind.Void)
-            {
-                throw new ArgumentException("Parameters and locals cannot have the void type.", parameterName);
-            }
-        }
     }
 }
 
