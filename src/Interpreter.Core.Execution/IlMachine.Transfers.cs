@@ -132,7 +132,7 @@ public sealed partial class IlMachine<TValue, TMemory>
             instruction.Operand,
             frame.Method,
             frame.IlOffset,
-            requireExactInt32: false);
+            ValuePrecisionRequirement.Executable);
         if (failure is not null)
         {
             return Failed(state, operationalState, MachineRunStatus.InvalidProgram, failure);
@@ -177,7 +177,7 @@ public sealed partial class IlMachine<TValue, TMemory>
             0,
             frame.Method,
             frame.IlOffset,
-            requireExactInt32: false);
+            ValuePrecisionRequirement.Executable);
         if (failure is not null)
         {
             return Failed(state, operationalState, MachineRunStatus.InvalidProgram, failure);
@@ -267,7 +267,7 @@ public sealed partial class IlMachine<TValue, TMemory>
                     0,
                     frame.Method,
                     frame.IlOffset,
-                    requireExactInt32: true);
+                    ValuePrecisionRequirement.Exact);
                 if (failure is not null)
                 {
                     return Failed(state, operationalState, MachineRunStatus.InvalidProgram, failure);
@@ -384,7 +384,7 @@ public sealed partial class IlMachine<TValue, TMemory>
             0,
             frame.Method,
             frame.IlOffset,
-            requireExactInt32: false);
+            ValuePrecisionRequirement.Executable);
         if (failure is not null)
         {
             return Failed(state, operationalState, MachineRunStatus.InvalidProgram, failure);

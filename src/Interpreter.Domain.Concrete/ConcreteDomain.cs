@@ -188,6 +188,11 @@ public sealed class ConcreteDomain : IValueDomain<ConcreteValue>
     /// <inheritdoc />
     public ConcreteValue ApplyBinary(BinaryOp op, ConcreteValue a, ConcreteValue b)
     {
+        if (!Enum.IsDefined(op))
+        {
+            throw new ArgumentOutOfRangeException(nameof(op));
+        }
+
         EnsureSameType(a, b);
         if (a.Kind == ConcreteValueKind.Bottom || b.Kind == ConcreteValueKind.Bottom)
         {

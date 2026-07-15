@@ -836,6 +836,31 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
         Assert.Equal(EvaluationEvidenceStatus.Unavailable, missingObservation.Evidence);
         Assert.Equal("DUMP_ARTIFACT_UNAVAILABLE", Assert.Single(missingObservation.Diagnostics).Code);
 
+        var malformedPath = Path.Combine(Path.GetTempPath(), $"malformed-dump-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            File.WriteAllBytes(malformedPath, "not a process dump"u8.ToArray());
+            var malformed = ClrmdDumpSession.Open(malformedPath);
+            Assert.Equal(ClrmdEvidenceStatus.Invalid, malformed.Status);
+            Assert.Equal(ClrmdValueIssue.ArtifactInvalid, malformed.Issue);
+            Assert.False(malformed.HasValue);
+            var malformedObservation = malformed.ToObservationResult();
+            Assert.Equal(EvaluationCompleteness.None, malformedObservation.Completeness);
+            Assert.Equal(EvaluationEvidenceStatus.Invalid, malformedObservation.Evidence);
+            Assert.Equal("DUMP_ARTIFACT_INVALID", Assert.Single(malformedObservation.Diagnostics).Code);
+        }
+        finally
+        {
+            File.Delete(malformedPath);
+        }
+    }
+
+    /// <summary>Verifies that a resource-exhausting external dump is rejected before loading.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    [Trait("Scope", "Cybersecurity")]
+    public void External_dump_open_rejects_oversized_artifact_before_loading()
+    {
         var oversizedPath = Path.Combine(Path.GetTempPath(), $"oversized-dump-{Guid.NewGuid():N}.dmp");
         try
         {
@@ -853,24 +878,6 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
         finally
         {
             File.Delete(oversizedPath);
-        }
-
-        var malformedPath = Path.Combine(Path.GetTempPath(), $"malformed-dump-{Guid.NewGuid():N}.dmp");
-        try
-        {
-            File.WriteAllBytes(malformedPath, "not a process dump"u8.ToArray());
-            var malformed = ClrmdDumpSession.Open(malformedPath);
-            Assert.Equal(ClrmdEvidenceStatus.Invalid, malformed.Status);
-            Assert.Equal(ClrmdValueIssue.ArtifactInvalid, malformed.Issue);
-            Assert.False(malformed.HasValue);
-            var malformedObservation = malformed.ToObservationResult();
-            Assert.Equal(EvaluationCompleteness.None, malformedObservation.Completeness);
-            Assert.Equal(EvaluationEvidenceStatus.Invalid, malformedObservation.Evidence);
-            Assert.Equal("DUMP_ARTIFACT_INVALID", Assert.Single(malformedObservation.Diagnostics).Code);
-        }
-        finally
-        {
-            File.Delete(malformedPath);
         }
     }
 

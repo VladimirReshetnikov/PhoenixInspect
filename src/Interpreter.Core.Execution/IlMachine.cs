@@ -25,6 +25,7 @@ public sealed partial class IlMachine<TValue, TMemory>
     private readonly IResolutionServices _resolver;
     private readonly IMemoryModel<TValue, TMemory> _memoryModel;
     private readonly IBudgetPolicy _budgetPolicy;
+    private readonly UnknownExecutionPolicy _unknownExecutionPolicy;
     private readonly object _sessionGate = new();
     private MethodHandle? _sessionMethod;
     private Lazy<PlanPreparationResult>? _sessionPlan;
@@ -36,16 +37,29 @@ public sealed partial class IlMachine<TValue, TMemory>
     /// <param name="resolver">The atomic method-definition and contextual field resolver.</param>
     /// <param name="memoryModel">The persistent memory capability invoked by admitted memory instructions.</param>
     /// <param name="budgetPolicy">The deterministic instruction-consumption policy.</param>
+    /// <param name="unknownExecutionPolicy">
+    /// Whether validated explanatory <see cref="int"/> unknowns may enter and remain in executable state.
+    /// </param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="unknownExecutionPolicy"/> is undefined.
+    /// </exception>
     public IlMachine(
         IValueDomain<TValue> domain,
         IResolutionServices resolver,
         IMemoryModel<TValue, TMemory> memoryModel,
-        IBudgetPolicy budgetPolicy)
+        IBudgetPolicy budgetPolicy,
+        UnknownExecutionPolicy unknownExecutionPolicy = UnknownExecutionPolicy.ExactOnly)
     {
+        if (!Enum.IsDefined(unknownExecutionPolicy))
+        {
+            throw new ArgumentOutOfRangeException(nameof(unknownExecutionPolicy));
+        }
+
         _domain = domain ?? throw new ArgumentNullException(nameof(domain));
         _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
         _memoryModel = memoryModel ?? throw new ArgumentNullException(nameof(memoryModel));
         _budgetPolicy = budgetPolicy ?? throw new ArgumentNullException(nameof(budgetPolicy));
+        _unknownExecutionPolicy = unknownExecutionPolicy;
     }
 
     /// <summary>
@@ -139,7 +153,9 @@ public sealed partial class IlMachine<TValue, TMemory>
                     index,
                     method,
                     0,
-                    requireExactInt32: true);
+                    plan.Definition.Signature.HasImplicitThis && index == 0
+                        ? ValuePrecisionRequirement.Exact
+                        : ValuePrecisionRequirement.Executable);
                 if (failure is not null)
                 {
                     return new MachineActivationResult<TValue, TMemory>(
@@ -161,7 +177,7 @@ public sealed partial class IlMachine<TValue, TMemory>
                     index,
                     method,
                     0,
-                    requireExactInt32: true);
+                    ValuePrecisionRequirement.Exact);
                 if (failure is not null)
                 {
                     return new MachineActivationResult<TValue, TMemory>(
@@ -354,21 +370,6 @@ public sealed partial class IlMachine<TValue, TMemory>
         }
 
         var plan = prepared.Plan!;
-        if (frame.Arguments.Length != plan.ArgumentTypes.Length ||
-            frame.Locals.Length != plan.Definition.Signature.LocalTypes.Length)
-        {
-            return Failed(
-                state,
-                operationalState,
-                MachineRunStatus.InvalidProgram,
-                new ExecutionFailure(
-                    ExecutionFailureKind.InvalidSlot,
-                    "EXEC_FRAME_SHAPE_MISMATCH",
-                    "Frame argument or local count disagrees with the frozen metadata shape.",
-                    frame.Method,
-                    frame.IlOffset));
-        }
-
         if (!plan.TryGetInstruction(frame.IlOffset, out var instruction) ||
             !plan.TryGetBoundary(frame.IlOffset, out var boundary))
         {
@@ -380,6 +381,47 @@ public sealed partial class IlMachine<TValue, TMemory>
                     ExecutionFailureKind.InvalidInstruction,
                     "EXEC_INVALID_INSTRUCTION_OFFSET",
                     "The current IL offset is not an instruction boundary in the frozen plan.",
+                    frame.Method,
+                    frame.IlOffset));
+        }
+
+        var updatedBudget = operationalState.Budget;
+        try
+        {
+            if (!_budgetPolicy.TryConsumeInstruction(ref updatedBudget, 1))
+            {
+                return new StepOutcome<TValue, TMemory>(
+                    state,
+                    operationalState,
+                    MachineRunStatus.BudgetExhausted,
+                    ImmutableArray<DebugEvent>.Empty);
+            }
+        }
+        catch (Exception exception) when (IsCapabilityException(exception))
+        {
+            return Failed(
+                state,
+                operationalState,
+                MachineRunStatus.InvalidProgram,
+                new ExecutionFailure(
+                    ExecutionFailureKind.ResourceLimit,
+                    "EXEC_BUDGET_POLICY_FAILURE",
+                    "The budget policy rejected instruction-consumption bookkeeping.",
+                    frame.Method,
+                    frame.IlOffset));
+        }
+
+        if (frame.Arguments.Length != plan.ArgumentTypes.Length ||
+            frame.Locals.Length != plan.Definition.Signature.LocalTypes.Length)
+        {
+            return Failed(
+                state,
+                operationalState,
+                MachineRunStatus.InvalidProgram,
+                new ExecutionFailure(
+                    ExecutionFailureKind.InvalidSlot,
+                    "EXEC_FRAME_SHAPE_MISMATCH",
+                    "Frame argument or local count disagrees with the frozen metadata shape.",
                     frame.Method,
                     frame.IlOffset));
         }
@@ -420,32 +462,6 @@ public sealed partial class IlMachine<TValue, TMemory>
         if (shapeFailure is not null)
         {
             return Failed(state, operationalState, MachineRunStatus.InvalidProgram, shapeFailure);
-        }
-
-        var updatedBudget = operationalState.Budget;
-        try
-        {
-            if (!_budgetPolicy.TryConsumeInstruction(ref updatedBudget, 1))
-            {
-                return new StepOutcome<TValue, TMemory>(
-                    state,
-                    operationalState,
-                    MachineRunStatus.BudgetExhausted,
-                    ImmutableArray<DebugEvent>.Empty);
-            }
-        }
-        catch (Exception exception) when (IsCapabilityException(exception))
-        {
-            return Failed(
-                state,
-                operationalState,
-                MachineRunStatus.InvalidProgram,
-                new ExecutionFailure(
-                    ExecutionFailureKind.ResourceLimit,
-                    "EXEC_BUDGET_POLICY_FAILURE",
-                    "The budget policy rejected instruction-consumption bookkeeping.",
-                    frame.Method,
-                    frame.IlOffset));
         }
 
         try
@@ -564,7 +580,9 @@ public sealed partial class IlMachine<TValue, TMemory>
                 index,
                 frame.Method,
                 frame.IlOffset,
-                requireExactInt32: false);
+                plan.Definition.Signature.HasImplicitThis && index == 0
+                    ? ValuePrecisionRequirement.Exact
+                    : ValuePrecisionRequirement.Executable);
             if (failure is not null)
             {
                 return failure;
@@ -580,7 +598,7 @@ public sealed partial class IlMachine<TValue, TMemory>
                 index,
                 frame.Method,
                 frame.IlOffset,
-                requireExactInt32: false);
+                ValuePrecisionRequirement.Executable);
             if (failure is not null)
             {
                 return failure;
@@ -596,7 +614,7 @@ public sealed partial class IlMachine<TValue, TMemory>
                 index,
                 frame.Method,
                 frame.IlOffset,
-                requireExactInt32: false);
+                ValuePrecisionRequirement.Executable);
             if (failure is not null)
             {
                 return failure;
@@ -613,7 +631,7 @@ public sealed partial class IlMachine<TValue, TMemory>
         int index,
         MethodHandle method,
         int ilOffset,
-        bool requireExactInt32)
+        ValuePrecisionRequirement precisionRequirement)
     {
         if (value is null)
         {
@@ -637,7 +655,40 @@ public sealed partial class IlMachine<TValue, TMemory>
             return InvalidValue("EXEC_VALUE_STACK_KIND_MISMATCH", "does not match the metadata-projected stack category");
         }
 
-        if (requireExactInt32 && Equals(expectedType, TypeSig.Int32) && !_domain.TryGetConstInt32(value, out _))
+        if (_domain is IValuePrecisionDomain<TValue> precisionDomain)
+        {
+            var precision = precisionDomain.GetPrecision(value);
+            if (!Enum.IsDefined(precision))
+            {
+                return InvalidValue(
+                    "EXEC_VALUE_PRECISION_INVALID",
+                    "has an undefined value-precision classification");
+            }
+
+            if (precision == ValuePrecisionKind.UnexplainedUnknown)
+            {
+                return InvalidValue(
+                    "EXEC_UNEXPLAINED_UNKNOWN",
+                    "is semantic top without a validated explanatory lineage root");
+            }
+
+            if (precision == ValuePrecisionKind.ExplainedUnknown &&
+                (precisionRequirement == ValuePrecisionRequirement.Exact ||
+                 _unknownExecutionPolicy != UnknownExecutionPolicy.ExplainedInt32))
+            {
+                return InvalidValue(
+                    "EXEC_NON_EXACT_ARGUMENT",
+                    "is not exact at a boundary configured for exact execution");
+            }
+
+            if (precision == ValuePrecisionKind.ExplainedUnknown && !Equals(expectedType, TypeSig.Int32))
+            {
+                return InvalidValue(
+                    "EXEC_UNKNOWN_TYPE_UNSUPPORTED",
+                    "is an explained unknown outside the admitted Int32 execution profile");
+            }
+        }
+        else if (Equals(expectedType, TypeSig.Int32) && !_domain.TryGetConstInt32(value, out _))
         {
             return InvalidValue("EXEC_NON_EXACT_ARGUMENT", "is not an exact Int32 value required by concrete activation");
         }
@@ -726,4 +777,10 @@ public sealed partial class IlMachine<TValue, TMemory>
 
     private static bool IsCapabilityException(Exception exception) =>
         exception is not OutOfMemoryException and not StackOverflowException;
+
+    private enum ValuePrecisionRequirement
+    {
+        Executable,
+        Exact,
+    }
 }
