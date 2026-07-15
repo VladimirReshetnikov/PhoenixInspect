@@ -95,6 +95,20 @@ internal static class ProvenanceLineageCodec
             bytes);
     }
 
+    internal static ModeledReturnTransformLineageNode CreateModeledReturnTransform(
+        DirectCallSiteIdentity callSite,
+        PureCallModelIdentity modelIdentity,
+        ImmutableArray<LineageOperand> arguments)
+    {
+        var bytes = EncodeModeledReturn(callSite, modelIdentity, arguments);
+        return new ModeledReturnTransformLineageNode(
+            LineageNodeId.Hash(bytes.AsSpan()),
+            callSite,
+            modelIdentity,
+            arguments,
+            bytes);
+    }
+
     internal static bool IsCanonical(LineageNode node)
     {
         ArgumentNullException.ThrowIfNull(node);
@@ -117,6 +131,10 @@ internal static class ProvenanceLineageCodec
             InterpretedReturnTransformLineageNode interpretedReturn => EncodeInterpretedReturn(
                 interpretedReturn.CallSite,
                 interpretedReturn.Predecessor),
+            ModeledReturnTransformLineageNode modeledReturn => EncodeModeledReturn(
+                modeledReturn.CallSite,
+                modeledReturn.ModelIdentity,
+                modeledReturn.Arguments),
             _ => ImmutableArray<byte>.Empty,
         };
         return !encoded.IsDefaultOrEmpty &&
@@ -262,6 +280,77 @@ internal static class ProvenanceLineageCodec
         return writer.ToImmutableArray();
     }
 
+    private static ImmutableArray<byte> EncodeModeledReturn(
+        DirectCallSiteIdentity callSite,
+        PureCallModelIdentity modelIdentity,
+        ImmutableArray<LineageOperand> arguments)
+    {
+        ValidateModelIdentity(modelIdentity);
+
+        if (arguments.IsDefault ||
+            arguments.Length != 2 ||
+            arguments.Any(static argument => argument is null || !argument.HasValidShape))
+        {
+            throw new ArgumentException(
+                "A modeled-return transform requires exactly two valid ordered Int32 operands.",
+                nameof(arguments));
+        }
+
+        if (!arguments.Any(static argument => argument.Kind == LineageOperandKind.Unknown))
+        {
+            throw new ArgumentException(
+                "A modeled unknown return must be grounded in at least one unknown argument.",
+                nameof(arguments));
+        }
+
+        var writer = StartNode(LineageNodeKind.ModeledReturnTransform);
+        WriteType(writer, TypeSig.Int32, 0);
+        WriteCallSite(writer, callSite);
+        writer.WriteString(modelIdentity.StableId);
+        writer.WriteInt32(modelIdentity.Version.Major);
+        writer.WriteInt32(modelIdentity.Version.Minor);
+        writer.WriteInt32(modelIdentity.Version.Patch);
+        writer.WriteInt32(arguments.Length);
+        foreach (var argument in arguments)
+        {
+            WriteOperand(writer, argument);
+        }
+
+        return writer.ToImmutableArray();
+    }
+
+    private static void ValidateModelIdentity(PureCallModelIdentity modelIdentity)
+    {
+        if (modelIdentity.StableId is null)
+        {
+            throw new ArgumentException(
+                "A modeled-return transform requires a non-default model identity.",
+                nameof(modelIdentity));
+        }
+
+        try
+        {
+            var version = new PureCallModelVersion(
+                modelIdentity.Version.Major,
+                modelIdentity.Version.Minor,
+                modelIdentity.Version.Patch);
+            var reconstructed = new PureCallModelIdentity(modelIdentity.StableId, version);
+            if (reconstructed != modelIdentity)
+            {
+                throw new ArgumentException(
+                    "A modeled-return transform requires one canonical model identity.",
+                    nameof(modelIdentity));
+            }
+        }
+        catch (ArgumentException exception) when (exception.ParamName != nameof(modelIdentity))
+        {
+            throw new ArgumentException(
+                "A modeled-return transform requires one canonical model identity.",
+                nameof(modelIdentity),
+                exception);
+        }
+    }
+
     private static CanonicalWriter StartNode(LineageNodeKind kind)
     {
         var writer = new CanonicalWriter();
@@ -350,6 +439,7 @@ internal static class ProvenanceLineageCodec
         LineageNodeKind.FieldLoadTransform => 3,
         LineageNodeKind.CallArgumentTransform => 4,
         LineageNodeKind.InterpretedReturnTransform => 5,
+        LineageNodeKind.ModeledReturnTransform => 6,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 

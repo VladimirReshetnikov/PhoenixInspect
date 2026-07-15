@@ -3,7 +3,7 @@ using Interpreter.Core.Abstractions;
 
 namespace Interpreter.Domain.Concrete;
 
-/// <summary>Represents one ordered operand of an unknown arithmetic transformation.</summary>
+/// <summary>Represents one ordered exact or unknown operand embedded in a lineage transformation.</summary>
 public sealed record LineageOperand
 {
     private LineageOperand(
@@ -44,6 +44,13 @@ public sealed record LineageOperand
 
         return new LineageOperand(LineageOperandKind.Unknown, null, predecessor);
     }
+
+    internal bool HasValidShape => Kind switch
+    {
+        LineageOperandKind.ExactInt32 => ExactInt32.HasValue && Predecessor is null,
+        LineageOperandKind.Unknown => ExactInt32 is null && Predecessor is { } predecessor && predecessor.IsValid,
+        _ => false,
+    };
 }
 
 /// <summary>Represents one immutable, content-addressed node in an explained-unknown lineage DAG.</summary>
@@ -240,7 +247,7 @@ public sealed class FieldLoadTransformLineageNode : LineageNode
 }
 
 /// <summary>
-/// Represents one explained <c>Int32</c> crossing into a metadata-ordered parameter of an interpreted direct call.
+/// Represents one explained <c>Int32</c> crossing into a metadata-ordered parameter of an admitted direct call.
 /// </summary>
 /// <remarks>
 /// The exact caller MethodDef, call IL offset, callee MethodDef, and zero-based parameter index are identity-bearing.
@@ -267,7 +274,7 @@ public sealed class CallArgumentTransformLineageNode : LineageNode
         {
             throw new ArgumentOutOfRangeException(
                 nameof(parameterIndex),
-                "The closed W4.5 call profile requires metadata parameter index zero or one.");
+                "The closed W4 call profile requires metadata parameter index zero or one.");
         }
 
         if (!predecessor.IsValid)
@@ -282,7 +289,7 @@ public sealed class CallArgumentTransformLineageNode : LineageNode
         Predecessor = predecessor;
     }
 
-    /// <summary>Gets the exact caller, call IL offset, and interpreted callee identity.</summary>
+    /// <summary>Gets the exact caller, call IL offset, and admitted direct-call target identity.</summary>
     public DirectCallSiteIdentity CallSite { get; }
 
     /// <summary>Gets the zero-based metadata parameter index assigned to the transformed argument.</summary>
@@ -355,4 +362,92 @@ public sealed class InterpretedReturnTransformLineageNode : LineageNode
 
     /// <summary>Gets the callee-side explanation that existed before the result crossed the return boundary.</summary>
     public LineageNodeId Predecessor { get; }
+}
+
+/// <summary>
+/// Represents one explained <c>Int32</c> returned by a versioned pure model over an admitted direct call.
+/// </summary>
+/// <remarks>
+/// The node retains the complete direct-call identity, stable model identity and semantic version, and exactly two
+/// metadata-ordered argument operands. Exact arguments are embedded directly. Each unknown argument refers to its
+/// parameter-indexed <see cref="CallArgumentTransformLineageNode"/> created at the same modeled boundary. At least
+/// one argument must be unknown, so the modeled result remains grounded in admitted input lineage.
+/// </remarks>
+public sealed class ModeledReturnTransformLineageNode : LineageNode
+{
+    internal ModeledReturnTransformLineageNode(
+        LineageNodeId id,
+        DirectCallSiteIdentity callSite,
+        PureCallModelIdentity modelIdentity,
+        ImmutableArray<LineageOperand> arguments,
+        ImmutableArray<byte> canonicalBytes)
+        : base(
+            id,
+            LineageNodeKind.ModeledReturnTransform,
+            TypeSig.Int32,
+            GetDependencies(arguments),
+            canonicalBytes)
+    {
+        if (callSite.Caller == default ||
+            callSite.Callee == default ||
+            callSite.CallIlOffset < 0 ||
+            callSite.Caller.Module != callSite.Callee.Module)
+        {
+            throw new ArgumentException(
+                "A modeled-return lineage transform requires one valid same-module direct-call identity.",
+                nameof(callSite));
+        }
+
+        if (modelIdentity.StableId is null)
+        {
+            throw new ArgumentException(
+                "A modeled-return lineage transform requires a non-default model identity.",
+                nameof(modelIdentity));
+        }
+
+        CallSite = callSite;
+        ModelIdentity = modelIdentity;
+        Arguments = ImmutableArray.CreateRange(arguments.AsSpan().ToArray());
+    }
+
+    /// <summary>Gets the exact caller, call IL offset, and body-free modeled target identity.</summary>
+    public DirectCallSiteIdentity CallSite { get; }
+
+    /// <summary>Gets the stable model identifier and exact semantic version selected during preparation.</summary>
+    public PureCallModelIdentity ModelIdentity { get; }
+
+    /// <summary>
+    /// Gets the complete metadata-ordered two-argument vector, embedding exact integers and identifying unknowns.
+    /// </summary>
+    public ImmutableArray<LineageOperand> Arguments { get; }
+
+    private static ImmutableArray<LineageNodeId> GetDependencies(ImmutableArray<LineageOperand> arguments)
+    {
+        if (arguments.IsDefault ||
+            arguments.Length != 2 ||
+            arguments.Any(static argument => argument is null || !argument.HasValidShape))
+        {
+            throw new ArgumentException(
+                "A modeled-return lineage transform requires exactly two valid ordered Int32 operands.",
+                nameof(arguments));
+        }
+
+        var dependencies = ImmutableArray.CreateBuilder<LineageNodeId>(2);
+        foreach (var argument in arguments)
+        {
+            if (argument.Predecessor is { } predecessor)
+            {
+                dependencies.Add(predecessor);
+            }
+        }
+
+        if (dependencies.Count == 0)
+        {
+            throw new ArgumentException(
+                "A modeled unknown return must be grounded in at least one unknown argument.",
+                nameof(arguments));
+        }
+
+        return dependencies.ToImmutable();
+    }
 }

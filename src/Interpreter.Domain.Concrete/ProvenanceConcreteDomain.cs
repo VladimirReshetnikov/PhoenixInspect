@@ -4,7 +4,7 @@ using Interpreter.Core.Abstractions;
 namespace Interpreter.Domain.Concrete;
 
 /// <summary>
-/// Implements the W4.2–W4.5 lifted-flat concrete semantics with a separate content-addressed explanation channel.
+/// Implements the W4.2–W4.6 lifted-flat concrete semantics with a separate content-addressed explanation channel.
 /// </summary>
 /// <remarks>
 /// Semantic operations delegate to <see cref="ConcreteDomain"/>. Lineage never participates in value equality,
@@ -13,12 +13,14 @@ namespace Interpreter.Domain.Concrete;
 /// ungrounded and is rejected by execution through <see cref="IValuePrecisionDomain{TValue}"/>.
 /// W4.3 field approximation atomically introduces an imported-field origin and field-load transform. W4.5 interpreted
 /// calls atomically wrap the complete two-argument batch by metadata parameter index and wrap an explained callee
-/// result at return, while exact values cross either boundary unchanged.
+/// result at return, while exact values cross either boundary unchanged. W4.6 pure-model unknowns atomically retain
+/// those admitted argument transforms and one modeled-return transform without exposing lineage to the model.
 /// </remarks>
 public sealed class ProvenanceConcreteDomain :
     IValuePrecisionDomain<ProvenanceConcreteValue>,
     IFieldLoadApproximationDomain<ProvenanceConcreteValue>,
-    IInterpretedCallLineageDomain<ProvenanceConcreteValue>
+    IInterpretedCallLineageDomain<ProvenanceConcreteValue>,
+    IPureCallModelLineageDomain<ProvenanceConcreteValue>
 {
     private readonly ConcreteDomain semanticDomain = new();
     private readonly object lineageGate = new();
@@ -180,7 +182,7 @@ public sealed class ProvenanceConcreteDomain :
         var transformedPositions = ImmutableArray.CreateBuilder<int>();
         for (var parameterIndex = 0; parameterIndex < arguments.Length; parameterIndex++)
         {
-            var predecessor = PreflightCallBoundaryValue(arguments[parameterIndex], nameof(arguments));
+            var predecessor = PreflightDirectCallBoundaryValue(arguments[parameterIndex], nameof(arguments));
             if (predecessor is not { } root)
             {
                 continue;
@@ -223,7 +225,7 @@ public sealed class ProvenanceConcreteDomain :
         ProvenanceConcreteValue returnedValue)
     {
         ValidateCallSite(callSite);
-        var predecessor = PreflightCallBoundaryValue(returnedValue, nameof(returnedValue));
+        var predecessor = PreflightDirectCallBoundaryValue(returnedValue, nameof(returnedValue));
         if (predecessor is not { } root)
         {
             return returnedValue;
@@ -237,6 +239,98 @@ public sealed class ProvenanceConcreteDomain :
         }
 
         return new ProvenanceConcreteValue(returnedValue.SemanticValue, interpretedReturn.Id);
+    }
+
+    /// <inheritdoc />
+    public ProvenanceConcreteValue CreateModeledReturnUnknown(
+        DirectCallSiteIdentity callSite,
+        PureCallModelIdentity modelIdentity,
+        ImmutableArray<ProvenanceConcreteValue> arguments)
+    {
+        ValidateCallSite(callSite);
+        if (modelIdentity.StableId is null)
+        {
+            throw new ArgumentException(
+                "Modeled-return lineage requires a non-default model identity.",
+                nameof(modelIdentity));
+        }
+
+        if (arguments.IsDefault)
+        {
+            throw new ArgumentException(
+                "A modeled-call argument vector must be initialized.",
+                nameof(arguments));
+        }
+
+        if (arguments.Length != 2)
+        {
+            throw new ArgumentException(
+                "The closed W4 modeled-call profile requires exactly two metadata-ordered arguments.",
+                nameof(arguments));
+        }
+
+        var predecessors = new LineageNodeId?[arguments.Length];
+        var exactValues = new int?[arguments.Length];
+        var unknownCount = 0;
+        for (var parameterIndex = 0; parameterIndex < arguments.Length; parameterIndex++)
+        {
+            var predecessor = PreflightDirectCallBoundaryValue(arguments[parameterIndex], nameof(arguments));
+            predecessors[parameterIndex] = predecessor;
+            if (predecessor.HasValue)
+            {
+                unknownCount++;
+                continue;
+            }
+
+            if (!semanticDomain.TryGetConstInt32(arguments[parameterIndex].SemanticValue, out var exact))
+            {
+                throw new ArgumentException(
+                    "An exact modeled-call argument must contain one signed 32-bit integer.",
+                    nameof(arguments));
+            }
+
+            exactValues[parameterIndex] = exact;
+        }
+
+        if (unknownCount == 0)
+        {
+            throw new ArgumentException(
+                "A modeled unknown return must be grounded in at least one explained-unknown argument.",
+                nameof(arguments));
+        }
+
+        var candidates = ImmutableArray.CreateBuilder<LineageNode>(unknownCount + 1);
+        var operands = ImmutableArray.CreateBuilder<LineageOperand>(arguments.Length);
+        for (var parameterIndex = 0; parameterIndex < arguments.Length; parameterIndex++)
+        {
+            if (predecessors[parameterIndex] is { } predecessor)
+            {
+                var callArgument = ProvenanceLineageCodec.CreateCallArgumentTransform(
+                    callSite,
+                    parameterIndex,
+                    predecessor);
+                candidates.Add(callArgument);
+                operands.Add(LineageOperand.FromUnknown(callArgument.Id));
+                continue;
+            }
+
+            operands.Add(LineageOperand.FromExactInt32(exactValues[parameterIndex]!.Value));
+        }
+
+        var modeledReturn = ProvenanceLineageCodec.CreateModeledReturnTransform(
+            callSite,
+            modelIdentity,
+            operands.MoveToImmutable());
+        candidates.Add(modeledReturn);
+
+        var interned = InternBatch(candidates.MoveToImmutable());
+        if (interned[^1] is not ModeledReturnTransformLineageNode canonicalReturn)
+        {
+            throw new InvalidOperationException(
+                "A canonical modeled-return identity is bound to an incompatible node kind.");
+        }
+
+        return new ProvenanceConcreteValue(semanticDomain.Top(TypeSig.Int32), canonicalReturn.Id);
     }
 
     /// <inheritdoc />
@@ -529,14 +623,16 @@ public sealed class ProvenanceConcreteDomain :
             {
                 foreach (var dependency in candidate.Dependencies)
                 {
-                    if (!lineageNodes.ContainsKey(dependency))
+                    if (!lineageNodes.ContainsKey(dependency) && !candidatesById.ContainsKey(dependency))
                     {
                         throw new ArgumentException(
-                            "A lineage batch refers to a predecessor not interned in this domain.",
+                            "A lineage batch refers to a predecessor absent from both the domain and the atomic batch.",
                             nameof(candidates));
                     }
                 }
             }
+
+            ValidateCandidateAcyclicity(candidatesById, nameof(candidates));
 
             var interned = ImmutableArray.CreateBuilder<LineageNode>(candidates.Length);
             foreach (var candidate in candidates)
@@ -552,6 +648,67 @@ public sealed class ProvenanceConcreteDomain :
             }
 
             return interned.MoveToImmutable();
+        }
+    }
+
+    private static void ValidateCandidateAcyclicity(
+        IReadOnlyDictionary<LineageNodeId, LineageNode> candidatesById,
+        string parameterName)
+    {
+        var colors = new Dictionary<LineageNodeId, byte>(candidatesById.Count);
+        foreach (var candidateId in candidatesById.Keys)
+        {
+            colors.TryGetValue(candidateId, out var initialColor);
+            if (initialColor == 2)
+            {
+                continue;
+            }
+
+            var pending = new Stack<(LineageNodeId Id, bool Exit)>();
+            pending.Push((candidateId, false));
+            while (pending.Count > 0)
+            {
+                var (id, exit) = pending.Pop();
+                colors.TryGetValue(id, out var color);
+                if (exit)
+                {
+                    colors[id] = 2;
+                    continue;
+                }
+
+                if (color == 2)
+                {
+                    continue;
+                }
+
+                if (color == 1)
+                {
+                    throw new ArgumentException("A lineage batch must be acyclic.", parameterName);
+                }
+
+                colors[id] = 1;
+                pending.Push((id, true));
+                var node = candidatesById[id];
+                for (var index = node.Dependencies.Length - 1; index >= 0; index--)
+                {
+                    var dependency = node.Dependencies[index];
+                    if (!candidatesById.ContainsKey(dependency))
+                    {
+                        continue;
+                    }
+
+                    colors.TryGetValue(dependency, out var dependencyColor);
+                    if (dependencyColor == 1)
+                    {
+                        throw new ArgumentException("A lineage batch must be acyclic.", parameterName);
+                    }
+
+                    if (dependencyColor != 2)
+                    {
+                        pending.Push((dependency, false));
+                    }
+                }
+            }
         }
     }
 
@@ -673,7 +830,7 @@ public sealed class ProvenanceConcreteDomain :
         }
     }
 
-    private LineageNodeId? PreflightCallBoundaryValue(
+    private LineageNodeId? PreflightDirectCallBoundaryValue(
         ProvenanceConcreteValue value,
         string parameterName)
     {
@@ -686,7 +843,7 @@ public sealed class ProvenanceConcreteDomain :
         catch (ArgumentException exception)
         {
             throw new ArgumentException(
-                "An interpreted-call boundary requires a locally owned executable value.",
+                "A direct-call lineage boundary requires a locally owned executable value.",
                 parameterName,
                 exception);
         }
@@ -695,7 +852,7 @@ public sealed class ProvenanceConcreteDomain :
             semanticDomain.GetStackKind(value.SemanticValue) != StackKind.I4)
         {
             throw new ArgumentException(
-                "The current interpreted-call lineage profile admits only structural Int32 values.",
+                "The current direct-call lineage profile admits only structural Int32 values.",
                 parameterName);
         }
 
@@ -704,10 +861,10 @@ public sealed class ProvenanceConcreteDomain :
             ValuePrecisionKind.Exact => null,
             ValuePrecisionKind.ExplainedUnknown when value.LineageRoot is { } root => root,
             ValuePrecisionKind.UnexplainedUnknown => throw new ArgumentException(
-                "An interpreted-call boundary cannot continue from an unexplained unknown.",
+                "A direct-call lineage boundary cannot continue from an unexplained unknown.",
                 parameterName),
             _ => throw new ArgumentException(
-                "An interpreted-call boundary received an unsupported precision classification.",
+                "A direct-call lineage boundary received an unsupported precision classification.",
                 parameterName),
         };
     }
@@ -720,7 +877,7 @@ public sealed class ProvenanceConcreteDomain :
             callSite.Caller.Module != callSite.Callee.Module)
         {
             throw new ArgumentException(
-                "Interpreted-call lineage requires one valid same-module direct-call identity.",
+                "Direct-call lineage requires one valid same-module direct-call identity.",
                 nameof(callSite));
         }
     }

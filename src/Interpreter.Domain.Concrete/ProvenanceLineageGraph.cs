@@ -181,11 +181,12 @@ public sealed class ProvenanceLineageGraph
 
                 if ((node is BinaryTransformLineageNode or
                     CallArgumentTransformLineageNode or
-                    InterpretedReturnTransformLineageNode) &&
+                    InterpretedReturnTransformLineageNode or
+                    ModeledReturnTransformLineageNode) &&
                     dependencyNode.StaticType != TypeSig.Int32)
                 {
                     throw new ArgumentException(
-                        "An arithmetic or interpreted-call predecessor must have the structural Int32 type.");
+                        "An arithmetic or direct-call predecessor must have the structural Int32 type.");
                 }
 
                 colors.TryGetValue(dependency, out var dependencyColor);
@@ -226,7 +227,7 @@ public sealed class ProvenanceLineageGraph
                 if (callArgument.ParameterIndex is < 0 or > 1)
                 {
                     throw new ArgumentException(
-                        "The closed W4.5 call profile requires parameter index zero or one.");
+                        "The closed W4 call profile requires parameter index zero or one.");
                 }
 
                 break;
@@ -244,6 +245,68 @@ public sealed class ProvenanceLineageGraph
                 }
 
                 break;
+            case ModeledReturnTransformLineageNode modeledReturn:
+                ValidateModeledReturn(modeledReturn, validatedNodesById);
+                break;
+        }
+    }
+
+    private static void ValidateModeledReturn(
+        ModeledReturnTransformLineageNode modeledReturn,
+        IReadOnlyDictionary<LineageNodeId, LineageNode> validatedNodesById)
+    {
+        if (modeledReturn.StaticType != TypeSig.Int32 ||
+            modeledReturn.CallSite.Caller == default ||
+            modeledReturn.CallSite.Callee == default ||
+            modeledReturn.CallSite.CallIlOffset < 0 ||
+            modeledReturn.CallSite.Caller.Module != modeledReturn.CallSite.Callee.Module ||
+            modeledReturn.ModelIdentity.StableId is null)
+        {
+            throw new ArgumentException(
+                "A W4.6 modeled-return transform requires structural Int32, one valid call site, and one model identity.");
+        }
+
+        if (modeledReturn.Arguments.IsDefault ||
+            modeledReturn.Arguments.Length != 2 ||
+            modeledReturn.Arguments.Any(static argument => argument is null || !argument.HasValidShape))
+        {
+            throw new ArgumentException(
+                "A W4.6 modeled-return transform requires exactly two valid metadata-ordered argument operands.");
+        }
+
+        var expectedDependencies = ImmutableArray.CreateBuilder<LineageNodeId>(2);
+        for (var parameterIndex = 0; parameterIndex < modeledReturn.Arguments.Length; parameterIndex++)
+        {
+            var argument = modeledReturn.Arguments[parameterIndex];
+            if (argument.Kind == LineageOperandKind.ExactInt32)
+            {
+                continue;
+            }
+
+            if (argument.Predecessor is not { } predecessor ||
+                !validatedNodesById.TryGetValue(predecessor, out var predecessorNode) ||
+                predecessorNode is not CallArgumentTransformLineageNode callArgument ||
+                callArgument.StaticType != TypeSig.Int32 ||
+                callArgument.CallSite != modeledReturn.CallSite ||
+                callArgument.ParameterIndex != parameterIndex)
+            {
+                throw new ArgumentException(
+                    "Each modeled-return unknown operand must depend on its matching parameter-indexed direct-call transform.");
+            }
+
+            expectedDependencies.Add(predecessor);
+        }
+
+        if (expectedDependencies.Count == 0)
+        {
+            throw new ArgumentException(
+                "A modeled unknown return must be grounded in at least one unknown argument.");
+        }
+
+        if (!modeledReturn.Dependencies.SequenceEqual(expectedDependencies))
+        {
+            throw new ArgumentException(
+                "A modeled-return dependency vector must contain exactly its unknown arguments in parameter order.");
         }
     }
 
