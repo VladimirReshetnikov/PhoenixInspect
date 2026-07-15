@@ -124,7 +124,8 @@
         "type": "Project",
         "dependencies": {
           "Interpreter.Core.Abstractions": "[1.0.0, )",
-          "Interpreter.Core.Execution": "[1.0.0, )"
+          "Interpreter.Core.Execution": "[1.0.0, )",
+          "Interpreter.Domain.Concrete": "[1.0.0, )"
         }
       }
     }
