@@ -10,14 +10,14 @@ namespace Interpreter.Tests;
 /// <summary>Exercises complete, deterministic W4 direct-call graph preparation without activating an IL machine.</summary>
 public sealed class MethodGraphPlannerTests
 {
-    private static readonly ModuleHandle Module = new(
+    internal static readonly ModuleHandle Module = new(
         0xA401020304050607,
         0xB408091011121314);
-    private static readonly TypeSig RootType = TypeSig.CreateTypeDefinition(
+    internal static readonly TypeSig RootType = TypeSig.CreateTypeDefinition(
         Module,
         0x02000001,
         "Interpreter.Tests.W4Root");
-    private static readonly TypeSig HelperType = TypeSig.CreateTypeDefinition(
+    internal static readonly TypeSig HelperType = TypeSig.CreateTypeDefinition(
         Module,
         0x02000002,
         "Interpreter.Tests.W4Helper");
@@ -673,7 +673,7 @@ public sealed class MethodGraphPlannerTests
         Assert.Empty(resolver.CallCounts);
     }
 
-    private static GraphResolver Resolver(params ResolvedMethodDefinition[] definitions)
+    internal static GraphResolver Resolver(params ResolvedMethodDefinition[] definitions)
     {
         var resolver = new GraphResolver();
         foreach (var definition in definitions)
@@ -684,9 +684,9 @@ public sealed class MethodGraphPlannerTests
         return resolver;
     }
 
-    private static MethodHandle Method(int row) => new(Module, 0x06000000 | row);
+    internal static MethodHandle Method(int row) => new(Module, 0x06000000 | row);
 
-    private static ResolvedField Field(int row, TypeSig declaringType) => new(
+    internal static ResolvedField Field(int row, TypeSig declaringType) => new(
         new FieldHandle(Module, 0x04000000 | row),
         declaringType,
         TypeSig.Int32,
@@ -694,7 +694,7 @@ public sealed class MethodGraphPlannerTests
         isLiteral: false,
         hasRva: false);
 
-    private static ResolvedMethodCallTarget Target(MethodHandle method) =>
+    internal static ResolvedMethodCallTarget Target(MethodHandle method) =>
         new(method, HelperSignature(HelperType));
 
     private static MethodCallSignatureShape RootSignature() => new(
@@ -715,13 +715,13 @@ public sealed class MethodGraphPlannerTests
         ImmutableArray.Create(TypeSig.Int32, TypeSig.Int32),
         TypeSig.Int32);
 
-    private static ResolvedMethodDefinition RootDefinition(
+    internal static ResolvedMethodDefinition RootDefinition(
         MethodHandle method,
         byte[] code,
         int maxStack) =>
         Definition(method, RootSignature(), code, maxStack);
 
-    private static ResolvedMethodDefinition HelperDefinition(
+    internal static ResolvedMethodDefinition HelperDefinition(
         MethodHandle method,
         byte[] code,
         int maxStack,
@@ -747,7 +747,7 @@ public sealed class MethodGraphPlannerTests
                 exceptionRegionCount: exceptionRegionCount),
             new MethodSignatureShape(signature, ImmutableArray<TypeSig>.Empty));
 
-    private static byte[] ExactRootBody(int firstFieldToken, int secondFieldToken, int helperToken)
+    internal static byte[] ExactRootBody(int firstFieldToken, int secondFieldToken, int helperToken)
     {
         var code = new List<byte> { 0x02 };
         EmitToken(code, 0x7B, firstFieldToken);
@@ -798,7 +798,7 @@ public sealed class MethodGraphPlannerTests
         return CallsBody(tokens);
     }
 
-    private static byte[] RootRepeatedCallsBody(MethodHandle target, int callCount)
+    internal static byte[] RootRepeatedCallsBody(MethodHandle target, int callCount)
     {
         var tokens = Enumerable.Repeat(target.MetadataToken, callCount).ToArray();
         return RootCallsBody(tokens);
@@ -885,7 +885,7 @@ public sealed class MethodGraphPlannerTests
             Assert.IsType<ExecutionFailure>(result.Failure).ResolutionFailure?.Kind);
     }
 
-    private sealed class GraphResolver : IResolutionServices
+    internal sealed class GraphResolver : IResolutionServices
     {
         internal Dictionary<MethodHandle, ResolvedMethodDefinition> Definitions { get; } = [];
 

@@ -7,13 +7,17 @@ namespace Interpreter.Core.Execution;
 /// Resolves, admits, validates, and freezes the complete W4 direct-call closure rooted at one MethodDef.
 /// </summary>
 /// <remarks>
-/// Each <see cref="Prepare"/> call owns fresh first-result caches. Discovery is root-first depth-first traversal in
+/// Each <see cref="Prepare(MethodHandle)"/> call owns fresh first-result caches. Discovery is root-first depth-first
+/// traversal in
 /// increasing call-site offset order; successful public vectors are subsequently canonicalized by structural
 /// identity. Preparation performs no IL execution, memory access, or <see cref="IlMachine{TValue, TMemory}"/>
 /// activation, and a rejection never exposes a partial graph.
 /// </remarks>
 public sealed class MethodGraphPlanner
 {
+    /// <summary>Gets the largest traversal limit accepted by configurable graph preparation.</summary>
+    public const int MaximumConfigurableTraversalUnits = 1024;
+
     private readonly IResolutionServices _resolutionServices;
 
     /// <summary>Creates a planner over one metadata/body resolution capability.</summary>
@@ -34,7 +38,37 @@ public sealed class MethodGraphPlanner
     /// whose <see cref="MethodGraphPreparationResult.Plan"/> is <see langword="null"/>.
     /// </returns>
     public MethodGraphPreparationResult Prepare(MethodHandle root)
-        => PrepareCore(root, requiredPureModel: null);
+        => PrepareCore(
+            root,
+            requiredPureModel: null,
+            MaximumConfigurableTraversalUnits,
+            configurableTraversalLimit: false);
+
+    /// <summary>
+    /// Prepares one complete immutable W4 graph under a caller-selected traversal limit.
+    /// </summary>
+    /// <param name="root">The exact root MethodDef identity.</param>
+    /// <param name="maximumTraversalUnits">
+    /// The maximum discovery units that may be consumed. Zero is valid and deterministically exhausts before root
+    /// resolution; values above <see cref="MaximumConfigurableTraversalUnits"/> are invalid.
+    /// </param>
+    /// <returns>
+    /// A ready complete graph, a structured non-budget rejection, or a budget-exhausted result retaining every
+    /// consumed charge and the first structurally identified rejected charge.
+    /// </returns>
+    public MethodGraphPreparationResult Prepare(MethodHandle root, int maximumTraversalUnits)
+    {
+        if (!IsValidTraversalLimit(maximumTraversalUnits))
+        {
+            return InvalidTraversalLimit(root);
+        }
+
+        return PrepareCore(
+            root,
+            requiredPureModel: null,
+            maximumTraversalUnits,
+            configurableTraversalLimit: true);
+    }
 
     /// <summary>
     /// Prepares one graph while requiring every call to one exact structural target to use a selected pure model.
@@ -54,6 +88,51 @@ public sealed class MethodGraphPlanner
         MethodHandle root,
         MethodHandle target,
         IPureCallModelRegistry registry)
+        => RequirePureModelCore(
+            root,
+            target,
+            registry,
+            MaximumConfigurableTraversalUnits,
+            configurableTraversalLimit: false);
+
+    /// <summary>
+    /// Prepares a graph with one required opaque modeled target under a caller-selected traversal limit.
+    /// </summary>
+    /// <param name="root">The exact interpreted root MethodDef identity.</param>
+    /// <param name="target">The exact non-root MethodDef that must terminate as an opaque modeled leaf.</param>
+    /// <param name="registry">The pure-model registry selected at most once for each equal structural target.</param>
+    /// <param name="maximumTraversalUnits">
+    /// The maximum discovery units that may be consumed. Zero is valid; negative values and values above
+    /// <see cref="MaximumConfigurableTraversalUnits"/> are invalid before any resolver or registry capability use.
+    /// </param>
+    /// <returns>A complete graph or a structured result with no partial graph.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="registry"/> is <see langword="null"/>.</exception>
+    public MethodGraphPreparationResult RequirePureModel(
+        MethodHandle root,
+        MethodHandle target,
+        IPureCallModelRegistry registry,
+        int maximumTraversalUnits)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        if (!IsValidTraversalLimit(maximumTraversalUnits))
+        {
+            return InvalidTraversalLimit(root);
+        }
+
+        return RequirePureModelCore(
+            root,
+            target,
+            registry,
+            maximumTraversalUnits,
+            configurableTraversalLimit: true);
+    }
+
+    private MethodGraphPreparationResult RequirePureModelCore(
+        MethodHandle root,
+        MethodHandle target,
+        IPureCallModelRegistry registry,
+        int maximumTraversalUnits,
+        bool configurableTraversalLimit)
     {
         ArgumentNullException.ThrowIfNull(registry);
         if (target == default || root == target || root != default && root.Module != target.Module)
@@ -67,10 +146,18 @@ public sealed class MethodGraphPlanner
                 0);
         }
 
-        return PrepareCore(root, new RequiredPureModel(target, registry));
+        return PrepareCore(
+            root,
+            new RequiredPureModel(target, registry),
+            maximumTraversalUnits,
+            configurableTraversalLimit);
     }
 
-    private MethodGraphPreparationResult PrepareCore(MethodHandle root, RequiredPureModel? requiredPureModel)
+    private MethodGraphPreparationResult PrepareCore(
+        MethodHandle root,
+        RequiredPureModel? requiredPureModel,
+        int maximumTraversalUnits,
+        bool configurableTraversalLimit)
     {
         if (root == default)
         {
@@ -83,21 +170,39 @@ public sealed class MethodGraphPlanner
                 0);
         }
 
+        var session = new PreparationSession(
+            _resolutionServices,
+            requiredPureModel,
+            maximumTraversalUnits,
+            configurableTraversalLimit);
         try
         {
-            return new PreparationSession(_resolutionServices, requiredPureModel).Prepare(root);
+            return session.Prepare(root);
         }
         catch (Exception exception) when (IsCapabilityException(exception))
         {
-            return Failed(
-                MachineRunStatus.Blocked,
-                ExecutionFailureKind.DependencyResolution,
-                "EXEC_RESOLVER_FAILURE",
-                "The metadata resolver rejected method-graph preparation.",
-                root,
-                0);
+            return session.AttachAccounting(
+                Failed(
+                    MachineRunStatus.Blocked,
+                    ExecutionFailureKind.DependencyResolution,
+                    "EXEC_RESOLVER_FAILURE",
+                    "The metadata resolver rejected method-graph preparation.",
+                    root,
+                    0));
         }
     }
+
+    private static bool IsValidTraversalLimit(int maximumTraversalUnits) =>
+        maximumTraversalUnits is >= 0 and <= MaximumConfigurableTraversalUnits;
+
+    private static MethodGraphPreparationResult InvalidTraversalLimit(MethodHandle root) =>
+        Failed(
+            MachineRunStatus.InvalidProgram,
+            ExecutionFailureKind.ResourceLimit,
+            "W4.Budget.Traversal.Invalid",
+            $"Traversal limits must be between 0 and {MaximumConfigurableTraversalUnits} units.",
+            root,
+            0);
 
     private sealed record RequiredPureModel(MethodHandle Target, IPureCallModelRegistry Registry);
 
@@ -136,10 +241,11 @@ public sealed class MethodGraphPlanner
     private sealed class PreparationSession : IMethodPlanResolutionContext
     {
         private const int MaximumMethodCount = 64;
-        private const int MaximumTraversalUnitCount = 1024;
 
         private readonly IResolutionServices _resolver;
         private readonly RequiredPureModel? _requiredPureModel;
+        private readonly int _maximumTraversalUnits;
+        private readonly bool _configurableTraversalLimit;
         private readonly Dictionary<MethodHandle, ResolutionResult<ResolvedMethodDefinition>> _definitionCache = [];
         private readonly Dictionary<FieldRequest, ResolutionResult<ResolvedField>> _fieldRequestCache = [];
         private readonly Dictionary<CallRequest, ResolutionResult<ResolvedMethodCallTarget>> _callRequestCache = [];
@@ -150,17 +256,34 @@ public sealed class MethodGraphPlanner
         private readonly Dictionary<MethodHandle, FrozenPureModelLeaf> _modeledLeaves = [];
         private readonly Dictionary<FieldHandle, ResolvedField> _structuralFields = [];
         private readonly List<FrozenMethodCallSite> _callSites = [];
+        private readonly List<MethodGraphTraversalCharge> _traversalCharges = [];
         private MethodGraphPreparationResult? _terminalFailure;
-        private int _traversalUnitCount;
+        private MethodGraphTraversalCharge? _rejectedTraversalCharge;
         private bool _requiredPureModelReached;
 
-        internal PreparationSession(IResolutionServices resolver, RequiredPureModel? requiredPureModel)
+        internal PreparationSession(
+            IResolutionServices resolver,
+            RequiredPureModel? requiredPureModel,
+            int maximumTraversalUnits,
+            bool configurableTraversalLimit)
         {
             _resolver = resolver;
             _requiredPureModel = requiredPureModel;
+            _maximumTraversalUnits = maximumTraversalUnits;
+            _configurableTraversalLimit = configurableTraversalLimit;
         }
 
         internal MethodGraphPreparationResult Prepare(MethodHandle root)
+            => AttachAccounting(PrepareWithoutAccounting(root));
+
+        internal MethodGraphPreparationResult AttachAccounting(MethodGraphPreparationResult result) =>
+            result.WithTraversalAccounting(
+                new MethodGraphTraversalAccounting(
+                    _maximumTraversalUnits,
+                    _traversalCharges.ToImmutableArray(),
+                    _rejectedTraversalCharge));
+
+        private MethodGraphPreparationResult PrepareWithoutAccounting(MethodHandle root)
         {
             var discoveryFailure = Visit(root, W4GraphMethodRole.Root, incomingCall: null);
             if (discoveryFailure is not null)
@@ -225,7 +348,12 @@ public sealed class MethodGraphPlanner
                 return result;
             }
 
-            if (!TryChargeTraversal(contextMethod, ilOffset))
+            if (!TryChargeTraversal(
+                    MethodGraphTraversalChargeKind.FieldDependency,
+                    contextMethod,
+                    field.Handle,
+                    ilOffset,
+                    metadataToken))
             {
                 return ResolutionResult<ResolvedField>.Failed(
                     ResolutionFailureKind.Unsupported,
@@ -243,7 +371,12 @@ public sealed class MethodGraphPlanner
             int metadataToken)
         {
             if (_chargedCallEdges.Add((contextMethod, ilOffset)) &&
-                !TryChargeTraversal(contextMethod, ilOffset))
+                !TryChargeTraversal(
+                    MethodGraphTraversalChargeKind.DirectCallEdge,
+                    contextMethod,
+                    field: null,
+                    ilOffset,
+                    metadataToken))
             {
                 return ResolutionResult<ResolvedMethodCallTarget>.Failed(
                     ResolutionFailureKind.Unsupported,
@@ -292,8 +425,11 @@ public sealed class MethodGraphPlanner
             }
 
             if (!TryChargeTraversal(
-                    incomingCall?.Caller ?? method,
-                    incomingCall?.IlOffset ?? 0))
+                    MethodGraphTraversalChargeKind.InterpretedMethod,
+                    method,
+                    field: null,
+                    incomingCall?.IlOffset ?? 0,
+                    incomingCall?.MetadataToken ?? method.MetadataToken))
             {
                 return _terminalFailure;
             }
@@ -450,7 +586,12 @@ public sealed class MethodGraphPlanner
                 return null;
             }
 
-            if (!TryChargeTraversal(caller, ilOffset))
+            if (!TryChargeTraversal(
+                    MethodGraphTraversalChargeKind.ModeledLeaf,
+                    target.Method,
+                    field: null,
+                    ilOffset,
+                    target.Method.MetadataToken))
             {
                 return null;
             }
@@ -680,7 +821,7 @@ public sealed class MethodGraphPlanner
                 canonicalFields,
                 canonicalCalls,
                 requiredDepth,
-                _traversalUnitCount);
+                _traversalCharges.Count);
             if (validationFailure is not null)
             {
                 return validationFailure;
@@ -696,7 +837,7 @@ public sealed class MethodGraphPlanner
                         canonicalFields,
                         canonicalCalls,
                         requiredDepth,
-                        _traversalUnitCount));
+                        _traversalCharges.Count));
             }
             catch (Exception exception) when (IsCapabilityException(exception))
             {
@@ -716,7 +857,7 @@ public sealed class MethodGraphPlanner
             if (nodes.IsDefaultOrEmpty || modeledLeaves.IsDefault || fields.IsDefault || callSites.IsDefault ||
                 nodes.Length + modeledLeaves.Length > MaximumMethodCount ||
                 traversalUnits != nodes.Length + modeledLeaves.Length + fields.Length + callSites.Length ||
-                traversalUnits > MaximumTraversalUnitCount ||
+                traversalUnits > MaximumConfigurableTraversalUnits ||
                 !nodes.Any(node => node.Method == root) ||
                 !IsStrictlyOrdered(nodes.Select(node => node.Method), MethodHandleCanonicalComparer.Instance) ||
                 !IsStrictlyOrdered(modeledLeaves.Select(leaf => leaf.Method), MethodHandleCanonicalComparer.Instance) ||
@@ -909,21 +1050,40 @@ public sealed class MethodGraphPlanner
             return true;
         }
 
-        private bool TryChargeTraversal(MethodHandle method, int offset)
+        private bool TryChargeTraversal(
+            MethodGraphTraversalChargeKind kind,
+            MethodHandle method,
+            FieldHandle? field,
+            int offset,
+            int rawMetadataToken)
         {
-            if (_traversalUnitCount >= MaximumTraversalUnitCount)
+            var charge = new MethodGraphTraversalCharge(
+                _traversalCharges.Count,
+                kind,
+                method,
+                field,
+                offset,
+                rawMetadataToken);
+            if (_traversalCharges.Count >= _maximumTraversalUnits)
             {
+                _rejectedTraversalCharge ??= charge;
                 _terminalFailure ??= Failed(
-                    MachineRunStatus.Blocked,
+                    _configurableTraversalLimit
+                        ? MachineRunStatus.BudgetExhausted
+                        : MachineRunStatus.Blocked,
                     ExecutionFailureKind.ResourceLimit,
-                    "EXEC_CALL_GRAPH_TRAVERSAL_LIMIT",
-                    $"Graph preparation is limited to {MaximumTraversalUnitCount} traversal units.",
+                    _configurableTraversalLimit
+                        ? "W4.Budget.Traversal"
+                        : "EXEC_CALL_GRAPH_TRAVERSAL_LIMIT",
+                    _configurableTraversalLimit
+                        ? $"The configured graph-preparation traversal budget of {_maximumTraversalUnits} units was exhausted."
+                        : $"Graph preparation is limited to {_maximumTraversalUnits} traversal units.",
                     method,
                     offset);
                 return false;
             }
 
-            _traversalUnitCount++;
+            _traversalCharges.Add(charge);
             return true;
         }
 

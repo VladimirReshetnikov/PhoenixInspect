@@ -423,18 +423,20 @@ public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
 /// <summary>Reports either one complete frozen method graph or a structured preparation failure.</summary>
 /// <remarks>
 /// Failed results never carry a partial graph. Successful results always use <see cref="MachineRunStatus.Ready"/>
-/// and carry no failure, making the three public facts a closed discriminated outcome for this prototype phase.
+/// and carry no failure, making the public facts a closed discriminated outcome for this prototype phase.
 /// </remarks>
 public sealed class MethodGraphPreparationResult
 {
     private MethodGraphPreparationResult(
         FrozenMethodGraphPlan? plan,
         MachineRunStatus status,
-        ExecutionFailure? failure)
+        ExecutionFailure? failure,
+        MethodGraphTraversalAccounting? traversalAccounting)
     {
         Plan = plan;
         Status = status;
         Failure = failure;
+        TraversalAccounting = traversalAccounting;
     }
 
     /// <summary>Gets the complete graph on success, or <see langword="null"/> after any failure.</summary>
@@ -447,16 +449,41 @@ public sealed class MethodGraphPreparationResult
     public ExecutionFailure? Failure { get; }
 
     /// <summary>
+    /// Gets ordered traversal accounting when graph preparation entered a discovery session, or
+    /// <see langword="null"/> when request validation rejected the operation before discovery began.
+    /// </summary>
+    public MethodGraphTraversalAccounting? TraversalAccounting { get; }
+
+    /// <summary>
     /// Gets a value indicating whether preparation produced one complete frozen graph. Planning success does not by
     /// itself imply that the current machine admits every frozen call disposition.
     /// </summary>
     public bool IsSuccess => Plan is not null && Status == MachineRunStatus.Ready && Failure is null;
 
     internal static MethodGraphPreparationResult Success(FrozenMethodGraphPlan plan) =>
-        new(plan, MachineRunStatus.Ready, null);
+        new(plan, MachineRunStatus.Ready, null, traversalAccounting: null);
 
     internal static MethodGraphPreparationResult Failed(MachineRunStatus status, ExecutionFailure failure) =>
-        new(null, status, failure);
+        new(null, status, failure, traversalAccounting: null);
+
+    internal MethodGraphPreparationResult WithTraversalAccounting(MethodGraphTraversalAccounting traversalAccounting)
+    {
+        ArgumentNullException.ThrowIfNull(traversalAccounting);
+        if (TraversalAccounting is not null)
+        {
+            throw new InvalidOperationException("Traversal accounting was already attached to this preparation result.");
+        }
+
+        if (Plan is not null &&
+            (traversalAccounting.IsExhausted || Plan.TraversalUnitCount != traversalAccounting.Used))
+        {
+            throw new ArgumentException(
+                "A successful frozen graph must consume exactly its reported non-exhausted traversal units.",
+                nameof(traversalAccounting));
+        }
+
+        return new MethodGraphPreparationResult(Plan, Status, Failure, traversalAccounting);
+    }
 }
 
 internal static class GraphContent
