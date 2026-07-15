@@ -325,7 +325,7 @@ public sealed class CounterfactualMethodRunner<TMemory>
                 "A runtime capability failed during prepared root activation.");
         }
 
-        var activationFailure = ValidateActivation(activation, graph);
+        var activationFailure = ValidateActivation(activation, graph, bundle);
         if (activationFailure is not null)
         {
             var completion = activation.Status == MachineRunStatus.Blocked
@@ -548,6 +548,820 @@ public sealed class CounterfactualMethodRunner<TMemory>
                         "Prepared execution returned an undefined machine status.");
             }
         }
+    }
+
+    private static ProjectionFailure? ValidateActivation(
+        MachineActivationResult<ProvenanceConcreteValue, TMemory> activation,
+        FrozenMethodGraphPlan graph,
+        CounterfactualRuntimeBundle<TMemory> bundle)
+    {
+        ArgumentNullException.ThrowIfNull(activation);
+        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(bundle);
+
+        if (!activation.IsSuccess)
+        {
+            if (activation.State is not null || activation.Failure is null ||
+                activation.Status is not (MachineRunStatus.Blocked or MachineRunStatus.InvalidProgram))
+            {
+                return new ProjectionFailure(
+                    "W4.Replay.ActivationUnionInvalid",
+                    "Prepared activation returned an incoherent state, status, and failure union.");
+            }
+
+            return activation.Status == MachineRunStatus.Blocked
+                ? new ProjectionFailure(
+                    "W4.Unknown.ActivationBlocked",
+                    "Prepared root activation was blocked by a required runtime capability.")
+                : new ProjectionFailure(
+                    "W4.Replay.ActivationInvalid",
+                    "Prepared root activation rejected an internally inconsistent runtime binding.");
+        }
+
+        var state = activation.State!;
+        if (activation.Status != MachineRunStatus.Ready || activation.Failure is not null ||
+            state.CallStack.IsDefault || state.CallStack.Length != 1 ||
+            state.CallStack[0] is not { } rootFrame ||
+            state.ReturnValue.HasValue || state.TerminalTargetException is not null ||
+            state.Memory is null || !HasSameMemoryIdentity(state.Memory, bundle.InitialMemory) ||
+            rootFrame.Method != graph.Root || rootFrame.IlOffset != 0 || rootFrame.ReturnSite is not null ||
+            rootFrame.Arguments.IsDefault || rootFrame.Locals.IsDefault || rootFrame.EvalStack.IsDefault ||
+            !rootFrame.EvalStack.IsEmpty || rootFrame.Arguments.Length != bundle.RootArguments.Length)
+        {
+            return new ProjectionFailure(
+                "W4.Replay.ActivationStateInvalid",
+                "Prepared activation did not produce the exact single-root initial state required by the issued plan.");
+        }
+
+        for (var index = 0; index < rootFrame.Arguments.Length; index++)
+        {
+            if (!ReferenceEquals(rootFrame.Arguments[index], bundle.RootArguments[index]))
+            {
+                return new ProjectionFailure(
+                    "W4.Replay.ActivationArgumentsInvalid",
+                    "Prepared activation did not retain the exact materialized rooted argument vector.");
+            }
+        }
+
+        return null;
+    }
+
+    private static ProjectionFailure? ValidateMachineTransition(
+        FrozenMethodGraphPlan graph,
+        int logicalDepthLimit,
+        MachineState<ProvenanceConcreteValue, TMemory> priorState,
+        MachineOperationalState priorOperationalState,
+        StepOutcome<ProvenanceConcreteValue, TMemory> outcome)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(priorState);
+        ArgumentNullException.ThrowIfNull(priorOperationalState);
+        ArgumentNullException.ThrowIfNull(outcome);
+
+        if (outcome.State is null || outcome.OperationalState is null || outcome.Events.IsDefault ||
+            outcome.Events.Any(static item => item is null) || priorState.Memory is null || outcome.State.Memory is null ||
+            !HasSameMemoryIdentity(priorState.Memory, outcome.State.Memory) ||
+            priorState.CallStack.IsDefault || outcome.State.CallStack.IsDefault ||
+            priorOperationalState.Budget is null || outcome.OperationalState.Budget is null)
+        {
+            return InvalidTransition("Envelope", "The machine transition returned an uninitialized or memory-changing envelope.");
+        }
+
+        var priorEnvelopeFailure = ValidateOperationalEnvelope(
+            graph,
+            logicalDepthLimit,
+            priorOperationalState);
+        var nextEnvelopeFailure = ValidateOperationalEnvelope(
+            graph,
+            logicalDepthLimit,
+            outcome.OperationalState);
+        if (priorEnvelopeFailure is not null || nextEnvelopeFailure is not null)
+        {
+            return priorEnvelopeFailure ?? nextEnvelopeFailure;
+        }
+
+        var priorAttempts = priorOperationalState.ModelAttempts;
+        var nextAttempts = outcome.OperationalState.ModelAttempts;
+        if (nextAttempts.Length < priorAttempts.Length || nextAttempts.Length > priorAttempts.Length + 1 ||
+            !nextAttempts.Take(priorAttempts.Length).SequenceEqual(priorAttempts))
+        {
+            return InvalidTransition("ModelAttempt", "A transition did not preserve the exact model-attempt prefix.");
+        }
+
+        var attemptDelta = nextAttempts.Length - priorAttempts.Length;
+        var invocationDelta = outcome.OperationalState.ModelInvocationCount -
+            priorOperationalState.ModelInvocationCount;
+        var completedDelta = outcome.OperationalState.CompletedModeledCallCount -
+            priorOperationalState.CompletedModeledCallCount;
+        if (attemptDelta != invocationDelta || completedDelta is < 0 or > 1 || completedDelta > attemptDelta ||
+            outcome.OperationalState.ObservedLogicalDepthHighWater <
+                priorOperationalState.ObservedLogicalDepthHighWater ||
+            outcome.OperationalState.ActiveFrameDepthHighWater <
+                priorOperationalState.ActiveFrameDepthHighWater ||
+            outcome.OperationalState.ObservedLogicalDepthHighWater -
+                priorOperationalState.ObservedLogicalDepthHighWater > 1 ||
+            outcome.OperationalState.ActiveFrameDepthHighWater -
+                priorOperationalState.ActiveFrameDepthHighWater > 1)
+        {
+            return InvalidTransition("OperationalDelta", "A transition returned an impossible model counter or depth delta.");
+        }
+
+        var priorBudget = priorOperationalState.Budget.InstructionBudget;
+        var nextBudget = outcome.OperationalState.Budget.InstructionBudget;
+        switch (outcome.Status)
+        {
+            case MachineRunStatus.Ready:
+            case MachineRunStatus.Completed:
+                if (outcome.Failure is not null || outcome.TargetException is not null ||
+                    priorBudget <= 0 || nextBudget != priorBudget - 1 ||
+                    !IsOrdinaryTransferEventVector(outcome.Events) ||
+                    !ValidateSuccessfulModelDelta(nextAttempts, attemptDelta, completedDelta) ||
+                    !ValidateFrameDelta(priorState, outcome.State, outcome.Events, outcome.Status))
+                {
+                    return InvalidTransition("SuccessfulTransfer", "A ready or completed transition violated its atomic transfer contract.");
+                }
+
+                if (outcome.Status == MachineRunStatus.Ready &&
+                    (outcome.State.CallStack.IsEmpty || outcome.State.ReturnValue.HasValue ||
+                     outcome.State.TerminalTargetException is not null))
+                {
+                    return InvalidTransition("ReadyUnion", "A ready transition returned a terminal machine state.");
+                }
+
+                if (outcome.Status == MachineRunStatus.Completed &&
+                    (!outcome.State.CallStack.IsEmpty || !outcome.State.ReturnValue.HasValue ||
+                     outcome.State.TerminalTargetException is not null))
+                {
+                    return InvalidTransition("CompletedUnion", "A completed transition did not return one normal root value.");
+                }
+
+                return null;
+
+            case MachineRunStatus.BudgetExhausted:
+                if (outcome.Failure is not null || outcome.TargetException is not null || !outcome.Events.IsEmpty ||
+                    priorBudget != 0 || nextBudget != 0 || attemptDelta != 0 || completedDelta != 0 ||
+                    !ReferenceEquals(priorState, outcome.State) ||
+                    !ReferenceEquals(priorOperationalState, outcome.OperationalState))
+                {
+                    return InvalidTransition("Budget", "Instruction exhaustion did not preserve the exact pre-instruction state and envelope.");
+                }
+
+                return null;
+
+            case MachineRunStatus.Blocked:
+            case MachineRunStatus.InvalidProgram:
+                if (outcome.Failure is null || outcome.TargetException is not null || !outcome.Events.IsEmpty ||
+                    nextBudget != priorBudget || !ReferenceEquals(priorState, outcome.State) ||
+                    !ValidateFailedModelDelta(
+                        priorOperationalState,
+                        outcome.OperationalState,
+                        nextAttempts,
+                        attemptDelta,
+                        completedDelta))
+                {
+                    return InvalidTransition("Failure", "A blocked or invalid transition changed semantic state, budget, events, or model accounting.");
+                }
+
+                return null;
+
+            case MachineRunStatus.TargetException:
+                if (outcome.Failure is not null || outcome.TargetException is null ||
+                    outcome.State.TerminalTargetException != outcome.TargetException ||
+                    !outcome.State.CallStack.IsEmpty || outcome.State.ReturnValue.HasValue ||
+                    priorBudget <= 0 || nextBudget != priorBudget - 1 || attemptDelta != 0 || completedDelta != 0 ||
+                    outcome.Events.Length != 1 ||
+                    outcome.Events[0].Kind != DebugEventKind.TargetExceptionRaised)
+                {
+                    return InvalidTransition("TargetException", "A target-exception transition violated its terminal union or accounting contract.");
+                }
+
+                return null;
+
+            default:
+                return InvalidTransition("Status", "The machine transition returned an undefined status.");
+        }
+    }
+
+    private static ProjectionFailure? ValidateOperationalEnvelope(
+        FrozenMethodGraphPlan graph,
+        int logicalDepthLimit,
+        MachineOperationalState state)
+    {
+        if (state.Budget is null || state.Budget.InstructionBudget < 0 || state.ModelAttempts.IsDefault ||
+            state.ModelAttempts.Any(static item => item is null) ||
+            state.ModelInvocationCount != state.ModelAttempts.Length ||
+            state.CompletedModeledCallCount != state.ModelAttempts.Count(static item => item.TransferCompleted) ||
+            state.ConfiguredMaximumLogicalCallDepth != logicalDepthLimit ||
+            state.RequiredLogicalCallDepth != graph.RequiredLogicalDepth ||
+            state.ObservedLogicalDepthHighWater is < 1 ||
+            state.ObservedLogicalDepthHighWater > graph.RequiredLogicalDepth ||
+            state.ActiveFrameDepthHighWater is < 1 ||
+            state.ActiveFrameDepthHighWater > state.ObservedLogicalDepthHighWater)
+        {
+            return InvalidTransition("OperationalEnvelope", "Prepared operational accounting disagreed with the frozen graph or configured depth.");
+        }
+
+        return null;
+    }
+
+    private static bool ValidateSuccessfulModelDelta(
+        ImmutableArray<PureModelAttempt> attempts,
+        int attemptDelta,
+        int completedDelta) =>
+        attemptDelta == 0 && completedDelta == 0 ||
+        attemptDelta == 1 && completedDelta == 1 && attempts[^1].TransferCompleted;
+
+    private static bool ValidateFailedModelDelta(
+        MachineOperationalState prior,
+        MachineOperationalState next,
+        ImmutableArray<PureModelAttempt> attempts,
+        int attemptDelta,
+        int completedDelta)
+    {
+        if (attemptDelta == 0)
+        {
+            return completedDelta == 0 && ReferenceEquals(prior, next);
+        }
+
+        return attemptDelta == 1 && completedDelta == 0 && !attempts[^1].TransferCompleted &&
+            ReferenceEquals(prior.Budget, next.Budget) &&
+            next.ActiveFrameDepthHighWater == prior.ActiveFrameDepthHighWater &&
+            next.ObservedLogicalDepthHighWater == Math.Max(
+                prior.ObservedLogicalDepthHighWater,
+                attempts[^1].EnteredLogicalDepth);
+    }
+
+    private static bool IsOrdinaryTransferEventVector(ImmutableArray<DebugEvent> events)
+    {
+        if (events.Length is < 1 or > 2 || events[0].Kind != DebugEventKind.InstructionExecuted ||
+            events[0].FieldEvidence is not null)
+        {
+            return false;
+        }
+
+        return events.Length == 1 || events[1].Kind is
+            DebugEventKind.FramePushed or DebugEventKind.FramePopped or DebugEventKind.ValuePrecisionLost;
+    }
+
+    private static bool ValidateFrameDelta(
+        MachineState<ProvenanceConcreteValue, TMemory> prior,
+        MachineState<ProvenanceConcreteValue, TMemory> next,
+        ImmutableArray<DebugEvent> events,
+        MachineRunStatus status)
+    {
+        var expectedDelta = events.Length == 2
+            ? events[1].Kind switch
+            {
+                DebugEventKind.FramePushed => 1,
+                DebugEventKind.FramePopped => -1,
+                _ => 0,
+            }
+            : 0;
+        if (next.CallStack.Length - prior.CallStack.Length != expectedDelta)
+        {
+            return false;
+        }
+
+        return status == MachineRunStatus.Completed
+            ? expectedDelta == -1
+            : !next.CallStack.IsEmpty;
+    }
+
+    private static void AppendDynamicEntries(
+        MachineOperationalState priorOperationalState,
+        StepOutcome<ProvenanceConcreteValue, TMemory> outcome,
+        ImmutableArray<MethodHandle>.Builder callTrace,
+        ImmutableArray<DebugEvent>.Builder events)
+    {
+        for (var index = priorOperationalState.ModelAttempts.Length;
+             index < outcome.OperationalState.ModelAttempts.Length;
+             index++)
+        {
+            callTrace.Add(outcome.OperationalState.ModelAttempts[index].CallSite.Callee);
+        }
+
+        foreach (var item in outcome.Events)
+        {
+            events.Add(item);
+            if (item.Kind == DebugEventKind.FramePushed)
+            {
+                callTrace.Add(item.Method);
+            }
+        }
+    }
+
+    private static CounterfactualExecutionResult CompleteRootedExecution(
+        CounterfactualMethodPlan<TMemory> plan,
+        IlMachine<ProvenanceConcreteValue, TMemory> machine,
+        CounterfactualRecordingMemoryModel<TMemory> recordingMemory,
+        MachineState<ProvenanceConcreteValue, TMemory> state,
+        MachineOperationalState operationalState,
+        ImmutableArray<MethodHandle>.Builder callTrace,
+        ImmutableArray<DebugEvent>.Builder events)
+    {
+        var bundle = plan.RuntimeBundle;
+        if (state.CallStack.IsDefault || !state.CallStack.IsEmpty || !state.ReturnValue.HasValue ||
+            state.TerminalTargetException is not null || state.Memory is null ||
+            !HasSameMemoryIdentity(state.Memory, bundle.InitialMemory))
+        {
+            return CreateExecutionInvalid(
+                plan,
+                recordingMemory,
+                operationalState,
+                callTrace,
+                events,
+                "W4.Replay.TerminalStateInvalid",
+                "Completed execution did not retain one normal read-only root return.");
+        }
+
+        var reachedLoadCount = recordingMemory.ReachedLoadOrdinals.Length;
+        var internedNodeCount = bundle.Domain.InternedNodeCount;
+        StepOutcome<ProvenanceConcreteValue, TMemory> repeated;
+        try
+        {
+            repeated = machine.StepOne(state, operationalState);
+        }
+        catch (Exception exception) when (IsOrdinaryFailure(exception))
+        {
+            return CreateExecutionInvalid(
+                plan,
+                recordingMemory,
+                operationalState,
+                callTrace,
+                events,
+                "W4.Replay.TerminalRestepFailed",
+                "The mandatory terminal idempotence check failed inside a runtime capability.");
+        }
+
+        if (!repeated.IsMachineIssuedTransitionFrom(machine, state, operationalState) ||
+            repeated.Status != MachineRunStatus.Completed || repeated.Failure is not null ||
+            repeated.TargetException is not null || !ReferenceEquals(repeated.State, state) ||
+            !ReferenceEquals(repeated.OperationalState, operationalState) || repeated.Events.IsDefault ||
+            !repeated.Events.IsEmpty || recordingMemory.ReachedLoadOrdinals.Length != reachedLoadCount ||
+            bundle.Domain.InternedNodeCount != internedNodeCount)
+        {
+            return CreateExecutionInvalid(
+                plan,
+                recordingMemory,
+                operationalState,
+                callTrace,
+                events,
+                "W4.Replay.TerminalRestepInvalid",
+                "The completed machine did not produce one certified identity-preserving terminal re-step.");
+        }
+
+        var evidence = AggregateReachedEvidence(plan.Request, recordingMemory.ReachedObservations);
+        CounterfactualExecutionValue value;
+        EvaluationCompleteness completeness;
+        CounterfactualBoundStatus lineageStatus;
+        int? lineageNodeCount;
+        try
+        {
+            var returned = state.ReturnValue.Value;
+            switch (bundle.Domain.GetPrecision(returned))
+            {
+                case ValuePrecisionKind.Exact when
+                    bundle.Domain.TryGetConstInt32(returned, out var exact) &&
+                    evidence == EvaluationEvidenceStatus.Exact:
+                    value = CounterfactualExecutionValue.CreateExactInt32(exact);
+                    completeness = EvaluationCompleteness.Complete;
+                    lineageStatus = CounterfactualBoundStatus.NotReached;
+                    lineageNodeCount = null;
+                    break;
+
+                case ValuePrecisionKind.ExplainedUnknown when
+                    evidence is EvaluationEvidenceStatus.Partial or EvaluationEvidenceStatus.Unavailable:
+                    var lineage = bundle.Domain.CaptureLineage(returned);
+                    if (lineage.Nodes.Length > plan.Request.LineageNodeCeiling)
+                    {
+                        return CreateExecutionInvalid(
+                            plan,
+                            recordingMemory,
+                            operationalState,
+                            callTrace,
+                            events,
+                            "W4.Replay.LineageCeilingInvalid",
+                            "The derived finite lineage ceiling did not cover the completed return explanation.");
+                    }
+
+                    value = CounterfactualExecutionValue.CreateUnknownInt32(lineage);
+                    completeness = EvaluationCompleteness.Partial;
+                    lineageStatus = CounterfactualBoundStatus.Applied;
+                    lineageNodeCount = lineage.Nodes.Length;
+                    break;
+
+                default:
+                    return CreateExecutionInvalid(
+                        plan,
+                        recordingMemory,
+                        operationalState,
+                        callTrace,
+                        events,
+                        "W4.Replay.TerminalValueInvalid",
+                        "The completed return precision, structural type, and reached evidence aggregate disagree.");
+            }
+        }
+        catch (Exception exception) when (IsOrdinaryFailure(exception))
+        {
+            return CreateExecutionInvalid(
+                plan,
+                recordingMemory,
+                operationalState,
+                callTrace,
+                events,
+                "W4.Replay.TerminalValueInvalid",
+                "The completed return could not be projected as one canonical exact or explained-unknown Int32 value.");
+        }
+
+        return CreateRootedResult(
+            plan,
+            EvaluationCompletionStatus.Completed,
+            completeness,
+            evidence,
+            value,
+            CounterfactualBoundStatus.Applied,
+            CountExecutedInstructions(events),
+            plan.Request.InstructionLimit - CountExecutedInstructions(events),
+            operationalState.ObservedLogicalDepthHighWater,
+            operationalState.ActiveFrameDepthHighWater,
+            lineageStatus,
+            lineageNodeCount,
+            recordingMemory.ReachedObservations,
+            recordingMemory.ReachedLoadOrdinals,
+            operationalState.ModelAttempts,
+            operationalState.ModelInvocationCount,
+            operationalState.CompletedModeledCallCount,
+            callTrace.ToImmutable(),
+            events.ToImmutable(),
+            []);
+    }
+
+    private static CounterfactualExecutionResult CreateBudgetExhausted(
+        CounterfactualMethodPlan<TMemory> plan,
+        CounterfactualRecordingMemoryModel<TMemory> recordingMemory,
+        MachineOperationalState operationalState,
+        ImmutableArray<MethodHandle>.Builder callTrace,
+        ImmutableArray<DebugEvent>.Builder events)
+    {
+        var used = CountExecutedInstructions(events);
+        return CreateRootedResult(
+            plan,
+            EvaluationCompletionStatus.BudgetExhausted,
+            used == 0 ? EvaluationCompleteness.None : EvaluationCompleteness.Partial,
+            AggregateReachedEvidence(plan.Request, recordingMemory.ReachedObservations),
+            used == 0 ? null : CounterfactualExecutionValue.CreateExecutionPrefix(),
+            CounterfactualBoundStatus.Exhausted,
+            used,
+            0,
+            operationalState.ObservedLogicalDepthHighWater,
+            operationalState.ActiveFrameDepthHighWater,
+            CounterfactualBoundStatus.NotReached,
+            null,
+            recordingMemory.ReachedObservations,
+            recordingMemory.ReachedLoadOrdinals,
+            operationalState.ModelAttempts,
+            operationalState.ModelInvocationCount,
+            operationalState.CompletedModeledCallCount,
+            callTrace.ToImmutable(),
+            events.ToImmutable(),
+            [new EvaluationDiagnostic(
+                "W4.Budget.Instruction",
+                "The configured instruction-unit bound was exhausted at a ready machine boundary.")]);
+    }
+
+    private static CounterfactualExecutionResult CreateMachineFailure(
+        CounterfactualMethodPlan<TMemory> plan,
+        CounterfactualRecordingMemoryModel<TMemory> recordingMemory,
+        MachineOperationalState operationalState,
+        ImmutableArray<MethodHandle>.Builder callTrace,
+        ImmutableArray<DebugEvent>.Builder events,
+        StepOutcome<ProvenanceConcreteValue, TMemory> outcome,
+        EvaluationCompletionStatus completion)
+    {
+        var reached = recordingMemory.ReachedObservations;
+        var evidence = completion == EvaluationCompletionStatus.Invalid
+            ? EvaluationEvidenceStatus.Invalid
+            : AggregateReachedEvidence(plan.Request, reached);
+        var failure = outcome.Failure!;
+        var effects = string.Equals(failure.Code, "W4.Model.EffectUnsupported", StringComparison.Ordinal)
+            ? EvaluationEffectStatus.Unsupported
+            : EvaluationEffectStatus.None;
+        var diagnostic = CreateRuntimeFailureDiagnostic(completion, evidence, effects, operationalState);
+        return CreateRootedResult(
+            plan,
+            completion,
+            EvaluationCompleteness.None,
+            evidence,
+            null,
+            CounterfactualBoundStatus.Applied,
+            CountExecutedInstructions(events),
+            plan.Request.InstructionLimit - CountExecutedInstructions(events),
+            operationalState.ObservedLogicalDepthHighWater,
+            operationalState.ActiveFrameDepthHighWater,
+            CounterfactualBoundStatus.NotReached,
+            null,
+            reached,
+            recordingMemory.ReachedLoadOrdinals,
+            operationalState.ModelAttempts,
+            operationalState.ModelInvocationCount,
+            operationalState.CompletedModeledCallCount,
+            callTrace.ToImmutable(),
+            events.ToImmutable(),
+            [diagnostic],
+            effects);
+    }
+
+    private static EvaluationDiagnostic CreateRuntimeFailureDiagnostic(
+        EvaluationCompletionStatus completion,
+        EvaluationEvidenceStatus evidence,
+        EvaluationEffectStatus effects,
+        MachineOperationalState operationalState)
+    {
+        if (effects == EvaluationEffectStatus.Unsupported)
+        {
+            return new EvaluationDiagnostic(
+                "W4.Model.EffectUnsupported",
+                "The entered call requires an effect unsupported by the read-only counterfactual profile.");
+        }
+
+        if (evidence == EvaluationEvidenceStatus.Conflict)
+        {
+            return new EvaluationDiagnostic(
+                "W4.Evidence.FieldConflict",
+                "A reached field observation conflicted with the frozen runtime evidence.");
+        }
+
+        if (!operationalState.ModelAttempts.IsEmpty &&
+            operationalState.ModelAttempts[^1] is { TransferCompleted: false } attempt)
+        {
+            var code = attempt.StableCode!.StartsWith("W4.Model.", StringComparison.Ordinal)
+                ? attempt.StableCode
+                : attempt.OutcomeKind == PureModelAttemptOutcomeKind.Invalid
+                    ? "W4.Model.Invalid"
+                    : "W4.Model.Capability";
+            return new EvaluationDiagnostic(
+                code,
+                completion == EvaluationCompletionStatus.Invalid
+                    ? "The frozen pure-model attempt returned an invalid bounded outcome."
+                    : "The frozen pure-model attempt could not complete one atomic caller transfer.");
+        }
+
+        return completion == EvaluationCompletionStatus.Invalid
+            ? new EvaluationDiagnostic(
+                "W4.Replay.ExecutionInvalid",
+                "Prepared execution detected an invalid structural or runtime invariant.")
+            : new EvaluationDiagnostic(
+                "W4.Unknown.ExecutionBlocked",
+                "Prepared execution could not continue through a required runtime capability.");
+    }
+
+    private static CounterfactualExecutionResult CreatePreactivationInvalid(
+        CounterfactualMethodPlan<TMemory> plan,
+        string code,
+        string message) =>
+        CreatePreactivationStopped(
+            plan,
+            EvaluationCompletionStatus.Invalid,
+            EvaluationEvidenceStatus.Invalid,
+            code,
+            message);
+
+    private static CounterfactualExecutionResult CreatePreactivationStopped(
+        CounterfactualMethodPlan<TMemory> plan,
+        EvaluationCompletionStatus completion,
+        EvaluationEvidenceStatus evidence,
+        string code,
+        string message) =>
+        CreateRootedResult(
+            plan,
+            completion,
+            EvaluationCompleteness.None,
+            evidence,
+            null,
+            CounterfactualBoundStatus.NotReached,
+            null,
+            null,
+            null,
+            null,
+            CounterfactualBoundStatus.NotReached,
+            null,
+            [],
+            [],
+            [],
+            0,
+            0,
+            [],
+            [],
+            [new EvaluationDiagnostic(code, message)]);
+
+    private static CounterfactualExecutionResult CreateExecutionStopped(
+        CounterfactualMethodPlan<TMemory> plan,
+        CounterfactualRecordingMemoryModel<TMemory> recordingMemory,
+        MachineOperationalState operationalState,
+        ImmutableArray<MethodHandle>.Builder callTrace,
+        ImmutableArray<DebugEvent>.Builder events,
+        EvaluationCompletionStatus completion,
+        string code,
+        string message)
+    {
+        var used = CountExecutedInstructions(events);
+        return CreateRootedResult(
+            plan,
+            completion,
+            EvaluationCompleteness.None,
+            AggregateReachedEvidence(plan.Request, recordingMemory.ReachedObservations),
+            null,
+            CounterfactualBoundStatus.Applied,
+            used,
+            plan.Request.InstructionLimit - used,
+            operationalState.ObservedLogicalDepthHighWater,
+            operationalState.ActiveFrameDepthHighWater,
+            CounterfactualBoundStatus.NotReached,
+            null,
+            recordingMemory.ReachedObservations,
+            recordingMemory.ReachedLoadOrdinals,
+            operationalState.ModelAttempts,
+            operationalState.ModelInvocationCount,
+            operationalState.CompletedModeledCallCount,
+            callTrace.ToImmutable(),
+            events.ToImmutable(),
+            [new EvaluationDiagnostic(code, message)]);
+    }
+
+    private static CounterfactualExecutionResult CreateExecutionInvalid(
+        CounterfactualMethodPlan<TMemory> plan,
+        CounterfactualRecordingMemoryModel<TMemory> recordingMemory,
+        MachineOperationalState operationalState,
+        IEnumerable<MethodHandle> callTrace,
+        IEnumerable<DebugEvent> events,
+        string code,
+        string message)
+    {
+        var frozenEvents = events.ToImmutableArray();
+        var used = CountExecutedInstructions(frozenEvents);
+        return CreateRootedResult(
+            plan,
+            EvaluationCompletionStatus.Invalid,
+            EvaluationCompleteness.None,
+            EvaluationEvidenceStatus.Invalid,
+            null,
+            CounterfactualBoundStatus.Applied,
+            used,
+            plan.Request.InstructionLimit - used,
+            operationalState.ObservedLogicalDepthHighWater,
+            operationalState.ActiveFrameDepthHighWater,
+            CounterfactualBoundStatus.NotReached,
+            null,
+            recordingMemory.ReachedObservations,
+            recordingMemory.ReachedLoadOrdinals,
+            operationalState.ModelAttempts,
+            operationalState.ModelInvocationCount,
+            operationalState.CompletedModeledCallCount,
+            callTrace.ToImmutableArray(),
+            frozenEvents,
+            [new EvaluationDiagnostic(code, message)]);
+    }
+
+    private static CounterfactualExecutionResult CreateRootedResult(
+        CounterfactualMethodPlan<TMemory> plan,
+        EvaluationCompletionStatus completion,
+        EvaluationCompleteness completeness,
+        EvaluationEvidenceStatus evidence,
+        CounterfactualExecutionValue? value,
+        CounterfactualBoundStatus instructionStatus,
+        long? instructionUsed,
+        long? instructionRemaining,
+        int? observedLogicalDepthHighWater,
+        int? activeFrameDepthHighWater,
+        CounterfactualBoundStatus lineageStatus,
+        int? lineageNodeCount,
+        ImmutableArray<CounterfactualFieldObservation> reachedFieldObservations,
+        ImmutableArray<int> reachedFieldLoadOrdinals,
+        ImmutableArray<PureModelAttempt> modelAttempts,
+        int modelInvocationCount,
+        int completedModeledCallCount,
+        ImmutableArray<MethodHandle> callTrace,
+        ImmutableArray<DebugEvent> events,
+        ImmutableArray<EvaluationDiagnostic> diagnostics,
+        EvaluationEffectStatus effects = EvaluationEffectStatus.None) =>
+        CounterfactualExecutionResult.CreateRooted(
+            plan,
+            completion,
+            completeness,
+            evidence,
+            effects,
+            value,
+            instructionStatus,
+            instructionUsed,
+            instructionRemaining,
+            observedLogicalDepthHighWater,
+            activeFrameDepthHighWater,
+            lineageStatus,
+            lineageNodeCount,
+            reachedFieldObservations,
+            reachedFieldLoadOrdinals,
+            modelAttempts,
+            modelInvocationCount,
+            completedModeledCallCount,
+            callTrace,
+            events,
+            RequestProvenance(plan.Request),
+            diagnostics);
+
+    private static EvaluationEvidenceStatus AggregateReachedEvidence(
+        CounterfactualMethodRequest request,
+        ImmutableArray<CounterfactualFieldObservation> observations)
+    {
+        var aggregate = EvaluationEvidenceStatus.Exact;
+        foreach (var status in request.Arguments.Select(static item => item.EvidenceStatus)
+            .Concat(observations.Select(static item => item.EvidenceStatus)))
+        {
+            if (EvidenceRank(status) > EvidenceRank(aggregate))
+            {
+                aggregate = status;
+            }
+        }
+
+        return aggregate;
+    }
+
+    private static int EvidenceRank(EvaluationEvidenceStatus status) => status switch
+    {
+        EvaluationEvidenceStatus.Exact => 0,
+        EvaluationEvidenceStatus.Partial => 1,
+        EvaluationEvidenceStatus.Unavailable => 2,
+        EvaluationEvidenceStatus.Conflict => 3,
+        EvaluationEvidenceStatus.Invalid => 4,
+        _ => throw new ArgumentOutOfRangeException(nameof(status)),
+    };
+
+    private static ImmutableArray<DebugEvent> RemoveLastTransitionEvents(
+        ImmutableArray<DebugEvent>.Builder events,
+        int transitionEventCount)
+    {
+        if (transitionEventCount < 0 || transitionEventCount > events.Count)
+        {
+            return [];
+        }
+
+        return events.Take(events.Count - transitionEventCount).ToImmutableArray();
+    }
+
+    private static long CountExecutedInstructions(IEnumerable<DebugEvent> events) =>
+        events.LongCount(static item => item.Kind == DebugEventKind.InstructionExecuted);
+
+    private static bool HasSameMemoryIdentity(TMemory left, TMemory right) =>
+        typeof(TMemory).IsValueType
+            ? EqualityComparer<TMemory>.Default.Equals(left, right)
+            : ReferenceEquals(left, right);
+
+    private static long SaturatingAdd(long left, long right, long saturation)
+    {
+        if (left < 0 || right < 0 || saturation <= 0)
+        {
+            return 0;
+        }
+
+        if (left >= saturation || right >= saturation || left > saturation - right)
+        {
+            return saturation;
+        }
+
+        return left + right;
+    }
+
+    private static ProjectionFailure InvalidTransition(string suffix, string message) =>
+        new($"W4.Replay.Transition{suffix}Invalid", message);
+
+    private sealed record ProjectionFailure(string Code, string Message);
+
+    private sealed class RejectingExecutionResolver : IResolutionServices
+    {
+        internal static readonly RejectingExecutionResolver Instance = new();
+
+        private RejectingExecutionResolver()
+        {
+        }
+
+        public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method) =>
+            ResolutionResult<ResolvedMethodDefinition>.Failed(
+                ResolutionFailureKind.Invalid,
+                "EXEC_PREPARED_RESOLUTION_FORBIDDEN",
+                "Prepared execution cannot resolve a method definition.");
+
+        public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+            MethodHandle contextMethod,
+            int metadataToken) =>
+            ResolutionResult<ResolvedMethodCallTarget>.Failed(
+                ResolutionFailureKind.Invalid,
+                "EXEC_PREPARED_RESOLUTION_FORBIDDEN",
+                "Prepared execution cannot resolve a method operand.");
+
+        public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken) =>
+            ResolutionResult<ResolvedField>.Failed(
+                ResolutionFailureKind.Invalid,
+                "EXEC_PREPARED_RESOLUTION_FORBIDDEN",
+                "Prepared execution cannot resolve a field operand.");
     }
 
     internal static bool TryCalculateDynamicInstructionCost(
