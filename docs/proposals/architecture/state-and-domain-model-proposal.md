@@ -6,8 +6,8 @@ Supporting design for W3/W4. The closed W3 concrete state/domain contract is imp
 hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
-at that exact commit. W4.1–W4.5 are now implemented. Exact W4.2 commit `e89e43498` adds the dump-free
+ 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+ at that exact commit. W4.1–W4.6b are now implemented. Exact W4.2 commit `e89e43498` adds the dump-free
 provenance-aware `Int32` arithmetic kernel; exact W4.3 commit `7479b1ad4` adds structured non-exact field continuation
 through that same machine; and W4.4 checkpoints `2e596c117`/`742ef2c4f` add complete direct-MethodDef graph
 preparation without changing machine state. Exact W4.5a commit `356c07037` now consumes those frozen graphs for exact
@@ -28,12 +28,34 @@ warnings/errors, prepared graph 40/40, combined lineage/audit 76/76 including 29
 
 W4.5b realizes 2,804 LOC (766 production plus 2,038 tests), so combined W4.5 realizes 6,138 LOC and W4.1–W4.5
 cumulatively realize 16,817 LOC. Historical W4.5b 1,800–2,700 and combined 5,134–6,034 upper estimates were exceeded
-by 104 LOC. The W4.5-closure projection was 25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at
-1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined); this is planning recalibration, not delivered
-work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC, projecting full W4 at 27,217–32,117 LOC while the
-original 16,860–25,310 baseline and every earlier projection, including 24,013–29,313, remain preserved. Call models,
-product contracts, ClrMD dump integration, hosted closure, and fixpoint,
-async, dynamic, and virtual-debug state remain pending or gated research.
+by 104 LOC.
+
+Exact W4.6a commit `77c92789b16d9258c907d5026a36e39f8c957b41` freezes non-generic structural pure-model
+identity, descriptor, invocation, outcome, and registry contracts; exact/no-effect body-free selection; opaque modeled
+leaves; deterministic traversal/depth facts; and fail-closed modeled-graph activation. It passed locked restore; the
+strict fifteen-project Release build at zero warnings/errors; unit 371/371; fast 77/77; ordinary dump 5/5; optimized
+dump 1/1; pure-model contracts 49/49; model planner 25/25; legacy planner 35/35; SRM compiler 1/1; lineage 2/2; both
+guards; and zero skips under `Scope!=Cybersecurity`. Independent audits found no behavioral finding. W4.6a realizes
+2,959 added LOC (1,210 production plus 1,749 tests/fixture support), 359 above the historical 1,800–2,600 upper
+estimate, and brings W4.1–W4.6a to 19,776 LOC.
+
+Exact W4.6b commit `fd723a912` adds `IPureCallModelLineageDomain<TValue>` and append-only schema-v1 kind-6
+`ModeledReturnTransform`, with exact operands embedded, explained operands wrapped by unchanged kind-4 call nodes,
+same-batch atomic interning/acyclicity, structural replay validation, and fresh-domain continuation. Kinds 1–5 retain
+their bytes and IDs. Strict headless builds passed at zero warnings/errors; focused modeled lineage passed 8/8;
+combined legacy-plus-modeled lineage passed 44/44; and the standard single-node integration build plus
+`W4CallLineageIntegrationTests` passed 2/2, all with zero skips and `Scope!=Cybersecurity` on behavioral filters.
+W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC.
+
+Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532–26,132; post-W4.3
+19,228–25,728; post-W4.4 21,179–26,779; post-W4.5a 24,013–29,313; W4.5 closure 25,017–29,417; design audit
+27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
+28,826–33,726; and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan leaves W4.6c machine
+invocation/transfer, attempts, depth witnesses, and unit conformance at 2,550–2,750 LOC and W4.6d compiler/SRM exact,
+degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized W4.6a/b
+plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC and current full W4 is
+30,079–33,729 LOC. Product contracts, ClrMD dump integration, hosted closure, fixpoint, async, dynamic, and virtual-
+debug state remain pending or gated research.
 
 ## Scope
 
@@ -290,6 +312,14 @@ blocked, malformed/non-equivalent output is invalid, and every failure preserves
 memory, budget, and events. Reachable capture/replay validates identity, type, dependency, call-site, and index facts
 before fresh-domain mutation.
 
+W4.6a still introduces no modeled machine state. `MethodGraphPlanner.RequirePureModel` freezes one body-free opaque
+modeled leaf only after the caller's direct edge is resolved and typed; a modeled leaf counts toward traversal and
+logical depth but has no frame, locals, evaluation stack, or heap state. `ActivatePreparedGraph` detects any modeled
+leaf and returns `EXEC_MODEL_EXECUTION_UNAVAILABLE` before checking depth or arguments and before creating semantic or
+operational state or consulting the resolver/model. Capability object identity remains outside structural graph
+equality/hashing. W4.6b likewise adds only a domain operation for constructing modeled-return provenance; it creates
+no call attempt or transfer and is not invoked by the machine until W4.6c.
+
 ### 2.7 AsyncState and LiftedCallState (research)
 
 If async/dynamic lifted semantics later pass their entry gates, semantic state may gain explicit virtual-runtime and lifted-call bookkeeping. These fields are not part of the active state contract.
@@ -388,9 +418,10 @@ semantic value. Thus all same-typed unknowns still denote one lattice top even w
 
 ### 3.3 Unknown payload and provenance
 
-At product boundaries, an executable unknown is not plain `Top`; it requires provenance. W4.2–W4.3 realize that rule
+At product boundaries, an executable unknown is not plain `Top`; it requires provenance. W4.2–W4.6b realize that rule
 with a separate canonical lineage DAG rather than the aspirational monolithic payload below. Its closed node set is
-`InputOrigin`, ordered `BinaryTransform`, and `FieldLoadTransform`. A W4.3 imported field creates an `ImportedField`
+`InputOrigin`, ordered `BinaryTransform`, `FieldLoadTransform`, `CallArgumentTransform`,
+`InterpretedReturnTransform`, and `ModeledReturnTransform`. A W4.3 imported field creates an `ImportedField`
 origin whose source key is the complete `FieldLoadEvidence` digest, followed by a field transform containing the
 imported-receiver digest, complete frozen field, and origin predecessor. The transform excludes process-local object
 numbers, display names, and raw addresses. `FieldLoadTransform` is append-only node kind 3 under the existing schema;
@@ -400,7 +431,12 @@ Node IDs are SHA-256 hashes of versioned canonical bytes; binary transforms embe
 explained-unknown predecessors. Field origin/transform interning preflights both nodes before mutating the domain.
 Reachable-only `CaptureLineage` and `ReplayLineage` prevalidation of canonical bytes, IDs, ordering, reachability,
 dependency shape, and field-origin relationships preserve the canonical node set, root, and graph fingerprint across
-domain instances without partially mutating a destination on rejection.
+domain instances without partially mutating a destination on rejection. W4.5 appends call-argument kind 4 and
+interpreted-return kind 5. W4.6b appends modeled-return kind 6 without changing kinds 1–5: exact arguments are encoded
+directly into the modeled relation, explained arguments are first wrapped by unchanged parameter-indexed kind-4
+nodes, and the complete acyclic batch is preflighted and interned atomically. Capture/replay validates the model
+identity, complete direct-call site, operand discriminants, parameter ordering, and predecessor relationships before
+fresh-domain publication or continuation.
 
 The richer payload sketch remains a future product/controller vocabulary:
 
@@ -538,7 +574,7 @@ Versioning rules:
 
 ## 8) Implemented constraints and deferred capabilities
 
-Implemented through W4.5:
+Implemented through W4.6b:
 
 - exact `Int32`, structural object references, typed null, and lifted-flat per-type top/bottom values,
 - a persistent memory snapshot contract with allocated defaults and exact imported-field absence,
@@ -576,11 +612,23 @@ Implemented through W4.5:
   complete call-site/predecessor facts and metadata parameter index where applicable, without changing kinds 1–3;
 - stable missing/throwing/malformed capability classification with no partial machine or lineage mutation; and
 - reachable call-lineage capture, validation, fresh-domain replay, and deterministic post-replay continuation.
+- bounded non-generic pure-model identity/version, structural descriptor, two-argument invocation/outcome, registry,
+  selection, and stable-code vocabulary without memory, dump, session, ambient context, target delegate, or lineage;
+- opt-in exact/no-effect pure-model preparation that freezes a body-free modeled leaf without acquiring the target
+  body or permitting missing/invalid/non-exact/effect rejection to fall back to interpreted preparation;
+- modeled-leaf traversal/depth accounting and activation rejection with `EXEC_MODEL_EXECUTION_UNAVAILABLE` before
+  state or operational-state creation;
+- optional `IPureCallModelLineageDomain<TValue>` and append-only schema-v1 kind-6 `ModeledReturnTransform` with exact
+  operands embedded and explained operands represented by unchanged kind-4 nodes; and
+- atomic modeled-return interning/acyclicity plus structural capture/replay and fresh-domain continuation, preserving
+  every kind-1–5 canonical byte sequence and identity.
 
-Deferred to W4.6a–W4.9 or later research gates:
+Deferred to W4.6c–W4.9 or later research gates:
 
 - hybrid nullness/constant/type/taint products,
-- call models, counterfactual request/plan/result and facade, and generated-dump product closure,
+- W4.6c pure-model invocation/return transfer, attempt records, depth witnesses, and unit conformance,
+- W4.6d compiler/SRM exact, degraded, and fresh-session execution conformance,
+- counterfactual request/plan/result and facade, and generated-dump product closure,
 - a ClrMD producer for structured W4.3 field evidence,
 - coarse and summary heap abstractions,
 - full relational numeric domains,
@@ -595,7 +643,7 @@ Deferred to W4.6a–W4.9 or later research gates:
 1. How much of `EHState` is mandatory for first public virtual-stepping preview (`stop-on-throw` only vs handler transfer)?
 2. Which later domains need a separate narrowing operator beyond `Meet`?
 3. How aggressively should path-fact contradiction pruning run under `fast` policy presets?
-4. Should later call/model provenance extend W4.3's canonical acyclic DAG or introduce a separately versioned graph?
+4. Should provenance after W4.6b continue extending schema v1's canonical acyclic DAG or introduce a separately versioned graph?
 5. Should modeled calls always appear as model frames in history, or may policy collapse them into atomic events?
 
 ---
@@ -610,13 +658,16 @@ commit `7479b1ad4`; and W4.4 satisfies complete dump-free direct-call graph prep
 `2e596c117`/`742ef2c4f`. W4.5a satisfies exact prepared-graph activation, direct-call frame execution, return-site
 replay, configured-depth enforcement, high-water accounting, and deterministic frame-event portions at exact commit
 `356c07037`; W4.5b satisfies atomic explained-unknown call/return lineage, stable capability taxonomy, append-only
-canonical identity, and same/fresh-session replay at exact commit `c72f6ee9e`. None is an end-to-end dump product, and
-W4.5 intentionally stops before call models, product contracts, ClrMD dump integration, and hosted closure. The broader research proposal is ready
+canonical identity, and same/fresh-session replay at exact commit `c72f6ee9e`; W4.6a satisfies structural pure-model
+selection, opaque modeled-leaf planning, and fail-closed activation at exact commit `77c92789b`; and W4.6b satisfies
+atomic modeled-return lineage, kind-1–5 compatibility, and structural fresh-domain replay at exact commit
+`fd723a912`. None is an end-to-end dump product, and W4.6b intentionally stops before model invocation/transfer,
+attempt records, product contracts, ClrMD dump integration, and hosted closure. The broader research proposal is ready
 for sign-off when:
 
 1. Core interfaces include explicit `MachineState`/`FrameState`, while any session controller keeps its transition and pause protocol distinct from the machine result.
-2. At least one product-level dump sample can emit and replay provenance-bearing unknowns; W4.2–W4.5 prove only the
-   dump-free domain, evidence, machine, preparation, and interpreted-call seams, and the existing ClrMD field descriptor
-   remains exact-only.
+2. At least one product-level dump sample can emit and replay provenance-bearing unknowns; W4.2–W4.6b prove only the
+   dump-free domain, evidence, machine, preparation, interpreted-call, structural-model, and modeled-lineage seams,
+   and the existing ClrMD field descriptor remains exact-only.
 3. Merge/join behavior is validated on a curated CFG fixture set.
 4. Host API can surface session pause reason, machine status, debug events, and approximation diagnostics without conflating their vocabularies or leaking internal types.

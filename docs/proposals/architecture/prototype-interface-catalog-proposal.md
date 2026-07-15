@@ -7,8 +7,8 @@
 ## Purpose
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
-W3 concrete-IL, and W4.2–W4.5 dump-free explained-unknown, graph-preparation, and interpreted-call proofs. It is descriptive, not a
-promise of compatibility.
+W3 concrete-IL, and W4.2–W4.6b dump-free explained-unknown, graph-preparation, interpreted-call, structural pure-model,
+and modeled-return-lineage proofs. It is descriptive, not a promise of compatibility.
 Hardened W3 checkpoint `19c292f9f`
 passed the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
@@ -35,13 +35,30 @@ lineage/audit 76/76 including 29 legacy identity cases, compiler lineage 2/2, W4
 76/76, ordinary dump 5/5, and optimized dump 1/1, with zero skips and `Scope!=Cybersecurity` on behavioral filters.
 Independent audit found no remaining finding. W4.5b realizes 2,804 LOC (766 production plus 2,038 tests), bringing
 combined W4.5 to 6,138 realized LOC and cumulative W4 realization to 16,817 LOC. The historical 1,800–2,700 W4.5b
-estimate and 5,134–6,034 combined projection were each exceeded at the upper bound by 104 LOC. The W4.5-closure
-projection was 25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at 1,800–2,600 LOC and W4.6b at
-2,700–3,500 LOC (4,500–6,100 combined); this is planning recalibration, not delivered work. Remaining W4.6a–W4.9
-is estimated at 10,400–15,300 LOC and full W4 now projects to 27,217–32,117 LOC. The original 16,860–25,310 baseline,
-original combined W4.5 estimate of 2,300–3,500, and all earlier projections including 24,013–29,313 remain preserved.
-A contract is added only with an executable
-consumer and is removed when it gets ahead of code.
+estimate and 5,134–6,034 combined projection were each exceeded at the upper bound by 104 LOC.
+
+Exact W4.6a implementation checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41` adds the structural pure-model
+contracts and explicit body-free planner profile described below. It passed locked restore; the strict fifteen-project
+Release build at zero warnings/errors; complete unit 371/371; fast integration 77/77; ordinary dump 5/5; optimized
+dump 1/1; focused pure-model contracts 49/49; model planner 25/25; legacy planner 35/35; SRM compiler 1/1; lineage
+2/2; both guards; and zero skips, with `Scope!=Cybersecurity` on every behavioral filter. Independent audits found no
+behavioral finding. W4.6a realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), 359 LOC above
+its historical 1,800–2,600 upper estimate, and brings W4.1–W4.6a realization to 19,776 LOC.
+
+Exact W4.6b implementation checkpoint `fd723a912` adds the optional modeled-return lineage capability and the
+append-only schema-v1 kind-6 `ModeledReturnTransform` described below; it still adds no model execution. Strict
+headless builds passed at zero warnings/errors, focused modeled-lineage tests passed 8/8, and combined legacy plus
+modeled lineage passed 44/44 with zero skips and `Scope!=Cybersecurity`. W4.6b realizes 1,003 added LOC (481
+production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b realization to 20,779 LOC.
+
+The original full-W4 baseline 16,860–25,310 and checkpoint projections 18,532–26,132, 19,228–25,728,
+21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
+28,826–33,726, and 28,879–33,279 LOC remain historical calibration. The current fourteen-row plan leaves W4.6c
+machine invocation/transfer, attempt records, depth witnesses, and unit conformance at 2,550–2,750 LOC, followed by
+W4.6d compiler/SRM exact, degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is
+3,400–3,750 LOC; W4.6a/b plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC
+and current full W4 is 30,079–33,729 LOC. A contract is added only with an executable consumer and is removed when it
+gets ahead of code.
 
 ## Active contracts
 
@@ -59,6 +76,14 @@ consumer and is removed when it gets ahead of code.
   explicit parameters, and return type without acquiring a method body, RVA, or locals;
 - `DirectCallSiteIdentity`, which content-equally freezes the exact caller MethodDef, direct-call IL offset, and exact
   same-module callee MethodDef used by prepared frame state and canonical call/return lineage;
+- `PureCallModelVersion` and `PureCallModelIdentity`, which freeze three bounded numeric components and a bounded
+  canonical lowercase ASCII identifier; `PureCallModelDescriptor`, which binds that identity to one exact body-
+  independent target, declared confidence, and normalized `None`/`Unsupported` effects; and bounded `W4.Model.*`
+  stable-code validation for payload-safe model failures;
+- the deliberately non-generic `PureCallModelInvocation`, `PureCallModelArgument`, and `PureCallModelOutcome`
+  vocabulary: exactly two metadata-ordered structural `Int32` atoms, exact or explained unknown without lineage,
+  ambient context, memory, session, dump, target delegate, or display text; exact/unknown returns or stable-code
+  blocked/invalid outcomes; plus `IPureCallModel`, `IPureCallModelRegistry`, and structural selection results;
 - `IValueDomain<TValue>`, including default-value construction, exact type/stack-kind inspection, concrete constants,
   arithmetic, and executable order/meet/join/widen operations;
 - optional `IValuePrecisionDomain<TValue>` and `ValuePrecisionKind`, which classify an executable value as `Exact`,
@@ -69,6 +94,9 @@ consumer and is removed when it gets ahead of code.
 - optional `IInterpretedCallLineageDomain<TValue>`, which extends the precision capability with an atomic complete-
   vector argument transform and one interpreted-return transform for the admitted direct-call boundary while exact
   values pass unchanged;
+- optional `IPureCallModelLineageDomain<TValue>`, which atomically grounds one modeled explained-unknown return in
+  the complete original two-argument call relation. Exact operands are embedded in one modeled-return node; unknown
+  operands receive unchanged parameter-indexed kind-4 call nodes in the same batch;
 - `IMemoryModel<TValue,TMemory>` constrained by `IPersistentMemoryState<TSelf>`;
 - canonical `FieldLoadEvidence` v1, which retains the dependency ordinal, complete frozen ordinary-instance `Int32`
   field, partial/unavailable status, bounded reason, source and imported-object SHA-256 identities, nonzero address,
@@ -94,7 +122,13 @@ consumer and is removed when it gets ahead of code.
 - `MethodGraphPlanner.Prepare`, which returns either a complete immutable `FrozenMethodGraphPlan` or a status/failure
   with no partial plan. A successful graph owns canonical `FrozenMethodGraphNode` and `FrozenMethodCallSite` vectors,
   complete definitions/admission, distinct fields, direct edges, required logical depth, and fixed internal traversal
-  use; shared MethodDefs are represented once and cycles are rejected; and
+  use; shared MethodDefs are represented once and cycles are rejected;
+- explicit `MethodGraphPlanner.RequirePureModel`, which selects only one exact, no-effect, body-independent target
+  after call resolution/typing and before target-body acquisition. Successful modeled edges expose disposition
+  `PureModel`, one canonical body-free `FrozenPureModelLeaf`, `ModeledLeaves`, and `TryGetModeledLeaf`; missing,
+  throwing, invalid, mismatched, non-exact, or unsupported-effect selection cannot fall back to the target body;
+- prepared activation's W4.6a fail-closed modeled-leaf guard, which returns
+  `EXEC_MODEL_EXECUTION_UNAVAILABLE` before depth, argument, state, resolver, or runtime-model access; and
 - `IlMachine.StepOne`, whose current closed set is `nop`, integer constants, argument/local loads, local stores,
   `add`, `sub`, `mul`, one ordinary-instance `Int32` `ldfld`, direct `call` only in a bound prepared graph, and `ret`;
 - `UnknownExecutionPolicy`, whose default `ExactOnly` value preserves the W3 execution boundary and whose opt-in
@@ -174,10 +208,12 @@ explained helper result becomes an `InterpretedReturnTransform` over that call s
 mutation. Missing capability, capability exceptions, and malformed/non-equivalent capability output map to distinct
 stable blocked/invalid machine results without partial frame, state, memory, budget, event, or node publication.
 
-The implemented lineage vocabulary is deliberately closed through W4.5 to canonical `InputOrigin`, ordered
-`BinaryTransform`, `FieldLoadTransform`, `CallArgumentTransform`, and `InterpretedReturnTransform` nodes. The call
-nodes are append-only kinds 4 and 5 under schema v1; `FieldLoadTransform` remains kind 3, and the hard-coded W4.2/W4.3
-bytes and IDs remain unchanged. Each node ID is the lowercase SHA-256 of
+The implemented lineage vocabulary is deliberately closed through W4.6b to canonical `InputOrigin`, ordered
+`BinaryTransform`, `FieldLoadTransform`, `CallArgumentTransform`, `InterpretedReturnTransform`, and
+`ModeledReturnTransform` nodes. W4.6b appends kind 6 under schema v1; kinds 1–5 retain their exact bytes and IDs.
+The modeled-return operation validates and interns its complete call-node/return-node batch atomically, preserves
+acyclicity, embeds exact operands rather than creating degenerate nodes, and supports structural capture/replay plus
+fresh-domain continuation. Each node ID is the lowercase SHA-256 of
 its versioned canonical bytes. A binary transform embeds exact `Int32` operands directly and references unknown
 operands by predecessor ID, preserving left/right IL stack order even for commutative operations. Domain interning is
 content-based, and field or call insertion preflights the complete atomic group before mutating the intern table.
@@ -289,11 +325,13 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 
 The query product surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
 null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
-loading, conversions, or general operators. W3's public interpreter activation, W4.2–W4.5's provenance-aware
-domain/machine extensions, W4.4's graph planner, and W4.5's prepared execution are architecture proofs, not query-language features or a
-counterfactual-method facade. A ClrMD producer for W4.3 structured non-exact field evidence remains absent, as do call
-models, the W4 request/plan/result and facade, and a generated-dump product result with reopen/replay or hosted
-closure. Those are W4.6a–W4.9 work. Speculative
+loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.6b's provenance-aware
+domain/machine, graph, interpreted-call, structural-model, and modeled-lineage extensions are architecture proofs,
+not query-language features or a counterfactual-method facade. W4.6a supplies structural pure-model contracts and
+selection, and W4.6b supplies modeled-return lineage construction; neither executes a model. A ClrMD producer for
+W4.3 structured non-exact field evidence remains absent, as do W4.6c model transfer/attempt/depth conformance, W4.6d
+compiler/SRM exact/degraded/fresh conformance, the W4 request/plan/result and facade, and a generated-dump product
+result with reopen/replay or hosted closure. Those are W4.6c–W4.9 work. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 

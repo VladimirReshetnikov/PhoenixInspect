@@ -232,6 +232,18 @@ Use standard .NET DI for host-facing composition while allowing direct construct
    - Capture only the reachable lineage DAG and prevalidate canonical bytes/hashes, ordering, dependencies,
      reachability, type, call-site identity, parameter index, and acyclicity before same-session or fresh-session replay.
      Keep modeled calls, product counterfactual contracts, dump integration, and hosted closure outside this lane.
+9. **Structural pure-model contract, planner, and compiler tests (W4.6a)**
+   - Freeze the bounded non-generic descriptor/invocation/outcome/registry vocabulary and stable payload-safe codes.
+   - Require exact/no-effect selection only after caller-edge resolution/typing and before prospective target-body
+     acquisition; assert opaque modeled-leaf deduplication, graph equality independent of runtime capability identity,
+     five-unit/depth-two compiler topology, no fallback/partial graph, and unchanged legacy plan hashes.
+   - Assert that modeled-graph activation returns `EXEC_MODEL_EXECUTION_UNAVAILABLE` before depth, arguments, state,
+     resolver, or model access. This lane makes no model-execution claim.
+10. **Modeled-return lineage contract tests (W4.6b)**
+    - Exercise `IPureCallModelLineageDomain<TValue>` directly: embed exact operands, wrap explained operands with
+      unchanged kind-4 nodes, and publish one schema-v1 kind-6 modeled-return node in a single prevalidated batch.
+    - Assert kinds 1–5 byte/identity compatibility, acyclicity, structural capture/replay validation, fresh-domain
+      continuation, and failure atomicity. Model invocation and machine transfer remain outside this lane.
 
 The external-worker regression project is compiled through the solution, but its tests are not invoked. The five
 hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W4 milestone test commands
@@ -359,9 +371,11 @@ Current facts:
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
   terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct
-  MethodDef helper signature. W4.5 activates that prepared graph for exact direct `call`/`ret` frames and, through an
+  MethodDef helper signature. W4.5 activates interpreted graphs for exact direct `call`/`ret` frames and, through an
   optional value-domain capability, propagates canonical explained-unknown argument and return lineage while the
-  legacy single-body path remains call-free. These profiles do not imply branches, modeled calls, EH, statics outside
+  legacy single-body path remains call-free. W4.6a adds a separate exact/no-effect structural pure-model planning
+  profile with body-free opaque leaves, then blocks those graphs before activation; W4.6b adds modeled-return lineage
+  construction without invoking a model. These profiles do not imply branches, model execution, EH, statics outside
   the exact callee, byrefs, generics, or arbitrary instance methods.
 - Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code,
   `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. It projects
@@ -399,9 +413,8 @@ Current facts:
   The checkpoint realizes 2,804 added LOC (766 production plus 2,038 tests), bringing combined W4.5 to 6,138 LOC and
   cumulative W4.1–W4.5 realization to 16,817 LOC. The historical W4.5b estimate was 1,800–2,700 LOC and the combined
   W4.5 projection was 5,134–6,034 LOC; each upper bound was exceeded by 104 LOC. The W4.5-closure projection was
-  25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at 1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC
-  (4,500–6,100 combined); this is planning recalibration, not delivered work. Remaining W4.6a–W4.9 is
-  10,400–15,300 LOC, for a current full-W4 projection of 27,217–32,117 LOC. Preserve the original
+  25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at 1,800–2,600 LOC and the then-unified W4.6b at
+  2,700–3,500 LOC (4,500–6,100 combined); this remains historical planning calibration. Preserve the original
   16,860–25,310 baseline, the original combined-W4.5 estimate of 2,300–3,500 LOC, and the successive full-W4
   projections of 18,532–26,132, 19,228–25,728, 21,179–26,779, and 24,013–29,313 LOC as historical planning facts.
   Headless evidence at the exact commit passed locked restore; the strict single-node fifteen-project Release build at
@@ -409,7 +422,37 @@ Current facts:
   cases; compiler lineage tests 2/2; the W4 integration aggregate 9/9; complete unit 297/297; fast integration 76/76;
   ordinary dump 5/5; optimized dump 1/1; and both documentation guards, with zero skips and
   `Scope!=Cybersecurity` on every behavioral filter. An independent audit found no production or test findings.
-  Models, product counterfactual contracts, ClrMD dump grounding, and hosted closure remain W4.6a–W4.9 work.
+  Product counterfactual contracts, ClrMD dump grounding, and hosted closure remained later work.
+- W4.6a exact commit `77c92789b16d9258c907d5026a36e39f8c957b41` adds bounded `PureCallModelIdentity`/
+  `PureCallModelVersion`, exact structural descriptors, a non-generic two-`Int32` invocation/outcome contract,
+  registry selection, and `MethodGraphPlanner.RequirePureModel`. Selection occurs after direct-call resolution/typing
+  and before target-body acquisition; successful edges point to deduplicated body-free `FrozenPureModelLeaf` values.
+  Only `Exact` confidence and `None` effects are admitted. Missing, throwing, invalid, mismatched, non-exact, and
+  unsupported-effect outcomes cannot fall back to a body or expose a partial plan. Runtime capability identity is
+  excluded from graph equality/hashing; legacy interpreted call-site hashes stay frozen. Modeled-graph activation
+  returns `EXEC_MODEL_EXECUTION_UNAVAILABLE` before runtime access. The PDB-free compiler fixture PE has SHA-256
+  `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801` and freezes one interpreted root, one
+  modeled leaf, two fields, one edge, five units, and depth two.
+- W4.6a exact-checkpoint headless evidence passed locked restore; strict fifteen-project Release build at zero
+  warnings/errors; complete unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; pure-model contracts
+  49/49; model planner 25/25; legacy planner 35/35; compiler 1/1; lineage 2/2; both guards; and zero skips with
+  `Scope!=Cybersecurity`. Independent audits found no behavioral finding. It realizes 2,959 added LOC (1,210
+  production plus 1,749 tests/fixture support), exceeding the historical upper estimate by 359 LOC and bringing
+  W4.1–W4.6a to 19,776 LOC.
+- W4.6b exact commit `fd723a912` adds optional `IPureCallModelLineageDomain<TValue>` and append-only schema-v1 kind-6
+  `ModeledReturnTransform`. Exact operands are embedded; explained operands receive unchanged kind-4 call nodes; the
+  whole batch is interned atomically with acyclicity and later structural replay validation. Kinds 1–5 remain byte- and
+  identity-compatible, and fresh-domain continuation is covered. Strict headless builds passed at zero warnings/
+  errors; focused 8/8, combined legacy-plus-modeled lineage 44/44, and the standard single-node integration build plus
+  W4 call-lineage 2/2 passed with zero skips and `Scope!=Cybersecurity`. It realizes 1,003 added LOC (481 production
+  plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC. It does not execute a model.
+- Historical later full-W4 projections are W4.5 closure 25,017–29,417, post-design-audit 27,217–32,117, W4.6a
+  checkpoint 28,376–32,476, first concrete W4.6b recalibration 28,876–33,276, post-W4.6b-split 28,826–33,726,
+  and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan leaves W4.6c machine execution/
+  transfer, attempt records, depth witnesses, and unit conformance at 2,550–2,750 LOC and W4.6d compiler/SRM exact,
+  degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized W4.6a/b
+  plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC and current full W4 is
+  30,079–33,729 LOC.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,

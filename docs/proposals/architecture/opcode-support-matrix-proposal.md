@@ -1,7 +1,7 @@
 # Opcode Admission and Evidence Matrix
 
 **Lifecycle:** Current
-**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 direct-call admission, completed W4.5 exact/explained-unknown prepared-call execution, and gates later expansion
+**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 direct-call admission, completed W4.5 exact/explained-unknown prepared-call execution, W4.6a structural pure-model admission, and gates later expansion
 
 ## 1. Principle
 
@@ -233,14 +233,60 @@ zero skips and `Scope!=Cybersecurity` on behavioral filters. Independent audit f
 realizes 2,804 LOC (766 production plus 2,038 tests); combined W4.5 realizes 6,138 LOC and cumulative W4.1–W4.5
 realization is 16,817 LOC. Historical W4.5b 1,800–2,700 and combined 5,134–6,034 upper estimates were exceeded by
 104 LOC. The W4.5-closure projection was 25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at
-1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined); this is planning recalibration, not delivered
-work. Remaining W4.6a–W4.9 is 10,400–15,300 LOC, projecting full W4 at 27,217–32,117 LOC while preserving the
-original baseline and all older projections including 24,013–29,313.
+1,800–2,600 LOC and W4.6b at 2,700–3,500 LOC (4,500–6,100 combined); those figures remain historical planning
+calibration.
+
+### W4.6a — Structural pure-model admission, not model execution
+
+Exact implementation checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41` adds no executable opcode shape.
+Instead, the explicit `MethodGraphPlanner.RequirePureModel` profile admits one exact, body-independent pure-model
+boundary after the direct call has been resolved and typed and before the prospective target body is acquired. The
+default `Prepare` profile remains interpreted-only. A successful selected edge retains `call` as a typed structural
+edge with disposition `PureModel`, points to one deduplicated opaque `FrozenPureModelLeaf`, and contributes the leaf
+and edge to graph traversal accounting. For the compiler fixture, one interpreted root, one modeled leaf, two fields,
+and one edge consume five units and require logical depth two.
+
+The admitted descriptor is deliberately narrower than the research model taxonomy: it has a bounded structural
+identity/version, exact body-independent target, `Exact` confidence, and `None` effects. Non-exact confidence,
+`Unsupported` effects, missing/throwing/mismatched/invalid selection, and every target-body fallback fail atomically
+without a partial graph. `VirtualOnly` and `Modeled` effects cannot be constructed. Capability object identity is not
+part of graph equality or hashing, while the legacy interpreted call-site hash remains frozen.
+
+Activation of any graph containing `ModeledLeaves` blocks before depth, argument, state, resolver, or model access
+with `EXEC_MODEL_EXECUTION_UNAVAILABLE`. W4.6a therefore does **not** execute a model, transfer a modeled return,
+create an attempt record, or add modeled lineage. The exact compiler fixture also freezes a deterministic PDB-free PE
+with SHA-256 `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`.
+
+Exact-checkpoint headless evidence passed locked restore; the strict fifteen-project Release build at zero
+warnings/errors; complete unit 371/371; fast integration 77/77; ordinary dump 5/5; optimized dump 1/1; focused pure-
+model contracts 49/49; model planner 25/25; legacy planner 35/35; SRM compiler 1/1; lineage 2/2; both repository
+guards; and zero skips, with `Scope!=Cybersecurity` on every behavioral filter. Independent audits found no
+behavioral finding. W4.6a realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), exceeding its
+historical 1,800–2,600 estimate by 359 LOC at the upper bound and bringing W4.1–W4.6a realization to 19,776 LOC.
+
+### W4.6b — Modeled-return lineage/domain, still not model execution
+
+Exact checkpoint `fd723a912` adds optional `IPureCallModelLineageDomain<TValue>` and append-only schema-v1 kind-6
+`ModeledReturnTransform`. Exact operands are embedded; explained operands receive unchanged kind-4 call nodes; and
+the complete acyclic batch is prevalidated and interned atomically. Structural capture/replay and fresh-domain
+continuation preserve every kind-1–5 byte sequence and identity. Strict headless builds passed at zero warnings/
+errors; focused 8/8, combined legacy-plus-modeled lineage 44/44, and integration call-lineage 2/2 passed with zero skips
+and `Scope!=Cybersecurity`. W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing
+W4.1–W4.6b realization to 20,779 LOC. This adds no executable opcode or model invocation.
+
+Historical full-W4 projections remain original 16,860–25,310, post-W4.2 18,532–26,132, post-W4.3
+19,228–25,728, post-W4.4 21,179–26,779, post-W4.5a 24,013–29,313, W4.5 closure 25,017–29,417, post-design-audit
+27,217–32,117, W4.6a checkpoint 28,376–32,476, first W4.6b recalibration 28,876–33,276, post-split
+28,826–33,726, and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan splits remaining model
+work into W4.6c machine invocation/transfer, attempts, depth witnesses, and unit conformance at 2,550–2,750 LOC and
+W4.6d compiler/SRM exact, degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is
+3,400–3,750 LOC; realized W4.6a/b plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is
+9,300–12,950 LOC and current full W4 is 30,079–33,729 LOC.
 
 ## 4. Later gates
 
 - **Branches:** require explicit condition semantics, deterministic path policy, and closed fixtures.
-- **Calls:** W4.5 completes exact and explained-unknown values for one frozen interpreted shape; W4.6's pure model and every broader call/effect policy remain gated.
+- **Calls:** W4.5 completes exact and explained-unknown values for one frozen interpreted shape. W4.6a structurally admits one exact no-effect pure-model leaf but deliberately blocks activation; W4.6b supplies its modeled-return lineage relation without invoking it. W4.6c machine execution/attempt/depth conformance and W4.6d compiler/SRM conformance remain gated, as does every broader call/effect policy.
 - **Indirect/byref operations:** require an addressable model and dump-layout evidence. Span is not an MVP commitment.
 - **Exception regions:** first add stop-on-throw; handler search/unwind is a separate milestone required before `leave`, `endfinally`, filters, or debugger-grade Step Out claims.
 - **Async/dynamic:** require their ordinary prerequisite opcode and EH sets before semantic lifting can be evaluated.

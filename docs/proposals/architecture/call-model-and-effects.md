@@ -1,10 +1,70 @@
 # Call Model and Effects Contract (Draft)
 
-> **Roadmap status: supporting design for W4, not an active implementation commitment.** The first dump/query and concrete IL slices admit no user calls. This contract should be narrowed by the first scenario that reaches a call boundary.
+> **Roadmap status: supporting research plus one implemented W4 profile.** W4.5 executes one closed interpreted direct-
+> MethodDef call shape. Exact W4.6a commit `77c92789b16d9258c907d5026a36e39f8c957b41` freezes one narrower
+> structural pure-model admission profile, and exact W4.6b commit `fd723a912` freezes its modeled-return lineage/domain
+> contract. Neither W4.6 checkpoint executes a model. The broad taxonomy, effect lattice, fallbacks, intrinsic catalog,
+> dynamic/async lifting, and host trust vocabulary below remain research unless the current-profile section explicitly
+> says otherwise.
+
+## Current implemented W4.6a/b profile
+
+The normative W4 contract, not this document's broad research taxonomy, controls the active slice. Its model boundary
+is deliberately closed:
+
+- `PureCallModelVersion` has exactly three numeric components, each in `0..65535`. `PureCallModelIdentity` adds a
+  canonical lowercase ASCII stable ID of at most 128 characters, with alphanumeric segments separated singly by
+  `.`, `-`, or `_`. Payload-safe failure codes are at most 128 ASCII characters in the `W4.Model.*` family.
+- `PureCallModelDescriptor` binds the identity/version to one exact body-independent structural target, confidence,
+  and normalized effects. The vocabulary can represent `Exact`, `BestEffort`, `Partial`, and `UnsupportedLayout`, but
+  the W4.6a planner admits only `Exact`. Descriptors may retain effects `None` or `Unsupported`; preparation admits only
+  `None`. `VirtualOnly` and `Modeled` are rejected at descriptor construction.
+- The non-generic `PureCallModelInvocation`/outcome contract carries exactly two metadata-ordered structural `Int32`
+  atoms. Each atom is exact or explained unknown but carries no lineage. The envelope has no memory, dump, session,
+  ambient context, target delegate, or display text. Outcomes are exact return, unknown return without lineage, or
+  blocked/invalid with a stable code. `IPureCallModel`, `IPureCallModelRegistry`, and structural selection results form
+  the remaining capability boundary.
+- Default `MethodGraphPlanner.Prepare` remains interpreted-only. Explicit `RequirePureModel(root, target, registry)`
+  resolves and types the caller edge, then performs model selection before acquiring the prospective target body. A
+  selected target becomes one body-free opaque `FrozenPureModelLeaf`; repeated edges deduplicate selection and the
+  leaf, while each call edge remains retained and charged. The graph exposes `Interpreted`/`PureModel` dispositions,
+  canonical `ModeledLeaves`, and `TryGetModeledLeaf`.
+- Only exact target, exact confidence, and no effects succeed. Missing, blocked, invalid, throwing, mismatched, non-
+  exact, or unsupported-effect selection cannot fall back to target-body interpretation and never exposes a partial
+  plan. Runtime capability object identity is excluded from structural graph equality/hashing; the legacy interpreted
+  call-site hash is frozen.
+- Traversal counts interpreted nodes, modeled leaves, fields, and edges; modeled depth is one logical boundary. The
+  real compiler graph is one interpreted root plus one modeled leaf, two fields, and one edge: five units and required
+  depth two. Its deterministic PDB-free target PE SHA-256 is
+  `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`.
+- `ActivatePreparedGraph` rejects any graph containing modeled leaves with `EXEC_MODEL_EXECUTION_UNAVAILABLE` before
+  depth, arguments, state, resolver, or runtime-model access. W4.6a therefore has no model call, attempt record,
+  modeled return transfer, or modeled lineage.
+- W4.6b adds optional `IPureCallModelLineageDomain<TValue>` and append-only schema-v1 kind-6
+  `ModeledReturnTransform`. It embeds exact operands, wraps explained operands with unchanged kind-4 call nodes,
+  prevalidates and interns the complete acyclic batch atomically, and validates structural replay plus fresh-domain
+  continuation. Kinds 1–5 retain their exact bytes and identities. This domain operation is not machine execution.
+
+W4.6a exact-checkpoint headless evidence passed locked restore; a strict fifteen-project Release build at zero
+warnings/errors; unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; pure-model contracts 49/49; model
+planner 25/25; legacy planner 35/35; compiler 1/1; lineage 2/2; both guards; and zero skips with
+`Scope!=Cybersecurity`. It realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), bringing
+W4.1–W4.6a to 19,776 LOC. W4.6b strict headless builds passed at zero warnings/errors; focused 8/8, combined legacy-
+plus-modeled lineage 44/44, and integration call-lineage 2/2 passed with zero skips and `Scope!=Cybersecurity`. It
+realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC.
+
+Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532–26,132; post-W4.3
+19,228–25,728; post-W4.4 21,179–26,779; post-W4.5a 24,013–29,313; W4.5 closure 25,017–29,417; design audit
+27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
+28,826–33,726; and post-W4.6b checkpoint 28,879–33,279 LOC. The current fourteen-row plan leaves W4.6c actual
+invocation/transfer, attempts, depth witnesses, and unit conformance at 2,550–2,750 LOC and W4.6d compiler/SRM exact,
+degraded, and fresh-session conformance at 850–1,000 LOC. Remaining W4.6c/d is 3,400–3,750 LOC; realized W4.6a/b
+plus projected W4.6c/d totals 7,362–7,712 LOC. Remaining W4.6c–W4.9 is 9,300–12,950 LOC and current full W4 is
+30,079–33,729 LOC.
 
 ## Purpose
 
-This document defines the conceptual contract for call handling in the IL interpreter, with emphasis on deterministic behavior, bounded execution, and explainable approximations.
+Beyond the implemented profile above, this document defines a conceptual research contract for call handling in the IL interpreter, with emphasis on deterministic behavior, bounded execution, and explainable approximations.
 
 It covers:
 
@@ -29,7 +89,9 @@ It covers:
 
 ## 2) Call classification
 
-Every call instruction is classified into one of the following categories before evaluation:
+The following is a future classification taxonomy, not the current W4 dispatcher. Current W4 graphs distinguish only
+interpreted edges and the one required exact pure-model leaf described above; W4.6c has not yet made the latter
+executable. A later broad dispatcher may classify calls into:
 
 1. **PureIntrinsic**
    - Predefined semantic model exists for target member and is side-effect free.
@@ -82,6 +144,9 @@ Confidence labels are mandatory for host trust synthesis and regression assertio
 ---
 
 ## 3) Dispatch contract
+
+This section is a future generalized envelope. It is not implemented by W4.6a/b, whose non-generic model boundary has
+no memory/ambient inputs and whose machine rejects modeled graphs before invocation.
 
 ### 3.1 Inputs
 
@@ -150,7 +215,9 @@ If purity cannot be proven under active policy, downgrade to impure/unknown and 
 
 ## 5) Fallback behaviors
 
-When a call cannot be modeled precisely, one of three fallback strategies is selected by policy:
+The following fallbacks are research candidates. The implemented W4.6a profile has exactly one fallback rule: none.
+Any failed or inadmissible required-model selection rejects preparation without acquiring/interpreting the target body.
+A future policy may instead select one of three strategies:
 
 1. **Block**
    - Stop evaluating this path and produce `blocked` trust label.
@@ -183,7 +250,7 @@ This enables host experiences to answer "why is this value unknown?" without rev
 
 ---
 
-## 7) Initial intrinsic scope (MVP recommendation)
+## 7) Future intrinsic scope (research recommendation)
 
 Prioritize intrinsically modeling methods that are:
 
@@ -236,7 +303,10 @@ All outcomes must carry provenance linking back to callsite IL offset, lifted si
 
 ## 10) Milestone alignment
 
-- **M1:** implement baseline fallback contract + diagnostics.
-- **M2:** integrate effect joins with fixpoint engine.
-- **M3:** add intrinsic catalog and summary format governance.
-- **M4+:** tune trust labels and UX messaging using dump-backed validation data.
+- **W4.6a (implemented):** structural exact/no-effect selection, opaque modeled leaves, and fail-closed activation.
+- **W4.6b (implemented):** atomic modeled-return lineage/domain vocabulary with schema-v1 compatibility.
+- **W4.6c (pending):** invoke the selected model, transfer exact/unknown results, and prove atomic attempts, depth,
+  charging, event, and unit conformance without broadening the active profile.
+- **W4.6d (pending):** prove compiler/SRM exact, degraded, and fresh-session execution conformance.
+- **Later research:** generalized fallback diagnostics, effect joins/fixpoint integration, intrinsic catalog and summary
+  governance, and host trust/UX tuning using dump-backed validation data.
