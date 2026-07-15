@@ -2,7 +2,8 @@
 
 > **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices and for the admitted W4
 > branchless counterfactual-method contract. W3 implements the prerequisite interpreter/memory architecture proof.
-> W4 implementation and validation have not landed; branches, handler transfer, virtual scratch objects,
+> W4.1's fixture gate is implemented and locally validated at `82363585b`; counterfactual method execution has not
+> landed. Branches, handler transfer, virtual scratch objects,
 > async/dynamic lifting, and advanced query workflows remain research backlog rather than inherited commitments.
 
 ## 1) Summary
@@ -14,7 +15,7 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. The admitted W4 contract adds one branchless counterfactual method question to the delivery plan, but it does not add current product capability until its implementation and evidence gates land. An isolated virtual heap and broader method workflows remain research.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. The admitted W4 contract adds one branchless counterfactual method question to the delivery plan. W4.1 now freezes that question's exact generated fixture, CoreCLR result, and current W3 admission gap, but it does not add product capability; W4.2–W4.9 must implement and validate the unknown, call, model, result, and dump paths. An isolated virtual heap and broader method workflows remain research.
 
 ---
 
@@ -231,7 +232,7 @@ exact W2 closure commit `5bed47100`.
 
 ---
 
-### Phase 2 — Branchless counterfactual method evaluation (active W4 contract; implementation pending)
+### Phase 2 — Branchless counterfactual method evaluation (W4.1 gate landed; product execution pending)
 
 Goal: implement the admitted
 [`Counterfactual Method Evaluation Contract`](../architecture/counterfactual-method-evaluation-contract-proposal.md)
@@ -270,7 +271,7 @@ non-cybersecurity architecture-proof scope.
 The W2 query grammar continues to reject every method/getter execution entry point. W4 is a separate request, plan,
 and result contract; it does not silently widen W2 syntax or reinterpret a `DerivedQuery` as method execution.
 
-**Admitted scenario (designed, not implemented)**
+**Admitted scenario (fixture gate implemented; counterfactual evaluation not implemented)**
 
 The generated `DumpProbe` fixture asks: “Under the named evaluation policy and the captured marker evidence, what
 would branchless `GetMarkerSummary` compute through its direct `CombineMarkers` helper?” This is the smallest selected
@@ -479,10 +480,11 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
   hardened checkpoint `19c292f9f`; formally closed for its defined non-cybersecurity architecture-proof scope at exact
   documentation commit `de6cea124` after [GitHub Actions run
   29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
-* **W4:** active, admitted design for the branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under
-  the normative counterfactual-method contract. Implementation and validation are pending. Only its closed direct
-  call, unknown-propagation, effect, and consuming-budget shapes are admitted; branches, broader calls/opcodes,
-  generics, allocation, PDB-backed context, and whole-method abstract analysis remain gated.
+* **W4:** active branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under the normative
+  counterfactual-method contract. W4.1's exact fixture/CoreCLR/current-W3-boundary gate is implemented and locally
+  validated at `82363585b`; unknown propagation, direct-call execution, models, product results, and dump closure remain
+  admitted but unimplemented. Branches, broader calls/opcodes, generics, allocation, PDB-backed context, and
+  whole-method abstract analysis remain gated.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

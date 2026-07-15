@@ -15,10 +15,11 @@ The current plan has three execution lanes:
 - an independent Windows x64 external-worker prototype-regression lane outside W1–W4.
 
 The Windows lane now evaluates both the complete W2 v1 product grammar and W3's closed counted-dump E2 getter over that
-evidence. Dump-free parser, root, plan-identity, SRM projection, activation/admission, memory-law, and CoreCLR
-differential checks remain fast because they require no DAC, process, dump, clock, or network. The worker lane retains
-a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside the non-cybersecurity
-W1/W2/W3 closure and outside the admitted W4 contract.
+evidence. W4.1 adds a dump-free fixture gate for the exact two-field/direct-call closure while deliberately preserving
+W3's rejection boundary. Dump-free parser, root, plan-identity, SRM projection, activation/admission, memory-law, and
+CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network. The worker lane retains
+a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside non-cybersecurity W1–W4
+milestone evidence.
 
 ## Fast semantics lane
 
@@ -32,6 +33,9 @@ Current proof obligations are:
   execute with CoreCLR-compatible results for the closed E1/E2 profiles;
 - compiler-emitted straight-line arithmetic and direct/adjusted getter methods agree with live CoreCLR results,
   including unchecked overflow and a typed-null receiver;
+- the W4.1 `GetMarkerSummary`/`CombineMarkers` fixture has exact compiler-emitted bodies, relational FieldDef/MethodDef
+  operands, signatures and header facts; CoreCLR returns `0x26AF37BD`; and current W3 rejects the caller's second
+  `ldfld` before activation or memory access while the direct `call` remains visible later in the raw body;
 - metadata-derived activation receives only the method, ordered values, and persistent memory; caller counts, local
   values/counts, and return disposition are rejected as inputs;
 - whole-body typed admission rejects unsupported signatures, field identities/storage, suffixes, EH,
@@ -188,8 +192,8 @@ presence does not admit an external artifact product surface.
 | Evaluation evidence context | Explicit dump snapshot/module identities, evaluator source/fallback policy, and only bounds whose guarded operations were reached | That an unavailable module/root was recovered or that an unapplied limit constrained the result |
 | Generic partial-field projection | Retained typed wrapper, provenance, issue code, and `None` answer completeness | A decoded scalar value |
 | Fresh-session replay | Complete canonical result byte sequence/SHA-256 for all 22 cases and canonical plan projection string/SHA-256 for the 13 prepared cases after dump close/reopen and module/root rediscovery | Historical process replay or equivalence across different snapshots |
-| Malformed corpus fast result | Historical deterministic generated mutation bytes and in-process admission outcome; its five facts are now excluded by `Scope!=Cybersecurity` | Any W1/W2/W3 completion requirement; this corpus is non-gating prototype work |
-| Worker prototype checkpoint | One historical locally verified malformed-artifact process result; its test project is not invoked now | Any W1/W2/W3 completion requirement or external product admission |
+| Malformed corpus fast result | Historical deterministic generated mutation bytes and in-process admission outcome; its five facts are now excluded by `Scope!=Cybersecurity` | Any W1/W2/W3/W4 completion requirement; this corpus is non-gating prototype work |
+| Worker prototype checkpoint | One historical locally verified malformed-artifact process result; its test project is not invoked now | Any W1/W2/W3/W4 completion requirement or external product admission |
 | Modeled optimized report | One generated optimized Release full dump with five predeclared axes | Representative private-production context recoverability or a readiness percentage |
 | Live result in differential tests | CoreCLR invocation in the test process | Dump recoverability |
 | Interpreter result | Metadata-derived activation, frozen typed plan, explicit value domain, persistent memory, and deterministic budget/event policy | Historical replay or product-level expression evaluation |
@@ -260,7 +264,7 @@ of hosted run 29374585767. Exact documentation-closure commit
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined
 non-cybersecurity scope.
 
-W4's admitted but unimplemented contract requires a second meaningful unknown-aware domain. Its tests must keep
+W4.2's remaining admitted implementation requires a second meaningful unknown-aware domain. Its tests must keep
 distinct explanatory lineage outside semantic lattice equality while reproducing that lineage canonically in product
 replay. New opcodes or method families enter only through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed

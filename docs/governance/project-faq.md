@@ -137,7 +137,7 @@ Representative risks include:
 - drift between product expectations, design claims, and executable evidence.
 
 The documentation set is intentionally structured to expose and manage these risks early.
-External-input cybersecurity remains separately scoped and supplies no W1-W3 milestone evidence; current milestone
+External-input cybersecurity remains separately scoped and supplies no W1–W4 milestone evidence; current milestone
 test claims explicitly exclude `Scope=Cybersecurity`.
 
 ## 15) How can external consumers evaluate whether this direction is promising?

@@ -85,7 +85,7 @@ counted dump metadata/body + exact rooted field evidence
 
 The dump path is not an implementation detail after the interpreter. It is the primary product path and therefore lands first.
 
-The active W1–W3 paths use generated, source-controlled fixtures directly. The worker described in section 4.5 is a
+The active W1–W4 paths use generated, source-controlled fixtures directly. The worker described in section 4.5 is a
 separately landed, non-gating prototype outside those milestones and is not part of this active data flow.
 
 ## 4. Active components
@@ -318,7 +318,7 @@ a later milestone and are prerequisites for debugger-grade Step Out and async `M
 
 ## 10. External-input scope boundary
 
-W1–W3 are restricted to generated, source-controlled fixture artifacts and non-security evidence behavior. Their
+W1–W4 are restricted to generated, source-controlled fixture artifacts and non-security evidence behavior. Their
 deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. External-input
 cybersecurity is explicitly outside those milestones, and their completion does not create an external artifact product
 surface. The already-landed malformed corpus and one-shot worker are retained only as non-gating prototypes; any future

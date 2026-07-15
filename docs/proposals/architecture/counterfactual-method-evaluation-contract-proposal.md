@@ -4,7 +4,7 @@
 >
 > **Roadmap relation:** Active · W4 normative contract
 >
-> **Implementation status:** Admitted design; implementation and validation have not landed
+> **Implementation status:** W4.1 fixture gate implemented and locally validated at `82363585b`; W4.2–W4.9 pending
 
 ## 1) Purpose and authority
 
@@ -19,9 +19,10 @@ Where this document conflicts with a supporting proposal, this document controls
 surface, and the W3 [Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md) remains the compatibility
 floor for structural identity, whole-body admission, memory isolation, instruction accounting, and replay.
 
-The contract is just ahead of code. Every section that describes W4 behavior is a requirement, not an implementation
-claim, until the traceability map names passing executable evidence. API names shown here are provisional design names;
-public prototype APIs that land must carry detailed XML documentation.
+The contract is just ahead of code. W4.1's fixture/emitted-shape/CoreCLR/current-W3-boundary evidence is implemented;
+every later section that describes W4 behavior remains a requirement, not an implementation claim, until the
+traceability map names passing executable evidence. API names shown here are provisional design names; public
+prototype APIs that land must carry detailed XML documentation.
 
 ## 2) Product-value gate
 
@@ -63,10 +64,12 @@ silently widening the W2 grammar.
 
 ### 2.3 Honest evidence claim
 
-This is a specified, application-shaped product workflow designed to become executable over the generated dump. Its
-shape is sufficient for roadmap admission beyond W2; executable evidence begins with W4.1 and does not exist yet. It is
-not a representative private-production incident corpus and establishes no recoverability or readiness rate. Frame,
-local, and argument recovery remain unavailable; the product receiver comes from the exact rooted-object path.
+This is a specified, application-shaped product workflow designed to become executable over the generated dump. W4.1
+now proves the exact fixture shape, structural operand/signature closure, CoreCLR outcome, and current W3 rejection
+boundary at pushed checkpoint `82363585b`. It does not execute the caller through the interpreter or acquire its body
+from dump memory. The workflow is not a representative private-production incident corpus and establishes no
+recoverability or readiness rate. Frame, local, and argument recovery remain unavailable; the future product receiver
+comes from the exact rooted-object path.
 
 ## 3) Closed W4 profile
 
@@ -614,18 +617,22 @@ Planning counts hand-written production code, tests, fixtures, harnesses, script
 generated output, locks, solution churn, vendored snapshots, and deletion-only scaffold removal are excluded. Additions
 and materially rewritten lines are counted once. These ranges describe implementation surface only.
 
-| Slice | Independently valuable responsibility | Estimated implementation LOC |
-|---|---|---:|
-| W4.1 | Generated value-gate fixture, exact emitted-shape assertions, exact CoreCLR oracle, and one current-W3 rejection checkpoint | 350–480 |
-| W4.2 | Unknown E1/E2 domain kernel, content-addressed lineage, domain/transfer laws, and replay | 1,910–2,630 |
-| W4.3 | Non-exact dump-field import/continuation, evidence matrix, precision events, and dump-free adapter/machine tests | 2,400–3,500 |
-| W4.4 | Direct MethodDef resolution, call signatures, acyclic graph construction/required-depth calculation, and frozen transitive admission | 1,700–2,600 |
-| W4.5 | Multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, and depth high-water reporting | 2,300–3,500 |
-| W4.6 | Structural pure model, typed outcomes, model/effect/fallback policy, and conformance tests | 2,300–3,400 |
-| W4.7 | Retained-null target-outcome contract, terminal projection, canonical fragment without request/plan identity, and dump-free differential/idempotence tests | 1,500–2,500 |
-| W4.8 | Canonical product request/plan/result/runner, configurable traversal charging, target-fragment result-projector integration, and product tests | 2,400–3,500 |
-| W4.9 | Generated-dump exact/degraded/model corpus, CoreCLR integration oracle, reopen/rebind replay, CI closure, and realized LOC ledger | 2,000–3,200 |
-| **Umbrella** | **Nine non-overlapping work slices** | **16,860–25,310** |
+| Slice | Independently valuable responsibility | Estimated implementation LOC | Realized LOC |
+|---|---|---:|---:|
+| W4.1 | Generated value-gate fixture, exact emitted-shape assertions, exact CoreCLR oracle, and one current-W3 rejection checkpoint | 350–480 | 478 |
+| W4.2 | Unknown E1/E2 domain kernel, content-addressed lineage, domain/transfer laws, and replay | 1,910–2,630 | — |
+| W4.3 | Non-exact dump-field import/continuation, evidence matrix, precision events, and dump-free adapter/machine tests | 2,400–3,500 | — |
+| W4.4 | Direct MethodDef resolution, call signatures, acyclic graph construction/required-depth calculation, and frozen transitive admission | 1,700–2,600 | — |
+| W4.5 | Multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, and depth high-water reporting | 2,300–3,500 | — |
+| W4.6 | Structural pure model, typed outcomes, model/effect/fallback policy, and conformance tests | 2,300–3,400 | — |
+| W4.7 | Retained-null target-outcome contract, terminal projection, canonical fragment without request/plan identity, and dump-free differential/idempotence tests | 1,500–2,500 | — |
+| W4.8 | Canonical product request/plan/result/runner, configurable traversal charging, target-fragment result-projector integration, and product tests | 2,400–3,500 | — |
+| W4.9 | Generated-dump exact/degraded/model corpus, CoreCLR integration oracle, reopen/rebind replay, CI closure, and realized LOC ledger | 2,000–3,200 | — |
+| **Initial umbrella** | **Nine non-overlapping work slices** | **16,860–25,310** | **478 through W4.1** |
+
+Replacing W4.1's estimate with its realized value gives a current W4 total projection of **16,988–25,308 LOC**:
+478 realized plus 16,510–24,830 estimated for W4.2–W4.9. The remaining slice envelopes are unchanged pending their
+own design/code audits and implementation evidence.
 
 Ownership boundaries are explicit. W4.1 freezes the fixture and current W3 rejection only; W4.4 owns new call admission
 and graph construction under a fixed internal safety cap, W4.5 owns logical-depth policy/enforcement, and W4.8 owns

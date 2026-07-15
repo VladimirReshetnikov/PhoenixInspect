@@ -22,8 +22,9 @@ Core principles:
 ## Current phase
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
-- **Active delivery target:** a deterministic, read-only evaluator grounded in a .NET dump. W4 now has an admitted
-  branchless counterfactual-method contract, but its implementation and validation have not landed.
+- **Active delivery target:** a deterministic, read-only evaluator grounded in a .NET dump. W4 has an admitted
+  branchless counterfactual-method contract and a locally validated W4.1 value-gate fixture; counterfactual method
+  execution has not landed.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. CoreCLR remains an outcome oracle, not an input to interpreter shape or dump evidence.
 - **Physical scope:** ten source projects contain active contracts or behavior; the two newest projects implement the narrow broker/runner boundary for one-shot external dump queries. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
@@ -39,11 +40,18 @@ Conflict and invalid evidence retain their typed failure outcomes rather than ma
 `CounterfactualExecution` under a named policy and explicit assumptions, not evidence that the target historically
 executed either method.
 
-This is an admitted design contract, not executable W4 evidence. No W4 product facade, unknown-aware domain, direct
-call path, generated-dump corpus, or W4 test gate is implemented yet. The future implementation must consume and report
-instruction and preparation-traversal units, prepare/enforce a maximum logical call depth, and report logical/frame
-depth high-water marks. Allocation remains unadmitted and its bound is therefore absent/not applied until a later
-allocation scenario. Closure requires the
+W4.1 implementation checkpoint `82363585b` adds the exact optimized fixture and four fast facts: the 18-byte caller
+and four-byte helper bodies, relational FieldDef/MethodDef and signature/header facts, the exact CoreCLR value, and the
+current W3 whole-body boundary. That boundary is the second `ldfld` at IL offset 7; the raw direct `call` remains fixed
+at offset 12 and is not yet admitted. Headless local verification passed locked restore, a fifteen-project Release
+build with zero warnings/errors, the focused W4.1 lane at 4/4, the complete non-cybersecurity fast lane at 71/71, and
+the ordinary dump regression at 5/5 with zero skips. The realized W4.1 surface is 478 added or materially revised LOC.
+
+This is executable fixture/gate evidence, not counterfactual product execution. No W4 product facade, unknown-aware
+domain, direct-call execution path, generated-dump W4 corpus, or umbrella closure exists yet. Later slices must consume
+and report instruction and preparation-traversal units, prepare/enforce a maximum logical call depth, and report
+logical/frame depth high-water marks. Allocation remains unadmitted and its bound is therefore absent/not applied
+until a later allocation scenario. Closure requires the
 specified exact, degraded-evidence, budget, differential, and same/fresh-session replay cases to pass through the
 non-cybersecurity headless Release, fast, dump, and focused W4 lanes with zero skips and at the exact pushed commit.
 
@@ -61,8 +69,8 @@ required jobs at exact documentation-closure commit `de6cea124`, formally closin
 non-cybersecurity scope.
 
 A versioned malformed-minidump mutation corpus and a Windows x64 one-shot worker are retained as separately landed,
-non-gating prototype work outside W1, W2, W3, and the admitted W4 contract. The worker's malformed-artifact test passed locally at its checkpoint.
-All current W1–W3 test invocations exclude `Scope=Cybersecurity`; the five hostile-corpus facts and ExternalWorker test
+non-gating prototype work outside W1–W4 milestone evidence. The worker's malformed-artifact test passed locally at its checkpoint.
+All current W1–W4 milestone test invocations exclude `Scope=Cybersecurity`; the five hostile-corpus facts and ExternalWorker test
 project provide no milestone validation. Restore/build intentionally remains repository-wide across all 15 projects,
 including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
 cybersecurity behavioral evidence. Their presence does not make external artifacts a supported product input.

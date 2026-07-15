@@ -6,9 +6,9 @@
 
 Current for active delivery. Research suites are collected separately in section 9.
 
-The W4 counterfactual-method contract is admitted and active design, but no W4 implementation, checked-in scenario
-test, local verification result, or CI-enforced W4 gate exists yet. Section 8 therefore states required evidence, not
-current capability.
+The W4 counterfactual-method contract is admitted and active. W4.1's checked-in fixture gate and local verification
+landed at pushed checkpoint `82363585b`; no W4 counterfactual execution or CI-enforced umbrella gate exists yet.
+Section 8 separates that narrow current evidence from later required capability.
 
 ## 1) Evidence language
 
@@ -138,8 +138,8 @@ Separately, the versioned malformed-minidump corpus deterministically covers eve
 signature/version failures, stream-directory overflow/overlap, `MemoryList`/`Memory64List` truncation, bounded header
 and directory bit flips, appended junk, and a sparse artifact just above the 8 GiB admission limit. Its canonical
 manifest and hard case/count/size caps have fast tests. This corpus is retained as non-gating prototype work outside
-W1, W2, and W3. Its five facts are tagged `Scope=Cybersecurity` and excluded from every current milestone test
-invocation; they provide no W1/W2/W3 validation.
+W1–W4. Its five facts are tagged `Scope=Cybersecurity` and excluded from every current milestone test invocation; they
+provide no W1/W2/W3/W4 validation.
 
 ### One-shot external-worker proof
 
@@ -469,7 +469,13 @@ branchless, EH-free generated-dump scenario: `DumpProbe.GetMarkerSummary` reads 
 direct `CombineMarkers` helper. This question is intentionally beyond W2: a W2 plan selects one field and never
 executes user IL, so it cannot combine the two observations or cross the call boundary.
 
-The future W4 implementation must satisfy all of the following before the slice is described as implemented or
+W4.1 checkpoint `82363585b` currently proves the exact 18-byte caller/four-byte helper closure, relational metadata
+operands and signature/header facts, CoreCLR result, and the actual W3 first rejection at the second `ldfld` before the
+direct `call`. Local headless verification passed focused 4/4, complete fast 71/71, and ordinary dump 5/5 with zero
+skips after locked restore and a zero-warning Release build. It realizes 478 added or materially revised LOC and does
+not claim dump-sourced W4 bodies, unknown continuation, call execution, a product result, or hosted closure.
+
+The remaining W4 implementation must satisfy all of the following before the umbrella is described as implemented or
 verified:
 
 1. The complete root and reachable helper bodies are admitted before instruction zero from counted dump body and

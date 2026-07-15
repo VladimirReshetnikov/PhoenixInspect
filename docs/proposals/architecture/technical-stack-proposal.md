@@ -202,7 +202,7 @@ Use standard .NET DI for host-facing composition while allowing direct construct
      events, terminal null behavior, and canonical transcript equality.
 
 The external-worker regression project is compiled through the solution, but its tests are not invoked. The five
-hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W3 test commands
+hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W4 milestone test commands
 exclude that scope. Repository-wide compilation is topology/compilation-health evidence only, not cybersecurity
 behavioral validation.
 
@@ -335,7 +335,7 @@ Current facts:
   only as a comparison oracle; its body/signature contributes no fact to dump-backed execution.
 - External-input resource ceilings are 8 GiB per dump before hashing/ClrMD parsing, a 256 MiB ClrMD dump cache with stack-trace/root caching disabled, and 512 MiB at the typed external-PE `Open` boundary before SRM parsing. These bounds reduce resource-exhaustion risk but are not a parser/DAC sandbox; trusted-fixture convenience APIs are not external admission boundaries.
 - The Windows x64 one-shot worker and malformed-minidump corpus are separately landed, non-gating prototypes outside
-  W1–W3. The five hostile-corpus facts and worker test project provide no current milestone validation; all W1–W3
+  W1–W4. The five hostile-corpus facts and worker test project provide no current milestone validation; all W1–W4
   test invocations exclude `Scope=Cybersecurity`, while repository-wide compilation retains the projects only as
   topology/compilation-health evidence. The projects do not create an admitted external artifact product surface.
 - `Interpreter.Core.Execution` depends on core abstractions, not on SRM or ClrMD. `MetadataResolutionServices` supplies
