@@ -19,8 +19,9 @@ evidence. W4.1 adds a dump-free fixture gate for the exact two-field/direct-call
 W3's rejection boundary; W4.2 adds the dump-free unknown-aware E1/E2 domain kernel and canonical lineage replay without
 creating a product/dump result; W4.3 adds dump-free backend-neutral structured field evidence, approximation-domain
 capability, precision events, and `FieldLoadTransform` continuation; and W4.4 adds body-independent exact direct-
-MethodDef resolution plus deterministic complete graph preparation. W4.4 still adds no call execution, ClrMD evidence
-producer, product facade, or dump-grounded W4 result. Dump-free parser, root, plan-identity, SRM projection, activation/admission,
+MethodDef resolution plus deterministic complete graph preparation. W4.5a adds exact frame execution over that frozen
+graph with no metadata re-resolution. It still adds no explained-unknown call/return lineage, ClrMD evidence producer,
+product facade, or dump-grounded W4 result. Dump-free parser, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 The worker lane retains a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside
 non-cybersecurity W1–W4 milestone evidence.
@@ -55,6 +56,10 @@ Current proof obligations are:
   rejects MemberRef/MethodSpec substitution and virtual/indirect dispatch, correlates every loaded definition, types
   complete root/callee bodies, freezes canonical nodes/fields/call sites, deduplicates shared callees, rejects cycles,
   calculates required logical depth, and returns no partial plan on any failure;
+- W4.5a atomically activates one complete frozen graph, rejects insufficient configured logical depth before frame
+  creation, executes exact direct `call`/`ret` with canonical return sites, charges one instruction per transfer, leaves
+  memory unchanged, orders instruction events before frame events, records observed/active depth high-water facts, and
+  rejects malformed replay state without re-resolving metadata;
 - metadata-derived activation receives only the method, ordered values, and persistent memory; caller counts, local
   values/counts, and return disposition are rejected as inputs;
 - whole-body typed admission rejects unsupported signatures, field identities/storage, suffixes, EH,
@@ -307,13 +312,33 @@ boundaries before exposing success, deduplicates a shared callee, rejects self/m
 guards, not the configurable product traversal budget. Both dump lanes remain regression evidence only: W4.4 does not
 execute calls, enforce request depth, select models, construct a product result, or ground the graph in dump evidence.
 
-Restore and build remain repository-wide, so all 15 projects are compiled as topology/compilation-health evidence.
+Current local W4.5a verification at exact pushed commit `356c07037` passed locked restore; focused prepared-graph
+execution tests 25/25; focused W4 fixture tests 7/7; the complete 275/275 `Interpreter.Tests` lane; 74/74 fast
+integration tests; 5/5 ordinary dump regression tests; 1/1 optimized dump regression test; the strict 15-project
+Release solution build and strict unit/integration project builds with 0 warnings and 0 errors; the Markdown-link guard over 62 files/41 destinations; and the
+headless-workflow guard over one workflow. Every managed command was headless, every behavioral filter used
+`Scope!=Cybersecurity`, there were zero skips, and no UI was displayed.
+
+W4.5a realizes 3,334 added LOC: 1,590 production LOC plus 1,744 test LOC. W4 has 14,013 realized LOC through W4.5a.
+W4.5b remains estimated at 1,800–2,700 LOC, projecting combined W4.5 at 5,134–6,034 LOC and full W4 at
+24,013–29,313 LOC while preserving the original 16,860–25,310 baseline and all earlier checkpoint estimates.
+
+The exact integration fixture now reaches the CoreCLR oracle through 10 executed instructions and two field loads,
+leaves memory unchanged, reaches observed/active logical-depth high-water 2/2, emits ordered call/frame/return events,
+and proves that the prepared execution path performs no metadata re-resolution. Insufficient configured depth fails
+before execution. An independent audit found no remaining production findings after the checkpoint fixes, including
+active/unwound/terminal depth and terminal empty-stack validation, failure classification, budget precedence, and
+atomic session compatibility/rebinding. Explained-unknown call/return lineage still reports
+`EXEC_CALL_LINEAGE_UNAVAILABLE`; models, product, dump, and hosted closure remain pending.
+
+Roadmap restore and umbrella-build gates remain repository-wide topology/compilation-health checks. The current W4.5a
+closure evidence includes both the solution-wide restore/build and focused strict unit/integration project builds.
 Every current test invocation includes `Scope!=Cybersecurity`; the five dedicated hostile-artifact corpus facts are
 excluded and no cybersecurity validation is claimed.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
-## Post-W4.4 evidence gates
+## Post-W4.5a evidence gates
 
 The generated-fixture W1–W2 path and its prior exact-commit hosted closure evidence remain unchanged. W3's structural
 identity, SRM projection, metadata-derived activation, typed whole-body admission, concrete-domain/persistent-memory
@@ -336,8 +361,12 @@ admission at `2e596c117`/`742ef2c4f`. Its deterministic rooted acyclic graph own
 boundaries, canonical field/call dependencies, shared-callee deduplication, required depth, and fixed internal safety
 usage before success. This is preparation evidence only; the legacy `IlMachine` still rejects before the direct call.
 
-W4.5 is the next evidence gate: deterministic frame push/return execution over the frozen plan and pre-execution
-request-depth enforcement. W4.5–W4.9 remain pending; in particular, product
+W4.5a now demonstrates deterministic exact frame push/return execution over that frozen plan, pre-execution
+request-depth enforcement, canonical return-site replay, high-water accounting, and no metadata re-resolution at
+`356c07037`. It is exact-value kernel evidence only, not counterfactual product execution.
+
+W4.5b is the next evidence gate: explained-unknown argument/return lineage across the interpreted call. W4.5b–W4.9
+remain pending; in particular, models and product
 request/plan/result projection and generated-dump ClrMD production plus close/reopen/rebind evidence remain later-slice
 obligations. New opcodes or method families enter only through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed

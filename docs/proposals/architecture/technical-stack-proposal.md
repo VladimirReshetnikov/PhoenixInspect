@@ -19,7 +19,9 @@ The objective is to pick technologies that maximize:
    Deterministic resource counters are required from the first executable slices; the prototype currently accounts
    for admitted instruction transfers. W4.4 additionally records fixed internal graph-construction use under
    64-method and 1,024 method/field/edge-unit safety caps; those are not the later configurable product traversal
-   budget. Allocation, path, join, and widening budgets remain later requirements.
+   budget. W4.5a separately admits a configured logical-call-depth limit before activation and records required,
+   observed, and active-frame depth facts without charging them as instruction budget. Allocation, path, join, and
+   widening budgets remain later requirements.
    Cooperative `CancellationToken` cancellation remains a separate host-responsiveness mechanism and must not replace
    replay-stable budgets.
 2. **Low-level metadata/IL fidelity**
@@ -209,8 +211,14 @@ Use standard .NET DI for host-facing composition while allowing direct construct
    - Resolve only exact same-module managed-IL MethodDefs, then freeze complete typed rooted acyclic graphs with
      deterministic shared-callee deduplication, required logical depth, canonical dependency order, fixed internal
      limits, and no partial-plan failures.
-   - Keep this lane dump-free and distinguish graph admission from `IlMachine` call execution, configured depth
-     enforcement, product traversal charging, and a counterfactual result.
+   - Keep this lane dump-free and distinguish graph admission from later execution and product charging.
+7. **Exact prepared-graph execution tests (W4.5a)**
+   - Activate only a complete frozen graph, reject insufficient configured logical depth before a frame exists, and
+     execute exact direct `call`/`ret` transfers without resolving metadata again.
+   - Assert one-instruction accounting per call/return, unchanged memory, return-site fidelity, ordered frame events,
+     observed/active depth high-water facts, terminal replay invariants, and failure atomicity.
+   - Keep explained-unknown call/return lineage, call models, counterfactual product contracts, dump integration, and
+     hosted closure outside this lane.
 
 The external-worker regression project is compiled through the solution, but its tests are not invoked. The five
 hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W4 milestone test commands
@@ -338,8 +346,9 @@ Current facts:
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
   terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct
-  MethodDef helper signature, but the legacy machine remains call-free. These profiles do not imply branches, call
-  execution, EH, statics outside the exact callee, byrefs,
+  MethodDef helper signature; W4.5a adds an explicitly activated prepared-graph path that executes exact direct
+  `call`/`ret` frames while the legacy single-body path remains call-free. These profiles do not imply branches,
+  explained-unknown call/return lineage, modeled calls, EH, statics outside the exact callee, byrefs,
   generics, or arbitrary instance methods.
 - Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code,
   `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. It projects
@@ -357,10 +366,19 @@ Current facts:
 - W4.4 checkpoints `2e596c117`/`742ef2c4f` freeze complete definitions, typed boundaries, canonical nodes/fields/call
   sites, shared-callee deduplication, required logical depth, and internal traversal use before exposing a plan. The
   exact fixture is two nodes, two fields, one edge at IL offset 12, depth two, and five units. W4.4 realizes 3,651
-  added LOC (2,076 production plus 1,575 tests), split 1,043/2,608; cumulative W4 realization is 10,679 LOC and the
-  current projection is 21,179–26,779 LOC with the original 16,860–25,310 baseline preserved. Its local headless
-  matrix passed planner 35/35, fixture 6/6, complete unit 250/250, fast 73/73, both dump regressions, strict build, and
-  both guards with zero skips and `Scope!=Cybersecurity` on behavioral tests.
+  added LOC (2,076 production plus 1,575 tests), split 1,043/2,608; cumulative realization through W4.4 is 10,679 LOC
+  and its checkpoint projection was 21,179–26,779 LOC. These historical figures remain preserved.
+- Exact W4.5a commit `356c07037` activates that frozen graph for exact direct calls with canonical call-site/return-site
+  identity, configured and required logical-depth facts, observed and active-frame high-water accounting, ordered frame
+  events, one-instruction call/return charging, unchanged memory, and no metadata re-resolution. It realizes 3,334
+  added LOC (1,590 production plus 1,744 tests), bringing W4.1–W4.5a to 14,013 realized LOC. W4.5b remains estimated at
+  1,800–2,700 LOC; combined W4.5 is projected at 5,134–6,034 LOC and full W4 at 24,013–29,313 LOC, with the original
+  16,860–25,310 baseline preserved. Headless evidence passed locked restore, the strict fifteen-project Release
+  solution build and strict unit/integration project builds at 0 warnings/0 errors, focused prepared-graph tests 25/25,
+  the W4 fixture 7/7, complete unit 275/275, fast integration 74/74, ordinary dump 5/5, optimized dump 1/1, and both
+  documentation guards, with zero skips and `Scope!=Cybersecurity` on every behavioral filter. An independent audit found no
+  remaining production findings after the checkpoint fixes. Explained-unknown call/return lineage, models, product,
+  dump, and hosted closure remain pending.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,

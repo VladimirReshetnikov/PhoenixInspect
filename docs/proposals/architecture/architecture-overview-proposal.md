@@ -11,15 +11,26 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.4 have since landed.
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.5a have since landed.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
-frozen graph preparation, not call execution. Their headless local evidence passed the strict fifteen-project Release
+frozen graph preparation. Their headless local evidence passed the strict fifteen-project Release
 build, focused planner 35/35, focused fixture 6/6, complete unit 250/250, fast 73/73, ordinary dump 5/5,
 optimized-context dump 1/1, and both documentation guards with zero skips under `Scope!=Cybersecurity`. W4.4 realizes
-3,651 added LOC (2,076 production plus 1,575 tests), split 1,043/2,608. W4 has 10,679 realized LOC and a
-21,179–26,779 LOC projection while the original 16,860–25,310 baseline remains preserved:
+3,651 added LOC (2,076 production plus 1,575 tests), split 1,043/2,608.
+
+Pushed W4.5a checkpoint `356c07037` now consumes that exact frozen graph through a resolver-free prepared-machine
+session. It adds metadata-derived multi-frame `call`/`ret`, structural return sites, ordered frame events, configured
+and required logical-depth facts, and observed logical/frame high-water reporting while preserving memory and the
+legacy call-free path. Its headless non-cybersecurity evidence passed locked restore, the strict fifteen-project
+Release solution build and strict unit/integration project builds at zero warnings/errors, focused prepared-graph tests
+25/25, the W4 fixture 7/7, the full unit suite 275/275, fast integration 74/74, ordinary dump 5/5, optimized dump 1/1,
+and both documentation guards with zero skips. Independent audit found no remaining production issue after capability-failure, depth-envelope,
+high-water, budget-precedence, terminal-validation, and session-binding corrections. W4.5a realizes 3,334 LOC (1,590
+production plus 1,744 tests), bringing W4.1–W4.5a to 14,013 realized LOC. W4.5b is recalibrated to 1,800–2,700 LOC;
+combined W4.5 projects to 5,134–6,034 LOC, and full W4 now projects to 24,013–29,313 LOC while the original
+16,860–25,310 baseline and earlier projections remain preserved:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -27,8 +38,9 @@ optimized-context dump 1/1, and both documentation guards with zero skips under 
 3. execute a small, scenario-derived, EH-free IL subset through a concrete value and memory domain, checked against CoreCLR;
 4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy; W4.2 proves their
    branchless dump-free arithmetic transport, and W4.3 proves structured non-exact field continuation plus canonical
-   precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation, while
-   W4.5–W4.9 remain pending.
+   precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation; and
+   W4.5a executes exact direct calls with deterministic frames and depth accounting. Explained-unknown call/return
+   lineage in W4.5b and W4.6–W4.9 remain pending.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -305,8 +317,22 @@ traversal budget.
 
 The exact fixture freezes two nodes, two fields, one edge at caller IL offset 12, required logical depth two, and five
 internal units. The legacy `IlMachine` continues using its call-free admission path and still rejects before the call.
-Direct-call frame transfer and transforms, call models, configured depth enforcement, the counterfactual
-facade/request/plan/result, and generated-dump product execution remain W4.5–W4.9 work.
+
+W4.5a checkpoint `356c07037` adds a mutually exclusive prepared-graph machine session. `ActivatePreparedGraph`
+binds the immutable graph plus one maximum logical depth without resolving again; `CreatePreparedOperationalState`
+retains configured and required depth alongside instruction budget and both high-water facts. Exact interpreted calls
+advance and freeze the caller continuation in `FrameReturnSite`, push a metadata-derived callee frame, and emit
+`InstructionExecuted` then `FramePushed`. Nested `ret` restores that exact continuation, propagates the typed result,
+and emits `InstructionExecuted` then `FramePopped`. Instruction availability precedes invariant/capability work,
+depth mismatch and forged return state fail atomically, memory remains persistent, and terminal states retain exact
+root-result or target-boundary evidence.
+
+The emitted `GetMarkerSummary` fixture now executes ten exact instructions through `CombineMarkers`, performs exactly
+two field loads, reaches logical and active-frame high water two, agrees with CoreCLR, and makes no resolution call
+after graph preparation. Explained-unknown arguments and helper results still stop at the explicit
+`EXEC_CALL_LINEAGE_UNAVAILABLE` seam: canonical `CallArgumentTransform`/`InterpretedReturnTransform` lineage is
+W4.5b. Call models, the counterfactual facade/request/plan/result, dump-grounded execution, and hosted umbrella closure
+remain W4.6–W4.9 work.
 
 ## 5. Identity model
 

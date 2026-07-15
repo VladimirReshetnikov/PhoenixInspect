@@ -1,7 +1,7 @@
 # Opcode Admission and Evidence Matrix
 
 **Lifecycle:** Current
-**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 graph-only direct-call admission, and gates later expansion
+**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 direct-call admission, W4.5a exact prepared-call execution, and gates later expansion
 
 ## 1. Principle
 
@@ -176,14 +176,43 @@ two, and five internal units. The focused planner lane passed 35/35 and fixture 
 build, and both guards also passed headlessly with zero skips and `Scope!=Cybersecurity` on behavioral tests. W4.4
 realizes 3,651 added LOC (2,076 production plus 1,575 tests), split into 1,043-LOC W4.4a and 2,608-LOC W4.4b.
 
-This status does not promote `call` to executable transfer support. The legacy `IlMachine` deliberately remains on
-its call-free plan builder and still rejects the W4 fixture before the call. Frame push/return, request-depth
-enforcement, call events/transforms, models, product projection, and dump-grounded W4 execution remain absent.
+This W4.4 status does not by itself promote `call` to executable transfer support. The legacy `IlMachine` deliberately
+remains on its call-free plan builder and still rejects the W4 fixture before the call.
+
+### W4.5a — Exact prepared-call execution
+
+Pushed checkpoint `356c07037` consumes only a successful immutable W4.4 graph through a mutually exclusive prepared
+machine session:
+
+| Instruction family | Admitted W4.5a execution shape | Status |
+|---|---|---|
+| `call <MethodDef>` | Frozen same-module static `Int32(Int32,Int32)` edge with two exact `Int32` stack arguments; advances the retained caller continuation and pushes one metadata-derived callee frame | `Exact` |
+| Nested `ret` | One exact `Int32` helper result returned through the structural `FrameReturnSite` to the frozen caller boundary | `Exact` |
+| Existing root `ret` | Exact typed root completion after every prepared frame has unwound | `Exact` |
+
+The call and nested return each consume one instruction. Successful call emits `InstructionExecuted` then
+`FramePushed`; successful helper return emits `InstructionExecuted` then `FramePopped`. The configured maximum and
+prepared required logical depth are retained beside observed logical and active-frame high waters, with instruction
+availability checked before invariant or capability work. Execution uses no resolver, preserves persistent memory,
+and rejects forged graph/frame/return/depth facts without a partial transfer.
+
+The exact fixture executes ten instructions, performs two field loads, reaches both depth high waters at two, and
+agrees with CoreCLR. Locked restore, the strict fifteen-project Release solution build and strict unit/integration
+project builds at zero warnings/errors, focused prepared-graph tests 25/25, the W4 fixture 7/7, complete unit 275/275,
+fast integration 74/74, ordinary dump 5/5, optimized dump 1/1, and both documentation guards passed headlessly with
+`Scope!=Cybersecurity` on behavioral filters and zero skips. Independent audit closed with no remaining production finding. W4.5a realizes 3,334 LOC (1,590
+production plus 1,744 tests); cumulative W4.1–W4.5a realization is 14,013 LOC. W4.5b remains estimated at
+1,800–2,700 LOC, projecting combined W4.5 at 5,134–6,034 LOC and full W4 at 24,013–29,313 LOC while preserving the
+original 16,860–25,310 baseline, historical combined W4.5 estimate of 2,300–3,500 LOC, and earlier projections.
+
+This promotion is exact-only. Explained-unknown call arguments and interpreted returns still stop at
+`EXEC_CALL_LINEAGE_UNAVAILABLE`; their canonical transforms remain W4.5b. Models, product projection, dump-grounded
+W4 execution, and hosted closure also remain absent.
 
 ## 4. Later gates
 
 - **Branches:** require explicit condition semantics, deterministic path policy, and closed fixtures.
-- **Calls:** W4.5 next executes only W4.4's frozen direct-MethodDef scenario shape; broader call/effect policy remains gated.
+- **Calls:** W4.5b adds explained-unknown argument/return lineage only to W4.5a's frozen interpreted shape; W4.6's pure model and every broader call/effect policy remain gated.
 - **Indirect/byref operations:** require an addressable model and dump-layout evidence. Span is not an MVP commitment.
 - **Exception regions:** first add stop-on-throw; handler search/unwind is a separate milestone required before `leave`, `endfinally`, filters, or debugger-grade Step Out claims.
 - **Async/dynamic:** require their ordinary prerequisite opcode and EH sets before semantic lifting can be evaluated.

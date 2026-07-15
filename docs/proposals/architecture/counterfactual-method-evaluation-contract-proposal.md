@@ -7,7 +7,7 @@
 > **Implementation status:** W4.1 fixture gate implemented at `82363585b`; W4.2 unknown E1/E2 kernel implemented at
 > `e89e43498`; W4.3 structured field-evidence continuation implemented at `7479b1ad4`; W4.4a body-free direct
 > MethodDef resolution implemented at `2e596c117`; W4.4b frozen transitive graph implemented at `742ef2c4f`;
-> W4.5–W4.9 pending
+> W4.5a exact prepared-graph execution implemented at `356c07037`; W4.5b–W4.9 pending
 
 ## 1) Purpose and authority
 
@@ -29,10 +29,12 @@ execution over shared W3 handlers, and fresh-object lineage replay. W4.3 adds im
 approximation capability, policy-gated partial/unavailable continuation, precision-loss events, and
 `FieldLoadTransform` lineage while retaining exact and terminal memory outcomes. W4.4 now realizes body-independent
 direct MethodDef/signature resolution and a canonical complete acyclic interpreted-method graph under fixed internal
-safety caps. It does not execute a call, push a frame, select a model, enforce a request-supplied depth/traversal limit,
-or produce a product result. W4.5 and every later behavior remain requirements, not implementation claims, until the
-traceability map names passing executable evidence. API names shown here are provisional design names; public
-prototype APIs that land must carry detailed XML documentation.
+safety caps. W4.5a executes the exact frozen interpreted graph through structural call/return boundaries, enforces a
+machine-supplied logical-depth limit before activation, and records logical/frame high water without re-resolution.
+It does not carry explained unknowns across call/return boundaries, select a model, enforce a request-supplied
+traversal limit, or produce a product result. W4.5b and every later behavior remain requirements, not implementation
+claims, until the traceability map names passing executable evidence. API names shown here are provisional design
+names; public prototype APIs that land must carry detailed XML documentation.
 
 ## 2) Product-value gate
 
@@ -88,8 +90,10 @@ dump-grounded counterfactual answer.
 Pushed W4.3 checkpoint `7479b1ad4` proves the dump-free structured field-evidence continuation. Pushed W4.4a
 checkpoint `2e596c117` proves body-free direct MethodDef/signature resolution, and pushed W4.4b checkpoint
 `742ef2c4f` proves complete frozen graph preparation over the exact emitted fixture. The W4.4 graph contains the two
-methods, both fields, and the call at IL offset 12, but remains preparation evidence: the legacy machine still does not
-execute the caller through that call, and no dump-grounded W4 product answer is claimed.
+methods, both fields, and the call at IL offset 12. Pushed W4.5a checkpoint `356c07037` executes that exact frozen graph
+through two metadata-derived frames without consulting a resolver, reproduces the exact CoreCLR answer, and retains
+deterministic instruction, frame-event, return-site, and depth facts. This is still dump-free machine evidence: the
+explained-unknown call/return lineage, model, product facade, and dump-grounded W4 answer remain pending.
 
 ## 3) Closed W4 profile
 
@@ -140,7 +144,8 @@ weaken instruction decoding, stack typing, field ownership, or complete-body adm
 W4.4b implements that distinction as explicit legacy and W4 graph-admission modes. The legacy path used by
 `IlMachine` retains W3's call-free, one-field/getter restrictions. The graph planner's W4 mode admits both fixed
 instance fields in the primary root and direct `call` with exact two-`Int32` pop/one-`Int32` push typing, then requires
-the helper's exact branchless body. This is admission only; call transfer remains W4.5 work.
+the helper's exact branchless body. W4.5a adds an opt-in prepared-graph machine mode that executes exact values across
+that admitted call while leaving legacy activation unchanged. Explained-unknown call/return transfer remains W4.5b.
 
 ### 3.3 Explicit exclusions
 
@@ -211,7 +216,9 @@ W4.4 implements the interpreted-only subset of these phases. W4.4a's `ResolvedMe
 no body/RVA/local facts, so the future W4.6 disposition selector can classify an exact structural target before a
 prospective body read. W4.4b currently chooses only the explicit interpreted graph mode and then acquires and admits
 every reachable definition. It has no model catalog or blocked/model leaf representation yet. Preparation failures
-return `MethodGraphPreparationResult` without a plan and leave the legacy machine entirely unactivated.
+return `MethodGraphPreparationResult` without a plan and leave the legacy machine entirely unactivated. W4.5a consumes
+only a successful frozen interpreted graph through a separate activation mode; it performs no resolution or graph
+mutation during execution and still introduces no model/catalog disposition.
 
 ### 4.3 Preparation traversal units
 
@@ -359,6 +366,11 @@ exact, conflict, invalid, and typed-null behavior remains compatible, while capa
 remain atomic. This checkpoint adds no ClrMD evidence producer, W4 product facade, dump-grounded counterfactual result,
 direct call, or modeled return.
 
+W4.5a checkpoint `356c07037` preserves exact values unchanged across its call and interpreted-return boundaries. It
+does not create degenerate provenance nodes for exact arguments. An explained unknown at either boundary blocks
+atomically with `EXEC_CALL_LINEAGE_UNAVAILABLE`, before state, memory, budget, or events change. W4.5b therefore still
+owns the canonical `CallArgumentTransform` and `InterpretedReturnTransform` nodes and their same/fresh-object replay.
+
 ## 7) Direct calls and transitive admission
 
 ### 7.1 Structural call target
@@ -412,6 +424,27 @@ logical depth two, and five traversal units (two methods, two fields, one edge).
 plans needed by W4.5, but W4.4 neither runs them nor changes `IlMachine` activation. No call transfer, frame event,
 model boundary, request-configurable traversal/depth enforcement, or product result is implemented by this checkpoint.
 
+### 7.4 W4.5a exact execution checkpoint
+
+W4.5a checkpoint `356c07037` binds exactly one `FrozenMethodGraphPlan` and one configured logical-depth limit to an
+opt-in machine session. It creates root and callee frames from already admitted metadata, uses
+`DirectCallSiteIdentity` and `FrameReturnSite` to retain the exact caller/call/callee/resume boundaries, and never
+re-resolves a method, field, or call operand during execution. The legacy W3 activation path remains a mutually
+exclusive call-free mode.
+
+Each exact interpreted `call` advances the caller, pushes its callee, consumes one instruction, and emits
+`InstructionExecuted` followed by `FramePushed`. Each helper `ret` consumes one instruction, validates and pops the
+callee, transfers its exact result to the retained caller return site, and emits `InstructionExecuted` followed by
+`FramePopped`. Root `ret` retains W3 completion behavior. Machine operational state carries configured/required
+logical depth and observed logical/frame high-water facts; every step validates them against the frozen graph and
+completed exact branchless execution additionally validates its depth witness.
+
+Prepared-depth underflow rejects before activation. Instruction availability retains precedence at a nonterminal
+boundary; graph/state disagreement, forged return sites, impossible high-water facts, and incompatible session modes
+are atomic invalid outcomes. Ordinary domain or memory exceptions are normalized to stable blocked capability
+failures without copying capability-controlled messages. Explained-unknown call/return lineage remains excluded by
+the explicit W4.5a boundary in section 6.3.
+
 ## 8) Call execution, models, and effects
 
 ### 8.1 Interpreted call
@@ -429,6 +462,11 @@ An interpreted call:
 Returning from the helper consumes one instruction unit for `ret`, pops the helper frame, pushes its result onto the
 caller stack, and emits the ordered return/frame-pop events. Root `ret` preserves the W3 completion behavior. Frame
 push/pop events identify the actual method and IL boundary; they are not synthesized for a call that did not occur.
+
+W4.5a implements this transfer for exact values over a frozen interpreted graph, including three-level and repeated
+call fixtures, exact return-site replay, ordered frame events, unchanged persistent memory, and the two-frame
+`GetMarkerSummary`/`CombineMarkers` differential result. The implementation performs no resolver call after graph
+activation. Explained unknowns are intentionally rejected before transfer pending W4.5b's lineage capability.
 
 ### 8.2 Pure call model
 
@@ -508,6 +546,11 @@ Execution records the observed logical-depth high-water mark. Interpreted calls 
 high water; modeled calls enter the logical boundary without pushing a frame. The machine rechecks that an interpreted
 frame push agrees with the frozen plan. A mismatch in an already admitted plan/state is `Invalid`, not a second
 reachable budget outcome, and leaves caller state, stack, memory, instruction budget, and events unchanged.
+
+W4.5a implements the interpreted exact subset. Prepared-graph activation rejects a configured limit below the frozen
+required depth before creating machine state, initializes both high-water marks at the root depth of one, and updates
+them only on a completed frame push. Runtime checks validate configured depth, required depth, active frame count, and
+both high-water facts against the bound graph. Modeled logical boundaries remain W4.6 work.
 
 ### 9.3 Preparation-traversal budget
 
@@ -657,6 +700,12 @@ resolution/planner objects. Canonical structural ordering reproduces the same no
 facts, required depth, and traversal-unit total. This is not yet the versioned canonical plan byte projection or
 SHA-256 required by item 3 above; W4.8 owns that product identity, and W4.9 owns dump close/reopen/rebind replay.
 
+Checkpoint `356c07037` proves exact prepared-graph machine replay across fresh machine instances without resolution
+during execution. Structural call/return sites, state, instruction accounting, ordered frame events, completion,
+unchanged memory, and logical/frame high-water facts reproduce for the admitted exact fixtures. This does not yet
+prove explained-unknown call/return lineage replay, the versioned product request/plan/result identity, or dump
+close/reopen/rebind replay.
+
 The target-exception conformance case has a separate replay rule because it has no W4 product request or plan. Equal
 versioned machine fixture, exact typed-null activation, instruction limit, and projector version must reproduce the
 same terminal outcome, accounting, diagnostics, and byte-identical canonical target-outcome fragment/fingerprint.
@@ -703,16 +752,27 @@ W4 closure requires all of the following, headlessly and with `Scope!=Cybersecur
 12. the repository-wide locked restore, zero-warning Release build, Markdown/headless guards, non-cybersecurity fast,
     ordinary-dump, optimized-dump, and focused W4 lanes with zero skips at the exact pushed closure commit.
 
-Through W4.4, item 2, the dump-free field-boundary core of item 3, the dump-free frozen interpreted-admission core of
-item 5, and the corresponding same/fresh-object subsets of item 11 are implemented. W4.4 proves direct MethodDef token
-and signature negatives, unsupported dispatch/suffixes, self/mutual cycles, shared-callee deduplication, fixed graph
-caps, complete no-prefix admission, and required-depth calculation; request maximum-depth enforcement remains W4.5.
-Checkpoints `2e596c117` and `742ef2c4f` together pass locked restore; the strict fifteen-project Release build with zero
-warnings/errors; planner 35/35; W4 fixture 6/6; complete unit 250/250; fast 73/73; ordinary dump 5/5; optimized dump
-1/1; and both guards, with zero skips. Every behavioral command was headless and used `Scope!=Cybersecurity`.
-Dump-sourced evidence in item 4, call execution, models, product projection, dump reopen/rebind replay, and hosted
-exact-commit umbrella closure remain pending; no ClrMD W4 producer, product result, dump-grounded W4 result, or W4
-umbrella closure is claimed.
+Through W4.5a, item 2, the dump-free field-boundary core of item 3, the dump-free frozen interpreted-admission core of
+item 5, the exact-value subset of item 6, the interpreted-depth subset of item 9, and corresponding same/fresh-object
+subsets of item 11 are implemented. W4.4 proves direct MethodDef token/signature negatives, unsupported
+dispatch/suffixes, self/mutual cycles, shared-callee deduplication, fixed graph caps, complete no-prefix admission, and
+required-depth calculation. W4.5a adds exact multi-frame execution, return-site and event ordering, pre-activation
+logical-depth enforcement, runtime invariant checking, depth high-water reporting, and resolver-free replay.
+
+Checkpoints `2e596c117` and `742ef2c4f` together passed locked restore; the strict fifteen-project Release build with
+zero warnings/errors; planner 35/35; W4 fixture 6/6; complete unit 250/250; fast 73/73; ordinary dump 5/5; optimized
+dump 1/1; and both guards, with zero skips. At checkpoint `356c07037`, headless validation passed locked restore; the
+strict fifteen-project Release solution build and strict Release builds of the unit and integration projects, all with
+zero warnings/errors; prepared-graph tests 25/25; W4
+fixture 7/7; complete unit 275/275; fast integration 74/74; ordinary dump 5/5; optimized dump 1/1; the Markdown guard
+across 62 files and 41 local destinations; and the headless guard across one workflow. Every test lane had zero skips
+and every behavioral command used `Scope!=Cybersecurity`. An independent audit closed every identified W4.5a blocker.
+The ordinary and optimized dump filters were `Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity`
+and `Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity`, respectively.
+
+Explained-unknown call/return lineage in item 6, dump-sourced evidence in item 4, models, product projection, dump
+reopen/rebind replay, and hosted exact-commit umbrella closure remain pending; no ClrMD W4 producer, product result,
+dump-grounded W4 result, or W4 umbrella closure is claimed.
 
 Concrete and differential coverage is required for every admitted opcode and call family. Degraded-evidence coverage is
 required for every transfer that can carry an unknown. Tests assert final outcome plus resolver/memory/model call counts,
@@ -731,12 +791,13 @@ and materially rewritten lines are counted once. These ranges describe implement
 | W4.3 | Backend-neutral structured field evidence/continuation, evidence matrix, precision events, and dump-free domain/machine tests | 2,400–3,500 | 3,096 |
 | W4.4a | Body-free direct MethodDef/signature resolution, managed-IL certification, and SRM token/implementation matrix | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 1,043 |
 | W4.4b | Explicit graph admission, deterministic resolution/discovery, canonical acyclic closure, fixed safety caps, and required depth | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 2,608 |
-| W4.5 | Multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, and depth high-water reporting | 2,300–3,500 | — |
+| W4.5a | Exact multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, invariant replay, and depth high-water reporting | Post-audit sub-slice of original combined W4.5 estimate, 2,300–3,500 | 3,334 |
+| W4.5b | Explained-unknown call/return boundary capability, `CallArgumentTransform`/`InterpretedReturnTransform`, and canonical replay | 1,800–2,700 | — |
 | W4.6 | Structural pure model, typed outcomes, model/effect/fallback policy, and conformance tests | 2,300–3,400 | — |
 | W4.7 | Retained-null target-outcome contract, terminal projection, canonical fragment without request/plan identity, and dump-free differential/idempotence tests | 1,500–2,500 | — |
 | W4.8 | Canonical product request/plan/result/runner, configurable traversal charging, target-fragment result-projector integration, and product tests | 2,400–3,500 | — |
 | W4.9 | Generated-dump exact/degraded/model corpus, CoreCLR integration oracle, reopen/rebind replay, CI closure, and realized LOC ledger | 2,000–3,200 | — |
-| **Initial umbrella** | **Nine original work slices; W4.4 was later split into two delivered sub-slices** | **16,860–25,310** | **10,679 through W4.4** |
+| **Initial umbrella** | **Nine original work slices; W4.4 and W4.5 were later split into independently tracked sub-slices** | **16,860–25,310** | **14,013 through W4.5a** |
 
 The original **16,860–25,310 LOC** baseline remains recorded above rather than being rewritten after implementation
 evidence. The historical projection after W4.2 was **18,532–26,132 LOC**; replacing W4.3's estimate with its realized
@@ -745,12 +806,19 @@ plus 378 tests), and W4.4b contributes 2,608 (1,411 production plus 1,197 tests)
 test LOC. Its original combined 1,700–2,600 estimate proved low, so the realized audit records two independently
 delivered sub-slices, each below the 3,500-LOC ceiling, without inventing retroactive per-slice estimates.
 
-W4.1–W4.4 cumulatively realize **10,679 LOC**. The remaining W4.5–W4.9 envelope is **10,500–16,100 LOC**, giving a
-current total projection of **21,179–26,779 LOC**. The W4.2 checkpoint remains 3,454 realized LOC: 3,429 attributable
-implementation LOC (1,521 production plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from
-the milestone lane. W4.3 remains 3,096 realized LOC: 1,100 production plus 1,996 tests. The current table therefore
-contains ten implementation rows because the originally admitted W4.4 row is now the W4.4a/W4.4b pair; the original
-nine-slice umbrella baseline remains a historical calibration fact.
+W4.1–W4.4 cumulatively realize **10,679 LOC**; the then-remaining W4.5–W4.9 envelope of **10,500–16,100 LOC** produced
+the historical **21,179–26,779 LOC** projection. W4.5a now realizes **3,334 LOC**: 1,590 production plus 1,744 tests.
+That brings W4.1–W4.5a to **14,013 LOC**. The original combined W4.5 estimate of 2,300–3,500 remains recorded rather
+than being rewritten; the post-implementation audit separates its exact execution core from the independently
+valuable W4.5b lineage package, now estimated at 1,800–2,700 LOC. Combined W4.5 is therefore currently projected at
+**5,134–6,034 LOC**.
+
+The remaining W4.5b–W4.9 envelope is **10,000–15,300 LOC**, giving a current total projection of
+**24,013–29,313 LOC**. The W4.2 checkpoint remains 3,454 realized LOC: 3,429 attributable implementation LOC (1,521
+production plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. W4.3
+remains 3,096 realized LOC: 1,100 production plus 1,996 tests. The current table contains eleven implementation rows
+because the originally admitted W4.4 and W4.5 rows are now W4.4a/W4.4b and W4.5a/W4.5b pairs. The original nine-slice
+umbrella baseline and historical 18,532–26,132, 19,228–25,728, and 21,179–26,779 projections remain calibration facts.
 
 Ownership boundaries are explicit. W4.1 freezes the fixture and current W3 rejection only. W4.2 owns the second
 domain, execution-boundary precision policy, and `InputOrigin`/`BinaryTransform` lineage only; it keeps exact E2 field
@@ -758,10 +826,10 @@ loads compatible but does not continue from non-exact field evidence. W4.3 imple
 structured field-evidence capability, continuation, precision event, and `FieldLoadTransform`; it does not implement a
 ClrMD evidence producer or dump-grounded result. W4.4a owns body-independent structural target resolution and
 managed-IL/signature certification; W4.4b owns interpreted-call admission, canonical complete graph construction,
-first-result caching, per-edge retention/charging, required-depth calculation, and fixed internal safety caps. Neither
-executes a call or exposes a configurable request budget. W4.5 is next and owns interpreted call transfer, frames,
-logical-depth policy/enforcement, and depth high-water reporting; W4.8 owns configurable traversal charging and product
-projection. W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
+first-result caching, per-edge retention/charging, required-depth calculation, and fixed internal safety caps. W4.5a
+owns exact interpreted call/return transfer, frames, machine-level logical-depth enforcement, invariant replay, and
+depth high-water reporting. W4.5b owns explained-unknown call/return lineage; W4.8 owns configurable traversal charging
+and product projection. W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
 target-outcome/canonical fragment; W4.8
 integrates it into the common result projector without inventing rooted-facade reachability, and W4.9 only aggregates
 the already-tested behavior into closure evidence. Realized LOC is attributed once.
@@ -784,12 +852,13 @@ That is an evaluator-language rule, not a claim that W4 establishes a security b
 
 ## 17) Completion and expansion rule
 
-W4 is complete only when all ten current table rows are implemented (the original W4.4 row is now the W4.4a/W4.4b
-pair), their realized LOC is recorded, the complete required matrix passes locally through the repository headless
-wrapper, the exact pushed closure commit passes every required hosted job, and the traceability map links each
-requirement to that evidence. A contract, fixture, unit-only domain, compiler-only call test, or successful local run
-is not umbrella closure. The preserved initial baseline still describes the nine-slice plan admitted before that
-post-audit split.
+W4 is complete only when all eleven current table rows are implemented (the original W4.4 and W4.5 rows are now
+W4.4a/W4.4b and W4.5a/W4.5b pairs), their realized LOC is recorded, the complete required matrix passes locally
+through the repository headless wrapper, the exact pushed closure commit passes every required hosted job, and the
+traceability map links each requirement to that evidence. A contract, fixture, unit-only domain, compiler-only call
+test, or successful local run
+is not umbrella closure. The preserved initial baseline still describes the nine-slice plan admitted before those
+post-audit splits.
 
 After W4, each of the following still requires a separate scenario-derived contract and LOC-bounded package:
 
