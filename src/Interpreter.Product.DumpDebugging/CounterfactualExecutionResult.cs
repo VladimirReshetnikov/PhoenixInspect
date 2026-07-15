@@ -162,7 +162,8 @@ public sealed class CounterfactualExecutionResult
             modelInvocationCount,
             completedModeledCallCount,
             callTrace,
-            events);
+            events,
+            completion);
         return new CounterfactualExecutionResult(
             completion,
             completeness,

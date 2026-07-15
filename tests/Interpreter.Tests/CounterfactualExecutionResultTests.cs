@@ -508,6 +508,70 @@ public sealed class CounterfactualExecutionResultTests
         Assert.Throws<ArgumentException>(() => CounterfactualExecutionContext.CreateRooted(
             plan, accounting, [other, plan.FieldObservations[1]], [0, 1], [], 0, 0,
             [Root, Helper], events));
+
+        var atomicAccounting = CreateAccounting(plan, used: 0, logicalHighWater: 1, frameHighWater: 1);
+        var blockedAtomic = CounterfactualExecutionResult.CreateRooted(
+            plan,
+            EvaluationCompletionStatus.Blocked,
+            EvaluationCompleteness.None,
+            EvaluationEvidenceStatus.Exact,
+            EvaluationEffectStatus.None,
+            null,
+            CounterfactualBoundStatus.Applied,
+            0,
+            plan.Request.InstructionLimit,
+            1,
+            1,
+            CounterfactualBoundStatus.NotReached,
+            null,
+            [plan.FieldObservations[0]],
+            [0],
+            [],
+            0,
+            0,
+            [Root],
+            [],
+            diagnostics: FailureDiagnostics(EvaluationCompletionStatus.Blocked));
+        Assert.Equal(0, blockedAtomic.Context.Accounting.InstructionUsed);
+        Assert.Single(blockedAtomic.Context.ReachedFieldLoadOrdinals);
+        Assert.Empty(blockedAtomic.Context.Events);
+        Assert.Throws<ArgumentException>(() => CounterfactualExecutionContext.CreateRooted(
+            plan,
+            atomicAccounting,
+            [plan.FieldObservations[0]],
+            [0],
+            [],
+            0,
+            0,
+            [Root],
+            [],
+            EvaluationCompletionStatus.Completed));
+
+        var partialPlan = CreatePlan(firstFieldEvidence: EvaluationEvidenceStatus.Partial).Plan;
+        var invalidAtomic = CounterfactualExecutionResult.CreateRooted(
+            partialPlan,
+            EvaluationCompletionStatus.Invalid,
+            EvaluationCompleteness.None,
+            EvaluationEvidenceStatus.Invalid,
+            EvaluationEffectStatus.None,
+            null,
+            CounterfactualBoundStatus.Applied,
+            0,
+            partialPlan.Request.InstructionLimit,
+            1,
+            1,
+            CounterfactualBoundStatus.NotReached,
+            null,
+            [partialPlan.FieldObservations[0]],
+            [0],
+            [],
+            0,
+            0,
+            [Root],
+            [],
+            diagnostics: FailureDiagnostics(EvaluationCompletionStatus.Invalid));
+        Assert.Equal(EvaluationEvidenceStatus.Invalid, invalidAtomic.Evidence);
+        Assert.Empty(invalidAtomic.Context.Events);
     }
 
     /// <summary>Rejects malformed model/call/frame/event structure and derives exact depth high-water witnesses.</summary>

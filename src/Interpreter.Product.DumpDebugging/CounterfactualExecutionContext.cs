@@ -166,11 +166,17 @@ public sealed class CounterfactualExecutionContext
         int modelInvocationCount,
         int completedModeledCallCount,
         ImmutableArray<MethodHandle> callTrace,
-        ImmutableArray<DebugEvent> events)
+        ImmutableArray<DebugEvent> events,
+        EvaluationCompletionStatus completion = EvaluationCompletionStatus.Completed)
         where TMemory : IPersistentMemoryState<TMemory>
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(accounting);
+        if (!Enum.IsDefined(completion))
+        {
+            throw new ArgumentOutOfRangeException(nameof(completion));
+        }
+
         ValidateCanonicalPlan(plan);
         ValidateAccounting(plan, accounting);
 
@@ -180,7 +186,15 @@ public sealed class CounterfactualExecutionContext
         var trace = CopyAndRejectNull(callTrace, nameof(callTrace));
         var copiedEvents = CopyAndRejectNull(events, nameof(events));
         ValidateCounters(attempts, modelInvocationCount, completedModeledCallCount);
-        var transcript = ValidateRootedTranscript(plan, accounting, observations, ordinals, attempts, trace, copiedEvents);
+        var transcript = ValidateRootedTranscript(
+            plan,
+            accounting,
+            observations,
+            ordinals,
+            attempts,
+            trace,
+            copiedEvents,
+            completion);
         var reachedEvidence = AggregateReachedEvidence(plan.Request, observations);
         var evidenceContext = CreateRootedEvidenceContext(plan.Request, accounting);
 
@@ -342,10 +356,11 @@ public sealed class CounterfactualExecutionContext
         ImmutableArray<int> loadOrdinals,
         ImmutableArray<PureModelAttempt> attempts,
         ImmutableArray<MethodHandle> trace,
-        ImmutableArray<DebugEvent> events)
+        ImmutableArray<DebugEvent> events,
+        EvaluationCompletionStatus completion)
         where TMemory : IPersistentMemoryState<TMemory>
     {
-        ValidateReachedObservations(plan, observations, loadOrdinals, events);
+        ValidateReachedObservations(plan, observations, loadOrdinals, events, completion);
         ValidateModelAttempts(plan, accounting, attempts, events);
         var eventFacts = ValidateEvents(plan, events, !trace.IsEmpty);
 
@@ -399,7 +414,8 @@ public sealed class CounterfactualExecutionContext
         CounterfactualMethodPlan<TMemory> plan,
         ImmutableArray<CounterfactualFieldObservation> observations,
         ImmutableArray<int> loadOrdinals,
-        ImmutableArray<DebugEvent> events)
+        ImmutableArray<DebugEvent> events,
+        EvaluationCompletionStatus completion)
         where TMemory : IPersistentMemoryState<TMemory>
     {
         var planObservations = plan.FieldObservations;
@@ -426,14 +442,23 @@ public sealed class CounterfactualExecutionContext
         var executedLoads = events.Count(static item =>
             item.Kind == DebugEventKind.InstructionExecuted &&
             string.Equals(item.Instruction, "LoadField", StringComparison.Ordinal));
-        Require(successfulLoads == executedLoads,
-            "Successful reached field observations must exactly match executed field-load events.");
+        var hasFinalNontransferringLoad = successfulLoads == executedLoads + 1 &&
+            completion is EvaluationCompletionStatus.Blocked or EvaluationCompletionStatus.Invalid &&
+            !loadOrdinals.IsEmpty &&
+            observationByOrdinal[loadOrdinals[^1]].EvidenceStatus is
+                EvaluationEvidenceStatus.Exact or EvaluationEvidenceStatus.Partial or EvaluationEvidenceStatus.Unavailable;
+        Require(successfulLoads == executedLoads || hasFinalNontransferringLoad,
+            "Successful reached field observations must match executed loads, except for one final atomic failure.");
+
+        var transferredLoadOrdinals = hasFinalNontransferringLoad
+            ? loadOrdinals.Take(loadOrdinals.Length - 1).ToImmutableArray()
+            : loadOrdinals;
 
         var precisionEvidence = events
             .Where(static item => item.Kind == DebugEventKind.ValuePrecisionLost)
             .Select(static item => item.FieldEvidence!.Sha256)
             .ToArray();
-        var expectedPrecision = loadOrdinals
+        var expectedPrecision = transferredLoadOrdinals
             .Select(ordinal => observationByOrdinal[ordinal])
             .Where(static item => item.EvidenceStatus is EvaluationEvidenceStatus.Partial or EvaluationEvidenceStatus.Unavailable)
             .Select(static item => item.ApproximationEvidenceSha256!)
