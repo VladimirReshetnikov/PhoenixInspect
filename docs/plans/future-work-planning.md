@@ -6,7 +6,9 @@ This is the active delivery plan for the interpreter and dump-time evaluation in
 
 ## 1) Scope lock
 
-The only active product target is a **deterministic, read-only expression evaluator grounded in a .NET dump**.
+The active product target is a **deterministic evaluator grounded in a read-only .NET dump**. W1/W2 provide observed
+and derived-query answers; the now-admitted active W4 path adds explicitly counterfactual method evaluation without mutating or
+claiming historical execution of the snapshot.
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
 enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a
@@ -34,8 +36,9 @@ Scope expands only through an explicit decision gate backed by executable eviden
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs.
 Its deliberately narrow contract is the [Restricted Dump Query v1
 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any increment beyond that contract
-requires an explicit scope decision. Representative private-production measurement is outside W1, already-landed
-worker/corpus code remains separately scoped non-gating prototype work, and W4 remains gated. W3 is complete for its
+requires an explicit scope decision. Representative private-production measurement is outside W1, and already-landed
+worker/corpus code remains separately scoped non-gating prototype work. W4 is now active and admitted around the
+`GetMarkerSummary` workflow below, but none of its implementation or validation slices has landed. W3 is complete for its
 defined non-cybersecurity architecture-validation scope at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
@@ -361,30 +364,65 @@ owns the exact behavior. Closure requires all of these executable gates:
 
 ### W4 — Unknown-aware method evaluation
 
-**Estimated implementation surface:** more than 3,500 LOC for the umbrella; decompose into independently valuable slices
-of at most 3,500 LOC each
+**Status:** **Active and admitted; implementation and validation have not landed.**
+
+**Estimated hand-written implementation surface:** 16,860–25,310 LOC across nine non-overlapping, independently
+valuable slices. Every slice has an upper estimate of at most 3,500 LOC; the umbrella is not one work package.
 
 **Goal:** extend the product from read-only derived queries to explicitly counterfactual method evaluation.
 
-**Candidate slices**
+The normative behavior is defined by the [Counterfactual Method Evaluation
+Contract](../proposals/architecture/counterfactual-method-evaluation-contract-proposal.md). The selected branchless
+workflow asks what a strongly rooted generated `DumpProbe` would compute for:
 
-- Provenance-bearing unknown values over the W3 opcode set.
-- Restricted calls and effects with typed model outcomes.
-- Deterministic instruction, call-depth, allocation, and traversal budgets.
-- Stop-on-throw behavior. Handler transfer is not part of the first W4 slice.
-- Host results classified as `CounterfactualExecution`, with assumptions and models visible.
+```csharp
+GetMarkerSummary() => CombineMarkers(Marker, AlternateMarker)
+```
+
+This is useful application-shaped work that W2 cannot express. W2 can bind one exact root and read exactly one direct
+field, optionally applying one literal coalescing fallback. It cannot select both `Marker` and `AlternateMarker`, invoke
+`GetMarkerSummary` or `CombineMarkers`, or execute the user IL that defines their combination. W3 proves the underlying
+single-frame arithmetic/getter seam but deliberately rejects calls and exposes no product method result. W4 therefore
+answers a distinct question rather than widening the W2 grammar speculatively.
+
+**Admitted work slices**
+
+| Slice | Non-overlapping implementation responsibility | Estimated hand-written implementation LOC |
+|---|---|---:|
+| W4.1 — Gate fixture | Add the generated rooted workflow, exact emitted-shape assertions, exact CoreCLR oracle, and one current-W3 whole-body rejection checkpoint. | 350–480 |
+| W4.2 — Unknown E1/E2 kernel | Introduce provenance-bearing unknown continuation for the existing W3 E1/E2 value transfers while preserving structural typing, deterministic events, and no fabricated concrete values. | 1,910–2,630 |
+| W4.3 — Non-exact dump field continuation | Import partial/unavailable field values as typed explanatory unknowns while preserving conflict and invalid as distinct non-continuing outcomes. | 2,400–3,500 |
+| W4.4 — Direct-call metadata and frozen transitive admission | Resolve the one admitted direct helper call structurally, construct the acyclic dependency graph, calculate required depth, and freeze the complete closure before instruction zero; configurable traversal charging remains W4.8. | 1,700–2,600 |
+| W4.5 — Multi-frame interpreted execution and call depth | Push/pop interpreted frames at discrete observable boundaries, preserve return-site identity, enforce the prepared maximum logical depth, and record logical/frame high water. | 2,300–3,500 |
+| W4.6 — Typed pure model, effects, and fallback | Add the scenario-narrowed typed model outcome, normalized effect summary, and explicit blocked/unknown fallback behavior without admitting ambient or arbitrary target execution. | 2,300–3,400 |
+| W4.7 — Target-outcome stop-on-throw contract | Define the standalone target-outcome/canonical fragment for W3's exact-null latch without admitting a fabricated helper/model throw; handler search and transfer remain excluded. | 1,500–2,500 |
+| W4.8 — Product canonical facade, runner, and traversal budget | Expose a bounded `CounterfactualExecution` result with assumptions, models, effects, reached bounds, stable diagnostics, and common-projector integration of W4.7's standalone target fragment; add configurable traversal charging to graph preparation without claiming the non-null rooted facade reaches that fragment. | 2,400–3,500 |
+| W4.9 — Dump corpus, replay, and CI closure | Execute exact and degraded generated-dump cases, compare CoreCLR where applicable, reproduce canonical results after reopen/rebind, and close the headless hosted gate. | 2,000–3,200 |
+
+Instruction budget remains the implemented W3 baseline. W4.5 introduces the prepared maximum logical call depth plus
+logical/frame high-water reporting; W4.8 adds configurable traversal charging to the already frozen graph discovery.
+Allocation is unadmitted by the selected workflow, so no allocation operation consumes a budget and W4 adds no
+dormant allocation counter. A later allocation scenario must define the operation, charging point, result behavior, and
+tests before an allocation budget becomes an applied contract.
 
 **Entry criteria**
 
-- W1–W3 are closed for their stated scopes.
-- Real scenarios demonstrate that method execution adds value beyond W2 queries.
-- Each W4 slice has an explicit estimate of at most 3,500 implementation LOC before work begins.
+- W1–W3 are closed for their stated scopes. **Satisfied.**
+- The selected `GetMarkerSummary` workflow demonstrates method-execution value beyond W2's one-root/one-field query.
+  **Satisfied for roadmap admission; executable evidence belongs to W4.1 and later closure slices.**
+- Effects, deterministic budgets, degraded-evidence behavior, product truth language, and explicit exclusions are fixed
+  by the normative W4 contract. **Satisfied for design admission; no implementation claim follows.**
+- Each admitted work slice has an explicit estimate of at most 3,500 hand-written implementation LOC before work begins.
+  **Satisfied by the table above.**
 
 **Exit criteria for the umbrella**
 
 - Selected methods tolerate missing inputs without fabricating concrete values.
 - Differential and degraded-evidence tests cover every supported opcode/call family.
 - Product language consistently describes results as counterfactual, not historical replay.
+- The exact pushed closure commit passes all required headless hosted jobs with `Scope!=Cybersecurity`, and the realized
+  hand-written implementation LOC ledger is recorded without counting documentation or generated output.
+- External-input cybersecurity behavior remains an explicit accepted exclusion, not an unfilled W4 evidence gate.
 
 ## 4) Research backlog and entry gates
 
@@ -393,7 +431,7 @@ Research documents remain useful hypotheses. They become delivery work only thro
 | Research area | Earliest entry gate |
 |---|---|
 | Handler-transfer EH | A W4 scenario requires interpreted `catch`/`finally`; define search/unwind behavior just ahead of implementation. |
-| Virtual stepping | W4 method execution, deterministic pause/event contracts, source mapping, and stop-on-throw are validated. Debugger-grade Step Out additionally requires handler-transfer EH. |
+| Virtual stepping | W4 method execution, deterministic instruction/frame/model events, and stop-on-throw are validated; a later stepping increment then defines pause semantics and source mapping. Debugger-grade Step Out additionally requires handler-transfer EH. |
 | Async/Task lifting | The interpreter supports the scenario-derived `MoveNext` opcode closure, generics, calls, and required EH behavior. |
 | Dynamic dispatch lifting | Direct call/binding behavior is validated and a concrete dump scenario justifies DLR-specific work. |
 | CFG/fixpoint abstract analysis | At least two value domains share the same meaningful opcode semantics; lattice order and convergence laws are executable tests. |
@@ -414,7 +452,7 @@ Every host-facing result identifies one of:
 - `AbstractAnalysis`: may/must reasoning over possible states.
 
 The active W1/W2 product paths use only the first two modes. W3 is an internal architecture proof and exposes no
-host-facing method result. Any later product method evaluation must use `CounterfactualExecution`; it cannot relabel
+host-facing method result. W4's admitted product method evaluation must use `CounterfactualExecution`; it cannot relabel
 W3 execution as an observation that the target historically ran the method.
 
 ### Result honesty
@@ -434,7 +472,9 @@ A UI trust badge may summarize them but never replaces them in contracts or test
 
 - W3 admits EH-free bodies only and latches one exact typed-null `ldfld` as a terminal target exception without handler
   transfer or continuation.
-- The first W4 exception increment may generalize stop-on-throw, but handler transfer remains separate.
+- W4.7 must define the retained exact-null target-outcome/canonical fragment for later W4.8 result-projector
+  integration. It has no rooted product request or plan identity. The closed non-throwing helper/model cannot fabricate
+  a broader exception case, and handler transfer remains separate.
 - Full handler search, filters, unwind, `finally`/`fault`, and cross-frame propagation are prerequisites for debugger-grade exception stepping, not implicit refinements.
 
 ## 6) Risks and mitigations
@@ -445,10 +485,10 @@ A UI trust badge may summarize them but never replaces them in contracts or test
 | A single maintainer cannot sustain a platform-sized surface | High | Critical | Give every active slice an implementation-LOC envelope; split slices above 3,500 LOC; prefer one product path. |
 | Maintainer unavailability leaves the active slice without continuity | Medium | Critical | Keep one canonical vertical-slice path, executable fixtures, explicit evidence boundaries, and a current handoff map; avoid private operational knowledge. |
 | Optimized dumps omit roots, locals, arguments, or `this` | High | High | Make unavailable/partial expected outcomes; measure scenario recovery rather than guessing. |
-| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Keep external-input cybersecurity outside W1–W3 and admit no external artifact product surface through their completion; any future initiative owns its separate requirements and evidence. |
+| Hostile or malformed artifacts exhaust or compromise the analyzer | Medium | Critical | Keep external-input cybersecurity outside W1–W4 and admit no external artifact product surface through their completion; any future initiative owns its separate requirements and evidence. |
 | Documentation volume is mistaken for capability | High | High | Track implementation and validation separately; design just ahead of code. |
 | Backend or identity mismatch yields plausible wrong reads | Medium | Critical | Identity validation, conflict outcomes, real-dump fixtures, no silent fallback. |
-| The evaluator does not materially improve incident workflows | Medium | High | Test W1/W2 against concrete user questions before funding a W4 product method-evaluation slice; W3 alone is architecture validation. |
+| The evaluator does not materially improve incident workflows | Medium | High | Keep W4 tied to the exact two-field `GetMarkerSummary` question; require the gate fixture, CoreCLR comparison, dump corpus, and product result to demonstrate value beyond W2 before claiming the admitted design is useful. W3 alone remains architecture validation. |
 
 ## 7) Decision gates
 
@@ -471,11 +511,20 @@ W3 decisions now applied:
 3. Reject the complete typed body—including unsupported IL, EH, and non-E1/E2 shapes—before instruction zero.
 4. Import only exact dump owner/field evidence into persistent memory and keep the machine independent of the live dump session.
 
-Before starting any W4 slice:
+W4 admission decisions now applied:
 
-1. Demonstrate user value not achievable through W2's read-only query plan.
-2. Define its effects, budget, and degraded-evidence behavior.
-3. Give it an explicit implementation estimate no larger than 3,500 LOC.
+1. The first product method question is the branchless rooted `DumpProbe.GetMarkerSummary()` workflow. It is not
+   expressible through W2 because its answer depends on two fields, user-method interpretation, and one direct helper
+   call rather than one preselected direct field and optional literal fallback.
+2. The normative counterfactual-method contract defines unknown continuation, effects, deterministic budget charging,
+   degraded evidence, target exceptions, canonical product results, and historical-replay exclusions before code lands.
+3. The nine admitted work slices in the W4 section are non-overlapping hand-written implementation-LOC envelopes, each with
+   an upper estimate no larger than 3,500 LOC. Realized additions and material rewrites will be recorded once at closure.
+4. Instruction and traversal units are consumed only by their defined operations. Maximum logical call depth is a
+   preparation-time bound with execution high-water reporting, not a consumable unit. Allocation remains unadmitted
+   and has no dormant counter.
+5. W4 retains `Scope!=Cybersecurity` in every required test command. Malformed-artifact and external-worker behavior is
+   neither a W4 deliverable nor W4 validation.
 
 ### Optimized-dump recoverability measurement
 

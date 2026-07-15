@@ -84,7 +84,7 @@ Current prototype structure:
 - `src/Interpreter.Product.DumpQuery`
   - the closed, bounded root-field query evaluator and result projection.
 - `src/Interpreter.Host.ExternalWorker` and `src/Interpreter.Host.ExternalWorker.Runner`
-  - a separately landed, non-gating Windows process-boundary prototype outside W1–W3.
+  - a separately landed, non-gating Windows process-boundary prototype outside W1–W4.
 - `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, `tests/Interpreter.TestTarget`, and
   `tests/Interpreter.OptimizedContextTestTarget`
   - fast semantic/contract tests, real dump evidence, and the generated optimized-context report.
@@ -245,7 +245,7 @@ CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad 
 
 ## 10) Future external-input and supply-chain posture
 
-Cybersecurity work for external artifacts is explicitly outside W1–W3. The following remains product-entry
+Cybersecurity work for external artifacts is explicitly outside W1–W4. The following remains product-entry
 guidance, not a current completion gate; the landed worker and malformed corpus are non-gating prototypes and do not
 admit an external artifact product surface.
 

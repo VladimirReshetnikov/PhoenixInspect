@@ -103,7 +103,7 @@ documentation commit `de6cea124`; [GitHub Actions run
 at that exact commit.
 
 The external-worker projects are separately executable, and their four-test package includes a locally passing real
-malformed-artifact process checkpoint. This is non-gating prototype work outside W1–W3; its presence does not admit
+malformed-artifact process checkpoint. This is non-gating prototype work outside W1–W4; its presence does not admit
 an external artifact product surface.
 
 ## 5. Rule for adding a project
@@ -132,7 +132,7 @@ A desired namespace, future product, candidate backend, or possible plugin is no
   completed 2026-07-14 UTC (2026-07-13 PDT). Third-party actions are pinned to verified release commit SHAs.
 
 That hosted run is the W0 baseline. The malformed corpus and external worker are separately landed, non-gating
-prototypes outside W1–W3.
+prototypes outside W1–W4.
 
 Historical unfiltered local verification on 2026-07-14 passed locked restore, the strict 15-project Release build with
 0 warnings/errors, 64/64 core tests, 63/63 fast integration tests, 3/3 ordinary dump tests, and 1/1 optimized-context

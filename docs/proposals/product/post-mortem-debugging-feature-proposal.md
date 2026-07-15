@@ -1,9 +1,9 @@
 # Design Doc: Post-Mortem Expression Evaluator for .NET Dumps
 
-> **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices only. W3 implements a
-> closed interpreter/memory architecture proof, but product-facing method execution, virtual scratch objects,
-> async/dynamic lifting, and advanced query workflows remain research backlog gated by executable evidence; they are
-> not current delivery commitments.
+> **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices and for the admitted W4
+> branchless counterfactual-method contract. W3 implements the prerequisite interpreter/memory architecture proof.
+> W4 implementation and validation have not landed; branches, handler transfer, virtual scratch objects,
+> async/dynamic lifting, and advanced query workflows remain research backlog rather than inherited commitments.
 
 ## 1) Summary
 
@@ -14,7 +14,7 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** for a restricted C# expression subset over dump evidence. The closed W3 getter proof validates architecture below that product boundary; it does not add getter syntax or execution to the query language. Later research may add counterfactual method execution and an isolated virtual heap, but those capabilities are not implied by the first product slice.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. The admitted W4 contract adds one branchless counterfactual method question to the delivery plan, but it does not add current product capability until its implementation and evidence gates land. An isolated virtual heap and broader method workflows remain research.
 
 ---
 
@@ -137,7 +137,7 @@ not discover frame roots, locals, arguments, statics, or exact-null roots.
 
 Each evaluation returns separate, machine-readable axes:
 
-* semantic mode (`Observation`, `DerivedQuery`, and only in later phases `CounterfactualExecution` or `AbstractAnalysis`)
+* semantic mode (`Observation`, `DerivedQuery`, W4 `CounterfactualExecution`, or later-research `AbstractAnalysis`)
 * completion status (completed, blocked, budget-exhausted, cancelled, decision-needed, or failed)
 * completeness (complete, partial, or none)
 * evidence status (exact, partial, unavailable, conflicting, or invalid)
@@ -231,9 +231,12 @@ exact W2 closure commit `5bed47100`.
 
 ---
 
-### Phase 2 — Safe method/property evaluation (research gate)
+### Phase 2 — Branchless counterfactual method evaluation (active W4 contract; implementation pending)
 
-Goal: investigate getters/helpers that would compute values from snapshot-derived or assumed state. Results in this phase are **counterfactual execution**, not historical replay and not evidence of why the original process reached its captured state.
+Goal: implement the admitted
+[`Counterfactual Method Evaluation Contract`](../architecture/counterfactual-method-evaluation-contract-proposal.md)
+for one generated-dump getter/helper chain. Results in this phase are **counterfactual execution**, not historical
+replay and not evidence of why the original process reached its captured state.
 
 **Implemented prerequisite evidence, not a product capability**
 
@@ -264,22 +267,51 @@ hardened checkpoint `19c292f9f`. [Run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
 required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
 non-cybersecurity architecture-proof scope.
-The W2 query grammar continues to reject every method/getter execution entry point.
+The W2 query grammar continues to reject every method/getter execution entry point. W4 is a separate request, plan,
+and result contract; it does not silently widen W2 syntax or reinterpret a `DerivedQuery` as method execution.
 
-**Research target (not implemented)**
+**Admitted scenario (designed, not implemented)**
 
-* Evaluate property getters and methods that are **provably safe** under our rules:
+The generated `DumpProbe` fixture asks: “Under the named evaluation policy and the captured marker evidence, what
+would branchless `GetMarkerSummary` compute through its direct `CombineMarkers` helper?” This is the smallest selected
+question that W2 cannot answer. W2 can select and decode one field; it cannot combine two field observations, execute
+the getter IL, or enter the helper call.
 
-  * no I/O, no time, no threading, no P/Invoke, no unsafe pointers
-  * bounded loops (either proven or runtime-limited)
-* Limited subset of BCL “pure” methods (string operations, numeric ops, simple LINQ on in-memory sequences with limits)
+* With exact method bodies, owner identity, and both marker fields, W4 must return the exact `Int32` summary and the
+  test oracle must agree with direct CoreCLR execution.
+* If either required field is partial or unavailable, the admitted arithmetic and call transfers continue with a
+  typed unknown. The result retains stable field and transformation lineage and never turns missing evidence into
+  zero, the remaining marker, or another concrete guess.
+* Every host-facing answer is `CounterfactualExecution` under an explicit policy and assumption set. It states what
+  the admitted IL computes from captured or explicitly unknown evidence; it never states that the target historically
+  invoked `GetMarkerSummary` or `CombineMarkers`.
+* The helper is the only admitted direct-call shape. Unsupported call shapes block with a typed outcome; the active
+  contract does not inherit the broad model catalog from supporting research documents.
 
 **Guardrails**
 
-* Deterministic instruction, call-depth, allocation, and traversal budgets are mandatory; cooperative cancellation is a separate host-responsiveness mechanism.
-* Clear “blocked due to side-effect risk” diagnostics
-* Option to “Show evaluation plan” at a high level (e.g., “Calls A → B → C; blocked at D (File IO)”)
-* Initial admission may be limited to EH-free bodies. The first exception behavior is stop-on-throw; interpreted handler transfer is a later prerequisite for `catch`/`finally` claims.
+* Deterministic instruction and preparation-traversal units are consumed. Maximum logical call depth is proven before
+  activation and logical/frame depth high-water marks are reported. Cooperative cancellation remains a separate
+  host-responsiveness outcome.
+* Allocation is not admitted. Its budget is absent/not applied until a separately admitted scenario consumes it;
+  carrying a dormant counter would make a false guarantee.
+* The complete branchless root/helper plan is frozen before instruction zero. Precision loss, call/effect decisions,
+  and budget stops have stable provenance and diagnostics.
+* The retained exact typed-null `ldfld` outcome stops counterfactual execution and receives a standalone canonical
+  result projection through dump-free conformance. It carries no fabricated rooted request or plan identity because
+  the closed W4 product request requires an exact non-null root. The non-throwing helper/model may not fabricate a
+  target exception. Interpreted handler search/transfer is not part of this slice, and EH-bearing bodies remain
+  rejected before execution.
+* Closure requires exact, degraded-evidence, differential, budget, and same/fresh-session canonical replay coverage,
+  followed by the required non-cybersecurity headless Release, fast, dump, and focused W4 gates with zero skips at the
+  exact pushed commit. Those results do not exist yet.
+
+**Deferred beyond the admitted slice**
+
+Branches and path forks, CFG merge/fixpoint/widening, loops, handler-transfer EH, virtual or generic dispatch,
+constructors and virtual allocations, broad BCL/pure-method catalogs, collection traversal, PDB-backed frame context,
+async/dynamic lifting, and virtual stepping retain their separate research gates. They are not implied by the W4
+contract or by W3 scaffolding.
 
 ---
 
@@ -447,8 +479,10 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
   hardened checkpoint `19c292f9f`; formally closed for its defined non-cybersecurity architecture-proof scope at exact
   documentation commit `de6cea124` after [GitHub Actions run
   29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
-* **W4:** decomposed, evidence-gated unknown-aware counterfactual method evaluation. Calls, broader opcodes, generics,
-  PDB-backed context, and a second meaningful value domain remain gates rather than inherited W3 capability.
+* **W4:** active, admitted design for the branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under
+  the normative counterfactual-method contract. Implementation and validation are pending. Only its closed direct
+  call, unknown-propagation, effect, and consuming-budget shapes are admitted; branches, broader calls/opcodes,
+  generics, allocation, PDB-backed context, and whole-method abstract analysis remain gated.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

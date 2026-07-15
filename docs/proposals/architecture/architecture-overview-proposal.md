@@ -176,7 +176,7 @@ rediscovered, and the query rebound. This implementation and corpus pass locally
 Two separately landed Windows x64 projects provide a trusted broker/protocol boundary and a one-request runner. They
 have a dedicated headless test project; its four-test package, including a real malformed-artifact process checkpoint,
 passed locally at `9fcf00934`. The projects remain useful topology and process-boundary experiments, but cybersecurity
-work is outside W1–W3; this prototype is not a completion requirement for those milestones or an admitted external
+work is outside W1–W4; this prototype is not a completion requirement for those milestones or an admitted external
 product surface. Its test project is not invoked by the current milestone workflow, and the five hostile-corpus facts
 in the integration assembly are tagged `Scope=Cybersecurity` and excluded from all current test commands.
 
@@ -348,9 +348,9 @@ Logical seams may be documented without creating assemblies. A new project is ju
 No research subsystem enters the active roadmap merely because a proposal exists.
 
 - **Hybrid/abstract domains:** two domains execute the same meaningful opcode corpus and domain laws are tested.
-- **Virtual stepping:** W3 must close first, then an admitted W4 method-execution slice must validate deterministic
-  pause/event contracts, source mapping, and generalized stop-on-throw behavior. Debugger-grade Step Out additionally
-  requires handler-transfer EH.
+- **Virtual stepping:** W4 must first validate method execution, deterministic instruction/frame/model events, and
+  stop-on-throw. A later stepping increment must separately define pause semantics and source mapping; debugger-grade
+  Step Out additionally requires handler-transfer EH.
 - **Async/dynamic lifting:** ordinary compiler-generated prerequisite IL and EH are supported, with scenario fixtures.
 - **Alternative products:** a second product demonstrates reuse without weakening the dump evaluator’s correctness and security model.
 - **Alternative metadata backend:** a corpus records an SRM deficiency and an adapter test demonstrates a better trade-off.

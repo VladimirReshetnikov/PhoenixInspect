@@ -12,13 +12,13 @@ The current plan has three execution lanes:
 
 - a fast, dump-free semantics lane for every change;
 - a supported Windows lane that generates real full dumps and exercises the evidence boundary; and
-- an independent Windows x64 external-worker prototype-regression lane outside W1, W2, and W3.
+- an independent Windows x64 external-worker prototype-regression lane outside W1–W4.
 
 The Windows lane now evaluates both the complete W2 v1 product grammar and W3's closed counted-dump E2 getter over that
 evidence. Dump-free parser, root, plan-identity, SRM projection, activation/admission, memory-law, and CoreCLR
 differential checks remain fast because they require no DAC, process, dump, clock, or network. The worker lane retains
 a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside the non-cybersecurity
-W1/W2/W3 closure.
+W1/W2/W3 closure and outside the admitted W4 contract.
 
 ## Fast semantics lane
 
@@ -26,7 +26,7 @@ The fast test project validates the code that should not depend on a DAC, child 
 
 Current proof obligations are:
 
-- the concrete domain satisfies bottom/top, order, join, meet, and widening laws, including distinct unknown origins;
+- the concrete domain satisfies bottom/top, order, join, meet, and widening laws with one canonical typed top;
 - persistent memory forks and subsequent stores cannot mutate an earlier snapshot;
 - metadata-projected constants, arguments, initialized locals, `add`, `sub`, `mul`, `ldfld`, and value/void `ret`
   execute with CoreCLR-compatible results for the closed E1/E2 profiles;
@@ -160,14 +160,14 @@ all 0–31-byte header truncations, bounded garbage, invalid signature/version, 
 `MemoryList`/`Memory64List` truncation, bounded header/directory bit flips, appended junk, and a sparse file just above
 the 8 GiB admission boundary. Fast tests prove stable names/order/bytes, coverage, and case/count/size ceilings.
 
-This already-landed corpus is retained as a non-gating prototype outside W1, W2, and W3. Its future scope is not an
+This already-landed corpus is retained as a non-gating prototype outside W1–W4. Its future scope is not an
 active test decision for those milestones.
 
 ## Non-gating one-shot external-worker lane
 
 The implemented Windows x64 broker/runner projects occupy real solution boundaries and have their own headless test
 project. Its four-test package, including a real malformed-artifact process checkpoint, passed locally at
-`9fcf00934`. The projects and regression lane are retained as non-gating prototype work outside W1, W2, and W3; their
+`9fcf00934`. The projects and regression lane are retained as non-gating prototype work outside W1–W4; their
 presence does not admit an external artifact product surface.
 
 ## Evidence matrix
@@ -260,7 +260,9 @@ of hosted run 29374585767. Exact documentation-closure commit
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined
 non-cybersecurity scope.
 
-Beyond W3, a second meaningful value domain is required before any shared multi-mode-engine claim. New opcodes
-or method families enter only through a scenario-derived compiler fixture and its complete dependency closure; opcode
-counts and percentage targets do not define readiness. Separately landed malformed corpus/worker prototypes,
-cybersecurity validation, and representative private-production measurement are outside W3.
+W4's admitted but unimplemented contract requires a second meaningful unknown-aware domain. Its tests must keep
+distinct explanatory lineage outside semantic lattice equality while reproducing that lineage canonically in product
+replay. New opcodes or method families enter only through a scenario-derived compiler fixture and its complete
+dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed
+corpus/worker prototypes and cybersecurity validation are outside W1–W4; representative private-production
+measurement remains a separate non-gating readiness question.

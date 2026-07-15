@@ -121,7 +121,7 @@ activation. A deliberately absent cell in an already imported test snapshot inst
 `ldfld` queries it; that runtime negative does not fabricate a default or retroactively invalidate activation.
 
 The size/cache caps are deterministic resource controls. A narrow Windows x64 external-worker prototype has locally
-passed one real malformed-artifact checkpoint, but it is non-gating work outside W1–W3 and does not create an
+passed one real malformed-artifact checkpoint, but it is non-gating work outside W1–W4 and does not create an
 admitted external artifact product surface.
 
 ### Read-only dump query

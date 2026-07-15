@@ -6,6 +6,10 @@
 
 Current for active delivery. Research suites are collected separately in section 9.
 
+The W4 counterfactual-method contract is admitted and active design, but no W4 implementation, checked-in scenario
+test, local verification result, or CI-enforced W4 gate exists yet. Section 8 therefore states required evidence, not
+current capability.
+
 ## 1) Evidence language
 
 Use these terms consistently in test plans, traceability tables, and PR descriptions:
@@ -141,7 +145,7 @@ invocation; they provide no W1/W2/W3 validation.
 
 `tests/Interpreter.Host.ExternalWorker.Tests` exercises the separately landed Windows x64 broker/runner prototype. Its
 four-test package, including one real malformed-artifact process boundary, passed locally at checkpoint `9fcf00934`
-under the headless wrapper. The worker remains non-gating prototype work outside W1, W2, and W3; its presence and test
+under the headless wrapper. The worker remains non-gating prototype work outside W1–W4; its presence and test
 result do not admit an external artifact product surface. Its test project is not invoked by the current milestone
 workflow.
 
@@ -364,7 +368,7 @@ Cancellation-token timing is a host-responsiveness concern and is not a determin
 
 Tests for dump-backed behavior assert independent axes rather than compressing them into one “success” flag:
 
-- semantic mode (`Observation`, `DerivedQuery`, later `CounterfactualExecution` or `AbstractAnalysis`);
+- semantic mode (`Observation`, `DerivedQuery`, W4 `CounterfactualExecution`, or later-research `AbstractAnalysis`);
 - completion status;
 - completeness (`Complete`, `Partial`, or `None`);
 - evidence status (`Exact`, `Partial`, `Unavailable`, `Conflict`, or `Invalid`);
@@ -459,15 +463,58 @@ the implementation nor its validation includes `Scope=Cybersecurity`.
 
 ### W4 — unknown-aware method evaluation
 
-- Each supported opcode/call family has concrete, differential, and degraded-evidence coverage.
-- Precision loss, modeled calls/effects, and budget stops carry stable provenance and diagnostics.
-- Results are explicitly `CounterfactualExecution`; tests reject language that implies historical replay.
+The normative gate is the
+[`Counterfactual Method Evaluation Contract`](counterfactual-method-evaluation-contract-proposal.md). It admits one
+branchless, EH-free generated-dump scenario: `DumpProbe.GetMarkerSummary` reads the two marker fields and reaches the
+direct `CombineMarkers` helper. This question is intentionally beyond W2: a W2 plan selects one field and never
+executes user IL, so it cannot combine the two observations or cross the call boundary.
+
+The future W4 implementation must satisfy all of the following before the slice is described as implemented or
+verified:
+
+1. The complete root and reachable helper bodies are admitted before instruction zero from counted dump body and
+   metadata evidence; a disk PE and direct CoreCLR invocation remain independent oracles, never execution inputs.
+2. Exact method, owner, and two-field evidence produces the exact `Int32` summary and agrees with CoreCLR. Every
+   supported opcode and the direct-call family has concrete and differential coverage.
+3. Replacing either required marker observation with an admitted partial or unavailable outcome completes with a
+   typed unknown whose stable lineage identifies the field evidence and subsequent arithmetic/call transformations.
+   It never substitutes zero, the other marker, or any fabricated concrete value. Conflict and invalid evidence keep
+   their distinct blocked/invalid outcomes. Degraded coverage is required for every supported transfer that can
+   propagate the unknown.
+4. The direct helper call has deterministic frame/return behavior, pre-execution call-depth enforcement, normalized
+   effects, and stable call diagnostics. Unsupported call shapes block before a misleading partial execution.
+5. A separate mandatory conformance request selects the one structural pure model and proves exact/unknown agreement
+   with interpretation plus blocked, invalid, capability, effect, and fallback outcomes. Tests
+   assert model-attempt records, state/memory atomicity, instruction charging, and semantic-event truthfulness.
+6. Retained exact typed-null `ldfld` behavior is projected as the only W4 target-exception outcome through a standalone
+   dump-free conformance fragment, not a fabricated rooted request. It stops without handler transfer, preserves exact
+   exception location, charges and emits the promised instruction/event outcome once, carries no request/plan identity,
+   and remains idempotent after terminal latching. The non-throwing helper/model may not fabricate an exception.
+7. Instruction budget is consumed only by executed instructions, call depth is proven against the frozen graph before
+   activation and observed on frame entry, and preparation traversal is consumed only while discovering and freezing
+   the bounded method/field plan. Exhaustion reports the exact applied bound without relabeling host cancellation.
+8. Allocation is outside the admitted scenario. No dormant allocation counter may appear as an enforced guarantee;
+   the result and replay projection record the allocation bound as absent/not applied until an allocation-consuming
+   scenario is separately admitted.
+9. The product result is explicitly `CounterfactualExecution` and exposes its named policy, assumptions, call/model
+   identities, effects, evidence, applied bounds, provenance, diagnostics, and exact or unknown outcome without
+   implying that either method historically ran in the target process.
+10. Repeated evaluation in one session and fresh-object reconstruction reproduce canonical request, plan, result bytes,
+    and fingerprints for exact, degraded, structural/effect blocked, budget, and modeled requests. The target-exception
+    conformance case reproduces its standalone fragment while asserting request/plan identities absent; every
+    dump-grounded case additionally reproduces its artifacts after complete dump close/reopen/rebind.
+11. The repository-wide Release build and required fast, ordinary-dump, optimized-dump, and focused W4 lanes pass
+    headlessly with zero skips under the non-cybersecurity test selection at the exact pushed commit.
+
+Branches and path forks, CFG state merge/fixpoint/widening, loops, handler-transfer EH, virtual or generic dispatch,
+broad intrinsic/model catalogs, allocation, async/dynamic lifting, and virtual stepping remain outside this gate. A
+later research proposal or existing scaffold does not count as W4 evidence.
 
 ## 9) Deferred research suites
 
 The following are not active CI commitments:
 
-- CFG merge/fixpoint convergence and widening properties;
+- branch/path-fork behavior and CFG merge/fixpoint convergence or widening properties;
 - CN-T, range, taint, and multi-domain precision scorecards;
 - virtual Step Into/Over/Out, undo, branch history, and debug-map transcripts;
 - dynamic-dispatch candidate traces and DLR outcome matrices;

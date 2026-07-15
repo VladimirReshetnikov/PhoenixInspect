@@ -29,16 +29,30 @@ exact implementation commit. [GitHub Actions run
 jobs at exact documentation-closure commit `de6cea124`, so W3 is formally closed for its defined non-cybersecurity
 scope. A whole-file-identified disk PE remains only an independent oracle, never dump resolver input.
 
+W4 is now admitted as an active design contract at
+`proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`; its implementation has not landed.
+The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
+marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
+only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
+partial or unavailable required marker must yield a typed unknown carrying stable evidence and transformation
+provenance, never a concrete default; conflict and invalid evidence retain their distinct failure outcomes. Host
+results use `CounterfactualExecution` with explicit policy, assumptions,
+models/effects, and applied bounds; they do not claim historical replay. Instruction and preparation-traversal units
+are consumed; maximum logical call depth is prepared/enforced and logical/frame high-water marks are reported.
+Allocation remains unadmitted and is reported as absent/not applied rather than as a dormant guarantee. The exact,
+degraded, differential, budget, and
+same/fresh-session replay gates remain required future headless evidence, not current test results.
+
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
 A versioned malformed-minidump mutation corpus and a Windows x64 one-shot external-worker prototype are retained as
-separately landed, non-gating work outside W1, W2, and W3. The worker's malformed-artifact checkpoint passed locally. Their
+separately landed, non-gating work outside W1–W4. The worker's malformed-artifact checkpoint passed locally. Their
 five hostile-corpus facts and the ExternalWorker test project provide no milestone validation: all current W1–W3 test
 invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide across all 15 projects,
 including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
 cybersecurity behavioral evidence. Their presence does not admit arbitrary external artifacts.
 
-The versioned optimized Release modeled-incident report is W1 generated-context evidence and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5 while retaining all unavailable cases. It explicitly describes one generated modeled dump, not a representative private-production incident corpus, and therefore establishes no production recoverability rate; representative production measurement is not a W1 gate. Current in-process resource admission still limits dumps to 8 GiB, ClrMD's dump cache to 256 MiB with stack-derived caches disabled, and managed PEs to 512 MiB on the actually opened stream before hashing. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, multi-application hosting, and other platform extensions are research backlog until their entry gates pass.
+The versioned optimized Release modeled-incident report is W1 generated-context evidence and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5 while retaining all unavailable cases. It explicitly describes one generated modeled dump, not a representative private-production incident corpus, and therefore establishes no production recoverability rate; representative production measurement is not a W1 gate. Current in-process resource admission still limits dumps to 8 GiB, ClrMD's dump cache to 256 MiB with stack-derived caches disabled, and managed PEs to 512 MiB on the actually opened stream before hashing. Branches, CFG merge/fixpoint analysis, handler-transfer EH, allocation, broad call/model catalogs, generics, virtual stepping, whole-method abstract analysis, async/dynamic lifting, multi-application hosting, and other platform extensions are research backlog until their entry gates pass.
 
 Current, active, and supporting documents use two dimensions: lifecycle (`Draft`, `Current`, `Complete`, `Historical`, `Superseded`) and roadmap relation (`Active`, `Supporting`, `Research`, `Reference`, `Historical`). Historical source/library records may use one combined status when a second axis would add no decision value. A designed or documented capability is not thereby implemented or validated. `Historical` and `Superseded` documents are preserved for rationale and source research; they are not instructions to recreate their proposed topology or backend choice.
 
@@ -60,12 +74,13 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump-evaluator target plus explicitly gated research phases. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including the admitted-but-unimplemented W4 counterfactual-method slice, plus explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
+| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative admitted W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; implementation and validation are pending. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
@@ -126,14 +141,15 @@ docs/
 2. `proposals/product/post-mortem-debugging-feature-proposal.md`
 3. `proposals/architecture/restricted-dump-query-contract-proposal.md`
 4. `proposals/architecture/concrete-il-execution-contract-proposal.md`
-5. `proposals/architecture/architecture-overview-proposal.md`
-6. `proposals/architecture/prototype-solution-structure-proposal.md`
-7. `lib/mvp-backend-decision-record.md`
-8. `plans/future-work-planning.md`
-9. `proposals/architecture/testing-strategy-proposal.md`
-10. `proposals/integration-test-plan.md`
-11. `proposals/integration/clrmd-integration-proposal.md`
-12. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+5. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
+6. `proposals/architecture/architecture-overview-proposal.md`
+7. `proposals/architecture/prototype-solution-structure-proposal.md`
+8. `lib/mvp-backend-decision-record.md`
+9. `plans/future-work-planning.md`
+10. `proposals/architecture/testing-strategy-proposal.md`
+11. `proposals/integration-test-plan.md`
+12. `proposals/integration/clrmd-integration-proposal.md`
+13. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 
@@ -209,7 +225,9 @@ These sketches explain earlier reasoning, but neither their API shapes nor their
 4. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 5. `lib/backend-evidence-log.md`
 
-Generic-context reconstruction and call/effect modeling are later research topics, not prerequisites for the active W1–W3 evidence path.
+Generic-context reconstruction and broad call/effect modeling remain later research topics. The active W4 contract
+admits only its named direct `GetMarkerSummary` to `CombineMarkers` call shape; it does not promote those broader
+research designs.
 
 ### Process and governance path
 

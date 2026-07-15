@@ -22,10 +22,30 @@ Core principles:
 ## Current phase
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
-- **Active delivery target:** a deterministic, read-only evaluator for expressions grounded in a .NET dump.
+- **Active delivery target:** a deterministic, read-only evaluator grounded in a .NET dump. W4 now has an admitted
+  branchless counterfactual-method contract, but its implementation and validation have not landed.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. CoreCLR remains an outcome oracle, not an input to interpreter shape or dump evidence.
 - **Physical scope:** ten source projects contain active contracts or behavior; the two newest projects implement the narrow broker/runner boundary for one-shot external dump queries. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
+
+The normative W4 contract is
+`docs/proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. Its generated-dump incident
+question asks what branchless `DumpProbe.GetMarkerSummary` computes through the direct `CombineMarkers` helper from
+the captured marker fields. W2 cannot answer that question: its immutable query plan reads one selected field and may
+coalesce an exact null, but it neither combines two field observations nor executes user IL. Under W4, exact admitted
+method/body and field evidence must produce the exact `Int32` answer; an admitted partial or unavailable required
+field must instead produce a provenance-bearing typed unknown, never a fabricated zero or another concrete fallback.
+Conflict and invalid evidence retain their typed failure outcomes rather than masquerading as unknown values. Every host result is
+`CounterfactualExecution` under a named policy and explicit assumptions, not evidence that the target historically
+executed either method.
+
+This is an admitted design contract, not executable W4 evidence. No W4 product facade, unknown-aware domain, direct
+call path, generated-dump corpus, or W4 test gate is implemented yet. The future implementation must consume and report
+instruction and preparation-traversal units, prepare/enforce a maximum logical call depth, and report logical/frame
+depth high-water marks. Allocation remains unadmitted and its bound is therefore absent/not applied until a later
+allocation scenario. Closure requires the
+specified exact, degraded-evidence, budget, differential, and same/fresh-session replay cases to pass through the
+non-cybersecurity headless Release, fast, dump, and focused W4 lanes with zero skips and at the exact pushed commit.
 
 The W1 dump-evidence slice is executable against generated full and intentionally sparse dumps. W2's restricted dump-query v1 is complete for its non-cybersecurity scope: typed root states, `Parse`/`Prepare`/`Evaluate(plan)` staging, immutable object-specific plans, exact `String`/`Int32`/`Nullable<Int32>` behavior, stable diagnostics, and all-case same/fresh-session replay are exercised against the generated full dump. [GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at exact W2 closure commit `5bed47100`. W1 remains complete for its revised non-security evidence scope: typed exact/partial/unavailable/conflict outcomes, honest answer completeness, stable identity/context/provenance, path-accurate bounds, fresh-session canonical replay, headless execution, truthful topology, and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
@@ -41,13 +61,13 @@ required jobs at exact documentation-closure commit `de6cea124`, formally closin
 non-cybersecurity scope.
 
 A versioned malformed-minidump mutation corpus and a Windows x64 one-shot worker are retained as separately landed,
-non-gating prototype work outside W1, W2, and W3. The worker's malformed-artifact test passed locally at its checkpoint.
+non-gating prototype work outside W1, W2, W3, and the admitted W4 contract. The worker's malformed-artifact test passed locally at its checkpoint.
 All current W1–W3 test invocations exclude `Scope=Cybersecurity`; the five hostile-corpus facts and ExternalWorker test
 project provide no milestone validation. Restore/build intentionally remains repository-wide across all 15 projects,
 including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
 cybersecurity behavioral evidence. Their presence does not make external artifacts a supported product input.
 
-A versioned optimized Release modeled-incident report keeps five predeclared axes in the denominator and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5. It is explicitly generated evidence, not a representative private-production incident corpus, so no readiness rate is claimed and representative incident measurement is not a W1 completion gate. Current in-process caps (8 GiB dump admission, 256 MiB ClrMD dump cache, and 512 MiB managed PE admission) remain resource controls. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, live speculation, sandbox runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
+A versioned optimized Release modeled-incident report keeps five predeclared axes in the denominator and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5. It is explicitly generated evidence, not a representative private-production incident corpus, so no readiness rate is claimed and representative incident measurement is not a W1 completion gate. Current in-process caps (8 GiB dump admission, 256 MiB ClrMD dump cache, and 512 MiB managed PE admission) remain resource controls. Branches, CFG merge/fixpoint analysis, handler-transfer EH, virtual stepping, broad call/model catalogs, generics, allocation, async/dynamic lifting, live speculation, sandbox runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
 
 ## Where to go next
 
@@ -57,6 +77,7 @@ For structured topic lists, document inventory, and recommended reading paths, s
 - **Documentation index and TOC-like navigation:** `docs/README.md`
 - **Normative W2 language, binding, plan, evidence, and replay contract:** `docs/proposals/architecture/restricted-dump-query-contract-proposal.md`
 - **Normative W3 concrete activation, admission, memory, outcome, and replay contract:** `docs/proposals/architecture/concrete-il-execution-contract-proposal.md`
+- **Normative W4 branchless counterfactual method, unknown, call, budget, and replay contract:** `docs/proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
 
 For process and roadmap context:
 
@@ -77,6 +98,8 @@ High-value contributions advance or challenge the active executable evidence:
 - harden dump reads, identity joins, partial/malformed evidence, and secret-safe failure behavior;
 - preserve the closed restricted dump-query v1 contract, and extend it only when a concrete incident scenario justifies the next grammar/evidence step;
 - preserve W3's structural activation, typed whole-body admission, exact-evidence import, and deterministic outcome boundaries;
+- implement or challenge the admitted W4 `GetMarkerSummary`/`CombineMarkers` contract without widening it to deferred
+  branches, CFG/fixpoint analysis, or handler transfer;
 - add deterministic, differential, and scenario tests at proven boundaries;
 - tighten architecture and documentation when executable evidence changes a decision;
 - keep design work just ahead of code rather than expanding speculative surface area.
