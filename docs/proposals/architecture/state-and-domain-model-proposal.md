@@ -650,7 +650,8 @@ Implemented through W4.6:
 - compiler/SRM interpreted/model/CoreCLR exact agreement plus interpreted/model degraded-evidence agreement across
   repeated and fresh sessions.
 
-Deferred to W4.7–W4.9 or later research gates:
+The issuer-certified standalone W4.7 target-outcome fragment is implemented separately and does not widen the rooted
+execution profile above. Deferred to W4.8–W4.9 or later research gates:
 
 - hybrid nullness/constant/type/taint products,
 - counterfactual request/plan/result and facade, and generated-dump product closure,

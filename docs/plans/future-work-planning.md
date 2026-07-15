@@ -41,7 +41,8 @@ worker/corpus code remains separately scoped non-gating prototype work. W4 is no
 `GetMarkerSummary` workflow below; W4.1's fixture gate, W4.2's unknown E1/E2 kernel, W4.3's dump-free non-exact
 field seam, W4.4's body-free call resolution/frozen graph, W4.5's exact plus explained-unknown prepared-graph
 execution, and W4.6's structural model admission, lineage, machine transfer, and compiler/SRM conformance have landed,
-while W4.7–W4.9 remain admitted work. W3 is complete for its defined non-cybersecurity architecture-validation scope
+and W4.7's issuer-certified standalone target-outcome projection and compiler/SRM replay have landed, while W4.8–W4.9
+remain admitted work. W3 is complete for its defined non-cybersecurity architecture-validation scope
 at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
@@ -367,16 +368,17 @@ owns the exact behavior. Closure requires all of these executable gates:
 
 ### W4 — Unknown-aware method evaluation
 
-**Status:** **Active; W4.1–W4.6d are implemented and locally validated, while W4.7–W4.9 remain admitted work.**
+**Status:** **Active; W4.1–W4.7b are implemented and locally validated, while W4.8–W4.9 remain admitted work.**
 
-**Current projected hand-written implementation surface:** 31,069–34,319 LOC: 24,469 realized through W4.6d plus an
-estimated 6,600–9,850 across three remaining non-overlapping, independently valuable slices. The admitted baseline
-was 16,860–25,310 LOC. The original nine-slice plan now has fourteen tracked rows because W4.4 and W4.5 were each
+**Current projected hand-written implementation surface:** 31,670–33,970 LOC: 27,270 realized through W4.7b plus an
+estimated 4,400–6,700 across two remaining non-overlapping, independently valuable slices. The admitted baseline
+was 16,860–25,310 LOC. The original nine-slice plan has fourteen tracked rows because W4.4 and W4.5 were each
 split once and W4.6 was split into four independently delivered sub-slices; every remaining slice has an upper estimate
 of at most 3,500 LOC, and the umbrella is not one work package. The earlier 18,532–26,132, 19,228–25,728,
 21,179–26,779, 24,013–29,313, W4.5-closure 25,017–29,417, post-W4.6-design-audit 27,217–32,117,
 W4.6a-checkpoint 28,376–32,476, first W4.6b recalibration 28,876–33,276, post-split 28,826–33,726,
-post-W4.6b 28,879–33,279, and pre-closure W4.6c/d 30,079–33,729 projections remain historical calibration.
+post-W4.6b 28,879–33,279, pre-closure W4.6c/d 30,079–33,729, and post-W4.6 closure 31,069–34,319 projections
+remain historical calibration.
 
 **Goal:** extend the product from read-only derived queries to explicitly counterfactual method evaluation.
 
@@ -582,10 +584,34 @@ zero warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integ
 fast 80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4. All lanes were headless with zero skips,
 and every behavioral filter used `Scope!=Cybersecurity`. Combined W4.6 realizes 7,652 LOC, and W4.1–W4.6d
 cumulatively realize 24,469 LOC.
-Recalibrated W4.7 is 2,200–3,150 LOC, W4.8 remains 2,400–3,500 LOC, and W4.9 remains 2,000–3,200 LOC. Remaining
-W4.7–W4.9 is 6,600–9,850 LOC, producing the current 31,069–34,319 LOC projection. W4.7 has not been implemented.
-Target-outcome projection, configurable request traversal limits, product projection, ClrMD non-exact import/dump
-grounding, dump-grounded W4 results, and hosted exact-commit closure remain pending.
+
+Pushed W4.7a checkpoint `2e70fe76d` adds the independently useful `Interpreter.Product.DumpDebugging` boundary. Its
+standalone projector consumes the complete exact sequence from same-machine legacy activation at IL offset zero to
+the first exact null-reference target transition, optionally followed by one issuer-certified idempotent latch re-step.
+Each outcome must have been issued by that exact machine for the exact predecessor state and operational-state
+references; structural equality or a plausible terminal record is insufficient. Projection validates the legacy
+one-frame envelope, exact exception kind/code/location, persistent-memory identity, unit-by-unit accounting, and the
+complete event transcript. The schema-v1 fragment fixes the five result axes, retains only the exception, call trace,
+accounting, events, stable diagnostic, canonical bytes, and SHA-256, and exposes no snapshot/root/request/plan/
+traversal reachability claims. The literal fixture freezes digest
+`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
+
+Pushed W4.7b checkpoint `dad6a6dd4` projects both direct and constant-adjusted compiler-emitted exact-null getters.
+Fresh SRM/module/domain/machine reconstruction reproduces fragment content, bytes, and hash. Counting and poisonable
+wrappers prove the optional terminal re-step does not consult the resolver, value domain, or memory model and does not
+repeat the single field load. W4.7a realizes 2,448 LOC and W4.7b realizes 353 LOC, so W4.7 realizes 2,801 LOC and
+cumulative W4 realization is 27,270 LOC.
+
+W4.7 closure passed locked restore; a strict sixteen-project Release build over eleven source projects at zero
+warnings/errors; complete unit 430/430; Fast 80/80; ordinary dump 5/5; optimized dump 1/1; focused W4.7a 15/15;
+focused W4.7b 2/2; combined W4.7 17/17; compiler differential class 23/23; Markdown 62 files/41 destinations; and the
+one-workflow headless guard. All behavioral lanes were headless, included `Scope!=Cybersecurity`, and had zero skips.
+External-worker 4/4 remains historical W4.6 evidence; it was deliberately not rerun or counted for W4.7.
+
+The former W4.7 estimate of 2,200–3,150 LOC and its 31,069–34,319 full-W4 projection are now historical. W4.8 remains
+2,400–3,500 LOC and W4.9 remains 2,000–3,200 LOC. Remaining W4.8–W4.9 is 4,400–6,700 LOC, producing the current
+31,670–33,970 LOC projection. Configurable request traversal limits, common product facade/runner/result projection,
+ClrMD non-exact import/dump grounding, dump-grounded W4 results, and hosted exact-commit closure remain pending.
 
 **Admitted work slices**
 
@@ -602,7 +628,7 @@ grounding, dump-grounded W4 results, and hosted exact-commit closure remain pend
 | W4.6b — Modeled-return lineage/domain | Add the atomic modeled-return transform and domain capability, preserving exact/unknown semantic value and dependency truth without machine transfer. | 950–1,450 | 1,003 |
 | W4.6c — Modeled machine transfer | Add frozen-capability-only invocation/transfer, attempt records, logical-versus-active depth witnesses, exact terminal validation, and unit conformance. | 2,550–2,750 | 2,734 |
 | W4.6d — Compiler/SRM conformance | Prove exact, degraded, repeated, and fresh-session interpreted/model agreement over the compiler-emitted W4 fixture without helper-body acquisition or execution-time metadata/model rereads. | 850–1,000 | 956 |
-| W4.7 — Target-outcome stop-on-throw contract | Define the standalone target-outcome/canonical fragment for W3's exact-null latch without admitting a fabricated helper/model throw; handler search and transfer remain excluded. | 2,200–3,150 | — |
+| W4.7 — Target-outcome stop-on-throw contract | Define the standalone target-outcome/canonical fragment for W3's exact-null latch without admitting a fabricated helper/model throw; handler search and transfer remain excluded. | 2,200–3,150 | 2,801 |
 | W4.8 — Product canonical facade, runner, and traversal budget | Expose a bounded `CounterfactualExecution` result with assumptions, models, effects, reached bounds, stable diagnostics, and common-projector integration of W4.7's standalone target fragment; add configurable traversal charging to graph preparation without claiming the non-null rooted facade reaches that fragment. | 2,400–3,500 | — |
 | W4.9 — Dump corpus, replay, and CI closure | Execute exact and degraded generated-dump cases, compare CoreCLR where applicable, reproduce canonical results after reopen/rebind, and close the headless hosted gate. | 2,000–3,200 | — |
 
@@ -684,8 +710,8 @@ A UI trust badge may summarize them but never replaces them in contracts or test
 
 - W3 admits EH-free bodies only and latches one exact typed-null `ldfld` as a terminal target exception without handler
   transfer or continuation.
-- W4.7 must define the retained exact-null target-outcome/canonical fragment for later W4.8 result-projector
-  integration. It has no rooted product request or plan identity. The closed non-throwing helper/model cannot fabricate
+- W4.7 defines the retained exact-null target-outcome/canonical fragment for later W4.8 result-projector integration.
+  It has no rooted product request or plan identity. The closed non-throwing helper/model cannot fabricate
   a broader exception case, and handler transfer remains separate.
 - Full handler search, filters, unwind, `finally`/`fault`, and cross-frame propagation are prerequisites for debugger-grade exception stepping, not implicit refinements.
 

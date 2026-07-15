@@ -8,11 +8,11 @@
 
 The earlier solution contained 42 source projects: 34 were project-file-only placeholders before this pass, including the now-implemented concrete domain. That physical decomposition encoded an unvalidated multi-product architecture and imposed build/dependency surface without behavior.
 
-The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary. A separately landed, non-gating external-worker prototype added exactly two more behavior-bearing boundaries—a trusted Windows broker/protocol assembly and a one-request AppContainer runner—leaving ten source projects. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
+The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary. A separately landed, non-gating external-worker prototype added two behavior-bearing boundaries—a trusted Windows broker/protocol assembly and a one-request AppContainer runner. W4.7 then justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary, leaving eleven source projects and sixteen projects overall. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
 
 ## 2. Current source projects
 
-The solution retains ten source projects, each containing contracts or behavior exercised by a realized slice:
+The solution retains eleven source projects, each containing contracts or behavior exercised by a realized slice:
 
 | Project | Current responsibility |
 |---|---|
@@ -24,6 +24,7 @@ The solution retains ten source projects, each containing contracts or behavior 
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
 | `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, and W3 snapshot-scoped execution resolution/import correlation through ClrMD. |
 | `Interpreter.Product.DumpQuery` | Closed W2 grammar, typed snapshot-root binding, one-time field selection into immutable canonical plans, bounded `Evaluate(plan)`, closed value projection, and complete-corpus replay. |
+| `Interpreter.Product.DumpDebugging` | W4.7 standalone issuer-certified exact-null target-outcome projection, stable failures, schema-v1 canonical fragment, content equality/hash, and compiler/SRM replay; no rooted request/plan/facade or dump dependency. |
 | `Interpreter.Host.ExternalWorker` | Trusted Windows x64 staging broker, bounded protocol/contracts, response validation, AppContainer/Job/handle policy, payload-free telemetry projection, and observable cleanup. |
 | `Interpreter.Host.ExternalWorker.Runner` | One-request framework-dependent AppContainer executable that re-verifies containment, pins the trusted DAC, disables ambient capabilities, evaluates the admitted dump query, and exits. |
 
@@ -49,7 +50,10 @@ depth facts, high-water integrity, event and budget ordering, resolver-free repl
   unchanged kinds 1–5, structural replay validation, and fresh-domain continuation. W4.6c machine tests add frozen-
   capability exact/unknown transfer, attempt chronology, failure atomicity, and independent logical/active depth
   witnesses. W4.6d compiler/SRM tests add direct interpreted/model/CoreCLR exact agreement, interpreted/model degraded
-  agreement, and repeated/fresh-session graph identity.
+  agreement, and repeated/fresh-session graph identity. W4.7 tests add per-transition same-machine issuer
+  certification, complete IL-zero-to-null chronology/latch/accounting/event validation, fixed fragment bytes/SHA,
+  absence of synthetic product reachability, optional idempotent re-step, direct/adjusted compiler getters, fresh SRM
+  replay, and poison/count proof that re-step performs no capability call or repeated field load.
 
 ## 3. Dependency rules
 
@@ -175,7 +179,7 @@ documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
 at that exact commit.
 
-W4.1–W4.6 are landed. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
+W4.1–W4.7 are landed. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
 `UnknownExecutionPolicy`, `ProvenanceConcreteDomain`/`ProvenanceConcreteValue`, canonical `InputOrigin` and
 `BinaryTransform` lineage, and shared-handler unknown arithmetic. That historical implementation checkpoint is 3,454
 LOC: 3,429 LOC for W4.2 plus a 25-LOC scope correction; cumulative W4 realization through W4.2 was 3,932 LOC.
@@ -272,18 +276,29 @@ integration 13/13, and Fast 80/80. Every behavioral lane used `eng/Invoke-Headle
 `Scope!=Cybersecurity`; strict affected builds passed at zero warnings/errors. W4.6 totals 7,652 LOC and cumulative
 W4 realization is 24,469 LOC.
 
+Exact W4.7a checkpoint `2e70fe76d` adds the product boundary above and issuer-bound complete-transition
+certification. Only the complete legacy same-machine sequence from IL zero through the first exact null-reference latch,
+optionally plus one identity-preserving idempotent re-step, can produce a fragment. The schema-v1 projection excludes
+snapshot/root/request/plan/traversal identities and freezes literal SHA-256
+`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`. Exact W4.7b checkpoint `dad6a6dd4`
+proves direct/adjusted compiler getters and fresh SRM/module/domain/machine replay, with poison/count wrappers proving
+the re-step consults no capability and repeats no load. W4.7a/b realize 2,448/353 LOC, bringing W4 to 27,270 LOC.
+W4.7 closure passed the strict sixteen-project Release build at zero warnings/errors, unit 430/430, Fast 80/80,
+dumps 5/5 and 1/1, focused 15/15 plus 2/2 (17/17 combined), compiler differential 23/23, and both guards, headlessly
+with `Scope!=Cybersecurity` and zero skips.
+
 Historical full-W4 projections remain original 16,860–25,310, post-W4.2 18,532–26,132, post-W4.3
 19,228–25,728, post-W4.4 21,179–26,779, post-W4.5a 24,013–29,313, W4.5 closure 25,017–29,417, design audit
 27,217–32,117, W4.6a checkpoint 28,376–32,476, first W4.6b recalibration 28,876–33,276, post-W4.6b-split
 28,826–33,726, post-W4.6b checkpoint 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
-realized 3,690 LOC against their historical 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC,
-W4.8 at 2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC
-for full W4.
+realized 3,690 LOC against their historical 3,400–3,750 estimate. The former W4.7 estimate of 2,200–3,150 LOC and
+31,069–34,319 projection are also historical. The current plan leaves W4.8 at 2,400–3,500 LOC and W4.9 at
+2,000–3,200 LOC: 4,400–6,700 LOC remaining and 31,670–33,970 LOC for full W4.
 
 The existing ClrMD field descriptor remains exact-only; W4.3 adds no partial-field dump producer or generated-dump
 counterfactual result. W4.5 executes exact and explained-unknown values across interpreted call boundaries; W4.6
 executes the one structurally selected pure-model leaf with modeled-return lineage and compiler/SRM conformance. The
-counterfactual facade/product result, generated-dump execution, and hosted closure remain absent and are W4.7–W4.9
+common rooted counterfactual facade/product result, generated-dump execution, and hosted closure remain absent and are W4.8–W4.9
 work. The legacy `IlMachine` still rejects the W4 fixture before the call, while the opt-in prepared session consumes
 both interpreted and modeled graphs.
 
@@ -340,4 +355,4 @@ implementation commit. Formal W3 closure is recorded at exact documentation comm
 run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required
 jobs.
 
-The physical layout and contracts remain prototype hypotheses. They may change freely as W4.7–W4.9 force better boundaries.
+The physical layout and contracts remain prototype hypotheses. They may change freely as W4.8–W4.9 force better boundaries.

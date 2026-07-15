@@ -29,10 +29,12 @@ Core principles:
   across frozen direct-call graphs with deterministic multi-frame accounting and canonical call/return lineage. W4.6
   now freezes one exact/no-effect structural pure model as a body-free opaque graph leaf, executes only that frozen
   capability through exact or grounded-unknown atomic caller transfer, records truthful model attempts and distinct
-  logical/frame depth witnesses, and proves compiler/SRM exact and degraded conformance. The counterfactual product and
-  dump-grounded W4 execution have not landed; W4.7 is the next unimplemented slice.
+  logical/frame depth witnesses, and proves compiler/SRM exact and degraded conformance. W4.7 now projects a complete,
+  same-machine IL-zero-to-exact-null transition sequence into a standalone canonical target-outcome fragment, with
+  per-outcome issuer certification and optional idempotent terminal re-step. The rooted counterfactual facade and
+  dump-grounded W4 execution have not landed; W4.8 is the next unimplemented slice.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. CoreCLR remains an outcome oracle, not an input to interpreter shape or dump evidence.
-- **Physical scope:** ten source projects contain active contracts or behavior; the two newest projects implement the narrow broker/runner boundary for one-shot external dump queries. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
+- **Physical scope:** eleven source projects contain active contracts or behavior in a sixteen-project solution. W4.7 adds the independently tested `Interpreter.Product.DumpDebugging` boundary for standalone target-outcome projection. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
 
 The normative W4 contract is
@@ -191,6 +193,30 @@ with zero warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 
 413/413; fast 80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4. Every lane was headless, every
 behavioral filter used `Scope!=Cybersecurity`, and there were zero skips.
 
+Pushed W4.7a checkpoint `2e70fe76d` adds the first counterfactual product assembly and a deliberately standalone
+`CounterfactualTargetOutcomeProjector`. Projection accepts only the complete sequence of exact `IlMachine.StepOne`
+outcomes issued by the same machine from one legacy root activation at IL offset zero through the first exact
+`NullReference` target latch; an optional single idempotent re-step must preserve state and operational-state identity,
+budget, events, and exception. A structurally plausible caller-authored outcome is not execution evidence: every
+transition is issuer-bound to its exact machine and predecessor references. Successful projection validates the
+one-frame envelope, exception kind/code/location, memory identity, instruction accounting, and complete ordered event
+transcript before producing fixed `CounterfactualExecution`/`Completed`/`Complete`/`Exact`/`None` axes.
+
+The schema-v1 fragment retains only target-exception identity/location, the structural call trace, instruction
+accounting, events, one stable diagnostic, canonical bytes, and lowercase SHA-256. Snapshot, root, request, plan, and
+traversal identities are absent because no rooted product request reached this conformance case; issuer certification
+is validation authority, not canonical content. The synthetic literal fixture freezes SHA-256
+`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`. Pushed W4.7b checkpoint `dad6a6dd4`
+proves direct and constant-adjusted compiler-emitted typed-null getters through fresh SRM/module/domain/machine
+reconstruction. Counting and poisonable resolver, domain, and memory wrappers prove a terminal re-step consults no
+capability and repeats no field load; both projections remain byte-, content-, and hash-identical.
+
+W4.7 closure passed locked restore; the strict sixteen-project Release build, covering eleven source projects, with
+zero warnings/errors; complete unit 430/430; Fast 80/80; ordinary dump 5/5; optimized dump 1/1; focused W4.7a 15/15;
+focused W4.7b 2/2; combined W4.7 17/17; compiler differential class 23/23; Markdown 62 files/41 destinations; and the
+one-workflow headless guard. Every behavioral lane was headless, used `Scope!=Cybersecurity`, and had zero skips. The
+external-worker 4/4 result above remains W4.6 history and was deliberately not rerun or claimed as W4.7 validation.
+
 The historical W4.2 checkpoint records 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production
 plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. Together with
 W4.1, that checkpoint had realized 3,932 LOC and projected 18,532–26,132 LOC. W4.3 realizes 3,096 LOC (1,100
@@ -205,12 +231,14 @@ W4.5 realizes 6,138 LOC and W4.1–W4.5 cumulatively realize 16,817 LOC. The his
 The W4.5-closure projection was 25,017–29,417 LOC, followed by historical 27,217–32,117, 28,376–32,476,
 28,876–33,276, 28,826–33,726, 28,879–33,279, and 30,079–33,729 projections. W4.6a realizes 2,959 added LOC (1,210
 production plus 1,749 tests/fixture support), W4.6b 1,003, W4.6c 2,734, and W4.6d 956. Combined W4.6 therefore
-realizes 7,652 LOC and W4.1–W4.6d cumulatively realize 24,469 LOC. Recalibrated W4.7 is 2,200–3,150 LOC, W4.8 remains
-2,400–3,500 LOC, and W4.9 remains 2,000–3,200 LOC. The remaining W4.7–W4.9 envelope is 6,600–9,850 LOC, giving the
-current full-W4 projection 31,069–34,319 LOC. Preserve the original 16,860–25,310 baseline and every earlier
-projection. This remains machine/kernel and compiler-conformance evidence, not counterfactual product execution.
-W4.7 target-outcome projection, configurable request traversal budget, product facade, ClrMD non-exact-field adapter,
-generated-dump W4 result/corpus, hosted exact-commit evidence, and umbrella closure remain pending. Allocation remains unadmitted and its bound is therefore absent/not
+realizes 7,652 LOC and W4.1–W4.6d cumulatively realize 24,469 LOC. W4.7a realizes 2,448 LOC and W4.7b 353 LOC, so
+W4.7 realizes 2,801 LOC and cumulative W4 realization is 27,270 LOC. Its former 2,200–3,150 estimate and the resulting
+31,069–34,319 full-W4 projection are now historical calibration. W4.8 remains 2,400–3,500 LOC and W4.9 remains
+2,000–3,200 LOC: 4,400–6,700 LOC remains, giving the current full-W4 projection 31,670–33,970 LOC. Preserve the
+original 16,860–25,310 baseline and every earlier projection. This remains a standalone target-outcome product
+fragment, not rooted product execution. Configurable request traversal budget, the common product facade/runner,
+ClrMD non-exact-field adapter, generated-dump W4 result/corpus, hosted exact-commit evidence, and umbrella closure
+remain pending. Allocation remains unadmitted and its bound is therefore absent/not
 applied until a later allocation scenario. Closure requires the specified exact, degraded-evidence, budget,
 differential, and same/fresh-session replay cases to pass through the non-cybersecurity headless Release, fast, dump,
 and focused W4 lanes with zero skips and at the exact pushed commit.
@@ -231,7 +259,7 @@ non-cybersecurity scope.
 A versioned malformed-minidump mutation corpus and a Windows x64 one-shot worker are retained as separately landed,
 non-gating prototype work outside W1–W4 milestone evidence. The worker's malformed-artifact test passed locally at its checkpoint.
 All current W1–W4 milestone test invocations exclude `Scope=Cybersecurity`; the five hostile-corpus facts and ExternalWorker test
-project provide no milestone validation. Restore/build intentionally remains repository-wide across all 15 projects,
+project provide no milestone validation. Restore/build intentionally remains repository-wide across all 16 projects,
 including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
 cybersecurity behavioral evidence. Their presence does not make external artifacts a supported product input.
 

@@ -7,7 +7,7 @@
 ## Purpose
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
-W3 concrete-IL, and W4.2–W4.6 dump-free explained-unknown, graph-preparation, interpreted-call, and pure-model
+W3 concrete-IL, and W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, and target-outcome
 execution proofs. It is descriptive, not a promise of compatibility.
 Hardened W3 checkpoint `19c292f9f`
 passed the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
@@ -67,11 +67,21 @@ passed 3/3, aggregate W4 integration 13/13, and Fast 80/80, all through the head
 `451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff` and
 `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`.
 
+Exact W4.7a checkpoint `2e70fe76d` adds `Interpreter.Product.DumpDebugging` and the contracts described below.
+Projection accepts only a complete exact transition sequence issued by the same machine from legacy IL-zero activation
+through the first exact null-reference latch, optionally plus one certified idempotent re-step. Exact W4.7b checkpoint
+`dad6a6dd4` proves direct/adjusted compiler getters, fresh SRM/module/domain/machine replay, and poison/count evidence
+that re-step performs no capability call or repeated load. W4.7a/b realize 2,448/353 LOC, 2,801 total, bringing W4 to
+27,270 LOC. Closure passed strict sixteen-project build 0/0, unit 430/430, Fast 80/80, dumps 5/5 and 1/1, focused
+15/15 plus 2/2 (17/17 combined), compiler differential 23/23, and both guards, headlessly with zero skips and
+`Scope!=Cybersecurity`. The literal standalone fragment SHA-256 is
+`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
+
 The original full-W4 baseline 16,860–25,310 and checkpoint projections 18,532–26,132, 19,228–25,728,
 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
 28,826–33,726, 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC remain historical calibration. W4.6c/d
-realized 3,690 LOC against their 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC, W4.8 at
-2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC for full
+realized 3,690 LOC against their 3,400–3,750 estimate. The former W4.7 estimate and 31,069–34,319 projection are now
+historical. The current plan leaves W4.8 at 2,400–3,500 LOC and W4.9 at 2,000–3,200 LOC: 4,400–6,700 LOC remaining and 31,670–33,970 LOC for full
 W4. A contract is added only with an executable consumer and is removed when it
 gets ahead of code.
 
@@ -153,6 +163,9 @@ gets ahead of code.
   `InstructionExecuted` event at the same method and IL offset and carries its canonical `FieldLoadEvidence`; and
 - `DebugEventKind.FramePushed` plus the retained `FramePopped` event, emitted after the corresponding successful
   exact call/return instruction and identifying the actual callee entry or helper return boundary.
+- `StepOutcome.IsMachineIssuedTransitionFrom`, which certifies that the exact machine issued an outcome from the exact
+  predecessor state and operational-state references. W4.7 consumes this authority during projection; certification
+  data is deliberately absent from semantic records and canonical fragment equality.
 
 Legacy activation receives only a method handle, receiver/arguments, and persistent memory. It atomically resolves the
 body and metadata shape, validates supplied structural types and execution precision under the selected policy,
@@ -337,16 +350,33 @@ diagnostics, context, path bounds, ordered provenance payload, and memory-read g
 corpus are locally verified and passed all four required hosted jobs at exact closure commit `5bed47100` in [GitHub
 Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
 
+### Standalone counterfactual target outcome
+
+`Interpreter.Product.DumpDebugging` exposes three W4.7 draft types:
+
+- `CounterfactualTargetOutcomeProjector.Project`, which validates the exact machine, initial semantic/operational
+  state, and complete immutable issued-transition sequence rather than trusting a naked terminal record;
+- `CounterfactualTargetOutcomeProjectionResult`, a fragment-or-stable-failure discriminated result; and
+- `CounterfactualTargetOutcomeFragment`, a defensively copied, content-equal schema-v1 record whose fixed axes,
+  exact exception/location, one-method call trace, accounting, complete events, diagnostic, canonical bytes, and
+  lowercase SHA-256 answer only which exact outcome the admitted activation produced.
+
+The projector accepts the first exact null-reference transition and optionally one issuer-certified idempotent re-step.
+It rejects forged or incomplete chronology, unsupported target kind, malformed latch/location, prepared-graph mode,
+misaccounting, or an inconsistent transcript with stable `W4.TargetException.*` codes. The fragment has no snapshot,
+root, request, plan, or traversal property. `Interpreter.Product.DumpDebugging` depends only on core abstractions and
+execution; no host, metadata backend, dump session, query product, rooted facade, or runner dependency crosses it.
+
 ## Deliberately absent
 
 The query product surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
 null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
-loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.6's provenance-aware
+loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.7's provenance-aware
 domain/machine, graph, interpreted-call, and pure-model extensions are architecture proofs, not query-language
 features or a counterfactual-method facade. W4.6 supplies structural selection, modeled-return lineage, frozen-
 capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. A ClrMD producer
-for W4.3 structured non-exact field evidence remains absent, as do the W4 request/plan/result and facade and a
-generated-dump product result with reopen/replay or hosted closure. Those are W4.7–W4.9 work. Speculative
+for W4.3 structured non-exact field evidence remains absent, as do the rooted W4 request/plan/result facade and a
+generated-dump product result with reopen/replay or hosted closure. Those are W4.8–W4.9 work. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 

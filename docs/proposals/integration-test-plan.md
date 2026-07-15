@@ -25,7 +25,9 @@ same call. W4.6a adds exact/no-effect structural pure-model selection, opaque bo
 closed activation; W4.6b adds atomic modeled-return lineage construction while preserving prior canonical identities.
 W4.6c invokes only the frozen capability and adds atomic exact/unknown caller transfer, attempt/counter/depth evidence,
 and stable nontransfer taxonomy. W4.6d proves compiler/SRM exact, degraded, repeated, and fresh-session agreement. A
-ClrMD W4 evidence producer, product facade, and dump-grounded W4 result remain absent.
+W4.7 adds dump-free issuer-certified complete target-outcome projection, a fixed standalone canonical fragment, and
+direct/adjusted compiler/SRM fresh replay with capability poison/count evidence. A ClrMD W4 evidence producer, rooted
+product facade/runner, and dump-grounded W4 result remain absent.
 Dump-free parser, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 The worker lane retains a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside
@@ -259,7 +261,7 @@ workflow `dotnet` launches. The workflow uses the pinned .NET 10 SDK and locked 
 local-Markdown-link and headless-workflow consistency checks, builds Release with warnings as errors, runs the fast suite,
 and then runs the required ordinary-dump and optimized-context Windows lanes. Every current test command includes
 `Scope!=Cybersecurity`; the worker test project is not invoked and the five hostile-corpus facts are excluded. Restore
-and build intentionally remain repository-wide across all 15 projects as topology/compilation-health evidence only,
+and build intentionally remain repository-wide across all 16 projects as topology/compilation-health evidence only,
 not cybersecurity behavioral evidence. Third-party actions are pinned to verified release commit SHAs. A missing DAC
 or inability to write/load a required dump is a failing infrastructure signal, not a passing skip.
 
@@ -424,9 +426,10 @@ Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532
 19,228–25,728; post-W4.4 21,179–26,779; post-W4.5a 24,013–29,313; W4.5 closure 25,017–29,417; design audit
 27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
 28,826–33,726; post-W4.6b checkpoint 28,879–33,279; and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
-realized 3,690 LOC against their historical 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC,
-W4.8 at 2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC
-for full W4.
+realized 3,690 LOC against their historical 3,400–3,750 estimate. The former W4.7 estimate of 2,200–3,150 LOC and
+31,069–34,319 projection are historical. W4.7a/b realize 2,448/353 LOC, 2,801 total, bringing W4 to 27,270 LOC.
+W4.8 remains 2,400–3,500 LOC and W4.9 2,000–3,200 LOC: 4,400–6,700 LOC remains and full W4 projects to
+31,670–33,970 LOC.
 
 Roadmap restore and umbrella-build gates remain repository-wide topology/compilation-health checks. Current W4.6
 evidence includes solution/affected-project strict builds plus focused contract, planner, compiler, lineage, machine,
@@ -436,7 +439,7 @@ excluded and no cybersecurity validation is claimed.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
-## Post-W4.6 evidence gates
+## Post-W4.7 evidence gates
 
 The generated-fixture W1–W2 path and its prior exact-commit hosted closure evidence remain unchanged. W3's structural
 identity, SRM projection, metadata-derived activation, typed whole-body admission, concrete-domain/persistent-memory
@@ -477,8 +480,14 @@ same/fresh-domain replay. It is a domain/lineage checkpoint, not model-execution
 
 W4.6c now demonstrates frozen-capability invocation, atomic exact/unknown caller transfer, attempts/counters/depth
 witnesses, failure atomicity, and resume conformance at `877c9fb55`. W4.6d now demonstrates compiler/SRM exact,
-degraded, repeated, and fresh-session execution conformance at `da5346813`. W4.7–W4.9 remain pending; product
-request/plan/result projection and generated-dump ClrMD production plus close/reopen/rebind
+degraded, repeated, and fresh-session execution conformance at `da5346813`.
+
+W4.7 now demonstrates standalone target-outcome projection at `2e70fe76d`/`dad6a6dd4`: complete same-machine
+issuer-certified IL-zero-to-null chronology, exact latch/location/accounting/events, optional idempotent re-step,
+schema-v1 fragment SHA-256 `a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`, and fresh direct/adjusted compiler replay.
+Closure passed the strict sixteen-project build 0/0, unit 430/430, Fast 80/80, dumps 5/5 and 1/1, focused 15/15 plus
+2/2 (17/17 combined), compiler differential 23/23, and both guards with zero skips, headlessly and under
+`Scope!=Cybersecurity`. W4.8–W4.9 remain pending; rooted product request/plan/result projection and generated-dump ClrMD production plus close/reopen/rebind
 evidence remain later-slice obligations. New opcodes or method families enter only
 through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed

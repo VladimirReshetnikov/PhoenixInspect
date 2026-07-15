@@ -17,8 +17,9 @@ checkpoints. W4.6a commit `77c92789b16d9258c907d5026a36e39f8c957b41` adds exact 
 selection and opaque body-free leaves while deliberately blocking model execution. W4.6b commit `fd723a912` adds
 atomic modeled-return lineage construction. W4.6c commit `877c9fb55` executes only the frozen capability with atomic
 return transfer and attempt/depth evidence; W4.6d commit `da5346813` closes compiler/SRM exact/degraded/fresh-session
-conformance. None creates a counterfactual product/dump result or CI-enforced umbrella gate. Section 8 separates the
-completed W4.1–W4.6 kernel from the remaining W4.7–W4.9 capability.
+conformance. W4.7a `2e70fe76d` adds standalone issuer-certified target-outcome projection, and W4.7b `dad6a6dd4`
+adds compiler/SRM fresh replay plus capability poison/count evidence. None creates a rooted or dump-grounded product
+result or CI-enforced umbrella gate. Section 8 separates completed W4.1–W4.7 from remaining W4.8–W4.9 capability.
 
 ## 1) Evidence language
 
@@ -82,6 +83,9 @@ hidden/no-window process policy. A raw `dotnet test` command is not an approved 
     returned value; canonical parameter-indexed `CallArgumentTransform` and `InterpretedReturnTransform` nodes; atomic
     missing/failing/invalid capability outcomes; legacy-byte compatibility; reachable-DAG capture; and validated
     same-session and fresh-session replay.
+13. W4.7 complete same-machine IL-zero-to-null transition certification, stable failure taxonomy, exact latch/
+    accounting/event validation, fixed schema-v1 bytes/SHA, absent synthetic reachability, optional idempotent re-step,
+    direct/adjusted compiler getter replay, and poison/count proof of no re-step capability access or repeated load.
 
 The differential harness proves the two closed, branchless, EH-free W3 profiles only. W4.2 separately demonstrates
 that a second meaningful domain reuses those opcode handlers for exact and explained-unknown values. W4.3 separately
@@ -204,7 +208,7 @@ The workflow in `.github/workflows/ci.yml` is checked in and has reported succes
 `CI-enforced` applies only to the gates that the successful workflow actually executed. The exact W1 closure commit is
 green, but its historical fast totals predate the explicit scope filter and must not be retroactively described as a
 filtered cybersecurity result. The current workflow formalizes the exclusion with `Scope!=Cybersecurity` on all four
-test commands. Repository-wide restore/build still compiles all 15 projects as topology/compilation-health evidence,
+test commands. Repository-wide restore/build still compiles all 16 projects as topology/compilation-health evidence,
 not cybersecurity behavioral evidence. Representative private-production measurement remains a separate
 product-readiness question.
 
@@ -263,7 +267,7 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 | Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
 
 Both W1 and W2 local results are corroborated by their exact-commit hosted closure runs above. Restore and build remain
-repository-wide and compile all 15 projects as topology and compilation-health evidence. Every current test command
+repository-wide and compile all 16 projects as topology and compilation-health evidence. Every current test command
 excludes `Scope=Cybersecurity`; the five dedicated hostile-artifact corpus facts therefore contribute neither W2
 validation nor a cybersecurity claim.
 
@@ -532,8 +536,34 @@ metadata-reader/domain/machine sessions reproduce the both-unknown graph hash
 Every behavioral invocation used `eng/Invoke-HeadlessProcess.ps1`, included `Scope!=Cybersecurity`, and recorded zero
 skips. W4.6c realizes 2,734 added LOC (1,425 production plus 1,309 tests), W4.6d realizes 956 test LOC, W4.6 totals
 7,652 LOC, and cumulative W4 realization is 24,469 LOC. W4.6c/d realized 3,690 LOC against their historical
-3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC, W4.8 at 2,400–3,500 LOC, and W4.9 at
-2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC for full W4.
+3,400–3,750 estimate. The post-W4.6 plan left W4.7 at 2,200–3,150 LOC and projected 31,069–34,319 LOC; both are now
+historical.
+
+### Current local W4.7 implementation verification — 2026-07-15
+
+Exact pushed commits `2e70fe76d` and `dad6a6dd4` complete the standalone exact-null target-outcome slice. W4.7a
+requires a complete same-machine sequence of issuer-certified transitions from legacy IL-zero activation through the
+first null-reference latch, optionally plus one certified idempotent re-step. It validates location, memory identity,
+budget, and events; rejects caller-authored or malformed evidence by stable code; and freezes literal fragment SHA-256
+`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`. W4.7b proves direct/adjusted compiler
+getters, fresh SRM/module/domain/machine replay, and no re-step resolver/domain/memory access or repeated field load.
+
+| Gate | Evidence scope | Result |
+|---|---|---|
+| Locked dependency graph | repository restore through the headless wrapper | Passed. |
+| Strict solution build | sixteen projects / eleven source projects, warnings as errors | Passed, 0 warnings / 0 errors. |
+| W4.7a focused projector | issuer, chronology, latch, accounting, events, canonical fragment, negatives | Passed, 15/15. |
+| W4.7b compiler replay | direct/adjusted fresh replay and poison/count evidence | Passed, 2/2. |
+| Combined W4.7 | both focused slices | Passed, 17/17. |
+| Compiler differential class | all compiler-emitted differential facts | Passed, 23/23. |
+| Complete unit | wrapped unit project | Passed, 430/430. |
+| Fast / ordinary dump / optimized dump | standard non-cybersecurity lanes | Passed, 80/80, 5/5, and 1/1. |
+| Documentation/workflow guards | Markdown links and headless workflow | Passed, 62 files / 41 destinations and 1 workflow. |
+
+Every behavioral lane was headless, included `Scope!=Cybersecurity`, and had zero skips. External-worker 4/4 is
+retained only as historical W4.6 evidence and was deliberately not rerun or claimed for W4.7. W4.7a/b realize
+2,448/353 LOC, 2,801 total, bringing W4 to 27,270 LOC. W4.8 remains 2,400–3,500 LOC and W4.9 2,000–3,200 LOC:
+4,400–6,700 LOC remains and current full W4 is 31,670–33,970 LOC.
 
 ## 3) Active test layers
 
@@ -805,11 +835,12 @@ lineage/domain portion, appending kind 6 while preserving kinds 1–5. W4.6a rea
 W4.6c checkpoint `877c9fb55` delivers frozen-capability execution, atomic exact/unknown transfer, attempts, counters,
 depth witnesses, failure taxonomy, and unit conformance in 2,734 LOC. W4.6d checkpoint `da5346813` delivers 956 test
 LOC of compiler/SRM exact, degraded, repeated, and fresh-session conformance. Combined W4.6 realizes 7,652 LOC and
-brings W4 to 24,469 realized LOC. The current remaining W4.7–W4.9 plan is 6,600–9,850 LOC and full W4 is
-31,069–34,319 LOC. The earlier 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
-28,826–33,726, 28,879–33,279, and 30,079–33,729 projections remain historical.
+brings W4 to 24,469 realized LOC. W4.7a/b checkpoints `2e70fe76d`/`dad6a6dd4` deliver complete issuer-certified
+target projection and compiler/SRM replay in 2,801 LOC, bringing W4 to 27,270 realized LOC. The current remaining
+W4.8–W4.9 plan is 4,400–6,700 LOC and full W4 is 31,670–33,970 LOC. The earlier 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
+28,826–33,726, 28,879–33,279, 30,079–33,729, and 31,069–34,319 projections remain historical.
 
-The remaining W4.7–W4.9 slices must finish the product/dump/closure portions below before the umbrella is described as
+The remaining W4.8–W4.9 slices must finish the rooted product/dump/closure portions below before the umbrella is described as
 implemented or verified. W4.4 satisfies interpreted structural graph preparation; W4.5 satisfies exact and explained-
 unknown interpreted direct-call/depth/lineage behavior; and W4.6 satisfies structural model selection, modeled-return
 lineage, machine invocation/transfer/attempt/depth behavior, and compiler/SRM conformance:
@@ -829,7 +860,7 @@ lineage, machine invocation/transfer/attempt/depth behavior, and compiler/SRM co
    lineage. W4.6c proves actual invocation, atomic exact/unknown transfer and nontransfer, model attempts, state/memory
    atomicity, instruction charging, depth witnesses, and semantic-event truthfulness; W4.6d proves exact, degraded,
    repeated, and fresh-session compiler/SRM agreement. Broader fallback/effect policies remain outside W4.
-6. Retained exact typed-null `ldfld` behavior is projected as the only W4 target-exception outcome through a standalone
+6. **Satisfied by W4.7.** Retained exact typed-null `ldfld` behavior is projected as the only W4 target-exception outcome through a standalone
    dump-free conformance fragment, not a fabricated rooted request. It stops without handler transfer, preserves exact
    exception location, charges and emits the promised instruction/event outcome once, carries no request/plan identity,
    and remains idempotent after terminal latching. The non-throwing helper/model may not fabricate an exception.

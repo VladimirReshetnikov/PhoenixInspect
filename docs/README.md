@@ -38,7 +38,8 @@ graph is implemented at pushed checkpoint `742ef2c4f`. W4.5a's exact prepared-gr
 checkpoint `356c07037`, and W4.5b's explained-unknown call/return lineage is implemented at pushed checkpoint
 `c72f6ee9e`. W4.6a structural pure-model admission is implemented at pushed checkpoint `77c92789b`, W4.6b modeled-
 return lineage at `fd723a912`, W4.6c machine invocation/transfer at `877c9fb55`, and W4.6d compiler/SRM conformance at
-`da5346813`. W4.7–W4.9, counterfactual product execution, and dump-grounded W4 behavior have not landed.
+`da5346813`. W4.7a standalone target-outcome projection is implemented at `2e70fe76d`, and W4.7b compiler/SRM
+replay at `dad6a6dd4`. W4.8–W4.9, rooted counterfactual product execution, and dump-grounded W4 behavior have not landed.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
@@ -170,20 +171,43 @@ warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integratio
 80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4, all headlessly with zero skips and
 `Scope!=Cybersecurity` on behavioral filters.
 
+W4.7a checkpoint `2e70fe76d` adds `Interpreter.Product.DumpDebugging` and projects only a complete sequence of exact
+transitions issued by the same `IlMachine`, from one legacy root activation at IL offset zero through the first exact
+null-reference target latch. The sequence may include one certified idempotent terminal re-step. Issuer binding is
+validated per outcome against exact machine/predecessor references; it does not participate in fragment identity.
+Projection rejects incomplete, forged, cross-machine, malformed-latch, non-null, non-legacy, misaccounted, or
+event-inconsistent evidence with stable `W4.TargetException.*` codes.
+
+The successful schema-v1 fragment fixes `CounterfactualExecution`/`Completed`/`Complete`/`Exact`/`None`, retains only
+the exact exception and structural location, one-method call trace, initial/used/remaining instruction units, complete
+events, stable diagnostic, canonical bytes, and lowercase digest, and deliberately exposes no snapshot, root, request,
+plan, or traversal identity. The literal standalone fixture freezes SHA-256
+`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`. W4.7b checkpoint `dad6a6dd4`
+reconstructs direct and adjusted compiler-emitted null getters through fresh SRM/module/domain/machine objects and
+reproduces identical fragment content, bytes, and hash. Counting/poisonable wrappers prove the optional terminal
+re-step consults no resolver, value-domain, or memory capability and that each execution performs exactly one load.
+
+W4.7 closure passed locked restore; the strict sixteen-project Release build over eleven source projects at zero
+warnings/errors; complete unit 430/430; Fast 80/80; ordinary dump 5/5; optimized dump 1/1; W4.7a 15/15; W4.7b 2/2;
+combined W4.7 17/17; compiler differential class 23/23; Markdown 62 files/41 destinations; and the one-workflow
+headless guard. All behavioral lanes were headless, included `Scope!=Cybersecurity`, and had zero skips. External-
+worker 4/4 remains W4.6 historical evidence and was not rerun or claimed for W4.7.
+
 W4.5b realizes 2,804 added LOC (766 production plus 2,038 tests). W4.6a/b/c/d realize 2,959/1,003/2,734/956 LOC,
-respectively, so combined W4.6 realizes 7,652 LOC and W4.1–W4.6d realize 24,469 LOC. Recalibrated W4.7 is
-2,200–3,150 LOC; W4.8 remains 2,400–3,500 and W4.9 remains 2,000–3,200. Remaining W4.7–W4.9 is 6,600–9,850 LOC
-and current W4 is 31,069–34,319 LOC. Preserve the original 16,860–25,310 baseline and historical 18,532–26,132,
+respectively, so combined W4.6 realizes 7,652 LOC and W4.1–W4.6d realize 24,469 LOC. W4.7a/b realize 2,448/353 LOC,
+so W4.7 realizes 2,801 LOC and W4.1–W4.7 realize 27,270 LOC. The former 2,200–3,150 W4.7 estimate and
+31,069–34,319 projection are historical. W4.8 remains 2,400–3,500 and W4.9 remains 2,000–3,200: remaining W4.8–W4.9
+is 4,400–6,700 LOC and current W4 is 31,670–33,970 LOC. Preserve the original 16,860–25,310 baseline and historical 18,532–26,132,
 19,228–25,728, 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
-28,826–33,726, 28,879–33,279, and 30,079–33,729 projections. W4.7 is not implemented. Target-outcome projection,
-configurable request traversal policy, product results, ClrMD dump grounding, and hosted closure remain pending.
+28,826–33,726, 28,879–33,279, 30,079–33,729, and 31,069–34,319 projections. Configurable request traversal policy,
+the common rooted facade/runner and result, ClrMD dump grounding, and hosted closure remain pending.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
 A versioned malformed-minidump mutation corpus and a Windows x64 one-shot external-worker prototype are retained as
 separately landed, non-gating work outside W1–W4. The worker's malformed-artifact checkpoint passed locally. Their
 five hostile-corpus facts and the ExternalWorker test project provide no milestone validation: all current W1–W4 milestone test
-invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide across all 15 projects,
+invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide across all 16 projects,
 including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
 cybersecurity behavioral evidence. Their presence does not admit arbitrary external artifacts.
 
@@ -209,13 +233,13 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4.1–W4.6's landed execution/model kernel, pending W4.7–W4.9 product/dump closure, and explicitly gated research phases. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4.1–W4.7's landed execution/model/target-outcome evidence, pending W4.8–W4.9 rooted-product/dump closure, and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
-| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; W4.1–W4.6 evidence is local/pushed and W4.7–W4.9 remain pending. |
+| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; W4.1–W4.7 evidence is local/pushed and W4.8–W4.9 remain pending. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |

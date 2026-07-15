@@ -11,7 +11,7 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.6d have since landed.
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.7b have since landed.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -76,11 +76,18 @@ zero warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integ
 fast 80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4, all headlessly with zero skips and
 `Scope!=Cybersecurity` on behavioral filters.
 
-W4.6a/b/c/d realize 2,959/1,003/2,734/956 LOC, so W4.6 totals 7,652 LOC and W4.1–W4.6d total 24,469 LOC. Remaining
-W4.7–W4.9 is 6,600–9,850 LOC: W4.7 is recalibrated to 2,200–3,150, W4.8 remains 2,400–3,500, and W4.9 remains
-2,000–3,200. Full W4 now projects to 31,069–34,319 LOC. Preserve the original 16,860–25,310 baseline and historical
+W4.6a/b/c/d realize 2,959/1,003/2,734/956 LOC, so W4.6 totals 7,652 LOC and W4.1–W4.6d total 24,469 LOC.
+W4.7a checkpoint `2e70fe76d` adds issuer-certified complete-sequence target-outcome projection; W4.7b `dad6a6dd4`
+adds direct/adjusted compiler and fresh SRM replay plus capability poison/count evidence. W4.7 realizes 2,801 LOC
+(2,448 + 353), bringing W4 to 27,270 LOC. Closure passed strict sixteen-project build 0/0, unit 430/430, Fast 80/80,
+dumps 5/5 and 1/1, focused 15/15 plus 2/2 (17/17 combined), compiler differential 23/23, and both guards, headlessly
+with zero skips and `Scope!=Cybersecurity`. The literal fragment SHA-256 is
+`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
+
+Remaining W4.8–W4.9 is 4,400–6,700 LOC: W4.8 remains 2,400–3,500 and W4.9 remains 2,000–3,200. Full W4 now
+projects to 31,670–33,970 LOC. Preserve the original 16,860–25,310 baseline and historical
 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476,
-28,876–33,276, 28,826–33,726, 28,879–33,279, and 30,079–33,729 projections:
+28,876–33,276, 28,826–33,726, 28,879–33,279, 30,079–33,729, and 31,069–34,319 projections:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -91,8 +98,8 @@ W4.7–W4.9 is 6,600–9,850 LOC: W4.7 is recalibrated to 2,200–3,150, W4.8 re
    precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation; and
     W4.5 executes exact and explained-unknown direct calls with deterministic frames, depth accounting, and canonical
     call/return lineage; and W4.6 freezes and executes the exact/no-effect pure-model leaf with atomic lineage/attempt
-    accounting and compiler conformance. W4.7 is not implemented; target-outcome projection, product, ClrMD dump
-    grounding, and hosted closure remain W4.7–W4.9 work.
+    accounting and compiler conformance; and W4.7 validates a standalone exact-null target fragment without inventing
+    rooted reachability. The common product facade, ClrMD dump grounding, and hosted closure remain W4.8–W4.9 work.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -405,8 +412,22 @@ model identities, attempt chronology, depth, counters, or terminal witnesses.
 
 W4.6d executes the compiler-emitted root through that boundary in exact, mixed partial/exact, and dual-unknown cases.
 Its frozen capability is the only runtime model authority: graph execution does not consult the registry, resolver,
-descriptor, target body, or selector again. The counterfactual facade/request/plan/result, standalone target-outcome
-projection, ClrMD dump-grounded execution, and hosted umbrella closure remain W4.7–W4.9 work.
+descriptor, target body, or selector again. The rooted counterfactual facade/request/plan/result, ClrMD dump-grounded
+execution, and hosted umbrella closure remain W4.8–W4.9 work.
+
+### 4.7 Standalone target-outcome projector
+
+W4.7 moves only the exact-null conformance outcome into `Interpreter.Product.DumpDebugging`. The projector requires
+the complete exact `StepOne` sequence issued by one machine from legacy single-root IL-zero activation through the
+first null-reference latch, optionally followed by one certified idempotent re-step. It validates machine/predecessor
+reference authority, the legacy envelope, exception kind/code/location, memory identity, budget delta, and complete
+events. Certification remains outside canonical content equality.
+
+The schema-v1 fragment fixes the five product axes and retains the exception, structural one-method trace,
+initial/used/remaining instruction units, events, one stable diagnostic, canonical bytes, and SHA-256. It deliberately
+contains no snapshot, root, request, plan, or traversal identity and therefore does not claim that the non-null rooted
+W4 scenario reaches it. The assembly depends only on core abstractions/execution. W4.8 owns the common rooted facade,
+runner, configurable traversal charging, and result-projector integration.
 
 ## 5. Identity model
 
@@ -566,7 +587,7 @@ deterministic read, identity, context, provenance, replay, and resource-bound co
 cybersecurity is explicitly outside those milestones, and their completion does not create an external artifact product
 surface. The already-landed malformed corpus and one-shot worker are retained only as non-gating prototypes; any future
 external-input initiative must establish its own scope and evidence independently. Restore/build intentionally remains
-repository-wide across all 15 projects, including the worker projects and integration assembly, as topology and
+repository-wide across all 16 projects, including the worker projects and integration assembly, as topology and
 compilation-health evidence only. It is not cybersecurity behavioral evidence.
 
 ## 11. Physical topology
@@ -587,6 +608,8 @@ The prototype retains only projects containing behavior or contracts exercised b
   into core execution;
 - `Interpreter.Product.DumpQuery` — the bounded W2 parser, typed root binding, immutable prepared plan, read-only
   `Evaluate(plan)` path, canonical identities, and closed result-value projection;
+- `Interpreter.Product.DumpDebugging` — W4.7's standalone issuer-certified exact-null projector and canonical
+  fragment; it has no dump, metadata-backend, query-product, request/plan, facade, or runner dependency;
 - `Interpreter.Host.ExternalWorker` and `Interpreter.Host.ExternalWorker.Runner` — the narrow Windows broker/protocol
   and one-request AppContainer executable; they are not a generic hosting framework.
 
