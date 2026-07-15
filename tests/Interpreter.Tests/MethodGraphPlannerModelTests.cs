@@ -94,11 +94,11 @@ public sealed class MethodGraphPlannerModelTests
     }
 
     /// <summary>
-    /// Proves W4.6a plans cannot execute a caller prefix before modeled transfer support exists: activation rejects the
-    /// graph before creating root state, re-resolving metadata, or invoking the selected capability.
+    /// Proves W4.6c activation binds a modeled graph without entering the dormant capability, rereading its descriptor,
+    /// resolving metadata or the opaque target body, consuming budget, or executing a caller instruction.
     /// </summary>
     [Fact]
-    public void CurrentMachineRejectsModeledPlanAtomicallyBeforeActivation()
+    public void ModeledPlanActivationBindsDormantFrozenCapabilityWithoutExternalWork()
     {
         var fixture = CreateExactFixture(includeHelperDefinition: false);
         var model = Model(fixture.Target);
@@ -111,6 +111,8 @@ public sealed class MethodGraphPlannerModelTests
         var plan = Assert.IsType<FrozenMethodGraphPlan>(preparation.Plan);
         var operationCount = fixture.Resolver.Operations.Count;
         var selectionCount = registry.SelectionCount;
+        var descriptorReadCount = model.DescriptorReadCount;
+        model.ThrowOnDescriptorRead = true;
         var domain = new ConcreteDomain();
         var memoryModel = new ConcreteMemoryModel(domain);
         var (receiver, memory) = memoryModel.NewObject(ConcreteMemory.Empty, RootType);
@@ -126,16 +128,16 @@ public sealed class MethodGraphPlannerModelTests
             ImmutableArray.Create(receiver),
             memory);
 
-        Assert.False(activation.IsSuccess);
-        Assert.Null(activation.State);
-        Assert.Equal(MachineRunStatus.Blocked, activation.Status);
-        var failure = Assert.IsType<ExecutionFailure>(activation.Failure);
-        Assert.Equal(ExecutionFailureKind.UnsupportedInstruction, failure.Kind);
-        Assert.Equal("EXEC_MODEL_EXECUTION_UNAVAILABLE", failure.Code);
-        Assert.Equal(fixture.Root, failure.Method);
-        Assert.Equal(0, failure.IlOffset);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+        Assert.Equal(MachineRunStatus.Ready, activation.Status);
+        Assert.Null(activation.Failure);
+        var frame = Assert.Single(activation.State!.CallStack);
+        Assert.Equal(fixture.Root, frame.Method);
+        Assert.Equal(0, frame.IlOffset);
+        Assert.Empty(frame.EvalStack);
         Assert.Equal(operationCount, fixture.Resolver.Operations.Count);
         Assert.Equal(selectionCount, registry.SelectionCount);
+        Assert.Equal(descriptorReadCount, model.DescriptorReadCount);
         Assert.Equal(0, model.InvocationCount);
     }
 
@@ -763,7 +765,23 @@ public sealed class MethodGraphPlannerModelTests
 
     private sealed class TestModel(PureCallModelDescriptor descriptor) : IPureCallModel
     {
-        public PureCallModelDescriptor Descriptor { get; } = descriptor;
+        public PureCallModelDescriptor Descriptor
+        {
+            get
+            {
+                DescriptorReadCount++;
+                if (ThrowOnDescriptorRead)
+                {
+                    throw new InvalidOperationException("A frozen model descriptor must not be read again.");
+                }
+
+                return descriptor;
+            }
+        }
+
+        internal int DescriptorReadCount { get; private set; }
+
+        internal bool ThrowOnDescriptorRead { get; set; }
 
         internal int InvocationCount { get; private set; }
 

@@ -816,6 +816,10 @@ public sealed partial class IlMachine<TValue, TMemory>
     {
         if (operationalState.ConfiguredMaximumLogicalCallDepth is not null ||
             operationalState.RequiredLogicalCallDepth is not null ||
+            operationalState.ModelAttempts.IsDefault ||
+            !operationalState.ModelAttempts.IsEmpty ||
+            operationalState.ModelInvocationCount != 0 ||
+            operationalState.CompletedModeledCallCount != 0 ||
             operationalState.ObservedLogicalDepthHighWater != 1 ||
             operationalState.ActiveFrameDepthHighWater != 1 ||
             state.CallStack.Any(frame => frame?.ReturnSite is not null))

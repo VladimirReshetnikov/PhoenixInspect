@@ -9,7 +9,10 @@ namespace Interpreter.Core.Execution;
 /// <typeparam name="TValue">The domain value representation carried by returned state.</typeparam>
 /// <typeparam name="TMemory">The persistent memory representation carried by returned state.</typeparam>
 /// <param name="State">The resulting state; it is unchanged when no instruction executed.</param>
-/// <param name="OperationalState">Updated deterministic bookkeeping; unchanged when no instruction executed.</param>
+/// <param name="OperationalState">
+/// Updated deterministic bookkeeping. It is unchanged when no capability or instruction was entered, but a failed
+/// pure-model invocation records one attempt and logical-boundary high water even though no instruction transferred.
+/// </param>
 /// <param name="Status">Whether the machine can continue, completed, exhausted budget, or became blocked/invalid.</param>
 /// <param name="Events">Structured deterministic events emitted only for transfers that actually occurred.</param>
 /// <param name="Failure">A structured failure when <paramref name="Status"/> is blocked or invalid.</param>
