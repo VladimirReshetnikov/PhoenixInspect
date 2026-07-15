@@ -3,6 +3,31 @@ using Interpreter.Core.Abstractions;
 
 namespace Interpreter.Core.Execution;
 
+internal enum MethodPlanBuilderMode
+{
+    LegacyW3,
+    W4Graph,
+}
+
+internal enum W4GraphMethodRole
+{
+    Root,
+    Callee,
+}
+
+internal interface IMethodPlanResolutionContext
+{
+    ResolutionResult<ResolvedField> ResolveField(
+        MethodHandle contextMethod,
+        int ilOffset,
+        int metadataToken);
+
+    ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+        MethodHandle contextMethod,
+        int ilOffset,
+        int metadataToken);
+}
+
 internal static class MethodPlanBuilder
 {
     private const int MaxAdmittedCodeBytes = 4096;
@@ -14,6 +39,31 @@ internal static class MethodPlanBuilder
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(resolver);
+
+        return Build(
+            definition,
+            MethodPlanBuilderMode.LegacyW3,
+            W4GraphMethodRole.Root,
+            new LegacyResolutionContext(resolver));
+    }
+
+    internal static PlanPreparationResult BuildGraph(
+        ResolvedMethodDefinition definition,
+        W4GraphMethodRole role,
+        IMethodPlanResolutionContext resolutionContext)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(resolutionContext);
+
+        return Build(definition, MethodPlanBuilderMode.W4Graph, role, resolutionContext);
+    }
+
+    private static PlanPreparationResult Build(
+        ResolvedMethodDefinition definition,
+        MethodPlanBuilderMode mode,
+        W4GraphMethodRole graphRole,
+        IMethodPlanResolutionContext resolutionContext)
+    {
 
         var method = definition.Method;
         var body = definition.Body;
@@ -33,6 +83,15 @@ internal static class MethodPlanBuilder
         if (signatureFailure is not null)
         {
             return signatureFailure.Value;
+        }
+
+        if (mode == MethodPlanBuilderMode.W4Graph)
+        {
+            var roleFailure = ValidateGraphDefinitionProfile(definition, graphRole);
+            if (roleFailure is not null)
+            {
+                return roleFailure.Value;
+            }
         }
 
         if (body.ExceptionRegionCount != 0)
@@ -149,6 +208,7 @@ internal static class MethodPlanBuilder
         var offset = 0;
         var instructionCount = 0;
         var fieldInstructionCount = 0;
+        var callInstructionCount = 0;
         var sawReturn = false;
         var stack = new List<TypeSig>();
         var boundaries = ImmutableArray.CreateBuilder<MethodInstructionBoundary>();
@@ -168,7 +228,7 @@ internal static class MethodPlanBuilder
             }
 
             boundaries.Add(new MethodInstructionBoundary(offset, stack.ToImmutableArray()));
-            var decode = Decode(body.CodeBytes, offset, method);
+            var decode = Decode(body.CodeBytes, offset, method, mode);
             if (!decode.IsSuccess)
             {
                 return PlanPreparationResult.Failed(decode.Status, decode.Failure!);
@@ -231,7 +291,7 @@ internal static class MethodPlanBuilder
 
                 case AdmittedInstructionKind.LoadField:
                     fieldInstructionCount++;
-                    if (fieldInstructionCount > 1)
+                    if (mode == MethodPlanBuilderMode.LegacyW3 && fieldInstructionCount > 1)
                     {
                         return Reject(
                             MachineRunStatus.Blocked,
@@ -242,7 +302,7 @@ internal static class MethodPlanBuilder
                             offset);
                     }
 
-                    var fieldResult = resolver.ResolveField(method, instruction.Operand);
+                    var fieldResult = resolutionContext.ResolveField(method, offset, instruction.Operand);
                     if (!fieldResult.IsSuccess)
                     {
                         var failure = fieldResult.Failure ?? new ResolutionFailure(
@@ -264,13 +324,14 @@ internal static class MethodPlanBuilder
                     }
 
                     var field = fieldResult.Value;
-                    var fieldFailure = ValidateField(method, offset, instruction.Operand, field);
+                    var fieldFailure = ValidateField(method, offset, instruction.Operand, field, mode);
                     if (fieldFailure is not null)
                     {
                         return fieldFailure.Value;
                     }
 
-                    if (field.DeclaringType != signature.DeclaringType)
+                    if (graphRole == W4GraphMethodRole.Callee ||
+                        field.DeclaringType != signature.DeclaringType)
                     {
                         return Reject(
                             MachineRunStatus.Blocked,
@@ -291,6 +352,63 @@ internal static class MethodPlanBuilder
 
                     stack.Add(field.FieldType);
                     instruction = instruction with { Field = field };
+                    break;
+
+                case AdmittedInstructionKind.Call:
+                    callInstructionCount++;
+                    var callFailure = ValidateCallToken(method, offset, instruction.Operand);
+                    if (callFailure is not null)
+                    {
+                        return callFailure.Value;
+                    }
+
+                    var callResult = resolutionContext.ResolveMethod(method, offset, instruction.Operand);
+                    if (!callResult.IsSuccess)
+                    {
+                        var failure = callResult.Failure ?? new ResolutionFailure(
+                            ResolutionFailureKind.Invalid,
+                            "RESOLUTION_INVALID_RESULT",
+                            "Method resolver returned an invalid default result.");
+                        var sanitizedFailure = ResolutionFailureDiagnostics.Sanitize(failure);
+                        return PlanPreparationResult.Failed(
+                            failure.Kind == ResolutionFailureKind.Invalid
+                                ? MachineRunStatus.InvalidProgram
+                                : MachineRunStatus.Blocked,
+                            new ExecutionFailure(
+                                ExecutionFailureKind.DependencyResolution,
+                                failure.Code,
+                                "Method resolution did not produce an executable direct-call descriptor.",
+                                method,
+                                offset,
+                                sanitizedFailure));
+                    }
+
+                    var callTarget = callResult.Value;
+                    var targetFailure = ValidateCallTarget(
+                        method,
+                        offset,
+                        instruction.Operand,
+                        callTarget);
+                    if (targetFailure is not null)
+                    {
+                        return targetFailure.Value;
+                    }
+
+                    for (var parameterIndex = callTarget.Signature.ParameterTypes.Length - 1;
+                         parameterIndex >= 0;
+                         parameterIndex--)
+                    {
+                        if (!TryPopExpected(stack, callTarget.Signature.ParameterTypes[parameterIndex]))
+                        {
+                            return InvalidStack(
+                                method,
+                                offset,
+                                "call requires two exact Int32 argument values in metadata order.");
+                        }
+                    }
+
+                    stack.Add(callTarget.Signature.ReturnType);
+                    instruction = instruction with { CallTarget = callTarget };
                     break;
 
                 case AdmittedInstructionKind.Return:
@@ -354,7 +472,9 @@ internal static class MethodPlanBuilder
                 body.CodeBytes.Length);
         }
 
-        var profileFailure = ValidateClosedProfile(definition, instructions, fieldInstructionCount);
+        var profileFailure = mode == MethodPlanBuilderMode.LegacyW3
+            ? ValidateClosedProfile(definition, instructions, fieldInstructionCount)
+            : ValidateGraphClosure(definition, graphRole, callInstructionCount);
         if (profileFailure is not null)
         {
             return profileFailure.Value;
@@ -432,6 +552,132 @@ internal static class MethodPlanBuilder
                 0);
     }
 
+    private static PlanPreparationResult? ValidateGraphDefinitionProfile(
+        ResolvedMethodDefinition definition,
+        W4GraphMethodRole role)
+    {
+        var method = definition.Method;
+        var signature = definition.Signature;
+        if (role == W4GraphMethodRole.Root)
+        {
+            if (!signature.HasImplicitThis ||
+                signature.HasExplicitThis ||
+                signature.CallingConvention != MethodCallingConventionKind.Default ||
+                signature.GenericParameterCount != 0 ||
+                signature.ParameterTypes.Length != 0 ||
+                signature.ReturnType != TypeSig.Int32 ||
+                !signature.DeclaringType.IsMetadataTypeDefinition)
+            {
+                return Reject(
+                    MachineRunStatus.Blocked,
+                    ExecutionFailureKind.UnsupportedInstruction,
+                    "EXEC_W4_ROOT_SIGNATURE_UNSUPPORTED",
+                    "The W4 graph root requires one exact TypeDef receiver, no explicit parameters, and an Int32 return.",
+                    method,
+                    0);
+            }
+
+            return null;
+        }
+
+        return IsAdmittedCalleeSignature(signature.CallSignature)
+            ? null
+            : Reject(
+                MachineRunStatus.Blocked,
+                ExecutionFailureKind.UnsupportedInstruction,
+                "EXEC_CALL_TARGET_SIGNATURE_UNSUPPORTED",
+                "An interpreted W4 callee must be static managed default-convention Int32(Int32, Int32) IL.",
+                method,
+                0);
+    }
+
+    private static PlanPreparationResult? ValidateGraphClosure(
+        ResolvedMethodDefinition definition,
+        W4GraphMethodRole role,
+        int callInstructionCount) =>
+        role == W4GraphMethodRole.Root && callInstructionCount == 0
+            ? Reject(
+                MachineRunStatus.Blocked,
+                ExecutionFailureKind.UnsupportedInstruction,
+                "EXEC_W4_ROOT_CALL_REQUIRED",
+                "The W4 graph root must contain at least one admitted direct MethodDef call.",
+                definition.Method,
+                0)
+            : null;
+
+    private static PlanPreparationResult? ValidateCallToken(
+        MethodHandle method,
+        int offset,
+        int rawToken)
+    {
+        if (MethodHandle.IsValidMetadataToken(rawToken))
+        {
+            return null;
+        }
+
+        var tokenKind = rawToken & unchecked((int)0xFF000000);
+        if (tokenKind is 0x0A000000 or 0x2B000000)
+        {
+            return Reject(
+                MachineRunStatus.Blocked,
+                ExecutionFailureKind.UnsupportedInstruction,
+                "EXEC_CALL_TOKEN_UNSUPPORTED",
+                "W4 admits only a direct non-nil MethodDef InlineMethod operand; MemberRef and MethodSpec dispatch are unsupported.",
+                method,
+                offset);
+        }
+
+        return Reject(
+            MachineRunStatus.InvalidProgram,
+            ExecutionFailureKind.InvalidInstruction,
+            "EXEC_CALL_TOKEN_INVALID",
+            "The direct call operand is not a structurally valid non-nil MethodDef token.",
+            method,
+            offset);
+    }
+
+    private static PlanPreparationResult? ValidateCallTarget(
+        MethodHandle caller,
+        int offset,
+        int rawToken,
+        ResolvedMethodCallTarget target)
+    {
+        if (target is null ||
+            target.Method.Module != caller.Module ||
+            target.Method.MetadataToken != rawToken)
+        {
+            return RejectConflict(
+                "EXEC_CALL_TARGET_IDENTITY_CONFLICT",
+                "Resolved direct-call identity does not match the same-module MethodDef operand.",
+                caller,
+                offset);
+        }
+
+        if (!target.IsManagedIl || !IsAdmittedCalleeSignature(target.Signature))
+        {
+            return Reject(
+                MachineRunStatus.Blocked,
+                ExecutionFailureKind.UnsupportedInstruction,
+                "EXEC_CALL_TARGET_SIGNATURE_UNSUPPORTED",
+                "W4 admits only a static managed non-generic default-convention Int32(Int32, Int32) target.",
+                caller,
+                offset);
+        }
+
+        return null;
+    }
+
+    internal static bool IsAdmittedCalleeSignature(MethodCallSignatureShape signature) =>
+        signature is not null &&
+        signature.CallingConvention == MethodCallingConventionKind.Default &&
+        !signature.HasImplicitThis &&
+        !signature.HasExplicitThis &&
+        signature.GenericParameterCount == 0 &&
+        signature.ParameterTypes.Length == 2 &&
+        signature.ParameterTypes[0] == TypeSig.Int32 &&
+        signature.ParameterTypes[1] == TypeSig.Int32 &&
+        signature.ReturnType == TypeSig.Int32;
+
     private static bool IsInstruction(
         AdmittedInstruction instruction,
         AdmittedInstructionKind kind,
@@ -506,19 +752,26 @@ internal static class MethodPlanBuilder
         MethodHandle method,
         int offset,
         int rawToken,
-        ResolvedField field)
+        ResolvedField field,
+        MethodPlanBuilderMode mode)
     {
         if (field is null ||
             field.Handle.Module != method.Module ||
             field.Handle.MetadataToken != rawToken)
         {
-            return Reject(
-                MachineRunStatus.InvalidProgram,
-                ExecutionFailureKind.DependencyResolution,
-                "EXEC_FIELD_IDENTITY_CONFLICT",
-                "Resolved field identity does not match the same-module InlineField operand.",
-                method,
-                offset);
+            return mode == MethodPlanBuilderMode.W4Graph
+                ? RejectConflict(
+                    "EXEC_FIELD_IDENTITY_CONFLICT",
+                    "Resolved field identity does not match the same-module InlineField operand.",
+                    method,
+                    offset)
+                : Reject(
+                    MachineRunStatus.InvalidProgram,
+                    ExecutionFailureKind.DependencyResolution,
+                    "EXEC_FIELD_IDENTITY_CONFLICT",
+                    "Resolved field identity does not match the same-module InlineField operand.",
+                    method,
+                    offset);
         }
 
         if (field.IsStatic || field.IsLiteral || field.HasRva)
@@ -600,11 +853,33 @@ internal static class MethodPlanBuilder
             status,
             new ExecutionFailure(kind, code, message, method, offset));
 
+    private static PlanPreparationResult RejectConflict(
+        string code,
+        string message,
+        MethodHandle method,
+        int offset)
+    {
+        var conflict = new ResolutionFailure(ResolutionFailureKind.Conflict, code, message);
+        return PlanPreparationResult.Failed(
+            MachineRunStatus.Blocked,
+            new ExecutionFailure(
+                ExecutionFailureKind.DependencyResolution,
+                code,
+                message,
+                method,
+                offset,
+                ResolutionFailureDiagnostics.Sanitize(conflict)));
+    }
+
     private static bool IsValidStandaloneSignatureToken(int token) =>
         (token & unchecked((int)0xFF000000)) == 0x11000000 &&
         (token & 0x00FFFFFF) != 0;
 
-    private static DecodeResult Decode(ImmutableArray<byte> code, int offset, MethodHandle method)
+    private static DecodeResult Decode(
+        ImmutableArray<byte> code,
+        int offset,
+        MethodHandle method,
+        MethodPlanBuilderMode mode)
     {
         if ((uint)offset >= (uint)code.Length)
         {
@@ -629,6 +904,7 @@ internal static class MethodPlanBuilder
             >= 0x16 and <= 0x1E => Success(AdmittedInstructionKind.LoadInt32, opcode - 0x16),
             0x1F => OneByteOperand(AdmittedInstructionKind.LoadInt32, signed: true),
             0x20 => FourByteOperand(AdmittedInstructionKind.LoadInt32),
+            0x28 when mode == MethodPlanBuilderMode.W4Graph => FourByteOperand(AdmittedInstructionKind.Call),
             0x2A => Success(AdmittedInstructionKind.Return),
             0x58 => Success(AdmittedInstructionKind.Add),
             0x59 => Success(AdmittedInstructionKind.Subtract),
@@ -763,6 +1039,28 @@ internal static class MethodPlanBuilder
         AdmittedInstruction Instruction,
         MachineRunStatus Status,
         ExecutionFailure? Failure);
+
+    private sealed class LegacyResolutionContext : IMethodPlanResolutionContext
+    {
+        private readonly IResolutionServices _resolver;
+
+        internal LegacyResolutionContext(IResolutionServices resolver)
+        {
+            _resolver = resolver;
+        }
+
+        public ResolutionResult<ResolvedField> ResolveField(
+            MethodHandle contextMethod,
+            int ilOffset,
+            int metadataToken) =>
+            _resolver.ResolveField(contextMethod, metadataToken);
+
+        public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+            MethodHandle contextMethod,
+            int ilOffset,
+            int metadataToken) =>
+            _resolver.ResolveMethod(contextMethod, metadataToken);
+    }
 
 }
 

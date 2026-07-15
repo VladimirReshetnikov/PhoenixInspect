@@ -1293,6 +1293,14 @@ public sealed class IlMachineTests
             return methodResult;
         }
 
+        public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+            MethodHandle contextMethod,
+            int metadataToken) =>
+            ResolutionResult<ResolvedMethodCallTarget>.Failed(
+                ResolutionFailureKind.Unsupported,
+                "TEST_DIRECT_CALL_NOT_CONFIGURED",
+                "This test resolver does not configure direct method calls.");
+
         public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken)
         {
             FieldCallCount++;
@@ -1327,6 +1335,14 @@ public sealed class IlMachineTests
             return ResolutionResult<ResolvedMethodDefinition>.Success(CallCount == 1 ? first : later);
         }
 
+        public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+            MethodHandle contextMethod,
+            int metadataToken) =>
+            ResolutionResult<ResolvedMethodCallTarget>.Failed(
+                ResolutionFailureKind.Unsupported,
+                "TEST_DIRECT_CALL_NOT_CONFIGURED",
+                "This test resolver does not configure direct method calls.");
+
         public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken) =>
             ResolutionResult<ResolvedField>.Failed(
                 ResolutionFailureKind.Unavailable,
@@ -1337,6 +1353,11 @@ public sealed class IlMachineTests
     private sealed class ThrowingResolver : IResolutionServices
     {
         public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method) =>
+            throw new SyntheticCapabilityException();
+
+        public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+            MethodHandle contextMethod,
+            int metadataToken) =>
             throw new SyntheticCapabilityException();
 
         public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken) =>

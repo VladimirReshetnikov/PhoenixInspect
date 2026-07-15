@@ -86,11 +86,16 @@ public sealed class W4GateFixtureTests
 
         var marker = module.ResolveField(caller.Method, markerToken);
         var alternateMarker = module.ResolveField(caller.Method, alternateMarkerToken);
-        var callTarget = module.GetMethodHandle(helperToken);
+        var callTargetHandle = module.GetMethodHandle(helperToken);
+        var callTarget = module.ResolveMethod(caller.Method, helperToken);
         Assert.True(marker.IsSuccess, marker.Failure?.Code);
         Assert.True(alternateMarker.IsSuccess, alternateMarker.Failure?.Code);
+        Assert.True(callTargetHandle.IsSuccess, callTargetHandle.Failure?.Code);
         Assert.True(callTarget.IsSuccess, callTarget.Failure?.Code);
-        Assert.Equal(helper.Method, callTarget.Value);
+        Assert.Equal(helper.Method, callTargetHandle.Value);
+        Assert.Equal(helper.Method, callTarget.Value.Method);
+        Assert.True(callTarget.Value.IsManagedIl);
+        Assert.Equal(helper.Signature.CallSignature, callTarget.Value.Signature);
         AssertExactInstanceInt32Field(marker.Value, caller.Signature.DeclaringType, markerToken);
         AssertExactInstanceInt32Field(
             alternateMarker.Value,
@@ -105,6 +110,112 @@ public sealed class W4GateFixtureTests
             caller.Body,
             CreateExpectedCallerCode(markerToken, alternateMarkerToken, helperToken));
         AssertExactTinyBody(helper.Body, [0x02, 0x03, 0x58, 0x2A]);
+    }
+
+    /// <summary>
+    /// Verifies that W4 preparation resolves and freezes the complete emitted caller/helper graph without accepting
+    /// a caller-supplied definition or crossing into execution, memory, event, or instruction-budget capabilities.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void GraphPreparationFreezesTheExactEmittedW4ClosureBeforeExecution()
+    {
+        var prepared = PrepareGateGraph();
+        var plan = prepared.Plan;
+
+        Assert.Equal(prepared.Caller, plan.Root);
+        Assert.Equal(2, plan.Nodes.Length);
+        Assert.Equal(2, plan.Fields.Length);
+        Assert.Single(plan.CallSites);
+        Assert.Equal(2, plan.RequiredLogicalDepth);
+        Assert.Equal(5, plan.TraversalUnitCount);
+
+        Assert.True(plan.TryGetNode(prepared.Caller, out var callerNode));
+        Assert.True(plan.TryGetNode(prepared.Helper, out var helperNode));
+        Assert.NotNull(callerNode);
+        Assert.NotNull(helperNode);
+        Assert.Equal(prepared.Caller, callerNode.Method);
+        Assert.Equal(prepared.Helper, helperNode.Method);
+        Assert.Equal(6, callerNode.Admission.InstructionCount);
+        Assert.Equal(4, helperNode.Admission.InstructionCount);
+        Assert.True(callerNode.Admission.IsAdmitted, callerNode.Admission.Failure?.Code);
+        Assert.True(helperNode.Admission.IsAdmitted, helperNode.Admission.Failure?.Code);
+        Assert.Null(callerNode.Admission.Failure);
+        Assert.Null(helperNode.Admission.Failure);
+
+        var receiverType = callerNode.Definition.Signature.DeclaringType;
+        AssertBoundaries(
+            callerNode.Admission,
+            (0, []),
+            (1, [receiverType]),
+            (6, [TypeSig.Int32]),
+            (7, [TypeSig.Int32, receiverType]),
+            (12, [TypeSig.Int32, TypeSig.Int32]),
+            (17, [TypeSig.Int32]));
+        AssertBoundaries(
+            helperNode.Admission,
+            (0, []),
+            (1, [TypeSig.Int32]),
+            (2, [TypeSig.Int32, TypeSig.Int32]),
+            (3, [TypeSig.Int32]));
+
+        var callerCode = callerNode.Definition.Body.CodeBytes;
+        var expectedFieldTokens = new[] { ReadToken(callerCode, 2), ReadToken(callerCode, 8) }
+            .Order()
+            .ToArray();
+        Assert.Equal(
+            expectedFieldTokens,
+            plan.Fields.Select(field => field.Handle.MetadataToken).ToArray());
+        Assert.Equal(
+            plan.Fields.Select(field => field.Handle).ToArray(),
+            callerNode.Fields.Select(field => field.Handle).ToArray());
+        Assert.Equal(2, plan.Fields.Select(field => field.Handle).Distinct().Count());
+        Assert.All(
+            plan.Fields,
+            field => AssertExactInstanceInt32Field(
+                field,
+                receiverType,
+                field.Handle.MetadataToken));
+        Assert.Empty(helperNode.Fields);
+
+        var callSite = Assert.Single(plan.CallSites);
+        Assert.Equal(prepared.Caller, callSite.Caller);
+        Assert.Equal(CallOffset, callSite.IlOffset);
+        Assert.Equal(prepared.Helper.MetadataToken, callSite.MetadataToken);
+        Assert.Equal(prepared.Helper, callSite.Target.Method);
+        Assert.True(callSite.Target.IsManagedIl);
+        Assert.Equal(helperNode.Definition.Signature.CallSignature, callSite.Target.Signature);
+        Assert.Equal(callSite, Assert.Single(callerNode.CallSites));
+        Assert.Empty(helperNode.CallSites);
+
+        Assert.Equal(2, prepared.GetMethodDefinitionCount);
+        Assert.Equal(1, prepared.CallerDefinitionCount);
+        Assert.Equal(1, prepared.HelperDefinitionCount);
+        Assert.Equal(2, prepared.ResolveFieldCount);
+        Assert.Equal(1, prepared.ResolveMethodCount);
+    }
+
+    /// <summary>
+    /// Verifies that fresh SRM modules, resolvers, and planners reproduce a content-equal canonically ordered graph.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void GraphPreparationIsContentEqualAcrossFreshSrmSessions()
+    {
+        var first = PrepareGateGraph();
+        var fresh = PrepareGateGraph();
+
+        Assert.NotSame(first.Plan, fresh.Plan);
+        Assert.Equal(first.Caller, fresh.Caller);
+        Assert.Equal(first.Helper, fresh.Helper);
+        Assert.Equal(first.Plan, fresh.Plan);
+        Assert.Equal(first.Plan.GetHashCode(), fresh.Plan.GetHashCode());
+        Assert.Equal(first.Plan.Nodes.ToArray(), fresh.Plan.Nodes.ToArray());
+        Assert.Equal(first.Plan.Fields.ToArray(), fresh.Plan.Fields.ToArray());
+        Assert.Equal(first.Plan.CallSites.ToArray(), fresh.Plan.CallSites.ToArray());
+        Assert.Equal(first.GetMethodDefinitionCount, fresh.GetMethodDefinitionCount);
+        Assert.Equal(first.ResolveFieldCount, fresh.ResolveFieldCount);
+        Assert.Equal(first.ResolveMethodCount, fresh.ResolveMethodCount);
     }
 
     /// <summary>
@@ -201,12 +312,37 @@ public sealed class W4GateFixtureTests
         Assert.Equal(caller.Method, failure.Method);
         Assert.Equal(SecondFieldLoadOffset, failure.IlOffset);
         Assert.Equal(1, countingResolution.GetMethodDefinitionCount);
+        Assert.Equal(0, countingResolution.ResolveMethodCount);
         Assert.Equal(1, countingResolution.ResolveFieldCount);
         Assert.Equal(0, countingMemory.LoadFieldCount);
     }
 
     private static string ResolveTargetAssemblyPath() =>
         TestTargetPaths.ResolveAssembly(TestTargetPaths.ResolveExecutable());
+
+    private static PreparedGateGraph PrepareGateGraph()
+    {
+        using var module = SrmMetadataModule.LoadFromFile(ResolveTargetAssemblyPath());
+        var caller = ResolveMethodHandle(module, CallerName);
+        var helper = ResolveMethodHandle(module, HelperName);
+        var resolution = new CountingResolutionServices(new MetadataResolutionServices(module));
+
+        var result = new MethodGraphPlanner(resolution).Prepare(caller);
+
+        Assert.True(result.IsSuccess, result.Failure?.Code);
+        Assert.Equal(MachineRunStatus.Ready, result.Status);
+        Assert.Null(result.Failure);
+        var plan = Assert.IsType<FrozenMethodGraphPlan>(result.Plan);
+        return new PreparedGateGraph(
+            plan,
+            caller,
+            helper,
+            resolution.GetMethodDefinitionCount,
+            resolution.GetMethodDefinitionCountFor(caller),
+            resolution.GetMethodDefinitionCountFor(helper),
+            resolution.ResolveFieldCount,
+            resolution.ResolveMethodCount);
+    }
 
     private static PeGateMetadata ReadPeGateMetadata(string targetAssemblyPath)
     {
@@ -281,13 +417,19 @@ public sealed class W4GateFixtureTests
 
     private static ResolvedMethodDefinition ResolveMethod(SrmMetadataModule module, string methodName)
     {
+        var handle = ResolveMethodHandle(module, methodName);
+        var definition = module.GetMethodDefinition(handle);
+        Assert.True(definition.IsSuccess, definition.Failure?.Code);
+        return definition.Value;
+    }
+
+    private static MethodHandle ResolveMethodHandle(SrmMetadataModule module, string methodName)
+    {
         var token = module.FindMethodDefinition("DumpProbe", methodName);
         Assert.True(token.IsSuccess, token.Failure?.Code);
         var handle = module.GetMethodHandle(token.Value);
         Assert.True(handle.IsSuccess, handle.Failure?.Code);
-        var definition = module.GetMethodDefinition(handle.Value);
-        Assert.True(definition.IsSuccess, definition.Failure?.Code);
-        return definition.Value;
+        return handle.Value;
     }
 
     private static byte[] CreateExpectedCallerCode(int markerToken, int alternateMarkerToken, int helperToken)
@@ -349,6 +491,20 @@ public sealed class W4GateFixtureTests
         Assert.Equal(0, body.ExceptionRegionCount);
     }
 
+    private static void AssertBoundaries(
+        MethodAdmissionResult admission,
+        params (int IlOffset, TypeSig[] StackTypes)[] expected)
+    {
+        Assert.Equal(expected.Length, admission.InstructionBoundaries.Length);
+        for (var index = 0; index < expected.Length; index++)
+        {
+            Assert.Equal(expected[index].IlOffset, admission.InstructionBoundaries[index].IlOffset);
+            Assert.Equal(
+                expected[index].StackTypes,
+                admission.InstructionBoundaries[index].ExpectedStackTypes.ToArray());
+        }
+    }
+
     private static IlMachine<ConcreteValue, ConcreteMemory> CreateMachine(
         SrmMetadataModule module,
         ConcreteDomain domain) =>
@@ -394,16 +550,42 @@ public sealed class W4GateFixtureTests
         MethodImplAttributes CallerImplAttributes,
         MethodImplAttributes HelperImplAttributes);
 
+    private sealed record PreparedGateGraph(
+        FrozenMethodGraphPlan Plan,
+        MethodHandle Caller,
+        MethodHandle Helper,
+        int GetMethodDefinitionCount,
+        int CallerDefinitionCount,
+        int HelperDefinitionCount,
+        int ResolveFieldCount,
+        int ResolveMethodCount);
+
     private sealed class CountingResolutionServices(IResolutionServices inner) : IResolutionServices
     {
+        private readonly Dictionary<MethodHandle, int> methodDefinitionCounts = [];
+
         internal int GetMethodDefinitionCount { get; private set; }
 
+        internal int ResolveMethodCount { get; private set; }
+
         internal int ResolveFieldCount { get; private set; }
+
+        internal int GetMethodDefinitionCountFor(MethodHandle method) =>
+            methodDefinitionCounts.TryGetValue(method, out var count) ? count : 0;
 
         ResolutionResult<ResolvedMethodDefinition> IResolutionServices.GetMethodDefinition(MethodHandle method)
         {
             GetMethodDefinitionCount++;
+            methodDefinitionCounts[method] = GetMethodDefinitionCountFor(method) + 1;
             return inner.GetMethodDefinition(method);
+        }
+
+        ResolutionResult<ResolvedMethodCallTarget> IResolutionServices.ResolveMethod(
+            MethodHandle contextMethod,
+            int metadataToken)
+        {
+            ResolveMethodCount++;
+            return inner.ResolveMethod(contextMethod, metadataToken);
         }
 
         ResolutionResult<ResolvedField> IResolutionServices.ResolveField(

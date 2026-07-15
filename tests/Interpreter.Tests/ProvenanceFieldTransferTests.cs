@@ -697,6 +697,14 @@ public sealed class ProvenanceFieldTransferTests
         public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method) =>
             ResolutionResult<ResolvedMethodDefinition>.Success(definition);
 
+        public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+            MethodHandle contextMethod,
+            int metadataToken) =>
+            ResolutionResult<ResolvedMethodCallTarget>.Failed(
+                ResolutionFailureKind.Unsupported,
+                "TEST_DIRECT_CALL_NOT_CONFIGURED",
+                "This test resolver does not configure direct method calls.");
+
         public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken) =>
             ResolutionResult<ResolvedField>.Success(field);
     }

@@ -627,6 +627,7 @@ public sealed class W3DumpGetterExecutionIntegrationTests
         Assert.Equal(MachineRunStatus.Ready, beforeLoad.Status);
         var outcome = machine.StepOne(beforeLoad.State, beforeLoad.OperationalState);
         var repeatedOutcome = machine.StepOne(outcome.State, outcome.OperationalState);
+        Assert.Equal(0, countingResolution.ResolveMethodCount);
         return new NullGetterRun(
             beforeLoad,
             outcome,
@@ -922,6 +923,7 @@ public sealed class W3DumpGetterExecutionIntegrationTests
                 events.AddRange(outcome.Events);
                 if (outcome.Status != MachineRunStatus.Ready)
                 {
+                    Assert.Equal(0, countingResolution.ResolveMethodCount);
                     return new GetterRun(
                         outcome,
                         events.ToImmutable(),
@@ -951,12 +953,22 @@ public sealed class W3DumpGetterExecutionIntegrationTests
 
         internal int GetMethodDefinitionCount { get; private set; }
 
+        internal int ResolveMethodCount { get; private set; }
+
         internal int ResolveFieldCount { get; private set; }
 
         ResolutionResult<ResolvedMethodDefinition> IResolutionServices.GetMethodDefinition(MethodHandle method)
         {
             GetMethodDefinitionCount++;
             return inner.GetMethodDefinition(method);
+        }
+
+        ResolutionResult<ResolvedMethodCallTarget> IResolutionServices.ResolveMethod(
+            MethodHandle contextMethod,
+            int metadataToken)
+        {
+            ResolveMethodCount++;
+            return inner.ResolveMethod(contextMethod, metadataToken);
         }
 
         ResolutionResult<ResolvedField> IResolutionServices.ResolveField(

@@ -14,6 +14,7 @@ internal enum AdmittedInstructionKind
     Subtract,
     Multiply,
     LoadField,
+    Call,
     Return,
 }
 
@@ -22,7 +23,8 @@ internal readonly record struct AdmittedInstruction(
     AdmittedInstructionKind Kind,
     int Operand,
     int Size,
-    ResolvedField? Field = null);
+    ResolvedField? Field = null,
+    ResolvedMethodCallTarget? CallTarget = null);
 
 internal sealed record AdmittedMethodPlan(
     ResolvedMethodDefinition Definition,
