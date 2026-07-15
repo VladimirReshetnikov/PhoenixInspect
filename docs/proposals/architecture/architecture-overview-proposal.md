@@ -11,13 +11,16 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237):
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1 and W4.2 have since
+landed; exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel, not
+the counterfactual product:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
    plan over dump evidence without repeating member selection;
 3. execute a small, scenario-derived, EH-free IL subset through a concrete value and memory domain, checked against CoreCLR;
-4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy.
+4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy; W4.2 now proves their
+   branchless dump-free transport and canonical lineage, while W4.3–W4.9 remain pending.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -81,9 +84,21 @@ counted dump metadata/body + exact rooted field evidence
   -> interpreter kernel + concrete value/memory domain
   -> machine outcome, resulting state/memory, events, and budget
   -> host/test canonical replay projection, transcript, and fingerprint
+
+For the implemented W4.2 dump-free kernel extension:
+
+bounded partial/unavailable input facts
+  -> canonical InputOrigin -> explained Int32 semantic top
+  -> IlMachine with opt-in ExplainedInt32 policy
+  -> shared argument/local/store/arithmetic/return transfers
+  -> ordered BinaryTransform nodes with exact operands embedded
+  -> reachable canonical graph capture -> validated fresh-domain replay
 ```
 
 The dump path is not an implementation detail after the interpreter. It is the primary product path and therefore lands first.
+
+The second path is kernel evidence only. It has no non-exact field-load continuation, call, model, product facade or
+result projection, and it consumes no generated dump.
 
 The active W1–W4 paths use generated, source-controlled fixtures directly. The worker described in section 4.5 is a
 separately landed, non-gating prototype outside those milestones and is not part of this active data flow.
@@ -211,6 +226,23 @@ Exact documentation-closure commit `de6cea124` then passed all four required job
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), formally closing W3's defined
 non-cybersecurity scope.
 
+W4.2 exact implementation commit `e89e43498` extends the same machine rather than creating a parallel interpreter.
+`IValuePrecisionDomain<TValue>` optionally reports `Exact`, `ExplainedUnknown`, or `UnexplainedUnknown`.
+`UnknownExecutionPolicy` defaults to `ExactOnly`, preserving W3 behavior; `ExplainedInt32` opts into only structurally
+typed, domain-validated explained `Int32` values. Bottom and bare semantic top remain non-executable. Exact receivers,
+metadata-initialized locals, and exact-classified W3 field loads remain exact, while the existing argument/local load,
+local store, arithmetic, and return handlers transport an admitted explained unknown.
+
+`ProvenanceConcreteDomain` and `ProvenanceConcreteValue` keep the lifted-flat semantic value separate from its optional
+lineage root. Equality, hashing, lattice order, join, meet, and widening ignore lineage. Runtime unknown arithmetic
+creates canonical `BinaryTransform` nodes from ordered operands only when every unknown operand has a validated
+explanation; exact `Int32` operands are embedded without spurious nodes. Canonical `InputOrigin` nodes ground partial
+or unavailable inputs. Reachable-only graph capture and validated fresh-domain replay preserve versioned bytes,
+content-derived node IDs, graph root, and graph SHA-256.
+
+No non-exact `ldfld` continuation or `FieldLoadTransform` exists yet. Direct calls and their transforms, call models,
+the counterfactual facade/request/plan/result, and a generated-dump product result remain W4.3–W4.9 work.
+
 ## 5. Identity model
 
 Identity and location are separate concepts:
@@ -233,6 +265,11 @@ Identity and location are separate concepts:
 - a **constructed method/type context** adds a deterministic generic-instantiation identity;
 - a **bound dump-query plan** adds the grammar version, ordinal root/field names, snapshot-scoped owner and selected
   field identities, admitted decoder kind, and exact optional literal value;
+- a **provenance source key** is the complete SHA-256 of a bounded canonical request/evidence source projection;
+- a **lineage node** is the SHA-256 of versioned canonical `InputOrigin` or ordered `BinaryTransform` bytes, independent
+  of interning and traversal order;
+- a **captured lineage graph** is the root plus exactly its reachable nodes in deterministic ID order, with its own
+  canonical bytes and SHA-256 fingerprint;
 - file paths, display names, enumeration order, process-random string hashes, and allocation counters are not stable identities.
 
 Mappings between runtime instances and artifacts carry evidence status and mismatch diagnostics. Handles used in replay or tests must be derived from these identities, not from discovery order.
@@ -269,6 +306,11 @@ OperationalContext
 
 Only semantic state participates in abstract-domain equality, joins, or widening. Decreasing budgets, growing traces, object allocation order, cache state, and provenance IDs must not prevent a fixpoint or make semantic equality traversal-dependent.
 
+W4.2 applies the same separation inside a value: `ProvenanceConcreteValue` equality and hashing inspect only its
+lifted-flat semantic value. Its optional lineage root belongs to the explanation/replay channel. Because lineage IDs
+are hashes of canonical node bytes, capture/replay remains deterministic without allowing explanation differences to
+split a semantic lattice top.
+
 Memory used for undo or branch snapshots must expose a documented persistent-snapshot contract. `TMemory` being a generic type is not by itself a persistence guarantee; mutable implementations are not eligible for rewind claims.
 
 Determinism means identical normalized inputs, policies, artifacts, dump evidence, and engine version produce identical values, statuses, ordered diagnostics, and transcript fingerprints. Wall-clock timeout and host cancellation are operational interruptions and are not interchangeable with deterministic budget exhaustion.
@@ -294,6 +336,10 @@ four hosted jobs also passed in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Exact documentation-closure
 commit `de6cea124` and [run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237)
 close that evidence chain with all four required jobs passing.
+
+The W4.2 dump-free proof independently freezes canonical bytes and hard-coded IDs for `InputOrigin` and
+`BinaryTransform`, checks insertion-order-independent interning and reachable-only capture, then replays the graph in
+a fresh domain while preserving root and graph fingerprints. It does not claim dump-session or product-result replay.
 
 ## 8. Status protocols
 
@@ -330,8 +376,10 @@ compilation-health evidence only. It is not cybersecurity behavioral evidence.
 
 The prototype retains only projects containing behavior or contracts exercised by the active slices:
 
-- `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body shapes, domain/memory contracts, and the interpreter kernel;
-- `Interpreter.Domain.Concrete` — concrete validation domain and persistent memory;
+- `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body shapes, domain/memory
+  contracts, optional value-precision classification, exact-only-by-default unknown policy, and the interpreter kernel;
+- `Interpreter.Domain.Concrete` — concrete validation semantics and persistent memory plus W4.2's provenance-aware
+  value/domain and canonical lineage graph;
 - `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts and active SRM adapter;
 - `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, and exact
   counted W3 method/field composition into a snapshot-scoped resolver/import descriptor without introducing ClrMD

@@ -4,7 +4,8 @@
 >
 > **Roadmap relation:** Active · W4 normative contract
 >
-> **Implementation status:** W4.1 fixture gate implemented and locally validated at `82363585b`; W4.2–W4.9 pending
+> **Implementation status:** W4.1 fixture gate implemented at `82363585b`; W4.2 unknown E1/E2 kernel implemented at
+> `e89e43498`; W4.3–W4.9 pending
 
 ## 1) Purpose and authority
 
@@ -19,8 +20,10 @@ Where this document conflicts with a supporting proposal, this document controls
 surface, and the W3 [Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md) remains the compatibility
 floor for structural identity, whole-body admission, memory isolation, instruction accounting, and replay.
 
-The contract is just ahead of code. W4.1's fixture/emitted-shape/CoreCLR/current-W3-boundary evidence is implemented;
-every later section that describes W4 behavior remains a requirement, not an implementation claim, until the
+The contract is just ahead of code. W4.1's fixture/emitted-shape/CoreCLR/current-W3-boundary evidence and W4.2's
+unknown E1/E2 domain kernel are implemented. W4.2 realizes the semantic-value rules, the `InputOrigin` and
+`BinaryTransform` subset of lineage, policy-enabled explained-`Int32` execution over shared W3 handlers, and
+fresh-object lineage replay. Every later behavior remains a requirement, not an implementation claim, until the
 traceability map names passing executable evidence. API names shown here are provisional design names; public
 prototype APIs that land must carry detailed XML documentation.
 
@@ -70,6 +73,10 @@ boundary at pushed checkpoint `82363585b`. It does not execute the caller throug
 from dump memory. The workflow is not a representative private-production incident corpus and establishes no
 recoverability or readiness rate. Frame, local, and argument recovery remain unavailable; the future product receiver
 comes from the exact rooted-object path.
+
+Pushed W4.2 checkpoint `e89e43498` proves the dump-free unknown-aware kernel, not this rooted workflow. It neither
+admits the caller's direct call nor imports non-exact dump-field evidence, constructs a product result, or claims a
+dump-grounded counterfactual answer.
 
 ## 3) Closed W4 profile
 
@@ -298,6 +305,17 @@ For every admitted transfer:
 
 The concrete W3 domain remains valid and provenance-free. W4 must add a second meaningful domain or equivalent explicit
 unknown-evidence implementation over the same opcode handlers before claiming shared multi-mode reuse.
+
+W4.2 satisfies that kernel requirement at checkpoint `e89e43498`. `ProvenanceConcreteDomain` retains one lifted-flat
+semantic top per structural type while an optional precision capability distinguishes exact, explained unknown, and
+unexplained unknown values at execution boundaries. `UnknownExecutionPolicy.ExplainedInt32` permits only owned,
+structurally valid explained `Int32` values; exact-only remains the compatibility default, and bottom, bare top,
+foreign roots, wrong types, or capability failures perform no semantic transfer. The lineage implementation is
+deliberately limited to canonical `InputOrigin` and ordered `BinaryTransform` nodes. It embeds exact operands, interns
+equal canonical nodes, captures only the reachable immutable DAG in identity order, and replays identical bytes,
+roots, nodes, and graph SHA-256 in fresh domain and machine objects. Exact E2 `ldfld` remains exact through the second
+domain. Partial/unavailable field continuation, precision-loss events, and `FieldLoadTransform` remain W4.3; call and
+modeled-return lineage remain owned by their later slices.
 
 ## 7) Direct calls and transitive admission
 
@@ -620,7 +638,7 @@ and materially rewritten lines are counted once. These ranges describe implement
 | Slice | Independently valuable responsibility | Estimated implementation LOC | Realized LOC |
 |---|---|---:|---:|
 | W4.1 | Generated value-gate fixture, exact emitted-shape assertions, exact CoreCLR oracle, and one current-W3 rejection checkpoint | 350–480 | 478 |
-| W4.2 | Unknown E1/E2 domain kernel, content-addressed lineage, domain/transfer laws, and replay | 1,910–2,630 | — |
+| W4.2 | Unknown E1/E2 domain kernel, content-addressed lineage, domain/transfer laws, and replay | 3,350–3,500 | 3,454 |
 | W4.3 | Non-exact dump-field import/continuation, evidence matrix, precision events, and dump-free adapter/machine tests | 2,400–3,500 | — |
 | W4.4 | Direct MethodDef resolution, call signatures, acyclic graph construction/required-depth calculation, and frozen transitive admission | 1,700–2,600 | — |
 | W4.5 | Multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, and depth high-water reporting | 2,300–3,500 | — |
@@ -628,16 +646,22 @@ and materially rewritten lines are counted once. These ranges describe implement
 | W4.7 | Retained-null target-outcome contract, terminal projection, canonical fragment without request/plan identity, and dump-free differential/idempotence tests | 1,500–2,500 | — |
 | W4.8 | Canonical product request/plan/result/runner, configurable traversal charging, target-fragment result-projector integration, and product tests | 2,400–3,500 | — |
 | W4.9 | Generated-dump exact/degraded/model corpus, CoreCLR integration oracle, reopen/rebind replay, CI closure, and realized LOC ledger | 2,000–3,200 | — |
-| **Initial umbrella** | **Nine non-overlapping work slices** | **16,860–25,310** | **478 through W4.1** |
+| **Initial umbrella** | **Nine non-overlapping work slices** | **16,860–25,310** | **3,932 through W4.2** |
 
-Replacing W4.1's estimate with its realized value gives a current W4 total projection of **16,988–25,308 LOC**:
-478 realized plus 16,510–24,830 estimated for W4.2–W4.9. The remaining slice envelopes are unchanged pending their
-own design/code audits and implementation evidence.
+Replacing W4.1 and W4.2 estimates with their realized values gives a current W4 total projection of
+**18,532–26,132 LOC**: 3,932 realized plus 14,600–22,200 estimated for W4.3–W4.9. The original
+**16,860–25,310 LOC** baseline remains recorded above rather than being rewritten after implementation evidence. The
+W4.2 checkpoint contributes 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production plus 1,908
+focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. The remaining slice envelopes
+are unchanged pending their own design/code audits and implementation evidence.
 
-Ownership boundaries are explicit. W4.1 freezes the fixture and current W3 rejection only; W4.4 owns new call admission
-and graph construction under a fixed internal safety cap, W4.5 owns logical-depth policy/enforcement, and W4.8 owns
-configurable traversal charging and product projection. W4.3 owns dump-free adapter/machine behavior while W4.9 owns
-generated-dump and reopen/rebind integration. W4.7 owns the standalone target-outcome/canonical fragment; W4.8
+Ownership boundaries are explicit. W4.1 freezes the fixture and current W3 rejection only. W4.2 owns the second
+domain, execution-boundary precision policy, and `InputOrigin`/`BinaryTransform` lineage only; it keeps exact E2 field
+loads compatible but does not continue from non-exact field evidence. W4.3 owns that dump-free adapter/machine
+continuation and `FieldLoadTransform`. W4.4 owns new call admission and graph construction under a fixed internal
+safety cap, W4.5 owns logical-depth policy/enforcement, and W4.8 owns configurable traversal charging and product
+projection. W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
+target-outcome/canonical fragment; W4.8
 integrates it into the common result projector without inventing rooted-facade reachability, and W4.9 only aggregates
 the already-tested behavior into closure evidence. Realized LOC is attributed once.
 

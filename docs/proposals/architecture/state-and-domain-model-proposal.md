@@ -7,7 +7,9 @@ hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-ch
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
-at that exact commit. Fixpoint, async, dynamic, and virtual-debug state are gated research.
+at that exact commit. W4.1 and W4.2 are now implemented; exact W4.2 commit `e89e43498` adds the dump-free
+provenance-aware `Int32` execution kernel. W4.3–W4.9 and fixpoint, async, dynamic, and virtual-debug state remain
+pending or gated research.
 
 ## Scope
 
@@ -25,10 +27,11 @@ The focus here is on **formal-ish, implementation-guiding contracts**:
 3. how unknownness and provenance are encoded,
 4. how transfer functions communicate guarantees.
 
-The implemented subset is normatively defined by the
-[Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md). Broader shapes in this document are
-research generalizations, not claims that the current machine supports CFG joins, calls, writes, EH, or unknown-aware
-continuation.
+The implemented W3 subset is normatively defined by the
+[Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md). W4.2 extends that machine only with an
+optional precision capability, an opt-in explained-`Int32` policy, and dump-free provenance-aware arithmetic. Broader
+shapes in this document are research generalizations, not claims that the current machine supports CFG joins,
+non-exact field loads, calls, writes, EH, or a counterfactual product surface.
 
 ---
 
@@ -312,9 +315,26 @@ ProductValue = {
 
 Join/widen are field-wise unless policy states correlated widening.
 
+#### Implemented W4.2 concrete realization
+
+`IValuePrecisionDomain<TValue>` is an optional extension of `IValueDomain<TValue>` that classifies executable values
+as `Exact`, `ExplainedUnknown`, or `UnexplainedUnknown`. `UnknownExecutionPolicy.ExactOnly` is the default and preserves
+W3. `ExplainedInt32` opts into only structurally typed, domain-validated explained `Int32` values; bottom and bare top
+remain non-executable.
+
+`ProvenanceConcreteDomain` wraps the existing lifted-flat `ConcreteDomain`. `ProvenanceConcreteValue` keeps semantic
+value and optional explanation root separate: equality, hashing, order, join, meet, and widening inspect only the
+semantic value. Thus all same-typed unknowns still denote one lattice top even when their explanations differ.
+
 ### 3.3 Unknown payload and provenance
 
-Unknown values are not plain `Top`; they carry provenance.
+At product boundaries, an executable unknown is not plain `Top`; it requires provenance. W4.2 realizes that rule with
+a separate canonical lineage DAG rather than the aspirational monolithic payload below. Its closed node set is
+`InputOrigin` plus ordered `BinaryTransform`. Node IDs are SHA-256 hashes of versioned canonical bytes; transforms
+embed exact `Int32` operands and reference explained-unknown predecessors. Reachable-only `CaptureLineage` and
+validated `ReplayLineage` preserve canonical node bytes, IDs, root, and graph fingerprint across domain instances.
+
+The richer payload sketch remains a future product/controller vocabulary:
 
 ```text
 UnknownPayload = {
@@ -369,7 +389,9 @@ SessionPauseReason = {StepComplete | DecisionNeeded | ExceptionStop | BudgetStop
 This is a future session-controller protocol layered over low-level `StepOutcome`/`MachineRunStatus`; it does not
 rename machine outcomes. The canonical mapping is in `architecture-overview-proposal.md`.
 
-Rules:
+Rules for the future controller and product layers follow. The W4.2 kernel reuses the existing argument/local load,
+local store, arithmetic, and return handlers and their instruction events rather than introducing a second transfer
+pipeline:
 
 1. `call/callvirt/newobj` that are interpreted must push a frame as a discrete, observable event (callee body does not execute in the same micro-step).
 2. Any introduction of unknownness must emit both:
@@ -441,9 +463,9 @@ Versioning rules:
 
 ---
 
-## 8) MVP constraints and deferred capabilities
+## 8) Implemented constraints and deferred capabilities
 
-Implemented in the W3 concrete execution slice:
+Implemented through W4.2:
 
 - exact `Int32`, structural object references, typed null, and lifted-flat per-type top/bottom values,
 - a persistent memory snapshot contract with allocated defaults and exact imported-field absence,
@@ -451,12 +473,17 @@ Implemented in the W3 concrete execution slice:
 - deterministic budget/event accounting,
 - metadata-derived activation and frozen typed whole-body admission,
 - exact direct/constant-adjusted getter `ldfld` through a typed memory-result contract, and
-- terminal null-reference outcome, plus separate same/fresh-session replay of successful execution outcomes.
+- terminal null-reference outcome, plus separate same/fresh-session replay of successful execution outcomes;
+- optional `IValuePrecisionDomain<TValue>` classification and exact-only-by-default execution policy;
+- explained `Int32` transport through existing argument/local/store/arithmetic/return handlers; and
+- canonical `InputOrigin`/`BinaryTransform` lineage identities with reachable capture and fresh-domain replay.
 
-Deferred until the unknown-aware method slice or research gates:
+Deferred to W4.3–W4.9 or later research gates:
 
 - hybrid nullness/constant/type/taint products,
-- provenance-bearing unknown values,
+- non-exact `ldfld` continuation and `FieldLoadTransform`,
+- interpreted calls and call-transform lineage,
+- call models, counterfactual request/plan/result and facade, and generated-dump product closure,
 - coarse and summary heap abstractions,
 - full relational numeric domains,
 - high-precision alias analysis,
@@ -470,7 +497,7 @@ Deferred until the unknown-aware method slice or research gates:
 1. How much of `EHState` is mandatory for first public virtual-stepping preview (`stop-on-throw` only vs handler transfer)?
 2. Which later domains need a separate narrowing operator beyond `Meet`?
 3. How aggressively should path-fact contradiction pruning run under `fast` policy presets?
-4. Should unknown provenance graphs be DAG-enforced in v1, or permit cycles for simplicity?
+4. Should later call/model provenance extend W4.2's canonical acyclic DAG or introduce a separately versioned graph?
 5. Should modeled calls always appear as model frames in history, or may policy collapse them into atomic events?
 
 ---
@@ -478,9 +505,12 @@ Deferred until the unknown-aware method slice or research gates:
 ## 10) Proposed acceptance criteria
 
 W3 satisfies the concrete machine-state, persistent-memory, deterministic budget/event, and lattice-law portions of
-this proposal locally at hardened implementation checkpoint `19c292f9f`. The broader research proposal is ready for sign-off when:
+this proposal locally at hardened implementation checkpoint `19c292f9f`. W4.2 satisfies the dump-free
+provenance-bearing branchless-transfer portion at exact implementation commit `e89e43498`; it is not an end-to-end
+dump product. The broader research proposal is ready for sign-off when:
 
 1. Core interfaces include explicit `MachineState`/`FrameState`, while any session controller keeps its transition and pause protocol distinct from the machine result.
-2. At least one end-to-end sample can emit provenance-bearing unknowns.
+2. At least one product-level dump sample can emit and replay provenance-bearing unknowns; W4.2 proves only the
+   dump-free domain and machine seam.
 3. Merge/join behavior is validated on a curated CFG fixture set.
 4. Host API can surface session pause reason, machine status, debug events, and approximation diagnostics without conflating their vocabularies or leaking internal types.

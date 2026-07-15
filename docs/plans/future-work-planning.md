@@ -38,7 +38,7 @@ Its deliberately narrow contract is the [Restricted Dump Query v1
 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any increment beyond that contract
 requires an explicit scope decision. Representative private-production measurement is outside W1, and already-landed
 worker/corpus code remains separately scoped non-gating prototype work. W4 is now active and admitted around the
-`GetMarkerSummary` workflow below; W4.1's fixture-gate implementation and local validation have landed, while W4.2–W4.9
+`GetMarkerSummary` workflow below; W4.1's fixture gate and W4.2's unknown E1/E2 kernel have landed, while W4.3–W4.9
 remain admitted work. W3 is complete for its
 defined non-cybersecurity architecture-validation scope at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
@@ -365,11 +365,11 @@ owns the exact behavior. Closure requires all of these executable gates:
 
 ### W4 — Unknown-aware method evaluation
 
-**Status:** **Active; W4.1 is implemented and locally validated, while W4.2–W4.9 remain admitted work.**
+**Status:** **Active; W4.1–W4.2 are implemented and locally validated, while W4.3–W4.9 remain admitted work.**
 
-**Current projected hand-written implementation surface:** 16,988–25,308 LOC: 478 realized in W4.1 plus an estimated
-16,510–24,830 across eight remaining non-overlapping, independently valuable slices. The admitted baseline was
-16,860–25,310 LOC. Every remaining slice has an upper estimate of at most 3,500 LOC; the umbrella is not one work
+**Current projected hand-written implementation surface:** 18,532–26,132 LOC: 3,932 realized through W4.2 plus an
+estimated 14,600–22,200 across seven remaining non-overlapping, independently valuable slices. The admitted baseline
+was 16,860–25,310 LOC. Every remaining slice has an upper estimate of at most 3,500 LOC; the umbrella is not one work
 package.
 
 **Goal:** extend the product from read-only derived queries to explicitly counterfactual method evaluation.
@@ -394,12 +394,27 @@ relational metadata identities and signatures, CoreCLR result, and current W3 fi
 ordinary dump with zero skips after a locked restore and zero-warning Release build. This is fixture/admission-gap
 evidence only; it does not implement unknown continuation, direct-call execution, or the product facade.
 
+Pushed W4.2 checkpoint `e89e43498` adds a second meaningful lifted-flat value domain over the shared W3 handlers.
+Policy-enabled execution transports only owned, structurally valid explained `Int32` values; bare top, bottom, foreign
+lineage, wrong types, and precision-capability failures remain atomic non-transfers. Semantic lattice operations and
+machine equality ignore explanation, while a separate content-addressed immutable DAG records canonical `InputOrigin`
+and ordered `BinaryTransform` nodes, embeds exact operands, and replays byte-for-byte in fresh domain and machine
+objects. Exact E2 `ldfld` remains executable through the second domain. Partial/unavailable field continuation,
+precision-loss events, and `FieldLoadTransform` belong to W4.3; calls, product results, and dump-grounded W4 execution
+remain later work.
+
+Headless verification passed the fifteen-project Release build with zero warnings/errors, focused W4.2 53/53, full
+unit 156/156, fast integration 71/71, ordinary dump 5/5, and both documentation guards, with zero skips and
+`Scope!=Cybersecurity` on behavioral test commands. The checkpoint realizes 3,454 LOC: 3,429 attributable W4.2
+implementation LOC (1,521 production plus 1,908 focused tests) and 25 LOC segregating an excluded test scope. Together
+W4.1–W4.2 realize 3,932 LOC.
+
 **Admitted work slices**
 
 | Slice | Non-overlapping implementation responsibility | Estimated hand-written implementation LOC | Realized LOC |
 |---|---|---:|---:|
 | W4.1 — Gate fixture | Add the generated rooted workflow, exact emitted-shape assertions, exact CoreCLR oracle, and one current-W3 whole-body rejection checkpoint. | 350–480 | 478 |
-| W4.2 — Unknown E1/E2 kernel | Introduce provenance-bearing unknown continuation for the existing W3 E1/E2 value transfers while preserving structural typing, deterministic events, and no fabricated concrete values. | 1,910–2,630 | — |
+| W4.2 — Unknown E1/E2 kernel | Introduce provenance-bearing unknown continuation for the existing W3 E1/E2 value transfers while preserving structural typing, deterministic events, and no fabricated concrete values. | 3,350–3,500 | 3,454 |
 | W4.3 — Non-exact dump field continuation | Import partial/unavailable field values as typed explanatory unknowns while preserving conflict and invalid as distinct non-continuing outcomes. | 2,400–3,500 | — |
 | W4.4 — Direct-call metadata and frozen transitive admission | Resolve the one admitted direct helper call structurally, construct the acyclic dependency graph, calculate required depth, and freeze the complete closure before instruction zero; configurable traversal charging remains W4.8. | 1,700–2,600 | — |
 | W4.5 — Multi-frame interpreted execution and call depth | Push/pop interpreted frames at discrete observable boundaries, preserve return-site identity, enforce the prepared maximum logical depth, and record logical/frame high water. | 2,300–3,500 | — |
@@ -420,7 +435,7 @@ tests before an allocation budget becomes an applied contract.
 - The selected `GetMarkerSummary` workflow demonstrates method-execution value beyond W2's one-root/one-field query.
   **Satisfied for roadmap admission and fixture evidence by W4.1; product execution belongs to later slices.**
 - Effects, deterministic budgets, degraded-evidence behavior, product truth language, and explicit exclusions are fixed
-  by the normative W4 contract. **Satisfied for design admission; no implementation claim follows.**
+  by the normative W4 contract. **Satisfied for design admission; W4.1–W4.2 implementation evidence is recorded above.**
 - Each admitted work slice has an explicit estimate of at most 3,500 hand-written implementation LOC before work begins.
   **Satisfied by the table above.**
 
@@ -534,6 +549,11 @@ W4 admission decisions now applied:
    and has no dormant counter.
 5. W4 retains `Scope!=Cybersecurity` in every required test command. Malformed-artifact and external-worker behavior is
    neither a W4 deliverable nor W4 validation.
+6. W4.2 keeps explanation outside lattice and machine semantic equality. Execution distinguishes exact, explained
+   unknown, and ungrounded top only through an optional precision capability and admits explained values only under an
+   explicit policy.
+7. W4.2 owns only `InputOrigin` and ordered `BinaryTransform` lineage. Exact E2 `ldfld` proves shared-handler
+   compatibility; W4.3 owns non-exact field continuation, precision-loss events, and `FieldLoadTransform`.
 
 ### Optimized-dump recoverability measurement
 

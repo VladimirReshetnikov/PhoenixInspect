@@ -6,9 +6,10 @@
 
 Current for active delivery. Research suites are collected separately in section 9.
 
-The W4 counterfactual-method contract is admitted and active. W4.1's checked-in fixture gate and local verification
-landed at pushed checkpoint `82363585b`; no W4 counterfactual execution or CI-enforced umbrella gate exists yet.
-Section 8 separates that narrow current evidence from later required capability.
+The W4 counterfactual-method contract is admitted and active. W4.1's checked-in fixture gate landed at pushed
+checkpoint `82363585b`, and W4.2's unknown-aware E1/E2 kernel landed at pushed checkpoint `e89e43498`. Neither creates
+a counterfactual product/dump result or CI-enforced umbrella gate. Section 8 separates those current checkpoints from
+later required capability.
 
 ## 1) Evidence language
 
@@ -40,26 +41,30 @@ hidden/no-window process policy. A raw `dotnet test` command is not an approved 
 `tests/Interpreter.Tests` is dump-free. Its checked-in corpus covers:
 
 1. lifted-flat concrete-domain order, join, meet, widening, canonical unknowns, and redacted display;
-2. persistent allocated/imported object and array snapshot/fork isolation, deterministic allocation, bounded arrays,
+2. provenance-aware lifted-flat laws whose semantic equality/hash/order ignore explanation, plus versioned
+   content-addressed `InputOrigin` and ordered `BinaryTransform` lineage, interning, capture, and fresh-object replay;
+3. persistent allocated/imported object and array snapshot/fork isolation, deterministic allocation, bounded arrays,
    stable content hashes, allocated defaults, and unavailable absent imported fields;
-3. SRM-derived structural module/type/method/field identities plus atomic body/signature/local projection for static and
+4. SRM-derived structural module/type/method/field identities plus atomic body/signature/local projection for static and
    instance methods, `void`/`Int32` returns, initialized `Int32` locals, and directly declared instance FieldDefs;
-4. metadata-derived root activation and a typed, whole-body-admitted E1 arithmetic profile covering compact, short,
+5. metadata-derived root activation and a typed, whole-body-admitted E1 arithmetic profile covering compact, short,
    and long argument/local encodings, plus an E2 direct or constant-adjusted `Int32` instance getter whose receiver
    must use the one-byte compact `ldarg.0`; equivalent short `ldarg.s 0` and long `ldarg 0` receiver encodings are
    negative admission cases;
-5. fail-closed behavior for unsupported signatures, fields, suffixes, EH, malformed/truncated IL, invalid
+6. fail-closed behavior for unsupported signatures, fields, suffixes, EH, malformed/truncated IL, invalid
    slots/stack/type shape, injected offsets/state, nested frames, decorated or multiple-field getters, oversized
    bodies/`maxstack`, and exhausted budget before any forbidden transfer;
-6. exact/non-exact/exceptional memory-load behavior, one-load `ldfld`, truthful capability-failure origin, and an
+7. exact/non-exact/exceptional memory-load behavior, one-load `ldfld`, truthful capability-failure origin, and an
    idempotent terminal null-receiver outcome with exact budget and event assertions;
-7. byte-identical canonical outcomes for repeated normalized inputs and for fresh metadata/resolver/machine/memory
+8. byte-identical canonical outcomes for repeated normalized inputs and for fresh metadata/resolver/machine/memory
    reconstruction; and
-8. compiler-emitted arithmetic and getter methods invoked on CoreCLR and interpreted through the same value-domain and
+9. compiler-emitted arithmetic and getter methods invoked on CoreCLR and interpreted through the same value-domain and
    memory handlers, including unchecked overflow and null-receiver outcomes.
 
-The differential harness proves the two closed, branchless, EH-free W3 profiles only. It is not evidence for calls,
-branches, handlers, arbitrary signatures, inherited/static fields, or an unknown-aware domain.
+The differential harness proves the two closed, branchless, EH-free W3 profiles only. W4.2 separately demonstrates
+that a second meaningful domain reuses those opcode handlers for exact and explained-unknown values. Neither is
+evidence for calls, branches, handlers, arbitrary signatures, inherited/static fields, or W4.3 non-exact field
+continuation.
 
 ### Real dump-memory proof
 
@@ -260,6 +265,29 @@ at the same exact pushed implementation commit. Exact documentation-closure comm
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently satisfied the
 separate hosted closure requirement. The implementation checkpoint realizes `+8,842/-1,650` hand-written LOC
 (`+5,362/-928` production and `+3,480/-722` tests) plus 39 generated lock-file lines.
+
+### Current local W4.2 implementation verification — 2026-07-14
+
+Exact pushed checkpoint `e89e43498` passed the following local matrix. Every managed command ran through
+`./eng/Invoke-HeadlessProcess.ps1`; every test filter used `Scope!=Cybersecurity`; no test was skipped; and no UI was
+displayed.
+
+| Gate | Headless command shape | Result |
+|---|---|---|
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Focused W4.2 kernel | the wrapped unit-project command filtered to `ProvenanceConcreteDomainTests`, `ProvenanceLineageTests`, and `ProvenanceMachineTransferTests`, together with `Scope!=Cybersecurity` | Passed, 53/53: 23 domain, 14 lineage, and 16 machine facts. |
+| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --filter "Scope!=Cybersecurity"` | Passed, 156/156. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast&Scope!=Cybersecurity"` | Passed, 71/71. |
+| Ordinary real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 5/5. This is regression evidence only; W4.2 creates no dump-grounded result. |
+| Documentation/workflow guards | `./eng/verify-markdown-links.ps1` and `./eng/verify-headless-workflows.ps1` | Passed. |
+
+The checkpoint accounts for 3,454 LOC: 3,429 attributable W4.2 implementation LOC (1,521 production plus 1,908
+tests) against its final refined 3,350–3,500 LOC estimate, plus 25 LOC that segregate a pre-existing resource-admission
+fact from milestone evidence. Together with W4.1, W4 has 3,932 realized checkpoint LOC through W4.2 and a current
+18,532–26,132 LOC projection across the seven remaining W4.3–W4.9 slices. Exact E2 field loads remain exact;
+partial/unavailable field continuation, `FieldLoadTransform`, and precision-loss events remain W4.3 work. No W4
+product facade, dump-grounded counterfactual result, direct call, or hosted umbrella closure is claimed.
 
 ## 3) Active test layers
 
@@ -469,14 +497,23 @@ branchless, EH-free generated-dump scenario: `DumpProbe.GetMarkerSummary` reads 
 direct `CombineMarkers` helper. This question is intentionally beyond W2: a W2 plan selects one field and never
 executes user IL, so it cannot combine the two observations or cross the call boundary.
 
-W4.1 checkpoint `82363585b` currently proves the exact 18-byte caller/four-byte helper closure, relational metadata
+W4.1 checkpoint `82363585b` proves the exact 18-byte caller/four-byte helper closure, relational metadata
 operands and signature/header facts, CoreCLR result, and the actual W3 first rejection at the second `ldfld` before the
 direct `call`. Local headless verification passed focused 4/4, complete fast 71/71, and ordinary dump 5/5 with zero
 skips after locked restore and a zero-warning Release build. It realizes 478 added or materially revised LOC and does
 not claim dump-sourced W4 bodies, unknown continuation, call execution, a product result, or hosted closure.
 
-The remaining W4 implementation must satisfy all of the following before the umbrella is described as implemented or
-verified:
+W4.2 checkpoint `e89e43498` adds the second meaningful domain, explicit explained-unknown execution policy,
+lineage-independent semantic equality, versioned content-addressed `InputOrigin`/`BinaryTransform` graphs, and exact
+or explained-unknown transport through the shared E1/E2 handlers. Focused W4.2 verification passed 53/53 (23 domain,
+14 lineage, 16 machine), alongside the 156/156 full unit, 71/71 fast, and 5/5 ordinary-dump regression lanes, strict
+15-project zero-warning build, and both guards. The 3,454-LOC checkpoint contains 3,429 W4.2 implementation LOC plus
+25 scope-segregation LOC; W4 totals 3,932 realized checkpoint LOC through W4.2 and projects to 18,532–26,132 LOC.
+Exact E2 field loads remain exact, and non-exact field continuation remains blocked for W4.3. This is a dump-free
+kernel/reuse result, not a W4 product or dump result.
+
+The seven remaining W4.3–W4.9 slices must satisfy all of the following before the umbrella is described as implemented
+or verified:
 
 1. The complete root and reachable helper bodies are admitted before instruction zero from counted dump body and
    metadata evidence; a disk PE and direct CoreCLR invocation remain independent oracles, never execution inputs.

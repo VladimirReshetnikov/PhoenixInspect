@@ -23,8 +23,8 @@ Core principles:
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
 - **Active delivery target:** a deterministic, read-only evaluator grounded in a .NET dump. W4 has an admitted
-  branchless counterfactual-method contract and a locally validated W4.1 value-gate fixture; counterfactual method
-  execution has not landed.
+  branchless counterfactual-method contract, a validated W4.1 value-gate fixture, and a validated W4.2
+  provenance-aware execution kernel; counterfactual product execution has not landed.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. CoreCLR remains an outcome oracle, not an input to interpreter shape or dump evidence.
 - **Physical scope:** ten source projects contain active contracts or behavior; the two newest projects implement the narrow broker/runner boundary for one-shot external dump queries. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
@@ -47,11 +47,24 @@ at offset 12 and is not yet admitted. Headless local verification passed locked 
 build with zero warnings/errors, the focused W4.1 lane at 4/4, the complete non-cybersecurity fast lane at 71/71, and
 the ordinary dump regression at 5/5 with zero skips. The realized W4.1 surface is 478 added or materially revised LOC.
 
-This is executable fixture/gate evidence, not counterfactual product execution. No W4 product facade, unknown-aware
-domain, direct-call execution path, generated-dump W4 corpus, or umbrella closure exists yet. Later slices must consume
-and report instruction and preparation-traversal units, prepare/enforce a maximum logical call depth, and report
-logical/frame depth high-water marks. Allocation remains unadmitted and its bound is therefore absent/not applied
-until a later allocation scenario. Closure requires the
+W4.2 implementation checkpoint `e89e43498` adds a second meaningful value domain over the shared W3 handlers. It
+admits policy-enabled, provenance-bearing unknown `Int32` arguments while rejecting bare top, bottom, foreign roots,
+and structurally incompatible values at executable boundaries. Semantic equality, hashing, order, join, meet, and
+widening ignore explanations; the separate immutable lineage DAG canonically records only W4.2's `InputOrigin` and
+ordered `BinaryTransform` nodes, embeds exact operands, and replays byte-for-byte in fresh domain and machine objects.
+Exact E2 `ldfld` remains executable through the second domain, while partial or unavailable field continuation and
+its `FieldLoadTransform` belong to W4.3. Headless verification passed the fifteen-project Release build with zero
+warnings/errors, focused W4.2 tests at 53/53, the full unit suite at 156/156, fast integration at 71/71, ordinary dump
+at 5/5, and both documentation guards, all with zero skips and `Scope!=Cybersecurity` on behavioral test commands.
+
+The W4.2 checkpoint records 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production plus 1,908
+focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. W4.1–W4.2 therefore realize
+3,932 LOC; replacing both estimates gives a current W4 projection of 18,532–26,132 LOC while preserving the original
+16,860–25,310 baseline. This remains kernel and fixture evidence, not counterfactual product execution. No W4
+non-exact dump-field continuation, direct-call execution path, product facade, generated-dump W4 result/corpus, or
+umbrella closure exists yet. Later slices must consume and report instruction and preparation-traversal units,
+prepare/enforce a maximum logical call depth, and report logical/frame depth high-water marks. Allocation remains
+unadmitted and its bound is therefore absent/not applied until a later allocation scenario. Closure requires the
 specified exact, degraded-evidence, budget, differential, and same/fresh-session replay cases to pass through the
 non-cybersecurity headless Release, fast, dump, and focused W4 lanes with zero skips and at the exact pushed commit.
 

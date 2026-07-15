@@ -16,8 +16,9 @@ The current plan has three execution lanes:
 
 The Windows lane now evaluates both the complete W2 v1 product grammar and W3's closed counted-dump E2 getter over that
 evidence. W4.1 adds a dump-free fixture gate for the exact two-field/direct-call closure while deliberately preserving
-W3's rejection boundary. Dump-free parser, root, plan-identity, SRM projection, activation/admission, memory-law, and
-CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network. The worker lane retains
+W3's rejection boundary; W4.2 adds the dump-free unknown-aware E1/E2 domain kernel and canonical lineage replay without
+creating a product/dump result. Dump-free parser, root, plan-identity, SRM projection, activation/admission, memory-law,
+and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network. The worker lane retains
 a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside non-cybersecurity W1–W4
 milestone evidence.
 
@@ -28,6 +29,9 @@ The fast test project validates the code that should not depend on a DAC, child 
 Current proof obligations are:
 
 - the concrete domain satisfies bottom/top, order, join, meet, and widening laws with one canonical typed top;
+- the provenance-aware concrete domain satisfies the same semantic laws while excluding lineage from equality, hash,
+  and order; its versioned content-addressed `InputOrigin` and ordered `BinaryTransform` graph captures and replays
+  byte-identically across fresh domain objects;
 - persistent memory forks and subsequent stores cannot mutate an earlier snapshot;
 - metadata-projected constants, arguments, initialized locals, `add`, `sub`, `mul`, `ldfld`, and value/void `ret`
   execute with CoreCLR-compatible results for the closed E1/E2 profiles;
@@ -36,6 +40,10 @@ Current proof obligations are:
 - the W4.1 `GetMarkerSummary`/`CombineMarkers` fixture has exact compiler-emitted bodies, relational FieldDef/MethodDef
   operands, signatures and header facts; CoreCLR returns `0x26AF37BD`; and current W3 rejects the caller's second
   `ldfld` before activation or memory access while the direct `call` remains visible later in the raw body;
+- W4.2 policy admits only locally validated explained `Int32` unknowns, transports them through the existing
+  argument/local/arithmetic/return handlers, preserves ordered origins through `add`/`sub`/`mul`, rejects ungrounded,
+  foreign, bottom, or policy-disabled values atomically, and gives instruction exhaustion precedence at a valid
+  admitted instruction boundary;
 - metadata-derived activation receives only the method, ordered values, and persistent memory; caller counts, local
   values/counts, and return disposition are rejected as inputs;
 - whole-body typed admission rejects unsupported signatures, field identities/storage, suffixes, EH,
@@ -247,13 +255,24 @@ the same exact pushed implementation checkpoint. Exact documentation-closure com
 `de6cea124488d503d13c61a4c8e67203a16d06f9` passed the same four-job workflow in [run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), satisfying the closure gate.
 
+Current local W4.2 verification at exact pushed checkpoint `e89e43498` passed locked restore; a strict 15-project
+Release build with 0 warnings and 0 errors; focused W4.2 53/53, split into 23 domain, 14 lineage, and 16 machine facts;
+the complete 156/156 `Interpreter.Tests` lane; 71/71 fast integration tests; 5/5 ordinary dump regression tests; and
+the Markdown-link and headless-workflow guards. Every managed command was headless, every test command used
+`Scope!=Cybersecurity`, and there were zero skips. The checkpoint accounts for 3,454 LOC: 3,429 attributable W4.2
+implementation LOC (1,521 production plus 1,908 tests) against the final refined 3,350–3,500 LOC estimate, plus 25
+scope-segregation LOC. W4 has 3,932 realized checkpoint LOC through W4.2 and now projects to 18,532–26,132 LOC across
+the seven remaining W4.3–W4.9 slices. Exact E2 field loads remain exact; partial/unavailable continuation and its field
+transform/precision evidence remain W4.3 work. The ordinary dump lane is regression evidence only: W4.2 creates no
+product facade or dump-grounded counterfactual result.
+
 Restore and build remain repository-wide, so all 15 projects are compiled as topology/compilation-health evidence.
 Every current test invocation includes `Scope!=Cybersecurity`; the five dedicated hostile-artifact corpus facts are
 excluded and no cybersecurity validation is claimed.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
-## Post-W3 evidence gates
+## Post-W4.2 evidence gates
 
 The generated-fixture W1–W2 path and its prior exact-commit hosted closure evidence remain unchanged. W3's structural
 identity, SRM projection, metadata-derived activation, typed whole-body admission, concrete-domain/persistent-memory
@@ -264,9 +283,11 @@ of hosted run 29374585767. Exact documentation-closure commit
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined
 non-cybersecurity scope.
 
-W4.2's remaining admitted implementation requires a second meaningful unknown-aware domain. Its tests must keep
-distinct explanatory lineage outside semantic lattice equality while reproducing that lineage canonically in product
-replay. New opcodes or method families enter only through a scenario-derived compiler fixture and its complete
-dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed
+W4.2 now demonstrates the second meaningful unknown-aware domain over the shared E1/E2 kernel at `e89e43498` while
+keeping explanatory lineage outside semantic lattice equality and replaying its reachable graph canonically. W4.3 is
+the next evidence gate: map partial/unavailable field observations into typed unknowns with their exact evidence and
+`FieldLoadTransform`, while retaining conflict/invalid stops and no-fabrication behavior. New opcodes or method families
+enter only through a scenario-derived compiler fixture and its complete dependency closure; opcode counts and
+percentage targets do not define readiness. Separately landed malformed
 corpus/worker prototypes and cybersecurity validation are outside W1–W4; representative private-production
 measurement remains a separate non-gating readiness question.

@@ -2,7 +2,8 @@
 
 > **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices and for the admitted W4
 > branchless counterfactual-method contract. W3 implements the prerequisite interpreter/memory architecture proof.
-> W4.1's fixture gate is implemented and locally validated at `82363585b`; counterfactual method execution has not
+> W4.1's fixture gate and W4.2's dump-free provenance-aware arithmetic kernel are implemented; the latter landed at
+> exact implementation commit `e89e43498`. No counterfactual-method product request, result, facade, or dump path has
 > landed. Branches, handler transfer, virtual scratch objects,
 > async/dynamic lifting, and advanced query workflows remain research backlog rather than inherited commitments.
 
@@ -15,7 +16,7 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. The admitted W4 contract adds one branchless counterfactual method question to the delivery plan. W4.1 now freezes that question's exact generated fixture, CoreCLR result, and current W3 admission gap, but it does not add product capability; W4.2–W4.9 must implement and validate the unknown, call, model, result, and dump paths. An isolated virtual heap and broader method workflows remain research.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. The admitted W4 contract adds one branchless counterfactual method question to the delivery plan. W4.1 freezes that question's exact generated fixture, CoreCLR result, and W3 admission gap. W4.2 implements the dump-free value-precision, explained-unknown arithmetic, and canonical lineage kernel at `e89e43498`, still below the product boundary. W4.3–W4.9 must connect non-exact fields, calls, models, the facade/result contract, and generated-dump replay. An isolated virtual heap and broader method workflows remain research.
 
 ---
 
@@ -232,7 +233,7 @@ exact W2 closure commit `5bed47100`.
 
 ---
 
-### Phase 2 — Branchless counterfactual method evaluation (W4.1 gate landed; product execution pending)
+### Phase 2 — Branchless counterfactual method evaluation (W4.1–W4.2 landed; product execution pending)
 
 Goal: implement the admitted
 [`Counterfactual Method Evaluation Contract`](../architecture/counterfactual-method-evaluation-contract-proposal.md)
@@ -271,7 +272,32 @@ non-cybersecurity architecture-proof scope.
 The W2 query grammar continues to reject every method/getter execution entry point. W4 is a separate request, plan,
 and result contract; it does not silently widen W2 syntax or reinterpret a `DerivedQuery` as method execution.
 
-**Admitted scenario (fixture gate implemented; counterfactual evaluation not implemented)**
+**Implemented W4.2 dump-free unknown kernel, not a product capability**
+
+Exact implementation commit `e89e43498` adds the first provenance-aware continuation through the existing machine:
+
+* `IValuePrecisionDomain<TValue>` optionally classifies values as `Exact`, `ExplainedUnknown`, or
+  `UnexplainedUnknown` without widening the minimum `IValueDomain<TValue>` contract. `UnknownExecutionPolicy` defaults
+  to `ExactOnly`; the opt-in `ExplainedInt32` policy admits only structurally typed, domain-validated explained
+  `Int32` unknowns. Bare semantic top remains non-executable.
+* `ProvenanceConcreteDomain` and `ProvenanceConcreteValue` retain the lifted-flat concrete semantics while carrying a
+  separate explanation root. Equality, hashing, order, join, meet, and widening remain semantic and do not depend on
+  lineage identity.
+* Canonical `InputOrigin` and ordered `BinaryTransform` nodes form a versioned, content-addressed SHA-256 DAG. Exact
+  integer operands are embedded in transform nodes; unknown operands reference predecessor IDs. Reachable-only
+  `CaptureLineage` and validated fresh-domain `ReplayLineage` preserve node bytes, IDs, root, and graph fingerprint.
+* Existing argument/local load, local store, arithmetic, and return handlers are reused. Exact receivers,
+  metadata-initialized locals, and the W3 exact `ldfld` path stay exact, so the default policy preserves W3 behavior.
+
+The W4.2 implementation checkpoint is 3,454 LOC: 3,429 LOC for the W4.2 implementation plus a 25-LOC scope
+correction. Together with W4.1, 3,932 LOC of W4 are realized. These figures measure the checkpoint rather than a
+forecast and may be revised as later slices expose better boundaries.
+
+W4.2 deliberately does not continue non-exact `ldfld` evidence and defines no `FieldLoadTransform`; it also adds no
+direct-call transfer, call model, counterfactual request/plan/result, facade, or generated-dump product result. Those
+remain W4.3–W4.9 work.
+
+**Admitted scenario (fixture and unknown kernel implemented; counterfactual product not implemented)**
 
 The generated `DumpProbe` fixture asks: “Under the named evaluation policy and the captured marker evidence, what
 would branchless `GetMarkerSummary` compute through its direct `CombineMarkers` helper?” This is the smallest selected
@@ -305,7 +331,8 @@ the getter IL, or enter the helper call.
   rejected before execution.
 * Closure requires exact, degraded-evidence, differential, budget, and same/fresh-session canonical replay coverage,
   followed by the required non-cybersecurity headless Release, fast, dump, and focused W4 gates with zero skips at the
-  exact pushed commit. Those results do not exist yet.
+  exact pushed commit. W4.2 supplies dump-free domain and machine evidence only; the complete product and generated-dump
+  closure results do not exist yet.
 
 **Deferred beyond the admitted slice**
 
@@ -481,10 +508,11 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
   documentation commit `de6cea124` after [GitHub Actions run
   29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
 * **W4:** active branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under the normative
-  counterfactual-method contract. W4.1's exact fixture/CoreCLR/current-W3-boundary gate is implemented and locally
-  validated at `82363585b`; unknown propagation, direct-call execution, models, product results, and dump closure remain
-  admitted but unimplemented. Branches, broader calls/opcodes, generics, allocation, PDB-backed context, and
-  whole-method abstract analysis remain gated.
+  counterfactual-method contract. W4.1's exact fixture/CoreCLR/current-W3-boundary gate is implemented at `82363585b`,
+  and W4.2's dump-free explained-unknown arithmetic and canonical lineage kernel is implemented at `e89e43498`.
+  Non-exact `ldfld`/`FieldLoadTransform`, direct calls, models, the facade and product result, and generated-dump closure
+  remain W4.3–W4.9 work. Branches, broader calls/opcodes, generics, allocation, PDB-backed context, and whole-method
+  abstract analysis remain gated.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

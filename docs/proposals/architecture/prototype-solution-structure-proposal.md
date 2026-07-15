@@ -16,9 +16,9 @@ The solution retains ten source projects, each containing contracts or behavior 
 
 | Project | Current responsibility |
 |---|---|
-| `Interpreter.Core.Abstractions` | Structural type/method/field identities, atomic resolution shapes, value-domain, typed memory-result, persistent-memory, and budget contracts. |
-| `Interpreter.Core.Execution` | Metadata-derived activation, frozen typed whole-body admission, and deterministic micro-step/machine-outcome protocol. |
-| `Interpreter.Domain.Concrete` | Concrete validation values plus persistent allocated/imported object and field memory. |
+| `Interpreter.Core.Abstractions` | Structural type/method/field identities, atomic resolution shapes, value-domain and optional value-precision classification, typed memory-result, persistent-memory, and budget contracts. |
+| `Interpreter.Core.Execution` | Metadata-derived activation, frozen typed whole-body admission, exact-only-by-default unknown policy, and deterministic micro-step/machine-outcome protocol. |
+| `Interpreter.Domain.Concrete` | Concrete validation values, persistent allocated/imported object and field memory, and W4.2's provenance-aware value/domain plus canonical lineage graph. |
 | `Interpreter.Metadata.Abstractions` | Project-owned metadata identities and complete method/field projection contracts. |
 | `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter and reusable method/signature/local/field projection over a `MetadataReader`. |
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
@@ -31,7 +31,9 @@ Tests are separated into a fast semantic/contract suite, a real dump integration
 suite, and two generated target executables: the general dump target and the optimized modeled-incident target. The
 real-dump suite contains an independently versioned 22-case/20-expression W2 corpus rather than treating one query in the W1
 omnibus test as query-product closure evidence. It also contains a dedicated W3 direct/adjusted getter lane that
-executes only exact counted dump evidence and reopens/rebinds the dump for replay.
+executes only exact counted dump evidence and reopens/rebinds the dump for replay. The W4.1 generated fixture freezes
+the branchless target and CoreCLR oracle; dump-free W4.2 domain and machine suites exercise precision policy,
+explained-unknown arithmetic, lattice laws, canonical lineage identities, capture, and fresh-domain replay.
 
 ## 3. Dependency rules
 
@@ -68,6 +70,22 @@ write full dump
   -> close/reopen/rebind the W3 module, root, method, field, and import, then reproduce execution transcripts
 ```
 
+W4.2 adds a separate dump-free evidence boundary within the existing three core projects:
+
+```text
+bounded partial/unavailable input origin
+  -> content-addressed InputOrigin node + explained Int32 semantic top
+  -> optional ExplainedInt32 machine policy
+  -> existing argument/local/store/arithmetic/return transfers
+  -> ordered BinaryTransform nodes with embedded exact operands
+  -> reachable-only canonical graph capture
+  -> validated replay in a fresh provenance-domain instance
+```
+
+Semantic equality, hashing, lattice order, join, meet, and widening ignore the optional lineage root. The default
+`ExactOnly` policy preserves W3 behavior; exact receivers, initialized locals, and exact-classified field loads remain
+exact. Bare top is not executable.
+
 The runtime binding identity is the counted metadata root's MVID, exact metadata length, and metadata SHA-256. W3's
 execution module handle additionally incorporates stable snapshot/runtime-module evidence, so different loader
 instances cannot alias through repeated names or addresses. The independently opened disk PE has a whole-file
@@ -101,6 +119,13 @@ implementation checkpoint in [GitHub Actions run
 documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
 at that exact commit.
+
+W4.1 and W4.2 are landed. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
+`UnknownExecutionPolicy`, `ProvenanceConcreteDomain`/`ProvenanceConcreteValue`, canonical `InputOrigin` and
+`BinaryTransform` lineage, and shared-handler unknown arithmetic. Its current implementation checkpoint is 3,454 LOC:
+3,429 LOC for W4.2 plus a 25-LOC scope correction. The cumulative W4 realization through W4.2 is 3,932 LOC. Non-exact
+`ldfld`/`FieldLoadTransform`, calls, models, the counterfactual facade/product result, and generated-dump closure remain
+absent and are W4.3–W4.9 work.
 
 The external-worker projects are separately executable, and their four-test package includes a locally passing real
 malformed-artifact process checkpoint. This is non-gating prototype work outside W1–W4; its presence does not admit
@@ -155,4 +180,4 @@ implementation commit. Formal W3 closure is recorded at exact documentation comm
 run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required
 jobs.
 
-The physical layout and contracts remain prototype hypotheses. They may change freely as W1–W4 force better boundaries.
+The physical layout and contracts remain prototype hypotheses. They may change freely as W4.3–W4.9 force better boundaries.

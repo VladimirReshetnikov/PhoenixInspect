@@ -7,12 +7,15 @@
 ## Purpose
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
-and W3 concrete-IL proofs. It is descriptive, not a promise of compatibility. Hardened W3 checkpoint `19c292f9f`
+W3 concrete-IL, and W4.2 dump-free explained-unknown proofs. It is descriptive, not a promise of compatibility.
+Hardened W3 checkpoint `19c292f9f`
 passed the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
-at that exact commit. A contract is added only with an executable consumer and is removed when it gets ahead of code.
+at that exact commit. W4.1 and W4.2 have since landed; exact W4.2 implementation commit `e89e43498` is the current
+dump-free provenance-aware kernel checkpoint. A contract is added only with an executable consumer and is removed
+when it gets ahead of code.
 
 ## Active contracts
 
@@ -27,6 +30,9 @@ at that exact commit. A contract is added only with an executable consumer and i
   declaring type, receiver/parameter/return/local types, calling convention, and field storage facts;
 - `IValueDomain<TValue>`, including default-value construction, exact type/stack-kind inspection, concrete constants,
   arithmetic, and executable order/meet/join/widen operations;
+- optional `IValuePrecisionDomain<TValue>` and `ValuePrecisionKind`, which classify an executable value as `Exact`,
+  `ExplainedUnknown`, or `UnexplainedUnknown` without making explanation identity part of the minimum value-domain
+  contract;
 - `IMemoryModel<TValue,TMemory>` constrained by `IPersistentMemoryState<TSelf>`;
 - `MemoryLoadResult<TValue>`, which distinguishes exact values, partial/unavailable/conflicting/invalid evidence, and
   structured target exceptions;
@@ -41,13 +47,17 @@ at that exact commit. A contract is added only with an executable consumer and i
   a semantic comparer that excludes operational history;
 - whole-body `MethodAdmissionResult`, structured `ExecutionFailure`, and low-level `MachineRunStatus`;
 - `IlMachine.StepOne`, whose current closed set is `nop`, integer constants, argument/local loads, local stores,
-  `add`, `sub`, `mul`, one exact `ldfld`, and `ret`.
+  `add`, `sub`, `mul`, one exact `ldfld`, and `ret`; and
+- `UnknownExecutionPolicy`, whose default `ExactOnly` value preserves the W3 execution boundary and whose opt-in
+  `ExplainedInt32` value permits only structurally typed, domain-validated explained `Int32` values.
 
 Activation receives only a method handle, receiver/arguments, and persistent memory. It atomically resolves the body
-and metadata shape, validates exact supplied types, constructs initialized local defaults, fixes the empty entry
-stack, and exposes no state on failure. Whole-body admission decodes every instruction once into a frozen typed plan;
-it rejects unsupported/malformed suffixes, invalid slot or stack shapes, non-boundary resumed states, nested frames,
-and exception regions before budget consumption, state mutation, memory calls, or instruction events.
+and metadata shape, validates supplied structural types and execution precision under the selected policy, constructs
+exact initialized local defaults, fixes the empty entry stack, and exposes no state on failure. Whole-body admission
+decodes every instruction once into a frozen typed plan; it rejects unsupported/malformed suffixes, invalid slot or
+stack shapes, non-boundary resumed states, nested frames, and exception regions before budget consumption, state
+mutation, memory calls, or instruction events. Bare top and any unknown without a validated domain-owned lineage root
+remain non-executable under both policies.
 
 `IlMachine<TValue,TMemory>` now receives `IMemoryModel<TValue,TMemory>`. The closed E2 profile admits only an exact
 instance `Int32` getter, direct or with one constant arithmetic adjustment, and freezes exactly one contextual
@@ -57,8 +67,10 @@ Non-exact memory evidence performs no transfer. Typed null consumes one instruct
 
 The old caller-shaped body-only activation is gone. Argument count, local vector/defaults, implicit receiver, and
 return disposition are metadata-derived facts. The admitted plan records exact entry-stack type vectors, not only
-depth or CLI stack categories. Arbitrary signatures, generic contexts, MemberRefs, branches, calls, EH, byrefs,
-statics, and broader instance methods remain rejected.
+depth or CLI stack categories. W4.2 reuses the existing argument/local load, local store, arithmetic, and return
+handlers; it does not create a parallel unknown interpreter. Exact receivers, initialized locals, and exact-classified
+field loads remain exact. Arbitrary signatures, generic contexts, MemberRefs, branches, calls, EH, byrefs, statics,
+and broader instance methods remain rejected.
 
 ### Concrete validation domain
 
@@ -70,6 +82,18 @@ statics, and broader instance methods remain rejected.
 - persistent allocated/imported object, array, and field snapshots;
 - exact dump-object import identities and explicit field-cell import;
 - branch isolation through immutable memory updates.
+
+W4.2 adds `ProvenanceConcreteDomain` and `ProvenanceConcreteValue` over those same lifted-flat semantics. Exact values
+carry no lineage; an explained unknown may carry one domain-owned root. Value equality, hashing, ordering, join, meet,
+and widening deliberately ignore that root, so different explanations remain the same per-type semantic top.
+`GetPrecision` is the execution-boundary capability that distinguishes exact values, grounded top, and bare top.
+
+The implemented lineage vocabulary is deliberately closed to canonical `InputOrigin` and ordered
+`BinaryTransform` nodes. Each node ID is the lowercase SHA-256 of its versioned canonical bytes. A transform embeds
+exact `Int32` operands directly and references unknown operands by predecessor ID, preserving left/right IL stack
+order even for commutative operations. Domain interning is content-based. `CaptureLineage` freezes only the graph
+reachable from one explained root in deterministic identity order; `ReplayLineage` validates and interns the graph in
+a fresh domain while preserving node bytes, IDs, root identity, and graph SHA-256.
 
 Allocated objects receive CLI defaults. Imported objects do not: a field absent from the imported exact evidence is
 unavailable rather than zero or top. This remains a semantics-validation domain, not a CLR object-layout emulator or
@@ -167,10 +191,12 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 
 The query product surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
 null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
-loading, conversions, or general operators. W3's public interpreter activation is an architecture proof, not a query
-language feature or product method-evaluation facade. Speculative debugger sessions, generic reconstruction,
-symbol/debug-map providers, call models, async/dynamic models, abstract-analysis worklists, product facades, and
-service locators remain absent; their research documents do not reserve API or assembly names.
+loading, conversions, or general operators. W3's public interpreter activation and W4.2's provenance-aware domain are
+architecture proofs, not query-language features or a counterfactual-method facade. Non-exact `ldfld` continuation
+and `FieldLoadTransform` are absent, as are interpreted calls, call transforms, call models, the W4 request/plan/result
+and facade, and a generated-dump product result with reopen/replay closure. Those are W4.3–W4.9 work. Speculative
+debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
+worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 
 ## Change rule
 
