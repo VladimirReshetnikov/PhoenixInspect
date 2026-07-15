@@ -7,10 +7,11 @@
 Current for active delivery. Research suites are collected separately in section 9.
 
 The W4 counterfactual-method contract is admitted and active. W4.1's checked-in fixture gate landed at pushed
-checkpoint `82363585b`, W4.2's unknown-aware E1/E2 kernel landed at pushed checkpoint `e89e43498`, and W4.3's
-backend-neutral structured field-evidence continuation is implemented at checkpoint `7479b1ad4`. All three checkpoints
-are dump-free W4 implementation evidence: none creates a counterfactual product/dump result or CI-enforced umbrella
-gate. W4.4 is next. Section 8 separates those current checkpoints from later required capability.
+checkpoint `82363585b`, W4.2's unknown-aware E1/E2 kernel at `e89e43498`, W4.3's backend-neutral structured
+field-evidence continuation at `7479b1ad4`, and W4.4's body-independent direct-MethodDef resolution plus complete
+frozen graph preparation at `2e596c117`/`742ef2c4f`. These are prerequisite W4 implementation checkpoints: none
+creates a counterfactual product/dump result or CI-enforced umbrella gate, and W4.4 deliberately does not execute a
+call. W4.5 is next. Section 8 separates those current checkpoints from later required capability.
 
 ## 1) Evidence language
 
@@ -62,13 +63,17 @@ hidden/no-window process policy. A raw `dotnet test` command is not an approved 
 8. byte-identical canonical outcomes for repeated normalized inputs and for fresh metadata/resolver/machine/memory
    reconstruction; and
 9. compiler-emitted arithmetic and getter methods invoked on CoreCLR and interpreted through the same value-domain and
-   memory handlers, including unchecked overflow and null-receiver outcomes.
+   memory handlers, including unchecked overflow and null-receiver outcomes; and
+10. body-independent same-module direct-MethodDef resolution; exact managed-IL call signatures; deterministic rooted,
+    acyclic graph preparation; shared-callee deduplication; definition/signature correlation; canonical nodes, fields,
+    and edges; required logical depth; fixed internal method/traversal safety limits; and no-partial-plan failures.
 
 The differential harness proves the two closed, branchless, EH-free W3 profiles only. W4.2 separately demonstrates
 that a second meaningful domain reuses those opcode handlers for exact and explained-unknown values. W4.3 separately
 demonstrates structured partial/unavailable field continuation and `FieldLoadTransform` over those same closed
-handlers. None is evidence for calls, branches, handlers, arbitrary signatures, inherited/static fields, a ClrMD field
-evidence producer, or a dump-grounded W4 result.
+handlers. W4.4 admits the exact direct `call` only into an immutable preparation graph; the legacy `IlMachine` remains
+call-free. None is evidence for call execution, branches, handlers, arbitrary signatures, inherited/static fields, a
+ClrMD field-evidence producer, or a dump-grounded W4 result.
 
 ### Real dump-memory proof
 
@@ -293,7 +298,7 @@ fact from milestone evidence. At that checkpoint, W4 had 3,932 realized LOC thro
 partial/unavailable field continuation, `FieldLoadTransform`, and precision-loss events remained W4.3 work. No W4
 product facade, dump-grounded counterfactual result, direct call, or hosted umbrella closure is claimed.
 
-### Current local W4.3 implementation verification — 2026-07-14
+### Historical local W4.3 implementation verification — 2026-07-14
 
 Exact implementation checkpoint `7479b1ad4` passed the following local matrix. Every managed command ran through
 `./eng/Invoke-HeadlessProcess.ps1`; every test filter used `Scope!=Cybersecurity`; no test was skipped; and no UI was
@@ -316,7 +321,38 @@ LOC through W4.3, with 12,200–18,700 LOC remaining across W4.4–W4.9 and a cu
 branch, an optional approximation-domain capability, policy-gated partial/unavailable continuation,
 `ValuePrecisionLost`, and canonical `FieldLoadTransform` lineage. Exact, conflict, invalid, and typed-null behavior and
 atomic failure/budget behavior remain compatible. No ClrMD evidence producer, product facade, dump-grounded W4 result,
-direct call, or hosted umbrella closure is claimed. W4.4 is next.
+direct call, or hosted umbrella closure is claimed.
+
+### Current local W4.4 implementation verification — 2026-07-14
+
+Pushed checkpoints `2e596c117` (W4.4a) and `742ef2c4f` (W4.4b) passed the following cumulative local matrix. Every
+managed command ran through `./eng/Invoke-HeadlessProcess.ps1`; every behavioral filter used
+`Scope!=Cybersecurity`; no test was skipped; and no UI was displayed.
+
+| Gate | Headless command shape | Result |
+|---|---|---|
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Focused W4.4 graph planner | the wrapped unit-project command filtered to `MethodGraphPlannerTests`, together with `Scope!=Cybersecurity` | Passed, 35/35. |
+| Focused W4 fixture | the wrapped integration-project command filtered to `W4GateFixtureTests`, together with `Scope!=Cybersecurity` | Passed, 6/6. |
+| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --filter "Scope!=Cybersecurity"` | Passed, 250/250. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast&Scope!=Cybersecurity"` | Passed, 73/73. |
+| Ordinary real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 5/5. This is regression evidence only. |
+| Optimized real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 1/1. This is regression evidence only. |
+| Documentation/workflow guards | `./eng/verify-markdown-links.ps1` and `./eng/verify-headless-workflows.ps1` | Passed. |
+
+W4.4 realizes 3,651 added LOC: 2,076 production LOC plus 1,575 test LOC. It is recorded as W4.4a at 1,043 LOC and
+W4.4b at 2,608 LOC so each implementation slice remains beneath the 3,500-LOC ceiling. W4 therefore has 10,679
+realized LOC through W4.4, with 10,500–16,100 LOC remaining across W4.5–W4.9 and a current total projection of
+21,179–26,779 LOC; the original 16,860–25,310 baseline remains preserved.
+
+W4.4 resolves an exact same-module managed-IL MethodDef and body-independent signature before body acquisition, then
+freezes complete definitions, typed boundaries, distinct fields, and direct-call edges into a deterministic rooted
+acyclic graph. Shared callees are one node, cycles fail, conflicts remain conflicts, and failures expose no partial
+plan. The fixed 64-method and 1,024 method/field/edge-unit ceilings are internal safety guards, not the configurable
+product traversal budget. The exact fixture freezes two nodes, two fields, one edge at IL offset 12, required logical
+depth 2, and five internal units. The legacy machine still rejects before the call: W4.4 implements no call transfer,
+frame/depth enforcement, model, product facade/result, or dump-grounded W4 execution.
 
 ## 3) Active test layers
 
@@ -550,8 +586,16 @@ skips. The 3,096-LOC checkpoint contains 1,100 production LOC and 1,996 test LOC
 and projects to 19,228–25,728 LOC. This is still dump-free evidence, not a ClrMD producer, product facade, dump-grounded
 W4 result, direct call, or hosted umbrella closure.
 
-The six remaining W4.4–W4.9 slices must satisfy all of the following before the umbrella is described as implemented
-or verified:
+W4.4 checkpoints `2e596c117` and `742ef2c4f` add body-independent exact direct-MethodDef resolution and a complete
+immutable call graph. Its focused planner and fixture lanes passed 35/35 and 6/6, alongside complete unit 250/250,
+fast 73/73, ordinary-dump regression 5/5, optimized-dump regression 1/1, locked restore, the strict 15-project build,
+and both guards. Its 3,651 added LOC comprise 2,076 production and 1,575 tests, split into 1,043-LOC W4.4a and
+2,608-LOC W4.4b slices. W4 totals 10,679 realized LOC through W4.4 and projects to 21,179–26,779 LOC. Preparation
+freezes the exact fixture's two nodes, two fields, one edge, depth two, and five internal units, but does not execute
+the call or enforce a request depth.
+
+The five remaining W4.5–W4.9 slices must finish all of the following before the umbrella is described as implemented
+or verified. W4.4 satisfies only the dump-free structural graph-preparation portion of the first item:
 
 1. The complete root and reachable helper bodies are admitted before instruction zero from counted dump body and
    metadata evidence; a disk PE and direct CoreCLR invocation remain independent oracles, never execution inputs.

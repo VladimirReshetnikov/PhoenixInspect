@@ -1,7 +1,7 @@
 # Opcode Admission and Evidence Matrix
 
 **Lifecycle:** Current
-**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, and gates later expansion
+**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, W4.4 graph-only direct-call admission, and gates later expansion
 
 ## 1. Principle
 
@@ -15,6 +15,7 @@ An opcode is not “supported” because it appears in a proposal. The companion
 |---|---|
 | `Exact` | Transfer semantics are implemented for the admitted operand/stack/type shapes and checked by unit plus differential tests. |
 | `Conservative` | The admitted shape intentionally loses precision and emits provenance-bearing evidence. W4.3 uses this only for its closed, dump-free partial/unavailable `Int32` field shape. |
+| `PreparationOnly` | Decode, resolution, typing, and immutable dependency-graph freezing are implemented, but no machine transfer or execution claim exists. W4.4 uses this for its exact direct `call` shape. |
 | `RecognizedBlocked` | Decode is deterministic, no semantic effects occur, and execution stops with an opcode/offset/reason diagnostic. |
 | `Unadmitted` | No execution claim. A body containing the instruction is rejected by the slice admission check. |
 
@@ -143,13 +144,46 @@ regression, and both repository guards also passed headlessly with zero skips an
 command.
 
 This is dump-free machine/domain evidence. The current ClrMD execution descriptor still imports only exact E2 field
-values; no W4 partial-field dump producer, counterfactual product result, direct call, or generated-dump W4 result is
-claimed here. W4.4 owns direct `MethodDef` resolution and frozen transitive call admission.
+values; no W4 partial-field dump producer, counterfactual product result, call execution, or generated-dump W4 result
+is claimed here.
+
+### W4.4 — Direct-call graph preparation
+
+W4.4a checkpoint `2e596c117` resolves the call operand without acquiring a body. The target must be a non-nil,
+same-module direct MethodDef, ordinary managed IL, non-generic, static, non-vararg, with exactly
+`Int32 (Int32, Int32)`. The content-equal signature excludes local types and body facts. MemberRef/MethodSpec
+substitution, cross-module targets, virtual/interface/indirect dispatch, and malformed tokens remain unsupported or
+invalid with typed resolution outcomes.
+
+W4.4b checkpoint `742ef2c4f` adds a graph-specific typed whole-body admission path:
+
+| Instruction family | Admitted W4.4 preparation shape | Status |
+|---|---|---|
+| `call <MethodDef>` | Direct same-module managed-IL target with exactly two `Int32` stack arguments and one `Int32` result; target descriptor and complete loaded definition must agree | `PreparationOnly` |
+| Existing E1 arithmetic/slot/return families | Root/callee typed boundaries used while preparing the exact W4 graph | `PreparationOnly` |
+| Existing E2 `ldarg.0`/`ldfld` families | The exact two-field W4 root shape, with both structural field descriptors frozen before success | `PreparationOnly` |
+
+`MethodGraphPlanner.Prepare` discovers methods root-first and call sites in increasing offset order, but exposes
+successful nodes, fields, and call sites in canonical structural order. Every reachable definition and complete body
+is acquired, decoded, and typed before a plan exists. Shared MethodDefs are one graph node; self and mutual cycles
+fail; definition/signature conflicts remain `Conflict`; and every failure returns no partial plan. Required logical
+depth counts the root at one. Fixed internal ceilings of 64 distinct methods and 1,024 distinct-method/field/call-site
+units bound construction but do not implement W4.8's configurable traversal budget.
+
+The exact fixture freezes two method nodes, two distinct fields, one call edge at caller IL offset 12, required depth
+two, and five internal units. The focused planner lane passed 35/35 and fixture lane 6/6; complete unit 250/250, fast
+73/73, ordinary dump 5/5, optimized dump 1/1, locked restore, the strict fifteen-project 0-warning/0-error Release
+build, and both guards also passed headlessly with zero skips and `Scope!=Cybersecurity` on behavioral tests. W4.4
+realizes 3,651 added LOC (2,076 production plus 1,575 tests), split into 1,043-LOC W4.4a and 2,608-LOC W4.4b.
+
+This status does not promote `call` to executable transfer support. The legacy `IlMachine` deliberately remains on
+its call-free plan builder and still rejects the W4 fixture before the call. Frame push/return, request-depth
+enforcement, call events/transforms, models, product projection, and dump-grounded W4 execution remain absent.
 
 ## 4. Later gates
 
 - **Branches:** require explicit condition semantics, deterministic path policy, and closed fixtures.
-- **Calls:** W4.4 next admits only the frozen direct-`MethodDef` scenario shape; broader call/effect policy remains gated.
+- **Calls:** W4.5 next executes only W4.4's frozen direct-MethodDef scenario shape; broader call/effect policy remains gated.
 - **Indirect/byref operations:** require an addressable model and dump-layout evidence. Span is not an MVP commitment.
 - **Exception regions:** first add stop-on-throw; handler search/unwind is a separate milestone required before `leave`, `endfinally`, filters, or debugger-grade Step Out claims.
 - **Async/dynamic:** require their ordinary prerequisite opcode and EH sets before semantic lifting can be evaluated.
@@ -171,6 +205,10 @@ the conservative transfer described above. Ordinary non-catastrophic exceptions 
 capabilities are normalized into stable payload-safe failures; out-of-memory and stack-overflow exceptions are not
 caught. The other exceptional W3 boundary is admitted target-null `ldfld`, whose consumed budget, target event, and
 terminal latch describe a target instruction that did execute exceptionally.
+
+W4.4 preparation failures likewise expose no machine state, memory mutation, instruction-budget use, or debug events;
+their result contains no partial graph. The internal graph-construction counters are not machine instruction budget or
+the later configurable product traversal budget.
 
 The engine does not inject an unknown for an unsupported instruction unless a later hybrid slice defines and proves that continuation is sound for that exact stack/effect shape.
 

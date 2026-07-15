@@ -5,7 +5,9 @@
 > **Roadmap relation:** Active · W4 normative contract
 >
 > **Implementation status:** W4.1 fixture gate implemented at `82363585b`; W4.2 unknown E1/E2 kernel implemented at
-> `e89e43498`; W4.3 structured field-evidence continuation implemented at `7479b1ad4`; W4.4–W4.9 pending
+> `e89e43498`; W4.3 structured field-evidence continuation implemented at `7479b1ad4`; W4.4a body-free direct
+> MethodDef resolution implemented at `2e596c117`; W4.4b frozen transitive graph implemented at `742ef2c4f`;
+> W4.5–W4.9 pending
 
 ## 1) Purpose and authority
 
@@ -25,9 +27,12 @@ E1/E2 domain kernel, and W4.3's backend-neutral structured field-evidence contin
 the semantic-value rules, the `InputOrigin` and `BinaryTransform` subset of lineage, policy-enabled explained-`Int32`
 execution over shared W3 handlers, and fresh-object lineage replay. W4.3 adds immutable field evidence, an optional
 approximation capability, policy-gated partial/unavailable continuation, precision-loss events, and
-`FieldLoadTransform` lineage while retaining exact and terminal memory outcomes. W4.4 and every later behavior remain
-requirements, not implementation claims, until the traceability map names passing executable evidence. API names
-shown here are provisional design names; public prototype APIs that land must carry detailed XML documentation.
+`FieldLoadTransform` lineage while retaining exact and terminal memory outcomes. W4.4 now realizes body-independent
+direct MethodDef/signature resolution and a canonical complete acyclic interpreted-method graph under fixed internal
+safety caps. It does not execute a call, push a frame, select a model, enforce a request-supplied depth/traversal limit,
+or produce a product result. W4.5 and every later behavior remain requirements, not implementation claims, until the
+traceability map names passing executable evidence. API names shown here are provisional design names; public
+prototype APIs that land must carry detailed XML documentation.
 
 ## 2) Product-value gate
 
@@ -80,6 +85,12 @@ Pushed W4.2 checkpoint `e89e43498` proves the dump-free unknown-aware kernel, no
 admits the caller's direct call nor imports non-exact dump-field evidence, constructs a product result, or claims a
 dump-grounded counterfactual answer.
 
+Pushed W4.3 checkpoint `7479b1ad4` proves the dump-free structured field-evidence continuation. Pushed W4.4a
+checkpoint `2e596c117` proves body-free direct MethodDef/signature resolution, and pushed W4.4b checkpoint
+`742ef2c4f` proves complete frozen graph preparation over the exact emitted fixture. The W4.4 graph contains the two
+methods, both fields, and the call at IL offset 12, but remains preparation evidence: the legacy machine still does not
+execute the caller through that call, and no dump-grounded W4 product answer is claimed.
+
 ## 3) Closed W4 profile
 
 ### 3.1 Admitted methods and values
@@ -125,6 +136,11 @@ W4 retains the W3 encodings needed for:
 
 W4 removes W3's one-field/getter-length product-shape restriction only for the closed branchless profile. It does not
 weaken instruction decoding, stack typing, field ownership, or complete-body admission.
+
+W4.4b implements that distinction as explicit legacy and W4 graph-admission modes. The legacy path used by
+`IlMachine` retains W3's call-free, one-field/getter restrictions. The graph planner's W4 mode admits both fixed
+instance fields in the primary root and direct `call` with exact two-`Int32` pop/one-`Int32` push typing, then requires
+the helper's exact branchless body. This is admission only; call transfer remains W4.5 work.
 
 ### 3.3 Explicit exclusions
 
@@ -191,6 +207,12 @@ No instruction executes before all phases succeed. A supported prefix in the roo
 when a later instruction, dependency, call disposition, or graph rule fails. Preparation does not consume instruction
 budget or call-depth capacity and does not call the persistent memory model.
 
+W4.4 implements the interpreted-only subset of these phases. W4.4a's `ResolvedMethodCallTarget` deliberately contains
+no body/RVA/local facts, so the future W4.6 disposition selector can classify an exact structural target before a
+prospective body read. W4.4b currently chooses only the explicit interpreted graph mode and then acquires and admits
+every reachable definition. It has no model catalog or blocked/model leaf representation yet. Preparation failures
+return `MethodGraphPreparationResult` without a plan and leave the legacy machine entirely unactivated.
+
 ### 4.3 Preparation traversal units
 
 The traversal limit is a real consuming bound. In stable discovery order, preparation charges one unit for each newly
@@ -200,6 +222,15 @@ no machine activation, and the exact ordered charges retained in result context.
 
 Resolution retries, hash-table probes, metadata rows not selected by the structural request, and diagnostic formatting
 are not traversal units. Changing the unit definition requires a versioned policy change and replay update.
+
+W4.4b implements the unit shape under fixed internal safety caps, not the request-configurable budget/result context
+required above. It charges the root and each newly discovered structural method once, each distinct structural field
+once, and every retained call-site edge once, including multiple edges to one shared callee. Discovery is root-first
+depth-first in increasing IL-offset order. Per-request first-result caches retain successes and failures for method
+definitions and contextual field/call operands, so resolver retries cannot change the result. A successful graph
+reports only its total `TraversalUnitCount`; W4.8 still owns the caller-supplied limit, ordered charge projection,
+remaining-unit accounting, and product budget outcome. Until then, preparation enforces fixed caps of 64 distinct
+methods and 1,024 traversal units and reports cap rejection without a partial graph.
 
 ## 5) Dump evidence and degraded inputs
 
@@ -354,6 +385,32 @@ Every interpreted callee is decoded, typed, and admitted before root instruction
 requires exact structural signature evidence, but its body is not interpreted and is recorded as model-covered rather
 than silently omitted. The primary scenario interprets `CombineMarkers`; W4 closure must also prepare and execute a
 separate conformance request that selects the same structural target through exactly one admitted pure model.
+
+### 7.3 W4.4 implementation checkpoint
+
+W4.4a checkpoint `2e596c117` implements contextual `ResolveMethod` across the abstraction, SRM module, and resolution
+service layers. `MethodCallSignatureShape` is content-equal over the exact declaring TypeDef, calling-convention,
+implicit/explicit receiver flags, generic arity, ordered explicit parameter types, and return type.
+`ResolvedMethodCallTarget` pairs that signature with one exact same-module MethodDef and can only represent an
+ordinary managed-IL target. It carries no body, RVA, local signature, or locals. SRM validates the MethodDef token and
+ordinary managed-IL implementation flags without calling `GetMethodBody`; non-nil `MemberRef` and `MethodSpec`
+operands are well-formed but unsupported, while malformed/nil/out-of-range identities remain invalid. This is the
+required disposition-before-body seam; no disposition or model is selected in W4.4.
+
+W4.4b checkpoint `742ef2c4f` adds `MethodGraphPlanner`, `FrozenMethodGraphPlan`, method nodes, and retained direct-call
+sites. Graph-mode admission resolves and types every direct edge, correlates each loaded definition with its frozen
+identity/signature, admits each body completely, and validates the final public graph again before construction.
+Equal reachable MethodDefs share one node and one admitted body even when multiple call sites retain separate charged
+edges. Equal FieldDefs share one canonical descriptor; disagreement between equal structural identities is a conflict,
+not last-writer-wins. Self/mutual cycles, unsupported dispatch/suffixes, resolver inability, definition/signature
+conflict, fixed-cap exhaustion, and invalid graph invariants produce stable blocked/invalid results with no partial
+plan. Canonical vectors are structurally ordered independently of discovery storage, while failure precedence follows
+deterministic root-first call-site-ordered discovery.
+
+The exact fixture prepares two method nodes, the two marker fields, the direct edge at caller IL offset 12, required
+logical depth two, and five traversal units (two methods, two fields, one edge). The graph retains the internal admitted
+plans needed by W4.5, but W4.4 neither runs them nor changes `IlMachine` activation. No call transfer, frame event,
+model boundary, request-configurable traversal/depth enforcement, or product result is implemented by this checkpoint.
 
 ## 8) Call execution, models, and effects
 
@@ -595,6 +652,11 @@ construction: structured field evidence, `FieldLoadTransform`, precision events,
 remain identical. It does not prove product request/plan/result replay or the dump close/reopen/rebind obligation above;
 those remain owned by W4.8 and W4.9.
 
+Checkpoint `742ef2c4f` additionally proves content-equal frozen-graph reconstruction across fresh SRM modules and
+resolution/planner objects. Canonical structural ordering reproduces the same nodes, fields, retained edges, admission
+facts, required depth, and traversal-unit total. This is not yet the versioned canonical plan byte projection or
+SHA-256 required by item 3 above; W4.8 owns that product identity, and W4.9 owns dump close/reopen/rebind replay.
+
 The target-exception conformance case has a separate replay rule because it has no W4 product request or plan. Equal
 versioned machine fixture, exact typed-null activation, instruction limit, and projector version must reproduce the
 same terminal outcome, accounting, diagnostics, and byte-identical canonical target-outcome fragment/fingerprint.
@@ -641,10 +703,15 @@ W4 closure requires all of the following, headlessly and with `Scope!=Cybersecur
 12. the repository-wide locked restore, zero-warning Release build, Markdown/headless guards, non-cybersecurity fast,
     ordinary-dump, optimized-dump, and focused W4 lanes with zero skips at the exact pushed closure commit.
 
-Through W4.3, item 2, the dump-free field-boundary core of item 3, and the corresponding same/fresh-object subset of
-item 11 are implemented. Checkpoint `7479b1ad4` also passes the local locked-restore, strict-build, test-lane, and guard
-portion of item 12. Dump-sourced evidence in item 4, calls, models, product projection, dump reopen/rebind replay, and
-hosted exact-commit umbrella closure remain pending; no ClrMD producer, product result, dump-grounded W4 result, or W4
+Through W4.4, item 2, the dump-free field-boundary core of item 3, the dump-free frozen interpreted-admission core of
+item 5, and the corresponding same/fresh-object subsets of item 11 are implemented. W4.4 proves direct MethodDef token
+and signature negatives, unsupported dispatch/suffixes, self/mutual cycles, shared-callee deduplication, fixed graph
+caps, complete no-prefix admission, and required-depth calculation; request maximum-depth enforcement remains W4.5.
+Checkpoints `2e596c117` and `742ef2c4f` together pass locked restore; the strict fifteen-project Release build with zero
+warnings/errors; planner 35/35; W4 fixture 6/6; complete unit 250/250; fast 73/73; ordinary dump 5/5; optimized dump
+1/1; and both guards, with zero skips. Every behavioral command was headless and used `Scope!=Cybersecurity`.
+Dump-sourced evidence in item 4, call execution, models, product projection, dump reopen/rebind replay, and hosted
+exact-commit umbrella closure remain pending; no ClrMD W4 producer, product result, dump-grounded W4 result, or W4
 umbrella closure is claimed.
 
 Concrete and differential coverage is required for every admitted opcode and call family. Degraded-evidence coverage is
@@ -662,29 +729,39 @@ and materially rewritten lines are counted once. These ranges describe implement
 | W4.1 | Generated value-gate fixture, exact emitted-shape assertions, exact CoreCLR oracle, and one current-W3 rejection checkpoint | 350–480 | 478 |
 | W4.2 | Unknown E1/E2 domain kernel, content-addressed lineage, domain/transfer laws, and replay | 3,350–3,500 | 3,454 |
 | W4.3 | Backend-neutral structured field evidence/continuation, evidence matrix, precision events, and dump-free domain/machine tests | 2,400–3,500 | 3,096 |
-| W4.4 | Direct MethodDef resolution, call signatures, acyclic graph construction/required-depth calculation, and frozen transitive admission | 1,700–2,600 | — |
+| W4.4a | Body-free direct MethodDef/signature resolution, managed-IL certification, and SRM token/implementation matrix | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 1,043 |
+| W4.4b | Explicit graph admission, deterministic resolution/discovery, canonical acyclic closure, fixed safety caps, and required depth | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 2,608 |
 | W4.5 | Multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, and depth high-water reporting | 2,300–3,500 | — |
 | W4.6 | Structural pure model, typed outcomes, model/effect/fallback policy, and conformance tests | 2,300–3,400 | — |
 | W4.7 | Retained-null target-outcome contract, terminal projection, canonical fragment without request/plan identity, and dump-free differential/idempotence tests | 1,500–2,500 | — |
 | W4.8 | Canonical product request/plan/result/runner, configurable traversal charging, target-fragment result-projector integration, and product tests | 2,400–3,500 | — |
 | W4.9 | Generated-dump exact/degraded/model corpus, CoreCLR integration oracle, reopen/rebind replay, CI closure, and realized LOC ledger | 2,000–3,200 | — |
-| **Initial umbrella** | **Nine non-overlapping work slices** | **16,860–25,310** | **7,028 through W4.3** |
+| **Initial umbrella** | **Nine original work slices; W4.4 was later split into two delivered sub-slices** | **16,860–25,310** | **10,679 through W4.4** |
 
-Replacing W4.1, W4.2, and W4.3 estimates with their realized values gives a current W4 total projection of
-**19,228–25,728 LOC**: 7,028 realized plus 12,200–18,700 estimated for W4.4–W4.9. The original
-**16,860–25,310 LOC** baseline remains recorded above rather than being rewritten after implementation evidence. The
-W4.2 checkpoint contributes 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production plus 1,908
-focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. W4.3 contributes 3,096
-realized implementation LOC: 1,100 production LOC plus 1,996 test LOC. The remaining W4.4–W4.9 slice envelopes are unchanged
-pending their own design/code audits and implementation evidence.
+The original **16,860–25,310 LOC** baseline remains recorded above rather than being rewritten after implementation
+evidence. The historical projection after W4.2 was **18,532–26,132 LOC**; replacing W4.3's estimate with its realized
+value then produced **19,228–25,728 LOC**. W4.4 realizes 3,651 added LOC: W4.4a contributes 1,043 (665 production
+plus 378 tests), and W4.4b contributes 2,608 (1,411 production plus 1,197 tests), for 2,076 production plus 1,575
+test LOC. Its original combined 1,700–2,600 estimate proved low, so the realized audit records two independently
+delivered sub-slices, each below the 3,500-LOC ceiling, without inventing retroactive per-slice estimates.
+
+W4.1–W4.4 cumulatively realize **10,679 LOC**. The remaining W4.5–W4.9 envelope is **10,500–16,100 LOC**, giving a
+current total projection of **21,179–26,779 LOC**. The W4.2 checkpoint remains 3,454 realized LOC: 3,429 attributable
+implementation LOC (1,521 production plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from
+the milestone lane. W4.3 remains 3,096 realized LOC: 1,100 production plus 1,996 tests. The current table therefore
+contains ten implementation rows because the originally admitted W4.4 row is now the W4.4a/W4.4b pair; the original
+nine-slice umbrella baseline remains a historical calibration fact.
 
 Ownership boundaries are explicit. W4.1 freezes the fixture and current W3 rejection only. W4.2 owns the second
 domain, execution-boundary precision policy, and `InputOrigin`/`BinaryTransform` lineage only; it keeps exact E2 field
 loads compatible but does not continue from non-exact field evidence. W4.3 implements the backend-neutral, dump-free
 structured field-evidence capability, continuation, precision event, and `FieldLoadTransform`; it does not implement a
-ClrMD evidence producer or dump-grounded result. W4.4 is next and owns new call admission and graph construction under
-a fixed internal safety cap, W4.5 owns logical-depth policy/enforcement, and W4.8 owns configurable traversal charging
-and product projection. W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
+ClrMD evidence producer or dump-grounded result. W4.4a owns body-independent structural target resolution and
+managed-IL/signature certification; W4.4b owns interpreted-call admission, canonical complete graph construction,
+first-result caching, per-edge retention/charging, required-depth calculation, and fixed internal safety caps. Neither
+executes a call or exposes a configurable request budget. W4.5 is next and owns interpreted call transfer, frames,
+logical-depth policy/enforcement, and depth high-water reporting; W4.8 owns configurable traversal charging and product
+projection. W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
 target-outcome/canonical fragment; W4.8
 integrates it into the common result projector without inventing rooted-facade reachability, and W4.9 only aggregates
 the already-tested behavior into closure evidence. Realized LOC is attributed once.
@@ -707,10 +784,12 @@ That is an evaluator-language rule, not a claim that W4 establishes a security b
 
 ## 17) Completion and expansion rule
 
-W4 is complete only when all nine work slices are implemented, their realized LOC is recorded, the complete required
-matrix passes locally through the repository headless wrapper, the exact pushed closure commit passes every required
-hosted job, and the traceability map links each requirement to that evidence. A contract, fixture, unit-only domain,
-compiler-only call test, or successful local run is not umbrella closure.
+W4 is complete only when all ten current table rows are implemented (the original W4.4 row is now the W4.4a/W4.4b
+pair), their realized LOC is recorded, the complete required matrix passes locally through the repository headless
+wrapper, the exact pushed closure commit passes every required hosted job, and the traceability map links each
+requirement to that evidence. A contract, fixture, unit-only domain, compiler-only call test, or successful local run
+is not umbrella closure. The preserved initial baseline still describes the nine-slice plan admitted before that
+post-audit split.
 
 After W4, each of the following still requires a separate scenario-derived contract and LOC-bounded package:
 

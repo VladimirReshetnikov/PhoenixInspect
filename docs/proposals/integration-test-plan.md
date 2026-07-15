@@ -17,9 +17,10 @@ The current plan has three execution lanes:
 The Windows lane now evaluates both the complete W2 v1 product grammar and W3's closed counted-dump E2 getter over that
 evidence. W4.1 adds a dump-free fixture gate for the exact two-field/direct-call closure while deliberately preserving
 W3's rejection boundary; W4.2 adds the dump-free unknown-aware E1/E2 domain kernel and canonical lineage replay without
-creating a product/dump result; and W4.3 adds dump-free backend-neutral structured field evidence, approximation-domain
-capability, precision events, and `FieldLoadTransform` continuation. W4.3 adds no ClrMD evidence producer, product
-facade, or dump-grounded W4 result. Dump-free parser, root, plan-identity, SRM projection, activation/admission,
+creating a product/dump result; W4.3 adds dump-free backend-neutral structured field evidence, approximation-domain
+capability, precision events, and `FieldLoadTransform` continuation; and W4.4 adds body-independent exact direct-
+MethodDef resolution plus deterministic complete graph preparation. W4.4 still adds no call execution, ClrMD evidence
+producer, product facade, or dump-grounded W4 result. Dump-free parser, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 The worker lane retains a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside
 non-cybersecurity W1–W4 milestone evidence.
@@ -50,6 +51,10 @@ Current proof obligations are:
   object/address, requested size, and bounded observed bytes; its optional approximation capability continues only
   policy-enabled partial/unavailable loads as typed unknowns, emits `ValuePrecisionLost`, preserves memory and budget
   truthfulness, and retains exact/conflict/invalid/typed-null compatibility without fabricating a scalar;
+- W4.4 resolves only an exact same-module managed-IL MethodDef with a body-independent content-equal signature,
+  rejects MemberRef/MethodSpec substitution and virtual/indirect dispatch, correlates every loaded definition, types
+  complete root/callee bodies, freezes canonical nodes/fields/call sites, deduplicates shared callees, rejects cycles,
+  calculates required logical depth, and returns no partial plan on any failure;
 - metadata-derived activation receives only the method, ordered values, and persistent memory; caller counts, local
   values/counts, and return disposition are rejected as inputs;
 - whole-body typed admission rejects unsupported signatures, field identities/storage, suffixes, EH,
@@ -272,7 +277,7 @@ then-seven remaining W4.3–W4.9 slices. Exact E2 field loads remained exact; pa
 field transform/precision evidence remained W4.3 work. The ordinary dump lane is regression evidence only: W4.2 creates no
 product facade or dump-grounded counterfactual result.
 
-Current local W4.3 verification at exact implementation checkpoint `7479b1ad4` passed locked restore; a strict
+Historical local W4.3 verification at exact implementation checkpoint `7479b1ad4` passed locked restore; a strict
 15-project Release build with 0 warnings and 0 errors; focused W4.3 field-evidence/domain/machine tests 55/55; the
 complete 211/211 `Interpreter.Tests` lane; 71/71 fast integration tests; 5/5 ordinary dump regression tests; 1/1
 optimized dump regression test; and the Markdown-link and headless-workflow guards. Every managed command was
@@ -284,13 +289,31 @@ continuation, and canonical `FieldLoadTransform` behavior while preserving exact
 failure/budget behavior. Both dump lanes are regression evidence only: W4.3 adds no ClrMD evidence producer, product
 facade, dump-grounded W4 result, direct call, or hosted umbrella closure.
 
+Current local W4.4 verification at pushed checkpoints `2e596c117` and `742ef2c4f` passed locked restore; a strict
+15-project Release build with 0 warnings and 0 errors; focused graph-planner tests 35/35; focused W4 fixture tests 6/6;
+the complete 250/250 `Interpreter.Tests` lane; 73/73 fast integration tests; 5/5 ordinary dump regression tests; 1/1
+optimized dump regression test; and the Markdown-link and headless-workflow guards. Every managed command was
+headless, every behavioral test command used `Scope!=Cybersecurity`, there were zero skips, and no UI was displayed.
+
+W4.4 realizes 3,651 added LOC: 2,076 production LOC plus 1,575 test LOC. The implementation is split into W4.4a at
+1,043 LOC and W4.4b at 2,608 LOC to preserve the per-slice ceiling. W4 has 10,679 realized LOC through W4.4,
+10,500–16,100 LOC remaining across W4.5–W4.9, and a current 21,179–26,779 LOC total projection while retaining the
+original 16,860–25,310 baseline.
+
+The exact generated fixture now prepares as two method nodes, two distinct fields, one direct edge at caller IL
+offset 12, required logical depth 2, and five fixed internal traversal units. The planner freezes definitions and typed
+boundaries before exposing success, deduplicates a shared callee, rejects self/mutual recursion, and preserves
+`Conflict` without leaking partial plans. Its 64-method and 1,024 method/field/edge-unit caps are fixed internal safety
+guards, not the configurable product traversal budget. Both dump lanes remain regression evidence only: W4.4 does not
+execute calls, enforce request depth, select models, construct a product result, or ground the graph in dump evidence.
+
 Restore and build remain repository-wide, so all 15 projects are compiled as topology/compilation-health evidence.
 Every current test invocation includes `Scope!=Cybersecurity`; the five dedicated hostile-artifact corpus facts are
 excluded and no cybersecurity validation is claimed.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
-## Post-W4.3 evidence gates
+## Post-W4.4 evidence gates
 
 The generated-fixture W1–W2 path and its prior exact-commit hosted closure evidence remain unchanged. W3's structural
 identity, SRM projection, metadata-derived activation, typed whole-body admission, concrete-domain/persistent-memory
@@ -301,15 +324,20 @@ of hosted run 29374585767. Exact documentation-closure commit
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined
 non-cybersecurity scope.
 
-W4.2 now demonstrates the second meaningful unknown-aware domain over the shared E1/E2 kernel at `e89e43498` while
+W4.2 demonstrates the second meaningful unknown-aware domain over the shared E1/E2 kernel at `e89e43498` while
 keeping explanatory lineage outside semantic lattice equality and replaying its reachable graph canonically. W4.3 now
 demonstrates the dump-free backend-neutral field-evidence boundary at `7479b1ad4`: partial/unavailable observations can
 become policy-approved typed unknowns with exact structured evidence, `ValuePrecisionLost`, and
 `FieldLoadTransform`, while exact/conflict/invalid/typed-null outcomes and no-fabrication behavior remain intact. This
 is not a ClrMD producer, product facade, or dump-grounded W4 result.
 
-W4.4 is the next evidence gate: direct MethodDef resolution and call signatures, acyclic graph construction and
-required-depth calculation, and frozen transitive admission. W4.4–W4.9 remain pending; in particular, product
+W4.4 now demonstrates body-independent direct MethodDef identity/signature resolution and complete frozen transitive
+admission at `2e596c117`/`742ef2c4f`. Its deterministic rooted acyclic graph owns complete definitions, typed
+boundaries, canonical field/call dependencies, shared-callee deduplication, required depth, and fixed internal safety
+usage before success. This is preparation evidence only; the legacy `IlMachine` still rejects before the direct call.
+
+W4.5 is the next evidence gate: deterministic frame push/return execution over the frozen plan and pre-execution
+request-depth enforcement. W4.5–W4.9 remain pending; in particular, product
 request/plan/result projection and generated-dump ClrMD production plus close/reopen/rebind evidence remain later-slice
 obligations. New opcodes or method families enter only through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed

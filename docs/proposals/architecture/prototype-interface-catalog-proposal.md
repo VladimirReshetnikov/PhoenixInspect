@@ -7,19 +7,21 @@
 ## Purpose
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
-W3 concrete-IL, and W4.2–W4.3 dump-free explained-unknown proofs. It is descriptive, not a promise of compatibility.
+W3 concrete-IL, and W4.2–W4.4 dump-free explained-unknown and graph-preparation proofs. It is descriptive, not a
+promise of compatibility.
 Hardened W3 checkpoint `19c292f9f`
 passed the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
-at that exact commit. W4.1–W4.3 have since landed. Exact W4.2 implementation commit `e89e43498` remains the
-explained-arithmetic checkpoint; exact W4.3 implementation commit `7479b1ad4` is the current dump-free structured
-field-continuation checkpoint. Its headless local evidence passed the strict fifteen-project Release build, focused
-W4.3 55/55, complete unit 211/211, fast 71/71, ordinary dump 5/5, optimized-context dump 1/1, and both documentation
-guards with zero skips under `Scope!=Cybersecurity`. The W4.3 implementation realizes 3,096 LOC (1,100 production
-LOC plus 1,996 test LOC), bringing W4 to 7,028 realized LOC and a 19,228–25,728 LOC projection; the original
-16,860–25,310 baseline remains preserved in the normative ledger. A contract is added only with an executable
+at that exact commit. W4.1–W4.4 have since landed. Exact W4.2 implementation commit `e89e43498` remains the
+explained-arithmetic checkpoint; exact W4.3 implementation commit `7479b1ad4` is the structured field-continuation
+checkpoint; and W4.4 checkpoints `2e596c117`/`742ef2c4f` are the current direct-MethodDef graph-preparation checkpoint.
+Its headless local evidence passed the strict fifteen-project Release build, focused planner 35/35, focused fixture
+6/6, complete unit 250/250, fast 73/73, ordinary dump 5/5, optimized-context dump 1/1, and both documentation guards
+with zero skips under `Scope!=Cybersecurity`. W4.4 realizes 3,651 added LOC (2,076 production plus 1,575 tests), split
+into 1,043-LOC W4.4a and 2,608-LOC W4.4b slices. W4 has 10,679 realized LOC and a 21,179–26,779 LOC projection; the
+original 16,860–25,310 baseline remains preserved. A contract is added only with an executable
 consumer and is removed when it gets ahead of code.
 
 ## Active contracts
@@ -33,6 +35,9 @@ consumer and is removed when it gets ahead of code.
   snapshot/runtime-module evidence;
 - immutable `ResolvedMethodDefinition`, `MethodSignatureShape`, and `ResolvedField` projections that freeze the body,
   declaring type, receiver/parameter/return/local types, calling convention, and field storage facts;
+- content-equal body-independent `MethodCallSignatureShape` and `ResolvedMethodCallTarget`, which freeze an exact
+  same-module managed-IL MethodDef, declaring TypeDef, calling convention, receiver facts, generic arity, ordered
+  explicit parameters, and return type without acquiring a method body, RVA, or locals;
 - `IValueDomain<TValue>`, including default-value construction, exact type/stack-kind inspection, concrete constants,
   arithmetic, and executable order/meet/join/widen operations;
 - optional `IValuePrecisionDomain<TValue>` and `ValuePrecisionKind`, which classify an executable value as `Exact`,
@@ -47,8 +52,9 @@ consumer and is removed when it gets ahead of code.
 - `MemoryLoadResult<TValue>`, which distinguishes exact values, partial/unavailable/conflicting/invalid evidence, and
   structured target exceptions; `FromFieldEvidence` is the exclusive structured partial/unavailable producer while
   existing code-only outcomes remain compatible;
-- `IResolutionServices.GetMethodDefinition` plus contextual `ResolveField`, whose first result is frozen by one
-  machine session; and
+- `IResolutionServices.GetMethodDefinition` plus contextual `ResolveField` and `ResolveMethod`. The call resolver
+  accepts only an exact direct MethodDef in the context module and certifies ordinary managed IL before any body is
+  acquired; MemberRef/MethodSpec substitution remains outside the contract; and
 - immutable `TypeSig`/`MethodBody`, budget, operation, and stack-category shapes used by those contracts.
 
 `Interpreter.Core.Execution` contains:
@@ -57,6 +63,10 @@ consumer and is removed when it gets ahead of code.
 - metadata-derived `ActivateRoot`, root-frame state, optional root return values, terminal target-exception state, and
   a semantic comparer that excludes operational history;
 - whole-body `MethodAdmissionResult`, structured `ExecutionFailure`, and low-level `MachineRunStatus`;
+- `MethodGraphPlanner.Prepare`, which returns either a complete immutable `FrozenMethodGraphPlan` or a status/failure
+  with no partial plan. A successful graph owns canonical `FrozenMethodGraphNode` and `FrozenMethodCallSite` vectors,
+  complete definitions/admission, distinct fields, direct edges, required logical depth, and fixed internal traversal
+  use; shared MethodDefs are represented once and cycles are rejected; and
 - `IlMachine.StepOne`, whose current closed set is `nop`, integer constants, argument/local loads, local stores,
   `add`, `sub`, `mul`, one ordinary-instance `Int32` `ldfld`, and `ret`; and
 - `UnknownExecutionPolicy`, whose default `ExactOnly` value preserves the W3 execution boundary and whose opt-in
@@ -89,8 +99,13 @@ return disposition are metadata-derived facts. The admitted plan records exact e
 depth or CLI stack categories. W4.2 reuses the existing argument/local load, local store, arithmetic, and return
 handlers; W4.3 adds the policy-gated non-exact branch inside the existing `ldfld` handler rather than creating a
 parallel unknown interpreter. Exact receivers, initialized locals, and exact-classified field loads remain exact.
-Arbitrary signatures, generic contexts, MemberRefs, branches, calls, EH, byrefs, statics, and broader instance methods
-remain rejected.
+The separate W4 graph-preparation mode admits only the exact branchless root and static
+`Int32 CombineMarkers(Int32,Int32)` callee shapes. It decodes and types direct `call`, resolves and correlates each
+target, and freezes the complete rooted acyclic closure without exposing executable state. The fixed ceilings are 64
+distinct methods and 1,024 method/field/call-site units; these are internal construction guards, not the later product
+traversal budget. The legacy `IlMachine` path remains call-free and still rejects the W4 fixture before the call.
+Arbitrary signatures, generic contexts, MemberRefs/MethodSpecs, branches, call execution, EH, byrefs, statics outside
+the exact callee profile, and broader instance methods remain rejected.
 
 ### Concrete validation domain
 
@@ -131,9 +146,12 @@ production heap.
 
 ### Artifact metadata
 
-`Interpreter.Metadata.Abstractions` retains module identity/descriptor and complete method/field projection contracts.
-`Interpreter.Metadata.SRM` implements them with `PEReader` and `System.Reflection.Metadata`; its reusable projection
-also operates over counted metadata supplied by the dump host.
+`Interpreter.Metadata.Abstractions` retains module identity/descriptor and complete method/field projection contracts,
+including contextual body-independent direct-MethodDef resolution. `Interpreter.Metadata.SRM` implements them with
+`PEReader` and `System.Reflection.Metadata`; its reusable projection also operates over counted metadata supplied by
+the dump host. The W4.4 projection distinguishes malformed/nil MethodDefs from structurally valid but unsupported
+MemberRef/MethodSpec tokens, validates same-module ownership and ordinary managed IL, and decodes exact call signature
+facts without reading the target body or local signature.
 
 Paths and names are display or acquisition hints, never identity. A disk module carries both metadata-root identity
 (MVID, metadata length, metadata SHA-256) and complete-artifact identity (whole-file length and SHA-256); the latter
@@ -174,7 +192,9 @@ the concrete memory snapshot imports the object and field. Partial or missing Cl
 activation. A deliberately absent cell in an already imported test snapshot instead remains unavailable when
 `ldfld` queries it; that runtime negative does not fabricate a default or retroactively invalidate activation.
 W4.3 does not change that descriptor or add a ClrMD partial-field producer: its `FieldLoadEvidence` seam is exercised
-dump-free through an injected memory model, so the existing dump execution composition remains exact-only.
+dump-free through an injected memory model, so the existing dump field composition remains exact-only. W4.4 extends
+the resolver's metadata side with the same body-independent exact direct-MethodDef target/signature proof; it does not
+acquire a callee body, prepare a dump-grounded product graph, or execute a call.
 
 The size/cache caps are deterministic resource controls. A narrow Windows x64 external-worker prototype has locally
 passed one real malformed-artifact checkpoint, but it is non-gating work outside W1–W4 and does not create an
@@ -223,11 +243,11 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 
 The query product surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
 null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
-loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.3's provenance-aware
-domain/machine extensions are architecture proofs, not query-language features or a counterfactual-method facade. A
-ClrMD producer for W4.3 structured non-exact field evidence remains absent, as do interpreted calls, call transforms,
-call models, the W4 request/plan/result and facade, and a generated-dump product result with reopen/replay closure.
-Those are W4.4–W4.9 work. Speculative
+loading, conversions, or general operators. W3's public interpreter activation, W4.2–W4.3's provenance-aware
+domain/machine extensions, and W4.4's graph planner are architecture proofs, not query-language features or a
+counterfactual-method facade. A ClrMD producer for W4.3 structured non-exact field evidence remains absent, as do call
+execution/frame transfer, call transforms, call models, configured depth enforcement, the W4 request/plan/result and
+facade, and a generated-dump product result with reopen/replay closure. Those are W4.5–W4.9 work. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 

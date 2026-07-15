@@ -2,8 +2,9 @@
 
 > **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices and for the admitted W4
 > branchless counterfactual-method contract. W3 implements the prerequisite interpreter/memory architecture proof.
-> W4.1's fixture gate, W4.2's dump-free provenance-aware arithmetic kernel, and W4.3's dump-free non-exact field
-> continuation are implemented; W4.3 landed at exact implementation commit `7479b1ad4`. No counterfactual-method
+> W4.1's fixture gate, W4.2's dump-free provenance-aware arithmetic kernel, W4.3's dump-free non-exact field
+> continuation, and W4.4's dump-free direct-MethodDef graph preparation are implemented; W4.4 landed at exact
+> checkpoints `2e596c117`/`742ef2c4f`. No counterfactual-method
 > product request, result, facade, or dump path has landed. Branches, handler transfer, virtual scratch objects,
 > async/dynamic lifting, and advanced query workflows remain research backlog rather than inherited commitments.
 
@@ -16,7 +17,7 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. The admitted W4 contract adds one branchless counterfactual method question to the delivery plan. W4.1 freezes that question's exact generated fixture, CoreCLR result, and W3 admission gap. W4.2 implements the dump-free value-precision, explained-unknown arithmetic, and canonical lineage kernel at `e89e43498`; W4.3 extends that same machine with canonical partial/unavailable field continuation at `7479b1ad4`, still below the product boundary. W4.4–W4.9 must connect direct calls, models, the facade/result contract, and generated-dump replay. An isolated virtual heap and broader method workflows remain research.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. The admitted W4 contract adds one branchless counterfactual method question to the delivery plan. W4.1 freezes that question's exact generated fixture, CoreCLR result, and W3 admission gap. W4.2 implements the dump-free value-precision, explained-unknown arithmetic, and canonical lineage kernel at `e89e43498`; W4.3 extends that same machine with canonical partial/unavailable field continuation at `7479b1ad4`; and W4.4 freezes the exact direct-call dependency graph at `2e596c117`/`742ef2c4f`, still below the product boundary and without executing the call. W4.5–W4.9 must add call transfer, models, the facade/result contract, and generated-dump replay. An isolated virtual heap and broader method workflows remain research.
 
 ---
 
@@ -233,7 +234,7 @@ exact W2 closure commit `5bed47100`.
 
 ---
 
-### Phase 2 — Branchless counterfactual method evaluation (W4.1–W4.3 landed; product execution pending)
+### Phase 2 — Branchless counterfactual method evaluation (W4.1–W4.4 landed; product execution pending)
 
 Goal: implement the admitted
 [`Counterfactual Method Evaluation Contract`](../architecture/counterfactual-method-evaluation-contract-proposal.md)
@@ -294,8 +295,9 @@ correction. Together with W4.1, 3,932 LOC of W4 are realized. These figures meas
 forecast and may be revised as later slices expose better boundaries.
 
 At the W4.2 checkpoint, non-exact `ldfld` evidence still stopped and `FieldLoadTransform` did not exist. W4.3 closes
-that specific dump-free machine/domain gap. Direct-call transfer, call models, the counterfactual request/plan/result,
-facade, and generated-dump product result remain W4.4–W4.9 work.
+that specific dump-free machine/domain gap. W4.4 subsequently closes direct-call metadata and graph preparation, but
+direct-call transfer, call models, the counterfactual request/plan/result, facade, and generated-dump product result
+remain W4.5–W4.9 work.
 
 **Implemented W4.3 dump-free field continuation, not a product capability**
 
@@ -324,10 +326,39 @@ With 12,200–18,700 LOC estimated for W4.4–W4.9, the current projection is 19
 both repository guards, and zero skips, with `Scope!=Cybersecurity` on every test command.
 
 This evidence is intentionally dump-free. The current ClrMD execution descriptor still imports only exact E2 field
-values; no W4 partial-field dump producer, counterfactual product request/result/facade, direct call, or generated-dump
-W4 result exists yet.
+values; no W4 partial-field dump producer, counterfactual product request/result/facade, call execution, or
+generated-dump W4 result exists yet.
 
-**Admitted scenario (fixture, unknown, and field kernels implemented; counterfactual product not implemented)**
+**Implemented W4.4 direct-MethodDef graph preparation, not call execution**
+
+W4.4 is split into two pushed implementation checkpoints so each slice stays below the 3,500-LOC ceiling:
+
+* W4.4a checkpoint `2e596c117` adds content-equal body-independent `MethodCallSignatureShape` and exact managed-IL
+  `ResolvedMethodCallTarget`. Contextual resolution accepts only a non-nil same-module direct MethodDef and proves
+  ordinary managed IL before acquiring any body, RVA, local signature, or locals. MemberRef/MethodSpec substitution,
+  virtual/indirect dispatch, cross-module targets, generics, varargs, and non-`static Int32(Int32,Int32)` helpers remain
+  outside the admitted shape.
+* W4.4b checkpoint `742ef2c4f` adds `MethodGraphPlanner.Prepare` and immutable graph/node/call-site projections. It
+  loads and types every reachable definition, correlates call descriptors with definitions, represents a shared
+  MethodDef once, rejects self/mutual cycles, and returns either canonical nodes/fields/edges plus required logical
+  depth and internal usage or no plan. Identity/signature disagreement remains `Conflict`.
+* The fixed 64-method and 1,024 distinct-method/field/call-site ceilings bound internal construction. They are not the
+  configurable product traversal budget, and `RequiredLogicalDepth` is a frozen fact rather than an enforced request
+  limit at this checkpoint.
+* The exact `GetMarkerSummary` fixture freezes two nodes, two fields, one edge at caller IL offset 12, required depth
+  two, and five internal units. The legacy `IlMachine` still uses call-free admission and rejects before the call.
+
+W4.4 realizes 3,651 added LOC: 2,076 production plus 1,575 tests, split into 1,043-LOC W4.4a and 2,608-LOC W4.4b.
+Cumulative W4 realization is 10,679 LOC. With 10,500–16,100 LOC estimated for W4.5–W4.9, the current projection is
+21,179–26,779 LOC; the original 16,860–25,310 baseline remains preserved. Headless verification passed locked restore,
+the strict fifteen-project Release build at zero warnings/errors, planner 35/35, W4 fixture 6/6, complete unit 250/250,
+fast 73/73, ordinary-dump regression 5/5, optimized-dump regression 1/1, both guards, and zero skips. Every behavioral
+command used `Scope!=Cybersecurity`.
+
+This is a frozen admission artifact, not counterfactual execution. W4.4 adds no frame push/return, configured depth
+enforcement, call transform, model, product result, or dump-grounded W4 path.
+
+**Admitted scenario (fixture, unknown, field, and graph kernels implemented; counterfactual product not implemented)**
 
 The generated `DumpProbe` fixture asks: “Under the named evaluation policy and the captured marker evidence, what
 would branchless `GetMarkerSummary` compute through its direct `CombineMarkers` helper?” This is the smallest selected
@@ -352,8 +383,9 @@ the getter IL, or enter the helper call.
   host-responsiveness outcome.
 * Allocation is not admitted. Its budget is absent/not applied until a separately admitted scenario consumes it;
   carrying a dormant counter would make a false guarantee.
-* The complete branchless root/helper plan is frozen before instruction zero. Precision loss, call/effect decisions,
-  and budget stops have stable provenance and diagnostics.
+* The complete branchless root/helper definition and typed dependency graph is now frozen before instruction zero.
+  W4.5 must consume that exact plan for call transfer and depth enforcement; later precision loss, call/effect
+  decisions, and budget stops must have stable provenance and diagnostics.
 * The retained exact typed-null `ldfld` outcome stops counterfactual execution and receives a standalone canonical
   result projection through dump-free conformance. It carries no fabricated rooted request or plan identity because
   the closed W4 product request requires an exact non-null root. The non-throwing helper/model may not fabricate a
@@ -361,7 +393,7 @@ the getter IL, or enter the helper call.
   rejected before execution.
 * Closure requires exact, degraded-evidence, differential, budget, and same/fresh-session canonical replay coverage,
   followed by the required non-cybersecurity headless Release, fast, dump, and focused W4 gates with zero skips at the
-  exact pushed commit. W4.2/W4.3 supply dump-free domain and machine evidence only; the complete product and
+  exact pushed commit. W4.2–W4.4 supply dump-free domain, machine, and preparation evidence only; the complete product and
   generated-dump closure results do not exist yet.
 
 **Deferred beyond the admitted slice**
@@ -540,8 +572,9 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
 * **W4:** active branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under the normative
   counterfactual-method contract. W4.1's exact fixture/CoreCLR/current-W3-boundary gate is implemented at `82363585b`,
   W4.2's dump-free explained-unknown arithmetic and canonical lineage kernel is implemented at `e89e43498`, and
-  W4.3's structured non-exact `ldfld` continuation plus `FieldLoadTransform` is implemented at `7479b1ad4`. Direct
-  calls, models, the facade and product result, and generated-dump closure remain W4.4–W4.9 work. Branches, broader
+  W4.3's structured non-exact `ldfld` continuation plus `FieldLoadTransform` is implemented at `7479b1ad4`, and W4.4's
+  direct-MethodDef resolution plus complete immutable graph preparation is implemented at `2e596c117`/`742ef2c4f`.
+  Call execution, models, the facade and product result, and generated-dump closure remain W4.5–W4.9 work. Branches, broader
   calls/opcodes, generics, allocation, PDB-backed context, and whole-method abstract analysis remain gated.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.

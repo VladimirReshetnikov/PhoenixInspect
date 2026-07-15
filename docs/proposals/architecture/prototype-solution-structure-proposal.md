@@ -16,11 +16,11 @@ The solution retains ten source projects, each containing contracts or behavior 
 
 | Project | Current responsibility |
 |---|---|
-| `Interpreter.Core.Abstractions` | Structural type/method/field identities, atomic resolution shapes, value-domain plus optional value-precision/field-approximation capabilities, canonical structured field evidence, typed memory-result, persistent-memory, and budget contracts. |
-| `Interpreter.Core.Execution` | Metadata-derived activation, frozen typed whole-body admission, exact-only-by-default unknown policy, policy-gated approximate field transfer, precision events, and deterministic micro-step/machine-outcome protocol. |
+| `Interpreter.Core.Abstractions` | Structural type/method/field identities, atomic body and body-independent direct-call resolution shapes, value-domain plus optional value-precision/field-approximation capabilities, canonical structured field evidence, typed memory-result, persistent-memory, and budget contracts. |
+| `Interpreter.Core.Execution` | Metadata-derived activation, frozen typed whole-body admission, deterministic rooted direct-call graph preparation, exact-only-by-default unknown policy, policy-gated approximate field transfer, precision events, and deterministic micro-step/machine-outcome protocol. |
 | `Interpreter.Domain.Concrete` | Concrete validation values, persistent allocated/imported object and field memory, and W4.2–W4.3's provenance-aware value/domain plus canonical input, binary, and field lineage graph. |
-| `Interpreter.Metadata.Abstractions` | Project-owned metadata identities and complete method/field projection contracts. |
-| `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter and reusable method/signature/local/field projection over a `MetadataReader`. |
+| `Interpreter.Metadata.Abstractions` | Project-owned metadata identities and complete method/field plus contextual direct-MethodDef projection contracts. |
+| `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter and reusable body, body-independent call-signature, local, and field projection over a `MetadataReader`. |
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
 | `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, and W3 snapshot-scoped execution resolution/import correlation through ClrMD. |
 | `Interpreter.Product.DumpQuery` | Closed W2 grammar, typed snapshot-root binding, one-time field selection into immutable canonical plans, bounded `Evaluate(plan)`, closed value projection, and complete-corpus replay. |
@@ -35,7 +35,9 @@ executes only exact counted dump evidence and reopens/rebinds the dump for repla
 the branchless target and CoreCLR oracle; dump-free W4.2 domain and machine suites exercise precision policy,
 explained-unknown arithmetic, lattice laws, canonical lineage identities, capture, and fresh-domain replay. Dump-free
 W4.3 evidence/domain/machine suites add canonical structured field evidence, policy-and-capability-gated non-exact
-`ldfld`, truthful precision events, imported-field lineage, atomicity, and prevalidated fresh-domain replay.
+`ldfld`, truthful precision events, imported-field lineage, atomicity, and prevalidated fresh-domain replay. W4.4
+metadata/planner suites add body-independent direct-MethodDef signatures, complete rooted-acyclic graph admission,
+shared-callee deduplication, deterministic failure precedence, fixed internal safety caps, and exact fixture topology.
 
 ## 3. Dependency rules
 
@@ -72,7 +74,7 @@ write full dump
   -> close/reopen/rebind the W3 module, root, method, field, and import, then reproduce execution transcripts
 ```
 
-W4.2–W4.3 add a separate dump-free evidence boundary within the existing three core projects:
+W4.2–W4.4 add separate dump-free evidence boundaries within the existing core and metadata projects:
 
 ```text
 bounded partial/unavailable input origin
@@ -91,6 +93,13 @@ exact local receiver + canonical partial/unavailable FieldLoadEvidence v1
 either explanation root
   -> reachable-only canonical graph capture
   -> full graph prevalidation before replay mutation in a fresh provenance-domain instance
+
+root MethodDef + contextual direct-call token
+  -> body-independent same-module managed-IL ResolvedMethodCallTarget + exact call signature
+  -> complete root/callee definition acquisition and typed whole-body admission
+  -> deterministic root-first, call-site-ordered traversal with shared-callee deduplication and cycle rejection
+  -> canonical FrozenMethodGraphPlan(nodes, fields, call sites, required logical depth, internal units)
+  -> no machine activation, call execution, or partial plan exposure
 ```
 
 Semantic equality, hashing, lattice order, join, meet, and widening ignore the optional lineage root. The default
@@ -133,7 +142,7 @@ documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
 at that exact commit.
 
-W4.1–W4.3 are landed. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
+W4.1–W4.4 are landed. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
 `UnknownExecutionPolicy`, `ProvenanceConcreteDomain`/`ProvenanceConcreteValue`, canonical `InputOrigin` and
 `BinaryTransform` lineage, and shared-handler unknown arithmetic. That historical implementation checkpoint is 3,454
 LOC: 3,429 LOC for W4.2 plus a 25-LOC scope correction; cumulative W4 realization through W4.2 was 3,932 LOC.
@@ -147,9 +156,25 @@ to 7,028 LOC. Replacing the first three estimates with realized values projects 
 build, focused W4.3 55/55, complete unit 211/211, fast 71/71, ordinary dump 5/5, optimized-context dump 1/1, and both
 documentation guards with zero skips under `Scope!=Cybersecurity`.
 
-The existing ClrMD execution descriptor remains exact-only; W4.3 adds no partial-field dump producer or generated-dump
-counterfactual result. Direct calls, models, the counterfactual facade/product result, and generated-dump closure remain
-absent and are W4.4–W4.9 work.
+W4.4a checkpoint `2e596c117` adds body-independent content-equal `MethodCallSignatureShape`, exact managed-IL
+`ResolvedMethodCallTarget`, and contextual direct-MethodDef resolution without acquiring a body. W4.4b checkpoint
+`742ef2c4f` adds `MethodGraphPlanner` and immutable graph/node/call-site projections. The planner freezes complete
+definitions and typed boundaries, canonical nodes/fields/edges, shared-callee deduplication, required logical depth,
+and internal traversal usage; cycles and disagreement fail without exposing a partial plan. The exact fixture has two
+method nodes, two fields, one edge at IL offset 12, depth two, and five method/field/edge units. Fixed ceilings of 64
+methods and 1,024 units are internal safety guards, not the configurable product traversal budget.
+
+W4.4 realizes 3,651 added LOC (2,076 production plus 1,575 tests), split into 1,043-LOC W4.4a and 2,608-LOC W4.4b.
+Cumulative W4 realization is 10,679 LOC; 10,500–16,100 LOC remain for W4.5–W4.9, yielding a current
+21,179–26,779 LOC projection while the original 16,860–25,310 baseline remains preserved. Headless local verification
+passed locked restore, the strict fifteen-project Release build at 0 warnings/0 errors, planner 35/35, W4 fixture 6/6,
+complete unit 250/250, fast 73/73, ordinary dump 5/5, optimized dump 1/1, and both guards with zero skips; every
+behavioral test command used `Scope!=Cybersecurity`.
+
+The existing ClrMD field descriptor remains exact-only; W4.3 adds no partial-field dump producer or generated-dump
+counterfactual result. W4.4 prepares calls but does not execute them: frame transfer/depth enforcement, models, the
+counterfactual facade/product result, and generated-dump closure remain absent and are W4.5–W4.9 work. The legacy
+`IlMachine` still rejects the W4 fixture before the call.
 
 The external-worker projects are separately executable, and their four-test package includes a locally passing real
 malformed-artifact process checkpoint. This is non-gating prototype work outside W1–W4; its presence does not admit
@@ -204,4 +229,4 @@ implementation commit. Formal W3 closure is recorded at exact documentation comm
 run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required
 jobs.
 
-The physical layout and contracts remain prototype hypotheses. They may change freely as W4.4–W4.9 force better boundaries.
+The physical layout and contracts remain prototype hypotheses. They may change freely as W4.5–W4.9 force better boundaries.

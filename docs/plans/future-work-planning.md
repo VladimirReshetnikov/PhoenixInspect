@@ -38,8 +38,8 @@ Its deliberately narrow contract is the [Restricted Dump Query v1
 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any increment beyond that contract
 requires an explicit scope decision. Representative private-production measurement is outside W1, and already-landed
 worker/corpus code remains separately scoped non-gating prototype work. W4 is now active and admitted around the
-`GetMarkerSummary` workflow below; W4.1's fixture gate, W4.2's unknown E1/E2 kernel, and W4.3's dump-free non-exact
-field seam have landed, while W4.4–W4.9 remain admitted work. W3 is complete for its
+`GetMarkerSummary` workflow below; W4.1's fixture gate, W4.2's unknown E1/E2 kernel, W4.3's dump-free non-exact
+field seam, and W4.4's body-free call resolution/frozen graph have landed, while W4.5–W4.9 remain admitted work. W3 is complete for its
 defined non-cybersecurity architecture-validation scope at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
@@ -365,12 +365,13 @@ owns the exact behavior. Closure requires all of these executable gates:
 
 ### W4 — Unknown-aware method evaluation
 
-**Status:** **Active; W4.1–W4.3 are implemented and locally validated, while W4.4–W4.9 remain admitted work.**
+**Status:** **Active; W4.1–W4.4 are implemented and locally validated, while W4.5–W4.9 remain admitted work.**
 
-**Current projected hand-written implementation surface:** 19,228–25,728 LOC: 7,028 realized through W4.3 plus an
-estimated 12,200–18,700 across six remaining non-overlapping, independently valuable slices. The admitted baseline
-was 16,860–25,310 LOC. Every remaining slice has an upper estimate of at most 3,500 LOC; the umbrella is not one work
-package.
+**Current projected hand-written implementation surface:** 21,179–26,779 LOC: 10,679 realized through W4.4 plus an
+estimated 10,500–16,100 across five remaining non-overlapping, independently valuable slices. The admitted baseline
+was 16,860–25,310 LOC. The original nine-slice plan now has ten tracked rows because realized W4.4 was split into two
+independently delivered sub-slices; every remaining slice has an upper estimate of at most 3,500 LOC, and the umbrella
+is not one work package.
 
 **Goal:** extend the product from read-only derived queries to explicitly counterfactual method evaluation.
 
@@ -427,6 +428,34 @@ and both Markdown/headless guards, with zero skips; every test command used `Sco
 3,096 LOC (1,100 production LOC plus 1,996 test LOC). W4.1–W4.3 therefore realize 7,028 LOC. This is deliberately dump-free
 kernel evidence: no ClrMD non-exact import, counterfactual product facade, or dump-grounded W4 result has landed.
 
+Pushed W4.4a checkpoint `2e596c117` adds body-independent contextual MethodDef resolution. Content-equal
+`MethodCallSignatureShape` and `ResolvedMethodCallTarget` values freeze the non-nil same-module target, exact declaring
+TypeDef/calling-convention/receiver/generic/parameter/return facts, and ordinary managed-IL certification without
+acquiring a body, RVA, local signature, or locals. SRM classifies `MemberRef` and `MethodSpec` as unsupported direct-call
+shapes, preserves invalidity for malformed/nil/out-of-range identities, and exposes the disposition-before-body seam
+needed for W4.6's future opaque pure model.
+
+Pushed W4.4b checkpoint `742ef2c4f` adds an explicit W4 graph-admission mode alongside the unchanged legacy
+single-method path. `MethodGraphPlanner` performs deterministic root-first, increasing-call-offset discovery with
+first-result caches, retains and charges every direct-call edge, deduplicates equal methods/fields and shared callees,
+and checks definition/signature/descriptor agreement before freezing canonical nodes, fields, and calls. The complete
+graph is revalidated as rooted, reachable, acyclic, and correctly depth-labeled under fixed internal caps of 64 methods
+and 1,024 traversal units. Any cycle, unsupported suffix/dispatch, resolver inability, conflict, cap exhaustion, or
+invalid graph yields no partial plan and executes no prefix. The exact fixture freezes two methods, two fields, one
+call at IL offset 12, required logical depth two, and five units.
+
+Strict headless W4.4 verification passed locked restore; the fifteen-project Release build with zero warnings/errors;
+planner 35/35; W4 fixture 6/6; complete unit 250/250; fast integration 73/73; ordinary dump 5/5; optimized dump 1/1;
+and both Markdown/headless guards, with zero skips. Every behavioral command used `Scope!=Cybersecurity`. W4.4
+realizes 3,651 added LOC: W4.4a contributes 1,043 (665 production plus 378 tests) and W4.4b contributes 2,608 (1,411
+production plus 1,197 tests), totaling 2,076 production plus 1,575 tests. The realized audit splits the original
+combined W4.4 package so each delivered sub-slice remains below 3,500 LOC; it preserves rather than rewrites the
+original combined 1,700–2,600 estimate. W4.1–W4.4 cumulatively realize 10,679 LOC. This remains admission evidence:
+the remaining W4.5–W4.9 estimate is 10,500–16,100 LOC and the current total projection is 21,179–26,779 LOC. The
+original 16,860–25,310 baseline and earlier 18,532–26,132 and 19,228–25,728 projections remain historical calibration
+facts. Call execution, frames, models, configurable request traversal limits, product projection, and dump-grounded
+W4 results are still absent.
+
 **Admitted work slices**
 
 | Slice | Non-overlapping implementation responsibility | Estimated hand-written implementation LOC | Realized LOC |
@@ -434,15 +463,18 @@ kernel evidence: no ClrMD non-exact import, counterfactual product facade, or du
 | W4.1 — Gate fixture | Add the generated rooted workflow, exact emitted-shape assertions, exact CoreCLR oracle, and one current-W3 whole-body rejection checkpoint. | 350–480 | 478 |
 | W4.2 — Unknown E1/E2 kernel | Introduce provenance-bearing unknown continuation for the existing W3 E1/E2 value transfers while preserving structural typing, deterministic events, and no fabricated concrete values. | 3,350–3,500 | 3,454 |
 | W4.3 — Non-exact dump field continuation | Import partial/unavailable field values as typed explanatory unknowns while preserving conflict and invalid as distinct non-continuing outcomes. | 2,400–3,500 | 3,096 |
-| W4.4 — Direct-call metadata and frozen transitive admission | Resolve the one admitted direct helper call structurally, construct the acyclic dependency graph, calculate required depth, and freeze the complete closure before instruction zero; configurable traversal charging remains W4.8. | 1,700–2,600 | — |
+| W4.4a — Body-free direct-call metadata | Resolve and certify the exact ordinary managed-IL MethodDef/signature without acquiring prospective body/local facts, preserving disposition-before-body selection. | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 1,043 |
+| W4.4b — Frozen transitive graph | Admit the interpreted call closure, retain/deduplicate structural dependencies, validate the canonical acyclic graph, calculate required depth, and enforce fixed internal safety caps. | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 2,608 |
 | W4.5 — Multi-frame interpreted execution and call depth | Push/pop interpreted frames at discrete observable boundaries, preserve return-site identity, enforce the prepared maximum logical depth, and record logical/frame high water. | 2,300–3,500 | — |
 | W4.6 — Typed pure model, effects, and fallback | Add the scenario-narrowed typed model outcome, normalized effect summary, and explicit blocked/unknown fallback behavior without admitting ambient or arbitrary target execution. | 2,300–3,400 | — |
 | W4.7 — Target-outcome stop-on-throw contract | Define the standalone target-outcome/canonical fragment for W3's exact-null latch without admitting a fabricated helper/model throw; handler search and transfer remain excluded. | 1,500–2,500 | — |
 | W4.8 — Product canonical facade, runner, and traversal budget | Expose a bounded `CounterfactualExecution` result with assumptions, models, effects, reached bounds, stable diagnostics, and common-projector integration of W4.7's standalone target fragment; add configurable traversal charging to graph preparation without claiming the non-null rooted facade reaches that fragment. | 2,400–3,500 | — |
 | W4.9 — Dump corpus, replay, and CI closure | Execute exact and degraded generated-dump cases, compare CoreCLR where applicable, reproduce canonical results after reopen/rebind, and close the headless hosted gate. | 2,000–3,200 | — |
 
-Instruction budget remains the implemented W3 baseline. W4.5 introduces the prepared maximum logical call depth plus
-logical/frame high-water reporting; W4.8 adds configurable traversal charging to the already frozen graph discovery.
+Instruction budget remains the implemented W3 baseline. W4.4 computes required logical depth and graph traversal
+usage under fixed internal safety caps, but does not apply request policy. W4.5 introduces the prepared maximum logical
+call-depth enforcement plus logical/frame high-water reporting; W4.8 adds configurable traversal charging and ordered
+charge/result context to the already frozen graph discovery.
 Allocation is unadmitted by the selected workflow, so no allocation operation consumes a budget and W4 adds no
 dormant allocation counter. A later allocation scenario must define the operation, charging point, result behavior, and
 tests before an allocation budget becomes an applied contract.
@@ -453,7 +485,7 @@ tests before an allocation budget becomes an applied contract.
 - The selected `GetMarkerSummary` workflow demonstrates method-execution value beyond W2's one-root/one-field query.
   **Satisfied for roadmap admission and fixture evidence by W4.1; product execution belongs to later slices.**
 - Effects, deterministic budgets, degraded-evidence behavior, product truth language, and explicit exclusions are fixed
-  by the normative W4 contract. **Satisfied for design admission; W4.1–W4.3 implementation evidence is recorded above.**
+  by the normative W4 contract. **Satisfied for design admission; W4.1–W4.4 implementation evidence is recorded above.**
 - Each admitted work slice has an explicit estimate of at most 3,500 hand-written implementation LOC before work begins.
   **Satisfied by the table above.**
 
@@ -560,8 +592,9 @@ W4 admission decisions now applied:
    call rather than one preselected direct field and optional literal fallback.
 2. The normative counterfactual-method contract defines unknown continuation, effects, deterministic budget charging,
    degraded evidence, target exceptions, canonical product results, and historical-replay exclusions before code lands.
-3. The nine admitted work slices in the W4 section are non-overlapping hand-written implementation-LOC envelopes, each with
-   an upper estimate no larger than 3,500 LOC. Realized additions and material rewrites will be recorded once at closure.
+3. The original nine admitted work slices in the W4 section were non-overlapping hand-written implementation-LOC
+   envelopes with upper estimates no larger than 3,500 LOC. W4.4's realized audit split that row into W4.4a/W4.4b, so
+   the current table has ten rows while preserving the original umbrella baseline and recording each sub-slice once.
 4. Instruction and traversal units are consumed only by their defined operations. Maximum logical call depth is a
    preparation-time bound with execution high-water reporting, not a consumable unit. Allocation remains unadmitted
    and has no dormant counter.
@@ -572,7 +605,9 @@ W4 admission decisions now applied:
    explicit policy.
 7. W4.2 owns `InputOrigin` and ordered `BinaryTransform` lineage. W4.3 adds structured non-exact field continuation,
    precision-loss events, and `FieldLoadTransform` through the same generic `ldfld` handler while preserving exact
-   behavior. Direct calls, product projection, ClrMD non-exact import, and dump-grounded W4 results remain later work.
+   behavior. W4.4 adds body-free direct MethodDef resolution and complete interpreted-graph admission with fixed
+   internal safety caps. Call execution, frames, models, configurable request traversal policy, product projection,
+   ClrMD non-exact import, and dump-grounded W4 results remain later work.
 
 ### Optimized-dump recoverability measurement
 

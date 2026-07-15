@@ -11,14 +11,15 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.3 have since landed.
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.4 have since landed.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
-product. Its headless local evidence passed the strict fifteen-project Release build, focused W4.3 55/55, complete
-unit 211/211, fast 71/71, ordinary dump 5/5, optimized-context dump 1/1, and both documentation guards with zero skips
-under `Scope!=Cybersecurity`. W4.3 realizes 3,096 LOC (1,100 production LOC plus 1,996 test LOC), bringing W4 to 7,028
-realized LOC and a 19,228–25,728 LOC projection while the original 16,860–25,310 baseline remains preserved in the
-normative ledger:
+product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
+frozen graph preparation, not call execution. Their headless local evidence passed the strict fifteen-project Release
+build, focused planner 35/35, focused fixture 6/6, complete unit 250/250, fast 73/73, ordinary dump 5/5,
+optimized-context dump 1/1, and both documentation guards with zero skips under `Scope!=Cybersecurity`. W4.4 realizes
+3,651 added LOC (2,076 production plus 1,575 tests), split 1,043/2,608. W4 has 10,679 realized LOC and a
+21,179–26,779 LOC projection while the original 16,860–25,310 baseline remains preserved:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -26,7 +27,8 @@ normative ledger:
 3. execute a small, scenario-derived, EH-free IL subset through a concrete value and memory domain, checked against CoreCLR;
 4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy; W4.2 proves their
    branchless dump-free arithmetic transport, and W4.3 proves structured non-exact field continuation plus canonical
-   precision lineage, while W4.4–W4.9 remain pending.
+   precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation, while
+   W4.5–W4.9 remain pending.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -108,12 +110,22 @@ exact local receiver + structured partial/unavailable FieldLoadEvidence
 
 either lineage root
   -> reachable canonical graph capture -> prevalidated fresh-domain replay
+
+For the implemented W4.4 dump-free preparation path:
+
+root MethodDef + direct call operands
+  -> body-independent same-module managed-IL targets + exact call signatures
+  -> complete root/callee definition acquisition and typed whole-body admission
+  -> deterministic rooted acyclic graph + shared-callee deduplication
+  -> canonical nodes, fields, call sites, required logical depth, and fixed internal units
+  -> no machine activation, call execution, or partial graph exposure
 ```
 
 The dump path is not an implementation detail after the interpreter. It is the primary product path and therefore lands first.
 
-The second path is kernel evidence only. W4.3 adds no ClrMD producer for structured partial/unavailable fields, call,
-model, product facade or result projection, and it consumes no generated dump.
+The W4.2–W4.3 path is kernel evidence only. W4.3 adds no ClrMD producer for structured partial/unavailable fields,
+model, product facade or result projection, and it consumes no generated dump. W4.4 is preparation evidence only: it
+freezes a call graph but adds no frame transfer, request-depth enforcement, call model, or product/dump execution.
 
 The active W1–W4 paths use generated, source-controlled fixtures directly. The worker described in section 4.5 is a
 separately landed, non-gating prototype outside those milestones and is not part of this active data flow.
@@ -136,8 +148,10 @@ private-production incident recoverability.
 For the active slices, `System.Reflection.Metadata` and `PEReader` are the evidence-backed metadata implementation.
 The projected contract provides metadata and whole-file PE identity, bounded fixture lookup, immutable method bodies,
 structural declaring types, calling-convention/receiver/parameter/return shapes, initialized local vectors, and
-contextual same-module FieldDef projection. Disk-backed differential tests obtain the complete atomic method shape
-from SRM; Reflection invokes CoreCLR only as the result oracle.
+contextual same-module FieldDef projection. W4.4 adds contextual direct-MethodDef resolution that projects a
+content-equal body-independent call signature and certifies ordinary managed IL without acquiring the target body,
+RVA, locals, or local signature. Disk-backed differential tests obtain complete atomic method shapes from SRM;
+Reflection invokes CoreCLR only as the result oracle.
 
 The dump execution resolver applies the same SRM projection to exact counted metadata bytes, while the MethodDef RVA,
 physical tiny/fat header, code, local-signature token, padding, and declared extra sections come from counted dump
@@ -219,7 +233,8 @@ getter, either direct or with one constant `add`/`sub`/`mul` adjustment, contain
 load must use the one-byte compact `ldarg.0`; equivalent short `ldarg.s 0` and long `ldarg 0` encodings are deliberate
 negative admission cases rather than E2 coverage.
 
-`IResolutionServices` returns an atomic `ResolvedMethodDefinition` and contextual `ResolvedField` descriptors.
+`IResolutionServices` returns an atomic `ResolvedMethodDefinition`, contextual `ResolvedField`, and body-independent
+contextual `ResolvedMethodCallTarget` descriptors.
 `ActivateRoot` accepts only the method handle, receiver/arguments, and memory; it derives argument slots, local
 defaults, and return disposition from metadata. Whole-body admission decodes and type-checks every instruction once,
 freezes its typed boundaries and field descriptor, and rejects the entire body before instruction zero if any suffix
@@ -272,8 +287,26 @@ and replay validates canonical bytes, IDs, ordering, reachability, dependencies,
 before mutating a destination domain.
 
 The ClrMD execution descriptor remains exact-only: W4.3 proves the injected memory/domain/machine boundary without a
-dump producer. Direct calls and their transforms, call models, the counterfactual facade/request/plan/result, and a
-generated-dump product result remain W4.4–W4.9 work.
+dump producer.
+
+W4.4a exact checkpoint `2e596c117` adds `MethodCallSignatureShape` and `ResolvedMethodCallTarget`. Resolution accepts
+only a non-nil same-module direct MethodDef whose implementation is ordinary managed IL; the call signature carries
+declaring TypeDef, calling convention, receiver facts, generic arity, ordered explicit parameters, and return type but
+no body/local facts. MemberRef/MethodSpec substitution, virtual or indirect dispatch, cross-module targets, generics,
+varargs, and non-`static Int32(Int32,Int32)` helper signatures are outside the admitted profile.
+
+W4.4b exact checkpoint `742ef2c4f` adds `MethodGraphPlanner.Prepare`. A successful `FrozenMethodGraphPlan` owns every
+reachable complete definition and typed admission, canonical structural node/field/call-site vectors, one node per
+shared MethodDef, the longest root-to-method logical depth, and distinct-method/field/edge internal units. Discovery is
+root-first and call-site ordered for deterministic failures; successful projections are canonically ordered. Cycles,
+identity/signature disagreement, malformed/unsupported tokens, and cap exhaustion expose no partial plan; conflicts
+remain conflicts. The fixed 64-method/1,024-unit caps are internal safety limits rather than W4.8's configurable
+traversal budget.
+
+The exact fixture freezes two nodes, two fields, one edge at caller IL offset 12, required logical depth two, and five
+internal units. The legacy `IlMachine` continues using its call-free admission path and still rejects before the call.
+Direct-call frame transfer and transforms, call models, configured depth enforcement, the counterfactual
+facade/request/plan/result, and generated-dump product execution remain W4.5–W4.9 work.
 
 ## 5. Identity model
 
@@ -386,6 +419,11 @@ prevalidates graph representation and field-origin relationships before fresh-do
 the approximate load, ordered events, lineage, and subsequent arithmetic. This still does not claim that ClrMD
 produces the evidence or that a dump-session/product result replays.
 
+The W4.4 dump-free proof constructs the same content-equal target signatures and frozen graph from fresh resolver
+instances, canonicalizes node/field/edge order independently of discovery storage, and validates the exact fixture
+topology plus diamond sharing, cycles, conflicts, malformed targets, and fixed-cap failures. Preparation returns either
+the complete graph or no plan. This is deterministic dependency preparation, not a canonical product replay result.
+
 ## 8. Status protocols
 
 Different layers use different, explicitly mapped vocabularies:
@@ -423,12 +461,14 @@ compilation-health evidence only. It is not cybersecurity behavioral evidence.
 
 The prototype retains only projects containing behavior or contracts exercised by the active slices:
 
-- `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body shapes, domain/memory
-  contracts, optional value-precision and field-approximation capabilities, canonical structured field evidence,
-  exact-only-by-default unknown policy, precision events, and the interpreter kernel;
+- `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body/call-target shapes,
+  domain/memory contracts, optional value-precision and field-approximation capabilities, canonical structured field
+  evidence, exact-only-by-default unknown policy, precision events, complete direct-call graph preparation, and the
+  interpreter kernel;
 - `Interpreter.Domain.Concrete` — concrete validation semantics and persistent memory plus W4.2–W4.3's
   provenance-aware value/domain and canonical input, binary, and field lineage graph;
-- `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts and active SRM adapter;
+- `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts, including
+  body-independent contextual direct-MethodDef resolution, and the active SRM adapter;
 - `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, and exact
   counted W3 method/field composition into a snapshot-scoped resolver/import descriptor without introducing ClrMD
   into core execution;

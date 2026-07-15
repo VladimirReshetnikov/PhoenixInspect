@@ -17,7 +17,9 @@ The objective is to pick technologies that maximize:
 
 1. **Tight runtime control**
    Deterministic resource counters are required from the first executable slices; the prototype currently accounts
-   for admitted instruction transfers. Allocation, path, join, and widening budgets remain later requirements.
+   for admitted instruction transfers. W4.4 additionally records fixed internal graph-construction use under
+   64-method and 1,024 method/field/edge-unit safety caps; those are not the later configurable product traversal
+   budget. Allocation, path, join, and widening budgets remain later requirements.
    Cooperative `CancellationToken` cancellation remains a separate host-responsiveness mechanism and must not replace
    replay-stable budgets.
 2. **Low-level metadata/IL fidelity**
@@ -113,6 +115,9 @@ the same no-dialog process policy applies locally and in CI.
 This is the active prototype backend because it is exercised by executable integration evidence and aligns with the
 planned Portable PDB path. W3's reusable SRM projection atomically derives body, calling convention, structural
 declaring type, receiver/parameters/return, initialized locals, and contextual FieldDefs from one `MetadataReader`.
+W4.4 adds body-independent contextual direct-MethodDef resolution: it proves same-module ordinary managed IL and
+decodes a content-equal call signature without reading the target body, RVA, local signature, or locals. The graph
+planner subsequently acquires and correlates complete definitions through project-owned abstractions.
 Disk-backed differential tests use it over a content-identified PE; the dump resolver uses it over exact counted
 metadata bytes and separately revalidates the counted physical method body. The earlier source-scan-only AsmResolver
 choice is superseded. Backend-neutral projected contracts remain a goal; an alternative adapter is justified only by
@@ -200,6 +205,12 @@ Use standard .NET DI for host-facing composition while allowing direct construct
      execute the admitted getter through `IMemoryModel`, and replay after closing/reopening/rebinding the dump.
    - Assert structural identities, typed plan boundaries, resolver/memory call counts, state/memory equality, budget,
      events, terminal null behavior, and canonical transcript equality.
+6. **Direct-call graph-preparation tests (W4.4)**
+   - Resolve only exact same-module managed-IL MethodDefs, then freeze complete typed rooted acyclic graphs with
+     deterministic shared-callee deduplication, required logical depth, canonical dependency order, fixed internal
+     limits, and no partial-plan failures.
+   - Keep this lane dump-free and distinguish graph admission from `IlMachine` call execution, configured depth
+     enforcement, product traversal charging, and a counterfactual result.
 
 The external-worker regression project is compiled through the solution, but its tests are not invoked. The five
 hostile-corpus facts in the integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W4 milestone test commands
@@ -326,7 +337,9 @@ Current facts:
 - Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Host.ExternalWorker`, and `Interpreter.Host.ExternalWorker.Runner`.
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
-  terminal typed-null target outcome. Its closed E1/E2 profiles do not imply branches, calls, EH, statics, byrefs,
+  terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct
+  MethodDef helper signature, but the legacy machine remains call-free. These profiles do not imply branches, call
+  execution, EH, statics outside the exact callee, byrefs,
   generics, or arbitrary instance methods.
 - Dump integration reads the MethodDef RVA from counted dump metadata and decodes the tiny/fat header, code,
   `maxstack`, init-locals flag, local-signature token, and declared extra sections from counted dump memory. It projects
@@ -340,7 +353,14 @@ Current facts:
   topology/compilation-health evidence. The projects do not create an admitted external artifact product surface.
 - `Interpreter.Core.Execution` depends on core abstractions, not on SRM or ClrMD. `MetadataResolutionServices` supplies
   the disk bridge; `ClrmdDumpExecutionResolver` supplies the counted-dump bridge while implementing the same
-  `IResolutionServices` contract.
+  `IResolutionServices` contract, including body-independent contextual direct-MethodDef targets.
+- W4.4 checkpoints `2e596c117`/`742ef2c4f` freeze complete definitions, typed boundaries, canonical nodes/fields/call
+  sites, shared-callee deduplication, required logical depth, and internal traversal use before exposing a plan. The
+  exact fixture is two nodes, two fields, one edge at IL offset 12, depth two, and five units. W4.4 realizes 3,651
+  added LOC (2,076 production plus 1,575 tests), split 1,043/2,608; cumulative W4 realization is 10,679 LOC and the
+  current projection is 21,179–26,779 LOC with the original 16,860–25,310 baseline preserved. Its local headless
+  matrix passed planner 35/35, fixture 6/6, complete unit 250/250, fast 73/73, both dump regressions, strict build, and
+  both guards with zero skips and `Scope!=Cybersecurity` on behavioral tests.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
