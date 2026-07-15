@@ -5,7 +5,13 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)TestInfrastructure\HeadlessTestFramework.cs"
+             Link="TestInfrastructure\HeadlessTestFramework.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestInfrastructure\HeadlessTestProcessTests.cs"
              Link="TestInfrastructure\HeadlessTestProcessTests.cs" />
+    <AssemblyAttribute Include="Xunit.TestFrameworkAttribute">
+      <_Parameter1>Interpreter.Tests.Infrastructure.HeadlessTestFramework</_Parameter1>
+      <_Parameter2>$(AssemblyName)</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 </Project>
