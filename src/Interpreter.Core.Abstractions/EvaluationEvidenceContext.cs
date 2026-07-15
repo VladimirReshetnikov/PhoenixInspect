@@ -195,6 +195,8 @@ public sealed record EvaluationDeterministicBound
 /// </remarks>
 public sealed class EvaluationEvidenceContext
 {
+    private readonly ImmutableArray<EvaluationDeterministicBound> bounds;
+
     private EvaluationEvidenceContext(
         EvaluationEvidenceSourceKind sourceKind,
         EvaluationEvidenceIdentity snapshot,
@@ -206,7 +208,7 @@ public sealed class EvaluationEvidenceContext
         Snapshot = snapshot;
         Module = module;
         Fallback = fallback;
-        Bounds = bounds;
+        this.bounds = Copy(bounds);
     }
 
     /// <summary>
@@ -232,10 +234,11 @@ public sealed class EvaluationEvidenceContext
     public EvaluationFallback Fallback { get; }
 
     /// <summary>
-    /// Gets only the deterministic bounds actually applied on this outcome's execution path, in ordinal name order.
-    /// Configured limits whose guarded operation was not reached are intentionally absent.
+    /// Gets a defensive copy containing only the deterministic bounds actually applied on this outcome's execution
+    /// path, in ordinal name order. Configured limits whose guarded operation was not reached are intentionally
+    /// absent.
     /// </summary>
-    public ImmutableArray<EvaluationDeterministicBound> Bounds { get; }
+    public ImmutableArray<EvaluationDeterministicBound> Bounds => Copy(bounds);
 
     /// <summary>Creates a validated immutable evidence context.</summary>
     /// <param name="sourceKind">The top-level external evidence-source classification.</param>
@@ -329,6 +332,11 @@ public sealed class EvaluationEvidenceContext
             fallback,
             normalizedBounds);
     }
+
+    private static ImmutableArray<T> Copy<T>(ImmutableArray<T> values) =>
+        values.IsDefaultOrEmpty
+            ? ImmutableArray<T>.Empty
+            : ImmutableArray.CreateRange(values.AsSpan().ToArray());
 }
 
 internal static class EvaluationContextName

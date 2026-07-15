@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Interpreter.Core.Abstractions;
 using Interpreter.Core.Execution;
@@ -52,6 +53,38 @@ public sealed class FieldLoadEvidenceTests
         Assert.Equal(observedLength, evidence.ObservedLength);
         Assert.Equal(expected, evidence.ObservedBytes);
         Assert.Equal(64, evidence.Sha256.Length);
+        Assert.Equal(
+            Convert.ToHexString(SHA256.HashData(evidence.CanonicalBytes.AsSpan())).ToLowerInvariant(),
+            evidence.Sha256);
+    }
+
+    /// <summary>
+    /// Proves mutation of arrays recovered from both public byte projections cannot alter retained evidence,
+    /// equality, or canonical identity.
+    /// </summary>
+    [Fact]
+    public void PublicByteProjectionBackingCannotMutateEvidenceOrCanonicalIdentity()
+    {
+        var evidence = CreateEvidence(observedBytes: [0x10, 0x20, 0x30]);
+        var equalEvidence = CreateEvidence(observedBytes: [0x10, 0x20, 0x30]);
+        var expectedObserved = evidence.ObservedBytes.ToArray();
+        var expectedCanonical = evidence.CanonicalBytes.ToArray();
+        var expectedSha256 = evidence.Sha256;
+        var expectedHashCode = evidence.GetHashCode();
+
+        var visibleObserved = evidence.ObservedBytes;
+        var visibleObservedBacking = ImmutableCollectionsMarshal.AsArray(visibleObserved)!;
+        visibleObservedBacking[0] ^= 0xff;
+
+        var visibleCanonical = evidence.CanonicalBytes;
+        var visibleCanonicalBacking = ImmutableCollectionsMarshal.AsArray(visibleCanonical)!;
+        visibleCanonicalBacking[0] ^= 0xff;
+
+        Assert.Equal(expectedObserved, evidence.ObservedBytes);
+        Assert.Equal(expectedCanonical, evidence.CanonicalBytes);
+        Assert.Equal(expectedSha256, evidence.Sha256);
+        Assert.Equal(expectedHashCode, evidence.GetHashCode());
+        Assert.Equal(equalEvidence, evidence);
         Assert.Equal(
             Convert.ToHexString(SHA256.HashData(evidence.CanonicalBytes.AsSpan())).ToLowerInvariant(),
             evidence.Sha256);

@@ -56,6 +56,7 @@ public sealed record LineageOperand
 /// <summary>Represents one immutable, content-addressed node in an explained-unknown lineage DAG.</summary>
 public abstract class LineageNode
 {
+    private readonly ImmutableArray<LineageNodeId> dependencies;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     internal LineageNode(
@@ -94,8 +95,8 @@ public abstract class LineageNode
         Id = id;
         Kind = kind;
         StaticType = staticType;
-        Dependencies = dependencies;
-        this.canonicalBytes = canonicalBytes;
+        this.dependencies = Copy(dependencies);
+        this.canonicalBytes = Copy(canonicalBytes);
     }
 
     /// <summary>Gets the SHA-256 identity of the canonical node bytes.</summary>
@@ -107,11 +108,16 @@ public abstract class LineageNode
     /// <summary>Gets the exact structural type of the represented unknown.</summary>
     public TypeSig StaticType { get; }
 
-    /// <summary>Gets the ordered predecessor identities.</summary>
-    public ImmutableArray<LineageNodeId> Dependencies { get; }
+    /// <summary>Gets a defensive copy of the ordered predecessor identities.</summary>
+    public ImmutableArray<LineageNodeId> Dependencies => Copy(dependencies);
 
-    /// <summary>Gets the versioned canonical bytes whose SHA-256 is <see cref="Id"/>.</summary>
-    public ImmutableArray<byte> CanonicalBytes => canonicalBytes;
+    /// <summary>Gets a defensive copy of the versioned canonical bytes whose SHA-256 is <see cref="Id"/>.</summary>
+    public ImmutableArray<byte> CanonicalBytes => Copy(canonicalBytes);
+
+    private static ImmutableArray<T> Copy<T>(ImmutableArray<T> values) =>
+        values.IsDefaultOrEmpty
+            ? ImmutableArray<T>.Empty
+            : ImmutableArray.CreateRange(values.AsSpan().ToArray());
 }
 
 /// <summary>Represents a partial or unavailable external input that introduced one unknown.</summary>
@@ -375,6 +381,8 @@ public sealed class InterpretedReturnTransformLineageNode : LineageNode
 /// </remarks>
 public sealed class ModeledReturnTransformLineageNode : LineageNode
 {
+    private readonly ImmutableArray<LineageOperand> arguments;
+
     internal ModeledReturnTransformLineageNode(
         LineageNodeId id,
         DirectCallSiteIdentity callSite,
@@ -407,7 +415,7 @@ public sealed class ModeledReturnTransformLineageNode : LineageNode
 
         CallSite = callSite;
         ModelIdentity = modelIdentity;
-        Arguments = ImmutableArray.CreateRange(arguments.AsSpan().ToArray());
+        this.arguments = Copy(arguments);
     }
 
     /// <summary>Gets the exact caller, call IL offset, and body-free modeled target identity.</summary>
@@ -417,9 +425,15 @@ public sealed class ModeledReturnTransformLineageNode : LineageNode
     public PureCallModelIdentity ModelIdentity { get; }
 
     /// <summary>
-    /// Gets the complete metadata-ordered two-argument vector, embedding exact integers and identifying unknowns.
+    /// Gets a defensive copy of the complete metadata-ordered two-argument vector, embedding exact integers and
+    /// identifying unknowns.
     /// </summary>
-    public ImmutableArray<LineageOperand> Arguments { get; }
+    public ImmutableArray<LineageOperand> Arguments => Copy(arguments);
+
+    private static ImmutableArray<T> Copy<T>(ImmutableArray<T> values) =>
+        values.IsDefaultOrEmpty
+            ? ImmutableArray<T>.Empty
+            : ImmutableArray.CreateRange(values.AsSpan().ToArray());
 
     private static ImmutableArray<LineageNodeId> GetDependencies(ImmutableArray<LineageOperand> arguments)
     {

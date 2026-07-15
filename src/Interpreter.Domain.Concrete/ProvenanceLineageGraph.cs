@@ -14,6 +14,8 @@ namespace Interpreter.Domain.Concrete;
 public sealed class ProvenanceLineageGraph
 {
     private readonly Dictionary<LineageNodeId, LineageNode> nodesById;
+    private readonly ImmutableArray<LineageNode> nodes;
+    private readonly ImmutableArray<byte> canonicalBytes;
 
     internal ProvenanceLineageGraph(LineageNodeId root, ImmutableArray<LineageNode> nodes)
     {
@@ -27,11 +29,11 @@ public sealed class ProvenanceLineageGraph
             throw new ArgumentException("A lineage graph requires initialized, non-null nodes.", nameof(nodes));
         }
 
-        Nodes = nodes
+        this.nodes = Copy(nodes
             .OrderBy(static node => node.Id.Sha256, StringComparer.Ordinal)
-            .ToImmutableArray();
-        nodesById = new Dictionary<LineageNodeId, LineageNode>(Nodes.Length);
-        foreach (var node in Nodes)
+            .ToImmutableArray());
+        nodesById = new Dictionary<LineageNodeId, LineageNode>(this.nodes.Length);
+        foreach (var node in this.nodes)
         {
             if (!ProvenanceLineageCodec.IsCanonical(node))
             {
@@ -51,18 +53,20 @@ public sealed class ProvenanceLineageGraph
 
         ValidateReachabilityAndAcyclicity(root, nodesById);
         Root = root;
-        CanonicalBytes = ProvenanceLineageCodec.EncodeGraph(root, Nodes);
-        Sha256 = Convert.ToHexString(SHA256.HashData(CanonicalBytes.AsSpan())).ToLowerInvariant();
+        canonicalBytes = Copy(ProvenanceLineageCodec.EncodeGraph(root, this.nodes));
+        Sha256 = Convert.ToHexString(SHA256.HashData(canonicalBytes.AsSpan())).ToLowerInvariant();
     }
 
     /// <summary>Gets the content-addressed node that explains the returned unknown.</summary>
     public LineageNodeId Root { get; }
 
-    /// <summary>Gets every reachable node exactly once, sorted by lowercase SHA-256 identity.</summary>
-    public ImmutableArray<LineageNode> Nodes { get; }
+    /// <summary>
+    /// Gets a defensive copy containing every reachable node exactly once, sorted by lowercase SHA-256 identity.
+    /// </summary>
+    public ImmutableArray<LineageNode> Nodes => Copy(nodes);
 
-    /// <summary>Gets the versioned canonical bytes of the complete reachable graph.</summary>
-    public ImmutableArray<byte> CanonicalBytes { get; }
+    /// <summary>Gets a defensive copy of the versioned canonical bytes of the complete reachable graph.</summary>
+    public ImmutableArray<byte> CanonicalBytes => Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 fingerprint of <see cref="CanonicalBytes"/>.</summary>
     public string Sha256 { get; }
@@ -89,14 +93,14 @@ public sealed class ProvenanceLineageGraph
             throw new ArgumentException("A replay graph requires a non-default root identity.");
         }
 
-        if (Nodes.IsDefaultOrEmpty || Nodes.Any(static node => node is null))
+        if (nodes.IsDefaultOrEmpty || nodes.Any(static node => node is null))
         {
             throw new ArgumentException("A replay graph requires initialized, non-null nodes.");
         }
 
-        var replayNodesById = new Dictionary<LineageNodeId, LineageNode>(Nodes.Length);
+        var replayNodesById = new Dictionary<LineageNodeId, LineageNode>(nodes.Length);
         string? previousIdentity = null;
-        foreach (var node in Nodes)
+        foreach (var node in nodes)
         {
             if (!ProvenanceLineageCodec.IsCanonical(node))
             {
@@ -124,16 +128,21 @@ public sealed class ProvenanceLineageGraph
         }
 
         ValidateReachabilityAndAcyclicity(Root, replayNodesById);
-        var canonicalBytes = ProvenanceLineageCodec.EncodeGraph(Root, Nodes);
-        if (!canonicalBytes.AsSpan().SequenceEqual(CanonicalBytes.AsSpan()) ||
+        var replayCanonicalBytes = ProvenanceLineageCodec.EncodeGraph(Root, nodes);
+        if (!replayCanonicalBytes.AsSpan().SequenceEqual(canonicalBytes.AsSpan()) ||
             !string.Equals(
-                Convert.ToHexString(SHA256.HashData(canonicalBytes.AsSpan())).ToLowerInvariant(),
+                Convert.ToHexString(SHA256.HashData(replayCanonicalBytes.AsSpan())).ToLowerInvariant(),
                 Sha256,
                 StringComparison.Ordinal))
         {
             throw new ArgumentException("A replay graph does not match its canonical bytes and fingerprint.");
         }
     }
+
+    private static ImmutableArray<T> Copy<T>(ImmutableArray<T> values) =>
+        values.IsDefaultOrEmpty
+            ? ImmutableArray<T>.Empty
+            : ImmutableArray.CreateRange(values.AsSpan().ToArray());
 
     private static void ValidateReachabilityAndAcyclicity(
         LineageNodeId root,

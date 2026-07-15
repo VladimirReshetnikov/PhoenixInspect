@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using System.Text;
 using Interpreter.Core.Abstractions;
 using Xunit;
@@ -162,6 +163,43 @@ public sealed class EvaluationResultTests
         Assert.NotEqual(
             EvaluationResultReplay.ComputeSha256(first, static value => value.Text),
             EvaluationResultReplay.ComputeSha256(changed, static value => value.Text));
+    }
+
+    /// <summary>
+    /// Proves mutation of a public bounds array cannot reorder or replace the context's retained bounds or change a
+    /// result's canonical replay bytes and fingerprint.
+    /// </summary>
+    [Fact]
+    public void EvidenceContextBoundsProjectionCannotMutateCanonicalReplay()
+    {
+        var context = EvaluationEvidenceContext.Create(
+            EvaluationEvidenceSourceKind.Synthetic,
+            EvaluationEvidenceIdentity.NotApplicable,
+            EvaluationEvidenceIdentity.NotApplicable,
+            EvaluationFallback.None,
+            ImmutableArray.Create(
+                new EvaluationDeterministicBound("z.bound", 2),
+                new EvaluationDeterministicBound("a.bound", 1)));
+        var result = CreateBlockedResult(context);
+        var expectedBounds = context.Bounds.ToArray();
+        var expectedCanonical = EvaluationResultReplay.SerializeCanonical(
+            result,
+            static value => value.Text);
+        var expectedSha256 = EvaluationResultReplay.ComputeSha256(
+            result,
+            static value => value.Text);
+
+        var visibleBounds = context.Bounds;
+        var visibleBacking = ImmutableCollectionsMarshal.AsArray(visibleBounds)!;
+        visibleBacking[0] = new EvaluationDeterministicBound("mutated.bound", 99);
+
+        Assert.Equal(expectedBounds, context.Bounds);
+        Assert.Equal(
+            expectedCanonical,
+            EvaluationResultReplay.SerializeCanonical(result, static value => value.Text));
+        Assert.Equal(
+            expectedSha256,
+            EvaluationResultReplay.ComputeSha256(result, static value => value.Text));
     }
 
     /// <summary>Checks that contradictory result-axis combinations cannot cross the host boundary.</summary>

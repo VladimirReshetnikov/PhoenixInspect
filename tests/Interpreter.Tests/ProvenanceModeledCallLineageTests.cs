@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using Interpreter.Core.Abstractions;
@@ -102,6 +103,39 @@ public sealed class ProvenanceModeledCallLineageTests
         Assert.Equal(
             Convert.ToHexString(SHA256.HashData(modeledReturn.CanonicalBytes.AsSpan())).ToLowerInvariant(),
             modeledReturn.Id.Sha256);
+    }
+
+    /// <summary>
+    /// Proves mutation of a public modeled-argument array cannot alter retained operands, node identity, graph
+    /// identity, or fresh-domain replay.
+    /// </summary>
+    [Fact]
+    public void ModeledReturnArgumentProjectionCannotMutateLineageOrReplay()
+    {
+        var domain = new ProvenanceConcreteDomain();
+        var unknown = Unknown(domain, "defensive-arguments", 0);
+        var result = domain.CreateModeledReturnUnknown(
+            CallSite,
+            ModelIdentity,
+            ImmutableArray.Create(unknown, domain.ConstInt32(7)));
+        var graph = domain.CaptureLineage(result);
+        var modeledReturn = Assert.Single(graph.Nodes.OfType<ModeledReturnTransformLineageNode>());
+        var expectedArguments = modeledReturn.Arguments.ToArray();
+        var expectedNodeId = modeledReturn.Id;
+        var expectedNodeCanonical = modeledReturn.CanonicalBytes.ToArray();
+        var expectedGraphSha256 = graph.Sha256;
+
+        var visibleArguments = modeledReturn.Arguments;
+        ImmutableCollectionsMarshal.AsArray(visibleArguments)![0] = LineageOperand.FromExactInt32(99);
+
+        Assert.Equal(expectedArguments, modeledReturn.Arguments);
+        Assert.Equal(expectedNodeId, modeledReturn.Id);
+        Assert.Equal(expectedNodeCanonical, modeledReturn.CanonicalBytes);
+        Assert.Equal(expectedGraphSha256, graph.Sha256);
+
+        var replayDomain = new ProvenanceConcreteDomain();
+        var replayed = replayDomain.ReplayLineage(graph);
+        Assert.Equal(expectedGraphSha256, replayDomain.CaptureLineage(replayed).Sha256);
     }
 
     /// <summary>Checks both unknown arguments receive ordered parameter transforms in the same atomic batch.</summary>
@@ -268,7 +302,7 @@ public sealed class ProvenanceModeledCallLineageTests
                 LineageOperand.FromUnknown(callArgument.Id),
                 LineageOperand.FromExactInt32(1)));
         typeof(LineageNode)
-            .GetField("<Dependencies>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetField("dependencies", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(modeledReturn, ImmutableArray.Create(modeledReturn.Id));
         var nodesBefore = domain.InternedNodeCount;
 
@@ -512,8 +546,8 @@ public sealed class ProvenanceModeledCallLineageTests
             graph,
             canonicalNodes.ToDictionary(static node => node.Id));
         fields.Single(static field => field.Name == "<Root>k__BackingField").SetValue(graph, root);
-        fields.Single(static field => field.Name == "<Nodes>k__BackingField").SetValue(graph, canonicalNodes);
-        fields.Single(static field => field.Name == "<CanonicalBytes>k__BackingField").SetValue(graph, canonicalBytes);
+        fields.Single(static field => field.Name == "nodes").SetValue(graph, canonicalNodes);
+        fields.Single(static field => field.Name == "canonicalBytes").SetValue(graph, canonicalBytes);
         fields.Single(static field => field.Name == "<Sha256>k__BackingField").SetValue(
             graph,
             Convert.ToHexString(SHA256.HashData(canonicalBytes.AsSpan())).ToLowerInvariant());

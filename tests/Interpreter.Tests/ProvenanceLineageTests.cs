@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using Interpreter.Core.Abstractions;
@@ -453,7 +454,10 @@ public sealed class ProvenanceLineageTests
             secondGraph.Nodes.Select(static node => node.Id));
     }
 
-    /// <summary>Checks captured graphs and nodes are frozen against mutable copies and later domain activity.</summary>
+    /// <summary>
+    /// Checks captured graph, node, dependency, and canonical-byte projections are frozen against backing-array
+    /// mutation and later domain activity.
+    /// </summary>
     [Fact]
     public void CapturedGraphIsDefensivelyImmutable()
     {
@@ -465,21 +469,27 @@ public sealed class ProvenanceLineageTests
         var nodeBytesBefore = graph.Nodes.ToDictionary(
             static node => node.Id,
             static node => node.CanonicalBytes.ToArray());
-        var nodesBefore = graph.Nodes;
+        var nodeIdsBefore = graph.Nodes.Select(static node => node.Id).ToArray();
+        var transform = Assert.Single(graph.Nodes.OfType<BinaryTransformLineageNode>());
+        var dependenciesBefore = transform.Dependencies.ToArray();
+        var sha256Before = graph.Sha256;
 
-        var mutableGraphCopy = graph.CanonicalBytes.ToArray();
-        mutableGraphCopy[0] ^= 0xff;
-        var mutableNodeCopy = graph.Nodes[0].CanonicalBytes.ToArray();
-        mutableNodeCopy[0] ^= 0xff;
-        var mutableNodesCopy = graph.Nodes.ToArray();
-        Array.Reverse(mutableNodesCopy);
+        var visibleGraphBytes = graph.CanonicalBytes;
+        ImmutableCollectionsMarshal.AsArray(visibleGraphBytes)![0] ^= 0xff;
+        var visibleNodeBytes = transform.CanonicalBytes;
+        ImmutableCollectionsMarshal.AsArray(visibleNodeBytes)![0] ^= 0xff;
+        var visibleNodes = graph.Nodes;
+        var visibleNodesBacking = ImmutableCollectionsMarshal.AsArray(visibleNodes)!;
+        visibleNodesBacking[0] = visibleNodesBacking[^1];
+        var visibleDependencies = transform.Dependencies;
+        ImmutableCollectionsMarshal.AsArray(visibleDependencies)![0] =
+            new LineageNodeId(new string('f', 64));
         _ = Unknown(domain, "created-later", 7, EvaluationEvidenceStatus.Unavailable);
 
         Assert.True(graphBytesBefore.AsSpan().SequenceEqual(graph.CanonicalBytes.AsSpan()));
-        Assert.Equal(nodesBefore, graph.Nodes);
-        Assert.NotEqual(mutableGraphCopy, graph.CanonicalBytes.ToArray());
-        Assert.NotEqual(mutableNodeCopy, graph.Nodes[0].CanonicalBytes.ToArray());
-        Assert.True(graphBytesBefore.AsSpan().SequenceEqual(graph.CanonicalBytes.AsSpan()));
+        Assert.Equal(nodeIdsBefore, graph.Nodes.Select(static node => node.Id));
+        Assert.Equal(dependenciesBefore, transform.Dependencies);
+        Assert.Equal(sha256Before, graph.Sha256);
         Assert.Equal(
             Convert.ToHexString(SHA256.HashData(graph.CanonicalBytes.AsSpan())).ToLowerInvariant(),
             graph.Sha256);
@@ -487,6 +497,10 @@ public sealed class ProvenanceLineageTests
         {
             Assert.True(nodeBytesBefore[node.Id].AsSpan().SequenceEqual(node.CanonicalBytes.AsSpan()));
         }
+
+        var replayDomain = new ProvenanceConcreteDomain();
+        var replayed = replayDomain.ReplayLineage(graph);
+        Assert.Equal(graph.Sha256, replayDomain.CaptureLineage(replayed).Sha256);
     }
 
     private static ProvenanceInputOrigin Origin(

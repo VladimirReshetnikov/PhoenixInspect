@@ -23,6 +23,8 @@ namespace Interpreter.Core.Abstractions;
 public sealed class FieldLoadEvidence : IEquatable<FieldLoadEvidence>
 {
     private static ReadOnlySpan<byte> CanonicalDomain => "Interpreter.FieldLoadEvidence"u8;
+    private readonly ImmutableArray<byte> observedBytes;
+    private readonly ImmutableArray<byte> canonicalBytes;
 
     /// <summary>Gets the current canonical binary schema version.</summary>
     public const int CanonicalSchemaVersion = 1;
@@ -146,9 +148,9 @@ public sealed class FieldLoadEvidence : IEquatable<FieldLoadEvidence>
         ImportedObjectSha256 = normalizedImportedObjectSha256;
         Address = address;
         RequestedLength = requestedLength;
-        ObservedBytes = ImmutableArray.CreateRange(observedBytes.ToArray());
-        CanonicalBytes = EncodeCanonical();
-        Sha256 = Convert.ToHexString(SHA256.HashData(CanonicalBytes.AsSpan())).ToLowerInvariant();
+        this.observedBytes = ImmutableArray.CreateRange(observedBytes.ToArray());
+        canonicalBytes = EncodeCanonical();
+        Sha256 = Convert.ToHexString(SHA256.HashData(canonicalBytes.AsSpan())).ToLowerInvariant();
     }
 
     /// <summary>Gets the nonnegative frozen-plan field-dependency ordinal.</summary>
@@ -176,15 +178,16 @@ public sealed class FieldLoadEvidence : IEquatable<FieldLoadEvidence>
     public int RequestedLength { get; }
 
     /// <summary>Gets the observed byte count: one to three for partial evidence and zero for unavailable evidence.</summary>
-    public int ObservedLength => ObservedBytes.Length;
+    public int ObservedLength => observedBytes.Length;
 
     /// <summary>Gets the immutable defensive copy of the observed byte prefix.</summary>
-    public ImmutableArray<byte> ObservedBytes { get; }
+    public ImmutableArray<byte> ObservedBytes => Copy(observedBytes);
 
     /// <summary>
-    /// Gets the versioned, domain-separated, big-endian canonical binary representation of every identity axis.
+    /// Gets a defensive copy of the versioned, domain-separated, big-endian canonical binary representation of
+    /// every identity axis.
     /// </summary>
-    public ImmutableArray<byte> CanonicalBytes { get; }
+    public ImmutableArray<byte> CanonicalBytes => Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
     public string Sha256 { get; }
@@ -206,8 +209,8 @@ public sealed class FieldLoadEvidence : IEquatable<FieldLoadEvidence>
             string.Equals(ImportedObjectSha256, other.ImportedObjectSha256, StringComparison.Ordinal) &&
             Address == other.Address &&
             RequestedLength == other.RequestedLength &&
-            ObservedBytes.AsSpan().SequenceEqual(other.ObservedBytes.AsSpan()) &&
-            CanonicalBytes.AsSpan().SequenceEqual(other.CanonicalBytes.AsSpan());
+            observedBytes.AsSpan().SequenceEqual(other.observedBytes.AsSpan()) &&
+            canonicalBytes.AsSpan().SequenceEqual(other.canonicalBytes.AsSpan());
     }
 
     /// <inheritdoc />
@@ -263,9 +266,14 @@ public sealed class FieldLoadEvidence : IEquatable<FieldLoadEvidence>
         writer.WriteUInt64(Address);
         writer.WriteInt32(RequestedLength);
         writer.WriteInt32(ObservedLength);
-        writer.WriteBytes(ObservedBytes.AsSpan());
+        writer.WriteBytes(observedBytes.AsSpan());
         return writer.ToImmutableArray();
     }
+
+    private static ImmutableArray<T> Copy<T>(ImmutableArray<T> values) =>
+        values.IsDefaultOrEmpty
+            ? ImmutableArray<T>.Empty
+            : ImmutableArray.CreateRange(values.AsSpan().ToArray());
 
     private static int EncodeTypeKind(TypeSigKind kind) => kind switch
     {

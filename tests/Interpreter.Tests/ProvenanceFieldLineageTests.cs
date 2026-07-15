@@ -646,8 +646,8 @@ public sealed class ProvenanceFieldLineageTests
                 .GroupBy(static node => node.Id)
                 .ToDictionary(static group => group.Key, static group => group.First()));
         fields.Single(static field => field.Name == "<Root>k__BackingField").SetValue(graph, root);
-        fields.Single(static field => field.Name == "<Nodes>k__BackingField").SetValue(graph, canonicalNodes);
-        fields.Single(static field => field.Name == "<CanonicalBytes>k__BackingField").SetValue(graph, canonicalBytes);
+        fields.Single(static field => field.Name == "nodes").SetValue(graph, canonicalNodes);
+        fields.Single(static field => field.Name == "canonicalBytes").SetValue(graph, canonicalBytes);
         fields.Single(static field => field.Name == "<Sha256>k__BackingField").SetValue(
             graph,
             Convert.ToHexString(SHA256.HashData(canonicalBytes.AsSpan())).ToLowerInvariant());
