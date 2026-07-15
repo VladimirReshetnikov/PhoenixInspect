@@ -34,6 +34,43 @@ public sealed class MethodGraphPlanner
     /// whose <see cref="MethodGraphPreparationResult.Plan"/> is <see langword="null"/>.
     /// </returns>
     public MethodGraphPreparationResult Prepare(MethodHandle root)
+        => PrepareCore(root, requiredPureModel: null);
+
+    /// <summary>
+    /// Prepares one graph while requiring every call to one exact structural target to use a selected pure model.
+    /// </summary>
+    /// <param name="root">The exact interpreted root MethodDef identity.</param>
+    /// <param name="target">The exact non-root MethodDef that must terminate as an opaque modeled leaf.</param>
+    /// <param name="registry">
+    /// The structural registry queried after a matching call target is resolved and typed but before its body can be
+    /// requested. Equal target descriptors are selected at most once during this preparation operation.
+    /// </param>
+    /// <returns>
+    /// A ready graph with one canonical modeled leaf, or a structured result with no partial plan when the target is
+    /// absent, selection fails, the descriptor disagrees, or the selected model is not effect-free.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="registry"/> is <see langword="null"/>.</exception>
+    public MethodGraphPreparationResult RequirePureModel(
+        MethodHandle root,
+        MethodHandle target,
+        IPureCallModelRegistry registry)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        if (target == default || root == target || root != default && root.Module != target.Module)
+        {
+            return Failed(
+                MachineRunStatus.InvalidProgram,
+                ExecutionFailureKind.DependencyResolution,
+                "W4.Model.TargetInvalid",
+                "A required pure-model target must be a non-default, same-module, non-root MethodDef.",
+                root,
+                0);
+        }
+
+        return PrepareCore(root, new RequiredPureModel(target, registry));
+    }
+
+    private MethodGraphPreparationResult PrepareCore(MethodHandle root, RequiredPureModel? requiredPureModel)
     {
         if (root == default)
         {
@@ -48,7 +85,7 @@ public sealed class MethodGraphPlanner
 
         try
         {
-            return new PreparationSession(_resolutionServices).Prepare(root);
+            return new PreparationSession(_resolutionServices, requiredPureModel).Prepare(root);
         }
         catch (Exception exception) when (IsCapabilityException(exception))
         {
@@ -61,6 +98,8 @@ public sealed class MethodGraphPlanner
                 0);
         }
     }
+
+    private sealed record RequiredPureModel(MethodHandle Target, IPureCallModelRegistry Registry);
 
     private static MethodGraphPreparationResult Failed(
         MachineRunStatus status,
@@ -100,20 +139,25 @@ public sealed class MethodGraphPlanner
         private const int MaximumTraversalUnitCount = 1024;
 
         private readonly IResolutionServices _resolver;
+        private readonly RequiredPureModel? _requiredPureModel;
         private readonly Dictionary<MethodHandle, ResolutionResult<ResolvedMethodDefinition>> _definitionCache = [];
         private readonly Dictionary<FieldRequest, ResolutionResult<ResolvedField>> _fieldRequestCache = [];
         private readonly Dictionary<CallRequest, ResolutionResult<ResolvedMethodCallTarget>> _callRequestCache = [];
+        private readonly Dictionary<ResolvedMethodCallTarget, PureCallModelSelectionResult> _modelSelectionCache = [];
         private readonly HashSet<(MethodHandle ContextMethod, int IlOffset)> _chargedCallEdges = [];
         private readonly Dictionary<MethodHandle, VisitState> _visitStates = [];
         private readonly Dictionary<MethodHandle, AdmittedMethodPlan> _admittedPlans = [];
+        private readonly Dictionary<MethodHandle, FrozenPureModelLeaf> _modeledLeaves = [];
         private readonly Dictionary<FieldHandle, ResolvedField> _structuralFields = [];
         private readonly List<FrozenMethodCallSite> _callSites = [];
         private MethodGraphPreparationResult? _terminalFailure;
         private int _traversalUnitCount;
+        private bool _requiredPureModelReached;
 
-        internal PreparationSession(IResolutionServices resolver)
+        internal PreparationSession(IResolutionServices resolver, RequiredPureModel? requiredPureModel)
         {
             _resolver = resolver;
+            _requiredPureModel = requiredPureModel;
         }
 
         internal MethodGraphPreparationResult Prepare(MethodHandle root)
@@ -127,6 +171,17 @@ public sealed class MethodGraphPlanner
             if (_terminalFailure is not null)
             {
                 return _terminalFailure;
+            }
+
+            if (_requiredPureModel is not null && !_requiredPureModelReached)
+            {
+                return Failed(
+                    MachineRunStatus.Blocked,
+                    ExecutionFailureKind.DependencyResolution,
+                    "W4.Model.TargetNotReached",
+                    "The required structural pure-model target is not reachable from the admitted root.",
+                    root,
+                    0);
             }
 
             return Freeze(root);
@@ -224,7 +279,7 @@ public sealed class MethodGraphPlanner
                 return ValidateDefinitionCorrelation(method, incomingCall);
             }
 
-            if (_visitStates.Count >= MaximumMethodCount)
+            if (_visitStates.Count + _modeledLeaves.Count >= MaximumMethodCount)
             {
                 var location = IncomingLocation(method, incomingCall);
                 return Failed(
@@ -285,19 +340,30 @@ public sealed class MethodGraphPlanner
 
             var plan = build.Plan!;
             _admittedPlans.Add(method, plan);
-            var outgoing = plan.Instructions
-                .Where(instruction => instruction.Kind == AdmittedInstructionKind.Call)
-                .OrderBy(instruction => instruction.IlOffset)
-                .Select(instruction => new FrozenMethodCallSite(
-                    method,
-                    instruction.IlOffset,
-                    instruction.Operand,
-                    instruction.CallTarget!))
-                .ToImmutableArray();
+            var outgoingBuilder = ImmutableArray.CreateBuilder<FrozenMethodCallSite>();
+            foreach (var instruction in plan.Instructions
+                         .Where(instruction => instruction.Kind == AdmittedInstructionKind.Call)
+                         .OrderBy(instruction => instruction.IlOffset))
+            {
+                var callSite = CreateCallSite(method, instruction);
+                if (callSite is null)
+                {
+                    return _terminalFailure;
+                }
+
+                outgoingBuilder.Add(callSite);
+            }
+
+            var outgoing = outgoingBuilder.ToImmutable();
             _callSites.AddRange(outgoing);
 
             foreach (var callSite in outgoing)
             {
+                if (callSite.Disposition == FrozenMethodCallDisposition.PureModel)
+                {
+                    continue;
+                }
+
                 var correlationFailure = ValidateDefinitionCorrelation(callSite.Target.Method, callSite);
                 if (correlationFailure is not null)
                 {
@@ -320,6 +386,232 @@ public sealed class MethodGraphPlanner
             _visitStates[method] = VisitState.Complete;
             return null;
         }
+
+        private FrozenMethodCallSite? CreateCallSite(
+            MethodHandle caller,
+            AdmittedInstruction instruction)
+        {
+            var target = instruction.CallTarget!;
+            if (_requiredPureModel is null || target.Method != _requiredPureModel.Target)
+            {
+                return new FrozenMethodCallSite(
+                    caller,
+                    instruction.IlOffset,
+                    instruction.Operand,
+                    target,
+                    FrozenMethodCallDisposition.Interpreted,
+                    EvaluationEffectStatus.None,
+                    modelDescriptor: null);
+            }
+
+            _requiredPureModelReached = true;
+            var leaf = GetOrAddModeledLeaf(target, caller, instruction.IlOffset);
+            return leaf is null
+                ? null
+                : new FrozenMethodCallSite(
+                    caller,
+                    instruction.IlOffset,
+                    instruction.Operand,
+                    target,
+                    FrozenMethodCallDisposition.PureModel,
+                    EvaluationEffectStatus.None,
+                    leaf.Descriptor);
+        }
+
+        private FrozenPureModelLeaf? GetOrAddModeledLeaf(
+            ResolvedMethodCallTarget target,
+            MethodHandle caller,
+            int ilOffset)
+        {
+            if (_modeledLeaves.TryGetValue(target.Method, out var existing))
+            {
+                if (existing.Target != target)
+                {
+                    _terminalFailure = Conflict(
+                        "W4.Model.TargetConflict",
+                        "Equal structural MethodDef identities carry conflicting model-target signatures.",
+                        caller,
+                        ilOffset);
+                    return null;
+                }
+
+                return existing;
+            }
+
+            if (_visitStates.Count + _modeledLeaves.Count >= MaximumMethodCount)
+            {
+                _terminalFailure = Failed(
+                    MachineRunStatus.Blocked,
+                    ExecutionFailureKind.ResourceLimit,
+                    "EXEC_CALL_GRAPH_METHOD_LIMIT",
+                    $"A frozen method graph is limited to {MaximumMethodCount} distinct methods and modeled leaves.",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            if (!TryChargeTraversal(caller, ilOffset))
+            {
+                return null;
+            }
+
+            var selection = SelectModel(target, caller, ilOffset);
+            if (selection is null)
+            {
+                return null;
+            }
+
+            if (selection.Kind != PureCallModelSelectionKind.Selected)
+            {
+                _terminalFailure = selection.Kind switch
+                {
+                    PureCallModelSelectionKind.NotApplicable or PureCallModelSelectionKind.Blocked =>
+                        ModelFailure(MachineRunStatus.Blocked, selection.StableCode!, caller, ilOffset),
+                    PureCallModelSelectionKind.Invalid =>
+                        ModelFailure(MachineRunStatus.InvalidProgram, selection.StableCode!, caller, ilOffset),
+                    _ => ModelFailure(
+                        MachineRunStatus.InvalidProgram,
+                        "W4.Model.SelectionInvalid",
+                        caller,
+                        ilOffset),
+                };
+                return null;
+            }
+
+            var model = selection.Model;
+            if (model is null)
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.InvalidProgram,
+                    "W4.Model.SelectionInvalid",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            PureCallModelDescriptor? descriptor;
+            try
+            {
+                descriptor = model.Descriptor;
+            }
+            catch (Exception exception) when (IsCapabilityException(exception))
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.Blocked,
+                    "W4.Model.Capability",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            if (descriptor is null)
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.InvalidProgram,
+                    "W4.Model.DescriptorInvalid",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            if (descriptor.Target != target)
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.InvalidProgram,
+                    "W4.Model.DescriptorMismatch",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            if (descriptor.Confidence != PureCallModelConfidence.Exact)
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.Blocked,
+                    "W4.Model.ConfidenceUnsupported",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            if (descriptor.Effects == EvaluationEffectStatus.Unsupported)
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.Blocked,
+                    "W4.Model.EffectUnsupported",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            if (descriptor.Effects != EvaluationEffectStatus.None)
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.InvalidProgram,
+                    "W4.Model.EffectInvalid",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            var leaf = new FrozenPureModelLeaf(target, descriptor, model);
+            _modeledLeaves.Add(target.Method, leaf);
+            return leaf;
+        }
+
+        private PureCallModelSelectionResult? SelectModel(
+            ResolvedMethodCallTarget target,
+            MethodHandle caller,
+            int ilOffset)
+        {
+            if (_modelSelectionCache.TryGetValue(target, out var cached))
+            {
+                return cached;
+            }
+
+            PureCallModelSelectionResult? selection;
+            try
+            {
+                selection = _requiredPureModel!.Registry.Select(target);
+            }
+            catch (Exception exception) when (IsCapabilityException(exception))
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.Blocked,
+                    "W4.Model.Capability",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            if (selection is null)
+            {
+                _terminalFailure = ModelFailure(
+                    MachineRunStatus.InvalidProgram,
+                    "W4.Model.SelectionInvalid",
+                    caller,
+                    ilOffset);
+                return null;
+            }
+
+            _modelSelectionCache.Add(target, selection);
+            return selection;
+        }
+
+        private static MethodGraphPreparationResult ModelFailure(
+            MachineRunStatus status,
+            string code,
+            MethodHandle method,
+            int offset) =>
+            Failed(
+                status,
+                ExecutionFailureKind.DependencyResolution,
+                code,
+                status == MachineRunStatus.InvalidProgram
+                    ? "Pure-model selection produced an invalid structural result."
+                    : "The required pure model could not be selected as an effect-free opaque call target.",
+                method,
+                offset);
 
         private MethodGraphPreparationResult? ValidateDefinitionCorrelation(
             MethodHandle method,
@@ -360,6 +652,9 @@ public sealed class MethodGraphPlanner
             var canonicalFields = _structuralFields.Values
                 .OrderBy(field => field.Handle, FieldHandleCanonicalComparer.Instance)
                 .ToImmutableArray();
+            var canonicalModeledLeaves = _modeledLeaves.Values
+                .OrderBy(leaf => leaf.Method, MethodHandleCanonicalComparer.Instance)
+                .ToImmutableArray();
             var canonicalNodes = _admittedPlans
                 .OrderBy(pair => pair.Key, MethodHandleCanonicalComparer.Instance)
                 .Select(pair =>
@@ -381,6 +676,7 @@ public sealed class MethodGraphPlanner
             var validationFailure = ValidateFrozenGraph(
                 root,
                 canonicalNodes,
+                canonicalModeledLeaves,
                 canonicalFields,
                 canonicalCalls,
                 requiredDepth,
@@ -396,6 +692,7 @@ public sealed class MethodGraphPlanner
                     new FrozenMethodGraphPlan(
                         root,
                         canonicalNodes,
+                        canonicalModeledLeaves,
                         canonicalFields,
                         canonicalCalls,
                         requiredDepth,
@@ -410,23 +707,36 @@ public sealed class MethodGraphPlanner
         private static MethodGraphPreparationResult? ValidateFrozenGraph(
             MethodHandle root,
             ImmutableArray<FrozenMethodGraphNode> nodes,
+            ImmutableArray<FrozenPureModelLeaf> modeledLeaves,
             ImmutableArray<ResolvedField> fields,
             ImmutableArray<FrozenMethodCallSite> callSites,
             int requiredDepth,
             int traversalUnits)
         {
-            if (nodes.IsDefaultOrEmpty || fields.IsDefault || callSites.IsDefault ||
-                nodes.Length > MaximumMethodCount ||
-                traversalUnits != nodes.Length + fields.Length + callSites.Length ||
+            if (nodes.IsDefaultOrEmpty || modeledLeaves.IsDefault || fields.IsDefault || callSites.IsDefault ||
+                nodes.Length + modeledLeaves.Length > MaximumMethodCount ||
+                traversalUnits != nodes.Length + modeledLeaves.Length + fields.Length + callSites.Length ||
                 traversalUnits > MaximumTraversalUnitCount ||
                 !nodes.Any(node => node.Method == root) ||
                 !IsStrictlyOrdered(nodes.Select(node => node.Method), MethodHandleCanonicalComparer.Instance) ||
+                !IsStrictlyOrdered(modeledLeaves.Select(leaf => leaf.Method), MethodHandleCanonicalComparer.Instance) ||
                 !IsStrictlyOrdered(fields.Select(field => field.Handle), FieldHandleCanonicalComparer.Instance))
             {
                 return GraphInvalid(root, 0, "The frozen graph violates cardinality, uniqueness, or canonical-order invariants.");
             }
 
             var nodeMap = nodes.ToDictionary(node => node.Method);
+            var modeledLeafMap = modeledLeaves.ToDictionary(leaf => leaf.Method);
+            if (modeledLeaves.Any(leaf =>
+                    nodeMap.ContainsKey(leaf.Method) ||
+                    leaf.Target.Method != leaf.Method ||
+                    leaf.Descriptor.Target != leaf.Target ||
+                    leaf.Descriptor.Confidence != PureCallModelConfidence.Exact ||
+                    leaf.Effects != EvaluationEffectStatus.None))
+            {
+                return GraphInvalid(root, 0, "A modeled leaf overlaps an interpreted node or violates its frozen descriptor.");
+            }
+
             var edgeKeys = new HashSet<(MethodHandle Caller, int Offset)>();
             var fieldGroups = nodes
                 .SelectMany(node => node.Fields)
@@ -478,12 +788,23 @@ public sealed class MethodGraphPlanner
                 }
 
                 previousCallSite = callSite;
+                var hasInterpretedTarget = nodeMap.TryGetValue(callSite.Target.Method, out var interpretedTarget);
+                var hasModeledTarget = modeledLeafMap.TryGetValue(callSite.Target.Method, out var modeledTarget);
                 if (!edgeKeys.Add((callSite.Caller, callSite.IlOffset)) ||
                     !nodeMap.TryGetValue(callSite.Caller, out var caller) ||
-                    !nodeMap.TryGetValue(callSite.Target.Method, out var target) ||
+                    hasInterpretedTarget == hasModeledTarget ||
                     callSite.Target.Method.Module != callSite.Caller.Module ||
                     callSite.Target.Method.MetadataToken != callSite.MetadataToken ||
-                    target.Definition.Signature.CallSignature != callSite.Target.Signature ||
+                    callSite.Effects != EvaluationEffectStatus.None ||
+                    callSite.Disposition == FrozenMethodCallDisposition.Interpreted &&
+                    (!hasInterpretedTarget ||
+                     callSite.ModelDescriptor is not null ||
+                     interpretedTarget!.Definition.Signature.CallSignature != callSite.Target.Signature) ||
+                    callSite.Disposition == FrozenMethodCallDisposition.PureModel &&
+                    (!hasModeledTarget ||
+                     callSite.ModelDescriptor is null ||
+                     callSite.ModelDescriptor != modeledTarget!.Descriptor ||
+                     callSite.Target != modeledTarget.Target) ||
                     !caller.RuntimePlan.TryGetInstruction(callSite.IlOffset, out var instruction) ||
                     instruction.Kind != AdmittedInstructionKind.Call ||
                     instruction.Operand != callSite.MetadataToken ||
@@ -495,8 +816,10 @@ public sealed class MethodGraphPlanner
             }
 
             var reachable = new HashSet<MethodHandle>();
+            var reachableModeledLeaves = new HashSet<MethodHandle>();
             var active = new HashSet<MethodHandle>();
             if (!VisitForValidation(root) || reachable.Count != nodes.Length ||
+                reachableModeledLeaves.Count != modeledLeaves.Length ||
                 CalculateRequiredDepth(root, callSites) != requiredDepth)
             {
                 return GraphInvalid(root, 0, "The frozen graph is cyclic, unreachable, or has an incorrect longest-path depth.");
@@ -515,7 +838,14 @@ public sealed class MethodGraphPlanner
                 {
                     foreach (var callSite in callSites.Where(site => site.Caller == method))
                     {
-                        if (!VisitForValidation(callSite.Target.Method))
+                        if (callSite.Disposition == FrozenMethodCallDisposition.PureModel)
+                        {
+                            if (!reachableModeledLeaves.Add(callSite.Target.Method))
+                            {
+                                continue;
+                            }
+                        }
+                        else if (!VisitForValidation(callSite.Target.Method))
                         {
                             return false;
                         }
@@ -544,7 +874,11 @@ public sealed class MethodGraphPlanner
                 var childDepth = 0;
                 foreach (var callSite in callSites.Where(site => site.Caller == method))
                 {
-                    childDepth = Math.Max(childDepth, Calculate(callSite.Target.Method));
+                    childDepth = Math.Max(
+                        childDepth,
+                        callSite.Disposition == FrozenMethodCallDisposition.PureModel
+                            ? 1
+                            : Calculate(callSite.Target.Method));
                 }
 
                 depth = checked(childDepth + 1);

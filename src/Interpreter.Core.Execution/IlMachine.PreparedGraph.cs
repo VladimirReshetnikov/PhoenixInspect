@@ -25,11 +25,15 @@ public sealed partial class IlMachine<TValue, TMemory>
     /// <param name="memory">The immutable initial persistent-memory snapshot.</param>
     /// <returns>
     /// A ready single-root state; a deterministic pre-activation depth exhaustion; or a structured invalid/blocked
-    /// result. This operation consumes no instruction budget, emits no event, and never invokes the resolver.
+    /// result. A graph containing an opaque modeled leaf is blocked before state creation until modeled-call transfer
+    /// support is admitted. This operation consumes no instruction budget, emits no event, and never invokes the
+    /// resolver or a selected model.
     /// </returns>
     /// <remarks>
-    /// This opt-in W4.5 prototype path is mutually exclusive with legacy <see cref="ActivateRoot"/> execution on the
-    /// same machine. Public shape and policy remain draft-phase contracts subject to later product-facade refinement.
+    /// This opt-in W4.5/W4.6a prototype path is mutually exclusive with legacy <see cref="ActivateRoot"/> execution
+    /// on the same machine. W4.6a makes modeled plans inspectable but intentionally non-executable; W4.6b owns the
+    /// future typed modeled-call transfer. Public shape and policy remain draft-phase contracts subject to later
+    /// product-facade refinement.
     /// </remarks>
     public MachineActivationResult<TValue, TMemory> ActivatePreparedGraph(
         FrozenMethodGraphPlan graph,
@@ -38,6 +42,17 @@ public sealed partial class IlMachine<TValue, TMemory>
         TMemory memory)
     {
         ArgumentNullException.ThrowIfNull(graph);
+        if (!graph.ModeledLeaves.IsEmpty)
+        {
+            return ActivationFailed(
+                MachineRunStatus.Blocked,
+                ExecutionFailureKind.UnsupportedInstruction,
+                "EXEC_MODEL_EXECUTION_UNAVAILABLE",
+                "Prepared pure-model leaves cannot execute until the modeled-call transfer is admitted.",
+                graph.Root,
+                0);
+        }
+
         if (maximumLogicalCallDepth <= 0)
         {
             return ActivationFailed(

@@ -21,10 +21,12 @@ public sealed class W4CallLineageIntegrationTests
     private const int ExpectedMarker = 0x13579BDF;
     private const int ExpectedAlternateMarker = 0x13579BDE;
     private const int CallOffset = 12;
+    private const string ExpectedTestTargetSha256 =
+        "fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801";
     private const string ExpectedMixedGraphSha256 =
-        "3477893c02ab12ef48a59e907721d234fb5007c0d426622439e6227d28f0d30f";
+        "1fe99a64e0c1d70118577847f7ea473703854c217368eee27aef1ab9ee54a142";
     private const string ExpectedBothUnknownGraphSha256 =
-        "543f9a83bfdd478bc255df9e5df5913aa2ca0d9af6eaca9260c944c5553cf40a";
+        "3df1b43826066c4c9974ffc1a1013678f5a0c86ffdc7ce8d930abe737b80d967";
 
     private static readonly string EvidenceSourceSha256 = HashUtf8(
         "W4.5b compiler-emitted integration evidence source");
@@ -625,7 +627,11 @@ public sealed class W4CallLineageIntegrationTests
 
         internal static PreparedFixture Create()
         {
-            var module = SrmMetadataModule.LoadFromFile(ResolveTargetAssemblyPath());
+            var targetAssemblyPath = ResolveTargetAssemblyPath();
+            Assert.Equal(
+                ExpectedTestTargetSha256,
+                Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(targetAssemblyPath))).ToLowerInvariant());
+            var module = SrmMetadataModule.LoadFromFile(targetAssemblyPath);
             try
             {
                 var caller = ResolveMethodHandle(module, CallerName);

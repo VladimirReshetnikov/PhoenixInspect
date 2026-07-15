@@ -75,7 +75,7 @@ public sealed class MethodCallSignatureShape : IEquatable<MethodCallSignatureSha
         HasImplicitThis = hasImplicitThis;
         HasExplicitThis = hasExplicitThis;
         GenericParameterCount = genericParameterCount;
-        ParameterTypes = parameterTypes;
+        ParameterTypes = ImmutableArray.CreateRange(parameterTypes.AsSpan().ToArray());
         ReturnType = returnType;
     }
 

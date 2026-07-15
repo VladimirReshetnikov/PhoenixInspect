@@ -4,7 +4,12 @@
     <AssemblyName>Interpreter.TestTarget</AssemblyName>
     <RootNamespace>Interpreter.TestTarget</RootNamespace>
     <Optimize>true</Optimize>
-    <DebugType>portable</DebugType>
+    <!-- W1-W4 consume this fixture's PE/metadata identity but intentionally do not consume symbols. Keeping debug
+         identity and a source-revision suffix out of the PE makes identical source reproduce byte-for-byte across
+         worktrees and local/CI builds, which is required by the frozen ModuleHandle/lineage corpus. -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 </Project>

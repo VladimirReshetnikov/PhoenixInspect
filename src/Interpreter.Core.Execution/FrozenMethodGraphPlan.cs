@@ -3,13 +3,24 @@ using Interpreter.Core.Abstractions;
 
 namespace Interpreter.Core.Execution;
 
+/// <summary>Classifies the preparation-time disposition frozen for one direct-call edge.</summary>
+public enum FrozenMethodCallDisposition
+{
+    /// <summary>The target has an admitted body and executes through an interpreter frame.</summary>
+    Interpreted = 1,
+
+    /// <summary>The target is an opaque leaf covered by one exact, side-effect-free pure model.</summary>
+    PureModel = 2,
+}
+
 /// <summary>
 /// Freezes one structurally resolved direct-call edge in an admitted method graph.
 /// </summary>
 /// <remarks>
 /// The call target is the body-independent descriptor observed while decoding the caller. The target body is held by
-/// the corresponding <see cref="FrozenMethodGraphNode"/> and is correlated with this descriptor before a plan can be
-/// created. Instances are constructed only by the execution preparation pipeline.
+/// the corresponding <see cref="FrozenMethodGraphNode"/> only for <see cref="FrozenMethodCallDisposition.Interpreted"/>.
+/// A <see cref="FrozenMethodCallDisposition.PureModel"/> target instead correlates with one body-free
+/// <see cref="FrozenPureModelLeaf"/>. Instances are constructed only by the execution preparation pipeline.
 /// </remarks>
 public sealed class FrozenMethodCallSite : IEquatable<FrozenMethodCallSite>
 {
@@ -17,7 +28,10 @@ public sealed class FrozenMethodCallSite : IEquatable<FrozenMethodCallSite>
         MethodHandle caller,
         int ilOffset,
         int metadataToken,
-        ResolvedMethodCallTarget target)
+        ResolvedMethodCallTarget target,
+        FrozenMethodCallDisposition disposition,
+        EvaluationEffectStatus effects,
+        PureCallModelDescriptor? modelDescriptor)
     {
         ArgumentNullException.ThrowIfNull(target);
         if (caller == default)
@@ -30,10 +44,37 @@ public sealed class FrozenMethodCallSite : IEquatable<FrozenMethodCallSite>
             throw new ArgumentOutOfRangeException(nameof(ilOffset));
         }
 
+        if (!Enum.IsDefined(disposition))
+        {
+            throw new ArgumentOutOfRangeException(nameof(disposition));
+        }
+
+        if (effects != EvaluationEffectStatus.None)
+        {
+            throw new ArgumentException(
+                "A successfully frozen W4 call edge must have the normalized no-effect disposition.",
+                nameof(effects));
+        }
+
+        if (disposition == FrozenMethodCallDisposition.Interpreted && modelDescriptor is not null ||
+            disposition == FrozenMethodCallDisposition.PureModel &&
+            (modelDescriptor is null ||
+             modelDescriptor.Confidence != PureCallModelConfidence.Exact ||
+             modelDescriptor.Effects != EvaluationEffectStatus.None ||
+             modelDescriptor.Target != target))
+        {
+            throw new ArgumentException(
+                "The call disposition, structural target, effect status, and model descriptor disagree.",
+                nameof(modelDescriptor));
+        }
+
         Caller = caller;
         IlOffset = ilOffset;
         MetadataToken = metadataToken;
         Target = target;
+        Disposition = disposition;
+        Effects = effects;
+        ModelDescriptor = modelDescriptor;
     }
 
     /// <summary>Gets the exact MethodDef containing the direct call.</summary>
@@ -48,6 +89,15 @@ public sealed class FrozenMethodCallSite : IEquatable<FrozenMethodCallSite>
     /// <summary>Gets the exact managed-IL MethodDef identity and body-independent signature selected for the edge.</summary>
     public ResolvedMethodCallTarget Target { get; }
 
+    /// <summary>Gets the immutable interpreted or pure-model disposition selected during preparation.</summary>
+    public FrozenMethodCallDisposition Disposition { get; }
+
+    /// <summary>Gets the normalized effect classification frozen for this edge.</summary>
+    public EvaluationEffectStatus Effects { get; }
+
+    /// <summary>Gets the selected pure-model descriptor, or <see langword="null"/> for an interpreted edge.</summary>
+    public PureCallModelDescriptor? ModelDescriptor { get; }
+
     /// <inheritdoc />
     public bool Equals(FrozenMethodCallSite? other) =>
         ReferenceEquals(this, other) ||
@@ -57,7 +107,10 @@ public sealed class FrozenMethodCallSite : IEquatable<FrozenMethodCallSite>
         MetadataToken == other.MetadataToken &&
         Target.Method == other.Target.Method &&
         Target.Signature == other.Target.Signature &&
-        Target.IsManagedIl == other.Target.IsManagedIl;
+        Target.IsManagedIl == other.Target.IsManagedIl &&
+        Disposition == other.Disposition &&
+        Effects == other.Effects &&
+        Equals(ModelDescriptor, other.ModelDescriptor);
 
     /// <inheritdoc />
     public override bool Equals(object? obj) => Equals(obj as FrozenMethodCallSite);
@@ -69,8 +122,79 @@ public sealed class FrozenMethodCallSite : IEquatable<FrozenMethodCallSite>
         hash = unchecked((hash * 397) ^ IlOffset);
         hash = unchecked((hash * 397) ^ MetadataToken);
         hash = GraphContent.AddMethod(hash, Target.Method);
-        return unchecked((hash * 397) ^ Target.Signature.GetHashCode());
+        var legacyHash = unchecked((hash * 397) ^ Target.Signature.GetHashCode());
+        if (Disposition == FrozenMethodCallDisposition.Interpreted &&
+            Effects == EvaluationEffectStatus.None &&
+            ModelDescriptor is null)
+        {
+            return legacyHash;
+        }
+
+        hash = legacyHash;
+        hash = unchecked((hash * 397) ^ (int)Disposition);
+        hash = unchecked((hash * 397) ^ (int)Effects);
+        return unchecked((hash * 397) ^ (ModelDescriptor?.GetHashCode() ?? 0));
     }
+}
+
+/// <summary>
+/// Freezes one structurally resolved call target as an opaque leaf covered by an exact pure model.
+/// </summary>
+/// <remarks>
+/// The leaf retains only body-independent target evidence and the selected descriptor publicly. The runtime model
+/// capability is retained internally for the later modeled-transfer increment; it is deliberately excluded from
+/// structural equality so fresh equivalent registries reproduce equal plans. No target body belongs to this value.
+/// </remarks>
+public sealed class FrozenPureModelLeaf : IEquatable<FrozenPureModelLeaf>
+{
+    internal FrozenPureModelLeaf(
+        ResolvedMethodCallTarget target,
+        PureCallModelDescriptor descriptor,
+        IPureCallModel runtimeModel)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(runtimeModel);
+        if (descriptor.Target != target ||
+            descriptor.Confidence != PureCallModelConfidence.Exact ||
+            descriptor.Effects != EvaluationEffectStatus.None)
+        {
+            throw new ArgumentException(
+                "A modeled leaf requires an exact target-correlated no-effect descriptor.",
+                nameof(descriptor));
+        }
+
+        Target = target;
+        Descriptor = descriptor;
+        RuntimeModel = runtimeModel;
+    }
+
+    /// <summary>Gets the exact body-independent managed-IL target covered by this opaque leaf.</summary>
+    public ResolvedMethodCallTarget Target { get; }
+
+    /// <summary>Gets the exact structural MethodDef identity of the modeled target.</summary>
+    public MethodHandle Method => Target.Method;
+
+    /// <summary>Gets the selected stable model identity, version, confidence, target, and normalized effects.</summary>
+    public PureCallModelDescriptor Descriptor { get; }
+
+    /// <summary>Gets the normalized effect classification for the selected pure model.</summary>
+    public EvaluationEffectStatus Effects => Descriptor.Effects;
+
+    internal IPureCallModel RuntimeModel { get; }
+
+    /// <inheritdoc />
+    public bool Equals(FrozenPureModelLeaf? other) =>
+        ReferenceEquals(this, other) ||
+        other is not null &&
+        Target == other.Target &&
+        Descriptor == other.Descriptor;
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => Equals(obj as FrozenPureModelLeaf);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => HashCode.Combine(Target, Descriptor);
 }
 
 /// <summary>
@@ -166,11 +290,13 @@ public sealed class FrozenMethodGraphNode : IEquatable<FrozenMethodGraphNode>
 public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
 {
     private readonly ImmutableDictionary<MethodHandle, FrozenMethodGraphNode> _nodeLookup;
+    private readonly ImmutableDictionary<MethodHandle, FrozenPureModelLeaf> _modeledLeafLookup;
     private readonly ImmutableDictionary<MethodHandle, AdmittedMethodPlan> _runtimePlanLookup;
 
     internal FrozenMethodGraphPlan(
         MethodHandle root,
         ImmutableArray<FrozenMethodGraphNode> nodes,
+        ImmutableArray<FrozenPureModelLeaf> modeledLeaves,
         ImmutableArray<ResolvedField> fields,
         ImmutableArray<FrozenMethodCallSite> callSites,
         int requiredLogicalDepth,
@@ -181,7 +307,7 @@ public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
             throw new ArgumentException("A graph plan requires a non-default root.", nameof(root));
         }
 
-        if (nodes.IsDefault || nodes.Length == 0 || fields.IsDefault || callSites.IsDefault)
+        if (nodes.IsDefault || nodes.Length == 0 || modeledLeaves.IsDefault || fields.IsDefault || callSites.IsDefault)
         {
             throw new ArgumentException("A graph plan requires initialized, nonempty node and dependency vectors.");
         }
@@ -195,11 +321,13 @@ public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
 
         Root = root;
         Nodes = nodes;
+        ModeledLeaves = modeledLeaves;
         Fields = fields;
         CallSites = callSites;
         RequiredLogicalDepth = requiredLogicalDepth;
         TraversalUnitCount = traversalUnitCount;
         _nodeLookup = nodes.ToImmutableDictionary(node => node.Method);
+        _modeledLeafLookup = modeledLeaves.ToImmutableDictionary(leaf => leaf.Method);
         _runtimePlanLookup = nodes.ToImmutableDictionary(node => node.Method, node => node.RuntimePlan);
     }
 
@@ -209,17 +337,24 @@ public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
     /// <summary>Gets all admitted methods in canonical structural MethodDef order.</summary>
     public ImmutableArray<FrozenMethodGraphNode> Nodes { get; }
 
+    /// <summary>
+    /// Gets all opaque pure-model leaves in canonical structural MethodDef order; no leaf contains a target body.
+    /// </summary>
+    public ImmutableArray<FrozenPureModelLeaf> ModeledLeaves { get; }
+
     /// <summary>Gets all distinct resolved field dependencies in canonical structural FieldDef order.</summary>
     public ImmutableArray<ResolvedField> Fields { get; }
 
     /// <summary>Gets every retained direct-call edge in canonical caller-and-offset order.</summary>
     public ImmutableArray<FrozenMethodCallSite> CallSites { get; }
 
-    /// <summary>Gets the graph's longest root-to-method path, counting the root at logical depth one.</summary>
+    /// <summary>
+    /// Gets the longest root-to-interpreted-method-or-modeled-boundary path, counting the root at logical depth one.
+    /// </summary>
     public int RequiredLogicalDepth { get; }
 
     /// <summary>
-    /// Gets the preparation units charged for distinct methods, distinct structural fields, and direct-call edges.
+    /// Gets the preparation units charged for interpreted methods, modeled leaves, structural fields, and call edges.
     /// </summary>
     public int TraversalUnitCount { get; }
 
@@ -229,6 +364,13 @@ public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
     /// <returns><see langword="true"/> when <paramref name="method"/> belongs to this complete graph.</returns>
     public bool TryGetNode(MethodHandle method, out FrozenMethodGraphNode? node) =>
         _nodeLookup.TryGetValue(method, out node);
+
+    /// <summary>Looks up an opaque modeled leaf without acquiring or exposing a target body.</summary>
+    /// <param name="method">The exact modeled MethodDef identity to find.</param>
+    /// <param name="leaf">Receives the frozen leaf on success; otherwise <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> when <paramref name="method"/> is a modeled leaf in this graph.</returns>
+    public bool TryGetModeledLeaf(MethodHandle method, out FrozenPureModelLeaf? leaf) =>
+        _modeledLeafLookup.TryGetValue(method, out leaf);
 
     internal bool TryGetAdmittedMethodPlan(MethodHandle method, out AdmittedMethodPlan? plan) =>
         _runtimePlanLookup.TryGetValue(method, out plan);
@@ -241,6 +383,7 @@ public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
         RequiredLogicalDepth == other.RequiredLogicalDepth &&
         TraversalUnitCount == other.TraversalUnitCount &&
         Nodes.SequenceEqual(other.Nodes) &&
+        ModeledLeaves.SequenceEqual(other.ModeledLeaves) &&
         Fields.SequenceEqual(other.Fields) &&
         CallSites.SequenceEqual(other.CallSites);
 
@@ -256,6 +399,11 @@ public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
         foreach (var node in Nodes)
         {
             hash = unchecked((hash * 397) ^ node.GetHashCode());
+        }
+
+        foreach (var leaf in ModeledLeaves)
+        {
+            hash = unchecked((hash * 397) ^ leaf.GetHashCode());
         }
 
         foreach (var field in Fields)
@@ -298,7 +446,10 @@ public sealed class MethodGraphPreparationResult
     /// <summary>Gets the structured failure on rejection, or <see langword="null"/> on success.</summary>
     public ExecutionFailure? Failure { get; }
 
-    /// <summary>Gets a value indicating whether preparation produced one complete executable graph.</summary>
+    /// <summary>
+    /// Gets a value indicating whether preparation produced one complete frozen graph. Planning success does not by
+    /// itself imply that the current machine admits every frozen call disposition.
+    /// </summary>
     public bool IsSuccess => Plan is not null && Status == MachineRunStatus.Ready && Failure is null;
 
     internal static MethodGraphPreparationResult Success(FrozenMethodGraphPlan plan) =>
