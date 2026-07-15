@@ -119,6 +119,13 @@
         "dependencies": {
           "Interpreter.Metadata.Abstractions": "[1.0.0, )"
         }
+      },
+      "interpreter.product.dumpdebugging": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.Core.Abstractions": "[1.0.0, )",
+          "Interpreter.Core.Execution": "[1.0.0, )"
+        }
       }
     }
   }

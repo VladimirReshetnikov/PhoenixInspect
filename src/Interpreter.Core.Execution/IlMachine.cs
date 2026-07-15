@@ -276,6 +276,14 @@ public sealed partial class IlMachine<TValue, TMemory>
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(operationalState);
 
+        return StepOneCore(state, operationalState)
+            .CertifyTransitionFrom(this, state, operationalState);
+    }
+
+    private StepOutcome<TValue, TMemory> StepOneCore(
+        MachineState<TValue, TMemory> state,
+        MachineOperationalState operationalState)
+    {
         if (TryGetPreparedGraphSession(out var preparedGraph, out var maximumLogicalCallDepth))
         {
             return StepPreparedGraph(

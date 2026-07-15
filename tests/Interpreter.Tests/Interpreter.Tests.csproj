@@ -21,5 +21,6 @@
     <ProjectReference Include="../../src/Interpreter.Core.Execution/Interpreter.Core.Execution.csproj" />
     <ProjectReference Include="../../src/Interpreter.Domain.Concrete/Interpreter.Domain.Concrete.csproj" />
     <ProjectReference Include="../../src/Interpreter.Metadata.SRM/Interpreter.Metadata.SRM.csproj" />
+    <ProjectReference Include="../../src/Interpreter.Product.DumpDebugging/Interpreter.Product.DumpDebugging.csproj" />
   </ItemGroup>
 </Project>

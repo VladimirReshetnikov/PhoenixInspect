@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Interpreter.Product.DumpDebugging</AssemblyName>
+    <RootNamespace>Interpreter.Product.DumpDebugging</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Core.Execution/Interpreter.Core.Execution.csproj" />
+  </ItemGroup>
+</Project>
