@@ -1,7 +1,7 @@
 # Opcode Admission and Evidence Matrix
 
 **Lifecycle:** Current
-**Roadmap relation:** Supporting; records W3 evidence and gates later expansion
+**Roadmap relation:** Supporting; records W3 exact evidence, the landed W4.3 conservative field overlay, and gates later expansion
 
 ## 1. Principle
 
@@ -14,7 +14,7 @@ An opcode is not “supported” because it appears in a proposal. The companion
 | Status | Meaning |
 |---|---|
 | `Exact` | Transfer semantics are implemented for the admitted operand/stack/type shapes and checked by unit plus differential tests. |
-| `Conservative` | The admitted shape intentionally loses precision and emits a provenance-bearing diagnostic. This is not used by the first concrete slice. |
+| `Conservative` | The admitted shape intentionally loses precision and emits provenance-bearing evidence. W4.3 uses this only for its closed, dump-free partial/unavailable `Int32` field shape. |
 | `RecognizedBlocked` | Decode is deterministic, no semantic effects occur, and execution stops with an opcode/offset/reason diagnostic. |
 | `Unadmitted` | No execution claim. A body containing the instruction is rejected by the slice admission check. |
 
@@ -116,10 +116,40 @@ negative admission cases, imported-missing-field behavior, same-machine and fres
 real dump that is closed, reopened, rediscovered, rebound, reimported, and replayed. The disk PE is a late comparison
 oracle and contributes no execution input to the dump resolver.
 
+### W4.3 — Dump-free conservative field overlay
+
+W4.3 implementation checkpoint `7479b1ad4` extends the shared E2 `ldfld` transfer without changing E2's exact
+classification or the exact-only ClrMD producer. The overlay is deliberately narrower than a general unknown-memory
+policy:
+
+| Instruction family | Additional admitted W4.3 shape | Status |
+|---|---|---|
+| `ldfld <FieldDef>` | The same frozen ordinary-instance `Int32` field, with canonical structured `Partial` or `Unavailable` `FieldLoadEvidence`, explicit `ExplainedInt32` policy, and an `IFieldLoadApproximationDomain<TValue>` capability | `Conservative` |
+
+`FieldLoadEvidence` retains the dependency ordinal, complete frozen field, source and imported-object SHA-256
+identities, status, reason code, address, four-byte request geometry, and copied observed prefix. A successful
+approximation preserves memory, consumes exactly one instruction, pushes a structurally validated explained
+`Int32` unknown, and emits `InstructionExecuted` followed by `ValuePrecisionLost` carrying that evidence. Its
+provenance is one imported-field `InputOrigin` followed by an append-only `FieldLoadTransform` whose identity uses the
+imported-receiver digest, frozen field, and sole origin predecessor; raw target addresses and process-local reference
+numbers do not enter that transform.
+
+Exact loads remain exact. Code-only partial/unavailable results, disabled policy, or a domain without the optional
+capability stop without transfer. Conflict remains blocked; invalid or mismatched structured evidence remains invalid.
+Replay validates canonical bytes, identities, ordering, uniqueness, reachability, acyclicity, and field/origin
+relationships before interning anything. The checkpoint passed 55/55 focused W4.3 and 211/211 complete unit tests;
+the strict fifteen-project Release build, 71/71 fast tests, 5/5 ordinary-dump regressions, 1/1 optimized-dump
+regression, and both repository guards also passed headlessly with zero skips and `Scope!=Cybersecurity` on every test
+command.
+
+This is dump-free machine/domain evidence. The current ClrMD execution descriptor still imports only exact E2 field
+values; no W4 partial-field dump producer, counterfactual product result, direct call, or generated-dump W4 result is
+claimed here. W4.4 owns direct `MethodDef` resolution and frozen transitive call admission.
+
 ## 4. Later gates
 
 - **Branches:** require explicit condition semantics, deterministic path policy, and closed fixtures.
-- **Calls:** require a scenario-narrowed call/effect contract and admitted callee policy.
+- **Calls:** W4.4 next admits only the frozen direct-`MethodDef` scenario shape; broader call/effect policy remains gated.
 - **Indirect/byref operations:** require an addressable model and dump-layout evidence. Span is not an MVP commitment.
 - **Exception regions:** first add stop-on-throw; handler search/unwind is a separate milestone required before `leave`, `endfinally`, filters, or debugger-grade Step Out claims.
 - **Async/dynamic:** require their ordinary prerequisite opcode and EH sets before semantic lifting can be evaluated.
@@ -134,11 +164,13 @@ Whole-body admission prevents an unexpected or malformed suffix from becoming a 
 - no evaluation-stack, local, or memory mutation;
 - no instruction-budget consumption for an instruction that did not execute.
 
-Likewise, resolution failure and non-exact memory evidence preserve state, memory, budget, and events. Ordinary
-non-catastrophic exceptions from resolver/domain/memory capabilities are normalized into stable payload-safe failures;
-out-of-memory and stack-overflow exceptions are not caught. The one different W3 boundary is admitted target-null
-`ldfld`, whose consumed budget, target event, and terminal latch describe a target instruction that did execute
-exceptionally.
+Likewise, resolution failure and code-only, conflicting, invalid, policy-disabled, or capability-unsupported non-exact
+memory evidence preserve state, memory, budget, and events. W4.3's one explicit exception is canonical structured
+partial/unavailable field evidence under the enabled policy and optional approximation capability; that path performs
+the conservative transfer described above. Ordinary non-catastrophic exceptions from resolver/domain/memory
+capabilities are normalized into stable payload-safe failures; out-of-memory and stack-overflow exceptions are not
+caught. The other exceptional W3 boundary is admitted target-null `ldfld`, whose consumed budget, target event, and
+terminal latch describe a target instruction that did execute exceptionally.
 
 The engine does not inject an unknown for an unsupported instruction unless a later hybrid slice defines and proves that continuation is sound for that exact stack/effect shape.
 

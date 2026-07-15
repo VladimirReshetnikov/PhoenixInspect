@@ -7,15 +7,20 @@
 ## Purpose
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
-W3 concrete-IL, and W4.2 dump-free explained-unknown proofs. It is descriptive, not a promise of compatibility.
+W3 concrete-IL, and W4.2–W4.3 dump-free explained-unknown proofs. It is descriptive, not a promise of compatibility.
 Hardened W3 checkpoint `19c292f9f`
 passed the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
-at that exact commit. W4.1 and W4.2 have since landed; exact W4.2 implementation commit `e89e43498` is the current
-dump-free provenance-aware kernel checkpoint. A contract is added only with an executable consumer and is removed
-when it gets ahead of code.
+at that exact commit. W4.1–W4.3 have since landed. Exact W4.2 implementation commit `e89e43498` remains the
+explained-arithmetic checkpoint; exact W4.3 implementation commit `7479b1ad4` is the current dump-free structured
+field-continuation checkpoint. Its headless local evidence passed the strict fifteen-project Release build, focused
+W4.3 55/55, complete unit 211/211, fast 71/71, ordinary dump 5/5, optimized-context dump 1/1, and both documentation
+guards with zero skips under `Scope!=Cybersecurity`. The W4.3 implementation realizes 3,096 LOC (1,100 production
+LOC plus 1,996 test LOC), bringing W4 to 7,028 realized LOC and a 19,228–25,728 LOC projection; the original
+16,860–25,310 baseline remains preserved in the normative ledger. A contract is added only with an executable
+consumer and is removed when it gets ahead of code.
 
 ## Active contracts
 
@@ -33,9 +38,15 @@ when it gets ahead of code.
 - optional `IValuePrecisionDomain<TValue>` and `ValuePrecisionKind`, which classify an executable value as `Exact`,
   `ExplainedUnknown`, or `UnexplainedUnknown` without making explanation identity part of the minimum value-domain
   contract;
+- optional `IFieldLoadApproximationDomain<TValue>`, which extends the precision capability only for the admitted
+  structured ordinary-instance `Int32` field-load continuation;
 - `IMemoryModel<TValue,TMemory>` constrained by `IPersistentMemoryState<TSelf>`;
+- canonical `FieldLoadEvidence` v1, which retains the dependency ordinal, complete frozen ordinary-instance `Int32`
+  field, partial/unavailable status, bounded reason, source and imported-object SHA-256 identities, nonzero address,
+  exact four-byte request, and defensively copied observed prefix;
 - `MemoryLoadResult<TValue>`, which distinguishes exact values, partial/unavailable/conflicting/invalid evidence, and
-  structured target exceptions;
+  structured target exceptions; `FromFieldEvidence` is the exclusive structured partial/unavailable producer while
+  existing code-only outcomes remain compatible;
 - `IResolutionServices.GetMethodDefinition` plus contextual `ResolveField`, whose first result is frozen by one
   machine session; and
 - immutable `TypeSig`/`MethodBody`, budget, operation, and stack-category shapes used by those contracts.
@@ -47,9 +58,11 @@ when it gets ahead of code.
   a semantic comparer that excludes operational history;
 - whole-body `MethodAdmissionResult`, structured `ExecutionFailure`, and low-level `MachineRunStatus`;
 - `IlMachine.StepOne`, whose current closed set is `nop`, integer constants, argument/local loads, local stores,
-  `add`, `sub`, `mul`, one exact `ldfld`, and `ret`; and
+  `add`, `sub`, `mul`, one ordinary-instance `Int32` `ldfld`, and `ret`; and
 - `UnknownExecutionPolicy`, whose default `ExactOnly` value preserves the W3 execution boundary and whose opt-in
-  `ExplainedInt32` value permits only structurally typed, domain-validated explained `Int32` values.
+  `ExplainedInt32` value permits only structurally typed, domain-validated explained `Int32` values; and
+- `DebugEventKind.ValuePrecisionLost`, whose successful field-load occurrence follows that instruction's
+  `InstructionExecuted` event at the same method and IL offset and carries its canonical `FieldLoadEvidence`.
 
 Activation receives only a method handle, receiver/arguments, and persistent memory. It atomically resolves the body
 and metadata shape, validates supplied structural types and execution precision under the selected policy, constructs
@@ -62,15 +75,22 @@ remain non-executable under both policies.
 `IlMachine<TValue,TMemory>` now receives `IMemoryModel<TValue,TMemory>`. The closed E2 profile admits only an exact
 instance `Int32` getter, direct or with one constant arithmetic adjustment, and freezes exactly one contextual
 same-module FieldDef before execution. Successful `ldfld` performs exactly one typed load and preserves memory.
-Non-exact memory evidence performs no transfer. Typed null consumes one instruction unit, emits one
-`TargetExceptionRaised` event, and produces an idempotent terminal `TargetException` state without handler search.
+W4.3 leaves that exact path unchanged. A partial or unavailable result continues only when it carries matching
+`FieldLoadEvidence`, the machine policy is `ExplainedInt32`, and the value domain implements
+`IFieldLoadApproximationDomain<TValue>`; the completed read-only transfer consumes the instruction, pushes one
+explained `Int32` unknown, emits `InstructionExecuted` followed by `ValuePrecisionLost`, and preserves memory.
+Code-only partial/unavailable results and missing policy/capability remain non-continuing compatibility outcomes;
+conflict remains blocked, invalid or mismatched structured evidence remains invalid, and no branch fabricates a
+scalar. Typed null consumes one instruction unit, emits one `TargetExceptionRaised` event, and produces an idempotent
+terminal `TargetException` state without handler search.
 
 The old caller-shaped body-only activation is gone. Argument count, local vector/defaults, implicit receiver, and
 return disposition are metadata-derived facts. The admitted plan records exact entry-stack type vectors, not only
 depth or CLI stack categories. W4.2 reuses the existing argument/local load, local store, arithmetic, and return
-handlers; it does not create a parallel unknown interpreter. Exact receivers, initialized locals, and exact-classified
-field loads remain exact. Arbitrary signatures, generic contexts, MemberRefs, branches, calls, EH, byrefs, statics,
-and broader instance methods remain rejected.
+handlers; W4.3 adds the policy-gated non-exact branch inside the existing `ldfld` handler rather than creating a
+parallel unknown interpreter. Exact receivers, initialized locals, and exact-classified field loads remain exact.
+Arbitrary signatures, generic contexts, MemberRefs, branches, calls, EH, byrefs, statics, and broader instance methods
+remain rejected.
 
 ### Concrete validation domain
 
@@ -88,12 +108,22 @@ carry no lineage; an explained unknown may carry one domain-owned root. Value eq
 and widening deliberately ignore that root, so different explanations remain the same per-type semantic top.
 `GetPrecision` is the execution-boundary capability that distinguishes exact values, grounded top, and bare top.
 
-The implemented lineage vocabulary is deliberately closed to canonical `InputOrigin` and ordered
-`BinaryTransform` nodes. Each node ID is the lowercase SHA-256 of its versioned canonical bytes. A transform embeds
-exact `Int32` operands directly and references unknown operands by predecessor ID, preserving left/right IL stack
-order even for commutative operations. Domain interning is content-based. `CaptureLineage` freezes only the graph
-reachable from one explained root in deterministic identity order; `ReplayLineage` validates and interns the graph in
-a fresh domain while preserving node bytes, IDs, root identity, and graph SHA-256.
+W4.3 makes that domain implement `IFieldLoadApproximationDomain<ProvenanceConcreteValue>`. It requires an exact local
+object receiver of the frozen declaring type, then atomically interns an `ImportedField` `InputOrigin` and its
+`FieldLoadTransform`. The origin retains partial/unavailable status and reason while its source key is the complete
+`FieldLoadEvidence` digest. The transform canonically retains the imported-receiver digest, complete frozen field,
+and origin predecessor; it never embeds the process-local object-reference number, display names, or a raw address.
+
+The implemented lineage vocabulary is deliberately closed through W4.3 to canonical `InputOrigin`, ordered
+`BinaryTransform`, and `FieldLoadTransform` nodes. `FieldLoadTransform` is append-only node kind 3 under the existing
+schema, and the hard-coded W4.2 input/binary bytes and IDs remain unchanged. Each node ID is the lowercase SHA-256 of
+its versioned canonical bytes. A binary transform embeds exact `Int32` operands directly and references unknown
+operands by predecessor ID, preserving left/right IL stack order even for commutative operations. Domain interning is
+content-based, and field origin/transform insertion preflights both nodes before mutating the intern table.
+`CaptureLineage` freezes only the graph reachable from one explained root in deterministic identity order;
+`ReplayLineage` prevalidates canonical bytes, IDs, node ordering, reachability, dependency shape, and the imported-field
+origin relationship before interning anything in a fresh domain, preserving node bytes, IDs, root identity, and graph
+SHA-256.
 
 Allocated objects receive CLI defaults. Imported objects do not: a field absent from the imported exact evidence is
 unavailable rather than zero or top. This remains a semantics-validation domain, not a CLR object-layout emulator or
@@ -143,6 +173,8 @@ type/FieldDef, and exact four-byte observation agree. It retains a stable bounde
 the concrete memory snapshot imports the object and field. Partial or missing ClrMD preparation evidence never reaches
 activation. A deliberately absent cell in an already imported test snapshot instead remains unavailable when
 `ldfld` queries it; that runtime negative does not fabricate a default or retroactively invalidate activation.
+W4.3 does not change that descriptor or add a ClrMD partial-field producer: its `FieldLoadEvidence` seam is exercised
+dump-free through an injected memory model, so the existing dump execution composition remains exact-only.
 
 The size/cache caps are deterministic resource controls. A narrow Windows x64 external-worker prototype has locally
 passed one real malformed-artifact checkpoint, but it is non-gating work outside W1–W4 and does not create an
@@ -191,10 +223,11 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 
 The query product surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
 null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
-loading, conversions, or general operators. W3's public interpreter activation and W4.2's provenance-aware domain are
-architecture proofs, not query-language features or a counterfactual-method facade. Non-exact `ldfld` continuation
-and `FieldLoadTransform` are absent, as are interpreted calls, call transforms, call models, the W4 request/plan/result
-and facade, and a generated-dump product result with reopen/replay closure. Those are W4.3–W4.9 work. Speculative
+loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.3's provenance-aware
+domain/machine extensions are architecture proofs, not query-language features or a counterfactual-method facade. A
+ClrMD producer for W4.3 structured non-exact field evidence remains absent, as do interpreted calls, call transforms,
+call models, the W4 request/plan/result and facade, and a generated-dump product result with reopen/replay closure.
+Those are W4.4–W4.9 work. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 

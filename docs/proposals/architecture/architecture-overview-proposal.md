@@ -11,16 +11,22 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1 and W4.2 have since
-landed; exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel, not
-the counterfactual product:
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.3 have since landed.
+Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
+implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
+product. Its headless local evidence passed the strict fifteen-project Release build, focused W4.3 55/55, complete
+unit 211/211, fast 71/71, ordinary dump 5/5, optimized-context dump 1/1, and both documentation guards with zero skips
+under `Scope!=Cybersecurity`. W4.3 realizes 3,096 LOC (1,100 production LOC plus 1,996 test LOC), bringing W4 to 7,028
+realized LOC and a 19,228–25,728 LOC projection while the original 16,860–25,310 baseline remains preserved in the
+normative ledger:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
    plan over dump evidence without repeating member selection;
 3. execute a small, scenario-derived, EH-free IL subset through a concrete value and memory domain, checked against CoreCLR;
-4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy; W4.2 now proves their
-   branchless dump-free transport and canonical lineage, while W4.3–W4.9 remain pending.
+4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy; W4.2 proves their
+   branchless dump-free arithmetic transport, and W4.3 proves structured non-exact field continuation plus canonical
+   precision lineage, while W4.4–W4.9 remain pending.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -85,20 +91,29 @@ counted dump metadata/body + exact rooted field evidence
   -> machine outcome, resulting state/memory, events, and budget
   -> host/test canonical replay projection, transcript, and fingerprint
 
-For the implemented W4.2 dump-free kernel extension:
+For the implemented W4.2–W4.3 dump-free kernel extensions:
 
 bounded partial/unavailable input facts
   -> canonical InputOrigin -> explained Int32 semantic top
   -> IlMachine with opt-in ExplainedInt32 policy
   -> shared argument/local/store/arithmetic/return transfers
   -> ordered BinaryTransform nodes with exact operands embedded
-  -> reachable canonical graph capture -> validated fresh-domain replay
+
+exact local receiver + structured partial/unavailable FieldLoadEvidence
+  -> MemoryLoadResult.FromFieldEvidence
+  -> matching frozen field + ExplainedInt32 policy + optional field-approximation capability
+  -> existing ldfld transfer -> explained Int32 semantic top + unchanged memory
+  -> InstructionExecuted then ValuePrecisionLost with the canonical evidence
+  -> ImportedField InputOrigin -> FieldLoadTransform(receiver digest, frozen field, origin)
+
+either lineage root
+  -> reachable canonical graph capture -> prevalidated fresh-domain replay
 ```
 
 The dump path is not an implementation detail after the interpreter. It is the primary product path and therefore lands first.
 
-The second path is kernel evidence only. It has no non-exact field-load continuation, call, model, product facade or
-result projection, and it consumes no generated dump.
+The second path is kernel evidence only. W4.3 adds no ClrMD producer for structured partial/unavailable fields, call,
+model, product facade or result projection, and it consumes no generated dump.
 
 The active W1–W4 paths use generated, source-controlled fixtures directly. The worker described in section 4.5 is a
 separately landed, non-gating prototype outside those milestones and is not part of this active data flow.
@@ -240,8 +255,25 @@ explanation; exact `Int32` operands are embedded without spurious nodes. Canonic
 or unavailable inputs. Reachable-only graph capture and validated fresh-domain replay preserve versioned bytes,
 content-derived node IDs, graph root, and graph SHA-256.
 
-No non-exact `ldfld` continuation or `FieldLoadTransform` exists yet. Direct calls and their transforms, call models,
-the counterfactual facade/request/plan/result, and a generated-dump product result remain W4.3–W4.9 work.
+W4.3 exact implementation commit `7479b1ad4` extends the existing `ldfld` transfer. Canonical
+`FieldLoadEvidence` v1 retains one frozen-plan dependency ordinal, the complete ordinary-instance `Int32` field,
+partial/unavailable status and reason, source and imported-object SHA-256 identities, nonzero address, exact four-byte
+request, and defensively copied observed prefix. `MemoryLoadResult<TValue>.FromFieldEvidence` is its structured union
+producer. Approximation requires matching evidence, `UnknownExecutionPolicy.ExplainedInt32`, and an
+`IFieldLoadApproximationDomain<TValue>` implementation; exact loads remain exact, while code-only non-exact results,
+missing policy/capability, conflict, invalidity, or mismatched evidence cannot produce a value.
+
+A successful approximate load consumes the instruction, preserves memory, and emits `InstructionExecuted` followed
+by `ValuePrecisionLost` at the same method/offset with the evidence attached. `ProvenanceConcreteDomain` atomically
+creates an `ImportedField` `InputOrigin` whose source key is the evidence digest and a `FieldLoadTransform` containing
+the imported-receiver digest, complete frozen field, and origin predecessor. `FieldLoadTransform` is append-only kind
+3 under the existing schema; W4.2's hard-coded input/binary bytes and IDs remain unchanged. Capture is reachable-only,
+and replay validates canonical bytes, IDs, ordering, reachability, dependencies, and the field-origin relationship
+before mutating a destination domain.
+
+The ClrMD execution descriptor remains exact-only: W4.3 proves the injected memory/domain/machine boundary without a
+dump producer. Direct calls and their transforms, call models, the counterfactual facade/request/plan/result, and a
+generated-dump product result remain W4.4–W4.9 work.
 
 ## 5. Identity model
 
@@ -266,8 +298,11 @@ Identity and location are separate concepts:
 - a **bound dump-query plan** adds the grammar version, ordinal root/field names, snapshot-scoped owner and selected
   field identities, admitted decoder kind, and exact optional literal value;
 - a **provenance source key** is the complete SHA-256 of a bounded canonical request/evidence source projection;
-- a **lineage node** is the SHA-256 of versioned canonical `InputOrigin` or ordered `BinaryTransform` bytes, independent
-  of interning and traversal order;
+- a **field-load evidence identity** is the SHA-256 of canonical `FieldLoadEvidence` v1, including the frozen field,
+  evidence/source/imported-object axes, and read geometry but excluding display and process-local identity;
+- a **lineage node** is the SHA-256 of versioned canonical `InputOrigin`, ordered `BinaryTransform`, or
+  `FieldLoadTransform` bytes, independent of interning and traversal order; the field transform retains the imported
+  receiver digest, frozen field, and origin predecessor rather than a raw address or local reference number;
 - a **captured lineage graph** is the root plus exactly its reachable nodes in deterministic ID order, with its own
   canonical bytes and SHA-256 fingerprint;
 - file paths, display names, enumeration order, process-random string hashes, and allocation counters are not stable identities.
@@ -289,6 +324,10 @@ EvidenceResult<T> = {
 ```
 
 Specialized zero-allocation outcomes are appropriate for hot paths such as `Read(address, Span<byte>)`, but they preserve the same distinctions and report the exact byte count. Exceptions are reserved for caller contract violations or internal defects, not ordinary dump sparsity.
+
+The implemented W4.3 specialization is `MemoryLoadResult<TValue>.FromFieldEvidence`. Only a structured partial or
+unavailable ordinary-instance `Int32` result carries canonical `FieldLoadEvidence`; older code-only results remain
+valid non-continuing outcomes and cannot imply source, imported-object, or read-geometry facts they do not possess.
 
 ## 7. Execution state and determinism
 
@@ -341,11 +380,19 @@ The W4.2 dump-free proof independently freezes canonical bytes and hard-coded ID
 `BinaryTransform`, checks insertion-order-independent interning and reachable-only capture, then replays the graph in
 a fresh domain while preserving root and graph fingerprints. It does not claim dump-session or product-result replay.
 
+The W4.3 dump-free proof freezes canonical `FieldLoadEvidence`, `ImportedField` origin, `FieldLoadTransform`, and graph
+bytes/IDs; asserts the W4.2 golden identities remain unchanged; covers atomic equal-node interning and rejection; and
+prevalidates graph representation and field-origin relationships before fresh-domain replay. Fresh machines reproduce
+the approximate load, ordered events, lineage, and subsequent arithmetic. This still does not claim that ClrMD
+produces the evidence or that a dump-session/product result replays.
+
 ## 8. Status protocols
 
 Different layers use different, explicitly mapped vocabularies:
 
 - machine execution status: `Ready`, `Completed`, `BudgetExhausted`, `Blocked`, `InvalidProgram`, `TargetException`;
+- machine debug-event kind: successful W4.3 approximation emits `InstructionExecuted` followed by
+  `ValuePrecisionLost`; this event vocabulary is not a host pause reason or evidence status;
 - future virtual-session pause reason: `StepComplete`, `DecisionNeeded`, `ExceptionStop`, `BudgetStop`, `Cancelled`, `Completed`;
 - adapter traversal: evidence status plus a miss-reason code;
 - async/task lifecycle: diagnostic events, not stop reasons.
@@ -377,9 +424,10 @@ compilation-health evidence only. It is not cybersecurity behavioral evidence.
 The prototype retains only projects containing behavior or contracts exercised by the active slices:
 
 - `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body shapes, domain/memory
-  contracts, optional value-precision classification, exact-only-by-default unknown policy, and the interpreter kernel;
-- `Interpreter.Domain.Concrete` — concrete validation semantics and persistent memory plus W4.2's provenance-aware
-  value/domain and canonical lineage graph;
+  contracts, optional value-precision and field-approximation capabilities, canonical structured field evidence,
+  exact-only-by-default unknown policy, precision events, and the interpreter kernel;
+- `Interpreter.Domain.Concrete` — concrete validation semantics and persistent memory plus W4.2–W4.3's
+  provenance-aware value/domain and canonical input, binary, and field lineage graph;
 - `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts and active SRM adapter;
 - `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, and exact
   counted W3 method/field composition into a snapshot-scoped resolver/import descriptor without introducing ClrMD

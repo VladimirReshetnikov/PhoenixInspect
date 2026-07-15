@@ -7,9 +7,14 @@ hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-ch
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
-at that exact commit. W4.1 and W4.2 are now implemented; exact W4.2 commit `e89e43498` adds the dump-free
-provenance-aware `Int32` execution kernel. W4.3–W4.9 and fixpoint, async, dynamic, and virtual-debug state remain
-pending or gated research.
+at that exact commit. W4.1–W4.3 are now implemented. Exact W4.2 commit `e89e43498` adds the dump-free
+provenance-aware `Int32` arithmetic kernel; exact W4.3 commit `7479b1ad4` adds structured non-exact field continuation
+through that same machine. Its headless local evidence passed the strict fifteen-project Release build, focused W4.3
+55/55, complete unit 211/211, fast 71/71, ordinary dump 5/5, optimized-context dump 1/1, and both documentation guards
+with zero skips under `Scope!=Cybersecurity`. W4.3 realizes 3,096 LOC (1,100 production LOC plus 1,996 test LOC), bringing W4
+to 7,028 realized LOC and a 19,228–25,728 LOC projection while the original 16,860–25,310 baseline remains preserved
+in the normative ledger. W4.4–W4.9 and fixpoint, async, dynamic, and virtual-debug state remain pending or gated
+research.
 
 ## Scope
 
@@ -28,10 +33,12 @@ The focus here is on **formal-ish, implementation-guiding contracts**:
 4. how transfer functions communicate guarantees.
 
 The implemented W3 subset is normatively defined by the
-[Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md). W4.2 extends that machine only with an
-optional precision capability, an opt-in explained-`Int32` policy, and dump-free provenance-aware arithmetic. Broader
-shapes in this document are research generalizations, not claims that the current machine supports CFG joins,
-non-exact field loads, calls, writes, EH, or a counterfactual product surface.
+[Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md). W4.2 extends that machine with an
+optional precision capability, an opt-in explained-`Int32` policy, and dump-free provenance-aware arithmetic. W4.3
+adds a second optional capability for structured partial/unavailable ordinary-instance `Int32` field loads plus their
+precision event and canonical lineage. Broader shapes in this document are research generalizations, not claims that
+the current machine supports CFG joins, calls, writes, EH, a counterfactual product surface, or a dump adapter that
+produces W4.3 evidence.
 
 ---
 
@@ -315,12 +322,20 @@ ProductValue = {
 
 Join/widen are field-wise unless policy states correlated widening.
 
-#### Implemented W4.2 concrete realization
+#### Implemented W4.2–W4.3 concrete realization
 
 `IValuePrecisionDomain<TValue>` is an optional extension of `IValueDomain<TValue>` that classifies executable values
 as `Exact`, `ExplainedUnknown`, or `UnexplainedUnknown`. `UnknownExecutionPolicy.ExactOnly` is the default and preserves
 W3. `ExplainedInt32` opts into only structurally typed, domain-validated explained `Int32` values; bottom and bare top
 remain non-executable.
+
+`FieldLoadEvidence` v1 is the immutable canonical boundary for one partial or unavailable ordinary-instance `Int32`
+observation. It retains the frozen-plan dependency ordinal, complete field descriptor, evidence status and reason,
+source and imported-object SHA-256 identities, nonzero read address, exact four-byte request, and copied observed
+prefix. `MemoryLoadResult<TValue>.FromFieldEvidence` is the structured union producer. A load can continue only when
+that evidence matches the frozen field and result status, the policy is `ExplainedInt32`, and the domain also
+implements `IFieldLoadApproximationDomain<TValue>`. Exact loads retain their W3 behavior; code-only non-exact results,
+missing policy/capability, conflict, invalidity, or mismatched evidence cannot manufacture a value.
 
 `ProvenanceConcreteDomain` wraps the existing lifted-flat `ConcreteDomain`. `ProvenanceConcreteValue` keeps semantic
 value and optional explanation root separate: equality, hashing, order, join, meet, and widening inspect only the
@@ -328,11 +343,19 @@ semantic value. Thus all same-typed unknowns still denote one lattice top even w
 
 ### 3.3 Unknown payload and provenance
 
-At product boundaries, an executable unknown is not plain `Top`; it requires provenance. W4.2 realizes that rule with
-a separate canonical lineage DAG rather than the aspirational monolithic payload below. Its closed node set is
-`InputOrigin` plus ordered `BinaryTransform`. Node IDs are SHA-256 hashes of versioned canonical bytes; transforms
-embed exact `Int32` operands and reference explained-unknown predecessors. Reachable-only `CaptureLineage` and
-validated `ReplayLineage` preserve canonical node bytes, IDs, root, and graph fingerprint across domain instances.
+At product boundaries, an executable unknown is not plain `Top`; it requires provenance. W4.2–W4.3 realize that rule
+with a separate canonical lineage DAG rather than the aspirational monolithic payload below. Its closed node set is
+`InputOrigin`, ordered `BinaryTransform`, and `FieldLoadTransform`. A W4.3 imported field creates an `ImportedField`
+origin whose source key is the complete `FieldLoadEvidence` digest, followed by a field transform containing the
+imported-receiver digest, complete frozen field, and origin predecessor. The transform excludes process-local object
+numbers, display names, and raw addresses. `FieldLoadTransform` is append-only node kind 3 under the existing schema;
+the hard-coded W4.2 input/binary canonical bytes and IDs are unchanged.
+
+Node IDs are SHA-256 hashes of versioned canonical bytes; binary transforms embed exact `Int32` operands and reference
+explained-unknown predecessors. Field origin/transform interning preflights both nodes before mutating the domain.
+Reachable-only `CaptureLineage` and `ReplayLineage` prevalidation of canonical bytes, IDs, ordering, reachability,
+dependency shape, and field-origin relationships preserve the canonical node set, root, and graph fingerprint across
+domain instances without partially mutating a destination on rejection.
 
 The richer payload sketch remains a future product/controller vocabulary:
 
@@ -372,8 +395,10 @@ This enables precise host messaging without reverse-engineering trace logs.
 The implemented low-level transfer returns `StepOutcome<TValue,TMemory>` containing resulting semantic state,
 operational budget, `MachineRunStatus`, ordered events, and either a structured execution failure or target exception.
 Statuses are `Ready`, `Completed`, `BudgetExhausted`, `Blocked`, `InvalidProgram`, and `TargetException`. Admission,
-resolution, domain, and non-exact-memory inability preserve semantic state, memory, budget, and events. Capability
-exceptions other than out-of-memory and stack-overflow are normalized without copying provider exception text.
+resolution, domain, and non-continuing memory inability preserve semantic state, memory, budget, and events. W4.3's
+one successful exception to that inability rule is a validated structured partial/unavailable field result: the
+read-only instruction completes with an explained `Int32` unknown and unchanged memory. Capability exceptions other
+than out-of-memory and stack-overflow are normalized without copying provider exception text.
 
 The following `SessionTransition` is a future controller result layered over one or more low-level outcomes:
 
@@ -390,13 +415,14 @@ This is a future session-controller protocol layered over low-level `StepOutcome
 rename machine outcomes. The canonical mapping is in `architecture-overview-proposal.md`.
 
 Rules for the future controller and product layers follow. The W4.2 kernel reuses the existing argument/local load,
-local store, arithmetic, and return handlers and their instruction events rather than introducing a second transfer
-pipeline:
+local store, arithmetic, and return handlers and their instruction events; W4.3 extends the existing `ldfld` transfer
+rather than introducing a second pipeline:
 
 1. `call/callvirt/newobj` that are interpreted must push a frame as a discrete, observable event (callee body does not execute in the same micro-step).
-2. Any introduction of unknownness must emit both:
-   - an `ApproxEvent`, and
-   - a provenance-bearing `DomainValue`.
+2. W4.3 field precision loss emits `InstructionExecuted` first and then `ValuePrecisionLost` at the same method and IL
+   offset; the latter carries the exact `FieldLoadEvidence`, and the pushed value carries the corresponding
+   provenance root. Any later source of unknownness must define an equally truthful concrete event contract rather
+   than assuming an unimplemented generic `ApproxEvent`.
 3. `DecisionNeeded` is host-resumable via explicit branch choice or policy-specified join/fork behavior.
 4. Interpreter-internal invalidity still uses diagnostic failures, but should not be conflated with target-program exception flow (`ExceptionStop`).
 5. W3's typed-null `ldfld` is a terminal, non-resumable machine target exception; handler transfer and general
@@ -465,7 +491,7 @@ Versioning rules:
 
 ## 8) Implemented constraints and deferred capabilities
 
-Implemented through W4.2:
+Implemented through W4.3:
 
 - exact `Int32`, structural object references, typed null, and lifted-flat per-type top/bottom values,
 - a persistent memory snapshot contract with allocated defaults and exact imported-field absence,
@@ -475,15 +501,22 @@ Implemented through W4.2:
 - exact direct/constant-adjusted getter `ldfld` through a typed memory-result contract, and
 - terminal null-reference outcome, plus separate same/fresh-session replay of successful execution outcomes;
 - optional `IValuePrecisionDomain<TValue>` classification and exact-only-by-default execution policy;
-- explained `Int32` transport through existing argument/local/store/arithmetic/return handlers; and
-- canonical `InputOrigin`/`BinaryTransform` lineage identities with reachable capture and fresh-domain replay.
+- explained `Int32` transport through existing argument/local/store/arithmetic/return handlers;
+- canonical `InputOrigin`/`BinaryTransform` lineage identities with reachable capture and fresh-domain replay;
+- canonical `FieldLoadEvidence` v1 and its exclusive structured `MemoryLoadResult.FromFieldEvidence` union arm;
+- optional `IFieldLoadApproximationDomain<TValue>` continuation gated jointly by structured evidence,
+  `ExplainedInt32`, and domain capability;
+- successful partial/unavailable ordinary-instance `Int32` `ldfld` continuation with ordered
+  `InstructionExecuted`/`ValuePrecisionLost` events and unchanged memory; and
+- append-only `FieldLoadTransform` kind 3 plus `ImportedField` origins, atomic pair interning, and replay prevalidation
+  without changing W4.2 canonical identities.
 
-Deferred to W4.3–W4.9 or later research gates:
+Deferred to W4.4–W4.9 or later research gates:
 
 - hybrid nullness/constant/type/taint products,
-- non-exact `ldfld` continuation and `FieldLoadTransform`,
 - interpreted calls and call-transform lineage,
 - call models, counterfactual request/plan/result and facade, and generated-dump product closure,
+- a ClrMD producer for structured W4.3 field evidence,
 - coarse and summary heap abstractions,
 - full relational numeric domains,
 - high-precision alias analysis,
@@ -497,7 +530,7 @@ Deferred to W4.3–W4.9 or later research gates:
 1. How much of `EHState` is mandatory for first public virtual-stepping preview (`stop-on-throw` only vs handler transfer)?
 2. Which later domains need a separate narrowing operator beyond `Meet`?
 3. How aggressively should path-fact contradiction pruning run under `fast` policy presets?
-4. Should later call/model provenance extend W4.2's canonical acyclic DAG or introduce a separately versioned graph?
+4. Should later call/model provenance extend W4.3's canonical acyclic DAG or introduce a separately versioned graph?
 5. Should modeled calls always appear as model frames in history, or may policy collapse them into atomic events?
 
 ---
@@ -506,11 +539,12 @@ Deferred to W4.3–W4.9 or later research gates:
 
 W3 satisfies the concrete machine-state, persistent-memory, deterministic budget/event, and lattice-law portions of
 this proposal locally at hardened implementation checkpoint `19c292f9f`. W4.2 satisfies the dump-free
-provenance-bearing branchless-transfer portion at exact implementation commit `e89e43498`; it is not an end-to-end
-dump product. The broader research proposal is ready for sign-off when:
+provenance-bearing branchless-arithmetic portion at exact implementation commit `e89e43498`; W4.3 satisfies the
+dump-free structured non-exact field-transfer, precision-event, and lineage/replay portion at exact implementation
+commit `7479b1ad4`. Neither is an end-to-end dump product. The broader research proposal is ready for sign-off when:
 
 1. Core interfaces include explicit `MachineState`/`FrameState`, while any session controller keeps its transition and pause protocol distinct from the machine result.
-2. At least one product-level dump sample can emit and replay provenance-bearing unknowns; W4.2 proves only the
-   dump-free domain and machine seam.
+2. At least one product-level dump sample can emit and replay provenance-bearing unknowns; W4.2–W4.3 prove only the
+   dump-free domain, evidence, and machine seams, and the existing ClrMD execution descriptor remains exact-only.
 3. Merge/join behavior is validated on a curated CFG fixture set.
 4. Host API can surface session pause reason, machine status, debug events, and approximation diagnostics without conflating their vocabularies or leaking internal types.

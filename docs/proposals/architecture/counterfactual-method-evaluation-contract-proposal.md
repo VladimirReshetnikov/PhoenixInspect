@@ -5,7 +5,7 @@
 > **Roadmap relation:** Active · W4 normative contract
 >
 > **Implementation status:** W4.1 fixture gate implemented at `82363585b`; W4.2 unknown E1/E2 kernel implemented at
-> `e89e43498`; W4.3–W4.9 pending
+> `e89e43498`; W4.3 structured field-evidence continuation implemented at `7479b1ad4`; W4.4–W4.9 pending
 
 ## 1) Purpose and authority
 
@@ -20,12 +20,14 @@ Where this document conflicts with a supporting proposal, this document controls
 surface, and the W3 [Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md) remains the compatibility
 floor for structural identity, whole-body admission, memory isolation, instruction accounting, and replay.
 
-The contract is just ahead of code. W4.1's fixture/emitted-shape/CoreCLR/current-W3-boundary evidence and W4.2's
-unknown E1/E2 domain kernel are implemented. W4.2 realizes the semantic-value rules, the `InputOrigin` and
-`BinaryTransform` subset of lineage, policy-enabled explained-`Int32` execution over shared W3 handlers, and
-fresh-object lineage replay. Every later behavior remains a requirement, not an implementation claim, until the
-traceability map names passing executable evidence. API names shown here are provisional design names; public
-prototype APIs that land must carry detailed XML documentation.
+The contract is just ahead of code. W4.1's fixture/emitted-shape/CoreCLR/current-W3-boundary evidence, W4.2's unknown
+E1/E2 domain kernel, and W4.3's backend-neutral structured field-evidence continuation are implemented. W4.2 realizes
+the semantic-value rules, the `InputOrigin` and `BinaryTransform` subset of lineage, policy-enabled explained-`Int32`
+execution over shared W3 handlers, and fresh-object lineage replay. W4.3 adds immutable field evidence, an optional
+approximation capability, policy-gated partial/unavailable continuation, precision-loss events, and
+`FieldLoadTransform` lineage while retaining exact and terminal memory outcomes. W4.4 and every later behavior remain
+requirements, not implementation claims, until the traceability map names passing executable evidence. API names
+shown here are provisional design names; public prototype APIs that land must carry detailed XML documentation.
 
 ## 2) Product-value gate
 
@@ -314,8 +316,17 @@ foreign roots, wrong types, or capability failures perform no semantic transfer.
 deliberately limited to canonical `InputOrigin` and ordered `BinaryTransform` nodes. It embeds exact operands, interns
 equal canonical nodes, captures only the reachable immutable DAG in identity order, and replays identical bytes,
 roots, nodes, and graph SHA-256 in fresh domain and machine objects. Exact E2 `ldfld` remains exact through the second
-domain. Partial/unavailable field continuation, precision-loss events, and `FieldLoadTransform` remain W4.3; call and
-modeled-return lineage remain owned by their later slices.
+domain. At that checkpoint, partial/unavailable field continuation, precision-loss events, and `FieldLoadTransform`
+remained W4.3 work; call and modeled-return lineage remain owned by their later slices.
+
+W4.3 satisfies that next dump-free boundary at checkpoint `7479b1ad4`. Immutable backend-neutral
+`FieldLoadEvidence` and its structured `MemoryLoadResult` branch preserve the field, observation classification,
+reason, source, imported object/address, and bounded observed bytes without inventing a scalar. The optional
+`IFieldLoadApproximationDomain` capability may convert only policy-enabled partial or unavailable evidence into a typed
+unknown. Successful approximation emits `ValuePrecisionLost` and appends canonical `FieldLoadTransform` lineage;
+exact, conflict, invalid, and typed-null behavior remains compatible, while capability failure and budget exhaustion
+remain atomic. This checkpoint adds no ClrMD evidence producer, W4 product facade, dump-grounded counterfactual result,
+direct call, or modeled return.
 
 ## 7) Direct calls and transitive admission
 
@@ -579,6 +590,11 @@ or seed missing dump evidence.
 Operational usage, events, lineage, and provenance remain outside semantic-state equality while remaining mandatory in
 canonical product replay.
 
+Checkpoint `7479b1ad4` proves the dump-free W4.3 subset with same-object and fresh-object evidence, domain, and machine
+construction: structured field evidence, `FieldLoadTransform`, precision events, state, and canonical lineage replay
+remain identical. It does not prove product request/plan/result replay or the dump close/reopen/rebind obligation above;
+those remain owned by W4.8 and W4.9.
+
 The target-exception conformance case has a separate replay rule because it has no W4 product request or plan. Equal
 versioned machine fixture, exact typed-null activation, instruction limit, and projector version must reproduce the
 same terminal outcome, accounting, diagnostics, and byte-identical canonical target-outcome fragment/fingerprint.
@@ -625,6 +641,12 @@ W4 closure requires all of the following, headlessly and with `Scope!=Cybersecur
 12. the repository-wide locked restore, zero-warning Release build, Markdown/headless guards, non-cybersecurity fast,
     ordinary-dump, optimized-dump, and focused W4 lanes with zero skips at the exact pushed closure commit.
 
+Through W4.3, item 2, the dump-free field-boundary core of item 3, and the corresponding same/fresh-object subset of
+item 11 are implemented. Checkpoint `7479b1ad4` also passes the local locked-restore, strict-build, test-lane, and guard
+portion of item 12. Dump-sourced evidence in item 4, calls, models, product projection, dump reopen/rebind replay, and
+hosted exact-commit umbrella closure remain pending; no ClrMD producer, product result, dump-grounded W4 result, or W4
+umbrella closure is claimed.
+
 Concrete and differential coverage is required for every admitted opcode and call family. Degraded-evidence coverage is
 required for every transfer that can carry an unknown. Tests assert final outcome plus resolver/memory/model call counts,
 state preservation, budget deltas, events, lineage, and canonical replay—not only the displayed value.
@@ -639,28 +661,30 @@ and materially rewritten lines are counted once. These ranges describe implement
 |---|---|---:|---:|
 | W4.1 | Generated value-gate fixture, exact emitted-shape assertions, exact CoreCLR oracle, and one current-W3 rejection checkpoint | 350–480 | 478 |
 | W4.2 | Unknown E1/E2 domain kernel, content-addressed lineage, domain/transfer laws, and replay | 3,350–3,500 | 3,454 |
-| W4.3 | Non-exact dump-field import/continuation, evidence matrix, precision events, and dump-free adapter/machine tests | 2,400–3,500 | — |
+| W4.3 | Backend-neutral structured field evidence/continuation, evidence matrix, precision events, and dump-free domain/machine tests | 2,400–3,500 | 3,096 |
 | W4.4 | Direct MethodDef resolution, call signatures, acyclic graph construction/required-depth calculation, and frozen transitive admission | 1,700–2,600 | — |
 | W4.5 | Multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, and depth high-water reporting | 2,300–3,500 | — |
 | W4.6 | Structural pure model, typed outcomes, model/effect/fallback policy, and conformance tests | 2,300–3,400 | — |
 | W4.7 | Retained-null target-outcome contract, terminal projection, canonical fragment without request/plan identity, and dump-free differential/idempotence tests | 1,500–2,500 | — |
 | W4.8 | Canonical product request/plan/result/runner, configurable traversal charging, target-fragment result-projector integration, and product tests | 2,400–3,500 | — |
 | W4.9 | Generated-dump exact/degraded/model corpus, CoreCLR integration oracle, reopen/rebind replay, CI closure, and realized LOC ledger | 2,000–3,200 | — |
-| **Initial umbrella** | **Nine non-overlapping work slices** | **16,860–25,310** | **3,932 through W4.2** |
+| **Initial umbrella** | **Nine non-overlapping work slices** | **16,860–25,310** | **7,028 through W4.3** |
 
-Replacing W4.1 and W4.2 estimates with their realized values gives a current W4 total projection of
-**18,532–26,132 LOC**: 3,932 realized plus 14,600–22,200 estimated for W4.3–W4.9. The original
+Replacing W4.1, W4.2, and W4.3 estimates with their realized values gives a current W4 total projection of
+**19,228–25,728 LOC**: 7,028 realized plus 12,200–18,700 estimated for W4.4–W4.9. The original
 **16,860–25,310 LOC** baseline remains recorded above rather than being rewritten after implementation evidence. The
 W4.2 checkpoint contributes 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production plus 1,908
-focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. The remaining slice envelopes
-are unchanged pending their own design/code audits and implementation evidence.
+focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. W4.3 contributes 3,096
+realized implementation LOC: 1,100 production LOC plus 1,996 test LOC. The remaining W4.4–W4.9 slice envelopes are unchanged
+pending their own design/code audits and implementation evidence.
 
 Ownership boundaries are explicit. W4.1 freezes the fixture and current W3 rejection only. W4.2 owns the second
 domain, execution-boundary precision policy, and `InputOrigin`/`BinaryTransform` lineage only; it keeps exact E2 field
-loads compatible but does not continue from non-exact field evidence. W4.3 owns that dump-free adapter/machine
-continuation and `FieldLoadTransform`. W4.4 owns new call admission and graph construction under a fixed internal
-safety cap, W4.5 owns logical-depth policy/enforcement, and W4.8 owns configurable traversal charging and product
-projection. W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
+loads compatible but does not continue from non-exact field evidence. W4.3 implements the backend-neutral, dump-free
+structured field-evidence capability, continuation, precision event, and `FieldLoadTransform`; it does not implement a
+ClrMD evidence producer or dump-grounded result. W4.4 is next and owns new call admission and graph construction under
+a fixed internal safety cap, W4.5 owns logical-depth policy/enforcement, and W4.8 owns configurable traversal charging
+and product projection. W4.9 owns generated-dump and reopen/rebind integration. W4.7 owns the standalone
 target-outcome/canonical fragment; W4.8
 integrates it into the common result projector without inventing rooted-facade reachability, and W4.9 only aggregates
 the already-tested behavior into closure evidence. Realized LOC is attributed once.

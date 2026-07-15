@@ -7,9 +7,10 @@
 Current for active delivery. Research suites are collected separately in section 9.
 
 The W4 counterfactual-method contract is admitted and active. W4.1's checked-in fixture gate landed at pushed
-checkpoint `82363585b`, and W4.2's unknown-aware E1/E2 kernel landed at pushed checkpoint `e89e43498`. Neither creates
-a counterfactual product/dump result or CI-enforced umbrella gate. Section 8 separates those current checkpoints from
-later required capability.
+checkpoint `82363585b`, W4.2's unknown-aware E1/E2 kernel landed at pushed checkpoint `e89e43498`, and W4.3's
+backend-neutral structured field-evidence continuation is implemented at checkpoint `7479b1ad4`. All three checkpoints
+are dump-free W4 implementation evidence: none creates a counterfactual product/dump result or CI-enforced umbrella
+gate. W4.4 is next. Section 8 separates those current checkpoints from later required capability.
 
 ## 1) Evidence language
 
@@ -42,7 +43,8 @@ hidden/no-window process policy. A raw `dotnet test` command is not an approved 
 
 1. lifted-flat concrete-domain order, join, meet, widening, canonical unknowns, and redacted display;
 2. provenance-aware lifted-flat laws whose semantic equality/hash/order ignore explanation, plus versioned
-   content-addressed `InputOrigin` and ordered `BinaryTransform` lineage, interning, capture, and fresh-object replay;
+   content-addressed `InputOrigin`, ordered `BinaryTransform`, and structured `FieldLoadTransform` lineage, interning,
+   capture, and fresh-object replay;
 3. persistent allocated/imported object and array snapshot/fork isolation, deterministic allocation, bounded arrays,
    stable content hashes, allocated defaults, and unavailable absent imported fields;
 4. SRM-derived structural module/type/method/field identities plus atomic body/signature/local projection for static and
@@ -54,17 +56,19 @@ hidden/no-window process policy. A raw `dotnet test` command is not an approved 
 6. fail-closed behavior for unsupported signatures, fields, suffixes, EH, malformed/truncated IL, invalid
    slots/stack/type shape, injected offsets/state, nested frames, decorated or multiple-field getters, oversized
    bodies/`maxstack`, and exhausted budget before any forbidden transfer;
-7. exact/non-exact/exceptional memory-load behavior, one-load `ldfld`, truthful capability-failure origin, and an
-   idempotent terminal null-receiver outcome with exact budget and event assertions;
+7. immutable structured exact/non-exact/exceptional memory-load evidence; one-load `ldfld`; policy-gated partial and
+   unavailable continuation; truthful precision-loss events and atomic capability-failure normalization; and an
+   idempotent terminal null-receiver outcome with exact budget, state, and event assertions;
 8. byte-identical canonical outcomes for repeated normalized inputs and for fresh metadata/resolver/machine/memory
    reconstruction; and
 9. compiler-emitted arithmetic and getter methods invoked on CoreCLR and interpreted through the same value-domain and
    memory handlers, including unchecked overflow and null-receiver outcomes.
 
 The differential harness proves the two closed, branchless, EH-free W3 profiles only. W4.2 separately demonstrates
-that a second meaningful domain reuses those opcode handlers for exact and explained-unknown values. Neither is
-evidence for calls, branches, handlers, arbitrary signatures, inherited/static fields, or W4.3 non-exact field
-continuation.
+that a second meaningful domain reuses those opcode handlers for exact and explained-unknown values. W4.3 separately
+demonstrates structured partial/unavailable field continuation and `FieldLoadTransform` over those same closed
+handlers. None is evidence for calls, branches, handlers, arbitrary signatures, inherited/static fields, a ClrMD field
+evidence producer, or a dump-grounded W4 result.
 
 ### Real dump-memory proof
 
@@ -266,7 +270,7 @@ at the same exact pushed implementation commit. Exact documentation-closure comm
 separate hosted closure requirement. The implementation checkpoint realizes `+8,842/-1,650` hand-written LOC
 (`+5,362/-928` production and `+3,480/-722` tests) plus 39 generated lock-file lines.
 
-### Current local W4.2 implementation verification — 2026-07-14
+### Historical local W4.2 implementation verification — 2026-07-14
 
 Exact pushed checkpoint `e89e43498` passed the following local matrix. Every managed command ran through
 `./eng/Invoke-HeadlessProcess.ps1`; every test filter used `Scope!=Cybersecurity`; no test was skipped; and no UI was
@@ -284,10 +288,35 @@ displayed.
 
 The checkpoint accounts for 3,454 LOC: 3,429 attributable W4.2 implementation LOC (1,521 production plus 1,908
 tests) against its final refined 3,350–3,500 LOC estimate, plus 25 LOC that segregate a pre-existing resource-admission
-fact from milestone evidence. Together with W4.1, W4 has 3,932 realized checkpoint LOC through W4.2 and a current
-18,532–26,132 LOC projection across the seven remaining W4.3–W4.9 slices. Exact E2 field loads remain exact;
-partial/unavailable field continuation, `FieldLoadTransform`, and precision-loss events remain W4.3 work. No W4
+fact from milestone evidence. At that checkpoint, W4 had 3,932 realized LOC through W4.2 and projected
+18,532–26,132 LOC across the then-seven remaining W4.3–W4.9 slices. Exact E2 field loads remained exact;
+partial/unavailable field continuation, `FieldLoadTransform`, and precision-loss events remained W4.3 work. No W4
 product facade, dump-grounded counterfactual result, direct call, or hosted umbrella closure is claimed.
+
+### Current local W4.3 implementation verification — 2026-07-14
+
+Exact implementation checkpoint `7479b1ad4` passed the following local matrix. Every managed command ran through
+`./eng/Invoke-HeadlessProcess.ps1`; every test filter used `Scope!=Cybersecurity`; no test was skipped; and no UI was
+displayed.
+
+| Gate | Headless command shape | Result |
+|---|---|---|
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Focused W4.3 field-evidence kernel | the wrapped unit-project command filtered to `FieldLoadEvidenceTests`, `ProvenanceFieldLineageTests`, and `ProvenanceFieldTransferTests`, together with `Scope!=Cybersecurity` | Passed, 55/55. |
+| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --filter "Scope!=Cybersecurity"` | Passed, 211/211. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast&Scope!=Cybersecurity"` | Passed, 71/71. |
+| Ordinary real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 5/5. This is regression evidence only; W4.3 creates no dump-grounded result. |
+| Optimized real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity"` | Passed, 1/1. This is regression evidence only; W4.3 creates no dump-grounded result. |
+| Documentation/workflow guards | `./eng/verify-markdown-links.ps1` and `./eng/verify-headless-workflows.ps1` | Passed. |
+
+W4.3 realizes 3,096 implementation LOC: 1,100 production LOC plus 1,996 test LOC. W4 therefore has 7,028 realized checkpoint
+LOC through W4.3, with 12,200–18,700 LOC remaining across W4.4–W4.9 and a current total projection of
+19,228–25,728 LOC. The checkpoint implements immutable backend-neutral field evidence, a structured load-result
+branch, an optional approximation-domain capability, policy-gated partial/unavailable continuation,
+`ValuePrecisionLost`, and canonical `FieldLoadTransform` lineage. Exact, conflict, invalid, and typed-null behavior and
+atomic failure/budget behavior remain compatible. No ClrMD evidence producer, product facade, dump-grounded W4 result,
+direct call, or hosted umbrella closure is claimed. W4.4 is next.
 
 ## 3) Active test layers
 
@@ -508,11 +537,20 @@ lineage-independent semantic equality, versioned content-addressed `InputOrigin`
 or explained-unknown transport through the shared E1/E2 handlers. Focused W4.2 verification passed 53/53 (23 domain,
 14 lineage, 16 machine), alongside the 156/156 full unit, 71/71 fast, and 5/5 ordinary-dump regression lanes, strict
 15-project zero-warning build, and both guards. The 3,454-LOC checkpoint contains 3,429 W4.2 implementation LOC plus
-25 scope-segregation LOC; W4 totals 3,932 realized checkpoint LOC through W4.2 and projects to 18,532–26,132 LOC.
-Exact E2 field loads remain exact, and non-exact field continuation remains blocked for W4.3. This is a dump-free
+25 scope-segregation LOC; at that checkpoint W4 totaled 3,932 realized LOC and projected 18,532–26,132 LOC.
+Exact E2 field loads remained exact, and non-exact field continuation remained blocked for W4.3. This is a dump-free
 kernel/reuse result, not a W4 product or dump result.
 
-The seven remaining W4.3–W4.9 slices must satisfy all of the following before the umbrella is described as implemented
+W4.3 checkpoint `7479b1ad4` adds immutable backend-neutral field evidence, the optional approximation capability,
+policy-gated partial/unavailable continuation, `ValuePrecisionLost`, and canonical `FieldLoadTransform` behavior while
+preserving exact/conflict/invalid/typed-null and atomic failure/budget semantics. Its headless local matrix passed
+focused 55/55, complete unit 211/211, fast 71/71, ordinary-dump regression 5/5, optimized-dump regression 1/1, locked
+restore, a strict 15-project build with 0 warnings and 0 errors, and both guards, with `Scope!=Cybersecurity` and zero
+skips. The 3,096-LOC checkpoint contains 1,100 production LOC and 1,996 test LOC; W4 totals 7,028 realized LOC through W4.3
+and projects to 19,228–25,728 LOC. This is still dump-free evidence, not a ClrMD producer, product facade, dump-grounded
+W4 result, direct call, or hosted umbrella closure.
+
+The six remaining W4.4–W4.9 slices must satisfy all of the following before the umbrella is described as implemented
 or verified:
 
 1. The complete root and reachable helper bodies are admitted before instruction zero from counted dump body and

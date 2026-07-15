@@ -1,4 +1,4 @@
-> **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-only evaluator. The closed W3 concrete opcode/memory proof was hardened at implementation checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124`; [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs at that exact closure commit. CFG/fixpoint analysis, broad unknown propagation, and multi-mode reuse remain gated research. API sketches below are illustrative, not current contracts.
+> **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-only evaluator. The closed W3 concrete opcode/memory proof was hardened at implementation checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124`; [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs at that exact closure commit. W4.2 and W4.3 now prove a narrow dump-free explained-unknown path through the shared E1/E2 handlers at exact implementation checkpoints `e89e43498` and `7479b1ad4`. CFG/fixpoint analysis, broad unknown propagation, and abstract-analysis reuse remain gated research. API sketches below are illustrative, not current contracts.
 
 Below is a **low-level technical proposal** for a reusable **CIL (ECMA-335) interpreter framework** whose distinguishing hypothesis is that incomplete concrete state, provenance-bearing unknowns, and later abstract interpretation can share opcode semantics.
 
@@ -6,7 +6,10 @@ The implemented checkpoint is intentionally narrower than that hypothesis. Its n
 [Concrete IL Execution](concrete-il-execution-contract-proposal.md): structural method/type/field identities, atomic
 metadata-derived activation, frozen typed whole-body admission, concrete E1 arithmetic, and E2 direct or
 constant-adjusted `Int32` getter execution through an injected persistent-memory capability. Missing/non-exact memory
-evidence blocks without transfer; it does not yet become a composable unknown.
+evidence blocks without transfer under that W3/default contract. W4.3 adds one conservative dump-free overlay: a
+canonical structured partial/unavailable observation for the same frozen ordinary-instance `Int32` field may become
+an explained unknown only when the explicit policy and optional field-approximation domain capability are both
+present. The current ClrMD execution descriptor remains exact-only.
 
 This is written as if you were going to **build and maintain this as a core library**—usable for:
 
@@ -23,8 +26,9 @@ This is written as if you were going to **build and maintain this as a core libr
 
 ## 0. Executive intent (technical, not marketing)
 
-Build a library that can **execute IL in a virtual machine**. The first bullet is implemented in W3; the remaining
-bullets describe gated research modes:
+Build a library that can **execute IL in a virtual machine**. The first bullet is implemented in W3. W4.2/W4.3 now
+implement the branchless, dump-free explained-unknown subset of the second bullet; branching, fixpoint, and broader
+unknown-source behavior still describe gated research modes:
 
 * For some operations, produce a **concrete result** (e.g., `1 + 2 = 3`)
 * For operations that depend on unavailable state (socket, native call, missing heap value, reflection, etc.), produce an **abstract/unknown result** while still advancing control flow
@@ -42,16 +46,19 @@ A design goal: **the same instruction semantics** should serve all modes; only t
 
 ### G1: First-class “unknownness” with provenance
 
-In a later unknown-aware slice, if admitted IL reads missing state or crosses an explicitly modeled boundary, the
-engine may continue with a value that is:
+For the landed W4.2/W4.3 profile, admitted arithmetic and one exact-shape `ldfld` may continue from a validated
+explained unknown. Any later missing-state or modeled boundary may do so only after its own scenario-specific
+admission. Such a value is:
 
 * typed (at least as well as IL types allow)
 * composable through subsequent instructions
 * optionally constrained (range/nullness/type set)
 * traceable (“unknown because: Socket.Receive”, “unknown because: missing field data”, “unknown because: calli/unsafe”, etc.)
 
-W3 deliberately does stop before transfer on unsupported IL or non-exact evidence. It never treats an unsupported
-instruction as an unknown-producing operation.
+W3 deliberately stops before transfer on unsupported IL or non-exact evidence. W4.3 changes only canonical structured
+partial/unavailable evidence for the already admitted field shape; code-only outcomes, conflicts, invalidity, missing
+policy/capability, and every unsupported instruction still stop. Unsupported IL is never reinterpreted as an
+unknown-producing operation.
 
 ### G2: Pluggable abstract domains and memory models
 
@@ -755,8 +762,9 @@ evidence-bearing source projects. It does not create the speculative domain/mode
 The long-term design aims to avoid two classic failure modes:
 
 1. **“We can’t evaluate that, stop.”**
-   In a future unknown-aware admitted slice: return unknown, keep going, and annotate why. W3 intentionally blocks
-   without transfer on unsupported IL or non-exact evidence.
+   W4.2/W4.3 now return an explained unknown and continue for their closed arithmetic and structured-field shapes.
+   W3/default execution still blocks without transfer on unsupported IL or non-exact evidence, and broader
+   continuation requires a separately admitted contract.
 
 2. **“We built a concrete interpreter and now want static analysis.”**
    Instead: the semantics are domain-parametric from day one; abstract interpretation is a strategy, not a rewrite.

@@ -23,8 +23,9 @@ Core principles:
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
 - **Active delivery target:** a deterministic, read-only evaluator grounded in a .NET dump. W4 has an admitted
-  branchless counterfactual-method contract, a validated W4.1 value-gate fixture, and a validated W4.2
-  provenance-aware execution kernel; counterfactual product execution has not landed.
+  branchless counterfactual-method contract, a validated W4.1 value-gate fixture, a validated W4.2
+  provenance-aware execution kernel, and a validated W4.3 dump-free non-exact field seam; counterfactual product and
+  dump-grounded W4 execution have not landed.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. CoreCLR remains an outcome oracle, not an input to interpreter shape or dump evidence.
 - **Physical scope:** ten source projects contain active contracts or behavior; the two newest projects implement the narrow broker/runner boundary for one-shot external dump queries. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
@@ -52,16 +53,34 @@ admits policy-enabled, provenance-bearing unknown `Int32` arguments while reject
 and structurally incompatible values at executable boundaries. Semantic equality, hashing, order, join, meet, and
 widening ignore explanations; the separate immutable lineage DAG canonically records only W4.2's `InputOrigin` and
 ordered `BinaryTransform` nodes, embeds exact operands, and replays byte-for-byte in fresh domain and machine objects.
-Exact E2 `ldfld` remains executable through the second domain, while partial or unavailable field continuation and
-its `FieldLoadTransform` belong to W4.3. Headless verification passed the fifteen-project Release build with zero
+Exact E2 `ldfld` remains executable through the second domain; partial or unavailable field continuation and its
+`FieldLoadTransform` were intentionally left to W4.3. Headless verification passed the fifteen-project Release build with zero
 warnings/errors, focused W4.2 tests at 53/53, the full unit suite at 156/156, fast integration at 71/71, ordinary dump
 at 5/5, and both documentation guards, all with zero skips and `Scope!=Cybersecurity` on behavioral test commands.
 
-The W4.2 checkpoint records 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production plus 1,908
-focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. W4.1–W4.2 therefore realize
-3,932 LOC; replacing both estimates gives a current W4 projection of 18,532–26,132 LOC while preserving the original
-16,860–25,310 baseline. This remains kernel and fixture evidence, not counterfactual product execution. No W4
-non-exact dump-field continuation, direct-call execution path, product facade, generated-dump W4 result/corpus, or
+W4.3 implementation checkpoint `7479b1ad4` closes that dump-free field seam without adding a ClrMD adapter or product
+surface. Immutable, content-equal `FieldLoadEvidence` retains the exact field, partial/unavailable status, stable
+reason, complete source/imported-object identities, address, requested width, observed width, and copied byte prefix;
+`MemoryLoadResult.FromFieldEvidence` carries it without changing legacy code-only results. The shared `ldfld` handler
+continues only when `UnknownExecutionPolicy.ExplainedInt32`, structured evidence matching the frozen field, and the
+optional `IFieldLoadApproximationDomain<TValue>` capability all agree. Exact loads remain exact; code-only
+partial/unavailable results and missing policy/capability remain blocked, conflict remains blocked, and invalid or
+mismatched structured evidence remains invalid without consuming the failed instruction. A successful approximate
+load preserves memory, emits `InstructionExecuted` followed by `ValuePrecisionLost` at the `ldfld`, and creates
+canonical `InputOrigin` plus `FieldLoadTransform` lineage that replays byte-for-byte without changing W4.2 identities.
+
+Headless verification at the W4.3 checkpoint passed the strict fifteen-project Release build with zero warnings and
+errors, focused W4.3 tests at 55/55, the complete unit suite at 211/211, fast integration at 71/71, ordinary dump
+regression at 5/5, optimized dump regression at 1/1, and both Markdown/headless guards, with zero skips. Every test
+command was headless and used `Scope!=Cybersecurity`.
+
+The historical W4.2 checkpoint records 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production
+plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. Together with
+W4.1, that checkpoint had realized 3,932 LOC and projected 18,532–26,132 LOC. W4.3 realizes 3,096 LOC (1,100
+production LOC plus 1,996 test LOC), so W4.1–W4.3 cumulatively realize 7,028 LOC. The remaining W4.4–W4.9
+envelope is 12,200–18,700 LOC, giving a current projection of 19,228–25,728 LOC while preserving the original
+16,860–25,310 baseline. This remains fixture and dump-free kernel evidence, not counterfactual product execution. No
+W4 direct-call execution path, ClrMD non-exact-field adapter, product facade, generated-dump W4 result/corpus, or
 umbrella closure exists yet. Later slices must consume and report instruction and preparation-traversal units,
 prepare/enforce a maximum logical call depth, and report logical/frame depth high-water marks. Allocation remains
 unadmitted and its bound is therefore absent/not applied until a later allocation scenario. Closure requires the
