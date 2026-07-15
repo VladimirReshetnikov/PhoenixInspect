@@ -11,9 +11,10 @@ namespace Interpreter.Core.Abstractions;
 /// <param name="LocalSignatureToken">The StandAloneSig token for locals, or zero when no local signature exists.</param>
 /// <param name="ExceptionRegionCount">The number of exception-handling clauses carried by the method body.</param>
 /// <remarks>
-/// The slice does not yet decode local types or exception regions, but it must preserve their presence so admission
-/// can reject unsupported semantics before any prefix executes. A pre-seeded-locals fixture may opt into a nonzero
-/// local signature token explicitly; arbitrary production locals remain outside the admitted contract.
+/// Metadata projection decodes local types into the enclosing <see cref="ResolvedMethodDefinition"/> signature while
+/// this value retains the raw local-signature token needed to correlate that projection with physical body evidence.
+/// Exception-region clauses are not executed by the current profile; their count is preserved so admission rejects
+/// unsupported handler semantics before any prefix executes.
 /// </remarks>
 public sealed record MethodBody(
     int MaxStack,

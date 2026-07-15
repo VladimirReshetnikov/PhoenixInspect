@@ -72,7 +72,8 @@ internal static class Program
             message: "dump-memory-evidence:\uD83D\uDE80 exact rooted string");
         if (dumpProbe.GetMarker() != 0x13579BDF ||
             dumpProbe.GetAdjustedMarker() != unchecked(0x13579BDF + 1) ||
-            dumpProbe.GetDuplicatedMarker() != unchecked(0x13579BDF + 0x13579BDF))
+            dumpProbe.GetDuplicatedMarker() != unchecked(0x13579BDF + 0x13579BDF) ||
+            dumpProbe.GetMarkerSummary() != 0x26AF37BD)
         {
             return 75;
         }
@@ -137,4 +138,11 @@ internal sealed class DumpProbe
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal int GetDuplicatedMarker() => Marker + Marker;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal int GetMarkerSummary() => CombineMarkers(Marker, AlternateMarker);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CombineMarkers(int marker, int alternateMarker) =>
+        unchecked(marker + alternateMarker);
 }
