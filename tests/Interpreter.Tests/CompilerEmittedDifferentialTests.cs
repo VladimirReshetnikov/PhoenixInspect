@@ -8,6 +8,7 @@ using Interpreter.Core.Abstractions;
 using Interpreter.Core.Execution;
 using Interpreter.Domain.Concrete;
 using Interpreter.Metadata.SRM;
+using Interpreter.Product.DumpDebugging;
 using Xunit;
 
 namespace Interpreter.Tests;
@@ -162,6 +163,65 @@ public sealed class CompilerEmittedDifferentialTests
             item => item.Kind == DebugEventKind.InstructionExecuted && item.IlOffset == 1);
     }
 
+    /// <summary>
+    /// Checks that both compiler-emitted exact typed-null getter shapes project one canonical product outcome,
+    /// remain capability-free when their terminal latch is stepped again, and replay through fresh SRM objects.
+    /// </summary>
+    /// <param name="methodName">The direct or constant-adjusted instance getter MethodDef name.</param>
+    [Theory]
+    [InlineData(nameof(DifferentialGetterFixture.Read))]
+    [InlineData(nameof(DifferentialGetterFixture.ReadAdjusted))]
+    public void CompilerEmittedTypedNullOutcomeProjectsIdempotentlyAndReplaysFresh(string methodName)
+    {
+        using var firstModule = OpenFixtureModule();
+        var first = ProjectCompilerEmittedTypedNull(firstModule, methodName);
+
+        Assert.Equal(1, first.Capabilities.Resolver.MethodDefinitionCallCount);
+        Assert.Equal(1, first.Capabilities.Resolver.FieldCallCount);
+        Assert.True(first.Capabilities.Domain.CallCount > 0);
+        Assert.Equal(1, first.Capabilities.Memory.LoadFieldCallCount);
+        var firstTerminalOutcome = first.Execution.Transitions[^1];
+        Assert.Equal(MachineRunStatus.TargetException, firstTerminalOutcome.Status);
+        Assert.Equal(TargetExceptionKind.NullReference, first.Fragment.TargetException.Kind);
+        Assert.Equal(firstTerminalOutcome.TargetException, first.Fragment.TargetException);
+        Assert.Equal(2, first.Fragment.UsedInstructionUnits);
+
+        var capabilityCounts = first.Capabilities.GetCounts();
+        first.Capabilities.Poison();
+        var repeatedOutcome = first.Machine.StepOne(
+            firstTerminalOutcome.State,
+            firstTerminalOutcome.OperationalState);
+
+        Assert.Equal(MachineRunStatus.TargetException, repeatedOutcome.Status);
+        Assert.Null(repeatedOutcome.Failure);
+        Assert.Same(firstTerminalOutcome.State, repeatedOutcome.State);
+        Assert.Same(firstTerminalOutcome.OperationalState, repeatedOutcome.OperationalState);
+        Assert.Empty(repeatedOutcome.Events);
+        Assert.Equal(capabilityCounts, first.Capabilities.GetCounts());
+        Assert.Equal(1, first.Capabilities.Memory.LoadFieldCallCount);
+
+        var repeatedProjection = CounterfactualTargetOutcomeProjector.Project(
+            first.Machine,
+            first.Execution.InitialState,
+            first.Execution.InitialOperationalState,
+            first.Execution.Transitions.Add(repeatedOutcome));
+        Assert.True(repeatedProjection.IsSuccess, repeatedProjection.Failure?.Code);
+        AssertFragmentEqual(first.Fragment, repeatedProjection.Fragment!);
+
+        using var freshModule = OpenFixtureModule();
+        var fresh = ProjectCompilerEmittedTypedNull(freshModule, methodName);
+
+        Assert.Equal(1, fresh.Capabilities.Resolver.MethodDefinitionCallCount);
+        Assert.Equal(1, fresh.Capabilities.Resolver.FieldCallCount);
+        Assert.Equal(1, fresh.Capabilities.Memory.LoadFieldCallCount);
+        Assert.NotSame(firstModule, freshModule);
+        Assert.NotSame(first.Machine, fresh.Machine);
+        Assert.NotSame(first.Capabilities.Domain, fresh.Capabilities.Domain);
+        Assert.NotSame(first.Capabilities.Resolver, fresh.Capabilities.Resolver);
+        Assert.NotSame(first.Capabilities.Memory, fresh.Capabilities.Memory);
+        AssertFragmentEqual(first.Fragment, fresh.Fragment);
+    }
+
     /// <summary>Checks the optimized compiler emits and execution admits the short fifth-argument encoding.</summary>
     [Fact]
     public void CompilerEmitsShortArgumentEncodingForFifthParameter()
@@ -244,6 +304,84 @@ public sealed class CompilerEmittedDifferentialTests
         }
 
         throw new InvalidOperationException("Fixture method did not stop within the deterministic step bound.");
+    }
+
+    private static ProjectedNullRun ProjectCompilerEmittedTypedNull(
+        SrmMetadataModule module,
+        string methodName)
+    {
+        var method = ResolveFixtureMethod(module, nameof(DifferentialGetterFixture), methodName);
+        var definition = module.GetMethodDefinition(method);
+        Assert.True(definition.IsSuccess, definition.Failure?.Code);
+
+        var innerDomain = new ConcreteDomain();
+        var capabilities = new PoisonableCapabilities(
+            innerDomain,
+            new MetadataResolutionServices(module));
+        var machine = new IlMachine<ConcreteValue, ConcreteMemory>(
+            capabilities.Domain,
+            capabilities.Resolver,
+            capabilities.Memory,
+            new InstructionBudgetPolicy());
+        var receiver = innerDomain.ConstNull(definition.Value.Signature.DeclaringType);
+        var execution = RunToTargetException(machine, method, receiver);
+        var projection = CounterfactualTargetOutcomeProjector.Project(
+            machine,
+            execution.InitialState,
+            execution.InitialOperationalState,
+            execution.Transitions);
+
+        Assert.True(projection.IsSuccess, projection.Failure?.Code);
+        Assert.NotNull(projection.Fragment);
+        return new ProjectedNullRun(machine, capabilities, execution, projection.Fragment!);
+    }
+
+    private static CertifiedExecution RunToTargetException(
+        IlMachine<ConcreteValue, ConcreteMemory> machine,
+        MethodHandle method,
+        ConcreteValue receiver)
+    {
+        var activation = machine.ActivateRoot(
+            method,
+            ImmutableArray.Create(receiver),
+            ConcreteMemory.Empty);
+        Assert.True(activation.IsSuccess, activation.Failure?.Code);
+
+        var state = activation.State!;
+        var operations = new MachineOperationalState(new BudgetState(InitialInstructionUnits));
+        var initialState = state;
+        var initialOperations = operations;
+        var transitions = ImmutableArray.CreateBuilder<StepOutcome<ConcreteValue, ConcreteMemory>>();
+        for (var step = 0; step < InitialInstructionUnits; step++)
+        {
+            var outcome = machine.StepOne(state, operations);
+            transitions.Add(outcome);
+            if (outcome.Status == MachineRunStatus.TargetException)
+            {
+                return new CertifiedExecution(
+                    initialState,
+                    initialOperations,
+                    transitions.ToImmutable());
+            }
+
+            Assert.Equal(MachineRunStatus.Ready, outcome.Status);
+            Assert.Null(outcome.Failure);
+            state = outcome.State;
+            operations = outcome.OperationalState;
+        }
+
+        throw new InvalidOperationException("Fixture getter did not reach its target exception within the step bound.");
+    }
+
+    private static void AssertFragmentEqual(
+        CounterfactualTargetOutcomeFragment expected,
+        CounterfactualTargetOutcomeFragment actual)
+    {
+        Assert.Equal(expected, actual);
+        Assert.True(expected == actual);
+        Assert.Equal(expected.GetHashCode(), actual.GetHashCode());
+        Assert.Equal(expected.Sha256, actual.Sha256);
+        Assert.Equal(expected.CanonicalBytes.ToArray(), actual.CanonicalBytes.ToArray());
     }
 
     private static IlMachine<ConcreteValue, ConcreteMemory> CreateMachine(
@@ -393,7 +531,222 @@ public sealed class CompilerEmittedDifferentialTests
         internal int ReadAdjusted() => value + 1;
     }
 
+    private sealed class PoisonableCapabilities
+    {
+        internal PoisonableCapabilities(ConcreteDomain domain, IResolutionServices resolver)
+        {
+            Domain = new PoisonableDomain(domain);
+            Resolver = new PoisonableResolver(resolver);
+            Memory = new PoisonableMemoryModel(new ConcreteMemoryModel(domain));
+        }
+
+        internal PoisonableDomain Domain { get; }
+
+        internal PoisonableResolver Resolver { get; }
+
+        internal PoisonableMemoryModel Memory { get; }
+
+        internal CapabilityCounts GetCounts() => new(
+            Domain.CallCount,
+            Resolver.MethodDefinitionCallCount,
+            Resolver.MethodCallCount,
+            Resolver.FieldCallCount,
+            Memory.TotalCallCount);
+
+        internal void Poison()
+        {
+            Domain.IsPoisoned = true;
+            Resolver.IsPoisoned = true;
+            Memory.IsPoisoned = true;
+        }
+    }
+
+    private sealed class PoisonableDomain(ConcreteDomain inner) : IValueDomain<ConcreteValue>
+    {
+        internal int CallCount { get; private set; }
+
+        internal bool IsPoisoned { get; set; }
+
+        public ConcreteValue Bottom(TypeSig type) => Invoke(() => inner.Bottom(type));
+
+        public bool IsBottom(ConcreteValue value) => Invoke(() => inner.IsBottom(value));
+
+        public ConcreteValue Top(TypeSig type) => Invoke(() => inner.Top(type));
+
+        public ConcreteValue DefaultValue(TypeSig type) => Invoke(() => inner.DefaultValue(type));
+
+        public ConcreteValue ConstInt32(int value) => Invoke(() => inner.ConstInt32(value));
+
+        public ConcreteValue Join(ConcreteValue a, ConcreteValue b) => Invoke(() => inner.Join(a, b));
+
+        public bool IsLessThanOrEqual(ConcreteValue a, ConcreteValue b) =>
+            Invoke(() => inner.IsLessThanOrEqual(a, b));
+
+        public ConcreteValue Meet(ConcreteValue a, ConcreteValue b) => Invoke(() => inner.Meet(a, b));
+
+        public ConcreteValue Widen(ConcreteValue prev, ConcreteValue next) =>
+            Invoke(() => inner.Widen(prev, next));
+
+        public TypeSig GetStaticType(ConcreteValue value) => Invoke(() => inner.GetStaticType(value));
+
+        public StackKind GetStackKind(ConcreteValue value) => Invoke(() => inner.GetStackKind(value));
+
+        public bool TryGetConstInt32(ConcreteValue value, out int c)
+        {
+            Demand();
+            return inner.TryGetConstInt32(value, out c);
+        }
+
+        public ConcreteValue ApplyBinary(BinaryOp op, ConcreteValue a, ConcreteValue b) =>
+            Invoke(() => inner.ApplyBinary(op, a, b));
+
+        private T Invoke<T>(Func<T> action)
+        {
+            Demand();
+            return action();
+        }
+
+        private void Demand()
+        {
+            Assert.False(IsPoisoned, "A terminal-latch re-step consulted the value domain.");
+            CallCount++;
+        }
+    }
+
+    private sealed class PoisonableResolver(IResolutionServices inner) : IResolutionServices
+    {
+        internal int MethodDefinitionCallCount { get; private set; }
+
+        internal int MethodCallCount { get; private set; }
+
+        internal int FieldCallCount { get; private set; }
+
+        internal bool IsPoisoned { get; set; }
+
+        public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method)
+        {
+            Demand();
+            MethodDefinitionCallCount++;
+            return inner.GetMethodDefinition(method);
+        }
+
+        public ResolutionResult<ResolvedMethodCallTarget> ResolveMethod(
+            MethodHandle contextMethod,
+            int metadataToken)
+        {
+            Demand();
+            MethodCallCount++;
+            return inner.ResolveMethod(contextMethod, metadataToken);
+        }
+
+        public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken)
+        {
+            Demand();
+            FieldCallCount++;
+            return inner.ResolveField(contextMethod, metadataToken);
+        }
+
+        private void Demand() =>
+            Assert.False(IsPoisoned, "A terminal-latch re-step consulted metadata resolution.");
+    }
+
+    private sealed class PoisonableMemoryModel(ConcreteMemoryModel inner) :
+        IMemoryModel<ConcreteValue, ConcreteMemory>
+    {
+        internal int TotalCallCount { get; private set; }
+
+        internal int LoadFieldCallCount { get; private set; }
+
+        internal bool IsPoisoned { get; set; }
+
+        public bool CanAllocate
+        {
+            get
+            {
+                Demand();
+                return inner.CanAllocate;
+            }
+        }
+
+        public (ConcreteValue objRef, ConcreteMemory mem) NewObject(ConcreteMemory mem, TypeSig type)
+        {
+            Demand();
+            return inner.NewObject(mem, type);
+        }
+
+        public (ConcreteValue arrRef, ConcreteMemory mem) NewArray(
+            ConcreteMemory mem,
+            TypeSig elemType,
+            ConcreteValue length)
+        {
+            Demand();
+            return inner.NewArray(mem, elemType, length);
+        }
+
+        public MemoryLoadResult<ConcreteValue> LoadField(
+            ConcreteMemory mem,
+            ConcreteValue objRef,
+            ResolvedField field)
+        {
+            Demand();
+            LoadFieldCallCount++;
+            return inner.LoadField(mem, objRef, field);
+        }
+
+        public ConcreteMemory StoreField(
+            ConcreteMemory mem,
+            ConcreteValue objRef,
+            ResolvedField field,
+            ConcreteValue value)
+        {
+            Demand();
+            return inner.StoreField(mem, objRef, field, value);
+        }
+
+        public ConcreteValue LoadElement(ConcreteMemory mem, ConcreteValue arrRef, ConcreteValue index)
+        {
+            Demand();
+            return inner.LoadElement(mem, arrRef, index);
+        }
+
+        public ConcreteMemory StoreElement(
+            ConcreteMemory mem,
+            ConcreteValue arrRef,
+            ConcreteValue index,
+            ConcreteValue value)
+        {
+            Demand();
+            return inner.StoreElement(mem, arrRef, index, value);
+        }
+
+        private void Demand()
+        {
+            Assert.False(IsPoisoned, "A terminal-latch re-step consulted the memory model.");
+            TotalCallCount++;
+        }
+    }
+
     private sealed record DifferentialRun(
         StepOutcome<ConcreteValue, ConcreteMemory> Outcome,
         ImmutableArray<DebugEvent> Events);
+
+    private sealed record ProjectedNullRun(
+        IlMachine<ConcreteValue, ConcreteMemory> Machine,
+        PoisonableCapabilities Capabilities,
+        CertifiedExecution Execution,
+        CounterfactualTargetOutcomeFragment Fragment);
+
+    private sealed record CertifiedExecution(
+        MachineState<ConcreteValue, ConcreteMemory> InitialState,
+        MachineOperationalState InitialOperationalState,
+        ImmutableArray<StepOutcome<ConcreteValue, ConcreteMemory>> Transitions);
+
+    private sealed record CapabilityCounts(
+        int Domain,
+        int MethodDefinitions,
+        int Methods,
+        int Fields,
+        int Memory);
+
+    private const int InitialInstructionUnits = 100;
 }
