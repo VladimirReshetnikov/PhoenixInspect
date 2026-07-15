@@ -10,7 +10,8 @@ using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 namespace Interpreter.Host.Dump.ClrMD;
 
 /// <summary>
-/// Projects one exactly counted dump metadata image and method body into immutable execution descriptors.
+/// Projects one exactly counted dump metadata image and a bounded method-body graph into immutable execution
+/// descriptors.
 /// </summary>
 /// <remarks>
 /// This resolver never opens a target-reported path or substitutes bytes from a local PE. The complete metadata
@@ -20,8 +21,14 @@ namespace Interpreter.Host.Dump.ClrMD;
 /// </remarks>
 public sealed class ClrmdDumpExecutionResolver : IResolutionServices
 {
+    /// <summary>Gets the maximum number of exact interpreted MethodDefs retained by one resolver.</summary>
+    public const int MaximumInterpretedMethodCount = 64;
+
     private readonly ImmutableArray<byte> metadataImage;
-    private readonly ResolvedMethodDefinition methodDefinition;
+    private readonly ImmutableSortedDictionary<MethodHandle, ResolvedMethodDefinition> methodDefinitions;
+    private readonly ImmutableArray<MethodHandle> interpretedMethods;
+    private readonly ResolvedMethodDefinition rootMethodDefinition;
+    private readonly int metadataMethodDefinitionCount;
     private readonly ImmutableArray<int> fieldOperandTokens;
     private readonly bool fieldOperandScanComplete;
 
@@ -30,7 +37,9 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
         ModuleContentIdentity contentIdentity,
         ModuleHandle moduleHandle,
         ImmutableArray<byte> metadataImage,
-        ResolvedMethodDefinition methodDefinition,
+        ImmutableSortedDictionary<MethodHandle, ResolvedMethodDefinition> methodDefinitions,
+        ResolvedMethodDefinition rootMethodDefinition,
+        int metadataMethodDefinitionCount,
         ImmutableArray<int> fieldOperandTokens,
         bool fieldOperandScanComplete)
     {
@@ -38,7 +47,10 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
         ContentIdentity = contentIdentity;
         ModuleHandle = moduleHandle;
         this.metadataImage = metadataImage;
-        this.methodDefinition = methodDefinition;
+        this.methodDefinitions = methodDefinitions;
+        interpretedMethods = methodDefinitions.Keys.ToImmutableArray();
+        this.rootMethodDefinition = rootMethodDefinition;
+        this.metadataMethodDefinitionCount = metadataMethodDefinitionCount;
         this.fieldOperandTokens = fieldOperandTokens;
         this.fieldOperandScanComplete = fieldOperandScanComplete;
     }
@@ -54,11 +66,29 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
     /// </summary>
     public ModuleHandle ModuleHandle { get; }
 
-    /// <summary>Gets the sole exact MethodDef identity admitted by this resolver instance.</summary>
-    public MethodHandle Method => methodDefinition.Method;
+    /// <summary>Gets the exact root MethodDef identity admitted by this resolver instance.</summary>
+    public MethodHandle RootMethod => rootMethodDefinition.Method;
 
-    /// <summary>Gets the immutable counted-body and metadata-signature projection returned for <see cref="Method"/>.</summary>
-    public ResolvedMethodDefinition MethodDefinition => methodDefinition;
+    /// <summary>Gets the immutable counted-body and metadata-signature projection for <see cref="RootMethod"/>.</summary>
+    public ResolvedMethodDefinition RootMethodDefinition => rootMethodDefinition;
+
+    /// <summary>
+    /// Gets every exact interpreted MethodDef retained by the resolver in canonical module/token order.
+    /// </summary>
+    /// <remarks>
+    /// The returned immutable value contains the root and every additional body admitted atomically by
+    /// <see cref="CreateMethodGraph"/>. A body-free pure-model target is deliberately absent.
+    /// </remarks>
+    public ImmutableArray<MethodHandle> InterpretedMethods => interpretedMethods;
+
+    /// <summary>Gets the exact root MethodDef identity retained for compatibility with the W3 single-body API.</summary>
+    public MethodHandle Method => RootMethod;
+
+    /// <summary>
+    /// Gets the immutable root body and metadata-signature projection retained for compatibility with the W3
+    /// single-body API.
+    /// </summary>
+    public ResolvedMethodDefinition MethodDefinition => RootMethodDefinition;
 
     /// <summary>
     /// Creates a dump-grounded resolver only when separately counted metadata-identity and method-body operations
@@ -87,6 +117,63 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
         ArgumentNullException.ThrowIfNull(metadataIdentity);
         ArgumentNullException.ThrowIfNull(methodBody);
 
+        return CreateMethodGraph(
+            module,
+            metadataIdentity,
+            methodBody,
+            ImmutableArray<ClrmdEvidenceResult<ClrmdMethodBodyInfo>>.Empty);
+    }
+
+    /// <summary>
+    /// Creates one atomic dump-grounded interpreted-method graph from a complete counted metadata image and a
+    /// bounded set of independently counted physical method bodies.
+    /// </summary>
+    /// <param name="module">The selected runtime module instance.</param>
+    /// <param name="metadataIdentity">
+    /// The exact result of <c>ClrmdDumpSession.ReadModuleContentIdentity(module)</c>, including its sole complete
+    /// metadata-root read.
+    /// </param>
+    /// <param name="rootMethodBody">
+    /// The exact counted root body. Its first evidence item must independently reproduce the same metadata-root read.
+    /// </param>
+    /// <param name="additionalInterpretedMethodBodies">
+    /// An initialized bounded vector of additional exact bodies needed for interpretation. Order is not identity;
+    /// successful resolvers canonicalize every retained MethodDef by module and token.
+    /// </param>
+    /// <returns>
+    /// An immutable resolver containing the complete body set on success; otherwise a structured failure and no
+    /// partially usable graph. A modeled target whose body must remain unread is omitted from the additional vector.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="module"/>, <paramref name="metadataIdentity"/>, or <paramref name="rootMethodBody"/> is
+    /// <see langword="null"/>.
+    /// </exception>
+    public static ResolutionResult<ClrmdDumpExecutionResolver> CreateMethodGraph(
+        ClrmdModuleInfo module,
+        ClrmdEvidenceResult<ModuleContentIdentity> metadataIdentity,
+        ClrmdEvidenceResult<ClrmdMethodBodyInfo> rootMethodBody,
+        ImmutableArray<ClrmdEvidenceResult<ClrmdMethodBodyInfo>> additionalInterpretedMethodBodies)
+    {
+        ArgumentNullException.ThrowIfNull(module);
+        ArgumentNullException.ThrowIfNull(metadataIdentity);
+        ArgumentNullException.ThrowIfNull(rootMethodBody);
+
+        if (additionalInterpretedMethodBodies.IsDefault)
+        {
+            return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_METHOD_GRAPH_UNINITIALIZED",
+                "The additional interpreted-method body vector must be initialized, even when empty.");
+        }
+
+        if (additionalInterpretedMethodBodies.Length >= MaximumInterpretedMethodCount)
+        {
+            return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_METHOD_GRAPH_LIMIT",
+                $"A dump execution resolver retains at most {MaximumInterpretedMethodCount} interpreted methods.");
+        }
+
         if (metadataIdentity.Status != ClrmdEvidenceStatus.Exact || metadataIdentity.Value is null)
         {
             return EvidenceFailure<ClrmdDumpExecutionResolver>(
@@ -95,10 +182,10 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
                 "Execution projection requires one complete exact dump metadata image.");
         }
 
-        if (methodBody.Status != ClrmdEvidenceStatus.Exact || methodBody.Value is null)
+        if (rootMethodBody.Status != ClrmdEvidenceStatus.Exact || rootMethodBody.Value is null)
         {
             return EvidenceFailure<ClrmdDumpExecutionResolver>(
-                methodBody.Status,
+                rootMethodBody.Status,
                 "DUMP_EXEC_METHOD_NOT_EXACT",
                 "Execution projection requires a completely counted exact dump method body.");
         }
@@ -109,13 +196,40 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
             return Failed<ClrmdDumpExecutionResolver>(metadataFailure);
         }
 
-        var countedBodyValidation = ValidateCountedMethodEvidence(
-            module,
-            metadataIdentity.Evidence[0],
-            methodBody);
-        if (countedBodyValidation is { } bodyFailure)
+        var methodBodies = ImmutableArray.CreateBuilder<ClrmdEvidenceResult<ClrmdMethodBodyInfo>>(
+            additionalInterpretedMethodBodies.Length + 1);
+        methodBodies.Add(rootMethodBody);
+        foreach (var additionalBody in additionalInterpretedMethodBodies)
         {
-            return Failed<ClrmdDumpExecutionResolver>(bodyFailure);
+            if (additionalBody is null)
+            {
+                return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
+                    ResolutionFailureKind.Invalid,
+                    "DUMP_EXEC_METHOD_GRAPH_BODY_MISSING",
+                    "The additional interpreted-method body vector cannot contain null entries.");
+            }
+
+            if (additionalBody.Status != ClrmdEvidenceStatus.Exact || additionalBody.Value is null)
+            {
+                return EvidenceFailure<ClrmdDumpExecutionResolver>(
+                    additionalBody.Status,
+                    "DUMP_EXEC_METHOD_NOT_EXACT",
+                    "Execution projection requires every interpreted method body to be completely counted and exact.");
+            }
+
+            methodBodies.Add(additionalBody);
+        }
+
+        foreach (var methodBody in methodBodies)
+        {
+            var countedBodyValidation = ValidateCountedMethodEvidence(
+                module,
+                metadataIdentity.Evidence[0],
+                methodBody);
+            if (countedBodyValidation is { } bodyFailure)
+            {
+                return Failed<ClrmdDumpExecutionResolver>(bodyFailure);
+            }
         }
 
         try
@@ -134,54 +248,78 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
                     identityMatch.Failure.Message);
             }
 
-            var bodyInfo = methodBody.Value;
-            var rowId = bodyInfo.MetadataToken & 0x00FF_FFFF;
-            if (!MethodHandle.IsValidMetadataToken(bodyInfo.MetadataToken) ||
-                rowId > reader.MethodDefinitions.Count)
-            {
-                return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
-                    ResolutionFailureKind.Invalid,
-                    "DUMP_EXEC_METHOD_TOKEN_INVALID",
-                    "The counted method token does not identify a MethodDef in the counted metadata image.");
-            }
-
-            var metadataMethod = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(rowId));
-            if (metadataMethod.RelativeVirtualAddress != bodyInfo.RelativeVirtualAddress)
-            {
-                return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
-                    ResolutionFailureKind.Conflict,
-                    "DUMP_EXEC_METHOD_RVA_CONFLICT",
-                    "The counted method body and metadata image disagree on the MethodDef RVA.");
-            }
-
-            var physicalReplayFailure = ValidatePhysicalMethodReplay(
-                module,
-                methodBody,
-                reader.GetTableRowCount(TableIndex.StandAloneSig));
-            if (physicalReplayFailure is { } replayFailure)
-            {
-                return Failed<ClrmdDumpExecutionResolver>(replayFailure);
-            }
-
             var moduleHandle = ModuleHandle.FromRuntimeEvidenceIdentity(
                 recomputedIdentity,
                 module.Identity.SourceId);
-            var methodHandle = new MethodHandle(moduleHandle, bodyInfo.MetadataToken);
-            var projection = SrmMetadataProjection.ProjectMethodDefinition(
-                reader,
-                moduleHandle,
-                methodHandle,
-                bodyInfo.Body);
-            if (!projection.IsSuccess)
+            var definitions = ImmutableSortedDictionary.CreateBuilder<MethodHandle, ResolvedMethodDefinition>(
+                MethodHandleComparer.Instance);
+            ResolvedMethodDefinition? rootDefinition = null;
+            var standaloneSignatureRowCount = reader.GetTableRowCount(TableIndex.StandAloneSig);
+
+            for (var index = 0; index < methodBodies.Count; index++)
             {
-                return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
-                    projection.Failure!.Kind,
-                    projection.Failure.Code,
-                    projection.Failure.Message);
+                var methodBody = methodBodies[index];
+                var bodyInfo = methodBody.Value!;
+                var rowId = bodyInfo.MetadataToken & 0x00FF_FFFF;
+                if (!MethodHandle.IsValidMetadataToken(bodyInfo.MetadataToken) ||
+                    rowId > reader.MethodDefinitions.Count)
+                {
+                    return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
+                        ResolutionFailureKind.Invalid,
+                        "DUMP_EXEC_METHOD_TOKEN_INVALID",
+                        "A counted method token does not identify a MethodDef in the counted metadata image.");
+                }
+
+                var methodHandle = new MethodHandle(moduleHandle, bodyInfo.MetadataToken);
+                if (definitions.ContainsKey(methodHandle))
+                {
+                    return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
+                        ResolutionFailureKind.Conflict,
+                        "DUMP_EXEC_METHOD_GRAPH_DUPLICATE",
+                        "The counted method graph contains the same MethodDef body more than once.");
+                }
+
+                var metadataMethod = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(rowId));
+                if (metadataMethod.RelativeVirtualAddress != bodyInfo.RelativeVirtualAddress)
+                {
+                    return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
+                        ResolutionFailureKind.Conflict,
+                        "DUMP_EXEC_METHOD_RVA_CONFLICT",
+                        "A counted method body and metadata image disagree on the MethodDef RVA.");
+                }
+
+                var physicalReplayFailure = ValidatePhysicalMethodReplay(
+                    module,
+                    methodBody,
+                    standaloneSignatureRowCount);
+                if (physicalReplayFailure is { } replayFailure)
+                {
+                    return Failed<ClrmdDumpExecutionResolver>(replayFailure);
+                }
+
+                var projection = SrmMetadataProjection.ProjectMethodDefinition(
+                    reader,
+                    moduleHandle,
+                    methodHandle,
+                    bodyInfo.Body);
+                if (!projection.IsSuccess)
+                {
+                    return ResolutionResult<ClrmdDumpExecutionResolver>.Failed(
+                        projection.Failure!.Kind,
+                        projection.Failure.Code,
+                        projection.Failure.Message);
+                }
+
+                definitions.Add(methodHandle, projection.Value);
+                if (index == 0)
+                {
+                    rootDefinition = projection.Value;
+                }
             }
 
+            var rootBodyInfo = rootMethodBody.Value!;
             var scanComplete = TryCollectFieldOperandTokens(
-                bodyInfo.Body.CodeBytes,
+                rootBodyInfo.Body.CodeBytes,
                 out var fieldOperandTokens);
             return ResolutionResult<ClrmdDumpExecutionResolver>.Success(
                 new ClrmdDumpExecutionResolver(
@@ -189,7 +327,9 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
                     recomputedIdentity,
                     moduleHandle,
                     metadataRead.Bytes,
-                    projection.Value,
+                    definitions.ToImmutable(),
+                    rootDefinition!,
+                    reader.MethodDefinitions.Count,
                     fieldOperandTokens,
                     scanComplete));
         }
@@ -210,15 +350,32 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
     /// <inheritdoc />
     public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method)
     {
-        if (method != Method)
+        if (method == default || method.Module != ModuleHandle)
         {
             return ResolutionResult<ResolvedMethodDefinition>.Failed(
                 ResolutionFailureKind.Invalid,
                 "DUMP_EXEC_METHOD_MISMATCH",
-                "This dump resolver contains a different counted MethodDef.");
+                "The requested MethodDef belongs to a different execution module.");
         }
 
-        return ResolutionResult<ResolvedMethodDefinition>.Success(methodDefinition);
+        if (methodDefinitions.TryGetValue(method, out var definition))
+        {
+            return ResolutionResult<ResolvedMethodDefinition>.Success(definition);
+        }
+
+        var rowId = method.MetadataToken & 0x00FF_FFFF;
+        if (!MethodHandle.IsValidMetadataToken(method.MetadataToken) || rowId > metadataMethodDefinitionCount)
+        {
+            return ResolutionResult<ResolvedMethodDefinition>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_METHOD_TOKEN_INVALID",
+                "The requested handle does not identify a MethodDef in the counted metadata image.");
+        }
+
+        return ResolutionResult<ResolvedMethodDefinition>.Failed(
+            ResolutionFailureKind.Unavailable,
+            "DUMP_EXEC_METHOD_BODY_UNAVAILABLE",
+            "The MethodDef exists in the counted metadata image, but its physical body was not admitted.");
     }
 
     /// <inheritdoc />
@@ -226,6 +383,19 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
         MethodHandle contextMethod,
         int metadataToken)
     {
+        var contextFailure = ValidateCallerContext(
+            contextMethod,
+            "DUMP_EXEC_CALL_CONTEXT_MISMATCH",
+            "DUMP_EXEC_CALL_CONTEXT_BODY_UNAVAILABLE",
+            "direct-call target");
+        if (contextFailure is not null)
+        {
+            return ResolutionResult<ResolvedMethodCallTarget>.Failed(
+                contextFailure.Kind,
+                contextFailure.Code,
+                contextFailure.Message);
+        }
+
         try
         {
             using var provider = MetadataReaderProvider.FromMetadataImage(metadataImage);
@@ -251,12 +421,17 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
     /// <inheritdoc />
     public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken)
     {
-        if (contextMethod != Method)
+        var contextFailure = ValidateCallerContext(
+            contextMethod,
+            "DUMP_EXEC_FIELD_CONTEXT_MISMATCH",
+            "DUMP_EXEC_FIELD_CONTEXT_BODY_UNAVAILABLE",
+            "field");
+        if (contextFailure is not null)
         {
             return ResolutionResult<ResolvedField>.Failed(
-                ResolutionFailureKind.Invalid,
-                "DUMP_EXEC_FIELD_CONTEXT_MISMATCH",
-                "The field request belongs to a different method context than this dump resolver.");
+                contextFailure.Kind,
+                contextFailure.Code,
+                contextFailure.Message);
         }
 
         try
@@ -279,6 +454,38 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
                 "DUMP_EXEC_FIELD_METADATA_INVALID",
                 "The counted dump metadata could not project the requested field descriptor.");
         }
+    }
+
+    private ResolutionFailure? ValidateCallerContext(
+        MethodHandle contextMethod,
+        string mismatchCode,
+        string unavailableCode,
+        string requestedDependency)
+    {
+        if (contextMethod == default || contextMethod.Module != ModuleHandle)
+        {
+            return new ResolutionFailure(
+                ResolutionFailureKind.Invalid,
+                mismatchCode,
+                $"The {requestedDependency} request belongs to a different execution module.");
+        }
+
+        var rowId = contextMethod.MetadataToken & 0x00FF_FFFF;
+        if (!MethodHandle.IsValidMetadataToken(contextMethod.MetadataToken) ||
+            rowId > metadataMethodDefinitionCount)
+        {
+            return new ResolutionFailure(
+                ResolutionFailureKind.Invalid,
+                mismatchCode,
+                $"The {requestedDependency} request uses a caller that is not a MethodDef in counted metadata.");
+        }
+
+        return methodDefinitions.ContainsKey(contextMethod)
+            ? null
+            : new ResolutionFailure(
+                ResolutionFailureKind.Unavailable,
+                unavailableCode,
+                $"The {requestedDependency} request uses a caller whose physical body was not admitted.");
     }
 
     /// <summary>
@@ -434,12 +641,12 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
         if (field.Handle.Module != ModuleHandle ||
             field.Handle.MetadataToken != runtimeField.MetadataToken ||
             !TypeSig.IsValidTypeDefinitionToken(owner.TypeMetadataToken) ||
-            owner.TypeMetadataToken != methodDefinition.Signature.DeclaringType.MetadataToken ||
+            owner.TypeMetadataToken != rootMethodDefinition.Signature.DeclaringType.MetadataToken ||
             !string.Equals(
                 owner.TypeName,
-                methodDefinition.Signature.DeclaringType.DisplayName,
+                rootMethodDefinition.Signature.DeclaringType.DisplayName,
                 StringComparison.Ordinal) ||
-            field.DeclaringType != methodDefinition.Signature.DeclaringType ||
+            field.DeclaringType != rootMethodDefinition.Signature.DeclaringType ||
             field.FieldType != TypeSig.Int32 ||
             field.IsStatic ||
             field.IsLiteral ||
@@ -483,12 +690,246 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
         return ResolutionResult<ClrmdExactInt32FieldExecutionEvidence>.Success(
             new ClrmdExactInt32FieldExecutionEvidence(
                 Module.Identity,
-                methodDefinition,
+                rootMethodDefinition,
                 field,
                 ownerSearch,
                 owner,
                 observation,
                 value));
+    }
+
+    /// <summary>
+    /// Correlates one unique exact strong-root object and one exact, partial, or unavailable counted Int32 field read
+    /// with the root method's metadata field descriptor without inventing a value for missing bytes.
+    /// </summary>
+    /// <param name="ownerSearch">
+    /// An exact bounded handle traversal with exactly one retained match from this resolver's snapshot and module.
+    /// </param>
+    /// <param name="fieldObservation">
+    /// A runtime-selected Int32 field observation retaining one exact four-byte read, one non-empty partial prefix, or
+    /// one unavailable empty read of the same four-byte range.
+    /// </param>
+    /// <returns>
+    /// A frozen descriptor preserving the truthful read disposition and exposing a scalar only for exact evidence;
+    /// otherwise a structured unavailable, invalid, or conflicting result.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">Either argument is <see langword="null"/>.</exception>
+    public ResolutionResult<ClrmdInt32FieldExecutionEvidence> CorrelateInt32FieldObservation(
+        ClrmdHeapObjectSearchResult ownerSearch,
+        ClrmdEvidenceResult<ClrmdInt32FieldObservation> fieldObservation)
+    {
+        ArgumentNullException.ThrowIfNull(ownerSearch);
+        ArgumentNullException.ThrowIfNull(fieldObservation);
+
+        if (ownerSearch.Status != ClrmdEvidenceStatus.Exact || ownerSearch.Issue != ClrmdValueIssue.None)
+        {
+            return EvidenceFailure<ClrmdInt32FieldExecutionEvidence>(
+                ownerSearch.Status,
+                "DUMP_EXEC_OWNER_NOT_EXACT",
+                "Field correlation requires an exact, exhaustive owner selection.");
+        }
+
+        if (ownerSearch.Snapshot != Module.Identity.Snapshot)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Conflict,
+                "DUMP_EXEC_OWNER_SNAPSHOT_CONFLICT",
+                "The selected owner belongs to a different dump snapshot.");
+        }
+
+        if (ownerSearch.Matches.Length == 0)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Unavailable,
+                "DUMP_EXEC_OWNER_UNAVAILABLE",
+                "The exact owner search found no matching object.");
+        }
+
+        if (ownerSearch.Matches.Length != 1)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Conflict,
+                "DUMP_EXEC_OWNER_AMBIGUOUS",
+                "Field correlation requires one uniquely selected dump object.");
+        }
+
+        var owner = ownerSearch.Matches[0];
+        if (owner.Snapshot != Module.Identity.Snapshot || owner.Module.Identity != Module.Identity)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Conflict,
+                "DUMP_EXEC_OWNER_MODULE_CONFLICT",
+                "The selected dump object does not belong to the resolver's runtime module instance.");
+        }
+
+        if (!string.Equals(ownerSearch.TypeNameSelector, owner.TypeName, StringComparison.Ordinal))
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Conflict,
+                "DUMP_EXEC_OWNER_TYPE_CONFLICT",
+                "The exact owner selection predicate disagrees with the retained runtime type.");
+        }
+
+        if (ownerSearch.HandlesScanned <= 0 ||
+            ownerSearch.MaximumHandlesScanned <= 0 ||
+            ownerSearch.HandlesScanned > ownerSearch.MaximumHandlesScanned ||
+            ownerSearch.MaximumMatches <= 0 ||
+            ownerSearch.MatchLimitReached ||
+            owner.Address == 0 ||
+            owner.MethodTable == 0 ||
+            owner.RootAddress == 0 ||
+            string.IsNullOrWhiteSpace(owner.RootKind) ||
+            owner.Evidence.Length != 2 ||
+            owner.Evidence[0].Address != owner.RootAddress ||
+            owner.Evidence[1].Address != owner.Address ||
+            owner.Evidence[0].RequestedLength != owner.Evidence[1].RequestedLength ||
+            !TryDecodePointer(owner.Evidence[0].Bytes.AsSpan(), out var rootedObjectAddress) ||
+            rootedObjectAddress != owner.Address ||
+            !TryDecodePointer(owner.Evidence[1].Bytes.AsSpan(), out var observedMethodTable) ||
+            observedMethodTable != owner.MethodTable ||
+            !AllExactFromSnapshot(ownerSearch.Evidence, Module.Identity.Snapshot) ||
+            !AllExactFromSnapshot(owner.Evidence, Module.Identity.Snapshot) ||
+            !ContainsReadSubsequence(ownerSearch.Evidence, owner.Evidence))
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_OWNER_EVIDENCE_INVALID",
+                "The selected owner is not backed by complete counted reads from the resolver snapshot.");
+        }
+
+        if (fieldObservation.Status is ClrmdEvidenceStatus.Conflict or ClrmdEvidenceStatus.Invalid)
+        {
+            return EvidenceFailure<ClrmdInt32FieldExecutionEvidence>(
+                fieldObservation.Status,
+                "DUMP_EXEC_FIELD_STATUS_REJECTED",
+                "Conflicting or invalid field evidence cannot be admitted into execution memory.");
+        }
+
+        if (fieldObservation.Status is not (
+                ClrmdEvidenceStatus.Exact or
+                ClrmdEvidenceStatus.Partial or
+                ClrmdEvidenceStatus.Unavailable))
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_FIELD_STATUS_INVALID",
+                "The field observation uses an undefined evidence status.");
+        }
+
+        var expectedIssue = fieldObservation.Status == ClrmdEvidenceStatus.Exact
+            ? ClrmdValueIssue.None
+            : ClrmdValueIssue.MemoryUnavailable;
+        if (fieldObservation.Issue != expectedIssue || fieldObservation.Value is null)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_FIELD_STATUS_TUPLE_INVALID",
+                "The field status, issue, and retained runtime observation are inconsistent.");
+        }
+
+        var observation = fieldObservation.Value;
+        var runtimeField = observation.Field;
+        if (runtimeField.Snapshot != owner.Snapshot ||
+            runtimeField.OwnerAddress != owner.Address ||
+            runtimeField.OwnerMethodTable != owner.MethodTable ||
+            !string.Equals(runtimeField.OwnerTypeName, owner.TypeName, StringComparison.Ordinal))
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Conflict,
+                "DUMP_EXEC_FIELD_OWNER_CONFLICT",
+                "The runtime field descriptor does not belong to the uniquely selected owner.");
+        }
+
+        var projectedField = ResolveField(RootMethod, runtimeField.MetadataToken);
+        if (!projectedField.IsSuccess)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                projectedField.Failure!.Kind,
+                projectedField.Failure.Code,
+                projectedField.Failure.Message);
+        }
+
+        var field = projectedField.Value;
+        if (field.Handle.Module != ModuleHandle ||
+            field.Handle.MetadataToken != runtimeField.MetadataToken ||
+            !TypeSig.IsValidTypeDefinitionToken(owner.TypeMetadataToken) ||
+            owner.TypeMetadataToken != rootMethodDefinition.Signature.DeclaringType.MetadataToken ||
+            !string.Equals(
+                owner.TypeName,
+                rootMethodDefinition.Signature.DeclaringType.DisplayName,
+                StringComparison.Ordinal) ||
+            field.DeclaringType != rootMethodDefinition.Signature.DeclaringType ||
+            field.FieldType != TypeSig.Int32 ||
+            field.IsStatic ||
+            field.IsLiteral ||
+            field.HasRva)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Conflict,
+                "DUMP_EXEC_FIELD_METADATA_TYPE_CONFLICT",
+                "The projected FieldDef is not the root receiver's ordinary instance Int32 field.");
+        }
+
+        if (runtimeField.Size != sizeof(int) ||
+            runtimeField.Address == 0 ||
+            runtimeField.Address > ulong.MaxValue - (sizeof(int) - 1UL) ||
+            runtimeField.IsObjectReference ||
+            runtimeField.IsNullableInt32 ||
+            !string.Equals(runtimeField.ElementType, "Int32", StringComparison.Ordinal) ||
+            !string.Equals(runtimeField.FieldTypeName, "System.Int32", StringComparison.Ordinal))
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Conflict,
+                "DUMP_EXEC_FIELD_RUNTIME_TYPE_CONFLICT",
+                "The runtime field descriptor is not a valid ordinary Int32 storage description.");
+        }
+
+        var memory = observation.Memory;
+        if (fieldObservation.Evidence.Length != 1 ||
+            !SameRead(fieldObservation.Evidence[0], memory) ||
+            !string.Equals(memory.SourceId, Module.Identity.Snapshot.MemorySourceId, StringComparison.Ordinal) ||
+            memory.Address != runtimeField.Address ||
+            memory.RequestedLength != sizeof(int))
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_FIELD_READ_TUPLE_INVALID",
+                "The field observation is not backed by one matching four-byte read from the resolver snapshot.");
+        }
+
+        var expectedReadStatus = fieldObservation.Status switch
+        {
+            ClrmdEvidenceStatus.Exact => MemoryReadStatus.Exact,
+            ClrmdEvidenceStatus.Partial => MemoryReadStatus.Partial,
+            ClrmdEvidenceStatus.Unavailable => MemoryReadStatus.Unavailable,
+            _ => throw new InvalidOperationException("The evidence status was validated above."),
+        };
+        var validValueTuple = fieldObservation.Status == ClrmdEvidenceStatus.Exact
+            ? observation.Value is { } exactValue &&
+                memory.Bytes.Length == sizeof(int) &&
+                BinaryPrimitives.ReadInt32LittleEndian(memory.Bytes.AsSpan()) == exactValue
+            : observation.Value is null &&
+                (fieldObservation.Status != ClrmdEvidenceStatus.Partial || memory.Bytes.Length is >= 1 and < sizeof(int)) &&
+                (fieldObservation.Status != ClrmdEvidenceStatus.Unavailable || memory.Bytes.IsEmpty);
+        if (memory.Status != expectedReadStatus || !validValueTuple)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Invalid,
+                "DUMP_EXEC_FIELD_VALUE_EVIDENCE_INVALID",
+                "The field status, observed byte prefix, and optional Int32 value are inconsistent.");
+        }
+
+        return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Success(
+            new ClrmdInt32FieldExecutionEvidence(
+                Module.Identity,
+                rootMethodDefinition,
+                field,
+                ownerSearch,
+                owner,
+                observation,
+                fieldObservation.Status,
+                fieldObservation.Issue,
+                observation.Value));
     }
 
     private static ProjectionFailure? ValidateMetadataEvidence(
@@ -869,6 +1310,23 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
 
     private static ProjectionFailure Conflict(string code, string message) =>
         new(ResolutionFailureKind.Conflict, code, message);
+
+    private sealed class MethodHandleComparer : IComparer<MethodHandle>
+    {
+        internal static MethodHandleComparer Instance { get; } = new();
+
+        public int Compare(MethodHandle left, MethodHandle right)
+        {
+            var comparison = left.Module.High.CompareTo(right.Module.High);
+            if (comparison != 0)
+            {
+                return comparison;
+            }
+
+            comparison = left.Module.Low.CompareTo(right.Module.Low);
+            return comparison != 0 ? comparison : left.MetadataToken.CompareTo(right.MetadataToken);
+        }
+    }
 
     private readonly record struct ProjectionFailure(
         ResolutionFailureKind Kind,

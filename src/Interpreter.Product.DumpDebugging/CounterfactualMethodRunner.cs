@@ -6,14 +6,15 @@ using Interpreter.Domain.Concrete;
 namespace Interpreter.Product.DumpDebugging;
 
 /// <summary>
-/// Owns issuer authority for preparing and, in later W4.8 slices, executing rooted counterfactual method plans.
+/// Owns issuer authority for preparing and executing rooted counterfactual method plans.
 /// </summary>
 /// <typeparam name="TMemory">The persistent memory snapshot type privately retained by successful plans.</typeparam>
 /// <remarks>
-/// The current draft exposes preparation only. It validates raw host data without throwing for ordinary malformed
-/// inputs, invokes graph preparation exactly once, and performs no memory access, machine activation, or IL
-/// instruction execution. Plans are privately stamped by this runner instance so a future execution method can
-/// reject foreign or forged plans before consulting their retained capabilities.
+/// The current draft validates raw host data without throwing for ordinary malformed inputs, invokes graph preparation
+/// exactly once, and executes only a complete privately issued plan. Execution uses a fresh machine, the plan's frozen
+/// runtime domain and memory binding, deterministic instruction accounting, and a resolver that rejects any accidental
+/// execution-time resolution. Plans are privately stamped by this runner instance so null and foreign inputs are
+/// rejected before cancellation, plan data, or retained capabilities are consulted.
 /// </remarks>
 public sealed class CounterfactualMethodRunner<TMemory>
     where TMemory : IPersistentMemoryState<TMemory>
@@ -222,6 +223,408 @@ public sealed class CounterfactualMethodRunner<TMemory>
                 "W4.Replay.PlanInvalid",
                 "The validated preparation facts disagreed at the private plan-issuance boundary.");
         }
+    }
+
+    /// <summary>
+    /// Executes one complete runner-issued plan under its canonical instruction and logical-depth bounds.
+    /// </summary>
+    /// <param name="plan">
+    /// The exact plan instance issued by this runner. A null or foreign plan is rejected before cancellation is
+    /// observed and before any public plan fact or private runtime binding is read.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// Host cancellation observed only at ready machine boundaries. A completed terminal transition and its mandatory
+    /// certified idempotent re-step take precedence over cancellation that arrives after the terminal transfer.
+    /// </param>
+    /// <returns>
+    /// One canonical rooted result, or the fixed identity-free facade-rejection result for a null or foreign plan.
+    /// Ordinary resolver, memory, model, and value-domain capability failures are normalized into stable result axes
+    /// and diagnostics rather than exposing exception-controlled payload.
+    /// </returns>
+    /// <remarks>
+    /// This is a draft W4 product facade, not a general-purpose machine host. The run is read-only, branchless, finite,
+    /// and bound to the exact graph, evidence, model capabilities, and provenance domain frozen during preparation.
+    /// Its public and canonical shape remains unstable until the conceptual-design phase closes.
+    /// </remarks>
+    public CounterfactualExecutionResult Run(
+        CounterfactualMethodPlan<TMemory>? plan,
+        CancellationToken cancellationToken = default)
+    {
+        if (plan is null)
+        {
+            return CounterfactualExecutionResult.CreateFacadeRejection(
+                [new EvaluationDiagnostic(
+                    "W4.Request.PlanMissing",
+                    "A runner-issued counterfactual method plan is required.")]);
+        }
+
+        // IsIssuedBy is deliberately the only plan operation before authority is established.
+        if (!plan.IsIssuedBy(issuer))
+        {
+            return CounterfactualExecutionResult.CreateFacadeRejection(
+                [new EvaluationDiagnostic(
+                    "W4.Request.PlanForeign",
+                    "The counterfactual method plan was not issued by this runner.")]);
+        }
+
+        var request = plan.Request;
+        var graph = plan.RuntimeGraph;
+        var saturation = request.InstructionLimit == long.MaxValue
+            ? long.MaxValue
+            : request.InstructionLimit + 1;
+        if (!TryCalculateDynamicInstructionCost(graph, saturation, out var dynamicInstructionCost) ||
+            dynamicInstructionCost <= 0)
+        {
+            return CreatePreactivationInvalid(
+                plan,
+                "W4.Replay.DynamicGraphInvalid",
+                "The issued graph did not produce one finite acyclic dynamic instruction bound.");
+        }
+
+        var bundle = plan.RuntimeBundle;
+        CounterfactualRecordingMemoryModel<TMemory> recordingMemory;
+        IlMachine<ProvenanceConcreteValue, TMemory> machine;
+        try
+        {
+            recordingMemory = new CounterfactualRecordingMemoryModel<TMemory>(
+                bundle.MemoryModel,
+                bundle.Receiver,
+                bundle.Domain,
+                plan.RuntimeFieldObservations);
+            machine = new IlMachine<ProvenanceConcreteValue, TMemory>(
+                bundle.Domain,
+                RejectingExecutionResolver.Instance,
+                recordingMemory,
+                new InstructionBudgetPolicy(),
+                UnknownExecutionPolicy.ExplainedInt32);
+        }
+        catch (Exception exception) when (IsOrdinaryFailure(exception))
+        {
+            return CreatePreactivationInvalid(
+                plan,
+                "W4.Replay.RuntimeBindingInvalid",
+                "The issued plan's private runtime binding was not internally coherent.");
+        }
+
+        MachineActivationResult<ProvenanceConcreteValue, TMemory> activation;
+        try
+        {
+            activation = machine.ActivatePreparedGraph(
+                graph,
+                request.LogicalDepthLimit,
+                bundle.RootArguments,
+                bundle.InitialMemory);
+        }
+        catch (Exception exception) when (IsOrdinaryFailure(exception))
+        {
+            return CreatePreactivationStopped(
+                plan,
+                EvaluationCompletionStatus.Blocked,
+                EvaluationEvidenceStatus.Exact,
+                "W4.Unknown.ActivationCapability",
+                "A runtime capability failed during prepared root activation.");
+        }
+
+        var activationFailure = ValidateActivation(activation, graph);
+        if (activationFailure is not null)
+        {
+            var completion = activation.Status == MachineRunStatus.Blocked
+                ? EvaluationCompletionStatus.Blocked
+                : EvaluationCompletionStatus.Invalid;
+            var evidence = completion == EvaluationCompletionStatus.Invalid
+                ? EvaluationEvidenceStatus.Invalid
+                : EvaluationEvidenceStatus.Exact;
+            return CreatePreactivationStopped(
+                plan,
+                completion,
+                evidence,
+                activationFailure.Code,
+                activationFailure.Message);
+        }
+
+        var state = activation.State!;
+        MachineOperationalState operationalState;
+        try
+        {
+            operationalState = machine.CreatePreparedOperationalState(new BudgetState(request.InstructionLimit));
+        }
+        catch (Exception exception) when (IsOrdinaryFailure(exception))
+        {
+            return CreatePreactivationInvalid(
+                plan,
+                "W4.Replay.OperationalStateInvalid",
+                "The activated machine could not create its prepared operational envelope.");
+        }
+
+        var callTrace = ImmutableArray.CreateBuilder<MethodHandle>();
+        callTrace.Add(graph.Root);
+        var events = ImmutableArray.CreateBuilder<DebugEvent>();
+        long stepRequests = 0;
+        var maximumStepRequests = SaturatingAdd(
+            Math.Min(dynamicInstructionCost, request.InstructionLimit),
+            1,
+            long.MaxValue);
+
+        while (true)
+        {
+            if (state.CallStack.IsDefault || state.Memory is null || operationalState.Budget is null)
+            {
+                return CreateExecutionInvalid(
+                    plan,
+                    recordingMemory,
+                    operationalState,
+                    callTrace,
+                    events,
+                    "W4.Replay.StateEnvelopeInvalid",
+                    "Prepared execution produced an uninitialized state or operational envelope.");
+            }
+
+            if (cancellationToken.IsCancellationRequested &&
+                state.CallStack.Length > 0 &&
+                state.TerminalTargetException is null)
+            {
+                var used = request.InstructionLimit - operationalState.Budget.InstructionBudget;
+                var instructionStatus = stepRequests == 0
+                    ? CounterfactualBoundStatus.NotReached
+                    : CounterfactualBoundStatus.Applied;
+                return CreateRootedResult(
+                    plan,
+                    EvaluationCompletionStatus.Cancelled,
+                    used == 0 ? EvaluationCompleteness.None : EvaluationCompleteness.Partial,
+                    AggregateReachedEvidence(request, recordingMemory.ReachedObservations),
+                    used == 0 ? null : CounterfactualExecutionValue.CreateExecutionPrefix(),
+                    instructionStatus,
+                    instructionStatus == CounterfactualBoundStatus.NotReached ? null : used,
+                    instructionStatus == CounterfactualBoundStatus.NotReached
+                        ? null
+                        : operationalState.Budget.InstructionBudget,
+                    operationalState.ObservedLogicalDepthHighWater,
+                    operationalState.ActiveFrameDepthHighWater,
+                    CounterfactualBoundStatus.NotReached,
+                    lineageNodeCount: null,
+                    recordingMemory.ReachedObservations,
+                    recordingMemory.ReachedLoadOrdinals,
+                    operationalState.ModelAttempts,
+                    operationalState.ModelInvocationCount,
+                    operationalState.CompletedModeledCallCount,
+                    callTrace.ToImmutable(),
+                    events.ToImmutable(),
+                    diagnostics:
+                    [
+                        new EvaluationDiagnostic(
+                            "W4.Execution.Cancelled",
+                            "Host cancellation was observed at a ready machine boundary."),
+                    ]);
+            }
+
+            if (stepRequests >= maximumStepRequests)
+            {
+                return CreateExecutionInvalid(
+                    plan,
+                    recordingMemory,
+                    operationalState,
+                    callTrace,
+                    events,
+                    "W4.Replay.StepBoundExceeded",
+                    "Prepared execution exceeded the graph-derived finite transition bound.");
+            }
+
+            var priorState = state;
+            var priorOperationalState = operationalState;
+            StepOutcome<ProvenanceConcreteValue, TMemory> outcome;
+            try
+            {
+                outcome = machine.StepOne(priorState, priorOperationalState);
+            }
+            catch (Exception exception) when (IsOrdinaryFailure(exception))
+            {
+                return CreateExecutionStopped(
+                    plan,
+                    recordingMemory,
+                    priorOperationalState,
+                    callTrace,
+                    events,
+                    EvaluationCompletionStatus.Blocked,
+                    "W4.Execution.Capability",
+                    "A runtime capability failed while requesting one prepared machine transition.");
+            }
+
+            stepRequests++;
+            if (!outcome.IsMachineIssuedTransitionFrom(machine, priorState, priorOperationalState))
+            {
+                return CreateExecutionInvalid(
+                    plan,
+                    recordingMemory,
+                    priorOperationalState,
+                    callTrace,
+                    events,
+                    "W4.Replay.TransitionUncertified",
+                    "The machine transition was not certified for the exact supplied state and operational envelope.");
+            }
+
+            var transitionFailure = ValidateMachineTransition(
+                graph,
+                request.LogicalDepthLimit,
+                priorState,
+                priorOperationalState,
+                outcome);
+            if (transitionFailure is not null)
+            {
+                return CreateExecutionInvalid(
+                    plan,
+                    recordingMemory,
+                    priorOperationalState,
+                    callTrace,
+                    events,
+                    transitionFailure.Code,
+                    transitionFailure.Message);
+            }
+
+            AppendDynamicEntries(priorOperationalState, outcome, callTrace, events);
+            state = outcome.State;
+            operationalState = outcome.OperationalState;
+
+            switch (outcome.Status)
+            {
+                case MachineRunStatus.Ready:
+                    continue;
+
+                case MachineRunStatus.Completed:
+                    return CompleteRootedExecution(
+                        plan,
+                        machine,
+                        recordingMemory,
+                        state,
+                        operationalState,
+                        callTrace,
+                        events);
+
+                case MachineRunStatus.BudgetExhausted:
+                    return CreateBudgetExhausted(
+                        plan,
+                        recordingMemory,
+                        operationalState,
+                        callTrace,
+                        events);
+
+                case MachineRunStatus.Blocked:
+                    return CreateMachineFailure(
+                        plan,
+                        recordingMemory,
+                        operationalState,
+                        callTrace,
+                        events,
+                        outcome,
+                        EvaluationCompletionStatus.Blocked);
+
+                case MachineRunStatus.InvalidProgram:
+                    return CreateMachineFailure(
+                        plan,
+                        recordingMemory,
+                        operationalState,
+                        callTrace,
+                        events,
+                        outcome,
+                        EvaluationCompletionStatus.Invalid);
+
+                case MachineRunStatus.TargetException:
+                    return CreateExecutionInvalid(
+                        plan,
+                        recordingMemory,
+                        priorOperationalState,
+                        callTrace,
+                        RemoveLastTransitionEvents(events, outcome.Events.Length),
+                        "W4.TargetException.RootedUnsupported",
+                        "The closed non-null rooted facade cannot retain a target-exception transition.");
+
+                default:
+                    return CreateExecutionInvalid(
+                        plan,
+                        recordingMemory,
+                        priorOperationalState,
+                        callTrace,
+                        RemoveLastTransitionEvents(events, outcome.Events.Length),
+                        "W4.Replay.StatusInvalid",
+                        "Prepared execution returned an undefined machine status.");
+            }
+        }
+    }
+
+    internal static bool TryCalculateDynamicInstructionCost(
+        FrozenMethodGraphPlan graph,
+        long saturation,
+        out long cost)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        if (saturation <= 0)
+        {
+            cost = 0;
+            return false;
+        }
+
+        var colors = new Dictionary<MethodHandle, byte>();
+        var memoized = new Dictionary<MethodHandle, long>();
+
+        bool TryVisit(MethodHandle method, out long methodCost)
+        {
+            if (memoized.TryGetValue(method, out methodCost))
+            {
+                return true;
+            }
+
+            colors.TryGetValue(method, out var color);
+            if (color == 1 || !graph.TryGetNode(method, out var node) || node is null ||
+                !node.Admission.IsAdmitted || node.Admission.InstructionCount <= 0)
+            {
+                methodCost = 0;
+                return false;
+            }
+
+            colors[method] = 1;
+            methodCost = Math.Min(node.Admission.InstructionCount, saturation);
+            foreach (var call in node.CallSites)
+            {
+                if (call.Caller != method || call.Effects != EvaluationEffectStatus.None)
+                {
+                    methodCost = 0;
+                    return false;
+                }
+
+                if (call.Disposition == FrozenMethodCallDisposition.PureModel)
+                {
+                    if (!graph.TryGetModeledLeaf(call.Target.Method, out var leaf) || leaf is null)
+                    {
+                        methodCost = 0;
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (call.Disposition != FrozenMethodCallDisposition.Interpreted ||
+                    !TryVisit(call.Target.Method, out var calleeCost))
+                {
+                    methodCost = 0;
+                    return false;
+                }
+
+                methodCost = SaturatingAdd(methodCost, calleeCost, saturation);
+            }
+
+            colors[method] = 2;
+            memoized[method] = methodCost;
+            return true;
+        }
+
+        if (!TryVisit(graph.Root, out cost) ||
+            graph.Nodes.Any(node => !memoized.ContainsKey(node.Method)) ||
+            graph.ModeledLeaves.Any(leaf => graph.Nodes.Any(node => node.Method == leaf.Method)))
+        {
+            cost = 0;
+            return false;
+        }
+
+        return true;
     }
 
     private static bool TryValidateBindings(
