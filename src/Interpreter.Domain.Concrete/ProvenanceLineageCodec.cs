@@ -55,6 +55,20 @@ internal static class ProvenanceLineageCodec
             bytes);
     }
 
+    internal static FieldLoadTransformLineageNode CreateFieldLoadTransform(
+        ImportedReceiverKey receiver,
+        ResolvedField field,
+        LineageNodeId inputOrigin)
+    {
+        var bytes = EncodeFieldLoad(receiver, field, inputOrigin);
+        return new FieldLoadTransformLineageNode(
+            LineageNodeId.Hash(bytes.AsSpan()),
+            receiver,
+            field,
+            inputOrigin,
+            bytes);
+    }
+
     internal static bool IsCanonical(LineageNode node)
     {
         ArgumentNullException.ThrowIfNull(node);
@@ -66,6 +80,10 @@ internal static class ProvenanceLineageCodec
                 binary.StaticType,
                 binary.Left,
                 binary.Right),
+            FieldLoadTransformLineageNode fieldLoad => EncodeFieldLoad(
+                fieldLoad.Receiver,
+                fieldLoad.Field,
+                fieldLoad.InputOrigin),
             _ => ImmutableArray<byte>.Empty,
         };
         return !encoded.IsDefaultOrEmpty &&
@@ -124,6 +142,45 @@ internal static class ProvenanceLineageCodec
         writer.WriteInt32(EncodeBinaryOperation(operation));
         WriteOperand(writer, left);
         WriteOperand(writer, right);
+        return writer.ToImmutableArray();
+    }
+
+    private static ImmutableArray<byte> EncodeFieldLoad(
+        ImportedReceiverKey receiver,
+        ResolvedField field,
+        LineageNodeId inputOrigin)
+    {
+        if (!receiver.IsValid)
+        {
+            throw new ArgumentException("A field-load transform requires a non-default imported receiver key.", nameof(receiver));
+        }
+
+        ArgumentNullException.ThrowIfNull(field);
+        if (field.FieldType != TypeSig.Int32)
+        {
+            throw new ArgumentException("W4.3 field-load lineage requires the structural Int32 field type.", nameof(field));
+        }
+
+        if (field.IsStatic || field.IsLiteral || field.HasRva)
+        {
+            throw new ArgumentException("W4.3 field-load lineage requires an ordinary instance field.", nameof(field));
+        }
+
+        if (!inputOrigin.IsValid)
+        {
+            throw new ArgumentException("A field-load transform requires a non-default input-origin predecessor.", nameof(inputOrigin));
+        }
+
+        var writer = StartNode(LineageNodeKind.FieldLoadTransform);
+        WriteType(writer, TypeSig.Int32, 0);
+        writer.WriteDigest(receiver.Sha256);
+        writer.WriteUInt64(field.Handle.Module.High);
+        writer.WriteUInt64(field.Handle.Module.Low);
+        writer.WriteInt32(field.Handle.MetadataToken);
+        WriteType(writer, field.DeclaringType, 0);
+        WriteType(writer, field.FieldType, 0);
+        writer.WriteInt32(1); // Canonical W4.3 ordinary-instance disposition.
+        writer.WriteDigest(inputOrigin.Sha256);
         return writer.ToImmutableArray();
     }
 
@@ -191,6 +248,7 @@ internal static class ProvenanceLineageCodec
     {
         LineageNodeKind.InputOrigin => 1,
         LineageNodeKind.BinaryTransform => 2,
+        LineageNodeKind.FieldLoadTransform => 3,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 

@@ -16,7 +16,7 @@ public enum ProvenanceInputKind
     ImportedField = 3,
 }
 
-/// <summary>Classifies the call-independent lineage nodes implemented by the W4.2 kernel.</summary>
+/// <summary>Classifies the call-independent lineage nodes implemented through the W4.3 kernel.</summary>
 public enum LineageNodeKind
 {
     /// <summary>A partial or unavailable request input.</summary>
@@ -24,6 +24,9 @@ public enum LineageNodeKind
 
     /// <summary>An ordered arithmetic operation with at least one unknown operand.</summary>
     BinaryTransform = 2,
+
+    /// <summary>An approximate imported-field read through one exact imported receiver.</summary>
+    FieldLoadTransform = 3,
 }
 
 /// <summary>Classifies one operand embedded in an arithmetic lineage node.</summary>
@@ -55,6 +58,34 @@ public readonly record struct ProvenanceSourceKey
     /// <returns>A complete SHA-256 identity for the supplied bytes.</returns>
     public static ProvenanceSourceKey Hash(ReadOnlySpan<byte> canonicalBytes) =>
         new(Convert.ToHexString(SHA256.HashData(canonicalBytes)).ToLowerInvariant());
+
+    /// <summary>Returns the canonical lowercase digest.</summary>
+    /// <returns><see cref="Sha256"/>.</returns>
+    public override string ToString() => Sha256 ?? string.Empty;
+
+    internal bool IsValid => Sha256 is not null;
+}
+
+/// <summary>
+/// Identifies one imported receiver by the complete SHA-256 identity retained by its prepared object evidence.
+/// </summary>
+/// <remarks>
+/// This identity is deliberately distinct from the concrete domain's numeric object-reference payload. Equal
+/// imported evidence therefore produces equal lineage even when fixture allocation or import order assigns a
+/// different local reference number.
+/// </remarks>
+public readonly record struct ImportedReceiverKey
+{
+    /// <summary>Creates a receiver key from one complete SHA-256 digest.</summary>
+    /// <param name="sha256">Exactly 64 hexadecimal characters; accepted uppercase is normalized to lowercase.</param>
+    /// <exception cref="ArgumentException"><paramref name="sha256"/> is not one complete SHA-256 digest.</exception>
+    public ImportedReceiverKey(string sha256)
+    {
+        Sha256 = CanonicalSha256.Require(sha256, nameof(sha256));
+    }
+
+    /// <summary>Gets the canonical lowercase 64-character digest.</summary>
+    public string Sha256 { get; }
 
     /// <summary>Returns the canonical lowercase digest.</summary>
     /// <returns><see cref="Sha256"/>.</returns>

@@ -49,7 +49,7 @@ public sealed class ProvenanceLineageGraph
             throw new ArgumentException("The lineage graph does not contain its root node.", nameof(root));
         }
 
-        ValidateReachabilityAndAcyclicity(root);
+        ValidateReachabilityAndAcyclicity(root, nodesById);
         Root = root;
         CanonicalBytes = ProvenanceLineageCodec.EncodeGraph(root, Nodes);
         Sha256 = Convert.ToHexString(SHA256.HashData(CanonicalBytes.AsSpan())).ToLowerInvariant();
@@ -82,9 +82,64 @@ public sealed class ProvenanceLineageGraph
         return nodesById.TryGetValue(id, out node);
     }
 
-    private void ValidateReachabilityAndAcyclicity(LineageNodeId root)
+    internal void ValidateForReplay()
     {
-        var colors = new Dictionary<LineageNodeId, byte>(nodesById.Count);
+        if (!Root.IsValid)
+        {
+            throw new ArgumentException("A replay graph requires a non-default root identity.");
+        }
+
+        if (Nodes.IsDefaultOrEmpty || Nodes.Any(static node => node is null))
+        {
+            throw new ArgumentException("A replay graph requires initialized, non-null nodes.");
+        }
+
+        var replayNodesById = new Dictionary<LineageNodeId, LineageNode>(Nodes.Length);
+        string? previousIdentity = null;
+        foreach (var node in Nodes)
+        {
+            if (!ProvenanceLineageCodec.IsCanonical(node))
+            {
+                throw new ArgumentException("A replay graph contains a noncanonical node.");
+            }
+
+            if (previousIdentity is not null &&
+                StringComparer.Ordinal.Compare(previousIdentity, node.Id.Sha256) >= 0)
+            {
+                throw new ArgumentException(
+                    "A replay graph requires distinct nodes in canonical identity order.");
+            }
+
+            if (!replayNodesById.TryAdd(node.Id, node))
+            {
+                throw new ArgumentException("A replay graph cannot contain duplicate node identities.");
+            }
+
+            previousIdentity = node.Id.Sha256;
+        }
+
+        if (!replayNodesById.ContainsKey(Root))
+        {
+            throw new ArgumentException("A replay graph does not contain its root node.");
+        }
+
+        ValidateReachabilityAndAcyclicity(Root, replayNodesById);
+        var canonicalBytes = ProvenanceLineageCodec.EncodeGraph(Root, Nodes);
+        if (!canonicalBytes.AsSpan().SequenceEqual(CanonicalBytes.AsSpan()) ||
+            !string.Equals(
+                Convert.ToHexString(SHA256.HashData(canonicalBytes.AsSpan())).ToLowerInvariant(),
+                Sha256,
+                StringComparison.Ordinal))
+        {
+            throw new ArgumentException("A replay graph does not match its canonical bytes and fingerprint.");
+        }
+    }
+
+    private static void ValidateReachabilityAndAcyclicity(
+        LineageNodeId root,
+        IReadOnlyDictionary<LineageNodeId, LineageNode> validatedNodesById)
+    {
+        var colors = new Dictionary<LineageNodeId, byte>(validatedNodesById.Count);
         var stack = new Stack<(LineageNodeId Id, bool Exit)>();
         stack.Push((root, false));
         while (stack.Count > 0)
@@ -107,17 +162,19 @@ public sealed class ProvenanceLineageGraph
                 throw new ArgumentException("A lineage graph must be acyclic.");
             }
 
-            if (!nodesById.TryGetValue(id, out var node))
+            if (!validatedNodesById.TryGetValue(id, out var node))
             {
                 throw new ArgumentException("A lineage dependency is absent from the graph.");
             }
+
+            ValidateNodeRelationships(node, validatedNodesById);
 
             colors[id] = 1;
             stack.Push((id, true));
             for (var index = node.Dependencies.Length - 1; index >= 0; index--)
             {
                 var dependency = node.Dependencies[index];
-                if (!nodesById.TryGetValue(dependency, out var dependencyNode))
+                if (!validatedNodesById.TryGetValue(dependency, out var dependencyNode))
                 {
                     throw new ArgumentException("A lineage dependency is absent from the graph.");
                 }
@@ -140,9 +197,48 @@ public sealed class ProvenanceLineageGraph
             }
         }
 
-        if (colors.Count(static pair => pair.Value == 2) != nodesById.Count)
+        if (colors.Count(static pair => pair.Value == 2) != validatedNodesById.Count)
         {
             throw new ArgumentException("A lineage graph cannot contain nodes unreachable from its root.");
+        }
+    }
+
+    private static void ValidateNodeRelationships(
+        LineageNode node,
+        IReadOnlyDictionary<LineageNodeId, LineageNode> validatedNodesById)
+    {
+        if (node is not FieldLoadTransformLineageNode fieldLoad)
+        {
+            return;
+        }
+
+        if (fieldLoad.StaticType != TypeSig.Int32 ||
+            fieldLoad.Field.FieldType != TypeSig.Int32 ||
+            fieldLoad.Field.IsStatic ||
+            fieldLoad.Field.IsLiteral ||
+            fieldLoad.Field.HasRva)
+        {
+            throw new ArgumentException("A W4.3 field-load transform must describe one ordinary Int32 instance field.");
+        }
+
+        if (fieldLoad.Dependencies.Length != 1 ||
+            fieldLoad.Dependencies[0] != fieldLoad.InputOrigin)
+        {
+            throw new ArgumentException("A W4.3 field-load transform requires exactly its input-origin predecessor.");
+        }
+
+        if (!validatedNodesById.TryGetValue(fieldLoad.InputOrigin, out var predecessor))
+        {
+            throw new ArgumentException("A field-load input-origin predecessor is absent from the graph.");
+        }
+
+        if (predecessor is not InputOriginLineageNode input ||
+            input.Origin.Kind != ProvenanceInputKind.ImportedField ||
+            input.StaticType != TypeSig.Int32 ||
+            input.Origin.Evidence is not (EvaluationEvidenceStatus.Partial or EvaluationEvidenceStatus.Unavailable))
+        {
+            throw new ArgumentException(
+                "A W4.3 field-load transform must depend on one partial or unavailable imported-field Int32 origin.");
         }
     }
 }

@@ -10,8 +10,10 @@ namespace Interpreter.Core.Execution;
 /// <typeparam name="TMemory">The persistent memory snapshot threaded through machine state.</typeparam>
 /// <remarks>
 /// The admitted profile is scenario-derived: primitive Int32 constants, arguments, initialized locals, unchecked
-/// add/subtract/multiply, one exact instance-Int32 <c>ldfld</c> shape, <c>nop</c>, and <c>ret</c>. Complete method
-/// metadata and every field operand are resolved and typed before activation. Unsupported bodies execute no prefix.
+/// add/subtract/multiply, one instance-Int32 <c>ldfld</c> shape, <c>nop</c>, and <c>ret</c>. Field loads remain exact
+/// by default and may continue from canonical partial or unavailable evidence only through the explicit unknown
+/// policy and approximation-domain capability. Complete method metadata and every field operand are resolved and
+/// typed before activation. Unsupported bodies execute no prefix.
 /// </remarks>
 public sealed partial class IlMachine<TValue, TMemory>
     where TMemory : IPersistentMemoryState<TMemory>
@@ -672,6 +674,14 @@ public sealed partial class IlMachine<TValue, TMemory>
                     "is semantic top without a validated explanatory lineage root");
             }
 
+            if (precisionRequirement == ValuePrecisionRequirement.ExplainedUnknown &&
+                precision != ValuePrecisionKind.ExplainedUnknown)
+            {
+                return InvalidValue(
+                    "EXEC_FIELD_APPROXIMATION_PRECISION_INVALID",
+                    "is not the explained unknown required from approximate field-load evidence");
+            }
+
             if (precision == ValuePrecisionKind.ExplainedUnknown &&
                 (precisionRequirement == ValuePrecisionRequirement.Exact ||
                  _unknownExecutionPolicy != UnknownExecutionPolicy.ExplainedInt32))
@@ -782,5 +792,6 @@ public sealed partial class IlMachine<TValue, TMemory>
     {
         Executable,
         Exact,
+        ExplainedUnknown,
     }
 }

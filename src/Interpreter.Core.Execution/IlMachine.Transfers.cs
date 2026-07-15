@@ -345,9 +345,19 @@ public sealed partial class IlMachine<TValue, TMemory>
                     Failure: null,
                     TargetException: exception);
 
-            case MemoryLoadKind.Partial or
-                 MemoryLoadKind.Unavailable or
-                 MemoryLoadKind.Conflict:
+            case MemoryLoadKind.Partial or MemoryLoadKind.Unavailable:
+                return LoadApproximateField(
+                    state,
+                    operationalState,
+                    frame,
+                    plan,
+                    instruction,
+                    field,
+                    receiver,
+                    load,
+                    updatedBudget);
+
+            case MemoryLoadKind.Conflict:
                 return MemoryFailed(state, operationalState, frame, load, MachineRunStatus.Blocked);
 
             case MemoryLoadKind.Invalid:
@@ -365,6 +375,108 @@ public sealed partial class IlMachine<TValue, TMemory>
                         frame.Method,
                         frame.IlOffset));
         }
+    }
+
+    private StepOutcome<TValue, TMemory> LoadApproximateField(
+        MachineState<TValue, TMemory> state,
+        MachineOperationalState operationalState,
+        FrameState<TValue> frame,
+        AdmittedMethodPlan plan,
+        AdmittedInstruction instruction,
+        ResolvedField field,
+        TValue receiver,
+        MemoryLoadResult<TValue> load,
+        BudgetState updatedBudget)
+    {
+        if (load.FieldEvidence is not { } evidence)
+        {
+            return MemoryFailed(state, operationalState, frame, load, MachineRunStatus.Blocked);
+        }
+
+        var expectedEvidenceStatus = load.Kind switch
+        {
+            MemoryLoadKind.Partial => EvaluationEvidenceStatus.Partial,
+            MemoryLoadKind.Unavailable => EvaluationEvidenceStatus.Unavailable,
+            _ => throw new InvalidOperationException("Approximate field transfer received a non-approximate load kind."),
+        };
+        if (evidence.EvidenceStatus != expectedEvidenceStatus ||
+            evidence.Field != field ||
+            !string.Equals(load.FailureCode, evidence.ReasonCode, StringComparison.Ordinal))
+        {
+            return Failed(
+                state,
+                operationalState,
+                MachineRunStatus.InvalidProgram,
+                new ExecutionFailure(
+                    ExecutionFailureKind.MemoryFailure,
+                    "EXEC_FIELD_EVIDENCE_MISMATCH",
+                    "Structured field evidence does not match the frozen field-load instruction or result classification.",
+                    frame.Method,
+                    frame.IlOffset));
+        }
+
+        if (_unknownExecutionPolicy != UnknownExecutionPolicy.ExplainedInt32)
+        {
+            return MemoryFailed(state, operationalState, frame, load, MachineRunStatus.Blocked);
+        }
+
+        if (_domain is not IFieldLoadApproximationDomain<TValue> approximationDomain)
+        {
+            return MemoryFailed(state, operationalState, frame, load, MachineRunStatus.Blocked);
+        }
+
+        TValue value;
+        try
+        {
+            value = approximationDomain.CreateFieldLoadUnknown(receiver, evidence);
+        }
+        catch (Exception exception) when (IsCapabilityException(exception))
+        {
+            return Failed(
+                state,
+                operationalState,
+                MachineRunStatus.InvalidProgram,
+                new ExecutionFailure(
+                    ExecutionFailureKind.DomainFailure,
+                    "EXEC_FIELD_APPROXIMATION_FAILURE",
+                    "The value domain rejected the validated approximate field-load transfer.",
+                    frame.Method,
+                    frame.IlOffset));
+        }
+
+        var failure = ValidateValue(
+            value,
+            field.FieldType,
+            "field approximation",
+            0,
+            frame.Method,
+            frame.IlOffset,
+            ValuePrecisionRequirement.ExplainedUnknown);
+        if (failure is not null)
+        {
+            return Failed(state, operationalState, MachineRunStatus.InvalidProgram, failure);
+        }
+
+        var stack = frame.EvalStack.SetItem(frame.EvalStack.Length - 1, value);
+        if (stack.Length > plan.Definition.Body.MaxStack)
+        {
+            return InvalidStack(
+                state,
+                operationalState,
+                frame,
+                instruction,
+                "ldfld transfer exceeds the method's declared maximum stack depth.");
+        }
+
+        return CompleteOrdinaryInstruction(
+            state,
+            operationalState,
+            frame,
+            instruction,
+            stack,
+            frame.Locals,
+            updatedBudget,
+            evidence);
     }
 
     private StepOutcome<TValue, TMemory> Push(
@@ -463,7 +575,8 @@ public sealed partial class IlMachine<TValue, TMemory>
         AdmittedInstruction instruction,
         ImmutableArray<TValue> evalStack,
         ImmutableArray<TValue> locals,
-        BudgetState updatedBudget)
+        BudgetState updatedBudget,
+        FieldLoadEvidence? precisionLostEvidence = null)
     {
         var nextFrame = frame with
         {
@@ -475,11 +588,21 @@ public sealed partial class IlMachine<TValue, TMemory>
         {
             CallStack = state.CallStack.SetItem(state.CallStack.Length - 1, nextFrame),
         };
+        var events = precisionLostEvidence is null
+            ? ImmutableArray.Create(ExecutedEvent(frame, instruction))
+            : ImmutableArray.Create(
+                ExecutedEvent(frame, instruction),
+                new DebugEvent(
+                    DebugEventKind.ValuePrecisionLost,
+                    frame.Method,
+                    frame.IlOffset,
+                    instruction.Kind.ToString(),
+                    precisionLostEvidence));
         return new StepOutcome<TValue, TMemory>(
             nextState,
             operationalState with { Budget = updatedBudget },
             MachineRunStatus.Ready,
-            ImmutableArray.Create(ExecutedEvent(frame, instruction)));
+            events);
     }
 
     private static StepOutcome<TValue, TMemory> InvalidSlot(

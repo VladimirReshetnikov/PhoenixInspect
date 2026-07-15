@@ -4,7 +4,7 @@ using Interpreter.Core.Abstractions;
 namespace Interpreter.Domain.Concrete;
 
 /// <summary>
-/// Implements the W4.2 lifted-flat concrete semantics with a separate content-addressed explanation channel.
+/// Implements the W4.2/W4.3 lifted-flat concrete semantics with a separate content-addressed explanation channel.
 /// </summary>
 /// <remarks>
 /// Semantic operations delegate to <see cref="ConcreteDomain"/>. Lineage never participates in value equality,
@@ -12,7 +12,9 @@ namespace Interpreter.Domain.Concrete;
 /// only when a complete explanation can be derived from every unknown operand; bare lattice top remains deliberately
 /// ungrounded and is rejected by execution through <see cref="IValuePrecisionDomain{TValue}"/>.
 /// </remarks>
-public sealed class ProvenanceConcreteDomain : IValuePrecisionDomain<ProvenanceConcreteValue>
+public sealed class ProvenanceConcreteDomain :
+    IValuePrecisionDomain<ProvenanceConcreteValue>,
+    IFieldLoadApproximationDomain<ProvenanceConcreteValue>
 {
     private readonly ConcreteDomain semanticDomain = new();
     private readonly object lineageGate = new();
@@ -91,6 +93,63 @@ public sealed class ProvenanceConcreteDomain : IValuePrecisionDomain<ProvenanceC
         ArgumentNullException.ThrowIfNull(origin);
         var node = Intern(ProvenanceLineageCodec.CreateInputOrigin(origin));
         return new ProvenanceConcreteValue(semanticDomain.Top(origin.StaticType), node.Id);
+    }
+
+    /// <inheritdoc />
+    public ProvenanceConcreteValue CreateFieldLoadUnknown(
+        ProvenanceConcreteValue receiver,
+        FieldLoadEvidence evidence)
+    {
+        receiver = RequireValue(receiver);
+        ArgumentNullException.ThrowIfNull(evidence);
+
+        if (receiver.SemanticValue.Kind != ConcreteValueKind.ObjectReference ||
+            !receiver.SemanticValue.TryGetReferenceId(out var referenceId) ||
+            referenceId <= 0 ||
+            receiver.LineageRoot.HasValue)
+        {
+            throw new ArgumentException(
+                "An approximate field load requires one exact object-reference receiver without lineage.",
+                nameof(receiver));
+        }
+
+        var field = evidence.Field;
+        if (field.FieldType != TypeSig.Int32 || field.IsStatic || field.IsLiteral || field.HasRva)
+        {
+            throw new ArgumentException(
+                "W4.3 field approximation requires one ordinary instance Int32 field.",
+                nameof(evidence));
+        }
+
+        if (receiver.SemanticValue.StaticType != field.DeclaringType)
+        {
+            throw new ArgumentException(
+                "The approximate field receiver must exactly match the frozen declaring TypeDef.",
+                nameof(receiver));
+        }
+
+        if (evidence.EvidenceStatus is not (EvaluationEvidenceStatus.Partial or EvaluationEvidenceStatus.Unavailable))
+        {
+            throw new ArgumentException(
+                "Approximate field evidence must be partial or unavailable.",
+                nameof(evidence));
+        }
+
+        var receiverKey = new ImportedReceiverKey(evidence.ImportedObjectSha256);
+        var origin = new ProvenanceInputOrigin(
+            ProvenanceInputKind.ImportedField,
+            evidence.DependencyOrdinal,
+            evidence.EvidenceStatus,
+            new ProvenanceSourceKey(evidence.Sha256),
+            evidence.ReasonCode,
+            TypeSig.Int32);
+        var originCandidate = ProvenanceLineageCodec.CreateInputOrigin(origin);
+        var fieldCandidate = ProvenanceLineageCodec.CreateFieldLoadTransform(
+            receiverKey,
+            field,
+            originCandidate.Id);
+        var fieldNode = InternFieldLoadPair(originCandidate, fieldCandidate);
+        return new ProvenanceConcreteValue(semanticDomain.Top(TypeSig.Int32), fieldNode.Id);
     }
 
     /// <inheritdoc />
@@ -229,6 +288,7 @@ public sealed class ProvenanceConcreteDomain : IValuePrecisionDomain<ProvenanceC
     public ProvenanceConcreteValue ReplayLineage(ProvenanceLineageGraph graph)
     {
         ArgumentNullException.ThrowIfNull(graph);
+        graph.ValidateForReplay();
         lock (lineageGate)
         {
             foreach (var node in graph.Nodes)
@@ -339,6 +399,70 @@ public sealed class ProvenanceConcreteDomain : IValuePrecisionDomain<ProvenanceC
         lock (lineageGate)
         {
             return InternUnderLock(candidate);
+        }
+    }
+
+    private FieldLoadTransformLineageNode InternFieldLoadPair(
+        InputOriginLineageNode origin,
+        FieldLoadTransformLineageNode fieldLoad)
+    {
+        lock (lineageGate)
+        {
+            if (!ProvenanceLineageCodec.IsCanonical(origin) || !ProvenanceLineageCodec.IsCanonical(fieldLoad))
+            {
+                throw new ArgumentException("A field-load lineage pair is not canonical.");
+            }
+
+            if (fieldLoad.Dependencies.Length != 1 ||
+                fieldLoad.Dependencies[0] != origin.Id ||
+                fieldLoad.InputOrigin != origin.Id)
+            {
+                throw new ArgumentException("A field-load transform must depend on exactly its imported-field origin.");
+            }
+
+            var storedOrigin = Preflight(origin);
+            var storedField = Preflight(fieldLoad);
+            if (storedOrigin is not InputOriginLineageNode canonicalOrigin ||
+                storedField is not FieldLoadTransformLineageNode canonicalField)
+            {
+                throw new InvalidOperationException("A canonical lineage identity is bound to an incompatible node kind.");
+            }
+
+            if (canonicalOrigin.Origin.Kind != ProvenanceInputKind.ImportedField ||
+                canonicalOrigin.StaticType != TypeSig.Int32 ||
+                canonicalOrigin.Origin.Evidence is not (
+                    EvaluationEvidenceStatus.Partial or EvaluationEvidenceStatus.Unavailable))
+            {
+                throw new ArgumentException("A field-load lineage pair requires a partial or unavailable imported-field origin.");
+            }
+
+            if (!lineageNodes.ContainsKey(origin.Id))
+            {
+                lineageNodes.Add(origin.Id, origin);
+            }
+
+            if (!lineageNodes.ContainsKey(fieldLoad.Id))
+            {
+                lineageNodes.Add(fieldLoad.Id, fieldLoad);
+            }
+
+            return canonicalField;
+
+            LineageNode Preflight(LineageNode candidate)
+            {
+                if (!lineageNodes.TryGetValue(candidate.Id, out var existing))
+                {
+                    return candidate;
+                }
+
+                if (!existing.CanonicalBytes.AsSpan().SequenceEqual(candidate.CanonicalBytes.AsSpan()))
+                {
+                    throw new InvalidOperationException(
+                        "A lineage SHA-256 identity collided with different canonical bytes.");
+                }
+
+                return existing;
+            }
         }
     }
 

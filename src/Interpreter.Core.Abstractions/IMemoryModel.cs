@@ -31,7 +31,11 @@ public interface IMemoryModel<TValue, TMem>
     /// <param name="field">The frozen resolved field descriptor to observe.</param>
     /// <returns>
     /// An exact typed value, a typed non-exact evidence outcome, or structured target-exception information.
-    /// Implementations must never convert absent imported evidence into an allocated-object default.
+    /// Implementations must never convert absent imported evidence into an allocated-object default. A model that
+    /// can retain the complete W4 ordinary-instance <c>Int32</c> observation should return
+    /// <see cref="MemoryLoadResult{TValue}.FromFieldEvidence"/> for partial or unavailable evidence. A code-only
+    /// partial or unavailable result remains a non-continuing compatibility outcome because it cannot establish the
+    /// imported object, frozen field, source, read geometry, or observed-byte prefix.
     /// </returns>
     MemoryLoadResult<TValue> LoadField(TMem mem, TValue objRef, ResolvedField field);
 

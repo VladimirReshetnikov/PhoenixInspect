@@ -184,3 +184,57 @@ public sealed class BinaryTransformLineageNode : LineageNode
         return builder.ToImmutable();
     }
 }
+
+/// <summary>
+/// Represents one approximate imported-field read through an exact imported receiver and frozen instance field.
+/// </summary>
+/// <remarks>
+/// The receiver identity is the prepared imported-object digest, never the concrete domain's local numeric reference
+/// payload. The sole predecessor is the imported-field <see cref="InputOriginLineageNode"/> that retains the partial
+/// or unavailable observation.
+/// </remarks>
+public sealed class FieldLoadTransformLineageNode : LineageNode
+{
+    internal FieldLoadTransformLineageNode(
+        LineageNodeId id,
+        ImportedReceiverKey receiver,
+        ResolvedField field,
+        LineageNodeId inputOrigin,
+        ImmutableArray<byte> canonicalBytes)
+        : base(
+            id,
+            LineageNodeKind.FieldLoadTransform,
+            TypeSig.Int32,
+            ImmutableArray.Create(inputOrigin),
+            canonicalBytes)
+    {
+        if (!receiver.IsValid)
+        {
+            throw new ArgumentException("A field-load transform requires a non-default imported receiver key.", nameof(receiver));
+        }
+
+        ArgumentNullException.ThrowIfNull(field);
+        if (field.FieldType != TypeSig.Int32)
+        {
+            throw new ArgumentException("W4.3 field-load lineage requires the structural Int32 field type.", nameof(field));
+        }
+
+        if (field.IsStatic || field.IsLiteral || field.HasRva)
+        {
+            throw new ArgumentException("W4.3 field-load lineage requires an ordinary instance field.", nameof(field));
+        }
+
+        Receiver = receiver;
+        Field = field;
+        InputOrigin = inputOrigin;
+    }
+
+    /// <summary>Gets the complete imported-object evidence digest for the exact receiver.</summary>
+    public ImportedReceiverKey Receiver { get; }
+
+    /// <summary>Gets the complete frozen ordinary-instance field descriptor.</summary>
+    public ResolvedField Field { get; }
+
+    /// <summary>Gets the sole imported-field origin predecessor.</summary>
+    public LineageNodeId InputOrigin { get; }
+}

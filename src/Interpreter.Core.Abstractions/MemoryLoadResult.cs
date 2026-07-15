@@ -135,8 +135,9 @@ public sealed record TargetExceptionInfo
 /// <typeparam name="TValue">The value-domain representation returned only by <see cref="MemoryLoadKind.Exact"/>.</typeparam>
 /// <remarks>
 /// The default value is <see cref="MemoryLoadKind.Invalid"/> without a code and is never intentionally produced.
-/// Factory methods enforce that only exact results carry values and only target-exception results carry structured
-/// exception information.
+/// Factory methods enforce that only exact results carry values, only partial or unavailable results created by
+/// <see cref="FromFieldEvidence"/> carry structured field evidence, and only target-exception results carry
+/// structured exception information. Existing code-only non-exact results remain valid and carry no field evidence.
 /// </remarks>
 public readonly struct MemoryLoadResult<TValue>
 {
@@ -146,12 +147,14 @@ public readonly struct MemoryLoadResult<TValue>
         MemoryLoadKind kind,
         TValue? value,
         string? failureCode,
-        TargetExceptionInfo? exception)
+        TargetExceptionInfo? exception,
+        FieldLoadEvidence? fieldEvidence)
     {
         Kind = kind;
         this.value = value;
         FailureCode = failureCode;
         Exception = exception;
+        FieldEvidence = fieldEvidence;
     }
 
     /// <summary>Gets the exact/evidence/exception outcome classification.</summary>
@@ -167,6 +170,16 @@ public readonly struct MemoryLoadResult<TValue>
     /// </summary>
     public TargetExceptionInfo? Exception { get; }
 
+    /// <summary>
+    /// Gets canonical field-load evidence only for structured <see cref="MemoryLoadKind.Partial"/> or
+    /// <see cref="MemoryLoadKind.Unavailable"/> results.
+    /// </summary>
+    /// <remarks>
+    /// Code-only values produced by <see cref="NonExact"/> return <see langword="null"/>. Consumers must not infer
+    /// read geometry or imported-object identity from <see cref="FailureCode"/> alone.
+    /// </remarks>
+    public FieldLoadEvidence? FieldEvidence { get; }
+
     /// <summary>Gets the exact value.</summary>
     /// <exception cref="InvalidOperationException">The result is not <see cref="MemoryLoadKind.Exact"/>.</exception>
     public TValue Value => Kind == MemoryLoadKind.Exact
@@ -180,7 +193,7 @@ public readonly struct MemoryLoadResult<TValue>
     public static MemoryLoadResult<TValue> Exact(TValue value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        return new MemoryLoadResult<TValue>(MemoryLoadKind.Exact, value, null, null);
+        return new MemoryLoadResult<TValue>(MemoryLoadKind.Exact, value, null, null, null);
     }
 
     /// <summary>Creates a non-exact evidence or invalidity result.</summary>
@@ -201,7 +214,35 @@ public readonly struct MemoryLoadResult<TValue>
         }
 
         TargetExceptionInfo.ValidateCode(code, nameof(code));
-        return new MemoryLoadResult<TValue>(kind, default, code, null);
+        return new MemoryLoadResult<TValue>(kind, default, code, null, null);
+    }
+
+    /// <summary>Creates a partial or unavailable result directly from canonical field-load evidence.</summary>
+    /// <param name="fieldEvidence">The complete validated partial or unavailable field observation.</param>
+    /// <returns>
+    /// A value-free result whose kind is derived from <see cref="FieldLoadEvidence.EvidenceStatus"/>, whose
+    /// <see cref="FailureCode"/> equals <see cref="FieldLoadEvidence.ReasonCode"/>, and whose
+    /// <see cref="FieldEvidence"/> is <paramref name="fieldEvidence"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="fieldEvidence"/> is <see langword="null"/>.</exception>
+    public static MemoryLoadResult<TValue> FromFieldEvidence(FieldLoadEvidence fieldEvidence)
+    {
+        ArgumentNullException.ThrowIfNull(fieldEvidence);
+        var kind = fieldEvidence.EvidenceStatus switch
+        {
+            EvaluationEvidenceStatus.Partial => MemoryLoadKind.Partial,
+            EvaluationEvidenceStatus.Unavailable => MemoryLoadKind.Unavailable,
+            _ => throw new ArgumentException(
+                "Structured field-load evidence must be Partial or Unavailable.",
+                nameof(fieldEvidence)),
+        };
+
+        return new MemoryLoadResult<TValue>(
+            kind,
+            default,
+            fieldEvidence.ReasonCode,
+            null,
+            fieldEvidence);
     }
 
     /// <summary>Creates a modeled target-exception result carrying no ordinary field value.</summary>
@@ -215,6 +256,7 @@ public readonly struct MemoryLoadResult<TValue>
             MemoryLoadKind.TargetException,
             default,
             exception.Code,
-            exception);
+            exception,
+            null);
     }
 }
