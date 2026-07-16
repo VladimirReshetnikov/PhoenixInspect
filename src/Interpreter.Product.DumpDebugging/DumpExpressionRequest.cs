@@ -42,32 +42,6 @@ public enum DumpExpressionLanguageProfile
     FixedDepthMemberChainV1 = 2,
 }
 
-/// <summary>Identifies the structural operator used by an admitted fixed-depth member chain.</summary>
-public enum DumpMemberChainAccessKind
-{
-    /// <summary>Both member hops use ordinary direct member access.</summary>
-    Direct = 1,
-
-    /// <summary>The terminal hop uses conditional access on the selected reference member.</summary>
-    Conditional = 2,
-}
-
-/// <summary>Identifies the optional typed coalescing literal retained by a member-chain identity.</summary>
-public enum DumpMemberChainFallbackKind
-{
-    /// <summary>The expression has no coalescing literal.</summary>
-    None = 0,
-
-    /// <summary>The expression coalesces to the null literal.</summary>
-    Null = 1,
-
-    /// <summary>The expression coalesces to one exact <see cref="int"/> literal.</summary>
-    Int32 = 2,
-
-    /// <summary>The expression coalesces to one decoded <see cref="string"/> literal.</summary>
-    String = 3,
-}
-
 /// <summary>Publishes the frozen, project-owned identity of the complete C# expression front-end profile.</summary>
 /// <remarks>
 /// These draft constants describe parsing and structural work bounds only. They do not widen the product's admitted

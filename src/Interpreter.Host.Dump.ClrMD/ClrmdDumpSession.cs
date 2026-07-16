@@ -830,8 +830,28 @@ public sealed partial class ClrmdDumpSession : IDisposable
             field,
             ImmutableArray<EvaluationDeterministicBound>.Empty);
 
+    /// <summary>
+    /// Reads one already-bound Int32 field of an exact referenced object without repeating member selection.
+    /// </summary>
+    /// <param name="obj">The validated non-root target that owns <paramref name="field"/>.</param>
+    /// <param name="field">The descriptor derived from a frozen relative terminal layout.</param>
+    /// <returns>
+    /// An exact integer or typed non-exact observation retaining only counted storage evidence. This draft W6 overload
+    /// performs no field or type-catalog lookup.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="obj"/> or <paramref name="field"/> is <see langword="null"/>.
+    /// </exception>
+    public ClrmdEvidenceResult<ClrmdInt32FieldObservation> ReadInt32Field(
+        ClrmdReferencedObjectInfo obj,
+        ClrmdInstanceFieldInfo field) =>
+        ReadInt32FieldCore(
+            obj,
+            field,
+            ImmutableArray<EvaluationDeterministicBound>.Empty);
+
     private ClrmdEvidenceResult<ClrmdInt32FieldObservation> ReadInt32FieldCore(
-        ClrmdHeapObjectInfo obj,
+        IClrmdObjectIdentity obj,
         ClrmdInstanceFieldInfo field,
         ImmutableArray<EvaluationDeterministicBound> appliedBounds)
     {
@@ -949,8 +969,28 @@ public sealed partial class ClrmdDumpSession : IDisposable
             field,
             ImmutableArray<EvaluationDeterministicBound>.Empty);
 
+    /// <summary>
+    /// Reads one already-bound nullable Int32 field of an exact referenced object without repeating member selection.
+    /// </summary>
+    /// <param name="obj">The validated non-root target that owns <paramref name="field"/>.</param>
+    /// <param name="field">The descriptor carrying the frozen nullable child layout.</param>
+    /// <returns>
+    /// An exact present integer, exact null, or typed non-exact observation. This draft W6 overload reads only the
+    /// frozen discriminant and, when present, payload ranges.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="obj"/> or <paramref name="field"/> is <see langword="null"/>.
+    /// </exception>
+    public ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation> ReadNullableInt32Field(
+        ClrmdReferencedObjectInfo obj,
+        ClrmdInstanceFieldInfo field) =>
+        ReadNullableInt32FieldCore(
+            obj,
+            field,
+            ImmutableArray<EvaluationDeterministicBound>.Empty);
+
     private ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation> ReadNullableInt32FieldCore(
-        ClrmdHeapObjectInfo obj,
+        IClrmdObjectIdentity obj,
         ClrmdInstanceFieldInfo field,
         ImmutableArray<EvaluationDeterministicBound> appliedBounds)
     {
@@ -1156,6 +1196,32 @@ public sealed partial class ClrmdDumpSession : IDisposable
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="maximumCharacters"/> is negative.</exception>
     public ClrmdStringFieldObservation ReadStringField(
         ClrmdHeapObjectInfo obj,
+        ClrmdInstanceFieldInfo field,
+        int maximumCharacters) =>
+        ReadStringFieldCore(obj, field, maximumCharacters);
+
+    /// <summary>
+    /// Reads one already-bound string field of an exact referenced object without repeating member selection.
+    /// </summary>
+    /// <param name="obj">The validated non-root target that owns <paramref name="field"/>.</param>
+    /// <param name="field">The descriptor derived from a frozen relative terminal layout.</param>
+    /// <param name="maximumCharacters">Caller observation cap. Values above the adapter hard cap remain bounded.</param>
+    /// <returns>
+    /// An exact string/null observation or typed prefix/unavailable/conflict/invalid evidence. This draft W6 overload
+    /// performs no field or type-catalog lookup and never invokes a certified getter.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="obj"/> or <paramref name="field"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maximumCharacters"/> is negative.</exception>
+    public ClrmdStringFieldObservation ReadStringField(
+        ClrmdReferencedObjectInfo obj,
+        ClrmdInstanceFieldInfo field,
+        int maximumCharacters) =>
+        ReadStringFieldCore(obj, field, maximumCharacters);
+
+    private ClrmdStringFieldObservation ReadStringFieldCore(
+        IClrmdObjectIdentity obj,
         ClrmdInstanceFieldInfo field,
         int maximumCharacters)
     {
@@ -2064,7 +2130,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
     private static ClrmdStringFieldObservation CreateStringObservation(
         ClrmdEvidenceStatus status,
         ClrmdValueIssue issue,
-        ClrmdHeapObjectInfo obj,
+        IClrmdObjectIdentity obj,
         string fieldName,
         ImmutableArray<MemoryReadResult>.Builder evidence,
         int? fieldMetadataToken = null,

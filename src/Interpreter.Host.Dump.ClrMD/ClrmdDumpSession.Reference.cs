@@ -165,32 +165,16 @@ public sealed partial class ClrmdDumpSession
                 evidence: pointerEvidence);
         }
         var evidence = pointerEvidence.Add(methodTableRead);
-        if (methodTableRead.Status != MemoryReadStatus.Exact)
+        var header = ProjectObjectHeader(Memory.PointerSize, methodTableRead, runtimeType.MethodTable);
+        if (header.Status != ClrmdEvidenceStatus.Exact)
         {
             return ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
-                methodTableRead.Status == MemoryReadStatus.Partial
-                    ? ClrmdEvidenceStatus.Partial
-                    : ClrmdEvidenceStatus.Unavailable,
-                ClrmdValueIssue.MemoryUnavailable,
+                header.Status,
+                header.Issue,
                 evidence: evidence);
         }
 
-        if (!TryDecodePointer(methodTableRead.Bytes.AsSpan(), Memory.PointerSize, out var observedMethodTable) ||
-            observedMethodTable == 0)
-        {
-            return ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
-                ClrmdEvidenceStatus.Invalid,
-                ClrmdValueIssue.InvalidData,
-                evidence: evidence);
-        }
-
-        if (observedMethodTable != runtimeType.MethodTable)
-        {
-            return ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
-                ClrmdEvidenceStatus.Conflict,
-                ClrmdValueIssue.TypeMismatch,
-                evidence: evidence);
-        }
+        var observedMethodTable = header.MethodTable!.Value;
 
         if (!_moduleInfos.TryGetValue(
                 (runtimeType.Module.AppDomain.Address, runtimeType.Module.Address),
@@ -280,6 +264,8 @@ public sealed partial class ClrmdDumpSession
         if (target.Module.Identity != certificate.DeclaredTarget.RuntimeModule ||
             target.TypeMetadataToken != certificate.DeclaredTarget.MetadataToken ||
             !string.Equals(target.TypeName, certificate.DeclaredTarget.Name, StringComparison.Ordinal) ||
+            !target.Selection.IsExactNonNull ||
+            target.Selection.TargetAddress != target.Address ||
             !string.Equals(
                 target.Selection.Field.ToCanonicalReplayProjection(),
                 certificate.OuterField.ToCanonicalReplayProjection(),
@@ -379,5 +365,42 @@ public sealed partial class ClrmdDumpSession
 
         address = ownerAddress + (ulong)relativeOffset;
         return address <= ulong.MaxValue - (ulong)(rangeSize - 1);
+    }
+
+    internal static (
+        ClrmdEvidenceStatus Status,
+        ClrmdValueIssue Issue,
+        ulong? MethodTable) ProjectObjectHeader(
+        int pointerSize,
+        MemoryReadResult read,
+        ulong runtimeMethodTable)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        if (pointerSize is not (sizeof(uint) or sizeof(ulong)) ||
+            read.RequestedLength != pointerSize ||
+            runtimeMethodTable == 0)
+        {
+            return (ClrmdEvidenceStatus.Invalid, ClrmdValueIssue.InvalidData, null);
+        }
+
+        if (read.Status != MemoryReadStatus.Exact)
+        {
+            return (
+                read.Status == MemoryReadStatus.Partial
+                    ? ClrmdEvidenceStatus.Partial
+                    : ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.MemoryUnavailable,
+                null);
+        }
+
+        if (!TryDecodePointer(read.Bytes.AsSpan(), pointerSize, out var observedMethodTable) ||
+            observedMethodTable == 0)
+        {
+            return (ClrmdEvidenceStatus.Invalid, ClrmdValueIssue.InvalidData, null);
+        }
+
+        return observedMethodTable == runtimeMethodTable
+            ? (ClrmdEvidenceStatus.Exact, ClrmdValueIssue.None, observedMethodTable)
+            : (ClrmdEvidenceStatus.Conflict, ClrmdValueIssue.TypeMismatch, observedMethodTable);
     }
 }

@@ -64,6 +64,54 @@ public sealed class W6ReferencedObjectIntegrationTests
             Assert.Equal(ClrmdEvidenceStatus.Unavailable, unavailable.Status);
             Assert.Null(unavailable.Value!.TargetAddress);
             Assert.Empty(unavailable.Value.Memory.Bytes);
+
+            var headerBytes = new byte[pointerSize];
+            if (pointerSize == sizeof(uint))
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(headerBytes, (uint)expected);
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt64LittleEndian(headerBytes, expected);
+            }
+
+            var headerRead = MemoryReadResult.Create(
+                field.Snapshot.MemorySourceId,
+                address: expected,
+                pointerSize,
+                headerBytes);
+            var matchingHeader = ClrmdDumpSession.ProjectObjectHeader(pointerSize, headerRead, expected);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, matchingHeader.Status);
+            Assert.Equal(expected, matchingHeader.MethodTable);
+
+            var conflictingHeader = ClrmdDumpSession.ProjectObjectHeader(pointerSize, headerRead, expected + 1);
+            Assert.Equal(ClrmdEvidenceStatus.Conflict, conflictingHeader.Status);
+            Assert.Equal(ClrmdValueIssue.TypeMismatch, conflictingHeader.Issue);
+            Assert.Equal(expected, conflictingHeader.MethodTable);
+
+            var zeroHeader = ClrmdDumpSession.ProjectObjectHeader(
+                pointerSize,
+                MemoryReadResult.Create(
+                    field.Snapshot.MemorySourceId,
+                    address: expected,
+                    pointerSize,
+                    new byte[pointerSize]),
+                expected);
+            Assert.Equal(ClrmdEvidenceStatus.Invalid, zeroHeader.Status);
+            Assert.Equal(ClrmdValueIssue.InvalidData, zeroHeader.Issue);
+            Assert.Null(zeroHeader.MethodTable);
+
+            var partialHeader = ClrmdDumpSession.ProjectObjectHeader(
+                pointerSize,
+                MemoryReadResult.Create(
+                    field.Snapshot.MemorySourceId,
+                    address: expected,
+                    pointerSize,
+                    headerBytes[..2]),
+                expected);
+            Assert.Equal(ClrmdEvidenceStatus.Partial, partialHeader.Status);
+            Assert.Equal(ClrmdValueIssue.MemoryUnavailable, partialHeader.Issue);
+            Assert.Null(partialHeader.MethodTable);
         }
     }
 
@@ -109,6 +157,55 @@ public sealed class W6ReferencedObjectIntegrationTests
                     storage.Value.Address);
                 Assert.True(storage.Value.Address >= target.Address);
                 Assert.True(storage.Value.Address - target.Address < target.Size);
+
+                var misaligned = CreateExactReference(certificate.OuterField, targetAddress: 1);
+                var invalidPointer = session.ValidateReferencedObject(certificate, misaligned);
+                Assert.Equal(ClrmdEvidenceStatus.Invalid, invalidPointer.Status);
+                Assert.Equal(ClrmdValueIssue.InvalidData, invalidPointer.Issue);
+                Assert.Single(invalidPointer.Evidence);
+
+                var forgedOwner = new ClrmdHeapObjectInfo(
+                    root.Snapshot,
+                    root.Address + 8,
+                    root.TypeName,
+                    root.TypeMetadataToken,
+                    root.MethodTable,
+                    root.RootAddress,
+                    root.RootKind,
+                    root.Module,
+                    root.Evidence);
+                var conflictingOwner = session.ReadObjectReference(forgedOwner, certificate.OuterField);
+                Assert.Equal(ClrmdEvidenceStatus.Conflict, conflictingOwner.Status);
+                Assert.Equal(ClrmdValueIssue.TypeMismatch, conflictingOwner.Issue);
+                Assert.Empty(conflictingOwner.Evidence);
+
+                var foreignOwner = new ClrmdHeapObjectInfo(
+                    new ClrmdSnapshotIdentity(new string('b', 64)),
+                    root.Address,
+                    root.TypeName,
+                    root.TypeMetadataToken,
+                    root.MethodTable,
+                    root.RootAddress,
+                    root.RootKind,
+                    root.Module,
+                    root.Evidence);
+                var conflictingSnapshot = session.ReadObjectReference(foreignOwner, certificate.OuterField);
+                Assert.Equal(ClrmdEvidenceStatus.Conflict, conflictingSnapshot.Status);
+                Assert.Equal(ClrmdValueIssue.SnapshotMismatch, conflictingSnapshot.Issue);
+                Assert.Empty(conflictingSnapshot.Evidence);
+
+                var undersized = ForgeTarget(target, target.Address, size: 1, target.Selection);
+                var invalidRange = session.BindTerminalStorage(certificate, undersized);
+                Assert.Equal(ClrmdEvidenceStatus.Invalid, invalidRange.Status);
+                Assert.Equal(ClrmdValueIssue.InvalidData, invalidRange.Issue);
+                Assert.Empty(invalidRange.Evidence);
+
+                var overflowSelection = CreateExactReference(certificate.OuterField, ulong.MaxValue);
+                var overflowTarget = ForgeTarget(target, ulong.MaxValue, ulong.MaxValue, overflowSelection);
+                var overflow = session.BindTerminalStorage(certificate, overflowTarget);
+                Assert.Equal(ClrmdEvidenceStatus.Invalid, overflow.Status);
+                Assert.Equal(ClrmdValueIssue.InvalidData, overflow.Issue);
+                Assert.Empty(overflow.Evidence);
             });
 
         CaptureGraph(
@@ -147,9 +244,17 @@ public sealed class W6ReferencedObjectIntegrationTests
                 Assert.Equal(ClrmdEvidenceStatus.Exact, firstTarget.Status);
                 Assert.Equal(ClrmdEvidenceStatus.Exact, aliasTarget.Status);
                 Assert.Equal(firstTarget.Value!.Address, aliasTarget.Value!.Address);
+                Assert.Equal(
+                    firstTarget.Value.Identity.ToCanonicalReplayProjection(),
+                    aliasTarget.Value.Identity.ToCanonicalReplayProjection());
                 Assert.NotEqual(
                     firstTarget.Value.ToCanonicalReplayProjection(),
                     aliasTarget.Value.ToCanonicalReplayProjection());
+
+                var wrongSelection = session.ValidateReferencedObject(firstCertificate, aliasReference);
+                Assert.Equal(ClrmdEvidenceStatus.Conflict, wrongSelection.Status);
+                Assert.Equal(ClrmdValueIssue.TypeMismatch, wrongSelection.Issue);
+                Assert.Single(wrongSelection.Evidence);
 
                 var subtypeCertificate = AssertCertificate(session, root, "Polymorphic", "Value");
                 var subtypeReference = session.ReadObjectReference(root, subtypeCertificate.OuterField);
@@ -178,6 +283,44 @@ public sealed class W6ReferencedObjectIntegrationTests
             fieldTypeName: "Synthetic.Target",
             nullableInt32Layout: null);
     }
+
+    private static ClrmdObjectReferenceObservation CreateExactReference(
+        ClrmdInstanceFieldInfo field,
+        ulong targetAddress)
+    {
+        var bytes = new byte[field.Size];
+        if (field.Size == sizeof(uint))
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(bytes, checked((uint)targetAddress));
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt64LittleEndian(bytes, targetAddress);
+        }
+
+        var result = ClrmdObjectReferenceObservation.Project(
+            field,
+            field.Size,
+            MemoryReadResult.Create(field.Snapshot.MemorySourceId, field.Address, field.Size, bytes));
+        Assert.Equal(ClrmdEvidenceStatus.Exact, result.Status);
+        return Assert.IsType<ClrmdObjectReferenceObservation>(result.Value);
+    }
+
+    private static ClrmdReferencedObjectInfo ForgeTarget(
+        ClrmdReferencedObjectInfo source,
+        ulong address,
+        ulong size,
+        ClrmdObjectReferenceObservation selection) =>
+        new(
+            source.Snapshot,
+            address,
+            source.TypeName,
+            source.TypeMetadataToken,
+            source.MethodTable,
+            size,
+            source.Module,
+            selection,
+            source.Evidence);
 
     private static ClrmdDeclaredDataMemberCertificate AssertCertificate(
         ClrmdDumpSession session,
