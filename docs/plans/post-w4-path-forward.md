@@ -285,7 +285,10 @@ observation denominator remains 0 questions across 0 incidents and 0 application
 
 W5.1–W5.5b are complete implementation checkpoints. The W5 umbrella is in closure verification: the meaningful
 portfolio and complete local matrix are satisfied at pushed checkpoint `56ec08149`; exact pushed hosted closure
-remains to be recorded.
+remains open. Run [29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes
+documentation and Build/Fast at exact commit `24825ce53`, but GitHub rejects both dependent dump jobs before their
+first step because the account's payments/spending limit requires attention. A same-commit retry produces the same
+zero-step infrastructure rejection.
 
 The current documentation candidate passes the complete local headless matrix: locked restore; strict 14-project
 Release build with warnings as errors at 0 warnings/0 errors; unit 502/502; Fast 104/104; ordinary dump 10/10;
@@ -293,6 +296,10 @@ optimized dump 1/1; focused W5 facade 3/3; focused generated usefulness 1/1; foc
 1/1; Markdown links across 63 files/59 local
 destinations; and the one-workflow headless guard. Every test lane has zero skips. This is local verification of the
 implemented checkpoints and complete local closure, not hosted W5 umbrella closure or field readiness.
+
+Hosted closure requires no code or test relaxation. Restore GitHub Actions billing/spending availability and rerun
+the unchanged workflow at the exact closure candidate; both dump jobs must actually execute and pass before this
+document changes W5 from closure verification to closed.
 
 ## 6) The post-W5 decision gate
 

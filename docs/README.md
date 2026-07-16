@@ -58,7 +58,10 @@ batch-pipeline root graphs. Its raw counts are 8/12 admitted, 4/12 exact, 2/3 us
 decision-changing; four recurring `MemberNavigation` blockers select `AdmitFixedDepthMemberChain` as the next
 prototype design slice. The designed corpus is not field evidence: representative/external observations remain 0
 questions across 0 incidents and 0 application shapes, and no readiness rate is claimed. W5 is in exact closure
-verification, not yet umbrella-closed.
+verification, not yet umbrella-closed. Exact-commit hosted run
+[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation and
+Build/Fast, but GitHub rejects both dump jobs before execution because the account's payments/spending limit requires
+attention.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted

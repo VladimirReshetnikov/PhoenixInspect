@@ -528,4 +528,8 @@ The cumulative documentation candidate passes locked restore; strict 14-project 
 502/502; Fast 104/104; ordinary dump 10/10; optimized dump 1/1; focused W5 facade 3/3; focused generated usefulness
 1/1; focused meaningful synthetic usefulness 1/1; Markdown 63 files/59 local destinations; and the one-workflow
 headless guard. All behavioral lanes are wrapper-launched and have zero skips. These local facts satisfy the W5 local
-closure matrix but not field readiness; exact pushed hosted closure verification remains pending.
+closure matrix but not field readiness. Exact-commit hosted run
+[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation and
+Build/Fast. Its real-dump and optimized-dump jobs execute zero steps because GitHub rejects them for account payment/
+spending-limit state; an unchanged retry has the same result. The hosted gate remains pending without reducing its
+selection.

@@ -931,7 +931,10 @@ facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefu
 destinations; and the one-workflow headless guard. All
 behavioral invocations use `eng/Invoke-HeadlessProcess.ps1` and have zero skips. The full matrix is regression and
 complete local closure evidence at pushed checkpoint `56ec08149`; exact pushed hosted W5 umbrella verification remains
-open.
+open. Run [29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation
+and Build/Fast at exact commit `24825ce53`, while GitHub rejects both dump jobs with zero executed steps because the
+account's payments/spending limit requires attention. The same-commit retry repeats that infrastructure rejection;
+neither attempt is dump-test evidence.
 
 ## 9) Deferred research suites
 

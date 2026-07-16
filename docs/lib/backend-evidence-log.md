@@ -56,6 +56,13 @@ expand the scenario or establish evidence beyond the named fixture shapes. Final
 `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same four jobs in [run
 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
 
+W5 local closure at `56ec08149` executes the twelve-snapshot row above inside the complete 10/10 ordinary-dump lane
+and retains optimized-dump 1/1. Exact-commit hosted run
+[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation and
+Build/Fast, but GitHub rejects both dump jobs before their first step because the account's payments/spending limit
+requires attention. The retry has the same zero-step infrastructure result, so it is not hosted dump evidence and W5
+umbrella closure remains open.
+
 ## Active decision and remaining evidence gaps
 
 - SRM/PEReader is the decided backend for active prototype slices; see `mvp-backend-decision-record.md`.
