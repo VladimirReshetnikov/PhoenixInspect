@@ -21,7 +21,7 @@ namespace Interpreter.Host.Dump.ClrMD;
 /// adapter therefore supports only named generated/local fixtures. Caveat: other artifact shapes remain outside the
 /// product contract. Only reads retained through <see cref="Memory"/> are attributed as counted dump-byte evidence.
 /// </remarks>
-public sealed class ClrmdDumpSession : IDisposable
+public sealed partial class ClrmdDumpSession : IDisposable
 {
     private const int MaximumHandleMatches = 4_096;
     private const int MaximumHandleScanCount = 100_000;
