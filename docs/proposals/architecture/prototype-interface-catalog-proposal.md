@@ -367,16 +367,41 @@ misaccounting, or an inconsistent transcript with stable `W4.TargetException.*` 
 root, request, plan, or traversal property. `Interpreter.Product.DumpDebugging` depends only on core abstractions and
 execution; no host, metadata backend, dump session, query product, rooted facade, or runner dependency crosses it.
 
+### W5 expression-to-result facade
+
+W5 checkpoints `7c3d52572`/`d88b13c2c`/`fc8a43a7a` add a separate rooted path without changing the standalone W4.7
+fragment:
+
+- `DumpQueryEngine.ClassifySyntax` reports whether text belongs to the unchanged W2 grammar without preparing,
+  binding, or reading a field.
+- `DumpExpressionPolicy`, `DumpMethodExpressionIdentity`, `DumpExpressionRequest`,
+  `DumpExpressionClassification`, and `DumpExpressionClassifier` preserve exact expression/root text, the single
+  admitted method identity, evaluation mode, deterministic bounds, model/policy versions, canonical bytes, and stable
+  classification diagnostics.
+- `DumpMethodAcquisitionFacade.Acquire` owns bounded root/module/type/caller/helper/field reacquisition and returns
+  either a detached `CounterfactualDumpExecutionBinding` or a typed `DumpMethodAcquisitionFailure`; it exposes no
+  live ClrMD lifetime to later preparation/execution.
+- `DumpExpressionEvaluator.Evaluate` routes an accepted W2 request to the existing
+  `EvaluationResult<DumpQueryValue>` and an accepted method request to the existing W4 preparation/execution path.
+  `DumpExpressionEvaluationOutcome` is a strict union that preserves those original results plus typed
+  classification, acquisition, and preparation failures; failure cases acquire no invented common semantic mode.
+
+W5.4/5.5 add no reusable public API. `Interpreter.Headless.ReferenceConsumer` is an internal, independently launched
+prototype host whose two command modes emit versioned scenario and usefulness reports. Its generated corpus carries
+an explicit corpus kind; the usefulness runner rejects corpus-kind mixing and projects controlled rows to a zero-row
+representative denominator.
+
 ## Deliberately absent
 
-The query product surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
+The admitted W5 expression surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
 null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
-loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.7's provenance-aware
-domain/machine, graph, interpreted-call, and pure-model extensions are architecture proofs, not query-language
-features or a counterfactual-method facade. W4.6 supplies structural selection, modeled-return lineage, frozen-
+loading, conversions, general operators, or any method expression except exact `root.GetMarkerSummary()`. W3's public
+interpreter activation and W4.2–W4.7's provenance-aware domain/machine, graph, interpreted-call, and pure-model
+extensions remain architecture proofs rather than general query-language features. W4.6 supplies structural selection, modeled-return lineage, frozen-
 capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. W4.8 now supplies
 the rooted request/plan/result facade and runner; W4.9 supplies the ClrMD exact/degraded field producer, detached dump
-binding, and generated-dump reopen/replay result. Exact hosted closure passed in run 29463426083. Speculative
+binding, and generated-dump reopen/replay result; W5 exposes only their one explicitly admitted composition. Exact
+W4 hosted closure passed in run 29463426083. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 

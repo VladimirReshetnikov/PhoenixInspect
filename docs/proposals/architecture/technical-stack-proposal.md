@@ -357,20 +357,20 @@ Formatting/analyzers, dependency audit, and scheduled benchmarks are added when 
 1. Which concrete consumer, if any, justifies multi-targeting?
 2. How much trace detail is retained by default versus explicit local opt-in?
 
-W5 resolves the earlier test-host question: add one repository-owned headless reference consumer for the closed
-expression-to-result facade, but do not declare it a stable shipping CLI contract. See the
+W5 resolves the earlier test-host question: the repository now has one headless reference consumer for the closed
+expression-to-result facade, without declaring it a stable shipping CLI contract. See the
 [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md).
 
 
 ## 13) Prototype implementation snapshot (draft)
 
-> **Draft status notice:** The current solution is a reduced nine-source-project prototype organized around executable evidence and a small set of dependency boundaries.
+> **Draft status notice:** The current solution is a reduced ten-source-project prototype organized around executable evidence and a small set of dependency boundaries.
 > Project names, dependencies, and interfaces are exploratory and may change without compatibility guarantees.
 
 Current facts:
 
-- The solution retains nine `src/` projects with active code/contracts plus four test/target projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
-- Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, and `Interpreter.Product.DumpDebugging`.
+- The solution retains ten `src/` projects with active code/contracts plus four test/target projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
+- Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Product.DumpDebugging`, and `Interpreter.Headless.ReferenceConsumer`.
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
   terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct

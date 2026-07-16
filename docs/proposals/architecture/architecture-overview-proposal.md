@@ -607,10 +607,11 @@ a later milestone and are prerequisites for debugger-grade Step Out and async `M
 
 ## 10. Validated input boundary
 
-W1–W4 are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
+W1–W5's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
 deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. Earlier
 out-of-scope experiments have been removed. Caveat: completing these milestones establishes no behavior
-for other artifact shapes; any later expansion requires its own scenario, contract, and executable evidence.
+for other artifact shapes; W5's generated usefulness portfolio contributes zero representative rows, and any later
+expansion requires its own scenario, contract, and executable evidence.
 
 ## 11. Physical topology
 
@@ -632,8 +633,12 @@ The prototype retains only projects containing behavior or contracts exercised b
   `Evaluate(plan)` path, canonical identities, and closed result-value projection;
 - `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
   result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
-  dump memory; and ClrMD evidence binder. It depends on the active ClrMD and SRM boundaries to compose the admitted
-  dump scenario, while the core execution projects remain backend-independent.
+  dump memory; ClrMD evidence binder; and W5 canonical expression classifier, typed acquisition facade, and strict
+  mode-preserving W2/W4 evaluation union. It depends on the active query, ClrMD, and SRM boundaries to compose the
+  admitted dump scenario, while the core execution projects remain backend-independent;
+- `Interpreter.Headless.ReferenceConsumer` — W5's independently launched prototype composition root, versioned
+  generated scenario consumer, stable machine/human reporter, and usefulness-portfolio raw-count/gate runner. It owns
+  no reusable semantics and is not a shipping CLI contract.
 
 Logical seams may be documented without creating assemblies. A new project is justified only when it contains implementation, has an independently useful dependency boundary, and at least one test exercises that boundary. Empty product/model/backend projects are not placeholders.
 

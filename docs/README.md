@@ -47,6 +47,15 @@ land through `a8b5f32f0`. W4 is closed at exact commit `a819a08fd`; [GitHub Acti
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs.
 Final documentation-closure commit `aaec73c5b` passed the same matrix in [run
 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
+W5.1–W5.5a are now implemented at pushed checkpoints `7c3d52572`, `d88b13c2c`, `fc8a43a7a`, `59d9bb590`, and
+`0f5230e13`. The product owns canonical expression admission, dump-to-method acquisition, and mode-preserving W2/W4
+evaluation. A repository-owned headless consumer runs the nine-row generated facade corpus in fresh processes, and
+its usefulness mode joins predeclared question metadata to evaluated machine reports, emits raw counts/composition,
+retains unsupported/unavailable rows, and rejects generated-to-representative promotion. Generated validation is 8/9
+admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers; it contributes zero
+representative rows. No representative incident portfolio is present, so W5 remains open at W5.5b with 0 questions,
+0 incidents, and 0 application shapes in its representative denominator. No readiness rate or successor increment is
+claimed.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted

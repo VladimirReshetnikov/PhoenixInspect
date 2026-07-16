@@ -225,6 +225,13 @@ unsupported expression, budget exhaustion, cancellation, repeated execution, and
 **Scale:** `~1K implementation LOC` for the manifest/report runner; corpus acquisition is not an implementation-LOC
 item.
 
+This checkpoint has two evidence boundaries:
+
+- **W5.5a — deterministic runner:** join predeclared question metadata to W5.4 machine reports, retain every row,
+  emit raw counts and composition, enforce corpus provenance, and defer the successor decision while the gate is open.
+- **W5.5b — representative portfolio:** run the predeclared incident corpus and record the baseline. This is evidence
+  acquisition, not an invitation to substitute controlled fixtures or synthetic annotations.
+
 Run a predeclared portfolio of incident questions through the W5 facade. A representative baseline should be on the
 order of `~10` incidents across more than one application shape. Controlled generated fixtures may validate the
 runner, but they do not satisfy this gate and do not contribute to a production-readiness rate.
@@ -247,6 +254,30 @@ representative corpus is absent.
 - The checked-in report schema and replay tests are deterministic.
 - A representative portfolio produces an honest baseline or W5 remains open with the missing corpus named explicitly.
 - The resulting blocker ranking is sufficient to make the decision in §6 without relying on architecture taste.
+
+### W5 implementation ledger — 2026-07-15
+
+| Checkpoint | Coarse realized scale | Pushed checkpoint | Current evidence |
+|---|---:|---|---|
+| W5.0 | `~100 documentation LOC` | `053bcb94f` | Scope, exclusions, LOC scale, and closure rule frozen. |
+| W5.1 | `~1K LOC` | `7c3d52572` | Exact W2 syntax classification remains parser-owned; the sole method expression has a canonical policy/request identity and exact spelling boundary. |
+| W5.2 | `~1K LOC` | `d88b13c2c` | One product-owned facade reacquires root/module/type/caller/helper/fields, returns typed acquisition failures, and detaches all evidence before preparation/execution. |
+| W5.3 | `~1K LOC` | `fc8a43a7a` | One strict outcome union preserves the original W2 result, W4 execution result, preparation failure, classification failure, or acquisition failure without a fabricated common semantic mode. |
+| W5.4 | `~1K LOC` | `59d9bb590` | The 14-project solution contains a headless reference consumer and nine-row generated corpus with fresh-process and dump-reopen deterministic replay. |
+| W5.5a | `~1K LOC` | `0f5230e13` | The usefulness runner emits raw admission/outcome/usefulness/acquisition composition, retains unsupported/unavailable rows, projects generated rows to a zero-row representative baseline, rejects corpus-kind promotion, and defers the next decision. |
+| W5.5b | corpus acquisition | — | **Open:** no representative incident portfolio is present. The current representative baseline is 0 questions, 0 incidents, and 0 application shapes; no successor is admitted. |
+
+The implemented W5 surface is cumulatively `~10K LOC` at order-of-magnitude scale. The generated validation report is
+8/9 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers. Those are runner-
+validation counts only: they contribute nothing to a readiness rate or to the representative denominator. W5.1–
+W5.5a are complete implementation checkpoints; the W5 umbrella remains open solely at W5.5b and the exact hosted-
+closure gate.
+
+The current documentation candidate passes the complete local headless matrix: locked restore; strict 14-project
+Release build with warnings as errors at 0 warnings/0 errors; unit 502/502; Fast 104/104; ordinary dump 9/9;
+optimized dump 1/1; focused W5 facade 3/3; focused W5 usefulness 1/1; Markdown links across 63 files/57 local
+destinations; and the one-workflow headless guard. Every test lane has zero skips. This is local verification of the
+implemented checkpoints, not W5 umbrella closure or representative usefulness evidence.
 
 ## 6) The post-W5 decision gate
 
@@ -283,6 +314,7 @@ the named-fixture scope. The expected command shape is:
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore  --verbosity minimal
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5ExpressionFacadeV1" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5UsefulnessGeneratedV1" --verbosity normal
 ```
 
 Documentation gates remain:
@@ -306,7 +338,7 @@ W5 closes only when all of the following are true:
 - callers no longer assemble W4 structural machinery;
 - exact, degraded, failure, budget, cancellation, interpreted, and modeled outcomes retain their existing truth axes;
 - a headless consumer and generated canonical corpus prove the complete request-to-result path;
-- the representative usefulness gate has produced its raw-count baseline; if the corpus is absent, W5.1–W5.4 may be
+- the representative usefulness gate has produced its raw-count baseline; if the corpus is absent, W5.1–W5.5a may be
   recorded as completed checkpoints but the W5 umbrella remains open and no successor feature is admitted; and
 - the exact pushed closure commit passes locked restore, strict Release build, complete unit/Fast/focused dump lanes,
   Markdown/headless guards, and hosted CI with zero skips within the milestone test selection.

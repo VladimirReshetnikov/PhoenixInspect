@@ -8,11 +8,11 @@
 
 The earlier solution contained 42 source projects: 34 were project-file-only placeholders before this pass, including the now-implemented concrete domain. That physical decomposition encoded an unvalidated multi-product architecture and imposed build/dependency surface without behavior.
 
-The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary, and W4.7 justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary. Three later experimental projects have now been removed, leaving nine source projects and thirteen projects overall. Caveat: the physical topology represents only the named generated fixtures and explicitly admitted input shapes. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
+The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary, W4.7 justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary, and W5.4 justified one external-process composition root/report runner. Three later experimental projects have now been removed, leaving ten source projects and fourteen projects overall. Caveat: the physical topology represents only the named generated fixtures and explicitly admitted input shapes. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
 
 ## 2. Current source projects
 
-The solution retains nine source projects, each containing contracts or behavior exercised by a realized slice:
+The solution retains ten source projects, each containing contracts or behavior exercised by a realized slice:
 
 | Project | Current responsibility |
 |---|---|
@@ -24,7 +24,8 @@ The solution retains nine source projects, each containing contracts or behavior
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
 | `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, and W3 snapshot-scoped execution resolution/import correlation through ClrMD. |
 | `Interpreter.Product.DumpQuery` | Closed W2 grammar, typed snapshot-root binding, one-time field selection into immutable canonical plans, bounded `Evaluate(plan)`, closed value projection, and complete-corpus replay. |
-| `Interpreter.Product.DumpDebugging` | W4.7 standalone issuer-certified exact-null target-outcome projection, stable failures, schema-v1 canonical fragment, content equality/hash, and compiler/SRM replay; no rooted request/plan/facade or dump dependency. |
+| `Interpreter.Product.DumpDebugging` | W4 standalone target projection and rooted preparation/execution plus W5 canonical expression request/classification, typed method acquisition, detached dump binding, and strict mode-preserving W2/W4 evaluation outcome. |
+| `Interpreter.Headless.ReferenceConsumer` | W5 prototype composition root: read-only dump open/root binding, versioned scenario execution, stable machine/human projection, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
 
 Tests are separated into a fast semantic/contract suite, a real dump integration suite, and two generated target
 executables: the general dump target and the optimized modeled-incident target. The
@@ -52,6 +53,9 @@ depth facts, high-water integrity, event and budget ordering, resolver-free repl
   certification, complete IL-zero-to-null chronology/latch/accounting/event validation, fixed fragment bytes/SHA,
   absence of synthetic product reachability, optional idempotent re-step, direct/adjusted compiler getters, fresh SRM
   replay, and poison/count proof that re-step performs no capability call or repeated field load.
+  W5 tests add exact classifier boundaries, typed acquisition failures, unchanged underlying W2/W4 artifacts, a nine-
+  row external-process corpus, usefulness-report raw-count replay, and rejection of generated-to-representative corpus
+  promotion. Controlled fixtures validate the runner only and contribute zero representative incident rows.
 
 ## 3. Dependency rules
 

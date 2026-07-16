@@ -757,7 +757,10 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; active W
   [Post-W4 Path Forward](../../plans/post-w4-path-forward.md). It admits only unchanged W2 expressions plus
   `root.GetMarkerSummary()`, owns the current W4 acquisition/binding path, preserves semantic modes in one evaluator
   facade, adds a headless reference consumer, and requires representative incident-question evidence before another
-  capability is selected.
+  capability is selected. W5.1–W5.5a are implemented through pushed checkpoint `0f5230e13`: generated fresh-process
+  replay validates the facade and raw-count runner, but its nine controlled questions contribute zero representative
+  rows. W5.5b remains open at 0 representative questions across 0 incidents and 0 application shapes; therefore no
+  readiness rate or next capability is selected.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

@@ -27,8 +27,9 @@ and stable nontransfer taxonomy. W4.6d proves compiler/SRM exact, degraded, repe
 W4.7 adds dump-free issuer-certified complete target-outcome projection, a fixed standalone canonical fragment, and
 direct/adjusted compiler/SRM fresh replay with capability poison/count evidence. W4.8 adds the rooted product runner,
 and W4.9 adds the ClrMD evidence producer, detached binding, dump-grounded exact/degraded corpus, close/reopen replay,
-and exact hosted closure. Active W5 adds focused expression-classifier, acquisition-facade, mode-preserving consumer,
-canonical-corpus, and representative-usefulness evidence under the
+and exact hosted closure. W5.1–W5.5a now add the focused expression classifier, typed acquisition facade, mode-
+preserving evaluator, external headless consumer, canonical generated corpus, and deterministic usefulness-report
+runner through pushed checkpoint `0f5230e13`. Representative incident evidence remains open under the
 [`Post-W4 Path Forward`](../plans/post-w4-path-forward.md).
 Dump-free parser, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
@@ -491,3 +492,32 @@ through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Caveat: validation beyond the named
 fixture shapes is outside active delivery. Representative production
 measurement was non-gating for W1–W4; it is now W5's usefulness gate before another feature is admitted.
+
+## W5 implementation and open usefulness gate
+
+W5's generated dump lane runs one versioned nine-row scenario manifest through the repository-owned headless
+consumer. It covers the unchanged W2 field query; exact interpreted and body-free modeled W4 evaluation; partial and
+unavailable marker evidence; module acquisition failure; unsupported syntax; zero instruction budget; pre-
+cancellation; repeated evaluation; fresh processes; and complete dump close/reopen/rebind. No test method assembles
+W4 graph/domain/machine internals for this path.
+
+The W5.5a runner consumes the resulting machine report plus a predeclared question portfolio. Its output retains user
+task/expression, root/context attribution, member/method evidence quality, semantic mode, terminal product outcome,
+first boundary, known manual object-walking operations, usefulness, decision impact, diagnostics, and dominant
+blocker. Aggregates contain raw admission, exact, useful partial/unknown, decision-changing, acquisition-failure,
+outcome, and blocker counts; they contain no headline percentage. Corpus kind is carried by both reports and mixing
+is rejected.
+
+Focused `Category=Dump&Corpus=W5UsefulnessGeneratedV1` verification passes 1/1 at pushed checkpoint `0f5230e13` with
+zero skips. It launches two facade consumers and two usefulness runs through the headless wrapper, requires byte-
+identical outputs, and proves that changing only the portfolio label cannot promote the generated evaluation report.
+The controlled raw counts are 8/9 admitted, 3/9 exact, 0/4 useful partial-or-unknown, and 0/9 decision-changing; the
+representative projection is deliberately 0 questions, 0 incidents, and 0 application shapes. This validates the
+runner only. W5.5b remains open until at least 10 predeclared representative incidents across two application shapes
+run through the facade; no successor feature or production-readiness rate is admitted before that baseline.
+
+The cumulative documentation candidate passes locked restore; strict 14-project Release 0 warnings/0 errors; unit
+502/502; Fast 104/104; ordinary dump 9/9; optimized dump 1/1; focused W5 facade 3/3; focused W5 usefulness 1/1;
+Markdown 63 files/57 local destinations; and the one-workflow headless guard. All behavioral lanes are wrapper-
+launched and have zero skips. These local facts do not satisfy the absent representative portfolio or hosted W5
+umbrella-closure conditions.

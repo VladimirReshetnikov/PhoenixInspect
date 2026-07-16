@@ -27,8 +27,10 @@ generated-dump execution plus close/reopen replay. Exact W4 implementation closu
 final documentation closure passed the same matrix in run 29463847230.
 
 W5 preserves all of those gates while adding focused expression classification, acquisition-facade, mode-preserving
-composition, headless consumer, canonical-corpus, and representative-usefulness evidence. The exact W5 corpus filters
-land with their implementation; no unimplemented research matrix is added in advance.
+composition, headless consumer, canonical-corpus, and representative-usefulness evidence. W5.1–W5.5a are implemented
+through pushed checkpoints `7c3d52572`/`d88b13c2c`/`fc8a43a7a`/`59d9bb590`/`0f5230e13`. The generated usefulness
+lane validates deterministic raw-count reporting and corpus-kind enforcement but contributes zero representative
+rows. W5.5b and umbrella closure remain open; no unimplemented research matrix is added in advance.
 
 ## 1) Evidence language
 
@@ -261,7 +263,7 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 | Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
 
 Both W1 and W2 local results are corroborated by their exact-commit hosted closure runs above. Their historical project
-and test counts describe the repositories at those commits. The current workflow builds all 13 projects and runs every
+and test counts describe the repositories at those commits. The current workflow builds all 14 projects and runs every
 remaining test in each selected category. Caveat: those tests establish behavior only for the named fixture shapes.
 
 ### Current local W3 implementation verification — 2026-07-14
@@ -889,6 +891,36 @@ Branches and path forks, CFG state merge/fixpoint/widening, loops, handler-trans
 broad intrinsic/model catalogs, allocation, async/dynamic lifting, and virtual stepping remain outside this gate. A
 later research proposal or existing scaffold does not count as W4 evidence.
 
+### Current W5.1–W5.5a implementation verification — 2026-07-15
+
+The five pushed implementation checkpoints establish distinct test boundaries:
+
+1. W5.1 reuses the exact W2 parser for syntax classification and tests canonical requests, exact method spelling,
+   casing, punctuation, suffix rejection, bounds, and fresh-object replay.
+2. W5.2 reacquires real dump evidence through counting/poisonable sources, disposes ClrMD before W4 work, proves the
+   exact result, and exercises missing, ambiguous, partial, unavailable, unsupported, incompatible, conflicting, and
+   invalid acquisition failures.
+3. W5.3 compares the underlying canonical W2/W4 bytes and hashes through the strict outcome union and covers exact,
+   degraded, preparation, acquisition, unsupported, budget, depth, and cancellation outcomes.
+4. W5.4 launches the reference consumer through `eng/Invoke-HeadlessProcess.ps1` in fresh processes, reopens the same
+   generated dump, and requires byte-identical machine/human reports across all nine scenarios.
+5. W5.5a joins the checked-in question portfolio to those evaluated rows in two more fresh processes, requires byte-
+   identical raw-count reports, retains unsupported/unavailable rows, emits no percentages, and rejects an attempted
+   generated-to-representative corpus-kind promotion.
+
+The focused `Category=Dump&Corpus=W5UsefulnessGeneratedV1` lane passes 1/1 at checkpoint `0f5230e13`, including the
+W5.4 replay it consumes, with zero skips and no UI. The generated report records 8/9 admitted, 3/9 exact, 0/4 useful
+partial-or-unknown, and 0/9 decision-changing questions, but its representative projection is 0/0 and its successor
+selection is deferred. These counts validate the runner, not product usefulness. W5.5b requires a predeclared
+representative portfolio of at least 10 incidents across at least two application shapes; until it exists, W5 remains
+open and hosted umbrella closure cannot be claimed.
+
+The cumulative documentation candidate also passes locked restore; strict 14-project Release build with warnings as
+errors at 0 warnings/0 errors; complete unit 502/502; Fast 104/104; ordinary dump 9/9; optimized dump 1/1; focused W5
+facade 3/3; focused W5 usefulness 1/1; Markdown 63 files/57 destinations; and the one-workflow headless guard. All
+behavioral invocations use `eng/Invoke-HeadlessProcess.ps1` and have zero skips. The full matrix is regression and
+checkpoint evidence only while W5.5b remains open.
+
 ## 9) Deferred research suites
 
 The following are not active CI commitments:
@@ -919,8 +951,10 @@ Record the failing fixture/test, exact command and environment, expected versus 
 
 ## 11) Open decisions
 
-1. Which representative private-production optimized incident corpus can supply an honest root/frame-context denominator?
-2. What corpus composition would justify setting a recoverability readiness threshold without hiding unavailable cases?
+1. Which representative incident corpus can supply at least 10 predeclared W5 questions across at least two
+   application shapes without disclosing restricted artifacts?
+2. Does that corpus's raw blocker composition select one allowed post-W5 branch, or does it require stopping product
+   expansion?
 
-Both are post-W1 product-readiness questions. Broader external-input handling is separately scoped and is not an open W1,
-W2, or W3 testing decision.
+These are the active W5.5b evidence questions. Generated fixtures cannot answer them, and no readiness threshold is
+set in advance. Broader external-input handling is separately scoped.
