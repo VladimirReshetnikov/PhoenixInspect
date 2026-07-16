@@ -9,5 +9,6 @@
     <ProjectReference Include="../Interpreter.Domain.Concrete/Interpreter.Domain.Concrete.csproj" />
     <ProjectReference Include="../Interpreter.Host.Abstractions/Interpreter.Host.Abstractions.csproj" />
     <ProjectReference Include="../Interpreter.Host.Dump.ClrMD/Interpreter.Host.Dump.ClrMD.csproj" />
+    <ProjectReference Include="../Interpreter.Product.DumpQuery/Interpreter.Product.DumpQuery.csproj" />
   </ItemGroup>
 </Project>

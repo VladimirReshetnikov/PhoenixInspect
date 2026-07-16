@@ -49,6 +49,31 @@ public static class DumpQueryEngine
             StringLiteralLengthBound,
             ObservedStringLengthBound);
 
+    /// <summary>
+    /// Classifies one expression against the exact W2 syntax without binding runtime evidence or opening a dump.
+    /// </summary>
+    /// <param name="expression">Expression text, including missing or oversized input that requires a stable rejection.</param>
+    /// <param name="rootName">The case-sensitive host-selected root identifier expected by the expression.</param>
+    /// <returns>
+    /// A complete syntax-only admission result carrying a stable diagnostic on rejection and only the deterministic
+    /// parser bounds actually reached. Success does not assert that a field exists or that later evidence is exact.
+    /// </returns>
+    /// <remarks>
+    /// This method reuses the W2 parser directly so product facades cannot drift into a second field-expression
+    /// grammar. It performs no root validation beyond syntax, no member selection, and no memory read.
+    /// </remarks>
+    public static DumpQuerySyntaxClassification ClassifySyntax(string? expression, string? rootName)
+    {
+        var parsed = DumpQueryParser.Parse(expression, rootName);
+        var bounds = ImmutableArray.CreateBuilder<EvaluationDeterministicBound>(EngineBounds.Length);
+        AddParserBounds(bounds, parsed.AppliedBounds);
+        return new DumpQuerySyntaxClassification(
+            parsed.IsSuccess,
+            parsed.DiagnosticCode,
+            parsed.DiagnosticMessage,
+            bounds.ToImmutable());
+    }
+
     /// <summary>Parses and binds one closed-grammar expression into an immutable object-specific query plan.</summary>
     /// <param name="session">The immutable dump session against which root and member evidence are bound.</param>
     /// <param name="expression">Expression text subject to deterministic syntax and length bounds.</param>
