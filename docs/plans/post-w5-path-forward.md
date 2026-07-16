@@ -555,6 +555,19 @@ schemas, classifications, outcome semantics, aggregate-count rules, and legacy c
   default profile; and
 - same/fresh-object canonical opt-in chain-request replay and deletion of the production handwritten parser.
 
+**Implemented checkpoint.** Commit `68aaf418f` closes W6.2 at `~1K LOC` scale. It pins the sole direct Roslyn package
+on `Interpreter.Product.DumpQuery`, uses one C# 14 regular-source full-text expression parse, projects disjoint W2,
+W5, direct-chain, and conditional-chain shapes into project-owned descriptors, and adds a separately tagged opt-in
+request/chain identity. The production handwritten reader, literal decoder, and W5 diagnostic-dependent fallback are
+absent. The W5 evaluator consumes the already parsed direct-member descriptor, so preparation does not parse again.
+
+The source-controlled three-bucket corpus includes rich valid trees and malformed neighbors; package/profile, bounds,
+one-parse-site, public-surface, and dependency-placement guards are executable. Locked restore, strict Release 0/0,
+unit 502/502, Fast 119/119, and the focused 52/52 parser/W2 replay/W5 dump/headless/W6 lane pass with zero skips. That
+focused lane runs the twelve-incident synthetic portfolio and preserves all four historical member-chain rows as
+unsupported under the default profile while the explicit W6 profile admits their syntax without claiming binding or
+evaluation.
+
 ### W6.3 — declared reference target and terminal data-member certificate
 
 **Scale:** `~1K LOC`.

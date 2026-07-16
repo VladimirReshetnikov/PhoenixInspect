@@ -5,8 +5,8 @@
 > **Decision:** use the complete Roslyn C# expression parser once per bounded request, then admit only explicitly
 > versioned syntax-tree shapes into project-owned binding and evaluation plans.
 >
-> **Implementation status:** design only. W6.1 remains the next executable checkpoint; the front-end migration is
-> W6.2 and is estimated at `~1K LOC` including its compatibility and conformance tests.
+> **Implementation status:** implemented at W6.2 checkpoint `68aaf418f` at `~1K LOC` scale, including compatibility
+> and conformance tests. W6.3 and later consume only the project-owned admitted descriptor.
 
 ## 1) Decision
 
@@ -164,10 +164,12 @@ The front end applies checks in this order:
 2. Apply the 512-UTF-16-code-unit expression limit before calling Roslyn. Oversized input receives no retained raw-
    expression identity, preserving the existing bounded-input rule.
 3. Parse once with the exact profile in section 4.
-4. Reject syntax diagnostics, missing nodes or tokens, skipped text, or incomplete full-text coverage as `Invalid`.
-5. Reject directive or disabled-text structured trivia as `Unsupported`; expression requests do not establish a
-   preprocessor context.
-6. Require `FullSpan` to cover the complete input and `ToFullString()` to equal the input ordinally.
+4. Reject directive or disabled-text structured trivia as `Unsupported`; expression requests do not establish a
+   preprocessor context. This policy check precedes recovery normalization because standalone expression parsing can
+   also attach recovery diagnostics to directive-bearing input.
+5. Reject all remaining syntax diagnostics, missing nodes or tokens, or skipped text as `Invalid`.
+6. Require `FullSpan` to cover the complete input and `ToFullString()` to equal the input ordinally; incomplete
+   coverage is `Invalid`.
 7. Apply the node-plus-token, maximum-depth, identifier-value, and decoded-string limits before profile recognition.
 8. Run only the recognizers enabled by the selected product language profile.
 
@@ -500,8 +502,14 @@ The decision is implemented only when W6.2 demonstrates all of the following at 
   guards pass; and
 - the exact dependency and realized implementation scale are recorded without implying broader language support.
 
-Until then, the current handwritten parser is implementation truth for W2/W5 and this document is the active design
-contract for its W6.2 replacement.
+Checkpoint `68aaf418f` satisfies this gate locally: locked restore and the strict Release build pass with zero warnings
+or errors; 502 unit, 119 Fast, and 52 focused parser/W2 replay/W5 dump/headless/W6 front-end tests pass with zero
+skips. The focused lane includes the complete twelve-incident W5 synthetic portfolio, proving its four historical
+member-chain rows remain unsupported under the frozen profile. The three-bucket W6 corpus adds complete-parser
+evidence for complex patterns, lambdas, query and switch expressions, casts/indexers, interpolation, raw/verbatim
+strings, escaped/Unicode identifiers, malformed neighbors, directives, and every frozen front-end bound. Source and
+reflection guards prove one production parse site, no handwritten reader or W5 fallback route, descriptor-consuming
+preparation, package placement only on `Interpreter.Product.DumpQuery`, and no Roslyn type in public product APIs.
 
 ## 15) Primary references
 
@@ -509,4 +517,3 @@ contract for its W6.2 replacement.
 - Microsoft Learn: [`CSharpParseOptions`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.csharp.csharpparseoptions?view=roslyn-dotnet-5.0.0)
 - Microsoft Learn: [configure a C# language version](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version)
 - NuGet: [`Microsoft.CodeAnalysis.CSharp` 5.3.0](https://www.nuget.org/packages/Microsoft.CodeAnalysis.CSharp/5.3.0)
-
