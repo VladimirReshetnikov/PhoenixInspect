@@ -763,9 +763,10 @@ A UI result badge may summarize them but never replaces them in contracts or tes
 
 ## 7) Decision gates
 
-W2 decisions now applied:
+W2 decisions applied at its closure commit:
 
-1. The supported subset is a project-owned bounded parser for one root/field and optional literal coalescing.
+1. The implemented subset used a project-owned bounded parser for one root/field and optional literal coalescing.
+   W6.2 later supersedes that mechanism with the common pinned Roslyn parser while retaining project-owned admission.
 2. Project-owned immutable parse/query shapes stay internal; no Roslyn object enters a core contract.
 3. Diagnostics use stable artifact-text-free messages, value display omits values, and canonical replay is explicitly not a diagnostic output format.
 4. Typed root binding and an immutable, snapshot/object-specific plan make parse, bind, plan, and evaluate distinct stages;

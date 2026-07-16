@@ -32,9 +32,10 @@ scope. A whole-file-identified disk PE remains only an independent oracle, never
 W4's closed design contract is
 `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. The completed
 `plans/post-w4-path-forward.md` records W5's expression-to-result path and meaningful synthetic selection. The active
-successor is `plans/post-w5-path-forward.md`: implement one opt-in fixed-depth member-chain query with certified
-field-backed terminal data properties, then use a larger multi-shape designed portfolio to select or defer another
-prototype increment while keeping field-readiness evidence separate. W4.1's fixture gate is implemented at
+successor is `plans/post-w5-path-forward.md`: replace parser growth with one pinned complete Roslyn C# expression parse,
+admit only versioned project-owned W2/W5/W6 tree shapes, implement one opt-in fixed-depth member-chain query with
+certified field-backed terminal data properties, then use a larger multi-shape designed portfolio to select or defer
+another prototype increment while keeping field-readiness evidence separate. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint
 `e89e43498`. W4.3's dump-free non-exact field continuation is implemented at checkpoint `7479b1ad4`. W4.4a's
 body-free direct MethodDef resolution is implemented at pushed checkpoint `2e596c117`, and W4.4b's complete frozen
@@ -273,7 +274,8 @@ docs/
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
-| `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
+| `proposals/architecture/csharp-expression-front-end-contract-proposal.md` | Architecture | Contract | Current · Active | Normative pinned Roslyn expression parse, stable invalid/unsupported mapping, versioned W2/W5/W6 tree admission, project-owned projection, compatibility migration, and complex three-bucket conformance contract. |
+| `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 admitted shape, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
 | `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Reference | Normative closed W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract and executable evidence record. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
@@ -334,19 +336,20 @@ docs/
 
 1. `../DESIGN-ARCHITECTURE-REVIEW.md`
 2. `plans/post-w5-path-forward.md`
-3. `plans/post-w4-path-forward.md`
-4. `proposals/product/post-mortem-debugging-feature-proposal.md`
-5. `proposals/architecture/restricted-dump-query-contract-proposal.md`
-6. `proposals/architecture/concrete-il-execution-contract-proposal.md`
-7. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
-8. `proposals/architecture/architecture-overview-proposal.md`
-9. `proposals/architecture/prototype-solution-structure-proposal.md`
-10. `lib/mvp-backend-decision-record.md`
-11. `plans/future-work-planning.md`
-12. `proposals/architecture/testing-strategy-proposal.md`
-13. `proposals/integration-test-plan.md`
-14. `proposals/integration/clrmd-integration-proposal.md`
-15. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+3. `proposals/architecture/csharp-expression-front-end-contract-proposal.md`
+4. `plans/post-w4-path-forward.md`
+5. `proposals/product/post-mortem-debugging-feature-proposal.md`
+6. `proposals/architecture/restricted-dump-query-contract-proposal.md`
+7. `proposals/architecture/concrete-il-execution-contract-proposal.md`
+8. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
+9. `proposals/architecture/architecture-overview-proposal.md`
+10. `proposals/architecture/prototype-solution-structure-proposal.md`
+11. `lib/mvp-backend-decision-record.md`
+12. `plans/future-work-planning.md`
+13. `proposals/architecture/testing-strategy-proposal.md`
+14. `proposals/integration-test-plan.md`
+15. `proposals/integration/clrmd-integration-proposal.md`
+16. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 

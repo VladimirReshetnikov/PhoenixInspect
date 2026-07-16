@@ -87,7 +87,8 @@ Current prototype structure:
   - dump loading, runtime discovery, raw evidence reads, and snapshot-scoped W3 execution resolution/import
     correlation.
 - `src/Interpreter.Product.DumpQuery`
-  - the closed, bounded root-field query evaluator and result projection.
+  - the closed, bounded root-field query evaluator and result projection; W6.2 adds the internal C# expression front
+    end and versioned tree-shape recognizers here.
 - `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, `tests/Interpreter.TestTarget`, and
   `tests/Interpreter.OptimizedContextTestTarget`
   - fast semantic/contract tests, real dump evidence, and the generated optimized-context report.
@@ -100,6 +101,22 @@ the same no-dialog process policy applies locally and in CI.
 - Keep `Interpreter.Core.Execution` free of host-specific dependencies.
 - Avoid cyclic dependencies; depend “inward” toward `Interpreter.Core.Abstractions`.
 - Add a physical project only with implementation, an independently useful dependency boundary, and a test that exercises it. Logical future seams stay in documentation.
+
+### C# expression front-end dependency
+
+W6.2 adopts `Microsoft.CodeAnalysis.CSharp` as the sole production expression parser under the normative
+[C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md). The initial
+package is centrally pinned at `5.3.0`, matching the Roslyn train in the repository's pinned .NET SDK 10.0.201. The
+front end calls `SyntaxFactory.ParseExpression` with explicit C# 14 regular-source options and full-text consumption.
+
+The dependency is contained in `Interpreter.Product.DumpQuery`. Workspaces, Scripting, compilation, semantic models,
+and emission are not part of the active product path. Internal tree visitors immediately project enabled W2/W5/W6
+shapes into project-owned immutable descriptors; no Roslyn object enters core execution, dump/metadata abstractions,
+public prototype contracts, or canonical artifacts. A package or language-version change requires a three-bucket
+parser/admission corpus diff and a new or explicitly revised front-end profile identity.
+
+Complete expression parsing does not imply complete binding or evaluation. Valid C# outside an enabled profile is a
+stable `Unsupported` product result.
 
 ---
 
@@ -470,7 +487,9 @@ Current facts:
   against their historical 3,400–3,750 estimate. W4.7 subsequently realizes 2,801 LOC, W4.8 11,924 LOC, and W4.9
   2,698 LOC, bringing full W4 implementation to 41,892 LOC; exact implementation closure passed in run 29463426083,
   and final documentation closure passed in run 29463847230.
-- The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
+- The first product composition is a deliberately closed root-field dump query. The complete Roslyn expression front
+  end is selected but not implemented until W6.2; there is no general C# binder/evaluator, frame-root binder,
+  production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
   and the 22-case/20-expression fresh-session corpus reproduces all result identities plus all 13 prepared-plan

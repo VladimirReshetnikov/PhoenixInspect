@@ -2,8 +2,9 @@
 
 > **Lifecycle:** Current · **Roadmap:** Active
 >
-> **Decision:** implement one fixed-depth, null-aware member-chain query slice selected by W5.5b; no other successor
-> is pre-approved.
+> **Decision:** implement one fixed-depth, null-aware member-chain query slice selected by W5.5b, using one complete
+> Roslyn C# expression parse followed by versioned project-owned tree-shape admission; no other successor is
+> pre-approved.
 >
 > **Evidence boundary:** W6 is a prototype-design milestone grounded in predeclared synthetic incidents. It does not
 > establish field readiness, and W5's hosted-gate exception does not carry forward.
@@ -26,14 +27,17 @@ root.Progress.State
 root.Progress.CompletedPartitions
 ```
 
-W6 adds one reference hop and one certified terminal data-member read to the derived-query path. It does not add general expression
-binding, arbitrary graph walking, a new interpreter opcode, another method shape, or a debugger subsystem. The
-existing W2 one-field query and W5 method expression keep their grammar, default routing, canonical codecs, and
-semantics byte-for-byte stable on a fixed artifact baseline; target-bound identities follow section 5.1.
+W6 adds one reference hop and one certified terminal data-member read to the derived-query path. It also replaces
+incremental handwritten expression parsing with the [C# Expression Front-End and Subset-Admission Contract](../proposals/architecture/csharp-expression-front-end-contract-proposal.md).
+Roslyn parses the complete bounded C# expression; product-owned recognizers still admit only W2, W5, or the selected
+W6 tree shapes. This does not add general expression binding, arbitrary graph walking, a new interpreter opcode,
+another method shape, or a debugger subsystem. Existing W2 one-field and W5 method behavior keeps its default routing,
+canonical codecs, and semantics byte-for-byte stable on a fixed artifact baseline; target-bound identities follow
+section 5.1.
 
-This is deliberately more than a parser increment. A truthful member chain requires:
+This is deliberately more than a syntax-front-end increment. A truthful member chain requires:
 
-1. a closed syntax and canonical chain identity;
+1. one pinned complete expression parse, a closed admitted tree shape, and a canonical chain identity;
 2. declared-type binding of the terminal data member even when the intermediate reference is exactly null;
 3. a counted raw-memory observation of the intermediate reference;
 4. a non-root identity for the referenced object, without inventing root provenance;
@@ -106,7 +110,7 @@ qualified observations are supplied later.
 
 ## 3) Scope lock
 
-### 3.1 Opt-in language profile and admitted grammar
+### 3.1 Opt-in language profile and admitted tree shape
 
 W6 adds exactly one opt-in language profile, `FixedDepthMemberChainV1`. Existing APIs and manifest schema versions
 continue to default to the frozen W5 language profile. In particular, the four historical W5.5b rows remain
@@ -115,8 +119,10 @@ unchanged; and `w5-usefulness-meaningful-synthetic-v2.json` is never rewritten t
 reports regenerated from the intentionally changed W6.1 target artifact receive new content-derived identities; they
 are not falsely required to equal reports generated from the earlier PE and dumps byte for byte.
 
-Only when the caller or versioned W6 manifest explicitly selects `FixedDepthMemberChainV1` does classification try
-this grammar after the unchanged W2 and W5 classifiers:
+Every bounded request is parsed once by the pinned `RoslynCSharpExpressionV1` profile. Only when the caller or
+versioned W6 manifest explicitly selects `FixedDepthMemberChainV1` does the ordered admission table enable the W6
+recognizer after the W2 and W5 recognizers. The notation below describes the project-owned admitted tree shape; it is
+not a lexer or parser grammar:
 
 ```text
 chain        := root-name "." reference-member hop terminal-member coalesce?
@@ -131,13 +137,14 @@ Additional rules:
 - The root-to-reference operator is always ordinary `.` because W6 still requires one exact non-null host-selected
   root.
 - The second operator is ordinary `.` or null-conditional `?.`.
-- `??` is optional and consumes only the existing W2 literal set.
-- Identifiers, casing, whitespace positions, expression length, identifier length, and decoded string-literal length
-  follow the existing bounded W2 lexical rules.
+- `??` is optional and projects only the declared null, `Int32`, or string literal values.
+- Roslyn owns lexical validity and full-expression parsing. The project applies the frozen expression, tree, depth,
+  identifier-value, and decoded-string bounds before admission.
+- New-profile identifier comparison uses ordinal `ValueText`; literal projection uses compiler token values. The
+  complete spelling and value rules are frozen by the front-end contract.
 - Classification is syntax-only. It performs no field catalog traversal and no dump-memory read.
-- Classifier precedence inside the opt-in profile is unchanged W2 first, the exact W5 method form second, and the W6
-  chain grammar third. The frozen W5 profile never tries the third branch. A W6 addition must not change which existing
-  expression path is selected.
+- Recognizer precedence inside the opt-in profile is W2 first, W5 second, and W6 third over the same valid tree. The
+  frozen W5 profile never enables the third recognizer. No admission path depends on another path's diagnostic.
 
 The milestone examples are normative scenario inputs, not a promise that arbitrary members with the same spelling
 shape will bind.
@@ -228,21 +235,22 @@ W6 does not admit:
 - a stable shipping command-line or public compatibility promise; or
 - any representative-usefulness or field-readiness claim.
 
-An expression outside the closed grammar is `Unsupported`, not malformed merely because W6 does not implement it.
-Captured evidence that violates a supported invariant remains `Invalid`; available evidence that disagrees remains
-`Conflict`.
+Roslyn-valid syntax outside the enabled admitted tree shapes is `Unsupported`, not malformed merely because W6 does
+not implement it. Parser errors, recovery artifacts, and violated input invariants are `Invalid`. Captured evidence
+that violates a supported evidence invariant remains `Invalid`; available evidence that disagrees remains `Conflict`.
 
 ## 4) Normative staging and ownership
 
-### 4.1 Three-stage query contract
+### 4.1 Four-stage query contract
 
-W6 preserves the W2/W5 separation between syntax, binding, and value reads:
+W6 makes parsing, admission, evidence binding, and value reads separate:
 
 | Stage | May do | Must not do | Success artifact |
 |---|---|---|---|
-| Classify | Parse the closed grammar, apply lexical bounds, freeze raw syntax/operators/literal | Traverse metadata, inspect a runtime type, or read dump memory | Canonical W6 chain request |
+| Parse | Apply the pre-parse bound and parse one complete C# expression with the pinned Roslyn profile; reject diagnostics/recovery and apply structural bounds | Select a product operation, traverse metadata, inspect a runtime type, or read dump memory | Internal valid bounded Roslyn tree |
+| Admit/classify | Run enabled tree-shape recognizers in declared order and project one project-owned descriptor | Reparse, expose Roslyn objects, traverse metadata, or read dump memory | Canonical W6 chain request plus internal admitted descriptor |
 | Prepare | Validate the exact root; bind the outer field, declared intermediate type, terminal field or certified data property, and physical terminal storage once; freeze all descriptors and bounds | Read the reference value, inspect the referenced runtime object, execute a getter, or decode the terminal value | Immutable complete member-chain plan |
-| Evaluate | Read the frozen outer reference, short-circuit or validate the referenced target, compute the frozen terminal storage location, decode it, and apply exact-null coalescing | Repeat root selection, field/property lookup, property certification, declared-type lookup, or syntax parsing | Derived-query result |
+| Evaluate | Read the frozen outer reference, short-circuit or validate the referenced target, compute the frozen terminal storage location, decode it, and apply exact-null coalescing | Repeat root selection, field/property lookup, property certification, declared-type lookup, or parsing | Derived-query result |
 
 Every failure exposes only the evidence accumulated through its stopping boundary. No partial plan escapes
 preparation.
@@ -251,8 +259,9 @@ preparation.
 
 ```mermaid
 flowchart LR
-    E["Raw expression + exact root + policy"] --> C["W2 / W5 / W6 syntax classification"]
-    C -->|"opt-in W6 chain"| P["Bind outer field + declared target + terminal field/property certificate"]
+    E["Bounded raw expression + exact root + policy"] --> R["One pinned Roslyn C# expression parse"]
+    R --> C["Versioned W2 / W5 / W6 tree-shape admission"]
+    C -->|"project-owned opt-in W6 descriptor"| P["Bind outer field + declared target + terminal field/property certificate"]
     P --> I["Freeze canonical member-chain plan"]
     I --> R["Counted outer-reference read"]
     R -->|"exact null + ?."| N["Exact null / exact fallback"]
@@ -268,12 +277,12 @@ W6 adds no project. Responsibilities remain aligned with the current fourteen-pr
 
 | Project / area | W6 responsibility |
 |---|---|
-| `Interpreter.Product.DumpQuery` | Separate closed chain parser, immutable parsed shape, declared-member plan, derived-query evaluator, null/coalesce semantics, canonical plan replay; W2 parser/plan remain unchanged |
+| `Interpreter.Product.DumpQuery` | Sole internal Roslyn dependency, pinned expression adapter, W2/W5/W6 tree recognizers, immutable project-owned parsed shapes, declared-member plan, derived-query evaluator, null/coalesce semantics, canonical plan replay; no Roslyn type escapes |
 | `Interpreter.Host.Dump.ClrMD` | Immutable declared-type/field/property certificate projection from SRM plus dump evidence, counted object-reference observation, exact non-root target identity, descriptor-consuming terminal reads |
 | `Interpreter.Product.DumpDebugging` | Explicit opt-in language profile, append-only expression-kind routing, W6 request identity, product outcome projection, preservation of W2/W4 payloads |
 | `Interpreter.Headless.ReferenceConsumer` | Versioned W6 manifest/report execution and usefulness reporting; frozen W5 manifests/reports remain unchanged; no reusable query semantics |
 | `Interpreter.TestTarget` | Source-controlled multi-shape object graphs and readiness oracles |
-| Unit/integration corpus | Parser laws, adapter evidence, plan/evaluation semantics, real dumps, fresh-process replay, and usefulness decision |
+| Unit/integration corpus | Three-bucket parser/admission laws, legacy compatibility, adapter evidence, plan/evaluation semantics, real dumps, fresh-process replay, and usefulness decision |
 
 Illustrative type names in this plan express ownership, not a frozen public API. Any public prototype type or method
 introduced during implementation requires complete XML documentation and an explicit draft-phase caveat.
@@ -282,10 +291,11 @@ introduced during implementation requires complete XML documentation and an expl
 
 ### 5.1 Existing identities remain frozen
 
-For every previously admitted or rejected W2/W5 input, W6 freezes the existing canonical encodings, schemas, language-
-profile defaults, classification, outcome semantics, and aggregate-count rules. The existing nine-row generated corpus
-and twelve-row W5.5b corpus remain replayable without schema rewriting, and their checked-in historical artifacts
-remain commit-scoped evidence rather than being rewritten.
+For the frozen W2/W5 compatibility corpus, W6 freezes the existing canonical encodings, schemas, language-profile
+defaults, classification, diagnostics, outcome semantics, and aggregate-count rules. The existing nine-row generated
+corpus and twelve-row W5.5b corpus remain replayable without schema rewriting, and their checked-in historical
+artifacts remain commit-scoped evidence rather than being rewritten. Roslyn replaces the implementation mechanism in
+W6.2; it does not rewrite the historical claim that the earlier artifacts used the handwritten parser.
 
 W6.1 intentionally adds coordinator and workflow graphs to `Interpreter.TestTarget`, so its PE identity and every dump-
 or PE-derived W2/W4/W5 identity necessarily change for newly generated artifacts. After the emitted-shape relations
@@ -294,22 +304,25 @@ boundary is semantic and relational, not byte identity across different content.
 same/fresh/reopen replay must remain byte-identical.
 
 W6 uses an explicit opt-in language-profile identity, an append-only expression kind, and a separately tagged chain
-identity. Existing overloads/default manifests remain on the frozen W5 profile. A new encoding may add a profile or
-chain payload only for the opt-in request; it must not append even a false/default marker to old canonical byte
-sequences. Golden legacy tests prove this before W6 evaluation code lands.
+identity. The W6 encoding also names `RoslynCSharpExpressionV1`; its descriptor freezes the package, C# language
+version, parse options, full-text rule, and front-end limits. Existing overloads/default manifests remain on the
+frozen W5 profile. A new encoding may add a front-end, profile, or chain payload only for the opt-in request; it must
+not append even a false/default marker to old canonical byte sequences. Golden legacy tests prove this before W6
+evaluation code lands.
 
 ### 5.2 Chain request identity
 
 The canonical W6 chain request includes:
 
 - its own schema and grammar identity;
+- the `RoslynCSharpExpressionV1` front-end identity;
 - the explicit `FixedDepthMemberChainV1` profile identity;
 - the exact raw expression, including whitespace;
 - root name and the complete existing exact root binding;
 - ordered intermediate/terminal identifiers;
 - direct versus null-conditional hop;
 - the complete optional literal kind and payload;
-- every actually reached parser bound; and
+- every actually reached front-end/admission bound; and
 - the unchanged product policy identity supplied with the request.
 
 Syntactically bounded unsupported/invalid inputs retain a canonical raw request where the existing W5 issuance rules
@@ -328,7 +341,7 @@ A successful plan freezes:
 - for a certified property, the correlated getter body and backing-field identity proving the data projection;
 - the terminal decoder kind;
 - direct/null-conditional and coalesce semantics;
-- every applied root, parser, field-catalog, type, and read-size bound that preparation actually reached; and
+- every applied root, front-end, field-catalog, type, and read-size bound that preparation actually reached; and
 - an explicit declaration that the runtime reference value and terminal value have not yet been read.
 
 The terminal descriptor must carry enough relative-layout information for evaluation to derive its absolute address
@@ -378,7 +391,7 @@ user IL execution, historical execution, abstract analysis, or a target write.
 
 The product facade reuses the W2 truth envelope and value union. The broad append-only enum case
 `DumpExpressionKind.MemberChain` identifies routing, while the stable `FixedDepthMemberChainV1` profile identity names
-this exact grammar and contract; they are deliberately different axes. The request retains both so chain admission is
+this exact admitted tree shape and contract; they are deliberately different axes. The request retains both so chain admission is
 not confused with the unchanged W2 single-field path.
 
 ### 6.2 Required outcome matrix
@@ -459,8 +472,9 @@ observed byte or catalog counts remain accounting and provenance fields; they ne
 
 **Scale:** `~1K LOC` documentation.
 
-Publish this plan, link it from active navigation, add the planned traceability requirement, and freeze the grammar,
-semantics, exclusions, and closure rule before implementation.
+Publish this plan and the C# expression-front-end contract, link them from active navigation, add the planned
+traceability requirement, and freeze the admitted shapes, semantics, exclusions, and closure rule before
+implementation.
 
 **Exit gate**
 
@@ -493,27 +507,36 @@ implement or share the reusable certificate recognizer under test; that product 
   property profiles;
 - complete relational target-fixture facts before any PE/hash refresh;
 - one explicit current PE/derived-identity refresh with historical hashes left untouched; and
-- no chain parser, product admission, or terminal value read yet.
+- no Roslyn package integration, product tree admission, or terminal value read yet.
 
-### W6.2 — opt-in syntax, request identity, and routing
+### W6.2 — Roslyn expression front end, versioned tree admission, request identity, and routing
 
 **Scale:** `~1K LOC`.
 
-Add `FixedDepthMemberChainV1`, the separate exact two-member parser, append-only expression kind, canonical chain
-identity, and syntax-only routing. Keep the W2 parser, exact W5 method spelling, default API profile, W5 manifests, and
-W5 schemas, classifications, outcome semantics, and aggregate-count rules unchanged.
+Pin `Microsoft.CodeAnalysis.CSharp/5.3.0`; add `RoslynCSharpExpressionV1`; route one full-text C# expression parse
+through ordered W2, W5, and opt-in `FixedDepthMemberChainV1` recognizers; project only immutable project-owned nodes;
+and remove the handwritten reader and diagnostic-dependent W5 string route after differential compatibility passes.
+Keep exact W5 method spelling and the existing W2 lexical subset in the frozen default profile. Preserve W5 manifests,
+schemas, classifications, outcome semantics, aggregate-count rules, and legacy canonical bytes.
 
 **Required evidence**
 
-- direct and null-conditional forms, optional literals, whitespace, casing, and all lexical bounds;
-- rejection of one-member duplication, three-hop chains, repeated `?.`, calls, indexers, and suffixes;
+- the exact package, C# 14 regular-source options, full-text consumption, expression/tree/depth/value bounds, and
+  stable parser-error normalization;
+- direct and null-conditional forms, optional literals, decoded identifiers/values, trivia, casing, and profile
+  spelling policy;
+- valid-but-unsupported one-member duplication, three-hop chains, repeated `?.`, calls, indexers, and suffixes;
+- complex patterns, lambdas/LINQ, interpolation, casts/indexers, switch expressions, and malformed near-neighbors in
+  an explicit valid-admitted / valid-unsupported / invalid corpus;
 - syntax accepts a member name without pretending to know whether metadata later binds it as a field or property;
 - exact unsupported-versus-invalid diagnostic classification;
 - zero calls to metadata, field, memory, method, or execution capabilities during classification;
+- one parse per classification, no parse during preparation, no Roslyn type outside the front-end boundary, and no
+  compilation or semantic model;
 - compatibility goldens proving unchanged legacy encodings and behavior over a fixed artifact baseline, plus the one
   explicit W6.1 refresh for PE/dump-derived identities; the four historical W5.5b rows remain unsupported under the
   default profile; and
-- same/fresh-object canonical opt-in chain-request replay.
+- same/fresh-object canonical opt-in chain-request replay and deletion of the production handwritten parser.
 
 ### W6.3 — declared reference target and terminal data-member certificate
 
@@ -699,7 +722,10 @@ The generated W6.5 corpus additionally covers mechanical boundaries that should 
 denominator:
 
 - maximum expression/identifier/literal lengths and one-over-limit inputs;
-- whitespace/casing variants and unsupported suffixes;
+- maximum node/token and syntax-depth limits;
+- whitespace/comments/casing variants, complete C# lexical spellings selected by the profile, and unsupported
+  suffixes;
+- complex valid-but-unsupported expression trees paired with malformed invalid neighbors;
 - missing, duplicate, inherited, static, unsupported-type, and over-limit members;
 - foreign snapshots and descriptors;
 - partial/unavailable target validation, pointer/address overflow, and conflicting/invalid object-header/type facts
@@ -719,7 +745,7 @@ All managed commands remain headless. Exact filters may be refined as tests land
 
 | Layer | Required proof |
 |---|---|
-| Parser/classifier unit | Closed grammar, bounds, precedence, diagnostics, zero capability use, legacy identity preservation |
+| Parser/classifier unit | Pinned Roslyn profile, full-text/integrity checks, complex three-bucket corpus, bounds, recognizer precedence, diagnostics, parse-once/no-prepare-parse, zero capability use, legacy identity preservation |
 | Adapter unit/integration | Declared-type projection, direct FieldDef or certified PropertyDef/getter/backing-field selection, pointer evidence, target validation, relative address derivation, typed misses |
 | Query unit/integration | Complete/no-partial plan, no rebinding, null/coalesce matrix, decoder reuse, result axes, provenance, canonical replay |
 | Product Fast | Strict union routing, old W2/W4 payload preservation, preparation/direct-null terminals, deterministic reports |
@@ -771,7 +797,10 @@ implementation is pre-approved by this document.
 
 W6 closes only when all of the following are proven at current state:
 
-- the exact grammar in section 3 is the only new syntax admitted;
+- Roslyn is the sole production expression parser and the exact W6 tree shapes in section 3 are the only new syntax
+  admitted for binding/evaluation;
+- the package/options profile, invalid-versus-unsupported mapping, front-end bounds, project-owned projection, and
+  parser-upgrade gate satisfy the C# expression-front-end contract;
 - one complete plan freezes the outer field, declared target type, terminal FieldDef or certified data property, and
   physical terminal storage before value evaluation;
 - evaluation performs one counted reference read, never fabricates a pointer, and never repeats member binding;

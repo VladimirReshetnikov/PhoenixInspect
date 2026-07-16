@@ -147,6 +147,10 @@ Do not introduce Roslyn or a general AST for this grammar. The parser must prese
 for every W2 request and add a separately versioned method-expression identity rather than silently changing schema
 v1.
 
+This was the closed W5.1 mechanism decision, not a permanent ban on a compiler parser. W6.2 supersedes the mechanism
+with one pinned Roslyn expression parse plus compatibility-preserving W2/W5 tree recognizers; it does not rewrite this
+historical evidence or broaden W5 binding/evaluation.
+
 **Exit gate**
 
 - Exact spelling, casing, punctuation, root-name, expression-length, and unsupported-suffix behavior are deterministic.

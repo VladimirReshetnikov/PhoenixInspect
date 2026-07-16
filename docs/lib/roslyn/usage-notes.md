@@ -1,5 +1,12 @@
 # Roslyn usage notes for this project
 
+> **Lifecycle:** Historical · **Research**
+>
+> This source-review note predates the active
+> [C# Expression Front-End and Subset-Admission Contract](../../proposals/architecture/csharp-expression-front-end-contract-proposal.md).
+> Where this note recommends optional parsing or a no-Roslyn mode, the active W6.2 decision supersedes it: Roslyn is
+> the required expression parser, while binding/evaluation and all downstream contracts remain project-owned.
+
 ## Why it matters
 
 Roslyn is useful here as a **language + semantic front-end**, not as a dump-time execution backend.

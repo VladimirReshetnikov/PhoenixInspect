@@ -7,6 +7,11 @@ language, binding, evidence, and replay rules that were previously distributed a
 overview, product proposal, and test strategy. The prototype APIs remain draft-phase interfaces, but an implementation
 does not satisfy W2 unless it preserves the behavior below.
 
+W2 closed with a handwritten parser at commit `5bed47100`. W6.2 will replace that implementation with the common
+[C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md). The
+accepted W2 v1 shape, default-profile spelling rules, diagnostics, and canonical bytes remain compatibility
+requirements; this historical closure record is not evidence that the planned Roslyn front end is implemented.
+
 ## 1) Product question and scope
 
 W2 answers one deliberately small question:
@@ -28,9 +33,9 @@ The following are intentionally outside v1:
 Those forms remain later, scenario-gated Phase 1 or research work. Their omission is a closed language boundary, not
 an invitation to approximate them.
 
-## 2) Closed grammar
+## 2) W2 v1 admitted syntax-tree shape
 
-The grammar is:
+The semantic notation is:
 
 ```text
 query       := whitespace root whitespace "." whitespace field whitespace
@@ -44,20 +49,29 @@ literal     := "null" | signed-decimal-int32 | bounded-string
 Root and field comparison is ordinal and case-sensitive. Whitespace is accepted only at the positions shown. String
 literals admit the explicitly implemented escape set; they are not the complete C# string-literal language.
 
-The parser applies deterministic caps to the expression, each identifier, and the decoded string literal. Unsupported
-syntax and structurally invalid admitted syntax have stable, payload-omitting diagnostic codes. In particular, `?.`, a
-second member hop, calls, indexing, and trailing operators are rejected rather than partially evaluated.
+At W2 closure this notation was also the handwritten grammar. Under the planned common front end, Roslyn first parses
+the complete bounded C# expression and the frozen W2 profile then recognizes only the equivalent simple-member-access
+tree with an optional outer coalesce. Its ASCII identifier, trivia-position, signed-decimal, and ordinary-string
+spelling predicates remain profile admission rules, not a second tokenizer or recovery implementation.
+
+The front end applies deterministic caps to the expression, each decoded identifier, the decoded string literal, and
+its project-owned tree traversal. Roslyn-invalid input is `Invalid`; Roslyn-valid syntax outside the admitted W2 shape
+is `Unsupported`. Both have stable, payload-omitting project diagnostic codes. In particular, `?.`, a second member
+hop, calls, indexing, and trailing operators are never partially evaluated.
 
 ## 3) Staged pipeline
 
 One evaluation has four explicit stages:
 
-1. **Parse** produces the immutable syntax shape or a stable parse/admission failure.
-2. **Bind** consumes a typed host root binding, verifies its immutable snapshot identity, selects the requested outer
+1. **Parse** uses the pinned complete C# expression front end and produces a valid bounded tree or stable invalid
+   input result.
+2. **Admit** recognizes the versioned W2 tree and projects an immutable project-owned syntax shape, or returns stable
+   unsupported syntax.
+3. **Bind** consumes a typed host root binding, verifies its immutable snapshot identity, selects the requested outer
    instance field exactly once, and classifies the admitted field/coalescing combination.
-3. **Plan** freezes the root identity, selected field descriptor, value decoder, optional coalescing literal, reached
+4. **Plan** freezes the root identity, selected field descriptor, value decoder, optional coalescing literal, reached
    policy bounds, and a canonical v1 plan identity.
-4. **Evaluate** reads through the already selected descriptor. It must not repeat outer member lookup.
+5. **Evaluate** reads through the already selected descriptor. It must not repeat outer member lookup or parse.
 
 The convenience parse-and-evaluate API is only composition over these stages. The explicit prepared plan is reusable
 against the same immutable snapshot identity and owner identity. A foreign snapshot, owner, method table, or field
@@ -149,9 +163,10 @@ Successful evaluation provenance identifies the canonical plan, root-selection e
 structures, counted value reads, and any reached coalescing transformation in deterministic order. A failure retains
 all explanation available before its stopping stage. Configured policies for unvisited paths are absent.
 
-Successfully parsed requests have canonical request identity. Bounded invalid input retains a canonical raw-input
-identity; input rejected for exceeding the expression cap deliberately retains no raw identity. Successful preparation
-additionally supplies plan identity.
+Successfully admitted requests have canonical request identity. Bounded invalid or unsupported input retains a
+canonical raw-input identity where the product issuance rules permit it; input rejected for exceeding the expression
+cap deliberately retains no raw identity. Successful preparation additionally supplies plan identity. Roslyn nodes,
+numeric syntax-kind values, and diagnostics never enter these identities.
 
 ## 8) Diagnostic stages
 
@@ -193,7 +208,6 @@ This gate is satisfied for the milestone-selected W2 v1 scope at exact closure c
 
 ## 10) Expansion rule
 
-W2 v1 is complete when the contract above is implemented, its full scenario corpus is green locally and on the exact
-pushed commit, and the realized hand-written implementation LOC is recorded. New syntax requires a concrete product
-question plus explicit evidence, type, bound, diagnostic, and replay behavior. Completion of v1 does not implicitly
-open W3 or any broader Phase 1 feature.
+W2 v1 completed under the implementation recorded above. New admitted syntax requires a concrete product question
+plus explicit tree shape, evidence, type, bound, diagnostic, identity, and replay behavior. The complete Roslyn parser
+does not implicitly open W3 or any broader expression feature; binding and evaluation remain versioned subsets.

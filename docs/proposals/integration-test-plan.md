@@ -13,7 +13,7 @@ The required current plan has two execution lanes:
 - a fast, dump-free semantics lane for every change;
 - a supported Windows lane that generates real full dumps and exercises the evidence boundary.
 
-The Windows lane now evaluates both the complete W2 v1 product grammar and W3's closed counted-dump E2 getter over that
+The Windows lane now evaluates both the complete W2 v1 admitted query shape and W3's closed counted-dump E2 getter over that
 evidence. W4.1 adds a dump-free fixture gate for the exact two-field/direct-call closure while deliberately preserving
 W3's rejection boundary; W4.2 adds the dump-free unknown-aware E1/E2 domain kernel and canonical lineage replay without
 creating a product/dump result; W4.3 adds dump-free backend-neutral structured field evidence, approximation-domain
@@ -32,10 +32,11 @@ preserving evaluator, external headless consumer, canonical generated corpus, de
 and twelve-incident/two-shape meaningful synthetic portfolio through pushed checkpoint `90ade6d92`. W5 is closed for
 its defined prototype scope under the milestone-scoped owner exception recorded in the
 [`Post-W4 Path Forward`](../plans/post-w4-path-forward.md); rejected hosted jobs are not test evidence.
-The active [`Post-W5 Path Forward`](../plans/post-w5-path-forward.md) defines W6's not-yet-implemented opt-in member-
-chain lanes, exact property/storage truth gate, independent twenty-four-dump/four-shape synthetic portfolio, and
-same/fresh/reopen replay obligations.
-Dump-free parser, root, plan-identity, SRM projection, activation/admission,
+The active [`Post-W5 Path Forward`](../plans/post-w5-path-forward.md) and
+[`C# Expression Front-End and Subset-Admission Contract`](architecture/csharp-expression-front-end-contract-proposal.md)
+define W6's not-yet-implemented pinned Roslyn front end, opt-in member-chain lanes, exact property/storage truth gate,
+independent twenty-four-dump/four-shape synthetic portfolio, and same/fresh/reopen replay obligations.
+Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
 shapes. Earlier out-of-scope experiments have been removed.
@@ -543,11 +544,20 @@ establish field readiness, or apply to a future milestone.
 
 ## Planned W6 bounded-member-chain evidence
 
-W6 begins with a physical-shape gate rather than a parser claim. Compiler-emitted fixtures and SRM projections must
+W6 begins with a physical-shape gate before the expression-front-end migration. Compiler-emitted fixtures and SRM projections must
 agree exactly on the terminal property, getter signature, trivial getter body, and backing field used by the four
 literal W5-selected questions. Only that narrow certified data-property projection, plus a direct terminal field, may
 enter the opt-in `FixedDepthMemberChainV1` plan. Tests must prove the getter is never invoked and that W2/W5 default-
 profile schemas, counts, classifications, and semantics remain unchanged.
+
+W6.2 then pins `Microsoft.CodeAnalysis.CSharp/5.3.0` and explicit C# 14 regular-source/full-text options. Its dump-free
+lane must prove one parse per classification, no parse during preparation, no Roslyn type outside the front-end
+boundary, and no metadata or memory access during tree admission. A source-controlled three-bucket corpus distinguishes
+valid-admitted profile shapes, complex valid-but-unsupported C# trees, and malformed/recovered/over-limit invalid
+inputs. Patterns, lambdas/LINQ/interpolation, casts/indexers/chains, query expressions, and switch expressions provide
+meaningful unsupported cases, each paired with a malformed neighbor. The lane preserves W2/W5 diagnostic and
+canonical goldens, directly recognizes the W5 invocation, and deletes the production handwritten parser after
+differential compatibility passes.
 
 The generated lane must exercise exact, exact-null, coalesced-null, partial, unavailable, conflict, invalid, and
 unsupported outcomes across the outer reference and terminal storage boundaries. It must validate truthful referenced-

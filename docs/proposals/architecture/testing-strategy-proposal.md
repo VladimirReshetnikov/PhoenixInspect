@@ -142,12 +142,16 @@ page remains partial/unavailable rather than being zero-filled.
 ### Restricted dump-query proof
 
 `Interpreter.Product.DumpQuery` is exercised both without a dump and through the generated full-dump scenario. The
-fast corpus admits exactly one exact non-null ordinal root, `.`, one field, and optional bounded literal coalescing,
+historical W2 fast corpus admits exactly one exact non-null ordinal root, `.`, one field, and optional bounded literal coalescing,
 while rejecting `?.`, calls, indexing, chaining, arithmetic, oversized inputs, malformed literals, and unsupported
 escapes with stable payload-omitting codes. Preparation consumes a typed, snapshot-bound root result and selects the outer
 field once into an immutable object-specific plan; evaluation reads only through that frozen descriptor. Exact
 absence, bounded partial search, ambiguity, invalid evidence, and a foreign snapshot remain distinct and never expose
 a retained partial candidate as an exact root.
+
+That corpus closed the handwritten W2 parser. W6.2 must reproduce its frozen admission/diagnostic/canonical behavior
+through one pinned Roslyn expression parse and a W2 compatibility recognizer, then delete the production handwritten
+reader. This is a migration requirement, not a retrospective claim about how the W2 artifacts were produced.
 
 The versioned `w2-root-field-v1` real-dump corpus contains 22 cases spanning 20 distinct expression texts. It covers
 direct `Int32`, direct and coalesced `Nullable<Int32>`, exact and partial strings, exact null, selected and unselected
@@ -738,7 +742,7 @@ Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/
 - Twenty-two versioned cases spanning 20 distinct expression texts cover direct `Int32`, direct/coalesced
   `Nullable<Int32>`, exact nullable-field null/coalescing, exhaustive and partial roots, invalid syntax, unsupported
   syntax (including `?.`), and partial value evidence.
-- Parse/prepare/bound-plan/query behavior is deterministic; every product result is `DerivedQuery`, while its direct
+- Parse/admit/prepare/bound-plan/query behavior is deterministic; every product result is `DerivedQuery`, while its direct
   adapter reads remain `Observation` evidence.
 - Every scenario reproduces complete result bytes/fingerprint across same-session repetition and fresh-session
   close/reopen/rebind; the 13 cases whose preparation succeeds also reproduce the canonical plan projection
@@ -900,8 +904,9 @@ later research proposal or existing scaffold does not count as W4 evidence.
 
 The pushed implementation checkpoints establish six distinct test boundaries:
 
-1. W5.1 reuses the exact W2 parser for syntax classification and tests canonical requests, exact method spelling,
-   casing, punctuation, suffix rejection, bounds, and fresh-object replay.
+1. W5.1 historically reuses the exact W2 parser for syntax classification and tests canonical requests, exact method
+   spelling, casing, punctuation, suffix rejection, bounds, and fresh-object replay. W6.2 supersedes the parser
+   mechanism without rewriting that completed evidence.
 2. W5.2 reacquires real dump evidence through counting/poisonable sources, disposes ClrMD before W4 work, proves the
    exact result, and exercises missing, ambiguous, partial, unavailable, unsupported, incompatible, conflicting, and
    invalid acquisition failures.
@@ -944,10 +949,20 @@ field readiness, or setting policy for the selected next slice.
 ### Planned W6 bounded-member-chain evidence gates
 
 W6 is contract-only until its checkpoints produce executable evidence under the
-[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Its tests must preserve the frozen W2 and W5 schemas,
-counts, classifications, and semantics while separately opting into `FixedDepthMemberChainV1`. Before any value-read
+[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) and the
+[`C# Expression Front-End and Subset-Admission Contract`](csharp-expression-front-end-contract-proposal.md). W6.2
+must pin `Microsoft.CodeAnalysis.CSharp/5.3.0` and explicit C# 14 regular-source/full-text options, parse once, project
+only project-owned descriptors, preserve the frozen W2 and W5 schemas, counts, classifications, diagnostics, and
+semantics, and separately opt into `FixedDepthMemberChainV1`. Before any value-read
 claim, a compiler/SRM gate must prove the exact PropertyDef, getter signature/body, and backing-FieldDef relationships
 used by the selected W5 questions; arbitrary property execution remains outside the slice.
+
+The front-end lane has three explicit buckets: valid-admitted profile trees, complex Roslyn-valid but product-
+unsupported trees, and malformed/recovered/over-limit invalid inputs. The valid-unsupported bucket includes nested
+patterns, lambdas/LINQ/interpolation, casts with indexers and chains, query expressions, and switch expressions paired
+with malformed near-neighbors. It proves zero metadata/dump/memory capability calls, one parse during classification,
+no parse during preparation, no Roslyn type outside the adapter, stable product diagnostics, legacy canonical goldens,
+and byte-identical fresh-process descriptors. A package upgrade must rerun and intentionally review this entire corpus.
 
 The generated conformance lane must cover direct and null-conditional hops, exact and exactly null references,
 fallback behavior, exact terminal direct fields and certified data properties, non-nullable value lifting, relative

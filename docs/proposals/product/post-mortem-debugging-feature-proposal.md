@@ -7,8 +7,9 @@
 > navigation; it remains synthetic evidence rather than a
 > field-readiness claim. The active successor is the
 > [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md): an opt-in bounded member-chain query with counted
-> reference evidence, narrowly certified field-backed terminal properties, deterministic replay, and a new
-> twenty-four-incident/four-shape synthetic decision corpus.
+> reference evidence, narrowly certified field-backed terminal properties, one complete Roslyn expression parse with
+> versioned subset admission, deterministic replay, and a new twenty-four-incident/four-shape synthetic decision
+> corpus.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -186,12 +187,14 @@ The product question is intentionally singular: given one host-named, exactly se
 immutable dump, return one exact instance field, optionally replacing an exactly observed null with one bounded
 literal.
 
-- Grammar: one ordinal, case-sensitive `root.field`, optionally followed by `?? null`, a signed decimal `Int32`, or
-  a bounded string literal.
+- Admitted shape: one ordinal, case-sensitive `root.field`, optionally followed by `?? null`, a signed decimal
+  `Int32`, or a bounded string literal. W2 closed with a handwritten parser; W6.2 plans its compatibility-preserving
+  replacement under the common C# expression-front-end contract.
 - Root evidence: typed `ExactObject`, `ExhaustiveAbsence`, `Partial`, `Unavailable`, `Conflict`, and `Invalid` states.
   Only an exact non-null object can produce a plan; missing or non-exact evidence is never treated as null.
-- Pipeline: parse, prepare/bind, freeze an immutable object-specific plan, then evaluate that plan. Preparation selects
-  the outer field exactly once; evaluation reads through the selected descriptor without rebinding it.
+- Pipeline: parse, admit/classify, prepare/bind, freeze an immutable object-specific plan, then evaluate that plan.
+  Preparation selects the outer field exactly once; evaluation reads through the selected descriptor without
+  rebinding or reparsing it.
 - Field domain: direct `Int32`; exact/null `Nullable<Int32>` with `Int32` or `null` coalescing; and exact/null/partial
   `String` with string or `null` coalescing. A fallback is selected only for exact null.
 - Identity and explanation: canonical versioned request, root-selection policy, and plan projections; complete nullable
@@ -224,9 +227,11 @@ exact W2 closure commit `5bed47100`.
 * `typeof(T)`, `default(T)`, literal values
 * Bounded pretty-printing of common BCL types
 
-**W2 v1 front-end and plan boundary**
+**W2 v1 admission and plan boundary**
 
-* Parse only the closed one-hop grammar with deterministic expression, identifier, and decoded-string caps.
+* Admit only the closed one-hop shape with deterministic expression, identifier, and decoded-string caps. At W2
+  closure the handwritten parser enforced that boundary; the planned W6.2 front end parses complete bounded C# and
+  then projects only the versioned W2 shape.
 * Bind only the supplied typed root and dump runtime/metadata evidence; do not discover roots or load assemblies.
 * Select one exact instance-field descriptor during preparation and lower it to an immutable read-only plan rather
   than compiling a synthetic method.
@@ -247,7 +252,8 @@ exact W2 closure commit `5bed47100`.
 
 * A single typed, replayable root-field query validates the product's parse/bind/evidence/explanation seam without
   pretending a dump is a live C# execution context.
-* The closed type and syntax boundary gives later scenario-driven increments a evidence-backed compatibility baseline.
+* Complete parsing does not imply complete binding or evaluation. The closed type and admitted-tree boundary gives
+  later scenario-driven increments an evidence-backed compatibility baseline.
 
 ---
 
@@ -771,8 +777,11 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; complete
 * **W6:** active design and delivery sequence under the
   [Post-W5 Path Forward](../../plans/post-w5-path-forward.md). It adds only an explicit
   `FixedDepthMemberChainV1` profile: one root reference field, one direct terminal field or exactly certified trivial
-  field-backed data property, null-aware access, and existing W2 terminal value decoding. W6 begins with emitted-shape
-  proof and has no implementation or validation claim yet. Its closure requires a headless generated corpus,
+  field-backed data property, null-aware access, and existing W2 terminal value decoding. The companion
+  [C# Expression Front-End and Subset-Admission Contract](../architecture/csharp-expression-front-end-contract-proposal.md)
+  replaces parser growth with one pinned Roslyn parse and ordered W2/W5/W6 tree recognizers; valid C# outside those
+  profiles remains unsupported. W6 begins with emitted-shape proof and has no implementation or validation claim yet.
+  Its closure requires a headless generated corpus,
   twenty-four independent synthetic dumps across four structural shapes, deterministic same/fresh/reopen replay, and
   either a threshold-qualified unique successor or explicit deferral.
 
@@ -782,8 +791,9 @@ Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual st
 
 ## 14) Open Questions (for later product increments)
 
-The W2 v1 grammar, typed-root model, value domain, plan identity, and replay gate are closed decisions. The following
-questions stay with later Phase 1 increments or their research phase and do not reopen W2.
+The W2 v1 admitted shape, typed-root model, value domain, plan identity, and replay gate are closed decisions. Roslyn
+will own complete bounded expression parsing, but the following binding/evaluation questions stay with later Phase 1
+increments or their research phase and do not reopen W2.
 
 1. **Default execution stance**
 

@@ -147,10 +147,13 @@ no-fallback outcome is explicit rather than inferred from a missing property.
 Expression + typed host root evidence + deterministic policy
                              |
                              v
-                     Parse closed grammar
+              Parse one complete bounded C# expression
                              |
                              v
-Bind snapshot/root -> select field exactly once -> immutable plan + identity
+               Admit one versioned project-owned tree shape
+                             |
+                             v
+Bind snapshot/root -> select members exactly once -> immutable plan + identity
                              |
                   +----------+----------+
                   |                     |
@@ -247,9 +250,14 @@ Dump bytes and artifact bytes remain distinct evidence sources even when identit
 
 ### 4.3 Restricted expression front end
 
-The first front end accepts only syntax that can be lowered to a bounded, read-only query plan. Roslyn may parse syntax, but the project owns binding, admission, lowering, and diagnostic policy. The normative language, binding, value, identity, and replay rules are consolidated in the [Restricted Dump Query v1 Contract](restricted-dump-query-contract-proposal.md).
+The selected front end parses every bounded request once with the complete pinned Roslyn C# expression parser, then
+accepts only versioned syntax-tree shapes that can be lowered to bounded, read-only product plans. The project owns
+admission, binding, lowering, diagnostics, canonical identity, and evaluation policy. The common boundary is normative
+in the [C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md);
+W2's admitted language, binding, value, identity, and replay rules remain in the
+[Restricted Dump Query v1 Contract](restricted-dump-query-contract-proposal.md).
 
-The implemented W2 grammar is intentionally smaller than the eventual restricted-expression surface:
+The implemented W2 admitted shape is intentionally smaller than the complete parsed expression surface:
 
 - one exact, ordinal host-provided root name whose typed binding is `ExactObject`, `ExhaustiveAbsence`, `Partial`,
   `Unavailable`, `Conflict`, or `Invalid`; only the exact non-null object state can produce a plan;
@@ -259,35 +267,41 @@ The implemented W2 grammar is intentionally smaller than the eventual restricted
   preparation; and
 - result values restricted to exact `Int32`, exact null, exact string, or an explicitly partial bounded string prefix.
 
-The parser caps expression, identifier, and decoded-literal length. Preparation verifies the binding's snapshot,
+The front end caps raw expression length before parsing and bounds project traversal, identifier values, and decoded
+literals after parsing. Roslyn-valid but unadmitted trees are `Unsupported`; parser errors and recovery artifacts are
+`Invalid`. Preparation verifies the binding's snapshot,
 selects the exact outer field once, classifies its decoder and coalescing combination, and freezes those choices into
 an object-specific plan. The evaluator caps string reads and preserves missing or partial evidence instead of treating
 it as null. A selected nullable field may produce exact null and may then be coalesced; unavailable or partial evidence
-never triggers a fallback. Null-conditional access, chained traversal, backing-field projection, arrays, operators
-other than coalescing, and frame roots remain later scenario-driven increments.
+never triggers a fallback. W6 plans one exact null-aware two-member shape and one certified data-property projection;
+arrays, other operators, deeper traversal, and frame roots remain later scenario-driven increments.
 
-Method calls, construction, reflection, implicit assembly loading, user-defined conversions, and unbounded enumeration are rejected in this slice. Parse, bind, admission, and evidence failures use different reason codes.
+The frozen W5 profile additionally admits one exact empty instance invocation. Other calls, construction, reflection,
+implicit assembly loading, user-defined conversions, and unbounded enumeration remain unsupported. Parse, admission,
+binding, and evidence failures use different reason codes. No Roslyn object crosses the front-end boundary, and the
+front end creates no compilation or semantic model.
 
 ### 4.4 Read-only query evaluator
 
-The query evaluator executes a finite project-owned plan, not synthesized user code. `Prepare` consumes the parse result
-and typed root evidence, performs the only outer-field lookup, and returns either an immutable `DumpQueryPlan` or a
+The query evaluator executes a finite project-owned plan, not synthesized user code. `Prepare` consumes the admitted
+project-owned descriptor and typed root evidence, performs the only member lookup, and returns either an immutable plan or a
 complete multi-axis failure result. `Evaluate(session, plan)` validates the plan's snapshot/owner/field relationship
-and reads through the already selected descriptor; it never repeats outer member lookup. The convenience evaluation
-entry point is composition over these stages rather than a separate semantic path.
+and reads through already selected descriptors; it never repeats member lookup or parsing. The convenience evaluation
+entry point is composition over parse, admission, preparation, and evaluation rather than a separate semantic path.
 
-The one-hop grammar is structurally bounded and subject to deterministic expression, identifier, literal,
+The admitted profile and its project-owned tree traversal are structurally bounded and subject to deterministic
+expression, node/token, depth, identifier, literal,
 handle-scan, field-catalog, and string-read caps; each evidence read produces either a value or a typed
 partial/unavailable outcome. Result context records a cap only when its guarded operation was reached, so a
 root-name mismatch, a missing field, and a foreign-snapshot root report different applied-bound sets. A retained
 partial primitive-field wrapper remains explanatory evidence with no decoded scalar answer; generic projection does
 not overstate completeness. It has no filesystem, network, process, native, or target-mutation capability.
 
-Each admitted plan has a canonical v1 projection and SHA-256 identity that includes the grammar version, exact root
+Each admitted plan has a canonical v1 projection and SHA-256 identity that includes the admission-profile version, exact root
 and field names, snapshot/owner identity, the complete selected field descriptor (including nullable child layout),
-decoder kind, and exact optional literal. Successfully parsed requests have canonical request identity; bounded invalid
-input retains a canonical raw-input identity, while deliberately oversized input is rejected before raw identity is
-retained. Exact root-selection policy provenance independently preserves the ordinal selector, disposition, issue,
+decoder kind, and exact optional literal. Successfully admitted requests have canonical request identity; bounded
+invalid or unsupported input retains a canonical raw-input identity where issuance rules permit it, while deliberately
+oversized input is rejected before raw identity is retained. Exact root-selection policy provenance independently preserves the ordinal selector, disposition, issue,
 scan counters, caps, retained-match count, and match-limit state. Failures before plan creation and successful values
 whose unused fallbacks differ therefore remain distinguishable. Results from successful plan evaluation carry the plan
 identity in ordered provenance, and all product results are `DerivedQuery`; adapter reads beneath them remain
@@ -635,8 +649,9 @@ The prototype retains only projects containing behavior or contracts exercised b
 - `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, and exact
   counted W3 method/field composition into a snapshot-scoped resolver/import descriptor without introducing ClrMD
   into core execution;
-- `Interpreter.Product.DumpQuery` — the bounded W2 parser, typed root binding, immutable prepared plan, read-only
-  `Evaluate(plan)` path, canonical identities, and closed result-value projection;
+- `Interpreter.Product.DumpQuery` — currently the bounded W2 parser and, at W6.2, the sole internal Roslyn dependency,
+  parse adapter, and W2/W5/W6 tree recognizers; typed root binding, immutable prepared plan, read-only `Evaluate(plan)`
+  path, canonical identities, and closed result-value projection remain project-owned;
 - `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
   result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
   dump memory; ClrMD evidence binder; and W5 canonical expression classifier, typed acquisition facade, and strict

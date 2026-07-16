@@ -25,8 +25,9 @@ Core principles:
 - **Active delivery target:** W6, a deterministic, read-only, fixed-depth member-chain query grounded in a .NET dump.
   W5 closed the W2/W4 expression-to-result path and selected this slice from meaningful multi-shape synthetic incident
   evidence. The active [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) freezes an opt-in two-member
-  grammar, counted reference evidence, truthful non-root identity, a narrowly certified field-backed data-property
-  shape, null/coalesce semantics, headless replay, and a new multi-shape decision gate. Its W4 baseline has a closed branchless counterfactual-method contract, a validated W4.1
+  tree shape, one complete pinned Roslyn C# expression parse with versioned subset admission, counted reference
+  evidence, truthful non-root identity, a narrowly certified field-backed data-property shape, null/coalesce semantics,
+  headless replay, and a new multi-shape decision gate. Its W4 baseline has a closed branchless counterfactual-method contract, a validated W4.1
   value-gate fixture, a validated W4.2
   provenance-aware execution kernel, a validated W4.3 dump-free non-exact field seam, and W4.4's validated body-free
   direct-MethodDef resolution plus complete frozen call graph. W4.5 now executes exact and explained-unknown values
@@ -62,11 +63,14 @@ Core principles:
   first step; [run 29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) was
   rejected before any job executed. The waiver is a W5-only governance exception, not hosted dump evidence, a
   field-readiness claim, or permission to weaken the unchanged workflow.
-- **W6 planning status:** the detailed W6 contract is current and implementation has not begun. It preserves the
-  default W5 language/report behavior and admits member chains only through an explicit
-  `FixedDepthMemberChainV1` profile. Its first executable gate must prove the actual record-property/getter/backing-
-  field shapes selected by W5; documentation alone is not implementation evidence. W6's umbrella scale is `~10K LOC`
-  split into `~1K LOC` evidence checkpoints, with a `~1K documentation LOC` initial contract.
+- **W6 planning status:** the detailed W6 and
+  [`C# expression-front-end`](docs/proposals/architecture/csharp-expression-front-end-contract-proposal.md) contracts
+  are current and implementation has not begun. W6.1 first proves the actual record-property/getter/backing-field
+  shapes selected by W5. W6.2 then pins `Microsoft.CodeAnalysis.CSharp/5.3.0`, parses each bounded C# expression once,
+  admits only ordered project-owned W2/W5/opt-in W6 tree shapes, preserves the default W5 language/report behavior,
+  and deletes the handwritten parser after differential compatibility. Documentation alone is not implementation
+  evidence. W6's umbrella scale is `~10K LOC` split into `~1K LOC` evidence checkpoints, with the front-end design and
+  implementation each at `~1K LOC` scale.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. W4's generated-dump lane additionally acquires the root/helper graph and two correlated fields, detaches all product evidence before execution, produces the exact `0x26AF37BD` result or a provenance-bearing unknown for partial/unavailable input, exercises both interpretation and a body-free pure model, and reproduces all six canonical memory/request/plan/result artifacts after reopening the dump. CoreCLR remains a late outcome oracle, not an input to interpreter shape, dump evidence, preparation, or execution.
 - **Physical scope:** ten source projects contain active contracts or behavior in a fourteen-project solution.
   `Interpreter.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
@@ -336,6 +340,7 @@ For structured topic lists, document inventory, and recommended reading paths, s
 
 - **Repository-wide design and architecture review:** `DESIGN-ARCHITECTURE-REVIEW.md`
 - **Active post-W5 W6 sequence:** `docs/plans/post-w5-path-forward.md`
+- **C# parsing and versioned subset-admission contract:** `docs/proposals/architecture/csharp-expression-front-end-contract-proposal.md`
 - **Completed W5 selection record:** `docs/plans/post-w4-path-forward.md`
 - **Documentation index and TOC-like navigation:** `docs/README.md`
 - **Normative W2 language, binding, plan, evidence, and replay contract:** `docs/proposals/architecture/restricted-dump-query-contract-proposal.md`
@@ -362,12 +367,14 @@ High-value contributions advance or challenge the active executable evidence:
 
 - strengthen dump reads, identity joins, partial evidence, and truthful failure behavior within the supported generated
   fixture boundary;
-- preserve the closed restricted dump-query v1 contract, and extend it only when a concrete incident scenario justifies the next grammar/evidence step;
+- preserve the closed restricted dump-query v1 behavior, replace parser growth with the pinned Roslyn front end, and
+  extend binding/evaluation only when a concrete incident scenario justifies the next tree/evidence step;
 - preserve W3's structural activation, typed whole-body admission, exact-evidence import, and deterministic outcome boundaries;
 - preserve the closed W4 `GetMarkerSummary`/`CombineMarkers` contract and make it reachable through W5's bounded
   expression-to-result product path without widening interpreter semantics;
-- implement or challenge W6's opt-in fixed-depth member-chain contract, including certified terminal data properties,
-  counted reference evidence, no-rebinding plans, null/coalesce truth, and unchanged W5 default reports;
+- implement or challenge W6's one-parse/versioned-admission boundary and opt-in fixed-depth member-chain contract,
+  including complex valid-but-unsupported parser tests, certified terminal data properties, counted reference evidence,
+  no-rebinding plans, null/coalesce truth, and unchanged W5 default reports;
 - preserve W5.5b's designed-evidence caveat; do not substitute broader syntax, context, opcode, EH, model, or debugger
   work without a new evidence decision;
 - add deterministic, differential, and scenario tests at proven boundaries;

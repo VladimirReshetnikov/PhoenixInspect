@@ -319,7 +319,7 @@ host-named root, one direct field, and an optional admitted coalescing literal. 
 
 - `DumpQueryRootBinding` plus `DumpQueryRootBindingStatus`, which retain exact object, exhaustive absence, partial,
   unavailable, conflicting, and invalid host-selection states without converting any non-exact state to null;
-- `DumpQueryEngine.Prepare(session, expression, rootBinding)`, which parses the closed grammar, verifies snapshot
+- `DumpQueryEngine.Prepare(session, expression, rootBinding)`, which currently parses the closed W2 grammar, verifies snapshot
   identity, performs the exact outer-field lookup once, checks the `Int32`/`Nullable<Int32>`/`String` and coalescing
   combination, and returns `DumpQueryPreparationResult`;
 - immutable `DumpQueryPlan`, which freezes the object-specific binding, selected field descriptor, decoder,
@@ -385,6 +385,11 @@ fragment:
   `EvaluationResult<DumpQueryValue>` and an accepted method request to the existing W4 preparation/execution path.
   `DumpExpressionEvaluationOutcome` is a strict union that preserves those original results plus typed
   classification, acquisition, and preparation failures; failure cases acquire no invented common semantic mode.
+
+This remains the current pre-W6.2 interface snapshot. The active
+[C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md) plans one
+internal Roslyn parse, project-owned W2/W5/W6 descriptors, and no parse during preparation. Update this catalog when
+that implementation lands; documentation does not make the new interface current prematurely.
 
 W5.4/5.5 add no reusable public API. `Interpreter.Headless.ReferenceConsumer` is an internal, independently launched
 prototype host whose two command modes emit versioned scenario and usefulness reports. Its generated corpus carries
