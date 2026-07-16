@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "scenarioSetId": "w6-member-chain-generated-conformance-v2",
+  "corpusKind": "GeneratedValidation",
+  "lifecycle": "W6.5HeadlessConformance",
+  "caveat": "These designed generated cases validate the draft W6 consumer contract and typed root-selection routing. They are not external observations or field-readiness evidence.",
+  "scenarios": [
+    {
+      "id": "w6-exact-request-failure-code",
+      "targetArguments": ["--synthetic-request-pipeline", "102", "-1002", "failed"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "rootFixtureEvidenceView": "Captured",
+      "expression": "root.Failure?.Code",
+      "expectedRootBindingStatus": "ExactObject",
+      "expectedRootIssue": "None",
+      "expectedAdapterStatus": "Exact",
+      "expectedValue": "request-failed"
+    },
+    {
+      "id": "w6-exact-request-current-status",
+      "targetArguments": ["--synthetic-request-pipeline", "101", "-1001", "running"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "rootFixtureEvidenceView": "Captured",
+      "expression": "root.CurrentRequest.Status",
+      "expectedRootBindingStatus": "ExactObject",
+      "expectedRootIssue": "None",
+      "expectedAdapterStatus": "Exact",
+      "expectedValue": "running"
+    },
+    {
+      "id": "w6-exact-batch-failure-code",
+      "targetArguments": ["--synthetic-batch-pipeline", "110", "-1010", "failed"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "rootFixtureEvidenceView": "Captured",
+      "expression": "root.LastFailure?.Code ?? \"<none>\"",
+      "expectedRootBindingStatus": "ExactObject",
+      "expectedRootIssue": "None",
+      "expectedAdapterStatus": "Exact",
+      "expectedValue": "batch-failed"
+    },
+    {
+      "id": "w6-exact-batch-progress-state",
+      "targetArguments": ["--synthetic-batch-pipeline", "107", "-1007", "running"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "rootFixtureEvidenceView": "Captured",
+      "expression": "root.Progress.State",
+      "expectedRootBindingStatus": "ExactObject",
+      "expectedRootIssue": "None",
+      "expectedAdapterStatus": "Exact",
+      "expectedValue": "running"
+    },
+    {
+      "id": "w6-root-exhaustive-absence",
+      "targetArguments": ["--synthetic-coordinator-pipeline", "118", "-1018", "clear"],
+      "rootType": "MissingSyntheticCoordinatorPipelineProbe",
+      "rootFixtureEvidenceView": "Captured",
+      "expression": "root.Owner?.Name",
+      "expectedRootBindingStatus": "ExhaustiveAbsence",
+      "expectedRootIssue": "None",
+      "expectedAdapterStatus": "Exact",
+      "expectedDiagnostic": "W5_ROOT_SELECTION_NOT_EXACT"
+    },
+    {
+      "id": "w6-root-partial",
+      "targetArguments": ["--synthetic-request-pipeline", "105", "-1005", "degraded"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "rootFixtureEvidenceView": "Partial",
+      "expression": "root.Failure?.Code ?? \"<none>\"",
+      "expectedRootBindingStatus": "Partial",
+      "expectedRootIssue": "MemoryUnavailable",
+      "expectedAdapterStatus": "Partial",
+      "expectedDiagnostic": "W5_ROOT_SELECTION_NOT_EXACT"
+    },
+    {
+      "id": "w6-root-unavailable",
+      "targetArguments": ["--synthetic-batch-pipeline", "111", "-1011", "running"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "rootFixtureEvidenceView": "Unavailable",
+      "expression": "root.Progress.State",
+      "expectedRootBindingStatus": "Unavailable",
+      "expectedRootIssue": "MemoryUnavailable",
+      "expectedAdapterStatus": "Unavailable",
+      "expectedDiagnostic": "W5_ROOT_SELECTION_NOT_EXACT"
+    },
+    {
+      "id": "w6-root-conflict",
+      "targetArguments": ["--synthetic-request-pipeline", "121", "-1021", "running"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "rootFixtureEvidenceView": "Conflict",
+      "expression": "root.CurrentRequest.Status",
+      "expectedRootBindingStatus": "Conflict",
+      "expectedRootIssue": "AmbiguousMatch",
+      "expectedAdapterStatus": "Conflict",
+      "expectedDiagnostic": "W5_ROOT_SELECTION_NOT_EXACT"
+    },
+    {
+      "id": "w6-root-invalid",
+      "targetArguments": ["--synthetic-batch-pipeline", "124", "-1024", "running"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "rootFixtureEvidenceView": "Invalid",
+      "expression": "root.Progress.CompletedPartitions",
+      "expectedRootBindingStatus": "Invalid",
+      "expectedRootIssue": "InvalidData",
+      "expectedAdapterStatus": "Invalid",
+      "expectedDiagnostic": "W5_ROOT_SELECTION_NOT_EXACT"
+    }
+  ]
+}

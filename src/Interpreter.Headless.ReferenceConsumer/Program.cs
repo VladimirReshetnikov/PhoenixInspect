@@ -15,6 +15,8 @@ internal static class Program
 {
     private const int MachineSchemaVersion = 1;
     private const int ManifestSchemaVersion = 1;
+    private const int W6MachineSchemaVersion = 2;
+    private const int W6ManifestSchemaVersion = 2;
     private const int MaximumScenarios = 64;
     private const string GeneratedFixtureCaveat =
         "Generated fixture evidence views validate routing only; they are not representative incident observations.";
@@ -43,23 +45,27 @@ internal static class Program
             }
 
             using var session = opened.Value;
-            var rootSearch = session.FindStrongHandleObjectsByTypeName(
+            var capturedRootSearch = session.FindStrongHandleObjectsByTypeName(
                 manifest.Root.TypeName,
                 manifest.Root.MaximumMatches,
                 manifest.Root.MaximumHandlesScanned);
+            var rootSearch = ApplyRootEvidenceView(capturedRootSearch, ParseRootView(manifest.Root.FixtureEvidenceView));
             var rootBinding = DumpQueryRootBinding.FromSearchResult(manifest.Root.Name, rootSearch);
-            if (rootBinding.Status != DumpQueryRootBindingStatus.ExactObject || rootBinding.Root is null)
+            if (manifest.SchemaVersion == ManifestSchemaVersion &&
+                (rootBinding.Status != DumpQueryRootBindingStatus.ExactObject || rootBinding.Root is null))
             {
                 Console.Error.WriteLine($"W5_CONSUMER_ROOT_NOT_EXACT:{rootBinding.Status}:{rootBinding.Issue}");
                 return 4;
             }
 
             var rows = manifest.Scenarios
-                .Select(scenario => RunScenario(session, rootBinding, scenario))
+                .Select(scenario => RunScenario(session, rootBinding, manifest.SchemaVersion, scenario))
                 .ToImmutableArray();
-            WriteMachineReport(options.MachineOutputPath, manifest, session.Snapshot, rows);
-            WriteHumanReport(options.HumanOutputPath, manifest, rows);
-            Console.WriteLine($"W5_CONSUMER_OK:{rows.Length}");
+            WriteMachineReport(options.MachineOutputPath, manifest, session.Snapshot, rootBinding, rows);
+            WriteHumanReport(options.HumanOutputPath, manifest, rootBinding, rows);
+            Console.WriteLine(manifest.SchemaVersion == ManifestSchemaVersion
+                ? $"W5_CONSUMER_OK:{rows.Length}"
+                : $"W6_CONSUMER_OK:{rows.Length}");
             return 0;
         }
         catch (CommandLineException exception)
@@ -118,6 +124,7 @@ internal static class Program
     private static ScenarioRow RunScenario(
         ClrmdDumpSession session,
         DumpQueryRootBinding root,
+        int manifestSchemaVersion,
         ScenarioDefinition scenario)
     {
         var mode = ParseMode(scenario.MethodMode);
@@ -139,7 +146,14 @@ internal static class Program
                 cancellation.Cancel();
             }
 
-            var outcome = EvaluateScenario(session, root, scenario, policy, view, cancellation.Token);
+            var outcome = EvaluateScenario(
+                session,
+                root,
+                manifestSchemaVersion,
+                scenario,
+                policy,
+                view,
+                cancellation.Token);
             request ??= outcome.Request;
             var projection = ProjectOutcome(outcome);
             var projectionBytes = SerializeOutcomeProjection(projection);
@@ -160,6 +174,7 @@ internal static class Program
             scenario.Id,
             scenario.Expression,
             scenario.MethodMode,
+            manifestSchemaVersion == ManifestSchemaVersion ? null : scenario.LanguageProfile,
             scenario.FixtureEvidenceView,
             scenario.RepeatCount,
             request?.Sha256,
@@ -170,6 +185,7 @@ internal static class Program
     private static DumpExpressionEvaluationOutcome EvaluateScenario(
         ClrmdDumpSession session,
         DumpQueryRootBinding root,
+        int manifestSchemaVersion,
         ScenarioDefinition scenario,
         DumpExpressionPolicy policy,
         FixtureEvidenceView view,
@@ -177,12 +193,20 @@ internal static class Program
     {
         if (view == FixtureEvidenceView.Captured)
         {
-            return DumpExpressionEvaluator.Evaluate(
-                session,
-                scenario.Expression,
-                root,
-                policy,
-                cancellationToken);
+            return manifestSchemaVersion == ManifestSchemaVersion
+                ? DumpExpressionEvaluator.Evaluate(
+                    session,
+                    scenario.Expression,
+                    root,
+                    policy,
+                    cancellationToken)
+                : DumpExpressionEvaluator.Evaluate(
+                    session,
+                    scenario.Expression,
+                    root,
+                    policy,
+                    ParseLanguageProfile(scenario.LanguageProfile),
+                    cancellationToken);
         }
 
         var classification = DumpExpressionClassifier.Classify(scenario.Expression, root, policy);
@@ -374,19 +398,27 @@ internal static class Program
         string path,
         ScenarioManifest manifest,
         ClrmdSnapshotIdentity snapshot,
+        DumpQueryRootBinding root,
         ImmutableArray<ScenarioRow> rows)
     {
         EnsureParentDirectory(path);
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
         using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
         writer.WriteStartObject();
-        writer.WriteNumber("machineSchemaVersion", MachineSchemaVersion);
+        writer.WriteNumber(
+            "machineSchemaVersion",
+            manifest.SchemaVersion == ManifestSchemaVersion ? MachineSchemaVersion : W6MachineSchemaVersion);
         writer.WriteNumber("manifestSchemaVersion", manifest.SchemaVersion);
         writer.WriteString("corpusKind", manifest.CorpusKind);
         writer.WriteString("dumpSnapshotSha256", snapshot.Sha256);
         writer.WriteString("rootName", manifest.Root.Name);
         writer.WriteString("rootTypeName", manifest.Root.TypeName);
         writer.WriteString("fixtureCaveat", GetCorpusCaveat(manifest));
+        if (manifest.SchemaVersion == W6ManifestSchemaVersion)
+        {
+            WriteRootSelection(writer, manifest.Root.FixtureEvidenceView, root);
+        }
+
         writer.WriteStartArray("scenarios");
         foreach (var row in rows)
         {
@@ -402,6 +434,11 @@ internal static class Program
             }
 
             writer.WriteString("methodMode", row.MethodMode);
+            if (manifest.SchemaVersion == W6ManifestSchemaVersion)
+            {
+                writer.WriteString("languageProfile", row.LanguageProfile);
+            }
+
             writer.WriteString("fixtureEvidenceView", row.FixtureEvidenceView);
             writer.WriteNumber("repetitions", row.Repetitions);
             if (row.RequestSha256 is null)
@@ -420,6 +457,35 @@ internal static class Program
         }
 
         writer.WriteEndArray();
+        writer.WriteEndObject();
+    }
+
+    private static void WriteRootSelection(
+        Utf8JsonWriter writer,
+        string fixtureEvidenceView,
+        DumpQueryRootBinding root)
+    {
+        writer.WriteStartObject("rootSelection");
+        WriteNullable(writer, "name", root.Name);
+        WriteNullable(writer, "typeNameSelector", root.TypeNameSelector);
+        writer.WriteString("bindingStatus", root.Status.ToString());
+        writer.WriteString("issue", root.Issue.ToString());
+        WriteNullable(writer, "adapterSearchStatus", root.SearchStatus?.ToString());
+        WriteNullable(writer, "handlesScanned", root.HandlesScanned);
+        WriteNullable(writer, "maximumHandlesScanned", root.MaximumHandlesScanned);
+        WriteNullable(writer, "maximumMatches", root.MaximumMatches);
+        WriteNullable(writer, "matchesRetained", root.MatchesRetained);
+        if (root.MatchLimitReached is { } matchLimitReached)
+        {
+            writer.WriteBoolean("matchLimitReached", matchLimitReached);
+        }
+        else
+        {
+            writer.WriteNull("matchLimitReached");
+        }
+
+        writer.WriteNumber("evidenceCount", root.Evidence.Length);
+        writer.WriteString("fixtureEvidenceView", fixtureEvidenceView);
         writer.WriteEndObject();
     }
 
@@ -474,13 +540,27 @@ internal static class Program
     private static void WriteHumanReport(
         string path,
         ScenarioManifest manifest,
+        DumpQueryRootBinding root,
         ImmutableArray<ScenarioRow> rows)
     {
         EnsureParentDirectory(path);
         using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        writer.WriteLine("W5 expression-facade report v1");
+        writer.WriteLine(manifest.SchemaVersion == ManifestSchemaVersion
+            ? "W5 expression-facade report v1"
+            : "W6 expression-facade report v2");
         writer.WriteLine($"Corpus: {manifest.CorpusKind}");
         writer.WriteLine($"Caveat: {GetCorpusCaveat(manifest)}");
+        if (manifest.SchemaVersion == W6ManifestSchemaVersion)
+        {
+            writer.WriteLine(
+                $"Root: name={root.Name ?? "none"}; selector={root.TypeNameSelector ?? "none"}; " +
+                $"binding={root.Status}; adapter={root.SearchStatus?.ToString() ?? "none"}; issue={root.Issue}; " +
+                $"handles={root.HandlesScanned?.ToString() ?? "none"}/{root.MaximumHandlesScanned?.ToString() ?? "none"}; " +
+                $"matches={root.MatchesRetained?.ToString() ?? "none"}/{root.MaximumMatches?.ToString() ?? "none"}; " +
+                $"limit-reached={root.MatchLimitReached?.ToString() ?? "none"}; evidence={root.Evidence.Length}; " +
+                $"fixture-view={manifest.Root.FixtureEvidenceView}");
+        }
+
         foreach (var row in rows)
         {
             var outcome = row.Outcome;
@@ -490,13 +570,47 @@ internal static class Program
             var diagnostics = outcome.Diagnostics.IsEmpty
                 ? "none"
                 : string.Join(',', outcome.Diagnostics.Select(static item => item.Code));
+            var value = manifest.SchemaVersion == ManifestSchemaVersion
+                ? outcome.Value ?? "none"
+                : ProjectHumanValueShape(outcome.Value);
+            var profile = manifest.SchemaVersion == ManifestSchemaVersion
+                ? string.Empty
+                : $"; profile={row.LanguageProfile}";
             writer.WriteLine(
                 $"{row.Id}: outcome={outcome.Kind}; semantic={outcome.SemanticMode ?? "none"}; " +
                 $"completion={outcome.Completion ?? "none"}; completeness={outcome.Completeness ?? "none"}; " +
                 $"evidence={outcome.Evidence ?? "none"}; effects={outcome.Effects ?? "none"}; " +
-                $"value={outcome.Value ?? "none"}; bounds={bounds}; provenance={outcome.Provenance.Length}; " +
-                $"diagnostics={diagnostics}; fixture-view={row.FixtureEvidenceView}; repetitions={row.Repetitions}");
+                $"value={value}; bounds={bounds}; provenance={outcome.Provenance.Length}; " +
+                $"diagnostics={diagnostics}; fixture-view={row.FixtureEvidenceView}; repetitions={row.Repetitions}{profile}");
         }
+    }
+
+    private static string ProjectHumanValueShape(string? value)
+    {
+        if (value is null)
+        {
+            return "none";
+        }
+
+        if (string.Equals(value, "null", StringComparison.Ordinal))
+        {
+            return "Null";
+        }
+
+        if (value.StartsWith("s16:", StringComparison.Ordinal))
+        {
+            var hexadecimalLength = value.Length - "s16:".Length;
+            return hexadecimalLength >= 0 && hexadecimalLength % 4 == 0
+                ? $"String(length={hexadecimalLength / 4})"
+                : "String(invalid-projection)";
+        }
+
+        if (value.StartsWith("i32:", StringComparison.Ordinal))
+        {
+            return "Int32(value omitted)";
+        }
+
+        return "Opaque(value omitted)";
     }
 
     private static string GetCorpusCaveat(ScenarioManifest manifest) => manifest.CorpusKind switch
@@ -559,6 +673,60 @@ internal static class Program
         nameof(DumpMethodEvaluationMode.Modeled) => DumpMethodEvaluationMode.Modeled,
         _ => throw new InvalidDataException($"Unknown method mode '{value}'."),
     };
+
+    private static DumpExpressionLanguageProfile ParseLanguageProfile(string? value) => value switch
+    {
+        nameof(DumpExpressionLanguageProfile.FixedDepthMemberChainV1) =>
+            DumpExpressionLanguageProfile.FixedDepthMemberChainV1,
+        _ => throw new InvalidDataException($"Unknown expression language profile '{value}'."),
+    };
+
+    private static RootFixtureEvidenceView ParseRootView(string value) => value switch
+    {
+        nameof(RootFixtureEvidenceView.Captured) => RootFixtureEvidenceView.Captured,
+        nameof(RootFixtureEvidenceView.Partial) => RootFixtureEvidenceView.Partial,
+        nameof(RootFixtureEvidenceView.Unavailable) => RootFixtureEvidenceView.Unavailable,
+        nameof(RootFixtureEvidenceView.Conflict) => RootFixtureEvidenceView.Conflict,
+        nameof(RootFixtureEvidenceView.Invalid) => RootFixtureEvidenceView.Invalid,
+        _ => throw new InvalidDataException($"Unknown root fixture evidence view '{value}'."),
+    };
+
+    private static ClrmdHeapObjectSearchResult ApplyRootEvidenceView(
+        ClrmdHeapObjectSearchResult captured,
+        RootFixtureEvidenceView view)
+    {
+        if (view == RootFixtureEvidenceView.Captured)
+        {
+            return captured;
+        }
+
+        var (status, issue, matches) = view switch
+        {
+            RootFixtureEvidenceView.Partial =>
+                (ClrmdEvidenceStatus.Partial, ClrmdValueIssue.MemoryUnavailable, captured.Matches),
+            RootFixtureEvidenceView.Unavailable =>
+                (ClrmdEvidenceStatus.Unavailable, ClrmdValueIssue.MemoryUnavailable,
+                    ImmutableArray<ClrmdHeapObjectInfo>.Empty),
+            RootFixtureEvidenceView.Conflict =>
+                (ClrmdEvidenceStatus.Conflict, ClrmdValueIssue.AmbiguousMatch,
+                    ImmutableArray<ClrmdHeapObjectInfo>.Empty),
+            RootFixtureEvidenceView.Invalid =>
+                (ClrmdEvidenceStatus.Invalid, ClrmdValueIssue.InvalidData,
+                    ImmutableArray<ClrmdHeapObjectInfo>.Empty),
+            _ => throw new ArgumentOutOfRangeException(nameof(view)),
+        };
+        return new ClrmdHeapObjectSearchResult(
+            captured.Snapshot,
+            captured.TypeNameSelector,
+            status,
+            issue,
+            captured.HandlesScanned,
+            captured.MaximumHandlesScanned,
+            captured.MaximumMatches,
+            captured.MatchLimitReached,
+            matches,
+            captured.Evidence);
+    }
 
     private static FixtureEvidenceView ParseView(string value) => value switch
     {
@@ -636,10 +804,20 @@ internal static class Program
         ModuleUnavailable,
     }
 
+    private enum RootFixtureEvidenceView
+    {
+        Captured,
+        Partial,
+        Unavailable,
+        Conflict,
+        Invalid,
+    }
+
     private sealed record ScenarioRow(
         string Id,
         string? Expression,
         string MethodMode,
+        string? LanguageProfile,
         string FixtureEvidenceView,
         int Repetitions,
         string? RequestSha256,
@@ -690,9 +868,10 @@ internal static class Program
 
         internal void Validate()
         {
-            if (SchemaVersion != ManifestSchemaVersion)
+            if (SchemaVersion is not (ManifestSchemaVersion or W6ManifestSchemaVersion))
             {
-                throw new InvalidDataException($"Manifest schema version must be {ManifestSchemaVersion}.");
+                throw new InvalidDataException(
+                    $"Manifest schema version must be {ManifestSchemaVersion} or {W6ManifestSchemaVersion}.");
             }
 
             if (Root is null)
@@ -702,7 +881,7 @@ internal static class Program
 
             _ = GetCorpusCaveat(this);
 
-            Root.Validate();
+            Root.Validate(SchemaVersion);
             if (Scenarios.IsDefaultOrEmpty || Scenarios.Length > MaximumScenarios ||
                 Scenarios.Any(static scenario => scenario is null))
             {
@@ -712,7 +891,7 @@ internal static class Program
             var ids = new HashSet<string>(StringComparer.Ordinal);
             foreach (var scenario in Scenarios)
             {
-                scenario.Validate();
+                scenario.Validate(SchemaVersion);
                 if (!ids.Add(scenario.Id))
                 {
                     throw new InvalidDataException($"Scenario id '{scenario.Id}' is duplicated.");
@@ -735,7 +914,10 @@ internal static class Program
         [JsonPropertyName("maximumHandlesScanned")]
         public int MaximumHandlesScanned { get; init; }
 
-        internal void Validate()
+        [JsonPropertyName("fixtureEvidenceView")]
+        public string FixtureEvidenceView { get; init; } = nameof(RootFixtureEvidenceView.Captured);
+
+        internal void Validate(int manifestSchemaVersion)
         {
             if (string.IsNullOrWhiteSpace(Name) || Name.Length > DumpExpressionRequest.MaximumRootNameCharacters ||
                 string.IsNullOrWhiteSpace(TypeName) || TypeName.Length > 4_096 ||
@@ -743,6 +925,12 @@ internal static class Program
                 MaximumHandlesScanned is < 1 or > 100_000)
             {
                 throw new InvalidDataException("The root selector is missing or outside its deterministic bounds.");
+            }
+
+            var view = ParseRootView(FixtureEvidenceView);
+            if (manifestSchemaVersion == ManifestSchemaVersion && view != RootFixtureEvidenceView.Captured)
+            {
+                throw new InvalidDataException("Manifest schema v1 permits only captured root evidence.");
             }
         }
     }
@@ -757,6 +945,9 @@ internal static class Program
 
         [JsonPropertyName("methodMode")]
         public string MethodMode { get; init; } = string.Empty;
+
+        [JsonPropertyName("languageProfile")]
+        public string? LanguageProfile { get; init; }
 
         [JsonPropertyName("instructionLimit")]
         public long InstructionLimit { get; init; }
@@ -776,7 +967,7 @@ internal static class Program
         [JsonPropertyName("repeatCount")]
         public int RepeatCount { get; init; }
 
-        internal void Validate()
+        internal void Validate(int manifestSchemaVersion)
         {
             if (string.IsNullOrWhiteSpace(Id) || Id.Length > 128 ||
                 !Id.All(static character => character is >= 'a' and <= 'z' or >= '0' and <= '9' or '.' or '-'))
@@ -791,6 +982,23 @@ internal static class Program
 
             _ = ParseMode(MethodMode);
             _ = ParseView(FixtureEvidenceView);
+            if (manifestSchemaVersion == ManifestSchemaVersion)
+            {
+                if (!string.IsNullOrEmpty(LanguageProfile))
+                {
+                    throw new InvalidDataException($"Scenario '{Id}' cannot select a W6 language profile in schema v1.");
+                }
+            }
+            else
+            {
+                _ = ParseLanguageProfile(LanguageProfile);
+                if (ParseView(FixtureEvidenceView) != Program.FixtureEvidenceView.Captured)
+                {
+                    throw new InvalidDataException(
+                        $"Scenario '{Id}' requires captured member evidence in manifest schema v2.");
+                }
+            }
+
             _ = DumpExpressionPolicy.Create(
                 ParseMode(MethodMode),
                 InstructionLimit,
