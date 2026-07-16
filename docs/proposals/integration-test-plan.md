@@ -29,9 +29,9 @@ direct/adjusted compiler/SRM fresh replay with capability poison/count evidence.
 and W4.9 adds the ClrMD evidence producer, detached binding, dump-grounded exact/degraded corpus, close/reopen replay,
 and exact hosted closure. W5.1–W5.5b now add the focused expression classifier, typed acquisition facade, mode-
 preserving evaluator, external headless consumer, canonical generated corpus, deterministic usefulness-report runner,
-and twelve-incident/two-shape meaningful synthetic portfolio through pushed checkpoint `90ade6d92`. Exact W5 closure
-verification remains open under the
-[`Post-W4 Path Forward`](../plans/post-w4-path-forward.md).
+and twelve-incident/two-shape meaningful synthetic portfolio through pushed checkpoint `90ade6d92`. W5 is closed for
+its defined prototype scope under the milestone-scoped owner exception recorded in the
+[`Post-W4 Path Forward`](../plans/post-w4-path-forward.md); rejected hosted jobs are not test evidence.
 Dump-free parser, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
@@ -531,5 +531,8 @@ headless guard. All behavioral lanes are wrapper-launched and have zero skips. T
 closure matrix but not field readiness. Exact-commit hosted run
 [29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation and
 Build/Fast. Its real-dump and optimized-dump jobs execute zero steps because GitHub rejects them for account payment/
-spending-limit state; an unchanged retry has the same result. The hosted gate remains pending without reducing its
-selection.
+spending-limit state; an unchanged retry has the same result. Run
+[29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) likewise executed no jobs.
+The owner explicitly waived W5's final hosted-only condition on 2026-07-16, so the milestone is closed on its complete
+exact-source local matrix. This exception does not mark the rejected jobs passing, reduce the unchanged selection,
+establish field readiness, or apply to a future milestone.

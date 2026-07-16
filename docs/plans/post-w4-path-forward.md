@@ -1,6 +1,6 @@
 # Post-W4 Path Forward
 
-> **Lifecycle:** Current · **Roadmap:** Closure verification
+> **Lifecycle:** Current · **Roadmap:** Closed
 >
 > **Decision:** fund product composition and usefulness evidence before adding interpreter breadth.
 
@@ -105,7 +105,7 @@ The detailed historical ledgers remain authoritative in
 | W2 — restricted query | `~10K LOC` | Closed |
 | W3 — concrete IL proof | `~10K LOC` | Closed |
 | W4 — unknown-aware method evaluation | `~10K LOC` | Closed |
-| W5 — expression-to-result product composition and usefulness gate | `~10K LOC` | Closure verification |
+| W5 — expression-to-result product composition and usefulness gate | `~10K LOC` | Closed |
 
 W5's umbrella scale is intentionally conservative. Each implementation checkpoint below begins at `~1K LOC`; if a
 checkpoint grows to `~10K LOC`, work stops at the preceding evidence boundary and the plan is split before more code
@@ -283,23 +283,22 @@ unknown and 6/12 decision-changing answers across 12 incidents and two applicati
 select prototype direction only: they contribute nothing to a field-readiness rate, and the representative/external-
 observation denominator remains 0 questions across 0 incidents and 0 application shapes.
 
-W5.1–W5.5b are complete implementation checkpoints. The W5 umbrella is in closure verification: the meaningful
-portfolio and complete local matrix are satisfied at pushed checkpoint `56ec08149`; exact pushed hosted closure
-remains open. Run [29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes
-documentation and Build/Fast at exact commit `24825ce53`, but GitHub rejects both dependent dump jobs before their
-first step because the account's payments/spending limit requires attention. A same-commit retry produces the same
-zero-step infrastructure rejection.
+W5.1–W5.5b and the W5 umbrella are closed for the defined prototype scope. Exact source baseline `26ba75fb1` passes
+the meaningful portfolio and complete local matrix. The owner explicitly waived the final hosted-only condition for
+W5 on 2026-07-16 because the external account state could not be repaired in this milestone. Run
+[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passed documentation and
+Build/Fast at exact commit `24825ce53`, but GitHub rejected both dependent dump jobs before their first step. Run
+[29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) rejected every job before
+execution, including repeated attempts. Those runs are infrastructure history, not passing hosted dump evidence.
 
 The current documentation candidate passes the complete local headless matrix: locked restore; strict 14-project
 Release build with warnings as errors at 0 warnings/0 errors; unit 502/502; Fast 104/104; ordinary dump 10/10;
 optimized dump 1/1; focused W5 facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefulness
 1/1; Markdown links across 63 files/59 local
-destinations; and the one-workflow headless guard. Every test lane has zero skips. This is local verification of the
-implemented checkpoints and complete local closure, not hosted W5 umbrella closure or field readiness.
-
-Hosted closure requires no code or test relaxation. Restore GitHub Actions billing/spending availability and rerun
-the unchanged workflow at the exact closure candidate; both dump jobs must actually execute and pass before this
-document changes W5 from closure verification to closed.
+destinations; and the one-workflow headless guard. Every test lane has zero skips. This is complete local closure
+evidence for the implemented checkpoints, not hosted dump evidence or field readiness. No test, selection, or workflow
+was removed or relaxed. The owner exception applies only to W5's final hosted condition; future milestones inherit the
+unchanged hosted-gate policy unless they receive their own explicit disposition.
 
 ## 6) The post-W5 decision gate
 
@@ -382,5 +381,12 @@ W5 closes only when all of the following are true:
 - the exact pushed closure commit passes locked restore, strict Release build, complete unit/Fast/focused dump lanes,
   Markdown/headless guards, and hosted CI with zero skips within the milestone test selection.
 
-Until those conditions hold, virtual stepping, broad interpreter expansion, and additional product surfaces remain
-research rather than active delivery work.
+All substantive product, evidence, replay, headless, synthetic-portfolio, and complete local-matrix conditions above
+are satisfied. The owner explicitly accepted the missing hosted portion of the final condition as a W5-only closure
+exception on 2026-07-16. Therefore W5 is closed for its defined prototype scope. The rejected hosted jobs remain
+recorded as not executed and not passing; this exception neither establishes field readiness nor carries into the
+selected fixed-depth member-chain slice.
+
+Virtual stepping, broad interpreter expansion, and additional product surfaces remain research rather than active
+delivery work. Only the selected fixed-depth member-chain design slice is eligible for a separately contracted next
+prototype milestone; it is selected, not implemented by W5.

@@ -31,8 +31,9 @@ composition, headless consumer, canonical-corpus, and usefulness evidence. W5.1â
 checkpoints `7c3d52572`/`d88b13c2c`/`fc8a43a7a`/`59d9bb590`/`0f5230e13`/`b788f4f66`/`90ade6d92`. The generated lane
 validates deterministic raw-count reporting and corpus-kind enforcement. The meaningful synthetic lane supplies 12
 independent incidents across two shapes and selects fixed-depth member navigation for the next prototype design. Both
-lanes contribute zero representative/external-observation rows. W5 umbrella closure verification remains open; no
-unimplemented research matrix is added in advance.
+lanes contribute zero representative/external-observation rows. W5 is closed for its defined prototype scope under
+the owner's explicit 2026-07-16 waiver of the hosted-only closure condition; the rejected hosted jobs remain absent
+evidence. No unimplemented research matrix is added in advance.
 
 ## 1) Evidence language
 
@@ -930,11 +931,13 @@ errors at 0 warnings/0 errors; complete unit 502/502; Fast 104/104; ordinary dum
 facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefulness 1/1; Markdown 63 files/59
 destinations; and the one-workflow headless guard. All
 behavioral invocations use `eng/Invoke-HeadlessProcess.ps1` and have zero skips. The full matrix is regression and
-complete local closure evidence at pushed checkpoint `56ec08149`; exact pushed hosted W5 umbrella verification remains
-open. Run [29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation
-and Build/Fast at exact commit `24825ce53`, while GitHub rejects both dump jobs with zero executed steps because the
-account's payments/spending limit requires attention. The same-commit retry repeats that infrastructure rejection;
-neither attempt is dump-test evidence.
+complete local closure evidence at exact source baseline `26ba75fb1`. Run
+[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passed documentation and
+Build/Fast at exact commit `24825ce53`, while GitHub rejected both dump jobs with zero executed steps. Run
+[29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) rejected every job before
+execution, including repeated attempts. Neither run is hosted dump evidence. The owner explicitly waived only W5's
+final hosted condition on 2026-07-16, closing the defined milestone scope without weakening the workflow, claiming
+field readiness, or setting policy for the selected next slice.
 
 ## 9) Deferred research suites
 

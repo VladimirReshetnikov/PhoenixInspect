@@ -57,11 +57,14 @@ representative rows. W5.5b adds 12 independently dumped, predeclared synthetic i
 batch-pipeline root graphs. Its raw counts are 8/12 admitted, 4/12 exact, 2/3 useful partial-or-unknown, and 6/12
 decision-changing; four recurring `MemberNavigation` blockers select `AdmitFixedDepthMemberChain` as the next
 prototype design slice. The designed corpus is not field evidence: representative/external observations remain 0
-questions across 0 incidents and 0 application shapes, and no readiness rate is claimed. W5 is in exact closure
-verification, not yet umbrella-closed. Exact-commit hosted run
-[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation and
-Build/Fast, but GitHub rejects both dump jobs before execution because the account's payments/spending limit requires
-attention.
+questions across 0 incidents and 0 application shapes, and no readiness rate is claimed. W5 is closed for its defined
+prototype scope under the owner's explicit 2026-07-16 waiver of the hosted-only closure condition. Exact source
+baseline `26ba75fb1` passes the complete local headless matrix. Hosted run
+[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passed documentation and
+Build/Fast but never executed either dump job; [run
+29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) executed no jobs. The
+milestone-scoped waiver does not convert either infrastructure rejection into hosted evidence, establish field
+readiness, or apply to future milestones.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
@@ -262,7 +265,7 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `plans/post-w4-path-forward.md` | Planning | Plan | Current · Closure verification | W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, and evidence-selected fixed-depth member-chain prototype decision. |
+| `plans/post-w4-path-forward.md` | Planning | Plan | Current · Closed | Closed W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, milestone-scoped hosted-gate waiver, and evidence-selected fixed-depth member-chain prototype decision. |
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4's closed rooted exact/degraded interpreted/modeled dump execution and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |

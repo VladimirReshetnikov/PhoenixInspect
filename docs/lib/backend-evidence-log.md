@@ -56,12 +56,14 @@ expand the scenario or establish evidence beyond the named fixture shapes. Final
 `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same four jobs in [run
 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
 
-W5 local closure at `56ec08149` executes the twelve-snapshot row above inside the complete 10/10 ordinary-dump lane
-and retains optimized-dump 1/1. Exact-commit hosted run
-[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation and
-Build/Fast, but GitHub rejects both dump jobs before their first step because the account's payments/spending limit
-requires attention. The retry has the same zero-step infrastructure result, so it is not hosted dump evidence and W5
-umbrella closure remains open.
+W5 exact source baseline `26ba75fb1` executes the twelve-snapshot row above inside the complete 10/10 ordinary-dump
+lane and retains optimized-dump 1/1. Hosted run
+[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passed documentation and
+Build/Fast, but GitHub rejected both dump jobs before their first step. Run
+[29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) executed no jobs. Those
+zero-step results are not hosted dump evidence. W5 is nevertheless closed for its defined prototype scope under the
+owner's explicit 2026-07-16 waiver of that milestone's final hosted-only condition; the waiver adds no backend
+confidence, representative observation, or field-readiness evidence and does not apply to future milestones.
 
 ## Active decision and remaining evidence gaps
 
