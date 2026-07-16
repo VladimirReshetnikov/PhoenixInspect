@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Interpreter.Core.Abstractions;
 using Interpreter.Host.Abstractions;
@@ -56,7 +57,7 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
 
                 var unsupportedArray = session.CertifyDeclaredDataMember(requestRoot, "RetryMarkers", "Length");
                 Assert.Equal(ClrmdEvidenceStatus.Unavailable, unsupportedArray.Status);
-                Assert.Equal(ClrmdValueIssue.TypeMismatch, unsupportedArray.Issue);
+                Assert.Equal(ClrmdValueIssue.MemberShapeUnsupported, unsupportedArray.Issue);
                 Assert.Single(unsupportedArray.Evidence);
             });
 
@@ -109,7 +110,7 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
 
                 var unsupportedReferenceLeaf = session.CertifyDeclaredDataMember(root, "ActiveShard", "Health");
                 Assert.Equal(ClrmdEvidenceStatus.Unavailable, unsupportedReferenceLeaf.Status);
-                Assert.Equal(ClrmdValueIssue.TypeMismatch, unsupportedReferenceLeaf.Issue);
+                Assert.Equal(ClrmdValueIssue.MemberShapeUnsupported, unsupportedReferenceLeaf.Issue);
                 Assert.Single(unsupportedReferenceLeaf.Evidence);
             });
 
@@ -151,15 +152,15 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
 
                 AssertRejected(
                     session.CertifyDeclaredDataMember(root, "Computed", "Value"),
-                    ClrmdValueIssue.MethodBodyUnavailable,
+                    ClrmdValueIssue.MemberShapeUnsupported,
                     minimumEvidenceReads: 4);
                 AssertRejected(
                     session.CertifyDeclaredDataMember(root, "Indexed", "Item"),
-                    ClrmdValueIssue.TypeMismatch,
+                    ClrmdValueIssue.MemberShapeUnsupported,
                     minimumEvidenceReads: 1);
                 AssertRejected(
                     session.CertifyDeclaredDataMember(root, "Static", "Value"),
-                    ClrmdValueIssue.TypeMismatch,
+                    ClrmdValueIssue.MemberShapeUnsupported,
                     minimumEvidenceReads: 1);
                 AssertRejected(
                     session.CertifyDeclaredDataMember(root, "Inherited", "Value"),
@@ -167,20 +168,25 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
                     minimumEvidenceReads: 1);
                 AssertRejected(
                     session.CertifyDeclaredDataMember(root, "Unsupported", "Value"),
-                    ClrmdValueIssue.TypeMismatch,
+                    ClrmdValueIssue.MemberShapeUnsupported,
                     minimumEvidenceReads: 1);
                 AssertRejected(
                     session.CertifyDeclaredDataMember(root, "Mismatched", "Value"),
-                    ClrmdValueIssue.TypeMismatch,
+                    ClrmdValueIssue.MemberShapeUnsupported,
                     minimumEvidenceReads: 1);
                 AssertRejected(
                     session.CertifyDeclaredDataMember(root, "Call", "Value"),
-                    ClrmdValueIssue.MethodBodyUnavailable,
+                    ClrmdValueIssue.MemberShapeUnsupported,
                     minimumEvidenceReads: 4);
                 AssertRejected(
                     session.CertifyDeclaredDataMember(root, "Virtual", "Value"),
-                    ClrmdValueIssue.TypeMismatch,
+                    ClrmdValueIssue.MemberShapeUnsupported,
                     minimumEvidenceReads: 1);
+
+                var invalidMethodToken = session.ReadMethodBody(root.Module, 0x06000000);
+                Assert.Equal(ClrmdEvidenceStatus.Invalid, invalidMethodToken.Status);
+                Assert.Equal(ClrmdValueIssue.InvalidData, invalidMethodToken.Issue);
+                Assert.Single(invalidMethodToken.Evidence);
             });
 
         Assert.Equal(10, detached.Count);
@@ -195,6 +201,77 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
             Assert.True(certificate.Storage.Size > 0);
             Assert.Equal(diskMetadata, certificate.DeclaredTarget.ModuleContent);
         });
+    }
+
+    /// <summary>
+    /// Drives the production terminal selector with test-scale bounds to prove deterministic partial field,
+    /// property, and method-semantics catalogs plus an invalid TypeDef identity.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    [Trait("Corpus", "W6DeclaredDataMemberCertificateV1")]
+    public void Terminal_catalog_bounds_are_reached_and_reported_independently()
+    {
+        using var stream = File.OpenRead(TestTargetPaths.ResolveAssembly(TestTargetPaths.ResolveExecutable()));
+        using var peReader = new PEReader(stream);
+        var reader = peReader.GetMetadataReader();
+        var directType = FindType(reader, "SyntheticDirectTerminalProfile");
+        var autoType = FindType(reader, "SyntheticAutoNullableProfile");
+
+        var fieldLimited = ClrmdDumpSession.InspectTerminalCatalog(
+            reader,
+            MetadataTokens.GetToken(directType),
+            "Text",
+            maximumFieldCount: 2,
+            maximumPropertyCount: 8,
+            maximumMethodSemanticsCount: 8);
+        Assert.Equal(ClrmdEvidenceStatus.Partial, fieldLimited.Status);
+        Assert.Equal(ClrmdValueIssue.LimitExceeded, fieldLimited.Issue);
+        Assert.Equal(2, fieldLimited.AppliedBounds.Single(bound =>
+            bound.Name == "dump.terminal-fields.traversed").Value);
+
+        var propertyLimited = ClrmdDumpSession.InspectTerminalCatalog(
+            reader,
+            MetadataTokens.GetToken(autoType),
+            "OptionalValue",
+            maximumFieldCount: 8,
+            maximumPropertyCount: 0,
+            maximumMethodSemanticsCount: 8);
+        Assert.Equal(ClrmdEvidenceStatus.Partial, propertyLimited.Status);
+        Assert.Equal(0, propertyLimited.AppliedBounds.Single(bound =>
+            bound.Name == "dump.terminal-properties.traversed").Value);
+
+        var semanticsLimited = ClrmdDumpSession.InspectTerminalCatalog(
+            reader,
+            MetadataTokens.GetToken(autoType),
+            "OptionalValue",
+            maximumFieldCount: 8,
+            maximumPropertyCount: 8,
+            maximumMethodSemanticsCount: 0);
+        Assert.Equal(ClrmdEvidenceStatus.Partial, semanticsLimited.Status);
+        Assert.Equal(0, semanticsLimited.AppliedBounds.Single(bound =>
+            bound.Name == "dump.terminal-method-semantics.traversed").Value);
+
+        var exact = ClrmdDumpSession.InspectTerminalCatalog(
+            reader,
+            MetadataTokens.GetToken(autoType),
+            "OptionalValue",
+            maximumFieldCount: 8,
+            maximumPropertyCount: 8,
+            maximumMethodSemanticsCount: 8);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, exact.Status);
+        Assert.NotNull(exact.PublicMemberToken);
+
+        var invalid = ClrmdDumpSession.InspectTerminalCatalog(
+            reader,
+            0x02000000,
+            "OptionalValue",
+            maximumFieldCount: 8,
+            maximumPropertyCount: 8,
+            maximumMethodSemanticsCount: 8);
+        Assert.Equal(ClrmdEvidenceStatus.Invalid, invalid.Status);
+        Assert.Equal(ClrmdValueIssue.InvalidData, invalid.Issue);
+        Assert.Empty(invalid.AppliedBounds);
     }
 
     private static ClrmdDeclaredDataMemberCertificate AssertProperty(
@@ -324,4 +401,8 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
             reader.GetGuid(reader.GetModuleDefinition().Mvid),
             metadata.AsSpan());
     }
+
+    private static TypeDefinitionHandle FindType(MetadataReader reader, string name) =>
+        reader.TypeDefinitions.Single(handle =>
+            string.Equals(reader.GetString(reader.GetTypeDefinition(handle).Name), name, StringComparison.Ordinal));
 }

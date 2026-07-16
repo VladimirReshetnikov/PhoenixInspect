@@ -91,6 +91,11 @@ public enum ClrmdValueIssue
     MethodIdentityMismatch,
 
     /// <summary>
+    /// Exact metadata described a valid member or getter shape outside the deliberately admitted data projection.
+    /// </summary>
+    MemberShapeUnsupported,
+
+    /// <summary>
     /// The runtime field or referenced object had an incompatible type.
     /// </summary>
     TypeMismatch,

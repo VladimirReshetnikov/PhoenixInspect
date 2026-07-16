@@ -19,6 +19,7 @@ public sealed partial class ClrmdDumpSession
     private const byte LoadInstanceField = 0x7B;
     private const byte Return = 0x2A;
     private const int MaximumTerminalMethodSemanticsCount = 16;
+    private const int MaximumDeclaredTypeNestingDepth = 128;
     private static readonly ImmutableArray<EvaluationDeterministicBound> TerminalFieldTraversalBounds =
         ImmutableArray.Create(new EvaluationDeterministicBound(
             "dump.terminal-fields.traversed",
@@ -27,11 +28,6 @@ public sealed partial class ClrmdDumpSession
         ImmutableArray.Create(new EvaluationDeterministicBound(
             "dump.terminal-properties.traversed",
             MaximumRuntimeInstanceFieldCount));
-    private static readonly ImmutableArray<EvaluationDeterministicBound> TerminalMethodSemanticsBounds =
-        ImmutableArray.Create(new EvaluationDeterministicBound(
-            "dump.terminal-method-semantics.traversed",
-            MaximumTerminalMethodSemanticsCount));
-
     /// <summary>
     /// Certifies one directly declared terminal field or trivial field-backed property reached through an outer
     /// directly declared reference field.
@@ -148,21 +144,33 @@ public sealed partial class ClrmdDumpSession
 
             if (!IsOrdinaryInstanceField(outerDefinition.Attributes))
             {
-                return Failure(ClrmdEvidenceStatus.Unavailable, ClrmdValueIssue.TypeMismatch, evidence, appliedBounds);
+                return Failure(
+                    ClrmdEvidenceStatus.Unavailable,
+                    ClrmdValueIssue.MemberShapeUnsupported,
+                    evidence,
+                    appliedBounds);
             }
 
             var signatureProvider = new DeclaredMemberSignatureProvider(reader);
             var outerType = outerDefinition.DecodeSignature(signatureProvider, genericContext: null);
             if (outerType.Kind != DeclaredSignatureKind.TypeDefinition || outerType.Handle.Kind != HandleKind.TypeDefinition)
             {
-                return Failure(ClrmdEvidenceStatus.Unavailable, ClrmdValueIssue.TypeMismatch, evidence, appliedBounds);
+                return Failure(
+                    ClrmdEvidenceStatus.Unavailable,
+                    ClrmdValueIssue.MemberShapeUnsupported,
+                    evidence,
+                    appliedBounds);
             }
 
             var targetTypeHandle = (TypeDefinitionHandle)outerType.Handle;
             var targetDefinition = reader.GetTypeDefinition(targetTypeHandle);
             if (targetDefinition.GetGenericParameters().Count != 0)
             {
-                return Failure(ClrmdEvidenceStatus.Unavailable, ClrmdValueIssue.TypeMismatch, evidence, appliedBounds);
+                return Failure(
+                    ClrmdEvidenceStatus.Unavailable,
+                    ClrmdValueIssue.MemberShapeUnsupported,
+                    evidence,
+                    appliedBounds);
             }
 
             var targetTypeToken = MetadataTokens.GetToken(targetTypeHandle);
@@ -183,7 +191,10 @@ public sealed partial class ClrmdDumpSession
                 reader,
                 signatureProvider,
                 targetTypeHandle,
-                terminalMemberName);
+                terminalMemberName,
+                MaximumRuntimeInstanceFieldCount,
+                MaximumRuntimeInstanceFieldCount,
+                MaximumTerminalMethodSemanticsCount);
             appliedBounds = MergeAppliedBounds(appliedBounds, terminalProjection.AppliedBounds);
             if (terminalProjection.Status != ClrmdEvidenceStatus.Exact || terminalProjection.Value is null)
             {
@@ -212,7 +223,7 @@ public sealed partial class ClrmdDumpSession
                 {
                     return Failure(
                         ClrmdEvidenceStatus.Unavailable,
-                        ClrmdValueIssue.MethodBodyUnavailable,
+                        ClrmdValueIssue.MemberShapeUnsupported,
                         evidence,
                         appliedBounds);
                 }
@@ -227,12 +238,13 @@ public sealed partial class ClrmdDumpSession
                 var backingSignature = backingField.DecodeSignature(signatureProvider, genericContext: null);
                 if (backingField.GetDeclaringType() != targetTypeHandle ||
                     !IsOrdinaryInstanceField(backingField.Attributes) ||
+                    backingSignature != terminal.TerminalTypeSignature ||
                     !TryGetDecoder(backingSignature, out var backingDecoder) ||
                     backingDecoder != terminal.Decoder)
                 {
                     return Failure(
                         ClrmdEvidenceStatus.Unavailable,
-                        ClrmdValueIssue.TypeMismatch,
+                        ClrmdValueIssue.MemberShapeUnsupported,
                         evidence,
                         appliedBounds);
                 }
@@ -460,13 +472,22 @@ public sealed partial class ClrmdDumpSession
         MetadataReader reader,
         DeclaredMemberSignatureProvider signatureProvider,
         TypeDefinitionHandle targetTypeHandle,
-        string terminalMemberName)
+        string terminalMemberName,
+        int maximumFieldCount,
+        int maximumPropertyCount,
+        int maximumMethodSemanticsCount)
     {
         var type = reader.GetTypeDefinition(targetTypeHandle);
         var fields = type.GetFields().ToImmutableArray();
         var properties = type.GetProperties().ToImmutableArray();
-        var bounds = MergeAppliedBounds(TerminalFieldTraversalBounds, TerminalPropertyTraversalBounds);
-        if (fields.Length > MaximumRuntimeInstanceFieldCount || properties.Length > MaximumRuntimeInstanceFieldCount)
+        var fieldBounds = ImmutableArray.Create(new EvaluationDeterministicBound(
+            "dump.terminal-fields.traversed",
+            maximumFieldCount));
+        var propertyBounds = ImmutableArray.Create(new EvaluationDeterministicBound(
+            "dump.terminal-properties.traversed",
+            maximumPropertyCount));
+        var bounds = MergeAppliedBounds(fieldBounds, propertyBounds);
+        if (fields.Length > maximumFieldCount || properties.Length > maximumPropertyCount)
         {
             return ClrmdEvidenceResult<TerminalMetadataProjection>.Create(
                 ClrmdEvidenceStatus.Partial,
@@ -524,6 +545,7 @@ public sealed partial class ClrmdDumpSession
                     GetterName: null,
                     token,
                     decoder,
+                    signature,
                     ImmutableArray.Create(reader.GetBlobBytes(field.Signature)),
                     ImmutableArray<byte>.Empty,
                     ImmutableArray.Create(reader.GetBlobBytes(field.Signature))),
@@ -533,7 +555,10 @@ public sealed partial class ClrmdDumpSession
         var propertyHandle = matchingProperties[0];
         var property = reader.GetPropertyDefinition(propertyHandle);
         var propertySignature = property.DecodeSignature(signatureProvider, genericContext: null);
-        if (propertySignature.ParameterTypes.Length != 0 ||
+        if (!propertySignature.Header.IsInstance ||
+            propertySignature.Header.IsGeneric ||
+            propertySignature.GenericParameterCount != 0 ||
+            propertySignature.ParameterTypes.Length != 0 ||
             !TryGetDecoder(propertySignature.ReturnType, out var propertyDecoder))
         {
             return UnsupportedTerminal(bounds);
@@ -545,9 +570,12 @@ public sealed partial class ClrmdDumpSession
             return UnsupportedTerminal(bounds);
         }
 
-        bounds = MergeAppliedBounds(bounds, TerminalMethodSemanticsBounds);
+        var semanticsBounds = ImmutableArray.Create(new EvaluationDeterministicBound(
+            "dump.terminal-method-semantics.traversed",
+            maximumMethodSemanticsCount));
+        bounds = MergeAppliedBounds(bounds, semanticsBounds);
         var semanticsCount = 1 + (accessors.Setter.IsNil ? 0 : 1) + accessors.Others.Count();
-        if (semanticsCount > MaximumTerminalMethodSemanticsCount)
+        if (semanticsCount > maximumMethodSemanticsCount)
         {
             return ClrmdEvidenceResult<TerminalMetadataProjection>.Create(
                 ClrmdEvidenceStatus.Partial,
@@ -569,6 +597,8 @@ public sealed partial class ClrmdDumpSession
 
         var getterSignature = getter.DecodeSignature(signatureProvider, genericContext: null);
         if (!getterSignature.Header.IsInstance ||
+            getterSignature.Header.IsGeneric ||
+            getterSignature.GenericParameterCount != 0 ||
             getterSignature.ParameterTypes.Length != 0 ||
             getterSignature.ReturnType != propertySignature.ReturnType)
         {
@@ -587,12 +617,71 @@ public sealed partial class ClrmdDumpSession
                 reader.GetString(getter.Name),
                 StorageFieldToken: 0,
                 propertyDecoder,
+                propertySignature.ReturnType,
                 ImmutableArray.Create(reader.GetBlobBytes(property.Signature)),
                 ImmutableArray.Create(reader.GetBlobBytes(getter.Signature)),
                 ImmutableArray<byte>.Empty,
                 accessors.Setter.IsNil ? null : MetadataTokens.GetToken(accessors.Setter),
                 accessors.Others.Select(static handle => MetadataTokens.GetToken((EntityHandle)handle)).ToImmutableArray()),
             appliedBounds: bounds);
+    }
+
+    internal static ClrmdTerminalCatalogInspection InspectTerminalCatalog(
+        MetadataReader reader,
+        int targetTypeToken,
+        string terminalMemberName,
+        int maximumFieldCount,
+        int maximumPropertyCount,
+        int maximumMethodSemanticsCount)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        if (string.IsNullOrWhiteSpace(terminalMemberName))
+        {
+            throw new ArgumentException("A terminal member name is required.", nameof(terminalMemberName));
+        }
+
+        if (maximumFieldCount < 0 || maximumPropertyCount < 0 || maximumMethodSemanticsCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(maximumFieldCount),
+                "Terminal catalog and semantics bounds cannot be negative.");
+        }
+
+        try
+        {
+            var typeHandle = RequireTypeDefinition(reader, targetTypeToken);
+            if (typeHandle.IsNil)
+            {
+                return new ClrmdTerminalCatalogInspection(
+                    ClrmdEvidenceStatus.Invalid,
+                    ClrmdValueIssue.InvalidData,
+                    ImmutableArray<EvaluationDeterministicBound>.Empty,
+                    PublicMemberToken: null);
+            }
+
+            var result = SelectTerminalMetadata(
+                reader,
+                new DeclaredMemberSignatureProvider(reader),
+                typeHandle,
+                terminalMemberName,
+                maximumFieldCount,
+                maximumPropertyCount,
+                maximumMethodSemanticsCount);
+            return new ClrmdTerminalCatalogInspection(
+                result.Status,
+                result.Issue,
+                result.AppliedBounds,
+                result.Value?.PublicMemberToken);
+        }
+        catch (Exception exception) when (
+            exception is BadImageFormatException or InvalidDataException or ArgumentOutOfRangeException or OverflowException)
+        {
+            return new ClrmdTerminalCatalogInspection(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                ImmutableArray<EvaluationDeterministicBound>.Empty,
+                PublicMemberToken: null);
+        }
     }
 
     private static ClrmdEvidenceResult<ClrmdRelativeFieldInfo> SelectRelativeStorage(
@@ -830,16 +919,31 @@ public sealed partial class ClrmdDumpSession
 
     private static string GetFullTypeName(MetadataReader reader, TypeDefinitionHandle handle)
     {
-        var definition = reader.GetTypeDefinition(handle);
-        var name = reader.GetString(definition.Name);
-        var declaring = definition.GetDeclaringType();
-        if (!declaring.IsNil)
+        var names = new Stack<string>();
+        var visited = new HashSet<TypeDefinitionHandle>();
+        var current = handle;
+        string? @namespace = null;
+        for (var depth = 0; depth < MaximumDeclaredTypeNestingDepth; depth++)
         {
-            return $"{GetFullTypeName(reader, declaring)}+{name}";
+            if (current.IsNil || !visited.Add(current))
+            {
+                throw new BadImageFormatException("The declared type nesting chain is cyclic or nil.");
+            }
+
+            var definition = reader.GetTypeDefinition(current);
+            names.Push(reader.GetString(definition.Name));
+            var declaring = definition.GetDeclaringType();
+            if (declaring.IsNil)
+            {
+                @namespace = reader.GetString(definition.Namespace);
+                var nestedName = string.Join('+', names);
+                return string.IsNullOrEmpty(@namespace) ? nestedName : $"{@namespace}.{nestedName}";
+            }
+
+            current = declaring;
         }
 
-        var @namespace = reader.GetString(definition.Namespace);
-        return string.IsNullOrEmpty(@namespace) ? name : $"{@namespace}.{name}";
+        throw new BadImageFormatException("The declared type nesting chain exceeds the deterministic depth bound.");
     }
 
     private static void ValidateDeclaredMemberName(string value, string parameterName)
@@ -861,7 +965,7 @@ public sealed partial class ClrmdDumpSession
         ImmutableArray<EvaluationDeterministicBound> bounds) =>
         ClrmdEvidenceResult<TerminalMetadataProjection>.Create(
             ClrmdEvidenceStatus.Unavailable,
-            ClrmdValueIssue.TypeMismatch,
+            ClrmdValueIssue.MemberShapeUnsupported,
             appliedBounds: bounds);
 
     private static ClrmdEvidenceResult<ClrmdDeclaredDataMemberCertificate> Failure(
@@ -877,6 +981,12 @@ public sealed partial class ClrmdDumpSession
 
     private sealed record CompleteMetadataImage(ImmutableArray<byte> Bytes);
 
+    internal sealed record ClrmdTerminalCatalogInspection(
+        ClrmdEvidenceStatus Status,
+        ClrmdValueIssue Issue,
+        ImmutableArray<EvaluationDeterministicBound> AppliedBounds,
+        int? PublicMemberToken);
+
     private sealed record TerminalMetadataProjection(
         int PublicMemberToken,
         int? PropertyToken,
@@ -884,6 +994,7 @@ public sealed partial class ClrmdDumpSession
         string? GetterName,
         int StorageFieldToken,
         ClrmdTerminalDecoderKind Decoder,
+        DeclaredSignature TerminalTypeSignature,
         ImmutableArray<byte> PublicSignature,
         ImmutableArray<byte> GetterSignature,
         ImmutableArray<byte> StorageSignature,
