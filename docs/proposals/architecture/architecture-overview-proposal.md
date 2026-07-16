@@ -646,9 +646,10 @@ The prototype retains only projects containing behavior or contracts exercised b
   lineage graph;
 - `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts, including
   body-independent contextual direct-MethodDef resolution, and the active SRM adapter;
-- `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, and exact
-  counted W3 method/field composition into a snapshot-scoped resolver/import descriptor without introducing ClrMD
-  into core execution;
+- `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, exact
+  counted W3 method/field composition into a snapshot-scoped resolver/import descriptor, and W6.3's immutable
+  declared-target/direct-field/data-property certificate with MethodDef-token physical getter acquisition and no
+  reference or leaf read, without introducing ClrMD into core execution;
 - `Interpreter.Product.DumpQuery` — currently the bounded W2 parser and, at W6.2, the sole internal Roslyn dependency,
   parse adapter, and W2/W5/W6 tree recognizers; typed root binding, immutable prepared plan, read-only `Evaluate(plan)`
   path, canonical identities, and closed result-value projection remain project-owned;

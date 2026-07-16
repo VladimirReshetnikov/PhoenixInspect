@@ -515,16 +515,22 @@ families and all twenty-four target invocations, and starts both new targets thr
 single intentional current artifact transition is frozen as follows; the preceding values remain historical evidence
 at their original commits rather than claims about the rebuilt artifact.
 
-| Identity | Previous fixed-content baseline | Current W6.1 baseline |
-|---|---|---|
-| Complete TestTarget SHA-256 | `abd919f1eb2ca1b0329e05fe2f3ee580672698560d64991d17aa8d9d3ba3384e` | `35922edc1898aaaf3942a4edcb3d2045eac67d7e69b08fd2f56a68e2be30f153` |
-| W4 interpreted mixed graph | `610dfb334f02cc2afb9b3582b391e8122eecd130236006f44a7bd9389281ec3d` | `99f99db8a130095b9d14e453371304078663ea28948ca26f02c47337e897b6d6` |
-| W4 interpreted dual-unknown graph | `09a0e3f37610a7b266aa61e9c3da901920e1fad3adf3118013ac4f99ffb90f1b` | `d63d6e626ddb3df72a4eee6654cf368f71992ba00768ea58b8e1f620f734b35d` |
-| W4 modeled mixed graph | `c9f9980c1b77914283aacd7f8125f576f564900ba6fb4cc0c57476a5c4426cc3` | `1733ca2d6acf1fd6d3cffc5c744e034a0d5ef73543e36d2941779e0d353b85bd` |
-| W4 modeled dual-unknown graph | `501c87c9fb351916dde583734af512798b7b30859dc3beac2cc22353d77fce4d` | `592a19f686c2719309b3222a5806892382fccd8748aad2c630ffc058bf35d477` |
+| Identity | Previous fixed-content baseline | W6.1 baseline | Current W6.3 certificate-fixture baseline |
+|---|---|---|---|
+| Complete TestTarget SHA-256 | `abd919f1eb2ca1b0329e05fe2f3ee580672698560d64991d17aa8d9d3ba3384e` | `35922edc1898aaaf3942a4edcb3d2045eac67d7e69b08fd2f56a68e2be30f153` | `1eee4384cc891aa7908b7b425b0626e66cd1ddd08bac11a4ad26d917d378e05a` |
+| W4 interpreted mixed graph | `610dfb334f02cc2afb9b3582b391e8122eecd130236006f44a7bd9389281ec3d` | `99f99db8a130095b9d14e453371304078663ea28948ca26f02c47337e897b6d6` | `dd72fec51bd2c27066bf3e6254933ea26c6c7a631da085c86fc0ca7196819c92` |
+| W4 interpreted dual-unknown graph | `09a0e3f37610a7b266aa61e9c3da901920e1fad3adf3118013ac4f99ffb90f1b` | `d63d6e626ddb3df72a4eee6654cf368f71992ba00768ea58b8e1f620f734b35d` | `17944bc454a8123af96fbeeb3873ae68eb3111b77035ab25863b0a620e4ff0d7` |
+| W4 modeled mixed graph | `c9f9980c1b77914283aacd7f8125f576f564900ba6fb4cc0c57476a5c4426cc3` | `1733ca2d6acf1fd6d3cffc5c744e034a0d5ef73543e36d2941779e0d353b85bd` | `0fc4508aa7681102e7be1eb0fa95f391ef7ac29df01d57009d58faf7f27d4e7d` |
+| W4 modeled dual-unknown graph | `501c87c9fb351916dde583734af512798b7b30859dc3beac2cc22353d77fce4d` | `592a19f686c2719309b3222a5806892382fccd8748aad2c630ffc058bf35d477` | `9bc0f1dc6a8cd38b520d6454ca62179337b2ccb7bb3d90c1a44ba8b3f7b00db2` |
 
-The current complete artifact is 28,160 bytes. Its MVID is `826aa3bd-c8a6-4397-9641-df7782f285ec`; its 16,768-byte
+The W6.1 complete artifact is 28,160 bytes. Its MVID is `826aa3bd-c8a6-4397-9641-df7782f285ec`; its 16,768-byte
 metadata root has SHA-256 `27089eb8b8559ab02f1b4ecec73b6f72d21d7f9131821e453aadaa121117a55b`.
+
+W6.3 later adds the dedicated positive/adverse certificate profile graph without changing the four W6.1 graph
+families or twenty-four scenario inputs. The resulting current artifact is 30,720 bytes with MVID
+`6039baaa-605a-480b-a989-53f6e68acabc`; its 18,680-byte metadata root has SHA-256
+`c8e0207d7b7c1553a862c6fe1383c446637f36d5025be5136fea4e45095311e5`. The W6.1 values above remain historical
+evidence at their implementing commit rather than claims about the rebuilt fixture.
 
 ### W6.2 — Roslyn expression front end, versioned tree admission, request identity, and routing
 
@@ -589,6 +595,25 @@ and relative storage identities without reading the outer reference value or exe
   invalid, and limit outcomes;
 - counting/poisonable capability tests proving no reference or leaf value read; and
 - canonical projection equality, defensive immutability, foreign-snapshot rejection, and complete XML documentation.
+
+**Implemented checkpoint.** Commits `779691cb3`, `4eacba80c`, and `6c36bd397` close W6.3 at `~1K LOC` scale. The
+ClrMD/SRM boundary now issues one immutable canonical certificate containing complete metadata-content identity,
+root and outer FieldDef facts, the same-module declared TypeDef, public terminal FieldDef or PropertyDef identity,
+relative runtime storage, decoder, and the complete getter/backing-field proof. Getter bodies are acquired by exact
+MethodDef token rather than runtime-method presence, so an auto-property that has never executed remains certifiable
+without warm-up or invocation. Property/getter/backing signatures, direct declaration, method semantics, the exact
+tiny `ldarg.0; ldfld; ret` body, runtime token, and relative layout must all agree.
+
+Four independent headless full dumps cover request, batch, coordinator, and a dedicated certificate-profile graph.
+Ten detached exact certificates exercise `Code`, `Status`, `State`, `CompletedPartitions`, direct `String`/`Int32`/
+`Nullable<Int32>` fields, and a nullable property. The adverse rows cover missing/inherited, indexed, static, virtual,
+computed, call-bearing, unsupported, mismatched, array, non-reference, foreign-snapshot, invalid-token, catalog-limit,
+and physical-body failures. Counted certificate evidence contains complete dump metadata and property-body reads but
+never overlaps the outer-reference slot; direct-field certificates retain exactly the metadata read. An independently
+opened disk PE is used only after issuance as an equality oracle.
+
+Closure passes strict serial Release build at 0 warnings/0 errors, unit 502/502, Fast 120/120, the complete integration
+assembly 133/133, focused certificate/catalog/body 10/10, and zero skips. W6.4 is the sole active next checkpoint.
 
 ### W6.4 — reference observation, non-root identity, and immutable plan
 

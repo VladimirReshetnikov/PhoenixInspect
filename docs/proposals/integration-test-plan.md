@@ -559,12 +559,23 @@ meaningful unsupported cases, each paired with a malformed neighbor. The lane pr
 canonical goldens, directly recognizes the W5 invocation, and deletes the production handwritten parser after
 differential compatibility passes.
 
-The generated lane must exercise exact, exact-null, coalesced-null, partial, unavailable, conflict, invalid, and
-unsupported outcomes across the outer reference and terminal storage boundaries. It must validate truthful referenced-
-object identity and extent, relative terminal layouts, checked address arithmetic, lifted nullable behavior for
-null-conditional non-nullable values, immutable two-member preparation, and descriptor-only evaluation with poisoned
-catalog sources. A hidden target and hidden reference consumer must reproduce canonical artifacts in repeated same-
-session, fresh-process, and dump-close/reopen runs within the W6 corpus.
+W6.3 is implemented through `6c36bd397`. Four independent hidden full-dump processes cover the request, batch,
+coordinator, and certificate-profile graphs; ten exact detached certificates cover direct and property-backed
+`String`, `Int32`, and `Nullable<Int32>` storage. Complete counted dump metadata supplies TypeDef/FieldDef/
+PropertyDef/method-semantics/signature identity. A MethodDef-token path acquires an unexecuted getter's physical body
+without runtime-method materialization or invocation and admits only the frozen trivial backing-field projection. The
+adverse rows cover missing/inherited, indexed, static, virtual, computed, call-bearing, unsupported, mismatched,
+partial/limited catalogs and bodies, foreign snapshots, and invalid tokens. The disk PE is consulted only after
+certificate issuance as an equality oracle. Strict Release, unit, Fast, focused, and complete integration lanes pass
+with zero skips.
+
+The remaining generated lane must exercise exact, exact-null, coalesced-null, partial, unavailable, conflict, invalid,
+and unsupported outcomes across the outer reference and terminal storage boundaries. W6.3 already freezes terminal
+layouts without value reads; W6.4–W6.5 must validate truthful referenced-object identity and extent, checked address
+arithmetic, lifted nullable behavior for null-conditional non-nullable values, immutable two-member preparation, and
+descriptor-only evaluation with poisoned catalog sources. A hidden target and hidden reference consumer must
+reproduce canonical artifacts in repeated same-session, fresh-process, and dump-close/reopen runs within the W6
+corpus.
 
 The meaningful synthetic lane must contain twenty-four independent full dumps and one predeclared question per dump
 across request, batch, coordinator, and workflow/dispatch object graphs. Value-only substitutions do not count as
