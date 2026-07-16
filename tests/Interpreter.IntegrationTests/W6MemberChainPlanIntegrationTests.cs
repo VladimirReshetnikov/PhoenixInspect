@@ -214,6 +214,8 @@ public sealed class W6MemberChainPlanIntegrationTests
 
         public ClrmdSnapshotIdentity Snapshot => session.Snapshot;
 
+        public int MaximumReadLength => session.Memory.MaximumReadLength;
+
         public ClrmdEvidenceResult<ClrmdDeclaredDataMemberCertificate> CertifyDeclaredDataMember(
             ClrmdHeapObjectInfo root,
             string referenceFieldName,

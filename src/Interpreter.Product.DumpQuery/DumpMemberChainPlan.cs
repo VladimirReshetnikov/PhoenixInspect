@@ -54,6 +54,7 @@ public sealed class DumpMemberChainPlan
 
     private readonly ImmutableArray<byte> requestCanonicalBytes;
     private readonly ImmutableArray<byte> expressionIdentityCanonicalBytes;
+    private readonly ImmutableArray<EvaluationDeterministicBound> requestBounds;
     private readonly ImmutableArray<MemoryReadResult> preparationEvidence;
     private readonly ImmutableArray<EvaluationDeterministicBound> preparationBounds;
     private readonly string canonicalProjection;
@@ -69,6 +70,7 @@ public sealed class DumpMemberChainPlan
         string requestSha256,
         ImmutableArray<byte> expressionIdentityCanonicalBytes,
         string expressionIdentitySha256,
+        ImmutableArray<EvaluationDeterministicBound> requestBounds,
         ImmutableArray<MemoryReadResult> preparationEvidence,
         ImmutableArray<EvaluationDeterministicBound> preparationBounds)
     {
@@ -106,6 +108,7 @@ public sealed class DumpMemberChainPlan
         this.preparationBounds = NormalizeBounds(preparationBounds);
         RequestSha256 = requestSha256;
         ExpressionIdentitySha256 = expressionIdentitySha256;
+        this.requestBounds = NormalizeBounds(requestBounds);
         AccessKind = accessKind;
         FallbackKind = fallbackKind;
         Int32Fallback = int32Fallback;
@@ -162,6 +165,10 @@ public sealed class DumpMemberChainPlan
     /// <summary>Gets a defensive copy of the separately tagged member-chain expression identity bytes.</summary>
     public ImmutableArray<byte> ExpressionIdentityCanonicalBytes =>
         ImmutableArray.CreateRange(expressionIdentityCanonicalBytes.AsSpan().ToArray());
+
+    /// <summary>Gets the exact front-end and admission bounds reached while issuing the accepted request.</summary>
+    public ImmutableArray<EvaluationDeterministicBound> RequestBounds =>
+        ImmutableArray.CreateRange(requestBounds.AsSpan().ToArray());
 
     /// <summary>
     /// Gets a defensive copy of the reads performed while producing the declaration certificate. The outer reference
@@ -266,6 +273,13 @@ public sealed class DumpMemberChainPlan
         Append(builder, StringFallback ?? string.Empty);
         Append(builder, SemanticMode.ToString());
         Append(builder, UnreadValuesMarker);
+        Append(builder, requestBounds.Length.ToString(CultureInfo.InvariantCulture));
+        foreach (var bound in requestBounds)
+        {
+            Append(builder, bound.Name);
+            Append(builder, bound.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
         Append(builder, preparationEvidence.Length.ToString(CultureInfo.InvariantCulture));
         foreach (var read in preparationEvidence)
         {

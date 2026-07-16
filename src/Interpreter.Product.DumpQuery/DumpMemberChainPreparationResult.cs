@@ -117,6 +117,7 @@ internal static class DumpMemberChainPlanBinder
         string requestSha256,
         ImmutableArray<byte> expressionIdentityCanonicalBytes,
         string expressionIdentitySha256,
+        ImmutableArray<EvaluationDeterministicBound> requestBounds,
         ImmutableArray<MemoryReadResult> preparationEvidence,
         ImmutableArray<EvaluationDeterministicBound> preparationBounds)
     {
@@ -185,6 +186,7 @@ internal static class DumpMemberChainPlanBinder
                 requestSha256,
                 expressionIdentityCanonicalBytes,
                 expressionIdentitySha256,
+                requestBounds,
                 preparationEvidence,
                 preparationBounds);
             return DumpMemberChainPreparationResult.Succeeded(plan);
