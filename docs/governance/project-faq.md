@@ -86,7 +86,8 @@ Recommended quick-start order:
 
 ## 10) How should contributors choose what to work on next?
 
-Start with the active milestone in `docs/plans/future-work-planning.md`:
+Start with the active milestone in `docs/plans/post-w4-path-forward.md`; use
+`docs/plans/future-work-planning.md` for the detailed W0–W4 record and research entry gates:
 
 - advance its executable scenario or validation evidence,
 - repair a contract that directly blocks that scenario,

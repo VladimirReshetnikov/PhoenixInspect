@@ -1,14 +1,18 @@
 # Future Work Planning
 
-> **Lifecycle:** Current · **Roadmap:** Active
+> **Lifecycle:** Current · **Roadmap:** Supporting
 
-This is the active delivery plan for the interpreter and dump-time evaluation initiative. It is intentionally evidence-led: each milestone must produce a useful executable scenario or remove a concrete obstacle to the next one.
+This is the authoritative W0–W4 delivery record and research-entry-gate source for the interpreter and dump-time
+evaluation initiative. The active successor sequence is the
+[Post-W4 Path Forward](post-w4-path-forward.md). Both documents remain evidence-led: each admitted milestone must
+produce a useful executable scenario or remove a concrete obstacle to the next one.
 
 ## 1) Scope lock
 
 The active product target is a **deterministic evaluator grounded in a read-only .NET dump**. W1/W2 provide observed
-and derived-query answers; the now-admitted active W4 path adds explicitly counterfactual method evaluation without mutating or
-claiming historical execution of the snapshot.
+and derived-query answers; closed W4 adds explicitly counterfactual method evaluation without mutating or claiming
+historical execution of the snapshot. W5's active expression-to-result composition and usefulness gate live in the
+[Post-W4 Path Forward](post-w4-path-forward.md).
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
 enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a
@@ -37,14 +41,16 @@ Scope expands only through an explicit decision gate backed by executable eviden
 Its deliberately narrow contract is the [Restricted Dump Query v1
 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any increment beyond that contract
 requires an explicit scope decision. Representative private-production measurement is outside W1, and already-landed
-worker/corpus code remains separately scoped non-gating prototype work. W4 is now active and admitted around the
+worker/corpus code remains separately scoped non-gating prototype work. W4 was admitted around the
 `GetMarkerSummary` workflow below; W4.1's fixture gate, W4.2's unknown E1/E2 kernel, W4.3's dump-free non-exact
 field seam, W4.4's body-free call resolution/frozen graph, W4.5's exact plus explained-unknown prepared-graph
 execution, and W4.6's structural model admission, lineage, machine transfer, and compiler/SRM conformance have landed,
 W4.7's issuer-certified standalone target-outcome projection/compiler replay, W4.8's complete canonical product
 runner, and W4.9's detached ClrMD generated-dump corpus have landed. W4 is complete at exact closure commit
 `a819a08fd9ccdf926620c505732475990b242be9`; [GitHub Actions run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs. W3 is complete for its defined non-cybersecurity architecture-validation scope
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs. Final
+documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230). W3 is complete for its defined non-cybersecurity architecture-validation scope
 at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
@@ -370,8 +376,9 @@ owns the exact behavior. Closure requires all of these executable gates:
 
 ### W4 — Unknown-aware method evaluation
 
-**Status:** **Complete for the normative non-cybersecurity W4 scope at exact commit `a819a08fd`; hosted run
-29463426083 passed all four required jobs.**
+**Status:** **Complete for the normative non-cybersecurity W4 scope. Implementation closure commit `a819a08fd`
+passed all four jobs in run 29463426083; final documentation-closure commit `aaec73c5b` passed them again in run
+29463847230.**
 
 **Realized hand-written implementation surface:** 41,892 LOC: 27,270 through W4.7, 11,924 across W4.8a–f, and 2,698
 across W4.9a–c. W4.9d changes documentation and executes unchanged gates, so it carries zero implementation LOC. The
@@ -629,7 +636,9 @@ W4.9d local closure passes locked restore; a strict sixteen-project Release buil
 unit 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
 destinations; and the one-workflow headless guard. Every behavioral filter includes `Scope!=Cybersecurity`, with zero
 skips. [Hosted run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all
-four jobs at exact commit `a819a08fd9ccdf926620c505732475990b242be9`.
+four jobs at exact implementation-closure commit `a819a08fd9ccdf926620c505732475990b242be9`; [run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) passed them again at final
+documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f`.
 
 **Admitted work slices**
 
@@ -686,7 +695,9 @@ tests before an allocation budget becomes an applied contract.
 - Product language consistently describes results as counterfactual, not historical replay. **Satisfied locally.**
 - The exact pushed closure commit passes all required headless hosted jobs with `Scope!=Cybersecurity`, and the realized
   hand-written implementation LOC ledger is recorded without counting documentation or generated output. **Ledger
-  satisfied. Exact pushed hosted closure passed in run 29463426083 at `a819a08fd9ccdf926620c505732475990b242be9`.**
+  satisfied. Exact pushed implementation closure passed in run 29463426083 at
+  `a819a08fd9ccdf926620c505732475990b242be9`; final documentation closure passed in run 29463847230 at
+  `aaec73c5b987089addb539d3628de67bd815bd8f`.**
 - External-input cybersecurity behavior remains an explicit accepted exclusion, not an unfilled W4 evidence gate.
   **Satisfied.**
 
@@ -805,8 +816,9 @@ W4 admission decisions now applied:
    structural model selection, atomic modeled-return lineage, frozen-capability-only invocation/transfer, operational
    attempts, separate logical/frame depth witnesses, and exact/degraded/fresh compiler conformance. W4.7 adds the
    standalone target fragment, W4.8 adds configurable traversal plus common product preparation/execution/projection,
-   and W4.9 adds detached ClrMD grounding plus close/reopen generated-dump replay. Exact hosted umbrella closure is the
-   sole remaining W4 step.
+   and W4.9 adds detached ClrMD grounding plus close/reopen generated-dump replay. Exact hosted umbrella closure passed
+   in run 29463426083 at `a819a08fd9ccdf926620c505732475990b242be9`; documentation closure then passed run
+   29463847230 at `aaec73c5b987089addb539d3628de67bd815bd8f`. No W4 implementation or closure step remains.
 
 ### Optimized-dump recoverability measurement
 

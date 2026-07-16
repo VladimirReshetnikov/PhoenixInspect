@@ -1,12 +1,15 @@
 # Testing Strategy
 
-> **Current delivery policy (2026-07).** Tests follow the active W0–W4 dump-evaluator roadmap. The repository must distinguish checked-in test code, a locally verified result, a CI-enforced gate, and a research proposal. The broad abstract-analysis, virtual-stepping, dynamic, async, and performance matrices are deferred until their entry gates pass.
+> **Current delivery policy (2026-07).** W0–W4 are the closed dump-evaluator evidence baseline; tests for active W5
+> follow the [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). The repository must distinguish checked-in
+> test code, a locally verified result, a CI-enforced gate, and a research proposal. The broad abstract-analysis,
+> virtual-stepping, dynamic, async, and performance matrices are deferred until their entry gates pass.
 
 ## Status
 
 Current for active delivery. Research suites are collected separately in section 9.
 
-The W4 counterfactual-method contract is admitted and active. W4.1's checked-in fixture gate landed at pushed
+The W4 counterfactual-method contract is closed. W4.1's checked-in fixture gate landed at pushed
 checkpoint `82363585b`, W4.2's unknown-aware E1/E2 kernel at `e89e43498`, W4.3's backend-neutral structured
 field-evidence continuation at `7479b1ad4`, and W4.4's body-independent direct-MethodDef resolution plus complete
 frozen graph preparation at `2e596c117`/`742ef2c4f`. Exact W4.5a commit `356c07037` now activates that graph and
@@ -20,7 +23,12 @@ return transfer and attempt/depth evidence; W4.6d commit `da5346813` closes comp
 conformance. W4.7a `2e70fe76d` adds standalone issuer-certified target-outcome projection, and W4.7b `dad6a6dd4`
 adds compiler/SRM fresh replay plus capability poison/count evidence. W4.8 checkpoints through `44b050ec8` add the
 canonical rooted product runner, and W4.9 checkpoints through `a8b5f32f0` add detached ClrMD exact/degraded
-generated-dump execution plus close/reopen replay. Exact W4 closure passed in hosted run 29463426083.
+generated-dump execution plus close/reopen replay. Exact W4 implementation closure passed in hosted run 29463426083;
+final documentation closure passed the same matrix in run 29463847230.
+
+W5 preserves all of those gates while adding focused expression classification, acquisition-facade, mode-preserving
+composition, headless consumer, canonical-corpus, and representative-usefulness evidence. The exact W5 corpus filters
+land with their implementation; no unimplemented research matrix is added in advance.
 
 ## 1) Evidence language
 
@@ -578,7 +586,9 @@ W4.9d's local candidate passes locked restore, a strict sixteen-project Release 
 unit 502/502, Fast 88/88, ordinary dump 6/6, optimized dump 1/1, aggregate W4 integration 14/14, Markdown 62/44, and
 the one-workflow headless guard. [Hosted run
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs at exact
-commit `a819a08fd9ccdf926620c505732475990b242be9`.
+implementation-closure commit `a819a08fd9ccdf926620c505732475990b242be9`. [Run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) passed the same jobs at final
+documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f`.
 
 ## 3) Active test layers
 
@@ -856,8 +866,11 @@ realizes 11,924/2,698 LOC and full W4 realizes 41,892 LOC. The earlier 25,017–
 27,217–32,117, 28,376–32,476, 28,876–33,276, 28,826–33,726, 28,879–33,279, 30,079–33,729,
 31,069–34,319, and 31,670–33,970 projections remain historical.
 
-W4.8/W4.9 implement the rooted product and dump portions below. Items 1–10 have focused local evidence; item 11
-remains the exact pushed W4.9d closure gate. W4.4 satisfies interpreted structural graph preparation; W4.5 satisfies
+W4.8/W4.9 implement the rooted product and dump portions below. Items 1–11 are satisfied; exact pushed W4.9d
+implementation closure passed all four hosted jobs in run 29463426083 at
+`a819a08fd9ccdf926620c505732475990b242be9`, and final documentation closure passed them again in run 29463847230 at
+`aaec73c5b987089addb539d3628de67bd815bd8f`. W4.4 satisfies
+interpreted structural graph preparation; W4.5 satisfies
 exact and explained-unknown interpreted direct-call/depth/lineage behavior; W4.6 satisfies structural model behavior;
 W4.7 satisfies the standalone target fragment; W4.8 satisfies product preparation/execution/projection; and W4.9
 satisfies detached dump production and replay:

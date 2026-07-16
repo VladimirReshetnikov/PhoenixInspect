@@ -1,15 +1,12 @@
 # Design Doc: Post-Mortem Expression Evaluator for .NET Dumps
 
-> **Roadmap relation:** Active for the read-only dump-evidence and restricted-query slices and for the admitted W4
-> branchless counterfactual-method contract. W3 implements the prerequisite interpreter/memory architecture proof.
-> W4.1's fixture gate, W4.2's dump-free provenance-aware arithmetic kernel, W4.3's dump-free non-exact field
-> continuation, W4.4's dump-free direct-MethodDef graph preparation, and W4.5's exact plus explained-unknown
-> prepared-call execution are implemented. W4.6a's structural pure-model admission landed at exact commit
-> `77c92789b16d9258c907d5026a36e39f8c957b41`, and W4.6b's modeled-return lineage/domain increment landed at
-> `fd723a912`; W4.6c's frozen-capability execution landed at `877c9fb55`, and W4.6d's compiler/SRM conformance landed
-> at `da5346813`. No counterfactual-method
-> product request, result, facade, or dump path has landed. Branches, handler transfer, virtual scratch objects,
-> async/dynamic lifting, and advanced query workflows remain research backlog rather than inherited commitments.
+> **Roadmap relation:** Active for the read-only dump evaluator. W1–W4 are closed for their stated
+> non-cybersecurity scopes, including W4's canonical product runner, detached ClrMD binding, exact/degraded generated-
+> dump corpus, close/reopen replay, and exact-commit hosted evidence. The active successor is
+> [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md): make the current W2/W4 capability reachable from one
+> closed expression-to-result product path, then measure representative usefulness before admitting more semantics.
+> Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
+> research backlog rather than inherited commitments.
 
 ## 1) Summary
 
@@ -20,7 +17,20 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. W4 adds one branchless counterfactual method question. W4.1–W4.7 establish its fixture, unknown-aware kernel, direct-call graph/execution, one body-free pure model, and standalone exact-null outcome. W4.8 checkpoints through `44b050ec8` add configurable traversal, canonical request/plan/result contracts, private typed bindings, authoritative preparation/execution, and common rooted/standalone projection. W4.9 checkpoints through `a8b5f32f0` add the ClrMD graph/field producer, detached rooted dump memory, and six exact/degraded interpreted/modeled generated-dump rows with close/reopen canonical replay. W4 closed at exact commit `a819a08fd` in [hosted run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083); an isolated virtual heap and broader method workflows remain research.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this
+with expression evaluation, but a dump has no running runtime to execute code. The active feature is a
+**deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first
+restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. W4 adds one
+branchless counterfactual method question. W4.1–W4.7 establish its fixture, unknown-aware kernel, direct-call graph/
+execution, one body-free pure model, and standalone exact-null outcome. W4.8 checkpoints through `44b050ec8` add
+configurable traversal, canonical request/plan/result contracts, private typed bindings, authoritative preparation/
+execution, and common rooted/standalone projection. W4.9 checkpoints through `a8b5f32f0` add the ClrMD graph/field
+producer, detached rooted dump memory, and six exact/degraded interpreted/modeled generated-dump rows with close/
+reopen canonical replay. W4 implementation closed at exact commit `a819a08fd` in [hosted run
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083); final documentation-closure
+commit `aaec73c5b` passed the same matrix in [run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230). An isolated virtual heap and
+broader method workflows remain research.
 
 ---
 
@@ -237,7 +247,7 @@ exact W2 closure commit `5bed47100`.
 
 ---
 
-### Phase 2 — Branchless counterfactual method evaluation (W4.1–W4.5 landed; product closure pending)
+### Phase 2 — Branchless counterfactual method evaluation (W4 closed)
 
 Goal: implement the admitted
 [`Counterfactual Method Evaluation Contract`](../architecture/counterfactual-method-evaluation-contract-proposal.md)
@@ -507,7 +517,7 @@ and diagnostic axes. The modeled plan proves `CombineMarkers` remains body-free.
 before execution, and all six memory/request/plan/result artifacts replay byte-for-byte after reopening and rebinding
 the dump. Disk metadata and CoreCLR are consulted only afterward as independent comparisons.
 
-**Implemented scenario (rooted exact/degraded interpreted/model product execution; hosted closure pending)**
+**Implemented scenario (rooted exact/degraded interpreted/model product execution; hosted closure complete)**
 
 The generated `DumpProbe` fixture asks: “Under the named evaluation policy and the captured marker evidence, what
 would branchless `GetMarkerSummary` compute through its direct `CombineMarkers` helper?” This is the smallest selected
@@ -542,10 +552,13 @@ the getter IL, or enter the helper call.
   the closed W4 product request requires an exact non-null root. The non-throwing helper/model may not fabricate a
   target exception. Interpreted handler search/transfer is not part of this slice, and EH-bearing bodies remain
   rejected before execution.
-* Closure requires exact, degraded-evidence, differential, budget, and same/fresh-session canonical replay coverage,
+* Closure required exact, degraded-evidence, differential, budget, and same/fresh-session canonical replay coverage,
   followed by the required non-cybersecurity headless Release, fast, dump, and focused W4 gates with zero skips at the
-  exact pushed commit. W4.2–W4.6 supply dump-free domain, machine, preparation, interpreted-call, and pure-model
-  evidence only; the complete product and generated-dump closure results do not exist yet.
+  exact pushed commit. W4.2–W4.6 supply the dump-free domain, machine, preparation, interpreted-call, and pure-model
+  prerequisites; W4.8–W4.9 supply the complete product and generated-dump closure evidence. Hosted run 29463426083
+  passed all required jobs at exact implementation-closure commit `a819a08fd9ccdf926620c505732475990b242be9`;
+  run 29463847230 passed them again at final documentation-closure commit
+  `aaec73c5b987089addb539d3628de67bd815bd8f`.
 
 **Deferred beyond the admitted slice**
 
@@ -709,7 +722,8 @@ All evaluation is cancelable and doesn’t block the rest of the UI.
 
 ## 13) Milestones (Proposed)
 
-The authoritative sequence is in `docs/plans/future-work-planning.md`:
+The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; active W5 sequencing is in
+`docs/plans/post-w4-path-forward.md`:
 
 * **W0:** truthful baseline, CI, and deterministic smoke evidence.
 * **W1:** real dump-memory field/string read with typed evidence outcomes.
@@ -720,7 +734,7 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
   hardened checkpoint `19c292f9f`; formally closed for its defined non-cybersecurity architecture-proof scope at exact
   documentation commit `de6cea124` after [GitHub Actions run
   29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
-* **W4:** active branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under the normative
+* **W4:** closed branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under the normative
   counterfactual-method contract. W4.1's exact fixture/CoreCLR/current-W3-boundary gate is implemented at `82363585b`,
   W4.2's dump-free explained-unknown arithmetic and canonical lineage kernel is implemented at `e89e43498`, and
   W4.3's structured non-exact `ldfld` continuation plus `FieldLoadTransform` is implemented at `7479b1ad4`, W4.4's
@@ -731,10 +745,18 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
   capability execution/attempt/depth contract is implemented at `877c9fb55`, and W4.6d's compiler/SRM conformance is
   implemented at `da5346813`, and standalone target-outcome projection/replay at `2e70fe76d`/`dad6a6dd4`. W4.8's
   canonical rooted facade/runner lands through `44b050ec8`, and W4.9's detached ClrMD generated-dump corpus lands
-  through `a8b5f32f0`. Exact W4 closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four jobs in
-  [hosted run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083).
+  through `a8b5f32f0`. Exact W4 implementation-closure commit
+  `a819a08fd9ccdf926620c505732475990b242be9` passed all four jobs in [hosted run
+  29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083); final documentation-closure
+  commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed them again in [run
+  29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
   Branches, broader
   calls/opcodes, generics, allocation, PDB-backed context, and whole-method abstract analysis remain gated.
+* **W5:** active product-composition and usefulness milestone under the
+  [Post-W4 Path Forward](../../plans/post-w4-path-forward.md). It admits only unchanged W2 expressions plus
+  `root.GetMarkerSummary()`, owns the current W4 acquisition/binding path, preserves semantic modes in one evaluator
+  facade, adds a headless reference consumer, and requires representative incident-question evidence before another
+  capability is selected.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

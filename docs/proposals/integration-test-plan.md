@@ -8,11 +8,13 @@
 
 Tests in this repository answer specific architectural questions. They do not stand in for product completeness. Every important assertion states whether its input came from dump memory, runtime structure decoded by ClrMD, a whole-file-identified disk oracle, explicit fixture state, or interpreter policy.
 
-The current plan has three execution lanes:
+The required current plan has two execution lanes:
 
 - a fast, dump-free semantics lane for every change;
-- a supported Windows lane that generates real full dumps and exercises the evidence boundary; and
-- an independent Windows x64 external-worker prototype-regression lane outside W1–W4.
+- a supported Windows lane that generates real full dumps and exercises the evidence boundary.
+
+The independent Windows x64 external-worker prototype is retained as non-gating history outside active delivery. W5
+does not run, expand, or claim it.
 
 The Windows lane now evaluates both the complete W2 v1 product grammar and W3's closed counted-dump E2 getter over that
 evidence. W4.1 adds a dump-free fixture gate for the exact two-field/direct-call closure while deliberately preserving
@@ -26,8 +28,11 @@ closed activation; W4.6b adds atomic modeled-return lineage construction while p
 W4.6c invokes only the frozen capability and adds atomic exact/unknown caller transfer, attempt/counter/depth evidence,
 and stable nontransfer taxonomy. W4.6d proves compiler/SRM exact, degraded, repeated, and fresh-session agreement. A
 W4.7 adds dump-free issuer-certified complete target-outcome projection, a fixed standalone canonical fragment, and
-direct/adjusted compiler/SRM fresh replay with capability poison/count evidence. A ClrMD W4 evidence producer, rooted
-product facade/runner, and dump-grounded W4 result remain absent.
+direct/adjusted compiler/SRM fresh replay with capability poison/count evidence. W4.8 adds the rooted product runner,
+and W4.9 adds the ClrMD evidence producer, detached binding, dump-grounded exact/degraded corpus, close/reopen replay,
+and exact hosted closure. Active W5 adds focused expression-classifier, acquisition-facade, mode-preserving consumer,
+canonical-corpus, and representative-usefulness evidence under the
+[`Post-W4 Path Forward`](../plans/post-w4-path-forward.md).
 Dump-free parser, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 The worker lane retains a locally passing malformed-artifact checkpoint, but it is non-gating prototype work outside
@@ -502,8 +507,10 @@ rows agree with late CoreCLR and degraded rows remain typed unknown. Focused gen
 6/6, and Fast 88/88. W4.9d's local candidate additionally passes locked restore, strict Release 0/0, complete unit
 502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and both guards. [Hosted run
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs at exact
-commit `a819a08fd9ccdf926620c505732475990b242be9`, closing W4. New opcodes or method families enter only
+implementation-closure commit `a819a08fd9ccdf926620c505732475990b242be9`; [run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) passed them again at final
+documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f`, closing W4. New opcodes or method families enter only
 through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed
-corpus/worker prototypes and cybersecurity validation are outside W1–W4; representative private-production
-measurement remains a separate non-gating readiness question.
+corpus/worker prototypes and cybersecurity validation are outside active delivery. Representative production
+measurement was non-gating for W1–W4; it is now W5's usefulness gate before another feature is admitted.

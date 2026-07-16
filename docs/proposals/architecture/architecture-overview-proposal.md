@@ -14,6 +14,10 @@ commit `de6cea124` passed all four required jobs in [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.9 have since landed;
 exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four jobs in [GitHub Actions run
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083).
+Final documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
+The active W5 successor is the bounded expression-to-result composition and representative-usefulness gate in the
+[`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md); it adds no interpreter semantics by default.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -638,8 +642,10 @@ The prototype retains only projects containing behavior or contracts exercised b
   into core execution;
 - `Interpreter.Product.DumpQuery` — the bounded W2 parser, typed root binding, immutable prepared plan, read-only
   `Evaluate(plan)` path, canonical identities, and closed result-value projection;
-- `Interpreter.Product.DumpDebugging` — W4.7's standalone issuer-certified exact-null projector and canonical
-  fragment; it has no dump, metadata-backend, query-product, request/plan, facade, or runner dependency;
+- `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
+  result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
+  dump memory; and ClrMD evidence binder. It depends on the active ClrMD and SRM boundaries to compose the admitted
+  dump scenario, while the core execution projects remain backend-independent;
 - `Interpreter.Host.ExternalWorker` and `Interpreter.Host.ExternalWorker.Runner` — the narrow Windows broker/protocol
   and one-request AppContainer executable; they are not a generic hosting framework.
 

@@ -51,7 +51,9 @@ W4 exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed docume
 build/Fast/unit, real-dump, and optimized-dump jobs in [GitHub Actions run
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083). The real-dump job therefore
 reproduces the W4.9 generated-dump row in the hosted headless environment under `Scope!=Cybersecurity`; it does not
-expand the scenario or establish cybersecurity evidence.
+expand the scenario or establish cybersecurity evidence. Final documentation-closure commit
+`aaec73c5b987089addb539d3628de67bd815bd8f` passed the same four jobs in [run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
 
 ## Active decision and remaining evidence gaps
 

@@ -16,7 +16,9 @@
 > evidence graph implemented at `24bd8fe6f`; W4.9b detached rooted dump binding implemented at `2d41f528d`;
 > W4.9c six-row generated-dump reopen/replay corpus implemented at `a8b5f32f0`; W4.9d closed at exact commit
 > `a819a08fd9ccdf926620c505732475990b242be9` in [GitHub Actions run
-> 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083)
+> 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083); final documentation-
+> closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
+> 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230)
 
 ## 1) Purpose and authority
 

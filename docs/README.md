@@ -29,8 +29,10 @@ exact implementation commit. [GitHub Actions run
 jobs at exact documentation-closure commit `de6cea124`, so W3 is formally closed for its defined non-cybersecurity
 scope. A whole-file-identified disk PE remains only an independent oracle, never dump resolver input.
 
-W4 is admitted as an active design contract at
-`proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. W4.1's fixture gate is implemented at
+W4's closed design contract is
+`proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. The active successor is
+`plans/post-w4-path-forward.md`: make the current W2/W4 capability reachable from one expression-to-result product
+path, then use representative incident-question evidence to select or reject the next increment. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint
 `e89e43498`. W4.3's dump-free non-exact field continuation is implemented at checkpoint `7479b1ad4`. W4.4a's
 body-free direct MethodDef resolution is implemented at pushed checkpoint `2e596c117`, and W4.4b's complete frozen
@@ -43,6 +45,8 @@ replay at `dad6a6dd4`. W4.8's configurable traversal, canonical facade, typed bi
 land through `44b050ec8`. W4.9's ClrMD evidence graph, detached dump binding, and six-row generated-dump reopen/replay
 land through `a8b5f32f0`. W4 is closed at exact commit `a819a08fd`; [GitHub Actions run
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs.
+Final documentation-closure commit `aaec73c5b` passed the same matrix in [run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
@@ -52,8 +56,8 @@ results use `CounterfactualExecution` with explicit policy, assumptions,
 models/effects, and applied bounds; they do not claim historical replay. Instruction and preparation-traversal units
 are consumed; maximum logical call depth is prepared/enforced and logical/frame high-water marks are reported.
 Allocation remains unadmitted and is reported as absent/not applied rather than as a dormant guarantee. The exact,
-degraded, differential, budget, and
-product/dump same/fresh-session replay gates remain required future headless evidence, not current product results. W4.1 contributes
+degraded, differential, budget, and product/dump same/fresh-session replay gates are closed W4 headless evidence.
+W4.1 contributes
 four fast fixture facts: exact caller/helper IL and metadata closure, CoreCLR agreement, and truthful W3 rejection at
 the second field load before the still-unadmitted direct call. W4.2 adds a second meaningful lifted-flat value domain,
 policy-enabled explained `Int32` execution, semantic equality independent of explanation, and canonical
@@ -205,7 +209,10 @@ historical 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, 2
 28,376–32,476, 28,876–33,276, 28,826–33,726, 28,879–33,279, 30,079–33,729, 31,069–34,319, and
 31,670–33,970 projections remain calibration facts. W4.9d's local closure passes locked restore, strict Release 0/0,
 unit 502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and guards 62/44 and 1, with zero skips. Exact pushed
-hosted closure passed in run 29463426083 at exact commit `a819a08fd9ccdf926620c505732475990b242be9`.
+implementation closure passed in run 29463426083 at exact commit
+`a819a08fd9ccdf926620c505732475990b242be9`; final documentation closure passed in [run
+29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) at
+`aaec73c5b987089addb539d3628de67bd815bd8f`.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
@@ -238,6 +245,7 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
+| `plans/post-w4-path-forward.md` | Planning | Plan | Current · Active | W5 expression-to-result product composition, headless reference consumer, representative usefulness gate, and evidence-selected successor decision. |
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4's closed rooted exact/degraded interpreted/modeled dump execution and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
@@ -255,7 +263,7 @@ docs/
 | `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical prototype layout and narrow implemented proof boundary. |
 | `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised by the dump-evidence and concrete-IL proofs; explicitly unstable. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate execution-state, domain, and provenance semantics. |
-| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence, W0–W4 test gates, and explicitly deferred research suites. |
+| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence, closed W0–W4 gates, active W5 testing policy, and explicitly deferred research suites. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft · Research | BCL/IL semantic lifting and projection concepts for later phases. |
 | `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft · Research | Candidate unified registry for later modeled semantics. |
 | `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Current · Supporting | Implemented closed W3 E1/E2 encodings and explicit gates for later opcode expansion. |
@@ -267,8 +275,8 @@ docs/
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft · Active | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft · Reference | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft · Active | Artifact-resolution design for PE/PDB loading and identity validation. |
-| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential coverage plus the bounded real dump-memory evidence lane and provenance matrix. |
-| `plans/future-work-planning.md` | Planning | Plan | Current · Active | LOC-bounded, evidence-led W0–W4 delivery plan and research gates. |
+| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence, closed W4 corpus, and active W5 evidence policy. |
+| `plans/future-work-planning.md` | Planning | Plan | Current · Supporting | Detailed evidence-led W0–W4 delivery record and research entry gates. |
 | `plans/requirements-traceability-map.md` | Planning | Matrix | Current · Active | Requirements mapped separately to design, implementation, and validation evidence. |
 | `lib/README.md` | Library Notes | Index | Current · Reference | Navigation and policy for active decisions versus preserved source research. |
 | `lib/clrmd/usage-notes.md` | Library Notes | Note | Historical · Reference | Preserved ClrMD source research; active behavior is established by adapter code and executable fixtures. |
@@ -302,18 +310,19 @@ docs/
 ### Active delivery path
 
 1. `../DESIGN-ARCHITECTURE-REVIEW.md`
-2. `proposals/product/post-mortem-debugging-feature-proposal.md`
-3. `proposals/architecture/restricted-dump-query-contract-proposal.md`
-4. `proposals/architecture/concrete-il-execution-contract-proposal.md`
-5. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
-6. `proposals/architecture/architecture-overview-proposal.md`
-7. `proposals/architecture/prototype-solution-structure-proposal.md`
-8. `lib/mvp-backend-decision-record.md`
-9. `plans/future-work-planning.md`
-10. `proposals/architecture/testing-strategy-proposal.md`
-11. `proposals/integration-test-plan.md`
-12. `proposals/integration/clrmd-integration-proposal.md`
-13. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+2. `plans/post-w4-path-forward.md`
+3. `proposals/product/post-mortem-debugging-feature-proposal.md`
+4. `proposals/architecture/restricted-dump-query-contract-proposal.md`
+5. `proposals/architecture/concrete-il-execution-contract-proposal.md`
+6. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
+7. `proposals/architecture/architecture-overview-proposal.md`
+8. `proposals/architecture/prototype-solution-structure-proposal.md`
+9. `lib/mvp-backend-decision-record.md`
+10. `plans/future-work-planning.md`
+11. `proposals/architecture/testing-strategy-proposal.md`
+12. `proposals/integration-test-plan.md`
+13. `proposals/integration/clrmd-integration-proposal.md`
+14. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 
@@ -389,7 +398,7 @@ These sketches explain earlier reasoning, but neither their API shapes nor their
 4. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 5. `lib/backend-evidence-log.md`
 
-Generic-context reconstruction and broad call/effect modeling remain later research topics. The active W4 contract
+Generic-context reconstruction and broad call/effect modeling remain later research topics. The closed W4 contract
 admits only its named direct `GetMarkerSummary` to `CombineMarkers` call shape; it does not promote those broader
 research designs.
 
@@ -398,8 +407,9 @@ research designs.
 1. `governance/project-faq.md`
 2. `governance/documentation-organization-proposal.md`
 3. `governance/terminology-glossary.md`
-4. `plans/future-work-planning.md`
-5. `plans/requirements-traceability-map.md`
+4. `plans/post-w4-path-forward.md`
+5. `plans/future-work-planning.md`
+6. `plans/requirements-traceability-map.md`
 
 ## Repository license
 
