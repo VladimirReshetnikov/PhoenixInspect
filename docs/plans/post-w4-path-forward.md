@@ -33,8 +33,8 @@ host-selected root, expression text, and policy. It does not supply metadata han
 vectors, or machine state.
 
 W5 is product composition, not a general C# evaluator and not a new interpreter-semantics milestone. After W5 makes
-the current capability consumable, a representative incident-question portfolio decides the next investment. No W6
-feature is pre-approved.
+the current capability consumable, a meaningful multi-shape synthetic incident-question portfolio decides the next
+prototype investment. This designed evidence does not establish field readiness. No W6 feature is pre-approved.
 
 ## 2) Why this is the right next move
 
@@ -44,8 +44,8 @@ typed evidence, lattice laws, a second meaningful domain, dump-sourced IL, diffe
 product result. Three gaps remain decisive:
 
 1. **Product reach:** W4 still requires expert, test-shaped structural assembly rather than one product request.
-2. **Representative usefulness:** all admitted success evidence comes from controlled generated scenarios; the
-   project has no representative incident-question denominator or production-readiness claim.
+2. **Meaningful synthetic usefulness:** all admitted success evidence comes from one controlled generated shape; the
+   project has no independent, multi-shape synthetic incident denominator or field-readiness claim.
 3. **Roadmap discipline:** without an explicit successor, it would be easy to promote virtual stepping, branches,
    exception-handler transfer, CFG analysis, async/dynamic lifting, generics, or broad models merely because their
    research entry gates are now closer.
@@ -220,21 +220,27 @@ unsupported expression, budget exhaustion, cancellation, repeated execution, and
 - Same-session, fresh-process where practical, and reopened-dump runs reproduce the declared canonical artifacts.
 - Required local and hosted gates pass at the exact pushed commit with zero skips.
 
-### W5.5 — representative usefulness gate
+### W5.5 — meaningful synthetic usefulness gate
 
-**Scale:** `~1K implementation LOC` for the manifest/report runner; corpus acquisition is not an implementation-LOC
-item.
+**Scale:** `~1K implementation LOC` for W5.5a's manifest/report runner and `~1K implementation LOC` initially for
+W5.5b's multi-snapshot target/orchestration/expectation corpus. Generated dump bytes are evidence, not implementation
+LOC.
 
 This checkpoint has two evidence boundaries:
 
 - **W5.5a — deterministic runner:** join predeclared question metadata to W5.4 machine reports, retain every row,
   emit raw counts and composition, enforce corpus provenance, and defer the successor decision while the gate is open.
-- **W5.5b — representative portfolio:** run the predeclared incident corpus and record the baseline. This is evidence
-  acquisition, not an invitation to substitute controlled fixtures or synthetic annotations.
+- **W5.5b — meaningful synthetic portfolio:** run predeclared designed incidents through independently captured dump
+  snapshots and record the baseline. The scenarios must exercise multiple structural application shapes, expected
+  investigation decisions, exact/degraded/blocked outcomes, and recurring blockers; duplicating the W5.4 routing rows
+  or relabeling one fixture does not satisfy this boundary.
 
-Run a predeclared portfolio of incident questions through the W5 facade. A representative baseline should be on the
-order of `~10` incidents across more than one application shape. Controlled generated fixtures may validate the
-runner, but they do not satisfy this gate and do not contribute to a production-readiness rate.
+Run a predeclared portfolio of incident questions through the W5 facade. The design-validation baseline is on the
+order of `~10` independently dumped synthetic incidents across more than one application shape. Each application
+shape has a distinct root type and surrounding object graph, and every incident has a predeclared expected product
+outcome. The simple W5.4 controlled fixture may validate routing and the report runner, but it does not satisfy this
+gate. The qualifying synthetic portfolio validates prototype usefulness only and does not contribute to a field-
+readiness rate.
 
 For every question, retain at least:
 
@@ -246,13 +252,14 @@ For every question, retain at least:
 - the manual object-walking operations needed to obtain the same answer, when known.
 
 Report raw numerators, denominators, and corpus composition before percentages. Retain unavailable and unsupported
-questions in the denominator. Do not extrapolate from controlled fixtures, and do not claim readiness while the
-representative corpus is absent.
+questions in the denominator. Report both the qualifying synthetic denominator and the zero external-observation
+denominator. Do not extrapolate from designed scenarios or claim field readiness.
 
 **Exit gate**
 
 - The checked-in report schema and replay tests are deterministic.
-- A representative portfolio produces an honest baseline or W5 remains open with the missing corpus named explicitly.
+- At least 10 independent synthetic incidents across at least two distinct application shapes produce an honest raw-
+  count baseline, or W5 remains open with the missing breadth named explicitly.
 - The resulting blocker ranking is sufficient to make the decision in §6 without relying on architecture taste.
 
 ### W5 implementation ledger — 2026-07-15
@@ -265,19 +272,19 @@ representative corpus is absent.
 | W5.3 | `~1K LOC` | `fc8a43a7a` | One strict outcome union preserves the original W2 result, W4 execution result, preparation failure, classification failure, or acquisition failure without a fabricated common semantic mode. |
 | W5.4 | `~1K LOC` | `59d9bb590` | The 14-project solution contains a headless reference consumer and nine-row generated corpus with fresh-process and dump-reopen deterministic replay. |
 | W5.5a | `~1K LOC` | `0f5230e13` | The usefulness runner emits raw admission/outcome/usefulness/acquisition composition, retains unsupported/unavailable rows, projects generated rows to a zero-row representative baseline, rejects corpus-kind promotion, and defers the next decision. |
-| W5.5b | corpus acquisition | — | **Open:** no representative incident portfolio is present. The current representative baseline is 0 questions, 0 incidents, and 0 application shapes; no successor is admitted. |
+| W5.5b | `~1K LOC` initially | — | **Active:** add at least 10 independently dumped, predeclared synthetic incidents across two distinct root/application shapes, exact expected outcomes, replay, and one evidence-selected prototype decision. |
 
 The implemented W5 surface is cumulatively `~10K LOC` at order-of-magnitude scale. The generated validation report is
 8/9 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers. Those are runner-
-validation counts only: they contribute nothing to a readiness rate or to the representative denominator. W5.1–
-W5.5a are complete implementation checkpoints; the W5 umbrella remains open solely at W5.5b and the exact hosted-
-closure gate.
+validation counts only: they contribute nothing to a field-readiness rate or to the external-observation denominator.
+W5.1–W5.5a are complete implementation checkpoints; the W5 umbrella remains open at the meaningful synthetic W5.5b
+portfolio and its exact hosted-closure gate.
 
 The current documentation candidate passes the complete local headless matrix: locked restore; strict 14-project
 Release build with warnings as errors at 0 warnings/0 errors; unit 502/502; Fast 104/104; ordinary dump 9/9;
 optimized dump 1/1; focused W5 facade 3/3; focused W5 usefulness 1/1; Markdown links across 63 files/57 local
 destinations; and the one-workflow headless guard. Every test lane has zero skips. This is local verification of the
-implemented checkpoints, not W5 umbrella closure or representative usefulness evidence.
+implemented checkpoints, not W5 umbrella closure, meaningful multi-shape usefulness evidence, or field readiness.
 
 ## 6) The post-W5 decision gate
 
@@ -301,7 +308,9 @@ Then choose exactly one branch:
 
 A candidate that requires branches, handler transfer, CFG/fixpoint analysis, generic dispatch, or another large
 subsystem receives a new contract and `~10K`-scale decomposition before implementation. Passing a historical research
-entry gate is necessary but not sufficient; representative product evidence must select the work.
+entry gate is necessary but not sufficient; the qualifying W5.5b blocker ranking must select the next prototype work.
+Because W5.5b uses designed scenarios, this decision advances prototype design only. External observations may later
+confirm, reverse, or stop that direction before a field-readiness claim.
 
 ## 7) Verification and delivery discipline
 
@@ -338,8 +347,9 @@ W5 closes only when all of the following are true:
 - callers no longer assemble W4 structural machinery;
 - exact, degraded, failure, budget, cancellation, interpreted, and modeled outcomes retain their existing truth axes;
 - a headless consumer and generated canonical corpus prove the complete request-to-result path;
-- the representative usefulness gate has produced its raw-count baseline; if the corpus is absent, W5.1–W5.5a may be
-  recorded as completed checkpoints but the W5 umbrella remains open and no successor feature is admitted; and
+- the meaningful synthetic usefulness gate has produced raw counts from at least 10 independent dumps across two
+  structural application shapes and selected exactly one next prototype action; external observations remain a
+  separate, explicitly zero-denominator field-readiness concern; and
 - the exact pushed closure commit passes locked restore, strict Release build, complete unit/Fast/focused dump lanes,
   Markdown/headless guards, and hosted CI with zero skips within the milestone test selection.
 
