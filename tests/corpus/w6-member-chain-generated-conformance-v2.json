@@ -103,6 +103,33 @@
       "expectedRootIssue": "InvalidData",
       "expectedAdapterStatus": "Invalid",
       "expectedDiagnostic": "W5_ROOT_SELECTION_NOT_EXACT"
+    },
+    {
+      "id": "w6-typed-missing-terminal",
+      "targetArguments": ["--synthetic-request-pipeline", "106", "-1006", "running"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "rootFixtureEvidenceView": "Captured",
+      "expression": "root.CurrentRequest.DoesNotExist",
+      "expectedRootBindingStatus": "ExactObject",
+      "expectedRootIssue": "None",
+      "expectedAdapterStatus": "Exact",
+      "expectedOutcomeKind": "DerivedQuery",
+      "expectedCompletion": "Blocked",
+      "expectedCompleteness": "None",
+      "expectedEvidence": "Unavailable",
+      "expectedDiagnostic": "QUERY_CHAIN_BIND_UNAVAILABLE"
+    },
+    {
+      "id": "w6-unsupported-third-member-hop",
+      "targetArguments": ["--synthetic-coordinator-pipeline", "115", "-1015", "degraded"],
+      "rootType": "SyntheticCoordinatorPipelineProbe",
+      "rootFixtureEvidenceView": "Captured",
+      "expression": "root.ActiveShard.Health.State",
+      "expectedRootBindingStatus": "ExactObject",
+      "expectedRootIssue": "None",
+      "expectedAdapterStatus": "Exact",
+      "expectedOutcomeKind": "ClassificationFailure",
+      "expectedDiagnostic": "QUERY_SYNTAX_UNSUPPORTED"
     }
   ]
 }

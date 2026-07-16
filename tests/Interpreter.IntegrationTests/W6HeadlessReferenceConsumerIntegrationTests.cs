@@ -14,8 +14,8 @@ namespace Interpreter.IntegrationTests;
 public sealed class W6HeadlessReferenceConsumerIntegrationTests
 {
     /// <summary>
-    /// Replays the four exact W5-selected questions plus exhaustive-absence, partial, unavailable, conflict, and
-    /// invalid root selections through independent snapshots and reopened consumer sessions.
+    /// Replays the four exact W5-selected questions, all typed root-selection outcomes, a typed preparation miss, and
+    /// unsupported complete syntax through independent snapshots and reopened consumer sessions.
     /// </summary>
     [Fact]
     [Trait("Category", "Dump")]
@@ -38,8 +38,8 @@ public sealed class W6HeadlessReferenceConsumerIntegrationTests
             Assert.Equal(2, corpusRoot.GetProperty("schemaVersion").GetInt32());
             Assert.Equal("GeneratedValidation", corpusRoot.GetProperty("corpusKind").GetString());
             var scenarios = corpusRoot.GetProperty("scenarios").EnumerateArray().ToArray();
-            Assert.Equal(9, scenarios.Length);
-            Assert.Equal(9, scenarios.Select(GetId).Distinct(StringComparer.Ordinal).Count());
+            Assert.Equal(11, scenarios.Length);
+            Assert.Equal(11, scenarios.Select(GetId).Distinct(StringComparer.Ordinal).Count());
 
             var snapshots = new HashSet<string>(StringComparer.Ordinal);
             foreach (var scenario in scenarios)
@@ -47,7 +47,7 @@ public sealed class W6HeadlessReferenceConsumerIntegrationTests
                 RunIndependentScenario(repositoryRoot, outputDirectory, scenario, snapshots);
             }
 
-            Assert.Equal(9, snapshots.Count);
+            Assert.Equal(11, snapshots.Count);
             Assert.Equal(
                 ["batch-failed", "request-failed", "running", "running"],
                 scenarios
@@ -178,9 +178,13 @@ public sealed class W6HeadlessReferenceConsumerIntegrationTests
         {
             AssertExactOutcome(row, outcome, expectedValue.GetString()!);
         }
-        else
+        else if (expected.GetProperty("expectedRootBindingStatus").GetString() != "ExactObject")
         {
             AssertRootClassificationFailure(row, outcome, expected.GetProperty("expectedDiagnostic").GetString()!);
+        }
+        else
+        {
+            AssertExactRootFailure(row, outcome, expected);
         }
     }
 
@@ -228,6 +232,31 @@ public sealed class W6HeadlessReferenceConsumerIntegrationTests
         Assert.Empty(outcome.GetProperty("provenance").EnumerateArray());
         var diagnosticRow = Assert.Single(outcome.GetProperty("diagnostics").EnumerateArray());
         Assert.Equal(diagnostic, diagnosticRow.GetProperty("code").GetString());
+    }
+
+    private static void AssertExactRootFailure(JsonElement row, JsonElement outcome, JsonElement expected)
+    {
+        var expectedKind = expected.GetProperty("expectedOutcomeKind").GetString();
+        Assert.Equal(expectedKind, outcome.GetProperty("kind").GetString());
+        if (expectedKind == "ClassificationFailure")
+        {
+            Assert.Equal(64, row.GetProperty("requestSha256").GetString()!.Length);
+            Assert.Equal(JsonValueKind.Null, outcome.GetProperty("semanticMode").ValueKind);
+        }
+        else
+        {
+            Assert.Equal(64, row.GetProperty("requestSha256").GetString()!.Length);
+            Assert.Equal("DerivedQuery", outcome.GetProperty("semanticMode").GetString());
+            Assert.Equal(expected.GetProperty("expectedCompletion").GetString(), outcome.GetProperty("completion").GetString());
+            Assert.Equal(
+                expected.GetProperty("expectedCompleteness").GetString(),
+                outcome.GetProperty("completeness").GetString());
+            Assert.Equal(expected.GetProperty("expectedEvidence").GetString(), outcome.GetProperty("evidence").GetString());
+        }
+
+        Assert.Equal(JsonValueKind.Null, outcome.GetProperty("value").ValueKind);
+        var diagnostic = Assert.Single(outcome.GetProperty("diagnostics").EnumerateArray());
+        Assert.Equal(expected.GetProperty("expectedDiagnostic").GetString(), diagnostic.GetProperty("code").GetString());
     }
 
     private static void AssertHumanReport(string path, JsonElement expected)
