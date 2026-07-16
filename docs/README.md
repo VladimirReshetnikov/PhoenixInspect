@@ -32,7 +32,7 @@ scope. A whole-file-identified disk PE remains only an independent oracle, never
 W4's closed design contract is
 `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. The active successor is
 `plans/post-w4-path-forward.md`: make the current W2/W4 capability reachable from one expression-to-result product
-path, then use representative incident-question evidence to select or reject the next increment. W4.1's fixture gate is implemented at
+path, then use meaningful multi-shape designed incident-question evidence to select or reject the next prototype increment while keeping field-readiness evidence separate. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint
 `e89e43498`. W4.3's dump-free non-exact field continuation is implemented at checkpoint `7479b1ad4`. W4.4a's
 body-free direct MethodDef resolution is implemented at pushed checkpoint `2e596c117`, and W4.4b's complete frozen
@@ -47,15 +47,18 @@ land through `a8b5f32f0`. W4 is closed at exact commit `a819a08fd`; [GitHub Acti
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs.
 Final documentation-closure commit `aaec73c5b` passed the same matrix in [run
 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
-W5.1–W5.5a are now implemented at pushed checkpoints `7c3d52572`, `d88b13c2c`, `fc8a43a7a`, `59d9bb590`, and
-`0f5230e13`. The product owns canonical expression admission, dump-to-method acquisition, and mode-preserving W2/W4
+W5.1–W5.5b are now implemented through pushed checkpoints `7c3d52572`, `d88b13c2c`, `fc8a43a7a`, `59d9bb590`,
+`0f5230e13`, `b788f4f66`, and `90ade6d92`. The product owns canonical expression admission, dump-to-method acquisition, and mode-preserving W2/W4
 evaluation. A repository-owned headless consumer runs the nine-row generated facade corpus in fresh processes, and
 its usefulness mode joins predeclared question metadata to evaluated machine reports, emits raw counts/composition,
 retains unsupported/unavailable rows, and rejects generated-to-representative promotion. Generated validation is 8/9
 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers; it contributes zero
-representative rows. No representative incident portfolio is present, so W5 remains open at W5.5b with 0 questions,
-0 incidents, and 0 application shapes in its representative denominator. No readiness rate or successor increment is
-claimed.
+representative rows. W5.5b adds 12 independently dumped, predeclared synthetic incidents over request-pipeline and
+batch-pipeline root graphs. Its raw counts are 8/12 admitted, 4/12 exact, 2/3 useful partial-or-unknown, and 6/12
+decision-changing; four recurring `MemberNavigation` blockers select `AdmitFixedDepthMemberChain` as the next
+prototype design slice. The designed corpus is not field evidence: representative/external observations remain 0
+questions across 0 incidents and 0 application shapes, and no readiness rate is claimed. W5 is in exact closure
+verification, not yet umbrella-closed.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
@@ -256,7 +259,7 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `plans/post-w4-path-forward.md` | Planning | Plan | Current · Active | W5 expression-to-result product composition, headless reference consumer, representative usefulness gate, and evidence-selected successor decision. |
+| `plans/post-w4-path-forward.md` | Planning | Plan | Current · Closure verification | W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, and evidence-selected fixed-depth member-chain prototype decision. |
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4's closed rooted exact/degraded interpreted/modeled dump execution and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |

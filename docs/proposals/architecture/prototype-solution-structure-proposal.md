@@ -54,8 +54,11 @@ depth facts, high-water integrity, event and budget ordering, resolver-free repl
   absence of synthetic product reachability, optional idempotent re-step, direct/adjusted compiler getters, fresh SRM
   replay, and poison/count proof that re-step performs no capability call or repeated field load.
   W5 tests add exact classifier boundaries, typed acquisition failures, unchanged underlying W2/W4 artifacts, a nine-
-  row external-process corpus, usefulness-report raw-count replay, and rejection of generated-to-representative corpus
-  promotion. Controlled fixtures validate the runner only and contribute zero representative incident rows.
+  row external-process routing corpus, usefulness-report raw-count replay, and rejection of generated-to-representative
+  corpus promotion. W5.5b adds twelve independently dumped incidents across distinct request-pipeline and batch-
+  pipeline object graphs, predeclared root/scenario/outcome/value contracts, and fresh-process portfolio replay. The
+  recurring blocker selects fixed-depth member navigation for prototype design. Controlled and designed fixtures both
+  contribute zero representative/external-observation rows and establish no readiness rate.
 
 ## 3. Dependency rules
 

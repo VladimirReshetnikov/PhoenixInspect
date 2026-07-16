@@ -23,8 +23,8 @@ Core principles:
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
 - **Active delivery target:** a deterministic, read-only evaluator grounded in a .NET dump. W5 now composes the
-  closed W2/W4 capabilities into one bounded expression-to-result path and gates further expansion on representative
-  usefulness evidence. Its W4 baseline has a closed branchless counterfactual-method contract, a validated W4.1
+  closed W2/W4 capabilities into one bounded expression-to-result path and uses meaningful multi-shape synthetic
+  incident evidence to select the next prototype design slice while keeping field-readiness evidence separate. Its W4 baseline has a closed branchless counterfactual-method contract, a validated W4.1
   value-gate fixture, a validated W4.2
   provenance-aware execution kernel, a validated W4.3 dump-free non-exact field seam, and W4.4's validated body-free
   direct-MethodDef resolution plus complete frozen call graph. W4.5 now executes exact and explained-unknown values
@@ -42,16 +42,19 @@ Core principles:
   passed all four required jobs. Final documentation-closure commit `aaec73c5b` passed the same matrix in
   [run 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230). The governing sequence is
   [`Post-W4 Path Forward`](docs/plans/post-w4-path-forward.md): W5 makes the existing W2/W4 capability reachable from
-  one closed expression-to-result path, then requires representative usefulness evidence before any new interpreter
+  one closed expression-to-result path, then requires a predeclared usefulness decision before any new interpreter
   or debugger subsystem is admitted.
-- **W5 implementation status:** W5.1–W5.5a are implemented and pushed at checkpoints `7c3d52572`, `d88b13c2c`,
-  `fc8a43a7a`, `59d9bb590`, and `0f5230e13`. One canonical request classifier now admits the unchanged W2 grammar or
+- **W5 implementation status:** W5.1–W5.5b are implemented and pushed through checkpoints `7c3d52572`, `d88b13c2c`,
+  `fc8a43a7a`, `59d9bb590`, `0f5230e13`, `b788f4f66`, and `90ade6d92`. One canonical request classifier now admits the unchanged W2 grammar or
   exact `root.GetMarkerSummary()` method form; one product facade owns dump reacquisition and detached W4 binding; one
   strict result union preserves the original W2/W4 modes and typed failure cases; and the 14-project solution includes
   a headless reference consumer plus deterministic usefulness-report mode. The generated nine-question validation
-  report is 8/9 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers. It is
-  explicitly not representative: the representative denominator remains 0 questions across 0 incidents and 0
-  application shapes, so W5 remains open, no readiness rate is claimed, and no successor capability is admitted.
+  report is 8/9 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers. A second
+  predeclared portfolio runs 12 independently dumped incidents over request-pipeline and batch-pipeline roots: 8/12
+  are admitted, 4/12 exact, 2/3 useful among partial-or-unknown answers, and 6/12 decision-changing. Its recurring
+  blocker ranking selects `AdmitFixedDepthMemberChain` for the next prototype design slice. The evidence is designed,
+  not representative: the external-observation denominator remains 0 questions across 0 incidents and 0 application
+  shapes, no readiness rate is claimed, and W5 umbrella closure still requires the exact full local/hosted gate.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. W4's generated-dump lane additionally acquires the root/helper graph and two correlated fields, detaches all product evidence before execution, produces the exact `0x26AF37BD` result or a provenance-bearing unknown for partial/unavailable input, exercises both interpretation and a body-free pure model, and reproduces all six canonical memory/request/plan/result artifacts after reopening the dump. CoreCLR remains a late outcome oracle, not an input to interpreter shape, dump evidence, preparation, or execution.
 - **Physical scope:** ten source projects contain active contracts or behavior in a fourteen-project solution.
   `Interpreter.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
@@ -349,8 +352,8 @@ High-value contributions advance or challenge the active executable evidence:
 - preserve W3's structural activation, typed whole-body admission, exact-evidence import, and deterministic outcome boundaries;
 - preserve the closed W4 `GetMarkerSummary`/`CombineMarkers` contract and make it reachable through W5's bounded
   expression-to-result product path without widening interpreter semantics;
-- collect representative incident-question evidence through the W5 usefulness gate before proposing the next syntax,
-  context, opcode, EH, model, or debugger increment;
+- preserve W5.5b's selected fixed-depth member-chain direction and its designed-evidence caveat; do not substitute a
+  broader syntax, context, opcode, EH, model, or debugger increment without a new evidence decision;
 - add deterministic, differential, and scenario tests at proven boundaries;
 - tighten architecture and documentation when executable evidence changes a decision;
 - keep design work just ahead of code rather than expanding speculative surface area.

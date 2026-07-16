@@ -1,6 +1,6 @@
 # Post-W4 Path Forward
 
-> **Lifecycle:** Current · **Roadmap:** Active
+> **Lifecycle:** Current · **Roadmap:** Closure verification
 >
 > **Decision:** fund product composition and usefulness evidence before adding interpreter breadth.
 
@@ -41,16 +41,17 @@ prototype investment. This designed evidence does not establish field readiness.
 The architecture review's central warning was platform-first, value-last expansion. W0–W4 repaired almost all of its
 foundational findings: scope lock, truthful topology, CI, headless execution, deterministic replay, stable identity,
 typed evidence, lattice laws, a second meaningful domain, dump-sourced IL, differential tests, and an actual rooted
-product result. Three gaps remain decisive:
+product result. Three gaps defined W5's work:
 
 1. **Product reach:** W4 still requires expert, test-shaped structural assembly rather than one product request.
-2. **Meaningful synthetic usefulness:** all admitted success evidence comes from one controlled generated shape; the
-   project has no independent, multi-shape synthetic incident denominator or field-readiness claim.
+2. **Meaningful synthetic usefulness:** the original admitted success evidence came from one controlled generated
+   shape, so the project needed an independent, multi-shape designed-incident denominator before selecting more
+   prototype behavior. This denominator remains distinct from field-readiness evidence.
 3. **Roadmap discipline:** without an explicit successor, it would be easy to promote virtual stepping, branches,
    exception-handler transfer, CFG analysis, async/dynamic lifting, generics, or broad models merely because their
    research entry gates are now closer.
 
-W5 closes the first gap and creates the instrument needed to measure the second while preserving the third.
+W5 closes the first gap and, through W5.5b checkpoint `90ade6d92`, measures the second while preserving the third.
 
 ## 3) Scope lock
 
@@ -104,7 +105,7 @@ The detailed historical ledgers remain authoritative in
 | W2 — restricted query | `~10K LOC` | Closed |
 | W3 — concrete IL proof | `~10K LOC` | Closed |
 | W4 — unknown-aware method evaluation | `~10K LOC` | Closed |
-| W5 — expression-to-result product composition and usefulness gate | `~10K LOC` initially | Active |
+| W5 — expression-to-result product composition and usefulness gate | `~10K LOC` | Closure verification |
 
 W5's umbrella scale is intentionally conservative. Each implementation checkpoint below begins at `~1K LOC`; if a
 checkpoint grows to `~10K LOC`, work stops at the preceding evidence boundary and the plan is split before more code
@@ -262,7 +263,7 @@ denominator. Do not extrapolate from designed scenarios or claim field readiness
   count baseline, or W5 remains open with the missing breadth named explicitly.
 - The resulting blocker ranking is sufficient to make the decision in §6 without relying on architecture taste.
 
-### W5 implementation ledger — 2026-07-15
+### W5 implementation ledger — 2026-07-16
 
 | Checkpoint | Coarse realized scale | Pushed checkpoint | Current evidence |
 |---|---:|---|---|
@@ -271,20 +272,27 @@ denominator. Do not extrapolate from designed scenarios or claim field readiness
 | W5.2 | `~1K LOC` | `d88b13c2c` | One product-owned facade reacquires root/module/type/caller/helper/fields, returns typed acquisition failures, and detaches all evidence before preparation/execution. |
 | W5.3 | `~1K LOC` | `fc8a43a7a` | One strict outcome union preserves the original W2 result, W4 execution result, preparation failure, classification failure, or acquisition failure without a fabricated common semantic mode. |
 | W5.4 | `~1K LOC` | `59d9bb590` | The 14-project solution contains a headless reference consumer and nine-row generated corpus with fresh-process and dump-reopen deterministic replay. |
-| W5.5a | `~1K LOC` | `0f5230e13` | The usefulness runner emits raw admission/outcome/usefulness/acquisition composition, retains unsupported/unavailable rows, projects generated rows to a zero-row representative baseline, rejects corpus-kind promotion, and defers the next decision. |
-| W5.5b | `~1K LOC` initially | — | **Active:** add at least 10 independently dumped, predeclared synthetic incidents across two distinct root/application shapes, exact expected outcomes, replay, and one evidence-selected prototype decision. |
+| W5.5a | `~1K LOC` | `0f5230e13`, `b788f4f66` | The schema-v2 usefulness runner separates generated routing, qualifying synthetic design evidence, and representative observations; it emits raw admission/outcome/usefulness/acquisition composition, rejects corpus-kind promotion, and requires predeclared synthetic root/scenario/outcome/value contracts plus independent snapshot identities. |
+| W5.5b | `~1K LOC` | `90ade6d92` | Twelve independently dumped, predeclared incidents across request-pipeline and batch-pipeline root graphs replay headlessly. Their blocker ranking selects `AdmitFixedDepthMemberChain` as a prototype design decision while representative observations remain zero. |
 
 The implemented W5 surface is cumulatively `~10K LOC` at order-of-magnitude scale. The generated validation report is
 8/9 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers. Those are runner-
-validation counts only: they contribute nothing to a field-readiness rate or to the external-observation denominator.
-W5.1–W5.5a are complete implementation checkpoints; the W5 umbrella remains open at the meaningful synthetic W5.5b
-portfolio and its exact hosted-closure gate.
+validation counts only. The meaningful synthetic report is 8/12 admitted and 4/12 exact, with 2/3 useful partial-or-
+unknown and 6/12 decision-changing answers across 12 incidents and two application shapes. It contains four
+`MemberNavigation`, three `ContextAcquisition`, one `ExecutionBody`, and four no-blocker rows. These designed counts
+select prototype direction only: they contribute nothing to a field-readiness rate, and the representative/external-
+observation denominator remains 0 questions across 0 incidents and 0 application shapes.
+
+W5.1–W5.5b are complete implementation checkpoints. The W5 umbrella is in closure verification: the meaningful
+portfolio gate is satisfied locally, while the complete local matrix and exact pushed hosted closure remain to be
+recorded.
 
 The current documentation candidate passes the complete local headless matrix: locked restore; strict 14-project
 Release build with warnings as errors at 0 warnings/0 errors; unit 502/502; Fast 104/104; ordinary dump 9/9;
-optimized dump 1/1; focused W5 facade 3/3; focused W5 usefulness 1/1; Markdown links across 63 files/57 local
+optimized dump 1/1; focused W5 facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefulness
+1/1; Markdown links across 63 files/57 local
 destinations; and the one-workflow headless guard. Every test lane has zero skips. This is local verification of the
-implemented checkpoints, not W5 umbrella closure, meaningful multi-shape usefulness evidence, or field readiness.
+implemented checkpoints, not W5 umbrella closure or field readiness.
 
 ## 6) The post-W5 decision gate
 
@@ -312,6 +320,19 @@ entry gate is necessary but not sufficient; the qualifying W5.5b blocker ranking
 Because W5.5b uses designed scenarios, this decision advances prototype design only. External observations may later
 confirm, reverse, or stop that direction before a field-readiness claim.
 
+### W5.5b decision — fixed-depth member chain selected
+
+Checkpoint `90ade6d92` satisfies the designed-evidence gate with 12 independently hashed dumps, 12 incident questions,
+and two structurally distinct root/application shapes. Four questions independently fail at fixed-depth member
+navigation: `root.Failure.Code`, `root.CurrentRequest.Status`, `root.LastFailure.Code`, and `root.Progress.State`.
+Context acquisition appears in three incidents and the execution body in one. The deterministic ordering therefore
+selects `AdmitFixedDepthMemberChain`.
+
+This selection admits design work on one fixed-depth, null-aware member-chain slice after W5 closure. It does not yet
+admit arbitrary properties, collections, indexers, calls, frame recovery, general expression binding, or additional IL
+semantics. It is also not an external observation or a readiness claim; representative counts remain zero and may
+later reverse the prototype direction.
+
 ## 7) Verification and delivery discipline
 
 Every implementation slice preserves the existing gates and adds its focused corpus. Behavioral tests always exclude
@@ -324,6 +345,7 @@ the named-fixture scope. The expected command shape is:
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5ExpressionFacadeV1" --verbosity normal
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5UsefulnessGeneratedV1" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5MeaningfulSyntheticV2" --verbosity normal
 ```
 
 Documentation gates remain:

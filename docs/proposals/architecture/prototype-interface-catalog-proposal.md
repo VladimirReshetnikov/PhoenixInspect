@@ -388,8 +388,10 @@ fragment:
 
 W5.4/5.5 add no reusable public API. `Interpreter.Headless.ReferenceConsumer` is an internal, independently launched
 prototype host whose two command modes emit versioned scenario and usefulness reports. Its generated corpus carries
-an explicit corpus kind; the usefulness runner rejects corpus-kind mixing and projects controlled rows to a zero-row
-representative denominator.
+an explicit corpus kind; schema v2 rejects corpus-kind mixing, requires predeclared fixture/outcome contracts for
+meaningful synthetic incidents, and keeps controlled/generated, designed/synthetic, and representative rows separate.
+The twelve-incident synthetic portfolio selects fixed-depth member navigation for prototype design while its
+representative/external-observation denominator remains zero.
 
 ## Deliberately absent
 

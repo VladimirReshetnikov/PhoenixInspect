@@ -16,8 +16,10 @@ exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four 
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083).
 Final documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
-The active W5 successor is the bounded expression-to-result composition and representative-usefulness gate in the
-[`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md); it adds no interpreter semantics by default.
+The W5 successor is the bounded expression-to-result composition and meaningful synthetic usefulness gate in the
+[`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). W5.5b checkpoint `90ade6d92` selects one fixed-depth
+member-chain prototype slice from twelve designed incidents across two root shapes; it adds no interpreter semantics
+by itself and makes no field-readiness claim.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -610,8 +612,9 @@ a later milestone and are prerequisites for debugger-grade Step Out and async `M
 W1–W5's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
 deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. Earlier
 out-of-scope experiments have been removed. Caveat: completing these milestones establishes no behavior
-for other artifact shapes; W5's generated usefulness portfolio contributes zero representative rows, and any later
-expansion requires its own scenario, contract, and executable evidence.
+for other artifact shapes; W5's generated and meaningful synthetic usefulness portfolios contribute zero
+representative/external-observation rows. The selected fixed-depth member-chain slice still requires its own scenario,
+contract, and executable evidence before implementation.
 
 ## 11. Physical topology
 

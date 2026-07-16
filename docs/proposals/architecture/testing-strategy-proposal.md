@@ -27,10 +27,12 @@ generated-dump execution plus close/reopen replay. Exact W4 implementation closu
 final documentation closure passed the same matrix in run 29463847230.
 
 W5 preserves all of those gates while adding focused expression classification, acquisition-facade, mode-preserving
-composition, headless consumer, canonical-corpus, and representative-usefulness evidence. W5.1–W5.5a are implemented
-through pushed checkpoints `7c3d52572`/`d88b13c2c`/`fc8a43a7a`/`59d9bb590`/`0f5230e13`. The generated usefulness
-lane validates deterministic raw-count reporting and corpus-kind enforcement but contributes zero representative
-rows. W5.5b and umbrella closure remain open; no unimplemented research matrix is added in advance.
+composition, headless consumer, canonical-corpus, and usefulness evidence. W5.1–W5.5b are implemented through pushed
+checkpoints `7c3d52572`/`d88b13c2c`/`fc8a43a7a`/`59d9bb590`/`0f5230e13`/`b788f4f66`/`90ade6d92`. The generated lane
+validates deterministic raw-count reporting and corpus-kind enforcement. The meaningful synthetic lane supplies 12
+independent incidents across two shapes and selects fixed-depth member navigation for the next prototype design. Both
+lanes contribute zero representative/external-observation rows. W5 umbrella closure verification remains open; no
+unimplemented research matrix is added in advance.
 
 ## 1) Evidence language
 
@@ -891,9 +893,9 @@ Branches and path forks, CFG state merge/fixpoint/widening, loops, handler-trans
 broad intrinsic/model catalogs, allocation, async/dynamic lifting, and virtual stepping remain outside this gate. A
 later research proposal or existing scaffold does not count as W4 evidence.
 
-### Current W5.1–W5.5a implementation verification — 2026-07-15
+### Current W5.1–W5.5b implementation verification — 2026-07-16
 
-The five pushed implementation checkpoints establish distinct test boundaries:
+The pushed implementation checkpoints establish six distinct test boundaries:
 
 1. W5.1 reuses the exact W2 parser for syntax classification and tests canonical requests, exact method spelling,
    casing, punctuation, suffix rejection, bounds, and fresh-object replay.
@@ -907,19 +909,28 @@ The five pushed implementation checkpoints establish distinct test boundaries:
 5. W5.5a joins the checked-in question portfolio to those evaluated rows in two more fresh processes, requires byte-
    identical raw-count reports, retains unsupported/unavailable rows, emits no percentages, and rejects an attempted
    generated-to-representative corpus-kind promotion.
+6. W5.5b launches twelve isolated hidden targets with predeclared arguments across request-pipeline and batch-pipeline
+   root types, writes one full dump and runs one fresh consumer per incident, enforces twelve distinct snapshot hashes,
+   validates exact/degraded/unavailable/unsupported expected outcomes, and requires byte-identical fresh-process
+   portfolio replay.
 
 The focused `Category=Dump&Corpus=W5UsefulnessGeneratedV1` lane passes 1/1 at checkpoint `0f5230e13`, including the
 W5.4 replay it consumes, with zero skips and no UI. The generated report records 8/9 admitted, 3/9 exact, 0/4 useful
 partial-or-unknown, and 0/9 decision-changing questions, but its representative projection is 0/0 and its successor
-selection is deferred. These counts validate the runner, not product usefulness. W5.5b requires a predeclared
-representative portfolio of at least 10 incidents across at least two application shapes; until it exists, W5 remains
-open and hosted umbrella closure cannot be claimed.
+selection is deferred. These counts validate the runner, not product usefulness.
+
+The focused `Category=Dump&Corpus=W5MeaningfulSyntheticV2` lane passes 1/1 at checkpoint `90ade6d92` with zero skips
+and no UI. It records 8/12 admitted, 4/12 exact, 2/3 useful partial-or-unknown, and 6/12 decision-changing questions.
+Four `MemberNavigation` incidents outrank three `ContextAcquisition` and one `ExecutionBody` incident, so the stable
+decision is `AdmitFixedDepthMemberChain`. This is designed prototype evidence, not field evidence: representative/
+external-observation counts remain 0 questions, 0 incidents, and 0 shapes, and no readiness rate is claimed.
 
 The cumulative documentation candidate also passes locked restore; strict 14-project Release build with warnings as
 errors at 0 warnings/0 errors; complete unit 502/502; Fast 104/104; ordinary dump 9/9; optimized dump 1/1; focused W5
-facade 3/3; focused W5 usefulness 1/1; Markdown 63 files/57 destinations; and the one-workflow headless guard. All
+facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefulness 1/1; Markdown 63 files/57
+destinations; and the one-workflow headless guard. All
 behavioral invocations use `eng/Invoke-HeadlessProcess.ps1` and have zero skips. The full matrix is regression and
-checkpoint evidence only while W5.5b remains open.
+checkpoint evidence only while exact W5 umbrella closure verification remains open.
 
 ## 9) Deferred research suites
 
@@ -949,12 +960,9 @@ Classify failures as one of:
 
 Record the failing fixture/test, exact command and environment, expected versus actual normalized outcome, evidence source, and whether a host-visible contract changed.
 
-## 11) Open decisions
+## 11) Selected decision and remaining evidence question
 
-1. Which representative incident corpus can supply at least 10 predeclared W5 questions across at least two
-   application shapes without disclosing restricted artifacts?
-2. Does that corpus's raw blocker composition select one allowed post-W5 branch, or does it require stopping product
-   expansion?
-
-These are the active W5.5b evidence questions. Generated fixtures cannot answer them, and no readiness threshold is
-set in advance. Broader external-input handling is separately scoped.
+W5.5b answers the prototype-design question with twelve predeclared designed incidents: fixed-depth member navigation
+is the recurring blocker and is the one selected post-W5 slice. The remaining question is deliberately separate:
+whether later external observations confirm, reverse, or stop that direction. No readiness threshold is inferred from
+the designed corpus, and broader external-input handling remains separately scoped.

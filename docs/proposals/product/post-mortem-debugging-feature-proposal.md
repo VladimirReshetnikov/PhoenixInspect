@@ -4,7 +4,8 @@
 > milestone-selected scopes, including W4's canonical product runner, detached ClrMD binding, exact/degraded generated-
 > dump corpus, close/reopen replay, and exact-commit hosted evidence. The active successor is
 > [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md): make the current W2/W4 capability reachable from one
-> closed expression-to-result product path, then measure representative usefulness before admitting more semantics.
+> closed expression-to-result product path, then use a meaningful multi-shape designed portfolio to select one
+> prototype direction while keeping field-readiness evidence separate. W5.5b selects fixed-depth member navigation.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -756,11 +757,12 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; active W
 * **W5:** active product-composition and usefulness milestone under the
   [Post-W4 Path Forward](../../plans/post-w4-path-forward.md). It admits only unchanged W2 expressions plus
   `root.GetMarkerSummary()`, owns the current W4 acquisition/binding path, preserves semantic modes in one evaluator
-  facade, adds a headless reference consumer, and requires representative incident-question evidence before another
-  capability is selected. W5.1–W5.5a are implemented through pushed checkpoint `0f5230e13`: generated fresh-process
-  replay validates the facade and raw-count runner, but its nine controlled questions contribute zero representative
-  rows. W5.5b remains open at 0 representative questions across 0 incidents and 0 application shapes; therefore no
-  readiness rate or next capability is selected.
+  facade, adds a headless reference consumer, and requires meaningful predeclared incident-question evidence before
+  another prototype capability is selected. W5.1–W5.5b are implemented through pushed checkpoint `90ade6d92`:
+  generated fresh-process replay validates the facade and raw-count runner, while twelve independent designed dumps
+  across request-pipeline and batch-pipeline roots supply the decision corpus. Their recurring blocker ranking selects
+  `AdmitFixedDepthMemberChain` as the next prototype slice. Both corpora contribute zero representative/external-
+  observation rows, so no field-readiness rate is claimed and external evidence may later reverse the direction.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 
