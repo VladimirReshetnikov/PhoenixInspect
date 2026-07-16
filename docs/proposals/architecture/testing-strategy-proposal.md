@@ -926,11 +926,12 @@ decision is `AdmitFixedDepthMemberChain`. This is designed prototype evidence, n
 external-observation counts remain 0 questions, 0 incidents, and 0 shapes, and no readiness rate is claimed.
 
 The cumulative documentation candidate also passes locked restore; strict 14-project Release build with warnings as
-errors at 0 warnings/0 errors; complete unit 502/502; Fast 104/104; ordinary dump 9/9; optimized dump 1/1; focused W5
-facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefulness 1/1; Markdown 63 files/57
+errors at 0 warnings/0 errors; complete unit 502/502; Fast 104/104; ordinary dump 10/10; optimized dump 1/1; focused W5
+facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefulness 1/1; Markdown 63 files/59
 destinations; and the one-workflow headless guard. All
 behavioral invocations use `eng/Invoke-HeadlessProcess.ps1` and have zero skips. The full matrix is regression and
-checkpoint evidence only while exact W5 umbrella closure verification remains open.
+complete local closure evidence at pushed checkpoint `56ec08149`; exact pushed hosted W5 umbrella verification remains
+open.
 
 ## 9) Deferred research suites
 

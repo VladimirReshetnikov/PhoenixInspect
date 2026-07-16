@@ -284,15 +284,15 @@ select prototype direction only: they contribute nothing to a field-readiness ra
 observation denominator remains 0 questions across 0 incidents and 0 application shapes.
 
 W5.1–W5.5b are complete implementation checkpoints. The W5 umbrella is in closure verification: the meaningful
-portfolio gate is satisfied locally, while the complete local matrix and exact pushed hosted closure remain to be
-recorded.
+portfolio and complete local matrix are satisfied at pushed checkpoint `56ec08149`; exact pushed hosted closure
+remains to be recorded.
 
 The current documentation candidate passes the complete local headless matrix: locked restore; strict 14-project
-Release build with warnings as errors at 0 warnings/0 errors; unit 502/502; Fast 104/104; ordinary dump 9/9;
+Release build with warnings as errors at 0 warnings/0 errors; unit 502/502; Fast 104/104; ordinary dump 10/10;
 optimized dump 1/1; focused W5 facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefulness
-1/1; Markdown links across 63 files/57 local
+1/1; Markdown links across 63 files/59 local
 destinations; and the one-workflow headless guard. Every test lane has zero skips. This is local verification of the
-implemented checkpoints, not W5 umbrella closure or field readiness.
+implemented checkpoints and complete local closure, not hosted W5 umbrella closure or field readiness.
 
 ## 6) The post-W5 decision gate
 

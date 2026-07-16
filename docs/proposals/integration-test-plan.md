@@ -525,7 +525,7 @@ three context-acquisition and one execution-body blocker, selecting `AdmitFixedD
 The designed corpus contributes zero representative/external-observation rows and establishes no readiness rate.
 
 The cumulative documentation candidate passes locked restore; strict 14-project Release 0 warnings/0 errors; unit
-502/502; Fast 104/104; ordinary dump 9/9; optimized dump 1/1; focused W5 facade 3/3; focused W5 usefulness 1/1;
-Markdown 63 files/57 local destinations; and the one-workflow headless guard. All behavioral lanes are wrapper-
-launched and have zero skips. These local facts do not satisfy the absent representative portfolio or hosted W5
-umbrella-closure conditions; exact local and hosted closure verification remains pending.
+502/502; Fast 104/104; ordinary dump 10/10; optimized dump 1/1; focused W5 facade 3/3; focused generated usefulness
+1/1; focused meaningful synthetic usefulness 1/1; Markdown 63 files/59 local destinations; and the one-workflow
+headless guard. All behavioral lanes are wrapper-launched and have zero skips. These local facts satisfy the W5 local
+closure matrix but not field readiness; exact pushed hosted closure verification remains pending.
