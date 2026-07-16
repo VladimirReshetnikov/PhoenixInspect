@@ -38,6 +38,12 @@ public static class DumpQueryEngine
     private static readonly EvaluationDeterministicBound StringLiteralLengthBound = new(
         "query.string-literal.characters",
         DumpQueryParser.MaximumStringLiteralLength);
+    private static readonly EvaluationDeterministicBound SyntaxNodeTokenCountBound = new(
+        "query.syntax.nodes-plus-tokens",
+        CSharpExpressionFrontEnd.MaximumNodeTokenCount);
+    private static readonly EvaluationDeterministicBound SyntaxDepthBound = new(
+        "query.syntax.depth",
+        CSharpExpressionFrontEnd.MaximumSyntaxDepth);
     private static readonly EvaluationDeterministicBound ObservedStringLengthBound = new(
         "query.observed-string.characters",
         MaximumObservedStringCharacters);
@@ -47,6 +53,8 @@ public static class DumpQueryEngine
             RootNameLengthBound,
             FieldNameLengthBound,
             StringLiteralLengthBound,
+            SyntaxNodeTokenCountBound,
+            SyntaxDepthBound,
             ObservedStringLengthBound);
 
     /// <summary>
@@ -65,13 +73,19 @@ public static class DumpQueryEngine
     public static DumpQuerySyntaxClassification ClassifySyntax(string? expression, string? rootName)
     {
         var parsed = DumpQueryParser.Parse(expression, rootName);
-        var bounds = ImmutableArray.CreateBuilder<EvaluationDeterministicBound>(EngineBounds.Length);
-        AddParserBounds(bounds, parsed.AppliedBounds);
         return new DumpQuerySyntaxClassification(
             parsed.IsSuccess,
             parsed.DiagnosticCode,
             parsed.DiagnosticMessage,
-            bounds.ToImmutable());
+            ProjectParserBounds(parsed.AppliedBounds));
+    }
+
+    internal static ImmutableArray<EvaluationDeterministicBound> ProjectParserBounds(
+        DumpQueryParserBounds parserBounds)
+    {
+        var bounds = ImmutableArray.CreateBuilder<EvaluationDeterministicBound>(EngineBounds.Length);
+        AddParserBounds(bounds, parserBounds);
+        return bounds.ToImmutable();
     }
 
     /// <summary>Parses and binds one closed-grammar expression into an immutable object-specific query plan.</summary>
@@ -103,6 +117,36 @@ public static class DumpQueryEngine
         ValidateUpstreamBounds(rootBinding.AppliedBounds);
 
         var parsed = DumpQueryParser.Parse(expression, rootBinding.Name);
+        return PrepareCore(session, parsed, rootBinding, expression);
+    }
+
+    internal static DumpQueryPreparationResult PrepareParsed(
+        ClrmdDumpSession session,
+        ParsedExpressionDescriptor expression,
+        DumpQueryParserBounds parserBounds,
+        DumpQueryRootBinding rootBinding)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(rootBinding);
+        ValidateUpstreamBounds(rootBinding.AppliedBounds);
+        return PrepareCore(
+            session,
+            new DumpQueryParseResult(
+                expression.ToDumpQuery(),
+                DiagnosticCode: null,
+                DiagnosticMessage: null,
+                parserBounds),
+            rootBinding,
+            rawExpression: null);
+    }
+
+    private static DumpQueryPreparationResult PrepareCore(
+        ClrmdDumpSession session,
+        DumpQueryParseResult parsed,
+        DumpQueryRootBinding rootBinding,
+        string? rawExpression)
+    {
         var rootEvidenceBelongsToSession = RootEvidenceBelongsToSession(session, rootBinding);
         var rootMemoryReadBoundApplied =
             rootEvidenceBelongsToSession && ReturnedOutcomeReachedRawMemoryRead(rootBinding.Evidence);
@@ -120,7 +164,7 @@ public static class DumpQueryEngine
             parseProvenance.Add(new EvaluationProvenance(
                 EvaluationProvenanceKind.Policy,
                 GrammarProvenanceId));
-            if (TryCreateRawRequestProvenanceId(expression, rootBinding.Name, out var rawRequestProvenanceId))
+            if (TryCreateRawRequestProvenanceId(rawExpression, rootBinding.Name, out var rawRequestProvenanceId))
             {
                 parseProvenance.Add(new EvaluationProvenance(
                     EvaluationProvenanceKind.Policy,
@@ -731,6 +775,16 @@ public static class DumpQueryEngine
         if ((parserBounds & DumpQueryParserBounds.StringLiteralLength) != 0)
         {
             bounds.Add(StringLiteralLengthBound);
+        }
+
+        if ((parserBounds & DumpQueryParserBounds.SyntaxNodeTokenCount) != 0)
+        {
+            bounds.Add(SyntaxNodeTokenCountBound);
+        }
+
+        if ((parserBounds & DumpQueryParserBounds.SyntaxDepth) != 0)
+        {
+            bounds.Add(SyntaxDepthBound);
         }
     }
 

@@ -4,6 +4,7 @@
     <RootNamespace>Interpreter.Product.DumpQuery</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
     <ProjectReference Include="../Interpreter.Host.Dump.ClrMD/Interpreter.Host.Dump.ClrMD.csproj" />
   </ItemGroup>

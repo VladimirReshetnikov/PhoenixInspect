@@ -188,7 +188,11 @@ public static class DumpExpressionEvaluator
         var request = classification.Request!;
         if (classification.Kind == DumpExpressionKind.DerivedQuery)
         {
-            var preparation = DumpQueryEngine.Prepare(session, expression, rootBinding);
+            var preparation = DumpQueryEngine.PrepareParsed(
+                session,
+                request.ParsedExpression!,
+                request.ParserBounds,
+                rootBinding);
             var result = preparation.IsSuccess
                 ? DumpQueryEngine.Evaluate(session, preparation.Plan!)
                 : preparation.Failure!;
