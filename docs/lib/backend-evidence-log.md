@@ -47,6 +47,12 @@ hardened checkpoint `19c292f9f`. [Run
 required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
 non-cybersecurity scope. That closure does not add product method evaluation or cybersecurity evidence.
 
+W4 exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed documentation consistency,
+build/Fast/unit, real-dump, and optimized-dump jobs in [GitHub Actions run
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083). The real-dump job therefore
+reproduces the W4.9 generated-dump row in the hosted headless environment under `Scope!=Cybersecurity`; it does not
+expand the scenario or establish cybersecurity evidence.
+
 ## Active decision and remaining evidence gaps
 
 - SRM/PEReader is the decided backend for active prototype slices; see `mvp-backend-decision-record.md`.

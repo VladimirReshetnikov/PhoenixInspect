@@ -20,7 +20,7 @@ return transfer and attempt/depth evidence; W4.6d commit `da5346813` closes comp
 conformance. W4.7a `2e70fe76d` adds standalone issuer-certified target-outcome projection, and W4.7b `dad6a6dd4`
 adds compiler/SRM fresh replay plus capability poison/count evidence. W4.8 checkpoints through `44b050ec8` add the
 canonical rooted product runner, and W4.9 checkpoints through `a8b5f32f0` add detached ClrMD exact/degraded
-generated-dump execution plus close/reopen replay. Section 8 records the remaining exact pushed hosted gate.
+generated-dump execution plus close/reopen replay. Exact W4 closure passed in hosted run 29463426083.
 
 ## 1) Evidence language
 
@@ -566,17 +566,19 @@ retained only as historical W4.6 evidence and was deliberately not rerun or clai
 2,448/353 LOC, 2,801 total, bringing W4 through W4.7 to 27,270 LOC. W4.8 later realizes 11,924 LOC and W4.9
 2,698 LOC, bringing full W4 implementation to 41,892 LOC.
 
-### Current local W4.8–W4.9 implementation verification — 2026-07-15
+### Closed W4.8–W4.9 implementation verification — 2026-07-15
 
 W4.8's final runner checkpoint passes focused execution 10/10, the complete counterfactual family 77/77, and complete
 non-cybersecurity unit 502/502 with a strict zero-warning Release build. W4.9a validates the atomic ClrMD graph/field
 producer; W4.9b passes binder 5/5, counterfactual 77/77, and Fast 88/88; W4.9c passes generated dump 1/1, ordinary
 dump 6/6, and Fast 88/88. All behavioral commands use the headless wrapper and `Scope!=Cybersecurity`, with zero
-skips. W4.9d owns repository-wide local and exact pushed hosted closure.
+skips. W4.9d records repository-wide local and exact pushed hosted closure.
 
 W4.9d's local candidate passes locked restore, a strict sixteen-project Release build at 0 warnings/errors, complete
 unit 502/502, Fast 88/88, ordinary dump 6/6, optimized dump 1/1, aggregate W4 integration 14/14, Markdown 62/44, and
-the one-workflow headless guard. Exact pushed hosted jobs remain.
+the one-workflow headless guard. [Hosted run
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs at exact
+commit `a819a08fd9ccdf926620c505732475990b242be9`.
 
 ## 3) Active test layers
 

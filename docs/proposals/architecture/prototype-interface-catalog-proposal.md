@@ -377,7 +377,7 @@ domain/machine, graph, interpreted-call, and pure-model extensions are architect
 features or a counterfactual-method facade. W4.6 supplies structural selection, modeled-return lineage, frozen-
 capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. W4.8 now supplies
 the rooted request/plan/result facade and runner; W4.9 supplies the ClrMD exact/degraded field producer, detached dump
-binding, and generated-dump reopen/replay result. Exact pushed hosted closure remains. Speculative
+binding, and generated-dump reopen/replay result. Exact hosted closure passed in run 29463426083. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 

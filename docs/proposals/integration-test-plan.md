@@ -500,7 +500,9 @@ detached rooted product memory, and six exact/partial/unavailable interpreted/mo
 disposed before execution; close/reopen/rebind reproduces all canonical memory/request/plan/result artifacts; exact
 rows agree with late CoreCLR and degraded rows remain typed unknown. Focused generated dump passes 1/1, ordinary dump
 6/6, and Fast 88/88. W4.9d's local candidate additionally passes locked restore, strict Release 0/0, complete unit
-502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and both guards. Exact pushed hosted jobs remain. New opcodes or method families enter only
+502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and both guards. [Hosted run
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs at exact
+commit `a819a08fd9ccdf926620c505732475990b242be9`, closing W4. New opcodes or method families enter only
 through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed
 corpus/worker prototypes and cybersecurity validation are outside W1–W4; representative private-production

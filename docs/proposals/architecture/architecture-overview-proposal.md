@@ -11,8 +11,9 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.9c have since landed;
-exact pushed hosted W4 closure remains.
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.9 have since landed;
+exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four jobs in [GitHub Actions run
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083).
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -101,7 +102,7 @@ documentation and generated lockfile changes. Preserve the original 16,860–25,
     call/return lineage; and W4.6 freezes and executes the exact/no-effect pure-model leaf with atomic lineage/attempt
     accounting and compiler conformance; W4.7 validates a standalone exact-null target fragment without inventing
     rooted reachability; W4.8 supplies the canonical product facade/runner; and W4.9 grounds six exact/degraded
-    interpreted/modeled rows in detached ClrMD dump evidence with reopen replay. Exact hosted closure remains.
+    interpreted/modeled rows in detached ClrMD dump evidence with reopen replay. W4 is closed for this scope.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 

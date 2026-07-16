@@ -20,7 +20,7 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. W4 adds one branchless counterfactual method question. W4.1–W4.7 establish its fixture, unknown-aware kernel, direct-call graph/execution, one body-free pure model, and standalone exact-null outcome. W4.8 checkpoints through `44b050ec8` add configurable traversal, canonical request/plan/result contracts, private typed bindings, authoritative preparation/execution, and common rooted/standalone projection. W4.9 checkpoints through `a8b5f32f0` add the ClrMD graph/field producer, detached rooted dump memory, and six exact/degraded interpreted/modeled generated-dump rows with close/reopen canonical replay. Exact pushed hosted closure remains; an isolated virtual heap and broader method workflows remain research.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. W4 adds one branchless counterfactual method question. W4.1–W4.7 establish its fixture, unknown-aware kernel, direct-call graph/execution, one body-free pure model, and standalone exact-null outcome. W4.8 checkpoints through `44b050ec8` add configurable traversal, canonical request/plan/result contracts, private typed bindings, authoritative preparation/execution, and common rooted/standalone projection. W4.9 checkpoints through `a8b5f32f0` add the ClrMD graph/field producer, detached rooted dump memory, and six exact/degraded interpreted/modeled generated-dump rows with close/reopen canonical replay. W4 closed at exact commit `a819a08fd` in [hosted run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083); an isolated virtual heap and broader method workflows remain research.
 
 ---
 
@@ -731,7 +731,8 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
   capability execution/attempt/depth contract is implemented at `877c9fb55`, and W4.6d's compiler/SRM conformance is
   implemented at `da5346813`, and standalone target-outcome projection/replay at `2e70fe76d`/`dad6a6dd4`. W4.8's
   canonical rooted facade/runner lands through `44b050ec8`, and W4.9's detached ClrMD generated-dump corpus lands
-  through `a8b5f32f0`. Exact pushed hosted closure remains.
+  through `a8b5f32f0`. Exact W4 closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four jobs in
+  [hosted run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083).
   Branches, broader
   calls/opcodes, generics, allocation, PDB-backed context, and whole-method abstract analysis remain gated.
 

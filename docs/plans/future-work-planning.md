@@ -42,8 +42,9 @@ worker/corpus code remains separately scoped non-gating prototype work. W4 is no
 field seam, W4.4's body-free call resolution/frozen graph, W4.5's exact plus explained-unknown prepared-graph
 execution, and W4.6's structural model admission, lineage, machine transfer, and compiler/SRM conformance have landed,
 W4.7's issuer-certified standalone target-outcome projection/compiler replay, W4.8's complete canonical product
-runner, and W4.9's detached ClrMD generated-dump corpus have landed. Exact pushed hosted closure is the remaining W4
-gate. W3 is complete for its defined non-cybersecurity architecture-validation scope
+runner, and W4.9's detached ClrMD generated-dump corpus have landed. W4 is complete at exact closure commit
+`a819a08fd9ccdf926620c505732475990b242be9`; [GitHub Actions run
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs. W3 is complete for its defined non-cybersecurity architecture-validation scope
 at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
@@ -369,8 +370,8 @@ owns the exact behavior. Closure requires all of these executable gates:
 
 ### W4 — Unknown-aware method evaluation
 
-**Status:** **Active closure candidate; W4.1–W4.9c are implemented and locally slice-validated, while W4.9d owns the
-complete local gate and exact pushed hosted evidence.**
+**Status:** **Complete for the normative non-cybersecurity W4 scope at exact commit `a819a08fd`; hosted run
+29463426083 passed all four required jobs.**
 
 **Realized hand-written implementation surface:** 41,892 LOC: 27,270 through W4.7, 11,924 across W4.8a–f, and 2,698
 across W4.9a–c. W4.9d changes documentation and executes unchanged gates, so it carries zero implementation LOC. The
@@ -621,13 +622,14 @@ W4.9a `24bd8fe6f` implements the atomic ClrMD execution-evidence graph; W4.9b `2
 detached rooted binding/memory; and W4.9c `a8b5f32f0` executes exact, partial, and unavailable rows under interpreted
 and body-free modeled plans. ClrMD is disposed before execution, and dump reopen/rebind reproduces all six canonical
 memory/request/plan/result artifacts before late disk/CoreCLR comparison. W4.9a–c realize 1,389/791/518 LOC, or 2,698
-total. Focused generated dump passes 1/1, ordinary dump 6/6, and Fast 88/88 headlessly with zero skips. W4.9d owns the
-complete local gate, exact pushed hosted evidence, and closure record.
+total. Focused generated dump passes 1/1, ordinary dump 6/6, and Fast 88/88 headlessly with zero skips. W4.9d records
+the complete local gate, exact pushed hosted evidence, and closure.
 
 W4.9d local closure passes locked restore; a strict sixteen-project Release build at zero warnings/errors; complete
 unit 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
 destinations; and the one-workflow headless guard. Every behavioral filter includes `Scope!=Cybersecurity`, with zero
-skips. Exact pushed hosted evidence remains.
+skips. [Hosted run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all
+four jobs at exact commit `a819a08fd9ccdf926620c505732475990b242be9`.
 
 **Admitted work slices**
 
@@ -684,7 +686,7 @@ tests before an allocation budget becomes an applied contract.
 - Product language consistently describes results as counterfactual, not historical replay. **Satisfied locally.**
 - The exact pushed closure commit passes all required headless hosted jobs with `Scope!=Cybersecurity`, and the realized
   hand-written implementation LOC ledger is recorded without counting documentation or generated output. **Ledger
-  satisfied; local gate satisfied and exact pushed hosted gate pending W4.9d.**
+  satisfied. Exact pushed hosted closure passed in run 29463426083 at `a819a08fd9ccdf926620c505732475990b242be9`.**
 - External-input cybersecurity behavior remains an explicit accepted exclusion, not an unfilled W4 evidence gate.
   **Satisfied.**
 

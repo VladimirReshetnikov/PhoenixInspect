@@ -68,7 +68,8 @@ Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532
 27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
 28,826–33,726; post-W4.6b checkpoint 28,879–33,279; and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
 realized 3,690 LOC against their historical 3,400–3,750 estimate. W4.7 subsequently realizes 2,801 LOC, W4.8 11,924
-LOC, and W4.9 2,698 LOC, bringing full W4 implementation to 41,892 LOC. Exact hosted closure remains; fixpoint, async,
+LOC, and W4.9 2,698 LOC, bringing full W4 implementation to 41,892 LOC. Exact hosted closure passed in run 29463426083;
+fixpoint, async,
 dynamic, and virtual-debug state remain gated research.
 
 ## Scope
@@ -688,12 +689,12 @@ selection, opaque modeled-leaf planning, and fail-closed activation at exact com
 atomic modeled-return lineage, kind-1–5 compatibility, and structural fresh-domain replay at exact commit
 `fd723a912`. W4.6c satisfies frozen-capability invocation, atomic exact/unknown caller transfer, attempt/counter/depth
 witnesses, and stable nontransfer taxonomy at exact commit `877c9fb55`; W4.6d satisfies compiler/SRM exact, degraded,
-and fresh-session conformance at exact commit `da5346813`. None is an end-to-end dump product; product contracts,
-ClrMD dump integration, and hosted closure remain. The broader research proposal is ready for sign-off when:
+and fresh-session conformance at exact commit `da5346813`. Those checkpoints alone were not an end-to-end dump
+product; W4.8–W4.9 subsequently add product contracts, detached ClrMD integration, canonical reopen replay, and hosted
+closure. The broader research proposal is ready for sign-off when:
 
 1. Core interfaces include explicit `MachineState`/`FrameState`, while any session controller keeps its transition and pause protocol distinct from the machine result.
-2. At least one product-level dump sample can emit and replay provenance-bearing unknowns; W4.2–W4.6 prove only the
-   dump-free domain, evidence, machine, preparation, interpreted-call, and pure-model seams,
-   and the existing ClrMD field descriptor remains exact-only.
+2. At least one product-level dump sample can emit and replay provenance-bearing unknowns. **Satisfied by W4.9's
+   interpreted/modeled partial and unavailable generated-dump rows plus close/reopen replay.**
 3. Merge/join behavior is validated on a curated CFG fixture set.
 4. Host API can surface session pause reason, machine status, debug events, and approximation diagnostics without conflating their vocabularies or leaking internal types.

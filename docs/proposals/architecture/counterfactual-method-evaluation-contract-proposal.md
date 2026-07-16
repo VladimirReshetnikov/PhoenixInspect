@@ -2,7 +2,7 @@
 
 > **Lifecycle:** Current
 >
-> **Roadmap relation:** Active · W4 normative contract
+> **Roadmap relation:** Complete · W4 normative contract and reference
 >
 > **Implementation status:** W4.1 fixture gate implemented at `82363585b`; W4.2 unknown E1/E2 kernel implemented at
 > `e89e43498`; W4.3 structured field-evidence continuation implemented at `7479b1ad4`; W4.4a body-free direct
@@ -14,8 +14,9 @@
 > W4.7b compiler/SRM replay implemented at `dad6a6dd4`; W4.8 configurable traversal, canonical product contracts,
 > typed binding, preparation, projection, and execution implemented through `44b050ec8`; W4.9a ClrMD execution
 > evidence graph implemented at `24bd8fe6f`; W4.9b detached rooted dump binding implemented at `2d41f528d`;
-> W4.9c six-row generated-dump reopen/replay corpus implemented at `a8b5f32f0`; W4.9d exact pushed hosted closure
-> pending
+> W4.9c six-row generated-dump reopen/replay corpus implemented at `a8b5f32f0`; W4.9d closed at exact commit
+> `a819a08fd9ccdf926620c505732475990b242be9` in [GitHub Actions run
+> 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083)
 
 ## 1) Purpose and authority
 
@@ -49,7 +50,7 @@ observation/plan/result artifacts, private typed runtime bindings, issuer-owned 
 execution, and common rooted/standalone projection. W4.9 validates dump-sourced root/helper bodies and both fields,
 detaches the complete rooted evidence/memory boundary, and executes exact, partial, and unavailable interpreted and
 modeled rows with dump close/reopen replay. API names shown here remain provisional design names; public prototype APIs
-carry detailed XML documentation. Hosted exact-commit evidence is the only remaining W4 closure claim.
+carry detailed XML documentation. W4 is closed for this contract's defined non-cybersecurity scope.
 
 ## 2) Product-value gate
 
@@ -1008,8 +1009,10 @@ lanes. W4.9b `2d41f528d` validates five binder/memory facts, the 77-test counter
 behavioral command ran through the headless wrapper with `Scope!=Cybersecurity` and every lane had zero skips. W4.9d's
 local candidate passes locked restore; the strict sixteen-project Release build at 0 warnings/errors; complete unit
 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
-destinations; and the one-workflow headless guard. Exact pushed hosted jobs remain; no umbrella closure is claimed
-until that exact commit is green.
+destinations; and the one-workflow headless guard. [GitHub Actions run
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) then passed documentation,
+build/Fast/unit, real-dump, and optimized-dump jobs at exact commit
+`a819a08fd9ccdf926620c505732475990b242be9`, closing the W4 umbrella.
 
 Concrete and differential coverage is required for every admitted opcode and call family. Degraded-evidence coverage is
 required for every transfer that can carry an unknown. Tests assert final outcome plus resolver/memory/model call counts,

@@ -62,7 +62,7 @@ Historical full-W4 projections remain 16,860–25,310, 18,532–26,132, 19,228�
 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276, 28,826–33,726, and
 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d realized 3,690 LOC against their historical
 3,400–3,750 estimate. W4.7 subsequently realized 2,801 LOC, W4.8 11,924 LOC, and W4.9 2,698 LOC, bringing full W4
-implementation to 41,892 LOC; exact pushed hosted closure remains.
+implementation to 41,892 LOC; exact hosted closure passed in run 29463426083.
 
 This is written as if you were going to **build and maintain this as a core library**—usable for:
 

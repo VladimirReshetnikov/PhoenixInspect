@@ -41,7 +41,8 @@ return lineage at `fd723a912`, W4.6c machine invocation/transfer at `877c9fb55`,
 `da5346813`. W4.7a standalone target-outcome projection is implemented at `2e70fe76d`, and W4.7b compiler/SRM
 replay at `dad6a6dd4`. W4.8's configurable traversal, canonical facade, typed binding, preparation, result, and runner
 land through `44b050ec8`. W4.9's ClrMD evidence graph, detached dump binding, and six-row generated-dump reopen/replay
-land through `a8b5f32f0`; exact pushed hosted closure is the remaining W4 gate.
+land through `a8b5f32f0`. W4 is closed at exact commit `a819a08fd`; [GitHub Actions run
+29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
@@ -204,7 +205,7 @@ historical 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, 2
 28,376–32,476, 28,876–33,276, 28,826–33,726, 28,879–33,279, 30,079–33,729, 31,069–34,319, and
 31,670–33,970 projections remain calibration facts. W4.9d's local closure passes locked restore, strict Release 0/0,
 unit 502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and guards 62/44 and 1, with zero skips. Exact pushed
-hosted closure remains pending.
+hosted closure passed in run 29463426083 at exact commit `a819a08fd9ccdf926620c505732475990b242be9`.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
@@ -237,13 +238,13 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4's landed rooted exact/degraded interpreted/modeled dump execution and explicitly gated research phases; exact pushed hosted closure remains. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4's closed rooted exact/degraded interpreted/modeled dump execution and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
-| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; all implementation slices and local proof lanes have landed, with exact pushed hosted closure remaining. |
+| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Reference | Normative closed W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract and executable evidence record. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
