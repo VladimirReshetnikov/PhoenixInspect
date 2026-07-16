@@ -736,6 +736,26 @@ one shape. The initial scenario design is in section 8.
 - a unique post-W6 prototype action selected only if it clears the evidence threshold in section 10; otherwise the
   successor remains explicitly deferred rather than being chosen by enum order or architecture taste.
 
+**Implemented checkpoint.** Commit `93c1f684b` closes W6.6 at `~1K LOC` scale. The predeclared schema-v3 manifest
+matches all twenty-four W6.1 target arguments and expressions, adds the exact root/member evidence view, expected
+result axes/value/diagnostics, investigation usefulness, decision impact, first boundary, and post-W6 dominant
+boundary, and materializes one distinct full snapshot plus fresh hidden consumer per incident. Request, batch,
+coordinator, and workflow graphs supply four distinct root shapes; same-session repetition and two fresh portfolio
+processes produce byte-identical reports.
+
+Raw outcomes are 10 exact, 2 partial, 1 direct-null blocked, 3 unavailable, 1 conflicting, 1 invalid, and 6
+valid-but-unsupported questions. Seventeen questions reach W6 evaluation, one stops at root attribution, and six stop
+at subset admission. Representative counts remain 0 questions, 0 incidents, and 0 shapes, and relabeling the designed
+portfolio as representative is rejected. Root/context attribution is the unique substantive leader with six
+independent incidents across all four shapes and six decision-changing questions. Depth-three, collection, and
+zero-argument-method boundaries each occur twice across two shapes. The qualified selection is therefore
+`AdmitOneConcreteContextAcquisitionScenario`; an injected substantive tie yields explicit deferral, proving enum order
+cannot manufacture a successor. W6 records this action but does not implement it.
+
+Focused W6.6 validation passes over all twenty-four dumps; the historical W5 headless/usefulness lanes pass 4/4 on
+their unchanged schema-v1/v2 paths; strict Release compilation reports zero warnings/errors; the excluded-vocabulary
+scan is clean; and zero tests are skipped. W6.7 is the sole active checkpoint.
+
 ### W6.7 — repository closure
 
 **Scale:** `~100 LOC` documentation.

@@ -774,16 +774,17 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; complete
   observation rows, so no field-readiness rate is claimed and external evidence may later reverse the direction. The
   owner closed W5 under an explicit milestone-only exception after hosted jobs were rejected before executing; those
   jobs remain absent evidence and the exception does not carry into W6.
-* **W6:** active design and delivery sequence under the
+* **W6:** active closure sequence under the
   [Post-W5 Path Forward](../../plans/post-w5-path-forward.md). It adds only an explicit
   `FixedDepthMemberChainV1` profile: one root reference field, one direct terminal field or exactly certified trivial
   field-backed data property, null-aware access, and existing W2 terminal value decoding. The companion
   [C# Expression Front-End and Subset-Admission Contract](../architecture/csharp-expression-front-end-contract-proposal.md)
   replaces parser growth with one pinned Roslyn parse and ordered W2/W5/W6 tree recognizers; valid C# outside those
-  profiles remains unsupported. W6 begins with emitted-shape proof and has no implementation or validation claim yet.
-  Its closure requires a headless generated corpus,
-  twenty-four independent synthetic dumps across four structural shapes, deterministic same/fresh/reopen replay, and
-  either a threshold-qualified unique successor or explicit deferral.
+  profiles remains unsupported. W6.1–W6.6 are implemented through `93c1f684b`: emitted-shape proof, frozen
+  declarations/plans, counted evaluation, headless generated conformance, and twenty-four independent synthetic dumps
+  across four structural shapes all replay deterministically. Six root/context-attribution incidents across all four
+  shapes uniquely select `AdmitOneConcreteContextAcquisitionScenario`; the selection advances prototype design only
+  and is not implemented by W6. Repository closure remains active.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

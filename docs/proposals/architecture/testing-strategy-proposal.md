@@ -948,7 +948,7 @@ field readiness, or setting policy for the selected next slice.
 
 ### Active W6 bounded-member-chain evidence gates
 
-W6.1–W6.5 have produced executable evidence under the
+W6.1–W6.6 have produced executable evidence under the
 [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) and the
 [`C# Expression Front-End and Subset-Admission Contract`](csharp-expression-front-end-contract-proposal.md). W6.2
 pins `Microsoft.CodeAnalysis.CSharp/5.3.0` and explicit C# 14 regular-source/full-text options, parses once, projects
@@ -978,12 +978,12 @@ dumps drive an append-only schema-v2 consumer through same-session repetition an
 row. Exact roots, all non-exact root classifications, an admitted binding miss, and complete Roslyn syntax outside the
 supported subset remain deterministic report rows. The W5 schema-v1 regression path remains passing.
 
-The meaningful synthetic lane must use twenty-four independently generated dumps and questions across four genuinely
-different object-graph shapes. It must retain unsupported depth, indexer, method, and context rows; emit raw counts;
-keep representative/external-observation counts at zero; and select a successor only when one unique blocker satisfies
-the predeclared incident, shape, and decision-changing thresholds. A tie or sub-threshold result is an explicit
-deferral, not a manufactured winner. W6 closure additionally requires the exact pushed commit's hosted jobs to
-execute and pass unless the owner records a new milestone-specific exception.
+The meaningful synthetic lane is implemented at `93c1f684b`. Twenty-four independent dumps and questions span four
+genuinely different object-graph/root shapes and retain exact, null, fallback, partial, unavailable, conflict, invalid,
+depth, indexer, and method rows. Raw counts keep representative/external-observation questions, incidents, and shapes
+at zero. Six root/context-attribution incidents across all four shapes uniquely clear the predeclared floor and select
+`AdmitOneConcreteContextAcquisitionScenario`; depth-three, collection, and method boundaries each remain at two
+incidents/two shapes. An exact substantive tie defers, and attempted promotion of designed rows is rejected.
 
 ## 9) Deferred research suites
 

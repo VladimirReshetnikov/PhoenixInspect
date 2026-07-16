@@ -586,10 +586,10 @@ root outcomes, an admitted binding miss, and complete Roslyn syntax outside the 
 repetitions and two fresh reopened hidden consumers per row reproduce byte-identical machine and human reports; the
 human report uses value shape only, and the historical schema-v1 consumer path remains passing.
 
-The meaningful synthetic lane must contain twenty-four independent full dumps and one predeclared question per dump
-across request, batch, coordinator, and workflow/dispatch object graphs. Value-only substitutions do not count as
-distinct shapes. The report retains unsupported depth/indexer/method/context rows, raw outcome and blocker counts, and
-zero representative/external observations. It may select a next prototype only for a unique blocker with at least
-three incidents across at least two shapes and at least two decision-changing answers; otherwise it must defer. These
-are planned gates, not current validation evidence. W6 cannot close until its complete local matrix passes headlessly
-and the exact pushed commit's required hosted jobs actually execute and pass, absent a new explicit exception.
+W6.6 is implemented at `93c1f684b`. Twenty-four independent full dumps and one predeclared question per dump span
+request, batch, coordinator, and workflow/dispatch object graphs, with four distinct actual root types. The report
+retains exact/null/fallback/partial/unavailable/conflict/invalid and unsupported depth/indexer/method rows, raw outcome
+and boundary counts, and zero representative/external observations. Six root/context-attribution incidents across all
+four shapes uniquely clear the three-incident/two-shape/two-decision threshold and select only
+`AdmitOneConcreteContextAcquisitionScenario`. A substantive tie explicitly defers, promotion is rejected, two fresh
+portfolio processes produce byte-identical reports, and W5 schema-v1/v2 regression lanes remain passing.

@@ -37,14 +37,17 @@ admit only versioned project-owned W2/W5/W6 tree shapes, implement one opt-in fi
 certified field-backed terminal data properties, then use a larger multi-shape designed portfolio to select or defer
 another prototype increment while keeping field-readiness evidence separate.
 
-W6.1–W6.5 are implemented through pushed checkpoint `62c4bb157`. One pinned complete Roslyn parse feeds only
+W6.1–W6.6 are implemented through pushed checkpoint `93c1f684b`. One pinned complete Roslyn parse feeds only
 versioned project-owned admitted shapes; counted metadata and physical getter bodies issue detached declared-member
 certificates; four/eight-byte reference observations preserve exact/null/partial evidence; intrinsic non-root identity
 is separate from alias-path selection; and a complete canonical plan freezes the request, certificate, relative
 terminal layout, semantics, evidence, and bounds before any reference or leaf value read. Frozen-plan evaluation now
 reuses the W2 value decoders without rebinding declarations or invoking getters, and the append-only schema-v2
-consumer replays exact and typed non-exact rows through fresh hidden processes while preserving schema v1. W6.6's
-predeclared twenty-four-incident synthetic portfolio is the sole active next checkpoint.
+consumer replays exact and typed non-exact rows through fresh hidden processes while preserving schema v1. The
+schema-v3 usefulness lane now evaluates twenty-four independent incidents across four graph/root shapes, retains zero
+representative rows, rejects promotion and enum-order tie selection, and selects one concrete context-acquisition
+scenario from a uniquely qualified six-incident/four-shape boundary. W6.7 repository closure is the sole active next
+checkpoint; the selected successor is documented but not implemented as W6 work.
 
 The earlier W4 history remains recorded here. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint

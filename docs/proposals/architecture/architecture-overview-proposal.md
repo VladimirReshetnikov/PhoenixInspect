@@ -626,13 +626,15 @@ a later milestone and are prerequisites for debugger-grade Step Out and async `M
 
 ## 10. Validated input boundary
 
-W1–W6.5's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
+W1–W6.6's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
 deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. Earlier
 out-of-scope experiments have been removed. Caveat: completing these milestones establishes no behavior
 for other artifact shapes; W5's generated and meaningful synthetic usefulness portfolios contribute zero
 representative/external-observation rows. The selected fixed-depth member-chain slice now has emitted-shape,
 full-expression-parse, declaration-certificate, immutable-plan, counted-evaluation, and fresh-process headless
-evidence. Its twenty-four-incident usefulness decision and repository closure gates remain active.
+evidence. Its twenty-four-incident/four-shape usefulness gate retains zero representative rows and selects one
+concrete context-acquisition scenario from a uniquely qualified six-incident boundary; that successor is not part of
+W6 implementation. Repository closure remains active.
 
 ## 11. Physical topology
 
