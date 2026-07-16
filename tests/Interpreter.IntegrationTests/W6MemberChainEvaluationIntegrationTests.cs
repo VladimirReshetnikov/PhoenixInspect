@@ -13,6 +13,73 @@ namespace Interpreter.IntegrationTests;
 public sealed class W6MemberChainEvaluationIntegrationTests
 {
     /// <summary>
+    /// Proves explicit W6 facade routing returns the unchanged derived-query envelope, preparation failures remain
+    /// typed result rows, and the default frozen-W5 overload continues to reject the same member-chain syntax.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W6MemberChainEvaluationV1")]
+    public void Product_facade_routes_only_explicit_W6_profile_and_preserves_legacy_default()
+    {
+        CaptureGraph(
+            "--synthetic-request-pipeline",
+            "SyntheticRequestPipelineProbe",
+            "failed",
+            (session, root) =>
+            {
+                var binding = DumpQueryRootBinding.FromExactObject("root", root);
+                var policy = CreatePolicy();
+                const string expression = "root.Failure?.Code";
+
+                var legacy = DumpExpressionEvaluator.Evaluate(
+                    session,
+                    expression,
+                    binding,
+                    policy);
+                Assert.Equal(DumpExpressionEvaluationOutcomeKind.ClassificationFailure, legacy.Kind);
+                Assert.Equal(DumpExpressionClassificationStatus.Unsupported, legacy.ClassificationFailure!.Status);
+                Assert.Null(legacy.DerivedQueryResult);
+
+                var routed = DumpExpressionEvaluator.Evaluate(
+                    session,
+                    expression,
+                    binding,
+                    policy,
+                    DumpExpressionLanguageProfile.FixedDepthMemberChainV1);
+                Assert.Equal(DumpExpressionEvaluationOutcomeKind.DerivedQuery, routed.Kind);
+                Assert.Equal(DumpExpressionKind.FixedDepthMemberChain, routed.Request!.AdmittedKind);
+                AssertExactString(routed.DerivedQueryResult!, "request-failed");
+                Assert.Null(routed.ClassificationFailure);
+                Assert.Null(routed.CounterfactualExecutionResult);
+
+                var plan = Prepare(session, binding, expression);
+                var direct = DumpMemberChainEngine.Evaluate(session, plan);
+                Assert.Equal(
+                    EvaluationResultReplay.ComputeSha256(
+                        direct,
+                        static value => value.ToCanonicalReplayProjection()),
+                    EvaluationResultReplay.ComputeSha256(
+                        routed.DerivedQueryResult!,
+                        static value => value.ToCanonicalReplayProjection()));
+
+                var missing = DumpExpressionEvaluator.Evaluate(
+                    session,
+                    "root.Failure?.DoesNotExist",
+                    binding,
+                    policy,
+                    DumpExpressionLanguageProfile.FixedDepthMemberChainV1);
+                Assert.Equal(DumpExpressionEvaluationOutcomeKind.DerivedQuery, missing.Kind);
+                var failure = Assert.IsType<EvaluationResult<DumpQueryValue>>(missing.DerivedQueryResult);
+                Assert.Equal(EvaluationSemanticMode.DerivedQuery, failure.SemanticMode);
+                Assert.Equal(EvaluationCompletionStatus.Blocked, failure.Completion);
+                Assert.Equal(EvaluationCompleteness.None, failure.Completeness);
+                Assert.Equal(EvaluationEvidenceStatus.Unavailable, failure.Evidence);
+                Assert.Null(failure.Value);
+                Assert.Equal("QUERY_CHAIN_BIND_UNAVAILABLE", Assert.Single(failure.Diagnostics).Code);
+            });
+    }
+
+    /// <summary>
     /// Decodes exact direct/conditional string, Int32, and nullable Int32 terminals through descriptor-only adapter
     /// operations, retains property storage provenance, and reproduces result replay without declaration rebinding.
     /// </summary>
@@ -207,16 +274,19 @@ public sealed class W6MemberChainEvaluationIntegrationTests
         var classification = DumpExpressionClassifier.Classify(
             expression,
             binding,
-            DumpExpressionPolicy.Create(
-                DumpMethodEvaluationMode.Interpreted,
-                instructionLimit: 100,
-                logicalDepthLimit: 2,
-                traversalLimit: 10),
+            CreatePolicy(),
             DumpExpressionLanguageProfile.FixedDepthMemberChainV1);
         Assert.Equal(DumpExpressionClassificationStatus.Accepted, classification.Status);
         Assert.Equal(DumpExpressionKind.FixedDepthMemberChain, classification.Kind);
         return Assert.IsType<DumpExpressionRequest>(classification.Request);
     }
+
+    private static DumpExpressionPolicy CreatePolicy() =>
+        DumpExpressionPolicy.Create(
+            DumpMethodEvaluationMode.Interpreted,
+            instructionLimit: 100,
+            logicalDepthLimit: 2,
+            traversalLimit: 10);
 
     private static void CaptureGraph(
         string command,

@@ -7,7 +7,7 @@ namespace Interpreter.Product.DumpDebugging;
 /// <summary>Identifies the one populated case of a W5 expression-evaluation outcome.</summary>
 public enum DumpExpressionEvaluationOutcomeKind
 {
-    /// <summary>The unchanged W2 path returned its complete derived-query result.</summary>
+    /// <summary>The W2 direct-field or opt-in W6 member-chain path returned its complete derived-query result.</summary>
     DerivedQuery = 1,
 
     /// <summary>The existing W4 path returned its complete counterfactual-execution result.</summary>
@@ -24,10 +24,10 @@ public enum DumpExpressionEvaluationOutcomeKind
 }
 
 /// <summary>
-/// Routes one W5 expression outcome without flattening the complete existing W2 and W4 result contracts.
+/// Routes one expression outcome without flattening the complete existing W2, W4, and opt-in W6 result contracts.
 /// </summary>
 /// <remarks>
-/// Exactly one payload property is populated. W2 retains <see cref="EvaluationResult{T}"/> with
+/// Exactly one payload property is populated. W2 and W6 retain <see cref="EvaluationResult{T}"/> with
 /// <see cref="DumpQueryValue"/> and its <see cref="EvaluationSemanticMode.DerivedQuery"/> truth mode. W4 retains
 /// either its complete <see cref="CounterfactualExecutionResult"/> or value-free preparation failure and its
 /// counterfactual truth mode. Classification and acquisition failures do not invent either semantic mode.
@@ -61,7 +61,7 @@ public sealed class DumpExpressionEvaluationOutcome
     /// </summary>
     public DumpExpressionRequest? Request { get; }
 
-    /// <summary>Gets the complete unchanged W2 result only for <see cref="DumpExpressionEvaluationOutcomeKind.DerivedQuery"/>.</summary>
+    /// <summary>Gets the complete W2 or opt-in W6 result only for <see cref="DumpExpressionEvaluationOutcomeKind.DerivedQuery"/>.</summary>
     public EvaluationResult<DumpQueryValue>? DerivedQueryResult { get; }
 
     /// <summary>
@@ -143,12 +143,12 @@ public sealed class DumpExpressionEvaluationOutcome
         failure ?? throw new ArgumentNullException(nameof(failure)));
 }
 
-/// <summary>Composes the unchanged W2 evaluator and existing W4 runner behind one W5 expression entry path.</summary>
+/// <summary>Composes the W2 evaluator, W4 runner, and opt-in W6 chain engine behind one expression entry path.</summary>
 /// <remarks>
 /// This facade owns routing and lifecycle only. It does not define a common value lattice or result schema. A W2
 /// expression is prepared and evaluated by <see cref="DumpQueryEngine"/>. The exact method expression is acquired by
-/// <see cref="DumpMethodAcquisitionFacade"/> and prepared/executed by one existing W4 runner. Rejected syntax never
-/// reaches either evidence-binding path.
+/// <see cref="DumpMethodAcquisitionFacade"/> and prepared/executed by one existing W4 runner. An explicitly selected
+/// W6 profile consumes only a frozen project-owned member-chain plan. Rejected syntax never reaches evidence binding.
 /// </remarks>
 public static class DumpExpressionEvaluator
 {
@@ -175,11 +175,57 @@ public static class DumpExpressionEvaluator
         DumpExpressionPolicy policy,
         CancellationToken cancellationToken = default)
     {
+        return Evaluate(
+            session,
+            expression,
+            rootBinding,
+            policy,
+            DumpExpressionLanguageProfile.FrozenW5,
+            cancellationToken);
+    }
+
+    /// <summary>Classifies, routes, and evaluates one bounded expression under an explicit language profile.</summary>
+    /// <param name="session">The immutable dump session used by the selected evaluation path.</param>
+    /// <param name="expression">Raw expression text retained without normalization by the canonical request.</param>
+    /// <param name="rootBinding">The exact host-selected root evidence used by every admitted path.</param>
+    /// <param name="policy">The closed product policy retained unchanged across W2, W4, and W6 routing.</param>
+    /// <param name="languageProfile">
+    /// The frozen-W5 or opt-in fixed-depth W6 profile. Both use the same pinned complete Roslyn expression parse and
+    /// differ only in versioned project-owned subset admission.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// Cancellation observed by W4 at ready machine boundaries. Finite synchronous W2/W6 operations retain their
+    /// existing no-cancellation contract.
+    /// </param>
+    /// <returns>
+    /// A strict union preserving the complete W2/W6 derived-query result, W4 result/preparation failure, or typed
+    /// classification/acquisition failure.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="session"/>, <paramref name="rootBinding"/>, or <paramref name="policy"/> is null.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="languageProfile"/> is not defined.</exception>
+    public static DumpExpressionEvaluationOutcome Evaluate(
+        ClrmdDumpSession session,
+        string? expression,
+        DumpQueryRootBinding rootBinding,
+        DumpExpressionPolicy policy,
+        DumpExpressionLanguageProfile languageProfile,
+        CancellationToken cancellationToken = default)
+    {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(rootBinding);
         ArgumentNullException.ThrowIfNull(policy);
+        if (!Enum.IsDefined(languageProfile))
+        {
+            throw new ArgumentOutOfRangeException(nameof(languageProfile));
+        }
 
-        var classification = DumpExpressionClassifier.Classify(expression, rootBinding, policy);
+        var classification = DumpExpressionClassifier.Classify(
+            expression,
+            rootBinding,
+            policy,
+            languageProfile);
         if (classification.Status != DumpExpressionClassificationStatus.Accepted)
         {
             return DumpExpressionEvaluationOutcome.FromClassificationFailure(classification);
@@ -199,7 +245,30 @@ public static class DumpExpressionEvaluator
             return DumpExpressionEvaluationOutcome.FromDerivedQuery(request, result);
         }
 
+        if (classification.Kind == DumpExpressionKind.FixedDepthMemberChain)
+        {
+            return EvaluateMemberChain(new ClrmdDumpMemberChainEvidenceSource(session), request);
+        }
+
         return EvaluateMethod(new ClrmdDumpMethodEvidenceSource(session), request, cancellationToken);
+    }
+
+    internal static DumpExpressionEvaluationOutcome EvaluateMemberChain(
+        IDumpMemberChainEvidenceSource source,
+        DumpExpressionRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(request);
+        var preparation = DumpMemberChainPreparationFacade.Prepare(source, request);
+        var result = preparation.IsSuccess
+            ? DumpMemberChainEngine.Evaluate(source, preparation.Plan!)
+            : DumpMemberChainEngine.FromPreparationFailure(
+                source,
+                request.RootBinding,
+                request.ReachedBounds,
+                request.Sha256,
+                preparation.Failure!);
+        return DumpExpressionEvaluationOutcome.FromDerivedQuery(request, result);
     }
 
     internal static DumpExpressionEvaluationOutcome EvaluateMethod(
