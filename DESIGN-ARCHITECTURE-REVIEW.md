@@ -1,6 +1,6 @@
 # Design & Architecture Review — Interpreter (.NET IL Interpreter / Dump-Time Evaluation)
 
-> **Point-in-time review and reset input.** Counts and implementation facts below describe the repository before the 2026-07-13 remediation pass; they are intentionally preserved as review evidence rather than rewritten as current status. The active scope, roadmap, and topology now live in `README.md`, `docs/plans/future-work-planning.md`, and `docs/proposals/architecture/architecture-overview-proposal.md`.
+> **Point-in-time review and reset input.** Counts and implementation facts below describe the repository before the 2026-07-13 remediation pass; they are intentionally preserved as review evidence rather than rewritten as current status. The active scope, W6 roadmap, historical W0–W4 record, and topology now live in `README.md`, `docs/plans/post-w5-path-forward.md`, `docs/plans/future-work-planning.md`, and `docs/proposals/architecture/architecture-overview-proposal.md`.
 
 ## Executive summary
 

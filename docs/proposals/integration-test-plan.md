@@ -1,6 +1,6 @@
 # Executable Evidence Plan
 
-**Lifecycle:** Current verification plan
+**Lifecycle:** Current
 **Roadmap relation:** Active
 **Last reset:** 2026-07-15
 
@@ -32,6 +32,9 @@ preserving evaluator, external headless consumer, canonical generated corpus, de
 and twelve-incident/two-shape meaningful synthetic portfolio through pushed checkpoint `90ade6d92`. W5 is closed for
 its defined prototype scope under the milestone-scoped owner exception recorded in the
 [`Post-W4 Path Forward`](../plans/post-w4-path-forward.md); rejected hosted jobs are not test evidence.
+The active [`Post-W5 Path Forward`](../plans/post-w5-path-forward.md) defines W6's not-yet-implemented opt-in member-
+chain lanes, exact property/storage truth gate, independent twenty-four-dump/four-shape synthetic portfolio, and
+same/fresh/reopen replay obligations.
 Dump-free parser, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
@@ -245,7 +248,7 @@ Every managed restore/build/test step uses `./eng/Invoke-HeadlessProcess.ps1 dot
 workflow `dotnet` launches. The workflow uses the pinned .NET 10 SDK and locked packages, runs repository-owned
 local-Markdown-link and headless-workflow consistency checks, builds Release with warnings as errors, runs the fast suite,
 and then runs the required ordinary-dump and optimized-context Windows lanes. Every current test command runs all
-remaining tests in its selected category, and restore/build cover all 13 current projects. Caveat: this establishes
+remaining tests in its selected category, and restore/build cover all 14 current projects. Caveat: this establishes
 behavior only for the named fixture shapes. Third-party actions are pinned to verified release commit SHAs. A missing DAC
 or inability to write/load a required dump is a failing infrastructure signal, not a passing skip.
 
@@ -492,7 +495,8 @@ documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f`, closing
 through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Caveat: validation beyond the named
 fixture shapes is outside active delivery. Representative production
-measurement was non-gating for W1–W4; it is now W5's usefulness gate before another feature is admitted.
+measurement was non-gating for W1–W4; designed usefulness evidence became W5's gate before W6 design was admitted,
+while representative measurement remains separately scoped.
 
 ## W5 implementation and selected usefulness decision
 
@@ -536,3 +540,26 @@ spending-limit state; an unchanged retry has the same result. Run
 The owner explicitly waived W5's final hosted-only condition on 2026-07-16, so the milestone is closed on its complete
 exact-source local matrix. This exception does not mark the rejected jobs passing, reduce the unchanged selection,
 establish field readiness, or apply to a future milestone.
+
+## Planned W6 bounded-member-chain evidence
+
+W6 begins with a physical-shape gate rather than a parser claim. Compiler-emitted fixtures and SRM projections must
+agree exactly on the terminal property, getter signature, trivial getter body, and backing field used by the four
+literal W5-selected questions. Only that narrow certified data-property projection, plus a direct terminal field, may
+enter the opt-in `FixedDepthMemberChainV1` plan. Tests must prove the getter is never invoked and that W2/W5 default-
+profile schemas, counts, classifications, and semantics remain unchanged.
+
+The generated lane must exercise exact, exact-null, coalesced-null, partial, unavailable, conflict, invalid, and
+unsupported outcomes across the outer reference and terminal storage boundaries. It must validate truthful referenced-
+object identity and extent, relative terminal layouts, checked address arithmetic, lifted nullable behavior for
+null-conditional non-nullable values, immutable two-member preparation, and descriptor-only evaluation with poisoned
+catalog sources. A hidden target and hidden reference consumer must reproduce canonical artifacts in repeated same-
+session, fresh-process, and dump-close/reopen runs within the W6 corpus.
+
+The meaningful synthetic lane must contain twenty-four independent full dumps and one predeclared question per dump
+across request, batch, coordinator, and workflow/dispatch object graphs. Value-only substitutions do not count as
+distinct shapes. The report retains unsupported depth/indexer/method/context rows, raw outcome and blocker counts, and
+zero representative/external observations. It may select a next prototype only for a unique blocker with at least
+three incidents across at least two shapes and at least two decision-changing answers; otherwise it must defer. These
+are planned gates, not current validation evidence. W6 cannot close until its complete local matrix passes headlessly
+and the exact pushed commit's required hosted jobs actually execute and pass, absent a new explicit exception.

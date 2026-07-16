@@ -1,6 +1,6 @@
 # Documentation Maintenance Policy
 
-**Lifecycle:** Current lightweight governance
+**Lifecycle:** Current · **Roadmap:** Supporting
 **Supersedes:** the unimplemented ADR/spec/owner/template migration proposal
 
 ## 1. Purpose

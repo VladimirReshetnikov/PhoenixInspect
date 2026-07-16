@@ -320,7 +320,7 @@ milestone-selected scope.
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
-each selected category. No result in W1–W4 establishes behavior for other artifact shapes.
+each selected category. No result in W1–W5 establishes behavior for other artifact shapes.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes above remain
 evidence for their named commits; they are not claims about the current fixture binary.

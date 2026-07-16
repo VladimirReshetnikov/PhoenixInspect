@@ -1,8 +1,8 @@
 # Architecture Overview
 
-**Lifecycle:** Current design direction
-**Roadmap relation:** Active and supporting
-**Last reset:** 2026-07-14
+**Lifecycle:** Current
+**Roadmap relation:** Supporting
+**Last reset:** 2026-07-16
 
 ## 1. Product and scope lock
 
@@ -16,10 +16,13 @@ exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four 
 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083).
 Final documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
-The W5 successor is the bounded expression-to-result composition and meaningful synthetic usefulness gate in the
-[`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). W5.5b checkpoint `90ade6d92` selects one fixed-depth
-member-chain prototype slice from twelve designed incidents across two root shapes; it adds no interpreter semantics
-by itself and makes no field-readiness claim.
+The bounded expression-to-result composition and meaningful synthetic usefulness gate in the
+[`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md) is closed for W5's stated prototype scope. W5.5b
+checkpoint `90ade6d92` selects one fixed-depth member-chain prototype slice from twelve designed incidents across two
+root shapes; it adds no interpreter semantics by itself and makes no field-readiness claim. The active
+[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) gives that W6 slice an opt-in language profile, counted
+reference evidence, a narrow exact certificate for trivial field-backed terminal data properties, and independent
+headless replay and usefulness gates. It is a design contract, not an implementation claim.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -207,7 +210,7 @@ The W4.2–W4.3 path is kernel evidence only. W4.3 adds no ClrMD producer for st
 model, product facade or result projection, and it consumes no generated dump. W4.4 is preparation evidence only: it
 freezes a call graph but adds no frame transfer, request-depth enforcement, call model, or product/dump execution.
 
-The active W1–W4 paths use generated, source-controlled fixtures directly. Caveat: the data flow covers only the
+The implemented W1–W5 paths use generated, source-controlled fixtures directly. Caveat: the data flow covers only the
 explicitly admitted fixture and input shapes.
 
 ## 4. Active components
@@ -613,8 +616,8 @@ W1–W5's implemented checkpoints are restricted to generated, source-controlled
 deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. Earlier
 out-of-scope experiments have been removed. Caveat: completing these milestones establishes no behavior
 for other artifact shapes; W5's generated and meaningful synthetic usefulness portfolios contribute zero
-representative/external-observation rows. The selected fixed-depth member-chain slice still requires its own scenario,
-contract, and executable evidence before implementation.
+representative/external-observation rows. The selected fixed-depth member-chain slice now has a scenario and contract,
+but still requires its emitted-shape truth gate and executable evidence before implementation is claimed.
 
 ## 11. Physical topology
 
@@ -657,4 +660,6 @@ No research subsystem enters the active roadmap merely because a proposal exists
 - **Alternative products:** a second product demonstrates reuse without weakening the dump evaluator’s result contract.
 - **Alternative metadata backend:** a corpus records an SRM deficiency and an adapter test demonstrates a better trade-off.
 
-The active sequence, sizing assumptions, and exit tests live in `docs/plans/future-work-planning.md`.
+The active W6 sequence, order-of-magnitude LOC scales, and exit tests live in
+`docs/plans/post-w5-path-forward.md`; `docs/plans/future-work-planning.md` retains the W0–W4 delivery record and
+research entry gates.

@@ -35,9 +35,10 @@ reaches the already-closed W4 `CounterfactualExecution` scenario. The host suppl
 host-selected root, expression text, and policy. It does not supply metadata handles, method graphs, correlated field
 vectors, or machine state.
 
-W5 is product composition, not a general C# evaluator and not a new interpreter-semantics milestone. After W5 makes
-the current capability consumable, a meaningful multi-shape synthetic incident-question portfolio decides the next
-prototype investment. This designed evidence does not establish field readiness. No W6 feature is pre-approved.
+W5 was product composition, not a general C# evaluator and not a new interpreter-semantics milestone. After W5 made
+the current capability consumable, a meaningful multi-shape synthetic incident-question portfolio selected the next
+prototype investment. This designed evidence does not establish field readiness. No W6 feature was pre-approved when
+W5 began; the later W6 contract is owned separately by the [Post-W5 Path Forward](post-w5-path-forward.md).
 
 ## 2) Why this is the right next move
 

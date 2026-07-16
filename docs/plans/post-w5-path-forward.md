@@ -28,8 +28,8 @@ root.Progress.CompletedPartitions
 
 W6 adds one reference hop and one certified terminal data-member read to the derived-query path. It does not add general expression
 binding, arbitrary graph walking, a new interpreter opcode, another method shape, or a debugger subsystem. The
-existing W2 one-field query and W5 method expression remain byte-for-byte stable and continue through their existing
-paths.
+existing W2 one-field query and W5 method expression keep their grammar, default routing, canonical codecs, and
+semantics byte-for-byte stable on a fixed artifact baseline; target-bound identities follow section 5.1.
 
 This is deliberately more than a parser increment. A truthful member chain requires:
 
@@ -89,9 +89,9 @@ discovery, or presentation behavior.
 
 W6 asks:
 
-> Can one exact dump root, one ordinary object-reference field, and one terminal supported field be bound and
-> evaluated as a deterministic derived query, including honest null and degraded-evidence behavior, without caller-
-> assembled runtime structure or repeated member lookup?
+> Can one exact dump root, one ordinary object-reference field, and one terminal direct field or certified field-backed
+> data-property storage be bound and evaluated as a deterministic derived query, including honest null and degraded-
+> evidence behavior, without caller-assembled runtime structure or repeated member lookup?
 
 The milestone succeeds only if an external headless consumer can answer that question against real generated dumps
 and a predeclared multi-shape synthetic portfolio can use the resulting answers to choose the following prototype
@@ -110,8 +110,10 @@ qualified observations are supplied later.
 
 W6 adds exactly one opt-in language profile, `FixedDepthMemberChainV1`. Existing APIs and manifest schema versions
 continue to default to the frozen W5 language profile. In particular, the four historical W5.5b rows remain
-`Unsupported`, their report bytes/counts remain unchanged, and `w5-usefulness-meaningful-synthetic-v2.json` is never
-rewritten to look retrospectively admitted.
+`Unsupported`; their schema, classification, aggregate-count semantics, and checked-in historical artifacts remain
+unchanged; and `w5-usefulness-meaningful-synthetic-v2.json` is never rewritten to look retrospectively admitted. Full
+reports regenerated from the intentionally changed W6.1 target artifact receive new content-derived identities; they
+are not falsely required to equal reports generated from the earlier PE and dumps byte for byte.
 
 Only when the caller or versioned W6 manifest explicitly selects `FixedDepthMemberChainV1` does classification try
 this grammar after the unchanged W2 and W5 classifiers:
@@ -159,10 +161,13 @@ A property certificate requires all of the following from counted dump metadata 
 
 - one exact ordinal PropertyDef and associated non-static, non-generic, zero-parameter getter MethodDef on the exact
   declared TypeDef;
+- one exact `MethodSemantics.Getter` association naming the selected getter and no second getter association; any
+  setter association is retained as non-participating metadata, excluded from the projection proof, and never executed;
 - exact property/getter/return signatures agreeing with one existing W2 terminal decoder;
 - one unique same-TypeDef instance backing FieldDef with the same value type;
-- an exact admitted getter body equivalent to `ldarg.0; ldfld <that FieldDef>; ret`, with no locals, EH, prefixes,
-  branches, calls, or additional behavior;
+- an exact admitted getter body equivalent to `ldarg.0; ldfld <that FieldDef>; ret`, with the header kind and
+  `maxstack` profile frozen by W6.1, no init-locals flag, nil local signature, no prefixes, EH, extra sections,
+  branches, calls, trailing instructions, or unconsumed body bytes;
 - exact runtime storage whose FieldDef token agrees with the certified backing field; and
 - one immutable certificate retaining PropertyDef, getter, body, backing FieldDef, type, and storage identities.
 
@@ -171,8 +176,10 @@ projection requested by the member name. A name pattern such as `<Name>k__Backin
 sufficient by itself.
 
 The intermediate declared type and an exact non-null runtime target must match ordinally by snapshot, module, type
-name, and non-nil TypeDef identity. W6 does not perform base-type, interface, variance, proxy, or derived-type member
-binding. A later evidence-selected slice may revisit that rule.
+name, and non-nil TypeDef identity. An internally consistent runtime object whose exact type differs is an exact-
+evidence unsupported shape, while contradictory facts about the same runtime object are a conflict. W6 does not
+perform base-type, interface, variance, proxy, assignability, or derived-type member binding. A later evidence-selected
+slice may revisit that rule.
 
 The terminal member and, for a certified data property, its backing storage are selected from the intermediate field's
 declared type during preparation, not from the eventual runtime object during evaluation. This is essential for three
@@ -275,11 +282,16 @@ introduced during implementation requires complete XML documentation and an expl
 
 ### 5.1 Existing identities remain frozen
 
-For every previously admitted or rejected W2/W5 input:
+For every previously admitted or rejected W2/W5 input, W6 freezes the existing canonical encodings, schemas, language-
+profile defaults, classification, outcome semantics, and aggregate-count rules. The existing nine-row generated corpus
+and twelve-row W5.5b corpus remain replayable without schema rewriting, and their checked-in historical artifacts
+remain commit-scoped evidence rather than being rewritten.
 
-- W2 request, plan, result bytes, projections, and SHA-256 values remain byte-identical;
-- W5 policy, request, method-expression, result, and report identities remain byte-identical; and
-- the existing nine-row generated corpus and twelve-row W5.5b corpus remain replayable without schema rewriting.
+W6.1 intentionally adds coordinator and workflow graphs to `Interpreter.TestTarget`, so its PE identity and every dump-
+or PE-derived W2/W4/W5 identity necessarily change for newly generated artifacts. After the emitted-shape relations
+pass, current artifact-derived goldens are refreshed exactly once and attributed to the new PE; comparison across that
+boundary is semantic and relational, not byte identity across different content. Within either fixed content baseline,
+same/fresh/reopen replay must remain byte-identical.
 
 W6 uses an explicit opt-in language-profile identity, an append-only expression kind, and a separately tagged chain
 identity. Existing overloads/default manifests remain on the frozen W5 profile. A new encoding may add a profile or
@@ -328,19 +340,19 @@ resolve a metadata token.
 The current root object projection carries a handle slot and handle kind. A referenced object has neither. W6 must not
 populate those properties with the parent field address or another invented value.
 
-Introduce a distinct immutable referenced-object projection, or factor an internal common object identity used by
-rooted and referenced projections while preserving every existing public and canonical root property. The W6
-referenced identity contains at least:
+Introduce two distinct immutable projections, or factor equivalent internal shapes while preserving every existing
+public and canonical root property:
 
-- snapshot and memory-source identity;
-- target object address;
-- exact runtime type name, TypeDef, method table, module identity, and validated object size/extent;
-- parent object identity and frozen outer FieldDef/storage identity;
-- the counted reference-pointer read; and
-- counted object-header/type-validation evidence actually used.
+1. `ReferencedObjectIdentity` is intrinsic to the observed target within the snapshot: snapshot and memory-source
+   identity, target address, exact runtime type name, TypeDef, method table, module identity, and validated object
+   size/extent.
+2. `ObjectReferenceObservationIdentity` is path-specific selection provenance: parent object identity, frozen outer
+   FieldDef/storage identity, counted reference-pointer read, and counted object-header/type-validation evidence
+   actually used.
 
-This identity is path-specific: two fields that point to the same object have distinct selection provenance even
-though their target object identities agree.
+Aliases that point to the same target have equal `ReferencedObjectIdentity` values but distinct
+`ObjectReferenceObservationIdentity` values. Canonical W6 results retain both; neither invents a handle slot, handle
+kind, or root-selection claim.
 
 ### 5.5 Replay obligations
 
@@ -359,12 +371,15 @@ global object identities.
 
 ### 6.1 Semantic mode and effects
 
-Every successful W6 value is `DerivedQuery` with `None` effects. No W6 result claims user IL execution, historical
-execution, abstract analysis, or a target write.
+Every accepted `FixedDepthMemberChainV1` request that reaches binding or evaluation returns
+`EvaluationResult<DumpQueryValue>` in `DerivedQuery` mode with `None` effects, including no-plan preparation failures.
+Only failures before query admission or exact root-bound request issuance lack a semantic mode. No W6 result claims
+user IL execution, historical execution, abstract analysis, or a target write.
 
-The product facade may reuse `EvaluationResult<DumpQueryValue>` because W6 uses the same truth mode and value union as
-W2. It must still retain `DumpExpressionKind.MemberChain` in the request so grammar admission is not confused with the
-unchanged W2 single-field path.
+The product facade reuses the W2 truth envelope and value union. The broad append-only enum case
+`DumpExpressionKind.MemberChain` identifies routing, while the stable `FixedDepthMemberChainV1` profile identity names
+this exact grammar and contract; they are deliberately different axes. The request retains both so chain admission is
+not confused with the unchanged W2 single-field path.
 
 ### 6.2 Required outcome matrix
 
@@ -378,9 +393,13 @@ unchanged W2 single-field path.
 | Exact null | `.` | Value read cannot continue | any | `DerivedQuery`; blocked, no value, exact evidence, stable `QUERY_CHAIN_NULL_RECEIVER`; coalesce does not run |
 | Partial pointer | either | Not reached | any | Blocked, no value, partial evidence; coalesce does not run |
 | Unavailable pointer | either | Not reached | any | Blocked, no value, unavailable evidence; coalesce does not run |
-| Exact pointer, runtime target disagrees with declared target | either | Not reached | any | Conflict, no value; leaf address is not derived |
+| Exact pointer, internally consistent runtime object whose exact type differs from the frozen declared type | either | Not reached | any | `DerivedQuery`; blocked, completeness `None`, exact evidence, no value, stable `QUERY_CHAIN_RUNTIME_TYPE_UNSUPPORTED`; leaf address is not derived |
+| Exact pointer, object-header/runtime/module/TypeDef facts disagree for the same target | either | Not reached | any | Conflict, no value; leaf address is not derived |
+| Exact pointer, partial target header/type/extent validation | either | Not reached | any | Blocked, no value, partial evidence; leaf address is not derived |
+| Exact pointer, unavailable target header/type/extent validation | either | Not reached | any | Blocked, no value, unavailable evidence; leaf address is not derived |
 | Exact pointer, invalid target structure | either | Not reached | any | Invalid, no value; leaf address is not derived |
-| Exact matching target | either | Partial string prefix | any | Completed, partial prefix, partial evidence; coalesce does not run |
+| Exact matching target | either | Cap-truncated, otherwise readable string prefix with `LimitExceeded` | any | Completed, partial prefix, partial evidence; coalesce does not run |
+| Exact matching target | either | Sparse/missing-memory string prefix | any | Blocked, partial prefix, partial evidence; coalesce does not run |
 | Exact matching target | either | Unavailable leaf | any | Blocked, no value, unavailable evidence; coalesce does not run |
 | Exact matching target | either | Conflicting/invalid leaf | any | Typed conflict/invalid result with no value |
 
@@ -388,6 +407,10 @@ The direct-null row remains an admitted `EvaluationResult<DumpQueryValue>` rathe
 failure. Its separate completion/evidence axes say that evaluation could not continue even though the receiver state
 was exact. The stable diagnostic, request/plan identity, pointer read, null hop index, context, and provenance preserve
 the distinction from missing evidence, exact null produced by `?.`, and invalid input.
+
+Null-conditional short-circuit and coalesce selection are structured transformation provenance, not merely scalar
+outcomes. Results retain the selected or unselected fallback, hop index, and reason no target or leaf read was reached,
+following the existing W2 coalescing contract.
 
 ### 6.3 Preparation failures
 
@@ -402,25 +425,33 @@ Preparation returns no plan when:
 - a catalog/type/layout bound is exhausted; or
 - any frozen identity or relative storage range is inconsistent.
 
-These are typed preparation failures. They do not receive `DerivedQuery`, `CounterfactualExecution`, or another
-fabricated semantic mode.
+Once syntax is admitted as `DumpExpressionKind.MemberChain` and acquisition has issued the exact root-bound request,
+these are typed `DerivedQuery` preparation results with no plan. They use the existing independent completion,
+completeness, evidence, effect, context, provenance, and diagnostic axes; they never receive
+`CounterfactualExecution`. Failures before query admission or root-bound request issuance remain classification or
+acquisition outcomes and receive no fabricated semantic mode.
 
 ### 6.4 Read and traversal accounting
 
 W6 reports only bounds actually reached:
 
-- existing expression/root/identifier/literal bounds;
-- one outer field-catalog traversal;
-- one declared-target terminal field/property-catalog traversal;
-- counted getter metadata/body acquisition when the terminal name resolves as a property;
-- one fixed reference-hop/depth bound;
-- one pointer-width raw read when evaluation reaches the reference;
-- object-header/type-validation reads for an exact non-null target; and
-- existing terminal read and observed-string bounds when evaluation reaches the leaf.
+- existing expression, root-selection, decoded-literal, `receiver.identifier`, and `terminal.identifier` bounds;
+- one `receiver.field_catalog` traversal on the exact root type;
+- separate `terminal.field_catalog` and `terminal.property_catalog` traversals on the declared target type;
+- bounded `terminal.method_semantics`, getter-MethodDef lookup, getter-body bytes/sections/instructions, and complete-
+  body consumption when the terminal name resolves as a property;
+- one fixed reference-hop/depth bound and one `receiver.reference` pointer-width raw read;
+- bounded `receiver.object_header`, runtime-type, module/TypeDef, and object-extent validation;
+- checked `terminal.relative_layout` and nullable-child range derivation within the validated target extent;
+- one `terminal.value` scalar/nullable/string read using the existing W2 read-size and string-character bounds; and
+- canonical request/plan/result/report byte limits.
 
 An exact null-conditional short circuit reports the pointer read but no target-validation or terminal-value read. A
 syntax or preparation failure reports no value-read bound. A partial pointer read reports its requested and observed
 width and stops.
+
+Every bound name is stage-qualified and unique because the common evidence context rejects duplicates. Requested and
+observed byte or catalog counts remain accounting and provenance fields; they never substitute for an admission bound.
 
 ## 7) Delivery sequence
 
@@ -437,7 +468,8 @@ semantics, exclusions, and closure rule before implementation.
 - All current status surfaces name W6, not W5, as active delivery.
 - The selected examples, certified-property dependency, outcome matrix, checkpoint sequence, and post-W6 decision
   gate agree.
-- Markdown links, headless-workflow checks, and repository caveat vocabulary checks pass.
+- Markdown links and headless-workflow guards pass, and a manual project-authored caveat-vocabulary scan records its
+  exclusions rather than pretending an automated repository guard exists.
 
 ### W6.1 — emitted-shape and fixture truth gate
 
@@ -448,6 +480,9 @@ PropertyDefs/getters/backing FieldDefs/getter bodies from physical target eviden
 dispatch graphs needed by the W6.6 portfolio now, then intentionally refresh the current TestTarget PE and every
 derived W4/W5 graph identity once. Preserve older hashes as commit-scoped evidence and accept new goldens only after
 relational metadata/body facts pass.
+
+This checkpoint uses an independent compiler/SRM fixture oracle to freeze the admitted emitted profile. It does not
+implement or share the reusable certificate recognizer under test; that product projection belongs to W6.3.
 
 **Required evidence**
 
@@ -466,7 +501,7 @@ relational metadata/body facts pass.
 
 Add `FixedDepthMemberChainV1`, the separate exact two-member parser, append-only expression kind, canonical chain
 identity, and syntax-only routing. Keep the W2 parser, exact W5 method spelling, default API profile, W5 manifests, and
-W5 report bytes/counts unchanged.
+W5 schemas, classifications, outcome semantics, and aggregate-count rules unchanged.
 
 **Required evidence**
 
@@ -475,8 +510,9 @@ W5 report bytes/counts unchanged.
 - syntax accepts a member name without pretending to know whether metadata later binds it as a field or property;
 - exact unsupported-versus-invalid diagnostic classification;
 - zero calls to metadata, field, memory, method, or execution capabilities during classification;
-- byte-identical legacy W2/W5 request, plan, result, manifest, and report fixtures, including the four historical
-  W5.5b rows remaining unsupported under the default profile; and
+- compatibility goldens proving unchanged legacy encodings and behavior over a fixed artifact baseline, plus the one
+  explicit W6.1 refresh for PE/dump-derived identities; the four historical W5.5b rows remain unsupported under the
+  default profile; and
 - same/fresh-object canonical opt-in chain-request replay.
 
 ### W6.3 — declared reference target and terminal data-member certificate
@@ -515,9 +551,10 @@ canonical root shapes.
 
 - exact non-null and exact null pointer decoding at both supported pointer widths where the adapter contract permits;
 - partial/unavailable pointer reads with retained prefixes and no pointer fabrication;
-- conflicting owner/snapshot/non-assignable type, invalid pointer/object/header/layout, and overflow-safe address
-  derivation;
-- a valid assignable derived target reported as an exact-evidence unsupported shape rather than a conflict;
+- conflicting owner/snapshot/object facts, exact-evidence unsupported runtime-type mismatch, invalid
+  pointer/object/header/layout, and overflow-safe address derivation;
+- an internally consistent target with a different exact runtime type reported as unsupported rather than conflict,
+  without adding base-chain or assignability traversal;
 - distinct selection provenance for aliasing fields that point to one object;
 - complete plan identity with no partial plan on failure;
 - poison tests proving preparation performs no pointer or terminal-value read; and
@@ -536,15 +573,19 @@ parsing/preparation. Route the opt-in result through the existing facade and a v
 - exact direct and conditional string/int/nullable results;
 - exact intermediate null with and without coalescing, and zero target/leaf reads after the short circuit;
 - a direct-null receiver result that is blocked with no value, exact pointer evidence, and its stable diagnostic;
-- partial/unavailable references and leaves, partial string prefixes, conflict, invalid, and incompatible coalescing;
+- partial/unavailable references, target validation, and leaves; both partial-string completion forms; conflict,
+  invalid, and incompatible coalescing;
 - coalescing only after exact null, never after uncertainty;
 - complete independent result axes, ordered provenance, and exact reached-bound sets;
 - repeated/same-session/fresh-session canonical replay; and
 - exact output for the four W5-selected questions while the historical W5 profile/report still shows them unsupported;
 - the exact selected answers are `request-failed`, `running`, `batch-failed`, and `running` for the frozen W5 target
   arguments, with property/getter/storage provenance retained rather than inferred;
-- one expression, exact root, and policy enter the consumer; no caller supplies field descriptors, target addresses,
-  plans, or adapter internals;
+- one expression, one typed root-selection outcome, and policy enter the consumer; admitted member-chain evaluation
+  requires an exact root, while non-exact roots become deterministic classification/context rows; no caller supplies
+  field descriptors, target addresses, plans, or adapter internals;
+- the consumer serializes exhaustive absence, partial, unavailable, ambiguous/conflicting, and invalid root-selection
+  outcomes instead of exiting before the scenario row is written;
 - fresh hidden target and consumer processes for every row;
 - exact human/machine reports that omit target-derived values from diagnostics and shape-only logs;
 - repeated evaluation, fresh process, and dump close/reopen/rebind produce byte-identical artifacts;
@@ -586,7 +627,8 @@ W6 only at the exact pushed commit that satisfies its required gates.
 - locked restore and strict Release build pass for the complete solution with zero warnings/errors;
 - complete unit, Fast, ordinary dump, optimized dump, focused W6, generated corpus, and meaningful synthetic lanes
   pass with zero skips;
-- W2/W4/W5 golden identities and reports remain byte-identical;
+- W2/W4/W5 canonical encodings, default classifications, schemas, outcomes, and gates remain unchanged; historical
+  artifact-derived goldens stay preserved and current goldens carry the explicit W6.1 identity refresh;
 - Markdown and headless-workflow guards pass;
 - the exact pushed commit's required hosted jobs actually execute and pass; and
 - the selected post-W6 action is documented but not silently implemented as W6 work.
@@ -613,8 +655,12 @@ does not cause unexplained target-artifact churn.
 
 ### 8.2 Predeclared twenty-four-row baseline
 
-The implementation may refine names and values before the W6.6 fixture-freeze commit, but it must preserve these
-semantic rows and publish their final expected artifacts before evaluating them:
+W6.1 freezes every target-affecting graph, member name, constructor input, and value needed by these semantic rows
+before the single PE/identity refresh. W6.6 may refine only manifest/report metadata that does not rebuild
+`Interpreter.TestTarget`. Before any W6.1 target build or portfolio dump is generated, one versioned scenario draft
+must therefore freeze the exact target inputs and expressions. Before any W6.6 evaluation, the versioned manifest must
+additionally freeze every root selector/outcome, evidence view, expected completion/completeness/evidence/value or
+prefix/diagnostic, usefulness classification, decision-changing flag, first boundary, and application shape:
 
 | # | Shape | Expression / condition | Expected W6 boundary |
 |---:|---|---|---|
@@ -623,25 +669,25 @@ semantic rows and publish their final expected artifacts before evaluating them:
 | 3 | Request | `root.Failure?.Code ?? "<none>"`, exact null reference | Exact fallback, no target/leaf read |
 | 4 | Request | `root.Failure.Code`, exact null reference | `DerivedQuery`, blocked/no value/exact evidence, `QUERY_CHAIN_NULL_RECEIVER` |
 | 5 | Request | `root.Failure?.Code ?? "<none>"`, partial pointer | Partial/blocked; fallback not applied |
-| 6 | Request | `root.CurrentRequest.Status`, partial terminal string | Partial prefix with complete provenance |
+| 6 | Request | `root.CurrentRequest.Status`, string capped by the configured observation bound | Completed/partial prefix with `LimitExceeded` and complete provenance |
 | 7 | Batch | `root.Progress.State`, exact non-null reference | Exact string |
 | 8 | Batch | `root.Progress.CompletedPartitions`, exact non-null reference | Exact `Int32` |
 | 9 | Batch | `root.LastFailure?.Code`, exact null reference | Exact null |
 | 10 | Batch | `root.LastFailure?.Code ?? "<none>"`, exact non-null reference | Exact code; fallback not applied |
 | 11 | Batch | `root.Progress.State`, unavailable pointer | Unavailable/blocked |
 | 12 | Workflow | `root.CurrentAttempt.Status`, certified terminal data property | Exact string on the fourth graph shape |
-| 13 | Coordinator | `root.Owner?.Name ?? "<unassigned>"`, exact optional owner | Exact name or exact fallback as predeclared |
-| 14 | Coordinator | `root.ActiveJob?.RetryCount ?? 0`, exact supported integer leaf | Exact integer or exact fallback as predeclared |
+| 13 | Coordinator | `root.Owner?.Name ?? "<unassigned>"`, exact non-null owner | Exact name; unselected fallback retained in provenance |
+| 14 | Coordinator | `root.ActiveJob?.RetryCount ?? 0`, exact null job reference | Exact integer fallback `0`, no target/leaf read |
 | 15 | Coordinator | `root.ActiveShard.Health.State` | Unsupported third member hop |
 | 16 | Coordinator | `root.Workers[0].State` | Unsupported collection/indexer navigation |
 | 17 | Coordinator | `root.CurrentTask.GetState()` | Unsupported method shape |
-| 18 | Coordinator | no exact unique root under the declared selector | Typed context-acquisition outcome |
-| 19 | Workflow | `root.CurrentAttempt.Status`, unavailable attempt reference | Unavailable/blocked context outcome |
+| 18 | Coordinator | exhaustive zero-match root selection under the declared selector | Classification/context failure, `W5_ROOT_SELECTION_NOT_EXACT`, no query request or plan |
+| 19 | Workflow | `root.CurrentAttempt.Status`, unavailable attempt reference | `DerivedQuery`; blocked, completeness `None`, unavailable evidence; fallback/leaf read not reached |
 | 20 | Workflow | `root.CurrentAttempt.GetDisplayStatus()` | Unsupported second independently motivated method shape |
-| 21 | Request | `root.CurrentRequest.Metadata.Region` | Unsupported third member hop on the first graph |
+| 21 | Request | `root.CurrentRequest.Status`, exact pointer with object-header/runtime TypeDef disagreement | Conflict before leaf-address derivation |
 | 22 | Workflow | `root.CurrentAttempt.Worker.State` | Unsupported third member hop on the fourth graph |
 | 23 | Workflow | `root.Attempts[0].Status` | Unsupported collection/indexer on the fourth graph |
-| 24 | Batch | `root.PartitionMarkers["primary"]` | Unsupported keyed collection access on the second graph |
+| 24 | Batch | `root.Progress.CompletedPartitions`, exact pointer with invalid target extent/header | Invalid before leaf read |
 
 Evidence views may mask a real captured read as partial/unavailable or introduce an explicitly conflicting/invalid
 test projection, but they may not invent an exact value absent from the dump. Every altered view retains the original
@@ -656,11 +702,13 @@ denominator:
 - whitespace/casing variants and unsupported suffixes;
 - missing, duplicate, inherited, static, unsupported-type, and over-limit members;
 - foreign snapshots and descriptors;
-- pointer/address overflow and invalid object-header/type facts through injected adapter seams;
+- partial/unavailable target validation, pointer/address overflow, and conflicting/invalid object-header/type facts
+  through injected adapter seams;
 - null terminal strings and nullable integers with compatible/incompatible literals;
 - alias fields selecting one target with distinct provenance;
 - same-plan repeated evaluation with counting capabilities; and
-- old W2/W5 golden identity and report regression.
+- legacy W2/W5 encoding, schema, routing, outcome, and count regression plus the explicitly reviewed W6.1 refresh of
+  target-derived identities.
 
 These rows validate the implementation. They contribute nothing to the synthetic or representative usefulness
 denominators.
@@ -678,7 +726,7 @@ All managed commands remain headless. Exact filters may be refined as tests land
 | Ordinary generated dump | Exact/non-exact reference and leaf evidence, real object graphs, fresh process, close/reopen/rebind |
 | Optimized dump regression | Existing optimized-context evidence remains passing; W6 claims only rows explicitly admitted there |
 | Meaningful synthetic | Twenty-four isolated dumps, four shapes, raw counts, a threshold-qualified unique decision or explicit deferral, zero representative rows |
-| Repository guards | Markdown links, headless workflow, caveat vocabulary, clean strict build |
+| Repository/document policy | Markdown-link and headless-workflow guards, documented manual authored-scope caveat-vocabulary scan, clean strict build |
 
 The expected command shape remains:
 
@@ -710,6 +758,8 @@ leader below that floor leaves the successor explicitly deferred.
 | Third member hop | Admit one depth-three scenario with a separately bounded plan; do not also add collections |
 | Collection/indexer navigation | Admit one concrete indexed collection shape; do not also add arbitrary depth |
 | Repeated zero-argument method body | Admit only that scenario's complete execution dependency closure |
+| Terminal member shape | Admit at most one separately evidenced emitted data-member shape; do not generalize to getter execution |
+| Terminal value type | Admit at most one concretely laid-out decoder with its own bounds and degraded-evidence matrix |
 | Result explanation/consumption | Improve the headless result explanation before adding semantics |
 | No recurring useful answer | Stop feature expansion and reconsider the product thesis |
 
@@ -727,7 +777,8 @@ W6 closes only when all of the following are proven at current state:
 - evaluation performs one counted reference read, never fabricates a pointer, and never repeats member binding;
 - rooted and referenced object identities remain truthful and distinct;
 - every row in the section 6 outcome matrix has executable evidence;
-- W2/W4/W5 identities, reports, and behavioral gates remain unchanged;
+- W2/W4/W5 encodings, schemas, default classifications, outcomes, and behavioral gates remain unchanged; historical
+  artifact-derived identities remain preserved and new current identities record the explicit W6.1 content refresh;
 - the headless generated corpus replays in fresh processes and after dump close/reopen/rebind;
 - the twenty-four-incident, four-shape synthetic portfolio runs from independent dumps and either selects one
   threshold-qualified unique next action or records explicit deferral while retaining zero representative rows;

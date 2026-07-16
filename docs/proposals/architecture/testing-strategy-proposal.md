@@ -1,7 +1,9 @@
 # Testing Strategy
 
-> **Current delivery policy (2026-07).** W0–W4 are the closed dump-evaluator evidence baseline; tests for active W5
-> follow the [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). The repository must distinguish checked-in
+> **Lifecycle:** Current · **Roadmap:** Active
+>
+> **Current delivery policy (2026-07).** W0–W5 are the closed dump-evaluator evidence baseline; planned W6 tests
+> follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). The repository must distinguish checked-in
 > test code, a locally verified result, a CI-enforced gate, and a research proposal. The broad abstract-analysis,
 > virtual-stepping, dynamic, async, and performance matrices are deferred until their entry gates pass.
 
@@ -207,7 +209,7 @@ is not a W1 gate.
 The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
 `CI-enforced` applies only to the gates that the successful workflow actually executed. The exact W1 closure commit is
 green, but its historical fast totals describe only the milestone-selected set at that commit. The current workflow
-runs every remaining test in each selected category and builds all 13 current projects. Caveat: this is not evidence
+runs every remaining test in each selected category and builds all 14 current projects. Caveat: this is not evidence
 beyond the named fixture shapes. Representative private-production measurement remains a separate product-readiness
 question.
 
@@ -700,7 +702,7 @@ The pipeline targets `net10.0` and should remain small enough to diagnose:
 5. documentation/link and headless-workflow consistency checks with stable signal.
 
 All four current `dotnet test` commands run every remaining test in their selected category. Restore and build cover
-all 13 current projects. Caveat: this validates only the named fixture and input shapes.
+all 14 current projects. Caveat: this validates only the named fixture and input shapes.
 
 The historical W0 run below proves only its original jobs. A new or changed gate becomes `CI-enforced` only after a
 successful hosted run names the exact pushed closure commit; checked-in workflow text or local execution alone is
@@ -938,6 +940,28 @@ Build/Fast at exact commit `24825ce53`, while GitHub rejected both dump jobs wit
 execution, including repeated attempts. Neither run is hosted dump evidence. The owner explicitly waived only W5's
 final hosted condition on 2026-07-16, closing the defined milestone scope without weakening the workflow, claiming
 field readiness, or setting policy for the selected next slice.
+
+### Planned W6 bounded-member-chain evidence gates
+
+W6 is contract-only until its checkpoints produce executable evidence under the
+[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Its tests must preserve the frozen W2 and W5 schemas,
+counts, classifications, and semantics while separately opting into `FixedDepthMemberChainV1`. Before any value-read
+claim, a compiler/SRM gate must prove the exact PropertyDef, getter signature/body, and backing-FieldDef relationships
+used by the selected W5 questions; arbitrary property execution remains outside the slice.
+
+The generated conformance lane must cover direct and null-conditional hops, exact and exactly null references,
+fallback behavior, exact terminal direct fields and certified data properties, non-nullable value lifting, relative
+nullable layout, target-type and object-extent checks, and every partial/unavailable/conflict/invalid stop. Counting and
+poison sources must prove preparation freezes both member selections and evaluation performs no catalog rebinding or
+getter execution. Same-session, fresh-process, and dump-close/reopen runs must reproduce canonical request, plan,
+reference-identity, result, and report artifacts within the W6 corpus.
+
+The meaningful synthetic lane must use twenty-four independently generated dumps and questions across four genuinely
+different object-graph shapes. It must retain unsupported depth, indexer, method, and context rows; emit raw counts;
+keep representative/external-observation counts at zero; and select a successor only when one unique blocker satisfies
+the predeclared incident, shape, and decision-changing thresholds. A tie or sub-threshold result is an explicit
+deferral, not a manufactured winner. W6 closure additionally requires the exact pushed commit's hosted jobs to
+execute and pass unless the owner records a new milestone-specific exception.
 
 ## 9) Deferred research suites
 

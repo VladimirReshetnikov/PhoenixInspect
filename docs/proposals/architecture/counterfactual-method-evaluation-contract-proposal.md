@@ -1,8 +1,8 @@
 # Counterfactual Method Evaluation Contract
 
-> **Lifecycle:** Current
+> **Lifecycle:** Current · **Roadmap:** Reference
 >
-> **Roadmap relation:** Complete · W4 normative contract and reference
+> **Milestone status:** W4 complete · normative contract and evidence reference
 >
 > **Implementation status:** W4.1 fixture gate implemented at `82363585b`; W4.2 unknown E1/E2 kernel implemented at
 > `e89e43498`; W4.3 structured field-evidence continuation implemented at `7479b1ad4`; W4.4a body-free direct

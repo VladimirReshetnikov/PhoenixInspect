@@ -297,7 +297,7 @@ CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad 
 
 ## 10) Input-shape caveat
 
-W1–W4 cover only the named generated fixtures and explicitly admitted input shapes. Earlier out-of-scope experiments
+W1–W5 cover only the named generated fixtures and explicitly admitted input shapes. Earlier out-of-scope experiments
 have been removed. Any later expansion must define its own scenario, bounded operations,
 identity rules, result contract, and executable evidence before entering the product surface.
 
@@ -359,7 +359,9 @@ Formatting/analyzers, dependency audit, and scheduled benchmarks are added when 
 
 W5 resolves the earlier test-host question: the repository now has one headless reference consumer for the closed
 expression-to-result facade, without declaring it a stable shipping CLI contract. See the
-[`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md).
+completed [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). The same consumer remains the planned external
+boundary for the opt-in W6 member-chain profile in the active
+[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md).
 
 
 ## 13) Prototype implementation snapshot (draft)

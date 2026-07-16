@@ -86,7 +86,8 @@ Recommended quick-start order:
 
 ## 10) How should contributors choose what to work on next?
 
-Start with the active milestone in `docs/plans/post-w4-path-forward.md`; use
+Start with the active milestone in `docs/plans/post-w5-path-forward.md`; use
+`docs/plans/post-w4-path-forward.md` for the completed W5 sequence and
 `docs/plans/future-work-planning.md` for the detailed W0–W4 record and research entry gates:
 
 - advance its executable scenario or validation evidence,
@@ -138,7 +139,7 @@ Representative risks include:
 - drift between product expectations, design claims, and executable evidence.
 
 The documentation set is intentionally structured to expose and manage these risks early.
-Caveat: W1–W4 evidence covers only the named generated fixtures and explicitly admitted input shapes. Current test
+Caveat: W1–W5 evidence covers only the named generated fixtures and explicitly admitted input shapes. Current test
 claims do not establish behavior for any other artifact shape.
 
 ## 15) How can external consumers evaluate whether this direction is promising?

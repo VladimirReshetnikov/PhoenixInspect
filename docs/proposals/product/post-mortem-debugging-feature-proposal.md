@@ -1,11 +1,14 @@
 # Design Doc: Post-Mortem Expression Evaluator for .NET Dumps
 
-> **Roadmap relation:** Active for the read-only dump evaluator. W1–W4 are closed for their stated
-> milestone-selected scopes, including W4's canonical product runner, detached ClrMD binding, exact/degraded generated-
-> dump corpus, close/reopen replay, and exact-commit hosted evidence. The active successor is
-> [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md): make the current W2/W4 capability reachable from one
-> closed expression-to-result product path, then use a meaningful multi-shape designed portfolio to select one
-> prototype direction while keeping field-readiness evidence separate. W5.5b selects fixed-depth member navigation.
+> **Lifecycle:** Draft · **Roadmap:** Active
+>
+> W1–W5 are closed for their stated milestone-selected scopes. W5 made the W2/W4 capability reachable through one
+> expression-to-result path and used twelve independently dumped synthetic incidents to select fixed-depth member
+> navigation; it remains synthetic evidence rather than a
+> field-readiness claim. The active successor is the
+> [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md): an opt-in bounded member-chain query with counted
+> reference evidence, narrowly certified field-backed terminal properties, deterministic replay, and a new
+> twenty-four-incident/four-shape synthetic decision corpus.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -724,8 +727,8 @@ All evaluation is cancelable and doesn’t block the rest of the UI.
 
 ## 13) Milestones (Proposed)
 
-The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; active W5 sequencing is in
-`docs/plans/post-w4-path-forward.md`:
+The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; completed W5 sequencing is in
+`docs/plans/post-w4-path-forward.md`; active W6 sequencing is in `docs/plans/post-w5-path-forward.md`:
 
 * **W0:** truthful baseline, CI, and deterministic smoke evidence.
 * **W1:** real dump-memory field/string read with typed evidence outcomes.
@@ -754,7 +757,7 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; active W
   29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
   Branches, broader
   calls/opcodes, generics, allocation, PDB-backed context, and whole-method abstract analysis remain gated.
-* **W5:** active product-composition and usefulness milestone under the
+* **W5:** closed product-composition and usefulness milestone under the
   [Post-W4 Path Forward](../../plans/post-w4-path-forward.md). It admits only unchanged W2 expressions plus
   `root.GetMarkerSummary()`, owns the current W4 acquisition/binding path, preserves semantic modes in one evaluator
   facade, adds a headless reference consumer, and requires meaningful predeclared incident-question evidence before
@@ -762,7 +765,16 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; active W
   generated fresh-process replay validates the facade and raw-count runner, while twelve independent designed dumps
   across request-pipeline and batch-pipeline roots supply the decision corpus. Their recurring blocker ranking selects
   `AdmitFixedDepthMemberChain` as the next prototype slice. Both corpora contribute zero representative/external-
-  observation rows, so no field-readiness rate is claimed and external evidence may later reverse the direction.
+  observation rows, so no field-readiness rate is claimed and external evidence may later reverse the direction. The
+  owner closed W5 under an explicit milestone-only exception after hosted jobs were rejected before executing; those
+  jobs remain absent evidence and the exception does not carry into W6.
+* **W6:** active design and delivery sequence under the
+  [Post-W5 Path Forward](../../plans/post-w5-path-forward.md). It adds only an explicit
+  `FixedDepthMemberChainV1` profile: one root reference field, one direct terminal field or exactly certified trivial
+  field-backed data property, null-aware access, and existing W2 terminal value decoding. W6 begins with emitted-shape
+  proof and has no implementation or validation claim yet. Its closure requires a headless generated corpus,
+  twenty-four independent synthetic dumps across four structural shapes, deterministic same/fresh/reopen replay, and
+  either a threshold-qualified unique successor or explicit deferral.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 
