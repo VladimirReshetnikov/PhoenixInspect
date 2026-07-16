@@ -13,6 +13,130 @@ namespace Interpreter.IntegrationTests;
 public sealed class W6MemberChainEvaluationIntegrationTests
 {
     /// <summary>
+    /// Proves partial/unavailable references never become null or select a fallback, exact runtime subtypes remain an
+    /// exact-evidence unsupported result, and target/storage conflict or invalid views stop before a terminal read.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W6MemberChainEvaluationV1")]
+    public void Reference_target_and_storage_uncertainty_stop_at_their_exact_boundaries()
+    {
+        CaptureGraph(
+            "--synthetic-request-pipeline",
+            "SyntheticRequestPipelineProbe",
+            "clear",
+            (session, root) =>
+            {
+                var binding = DumpQueryRootBinding.FromExactObject("root", root);
+                var plan = Prepare(session, binding, "root.Failure?.Code ?? \"<none>\"");
+
+                var partialSource = new EvidenceViewSource(session, EvidenceView.ReferencePartial);
+                var partial = DumpMemberChainEngine.Evaluate(partialSource, plan);
+                AssertBlockedWithoutValue(partial, EvaluationEvidenceStatus.Partial);
+                Assert.Equal("QUERY_CHAIN_REFERENCE_PARTIAL", Assert.Single(partial.Diagnostics).Code);
+                Assert.Equal(1, partialSource.ReferenceCalls);
+                Assert.Equal(0, partialSource.TargetCalls + partialSource.StorageCalls + partialSource.TerminalCalls);
+                Assert.DoesNotContain(
+                    partial.Provenance,
+                    item => item.SourceId == "dump-member-chain:null-coalesce-v1");
+
+                var unavailableSource = new EvidenceViewSource(session, EvidenceView.ReferenceUnavailable);
+                var unavailable = DumpMemberChainEngine.Evaluate(unavailableSource, plan);
+                AssertBlockedWithoutValue(unavailable, EvaluationEvidenceStatus.Unavailable);
+                Assert.Equal("QUERY_CHAIN_REFERENCE_UNAVAILABLE", Assert.Single(unavailable.Diagnostics).Code);
+                Assert.Equal(1, unavailableSource.ReferenceCalls);
+                Assert.Equal(0, unavailableSource.TargetCalls + unavailableSource.StorageCalls + unavailableSource.TerminalCalls);
+                Assert.DoesNotContain(
+                    unavailable.Provenance,
+                    item => item.SourceId == "dump-member-chain:null-coalesce-v1");
+            });
+
+        CaptureGraph(
+            "--synthetic-certificate-profiles",
+            "SyntheticCertificateProfileProbe",
+            "failed",
+            (session, root) =>
+            {
+                var binding = DumpQueryRootBinding.FromExactObject("root", root);
+                var subtypePlan = Prepare(session, binding, "root.Polymorphic.Value");
+                var subtypeSource = new EvidenceViewSource(session, EvidenceView.None);
+                var subtype = DumpMemberChainEngine.Evaluate(subtypeSource, subtypePlan);
+                AssertBlockedWithoutValue(subtype, EvaluationEvidenceStatus.Exact);
+                Assert.Equal("QUERY_CHAIN_RUNTIME_TYPE_UNSUPPORTED", Assert.Single(subtype.Diagnostics).Code);
+                Assert.Equal(1, subtypeSource.TargetCalls);
+                Assert.Equal(0, subtypeSource.StorageCalls + subtypeSource.TerminalCalls);
+
+                var ordinaryPlan = Prepare(session, binding, "root.Direct.Text");
+                foreach (var (view, evidence, code) in new[]
+                {
+                    (EvidenceView.TargetConflict, EvaluationEvidenceStatus.Conflict, "QUERY_CHAIN_TARGET_CONFLICT"),
+                    (EvidenceView.TargetInvalid, EvaluationEvidenceStatus.Invalid, "QUERY_CHAIN_TARGET_INVALID"),
+                    (EvidenceView.StorageConflict, EvaluationEvidenceStatus.Conflict, "QUERY_CHAIN_STORAGE_CONFLICT"),
+                    (EvidenceView.StorageInvalid, EvaluationEvidenceStatus.Invalid, "QUERY_CHAIN_STORAGE_INVALID"),
+                })
+                {
+                    var source = new EvidenceViewSource(session, view);
+                    var result = DumpMemberChainEngine.Evaluate(source, ordinaryPlan);
+                    Assert.Equal(EvaluationCompleteness.None, result.Completeness);
+                    Assert.Equal(evidence, result.Evidence);
+                    Assert.Null(result.Value);
+                    Assert.Equal(code, Assert.Single(result.Diagnostics).Code);
+                    Assert.Equal(0, source.TerminalCalls);
+                }
+            });
+    }
+
+    /// <summary>
+    /// Distinguishes a deterministic observation-cap prefix from a memory-limited prefix and complete absence, while
+    /// proving a compatible string fallback is not selected for any non-exact terminal observation.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W6MemberChainEvaluationV1")]
+    public void Partial_and_unavailable_strings_preserve_prefix_completion_without_coalescing()
+    {
+        CaptureGraph(
+            "--synthetic-certificate-profiles",
+            "SyntheticCertificateProfileProbe",
+            "failed",
+            (session, root) =>
+            {
+                var binding = DumpQueryRootBinding.FromExactObject("root", root);
+                var plan = Prepare(session, binding, "root.Direct.Text ?? \"<none>\"");
+
+                var limitedSource = new EvidenceViewSource(session, EvidenceView.StringPartialLimit);
+                var limited = DumpMemberChainEngine.Evaluate(limitedSource, plan);
+                Assert.Equal(EvaluationCompletionStatus.Completed, limited.Completion);
+                Assert.Equal(EvaluationCompleteness.Partial, limited.Completeness);
+                Assert.Equal(EvaluationEvidenceStatus.Partial, limited.Evidence);
+                Assert.Equal("fa", limited.Value!.StringValue);
+                Assert.Equal("QUERY_CHAIN_TERMINAL_LIMIT_EXCEEDED", Assert.Single(limited.Diagnostics).Code);
+                Assert.DoesNotContain(
+                    limited.Provenance,
+                    item => item.SourceId == "dump-member-chain:null-coalesce-v1");
+
+                var memorySource = new EvidenceViewSource(session, EvidenceView.StringPartialMemory);
+                var memory = DumpMemberChainEngine.Evaluate(memorySource, plan);
+                Assert.Equal(EvaluationCompletionStatus.Blocked, memory.Completion);
+                Assert.Equal(EvaluationCompleteness.Partial, memory.Completeness);
+                Assert.Equal(EvaluationEvidenceStatus.Partial, memory.Evidence);
+                Assert.Equal("fa", memory.Value!.StringValue);
+                Assert.Equal("QUERY_CHAIN_TERMINAL_PARTIAL", Assert.Single(memory.Diagnostics).Code);
+                Assert.DoesNotContain(
+                    memory.Provenance,
+                    item => item.SourceId == "dump-member-chain:null-coalesce-v1");
+
+                var unavailableSource = new EvidenceViewSource(session, EvidenceView.StringUnavailable);
+                var unavailable = DumpMemberChainEngine.Evaluate(unavailableSource, plan);
+                AssertBlockedWithoutValue(unavailable, EvaluationEvidenceStatus.Unavailable);
+                Assert.Equal("QUERY_CHAIN_TERMINAL_UNAVAILABLE", Assert.Single(unavailable.Diagnostics).Code);
+                Assert.DoesNotContain(
+                    unavailable.Provenance,
+                    item => item.SourceId == "dump-member-chain:null-coalesce-v1");
+            });
+    }
+
+    /// <summary>
     /// Proves explicit W6 facade routing returns the unchanged derived-query envelope, preparation failures remain
     /// typed result rows, and the default frozen-W5 overload continues to reject the same member-chain syntax.
     /// </summary>
@@ -226,6 +350,18 @@ public sealed class W6MemberChainEvaluationIntegrationTests
         Assert.Equal(0, source.StringCalls + source.Int32Calls + source.NullableInt32Calls);
     }
 
+    private static void AssertBlockedWithoutValue(
+        EvaluationResult<DumpQueryValue> result,
+        EvaluationEvidenceStatus evidence)
+    {
+        Assert.Equal(EvaluationSemanticMode.DerivedQuery, result.SemanticMode);
+        Assert.Equal(EvaluationCompletionStatus.Blocked, result.Completion);
+        Assert.Equal(EvaluationCompleteness.None, result.Completeness);
+        Assert.Equal(evidence, result.Evidence);
+        Assert.Equal(EvaluationEffectStatus.None, result.Effects);
+        Assert.Null(result.Value);
+    }
+
     private static void AssertExactString(EvaluationResult<DumpQueryValue> result, string expected)
     {
         AssertExact(result);
@@ -420,6 +556,175 @@ public sealed class W6MemberChainEvaluationIntegrationTests
             {
                 throw new InvalidOperationException("Null short-circuit reached a poisoned target or terminal operation.");
             }
+        }
+    }
+
+    private enum EvidenceView
+    {
+        None,
+        ReferencePartial,
+        ReferenceUnavailable,
+        TargetConflict,
+        TargetInvalid,
+        StorageConflict,
+        StorageInvalid,
+        StringPartialLimit,
+        StringPartialMemory,
+        StringUnavailable,
+    }
+
+    private sealed class EvidenceViewSource(
+        ClrmdDumpSession session,
+        EvidenceView view) : IDumpMemberChainEvidenceSource
+    {
+        internal int ReferenceCalls { get; private set; }
+
+        internal int TargetCalls { get; private set; }
+
+        internal int StorageCalls { get; private set; }
+
+        internal int TerminalCalls { get; private set; }
+
+        public ClrmdSnapshotIdentity Snapshot => session.Snapshot;
+
+        public int MaximumReadLength => session.Memory.MaximumReadLength;
+
+        public ClrmdEvidenceResult<ClrmdDeclaredDataMemberCertificate> CertifyDeclaredDataMember(
+            ClrmdHeapObjectInfo root,
+            string referenceFieldName,
+            string terminalMemberName) =>
+            throw new InvalidOperationException("Evaluation attempted declaration rebinding.");
+
+        public ClrmdEvidenceResult<ClrmdObjectReferenceObservation> ReadObjectReference(
+            ClrmdHeapObjectInfo root,
+            ClrmdInstanceFieldInfo field)
+        {
+            ReferenceCalls++;
+            var exact = session.ReadObjectReference(root, field);
+            if (view is not (EvidenceView.ReferencePartial or EvidenceView.ReferenceUnavailable))
+            {
+                return exact;
+            }
+
+            var bytes = view == EvidenceView.ReferencePartial
+                ? exact.Value!.Memory.Bytes.AsSpan(0, Math.Min(2, exact.Value.Memory.BytesRead)).ToArray()
+                : [];
+            return ClrmdObjectReferenceObservation.Project(
+                field,
+                field.Size,
+                Interpreter.Host.Abstractions.MemoryReadResult.Create(
+                    field.Snapshot.MemorySourceId,
+                    field.Address,
+                    field.Size,
+                    bytes));
+        }
+
+        public ClrmdEvidenceResult<ClrmdReferencedObjectInfo> ValidateReferencedObject(
+            ClrmdDeclaredDataMemberCertificate certificate,
+            ClrmdObjectReferenceObservation reference)
+        {
+            TargetCalls++;
+            if (view == EvidenceView.TargetConflict)
+            {
+                return ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
+                    ClrmdEvidenceStatus.Conflict,
+                    ClrmdValueIssue.TypeMismatch,
+                    evidence: [reference.Memory]);
+            }
+
+            if (view == EvidenceView.TargetInvalid)
+            {
+                return ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
+                    ClrmdEvidenceStatus.Invalid,
+                    ClrmdValueIssue.InvalidData,
+                    evidence: [reference.Memory]);
+            }
+
+            return session.ValidateReferencedObject(certificate, reference);
+        }
+
+        public ClrmdEvidenceResult<ClrmdInstanceFieldInfo> BindTerminalStorage(
+            ClrmdDeclaredDataMemberCertificate certificate,
+            ClrmdReferencedObjectInfo target)
+        {
+            StorageCalls++;
+            if (view == EvidenceView.StorageConflict)
+            {
+                return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(
+                    ClrmdEvidenceStatus.Conflict,
+                    ClrmdValueIssue.TypeMismatch);
+            }
+
+            if (view == EvidenceView.StorageInvalid)
+            {
+                return ClrmdEvidenceResult<ClrmdInstanceFieldInfo>.Create(
+                    ClrmdEvidenceStatus.Invalid,
+                    ClrmdValueIssue.InvalidData);
+            }
+
+            return session.BindTerminalStorage(certificate, target);
+        }
+
+        public ClrmdEvidenceResult<ClrmdInt32FieldObservation> ReadInt32Field(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field)
+        {
+            TerminalCalls++;
+            return session.ReadInt32Field(target, field);
+        }
+
+        public ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation> ReadNullableInt32Field(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field)
+        {
+            TerminalCalls++;
+            return session.ReadNullableInt32Field(target, field);
+        }
+
+        public ClrmdStringFieldObservation ReadStringField(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field,
+            int maximumCharacters)
+        {
+            TerminalCalls++;
+            if (view == EvidenceView.StringUnavailable)
+            {
+                return new ClrmdStringFieldObservation(
+                    ClrmdEvidenceStatus.Unavailable,
+                    ClrmdValueIssue.MemoryUnavailable,
+                    isNull: false,
+                    value: null,
+                    targetLength: null,
+                    target.Address,
+                    field.Name,
+                    field.MetadataToken,
+                    field.Address,
+                    stringAddress: null,
+                    evidence: []);
+            }
+
+            if (view is EvidenceView.StringPartialLimit or EvidenceView.StringPartialMemory)
+            {
+                var limited = session.ReadStringField(target, field, maximumCharacters: 2);
+                Assert.Equal(ClrmdEvidenceStatus.Partial, limited.Status);
+                Assert.Equal(ClrmdValueIssue.LimitExceeded, limited.Issue);
+                return view == EvidenceView.StringPartialLimit
+                    ? limited
+                    : new ClrmdStringFieldObservation(
+                        ClrmdEvidenceStatus.Partial,
+                        ClrmdValueIssue.MemoryUnavailable,
+                        isNull: false,
+                        limited.Value,
+                        limited.TargetLength,
+                        limited.ObjectAddress,
+                        limited.FieldName,
+                        limited.FieldMetadataToken,
+                        limited.FieldAddress,
+                        limited.StringAddress,
+                        limited.Evidence);
+            }
+
+            return session.ReadStringField(target, field, maximumCharacters);
         }
     }
 }
