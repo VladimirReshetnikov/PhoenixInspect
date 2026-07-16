@@ -7,15 +7,19 @@ namespace Interpreter.Headless.ReferenceConsumer;
 
 internal static class UsefulnessPortfolioRunner
 {
-    private const int PortfolioSchemaVersion = 1;
-    private const int UsefulnessReportSchemaVersion = 1;
+    private const int PortfolioSchemaVersion = 2;
+    private const int UsefulnessReportSchemaVersion = 2;
     private const int EvaluationReportSchemaVersion = 1;
-    private const int MinimumRepresentativeIncidents = 10;
-    private const int MinimumRepresentativeApplicationShapes = 2;
+    private const int MinimumQualifyingIncidents = 10;
+    private const int MinimumQualifyingApplicationShapes = 2;
     private const int MaximumEvaluationReports = 128;
     private const int MaximumQuestions = 512;
     private const string GeneratedCaveat =
-        "Generated validation rows exercise the runner only; they do not count as representative incident evidence.";
+        "Generated routing rows exercise the runner only; they do not count toward meaningful synthetic validation.";
+    private const string SyntheticCaveat =
+        "Designed synthetic incidents validate prototype behavior and design decisions only; they are not external observations or field-readiness evidence.";
+    private const string RepresentativeCaveat =
+        "Representative designation is supplied by the predeclared portfolio; the runner does not independently verify provenance.";
 
     internal static bool IsRequested(string[] args) =>
         args.Contains("--portfolio-manifest", StringComparer.Ordinal);
@@ -29,10 +33,14 @@ internal static class UsefulnessPortfolioRunner
             var reports = LoadEvaluationReports(manifest, options);
             var rows = JoinQuestions(manifest, reports);
             var allRows = RawAggregate.Create(rows);
+            var gateQualifyingRows = manifest.CorpusKind is
+                nameof(CorpusKind.SyntheticIncident) or nameof(CorpusKind.RepresentativeIncident)
+                    ? allRows
+                    : RawAggregate.Create(ImmutableArray<UsefulnessRow>.Empty);
             var representativeRows = manifest.CorpusKind == nameof(CorpusKind.RepresentativeIncident)
                 ? allRows
                 : RawAggregate.Create(ImmutableArray<UsefulnessRow>.Empty);
-            var gate = EvaluateRepresentativeGate(manifest, rows, representativeRows);
+            var gate = EvaluatePortfolioGate(manifest, gateQualifyingRows);
             var decision = EvaluateNextDecision(rows, gate);
 
             WriteMachineReport(
@@ -41,6 +49,7 @@ internal static class UsefulnessPortfolioRunner
                 reports.Values.OrderBy(static report => report.Id, StringComparer.Ordinal).ToImmutableArray(),
                 rows,
                 allRows,
+                gateQualifyingRows,
                 representativeRows,
                 gate,
                 decision);
@@ -49,6 +58,7 @@ internal static class UsefulnessPortfolioRunner
                 manifest,
                 rows,
                 allRows,
+                gateQualifyingRows,
                 representativeRows,
                 gate,
                 decision);
@@ -113,10 +123,30 @@ internal static class UsefulnessPortfolioRunner
                     $"'{manifest.CorpusKind}'; corpus kinds cannot be promoted or mixed.");
             }
 
+            if (manifest.CorpusKind == nameof(CorpusKind.SyntheticIncident))
+            {
+                var fixture = definition.SyntheticFixture!;
+                if (!string.Equals(report.RootName, fixture.Root.Name, StringComparison.Ordinal) ||
+                    !string.Equals(report.RootTypeName, fixture.Root.TypeName, StringComparison.Ordinal) ||
+                    !report.Scenarios.ContainsKey(fixture.Scenario.Id))
+                {
+                    throw new InvalidDataException(
+                        $"Synthetic evaluation report '{definition.Id}' does not match its predeclared root or scenario.");
+                }
+            }
+
             if (!builder.TryAdd(definition.Id, report))
             {
                 throw new InvalidDataException($"Evaluation report id '{definition.Id}' is duplicated.");
             }
+        }
+
+        if (manifest.CorpusKind == nameof(CorpusKind.SyntheticIncident) &&
+            builder.Values.Select(static report => report.DumpSnapshotSha256)
+                .Distinct(StringComparer.Ordinal).Count() != builder.Count)
+        {
+            throw new InvalidDataException(
+                "Each meaningful synthetic incident must come from an independent dump snapshot.");
         }
 
         return builder.ToImmutable();
@@ -149,6 +179,13 @@ internal static class UsefulnessPortfolioRunner
 
             var admission = DeriveAdmission(scenario);
             var outcome = DeriveProductOutcome(scenario);
+            var definition = manifest.EvaluationReports.Single(
+                candidate => string.Equals(candidate.Id, question.EvaluationReportId, StringComparison.Ordinal));
+            if (manifest.CorpusKind == nameof(CorpusKind.SyntheticIncident))
+            {
+                ValidateSyntheticExpectation(question, scenario, outcome, definition.SyntheticFixture!);
+            }
+
             var boundary = ParseEnum<FirstBoundaryKind>(question.FirstBoundary.Kind, "first-boundary kind");
             var blocker = ParseEnum<DominantBlocker>(question.DominantBlocker, "dominant blocker");
             ValidateQuestionAgainstOutcome(question, scenario, admission, outcome, boundary, blocker);
@@ -183,7 +220,45 @@ internal static class UsefulnessPortfolioRunner
                 scenario.DiagnosticCodes));
         }
 
+        if (manifest.CorpusKind == nameof(CorpusKind.SyntheticIncident))
+        {
+            ValidateSyntheticCoverage(manifest, rows);
+        }
+
         return rows.ToImmutable();
+    }
+
+    private static void ValidateSyntheticExpectation(
+        QuestionDefinition question,
+        EvaluationScenario scenario,
+        ProductOutcome outcome,
+        SyntheticFixtureDefinition fixture)
+    {
+        var valueMatches = fixture.ExpectedValuePrefix is not null
+            ? scenario.Value?.StartsWith(fixture.ExpectedValuePrefix, StringComparison.Ordinal) == true
+            : string.Equals(scenario.Value, fixture.ExpectedValue, StringComparison.Ordinal);
+        if (!string.Equals(question.ApplicationShape, fixture.ApplicationShape, StringComparison.Ordinal) ||
+            !string.Equals(question.ScenarioId, fixture.Scenario.Id, StringComparison.Ordinal) ||
+            outcome != ParseEnum<ProductOutcome>(fixture.ExpectedProductOutcome, "expected product outcome") ||
+            !valueMatches)
+        {
+            throw new InvalidDataException(
+                $"Synthetic question '{question.QuestionId}' did not reproduce its predeclared shape or outcome.");
+        }
+    }
+
+    private static void ValidateSyntheticCoverage(
+        PortfolioManifest manifest,
+        ImmutableArray<UsefulnessRow>.Builder rows)
+    {
+        if (rows.Select(static row => row.EvaluationReportId).Distinct(StringComparer.Ordinal).Count() !=
+                manifest.EvaluationReports.Length ||
+            rows.Select(static row => row.IncidentId).Distinct(StringComparer.Ordinal).Count() != rows.Count ||
+            rows.GroupBy(static row => row.EvaluationReportId, StringComparer.Ordinal).Any(static group => group.Count() != 1))
+        {
+            throw new InvalidDataException(
+                "Meaningful synthetic validation requires exactly one independent report and question per incident.");
+        }
     }
 
     private static AdmissionPath DeriveAdmission(EvaluationScenario scenario) => scenario.Kind switch
@@ -311,15 +386,15 @@ internal static class UsefulnessPortfolioRunner
         }
     }
 
-    private static RepresentativeGate EvaluateRepresentativeGate(
+    private static PortfolioGate EvaluatePortfolioGate(
         PortfolioManifest manifest,
-        ImmutableArray<UsefulnessRow> rows,
-        RawAggregate representativeRows)
+        RawAggregate qualifyingRows)
     {
         var missing = ImmutableArray.CreateBuilder<string>();
-        if (manifest.CorpusKind != nameof(CorpusKind.RepresentativeIncident))
+        if (manifest.CorpusKind == nameof(CorpusKind.GeneratedValidation))
         {
-            missing.Add("The portfolio is generated runner validation, not representative incident evidence.");
+            missing.Add(
+                "The portfolio is simple generated routing validation, not meaningful multi-shape synthetic evidence.");
         }
 
         if (!manifest.PredeclaredBeforeEvaluation)
@@ -327,45 +402,49 @@ internal static class UsefulnessPortfolioRunner
             missing.Add("The portfolio was not declared before evaluation.");
         }
 
-        if (representativeRows.DistinctIncidents < MinimumRepresentativeIncidents)
+        if (qualifyingRows.DistinctIncidents < MinimumQualifyingIncidents)
         {
             missing.Add(
-                $"Representative incident count is {representativeRows.DistinctIncidents}; " +
-                $"the gate requires at least {MinimumRepresentativeIncidents}.");
+                $"Qualifying incident count is {qualifyingRows.DistinctIncidents}; " +
+                $"the gate requires at least {MinimumQualifyingIncidents}.");
         }
 
-        if (representativeRows.DistinctApplicationShapes < MinimumRepresentativeApplicationShapes)
+        if (qualifyingRows.DistinctApplicationShapes < MinimumQualifyingApplicationShapes)
         {
             missing.Add(
-                $"Representative application-shape count is {representativeRows.DistinctApplicationShapes}; " +
-                $"the gate requires at least {MinimumRepresentativeApplicationShapes}.");
+                $"Qualifying application-shape count is {qualifyingRows.DistinctApplicationShapes}; " +
+                $"the gate requires at least {MinimumQualifyingApplicationShapes}.");
         }
 
         var status = missing.Count == 0
-            ? RepresentativeGateStatus.Satisfied
+            ? manifest.CorpusKind == nameof(CorpusKind.SyntheticIncident)
+                ? PortfolioGateStatus.SatisfiedSyntheticValidation
+                : PortfolioGateStatus.SatisfiedRepresentativeEvidence
             : manifest.CorpusKind == nameof(CorpusKind.GeneratedValidation)
-                ? RepresentativeGateStatus.OpenMissingRepresentativeCorpus
-                : RepresentativeGateStatus.OpenInsufficientRepresentativeBreadth;
-        return new RepresentativeGate(
+                ? PortfolioGateStatus.OpenGeneratedValidationOnly
+                : PortfolioGateStatus.OpenInsufficientBreadth;
+        return new PortfolioGate(
             status,
-            MinimumRepresentativeIncidents,
-            MinimumRepresentativeApplicationShapes,
-            representativeRows.DistinctIncidents,
-            representativeRows.DistinctApplicationShapes,
-            representativeRows.TotalQuestions,
+            MinimumQualifyingIncidents,
+            MinimumQualifyingApplicationShapes,
+            qualifyingRows.DistinctIncidents,
+            qualifyingRows.DistinctApplicationShapes,
+            qualifyingRows.TotalQuestions,
             missing.ToImmutable());
     }
 
     private static NextDecision EvaluateNextDecision(
         ImmutableArray<UsefulnessRow> rows,
-        RepresentativeGate gate)
+        PortfolioGate gate)
     {
-        if (gate.Status != RepresentativeGateStatus.Satisfied)
+        if (gate.Status is not (
+                PortfolioGateStatus.SatisfiedSyntheticValidation or
+                PortfolioGateStatus.SatisfiedRepresentativeEvidence))
         {
             return new NextDecision(
-                NextDecisionStatus.DeferredRepresentativeGateOpen,
+                NextDecisionStatus.DeferredPortfolioGateOpen,
                 SelectedDecision: null,
-                "No successor is admitted until the representative raw-count baseline satisfies the W5.5 gate.",
+                "No successor is admitted until the meaningful multi-shape raw-count baseline satisfies the W5.5 gate.",
                 ImmutableArray<BlockerRanking>.Empty);
         }
 
@@ -402,9 +481,11 @@ internal static class UsefulnessPortfolioRunner
                 _ => throw new InvalidDataException("The blocker ranking returned an unknown category."),
             };
         return new NextDecision(
-            NextDecisionStatus.Selected,
+            gate.Status == PortfolioGateStatus.SatisfiedSyntheticValidation
+                ? NextDecisionStatus.SelectedSyntheticDesignDecision
+                : NextDecisionStatus.SelectedRepresentativeDecision,
             selected,
-            "The selection follows independent-incident frequency, decision impact, usefulness, exact-evidence availability, then stable category order.",
+            "The selection follows independent-incident frequency, decision impact, usefulness, exact-evidence availability, then stable category order; a synthetic selection advances prototype design only.",
             rankings);
     }
 
@@ -414,8 +495,9 @@ internal static class UsefulnessPortfolioRunner
         ImmutableArray<EvaluationReport> reports,
         ImmutableArray<UsefulnessRow> rows,
         RawAggregate allRows,
+        RawAggregate gateQualifyingRows,
         RawAggregate representativeRows,
-        RepresentativeGate gate,
+        PortfolioGate gate,
         NextDecision decision)
     {
         EnsureParentDirectory(path);
@@ -428,7 +510,7 @@ internal static class UsefulnessPortfolioRunner
         writer.WriteString("corpusKind", manifest.CorpusKind);
         writer.WriteBoolean("predeclaredBeforeEvaluation", manifest.PredeclaredBeforeEvaluation);
         writer.WriteString("declaredPurpose", manifest.DeclaredPurpose);
-        writer.WriteString("generatedValidationCaveat", GeneratedCaveat);
+        writer.WriteString("evidenceScopeCaveat", GetEvidenceScopeCaveat(manifest.CorpusKind));
         writer.WriteBoolean("claimsProductionReadiness", false);
         writer.WriteStartArray("evaluationReports");
         foreach (var report in reports)
@@ -453,10 +535,12 @@ internal static class UsefulnessPortfolioRunner
         writer.WriteStartObject("rawCounts");
         writer.WritePropertyName("allRows");
         WriteAggregate(writer, allRows);
+        writer.WritePropertyName("gateQualifyingRows");
+        WriteAggregate(writer, gateQualifyingRows);
         writer.WritePropertyName("representativeRows");
         WriteAggregate(writer, representativeRows);
         writer.WriteEndObject();
-        writer.WritePropertyName("representativeGate");
+        writer.WritePropertyName("portfolioGate");
         WriteGate(writer, gate);
         writer.WritePropertyName("nextDecision");
         WriteDecision(writer, decision);
@@ -566,15 +650,15 @@ internal static class UsefulnessPortfolioRunner
         writer.WriteEndObject();
     }
 
-    private static void WriteGate(Utf8JsonWriter writer, RepresentativeGate gate)
+    private static void WriteGate(Utf8JsonWriter writer, PortfolioGate gate)
     {
         writer.WriteStartObject();
         writer.WriteString("status", gate.Status.ToString());
-        writer.WriteNumber("minimumRepresentativeIncidents", gate.MinimumRepresentativeIncidents);
-        writer.WriteNumber("minimumRepresentativeApplicationShapes", gate.MinimumRepresentativeApplicationShapes);
-        writer.WriteNumber("representativeIncidentCount", gate.RepresentativeIncidentCount);
-        writer.WriteNumber("representativeApplicationShapeCount", gate.RepresentativeApplicationShapeCount);
-        writer.WriteNumber("representativeQuestionCount", gate.RepresentativeQuestionCount);
+        writer.WriteNumber("minimumQualifyingIncidents", gate.MinimumQualifyingIncidents);
+        writer.WriteNumber("minimumQualifyingApplicationShapes", gate.MinimumQualifyingApplicationShapes);
+        writer.WriteNumber("qualifyingIncidentCount", gate.QualifyingIncidentCount);
+        writer.WriteNumber("qualifyingApplicationShapeCount", gate.QualifyingApplicationShapeCount);
+        writer.WriteNumber("qualifyingQuestionCount", gate.QualifyingQuestionCount);
         writer.WriteStartArray("missingConditions");
         foreach (var condition in gate.MissingConditions)
         {
@@ -612,15 +696,16 @@ internal static class UsefulnessPortfolioRunner
         PortfolioManifest manifest,
         ImmutableArray<UsefulnessRow> rows,
         RawAggregate allRows,
+        RawAggregate gateQualifyingRows,
         RawAggregate representativeRows,
-        RepresentativeGate gate,
+        PortfolioGate gate,
         NextDecision decision)
     {
         EnsureParentDirectory(path);
         using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        writer.WriteLine("W5 usefulness portfolio report v1");
+        writer.WriteLine("W5 usefulness portfolio report v2");
         writer.WriteLine($"Portfolio: {manifest.PortfolioId}; corpus={manifest.CorpusKind}; predeclared={manifest.PredeclaredBeforeEvaluation}");
-        writer.WriteLine($"Caveat: {GeneratedCaveat}");
+        writer.WriteLine($"Caveat: {GetEvidenceScopeCaveat(manifest.CorpusKind)}");
         foreach (var row in rows)
         {
             writer.WriteLine(
@@ -631,11 +716,12 @@ internal static class UsefulnessPortfolioRunner
         }
 
         WriteHumanCounts(writer, "all", allRows);
+        WriteHumanCounts(writer, "gate-qualifying", gateQualifyingRows);
         WriteHumanCounts(writer, "representative", representativeRows);
         writer.WriteLine(
-            $"Representative gate: status={gate.Status}; incidents={gate.RepresentativeIncidentCount}/{gate.MinimumRepresentativeIncidents}; " +
-            $"application-shapes={gate.RepresentativeApplicationShapeCount}/{gate.MinimumRepresentativeApplicationShapes}; " +
-            $"questions={gate.RepresentativeQuestionCount}");
+            $"Portfolio gate: status={gate.Status}; incidents={gate.QualifyingIncidentCount}/{gate.MinimumQualifyingIncidents}; " +
+            $"application-shapes={gate.QualifyingApplicationShapeCount}/{gate.MinimumQualifyingApplicationShapes}; " +
+            $"questions={gate.QualifyingQuestionCount}");
         foreach (var condition in gate.MissingConditions)
         {
             writer.WriteLine($"Gate missing: {condition}");
@@ -685,6 +771,14 @@ internal static class UsefulnessPortfolioRunner
         }
     }
 
+    private static string GetEvidenceScopeCaveat(string corpusKind) => corpusKind switch
+    {
+        nameof(CorpusKind.GeneratedValidation) => GeneratedCaveat,
+        nameof(CorpusKind.SyntheticIncident) => SyntheticCaveat,
+        nameof(CorpusKind.RepresentativeIncident) => RepresentativeCaveat,
+        _ => throw new InvalidDataException($"Unknown corpus kind '{corpusKind}'."),
+    };
+
     private static T ParseEnum<T>(string value, string label)
         where T : struct, Enum => Enum.TryParse<T>(value, ignoreCase: false, out var parsed) &&
             string.Equals(parsed.ToString(), value, StringComparison.Ordinal)
@@ -699,6 +793,7 @@ internal static class UsefulnessPortfolioRunner
     private enum CorpusKind
     {
         GeneratedValidation,
+        SyntheticIncident,
         RepresentativeIncident,
     }
 
@@ -750,17 +845,19 @@ internal static class UsefulnessPortfolioRunner
         ProductThesis,
     }
 
-    private enum RepresentativeGateStatus
+    private enum PortfolioGateStatus
     {
-        Satisfied,
-        OpenMissingRepresentativeCorpus,
-        OpenInsufficientRepresentativeBreadth,
+        SatisfiedSyntheticValidation,
+        SatisfiedRepresentativeEvidence,
+        OpenGeneratedValidationOnly,
+        OpenInsufficientBreadth,
     }
 
     private enum NextDecisionStatus
     {
-        Selected,
-        DeferredRepresentativeGateOpen,
+        SelectedSyntheticDesignDecision,
+        SelectedRepresentativeDecision,
+        DeferredPortfolioGateOpen,
     }
 
     private enum PostW5Decision
@@ -802,13 +899,13 @@ internal static class UsefulnessPortfolioRunner
         DominantBlocker DominantBlocker,
         ImmutableArray<string> DiagnosticCodes);
 
-    private sealed record RepresentativeGate(
-        RepresentativeGateStatus Status,
-        int MinimumRepresentativeIncidents,
-        int MinimumRepresentativeApplicationShapes,
-        int RepresentativeIncidentCount,
-        int RepresentativeApplicationShapeCount,
-        int RepresentativeQuestionCount,
+    private sealed record PortfolioGate(
+        PortfolioGateStatus Status,
+        int MinimumQualifyingIncidents,
+        int MinimumQualifyingApplicationShapes,
+        int QualifyingIncidentCount,
+        int QualifyingApplicationShapeCount,
+        int QualifyingQuestionCount,
         ImmutableArray<string> MissingConditions);
 
     private sealed record NextDecision(
@@ -941,12 +1038,16 @@ internal static class UsefulnessPortfolioRunner
             string corpusKind,
             string corpusCaveat,
             string dumpSnapshotSha256,
+            string rootName,
+            string rootTypeName,
             ImmutableDictionary<string, EvaluationScenario> scenarios)
         {
             Id = id;
             CorpusKind = corpusKind;
             CorpusCaveat = corpusCaveat;
             DumpSnapshotSha256 = dumpSnapshotSha256;
+            RootName = rootName;
+            RootTypeName = rootTypeName;
             Scenarios = scenarios;
         }
 
@@ -957,6 +1058,10 @@ internal static class UsefulnessPortfolioRunner
         internal string CorpusCaveat { get; }
 
         internal string DumpSnapshotSha256 { get; }
+
+        internal string RootName { get; }
+
+        internal string RootTypeName { get; }
 
         internal ImmutableDictionary<string, EvaluationScenario> Scenarios { get; }
 
@@ -984,6 +1089,8 @@ internal static class UsefulnessPortfolioRunner
             var corpusKind = RequiredString(root, "corpusKind");
             _ = ParseEnum<CorpusKind>(corpusKind, "evaluation-report corpus kind");
             var corpusCaveat = RequiredString(root, "fixtureCaveat");
+            var rootName = RequiredString(root, "rootName");
+            var rootTypeName = RequiredString(root, "rootTypeName");
 
             var scenarios = ImmutableDictionary.CreateBuilder<string, EvaluationScenario>(StringComparer.Ordinal);
             foreach (var element in root.GetProperty("scenarios").EnumerateArray())
@@ -1001,7 +1108,14 @@ internal static class UsefulnessPortfolioRunner
                 throw new InvalidDataException($"Evaluation report '{id}' has an invalid scenario count.");
             }
 
-            return new EvaluationReport(id, corpusKind, corpusCaveat, snapshot, scenarios.ToImmutable());
+            return new EvaluationReport(
+                id,
+                corpusKind,
+                corpusCaveat,
+                snapshot,
+                rootName,
+                rootTypeName,
+                scenarios.ToImmutable());
         }
     }
 
@@ -1091,10 +1205,11 @@ internal static class UsefulnessPortfolioRunner
             }
 
             _ = ParseEnum<CorpusKind>(CorpusKind, "corpus kind");
-            if (CorpusKind == nameof(UsefulnessPortfolioRunner.CorpusKind.RepresentativeIncident) &&
+            if (CorpusKind is nameof(UsefulnessPortfolioRunner.CorpusKind.SyntheticIncident) or
+                    nameof(UsefulnessPortfolioRunner.CorpusKind.RepresentativeIncident) &&
                 !PredeclaredBeforeEvaluation)
             {
-                throw new InvalidDataException("Representative incident portfolios must be predeclared.");
+                throw new InvalidDataException("Meaningful incident portfolios must be predeclared.");
             }
 
             if (EvaluationReports.IsDefaultOrEmpty || EvaluationReports.Length > MaximumEvaluationReports ||
@@ -1113,7 +1228,7 @@ internal static class UsefulnessPortfolioRunner
             var reportIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var report in EvaluationReports)
             {
-                report.Validate();
+                report.Validate(CorpusKind);
                 if (!reportIds.Add(report.Id))
                 {
                     throw new InvalidDataException($"Evaluation report id '{report.Id}' is duplicated.");
@@ -1140,11 +1255,146 @@ internal static class UsefulnessPortfolioRunner
         [JsonPropertyName("path")]
         public string Path { get; init; } = string.Empty;
 
-        internal void Validate()
+        [JsonPropertyName("syntheticFixture")]
+        public SyntheticFixtureDefinition? SyntheticFixture { get; init; }
+
+        internal void Validate(string corpusKind)
         {
             if (!IsBoundedIdentity(Id) || string.IsNullOrWhiteSpace(Path) || Path.Length > 4_096)
             {
                 throw new InvalidDataException("An evaluation-report reference is invalid.");
+            }
+
+            if (corpusKind == nameof(UsefulnessPortfolioRunner.CorpusKind.SyntheticIncident))
+            {
+                if (SyntheticFixture is null)
+                {
+                    throw new InvalidDataException(
+                        $"Synthetic evaluation report '{Id}' requires a predeclared fixture.");
+                }
+
+                SyntheticFixture.Validate();
+            }
+            else if (SyntheticFixture is not null)
+            {
+                throw new InvalidDataException(
+                    $"Only synthetic incident reports may declare a synthetic fixture ('{Id}').");
+            }
+        }
+    }
+
+    private sealed class SyntheticFixtureDefinition
+    {
+        [JsonPropertyName("applicationShape")]
+        public string ApplicationShape { get; init; } = string.Empty;
+
+        [JsonPropertyName("targetArguments")]
+        public ImmutableArray<string> TargetArguments { get; init; }
+
+        [JsonPropertyName("root")]
+        public SyntheticRootDefinition Root { get; init; } = null!;
+
+        [JsonPropertyName("scenario")]
+        public SyntheticScenarioDefinition Scenario { get; init; } = null!;
+
+        [JsonPropertyName("expectedProductOutcome")]
+        public string ExpectedProductOutcome { get; init; } = string.Empty;
+
+        [JsonPropertyName("expectedValue")]
+        public string? ExpectedValue { get; init; }
+
+        [JsonPropertyName("expectedValuePrefix")]
+        public string? ExpectedValuePrefix { get; init; }
+
+        internal void Validate()
+        {
+            if (!IsBoundedIdentity(ApplicationShape) ||
+                TargetArguments.IsDefaultOrEmpty || TargetArguments.Length > 16 ||
+                TargetArguments.Any(static value => string.IsNullOrWhiteSpace(value) || value.Length > 4_096) ||
+                Root is null || Scenario is null)
+            {
+                throw new InvalidDataException("A synthetic fixture is missing its bounded target or shape data.");
+            }
+
+            Root.Validate();
+            Scenario.Validate();
+            var outcome = ParseEnum<ProductOutcome>(ExpectedProductOutcome, "expected product outcome");
+            if (ExpectedValue?.Length > 4_096 || ExpectedValuePrefix?.Length > 256 ||
+                ExpectedValue is not null && ExpectedValuePrefix is not null ||
+                ExpectedValuePrefix is not null && ExpectedValuePrefix.Length == 0 ||
+                outcome == ProductOutcome.Exact && ExpectedValue is null ||
+                outcome is ProductOutcome.Unavailable or ProductOutcome.Unsupported &&
+                    (ExpectedValue is not null || ExpectedValuePrefix is not null))
+            {
+                throw new InvalidDataException("A synthetic fixture has an inconsistent expected value contract.");
+            }
+        }
+    }
+
+    private sealed class SyntheticRootDefinition
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; init; } = string.Empty;
+
+        [JsonPropertyName("typeName")]
+        public string TypeName { get; init; } = string.Empty;
+
+        [JsonPropertyName("maximumMatches")]
+        public int MaximumMatches { get; init; }
+
+        [JsonPropertyName("maximumHandlesScanned")]
+        public int MaximumHandlesScanned { get; init; }
+
+        internal void Validate()
+        {
+            if (string.IsNullOrWhiteSpace(Name) || Name.Length > 128 ||
+                string.IsNullOrWhiteSpace(TypeName) || TypeName.Length > 4_096 ||
+                MaximumMatches is < 1 or > 4_096 || MaximumHandlesScanned is < 1 or > 100_000)
+            {
+                throw new InvalidDataException("A synthetic root selector is outside its deterministic bounds.");
+            }
+        }
+    }
+
+    private sealed class SyntheticScenarioDefinition
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; init; } = string.Empty;
+
+        [JsonPropertyName("expression")]
+        public string? Expression { get; init; }
+
+        [JsonPropertyName("methodMode")]
+        public string MethodMode { get; init; } = string.Empty;
+
+        [JsonPropertyName("instructionLimit")]
+        public long InstructionLimit { get; init; }
+
+        [JsonPropertyName("logicalDepthLimit")]
+        public int LogicalDepthLimit { get; init; }
+
+        [JsonPropertyName("traversalLimit")]
+        public int TraversalLimit { get; init; }
+
+        [JsonPropertyName("fixtureEvidenceView")]
+        public string FixtureEvidenceView { get; init; } = string.Empty;
+
+        [JsonPropertyName("cancelBeforeExecution")]
+        public bool CancelBeforeExecution { get; init; }
+
+        [JsonPropertyName("repeatCount")]
+        public int RepeatCount { get; init; }
+
+        internal void Validate()
+        {
+            if (!IsBoundedIdentity(Id) || Expression?.Length > 4_096 ||
+                MethodMode is not ("Interpreted" or "Modeled") ||
+                FixtureEvidenceView is not (
+                    "Captured" or "MarkerPartial" or "MarkerUnavailable" or "ModuleUnavailable") ||
+                InstructionLimit is < 0 or > 1_000_000 || LogicalDepthLimit is < 0 or > 256 ||
+                TraversalLimit is < 0 or > 1_000_000 || RepeatCount is < 1 or > 4)
+            {
+                throw new InvalidDataException($"Synthetic scenario '{Id}' is outside its deterministic bounds.");
             }
         }
     }

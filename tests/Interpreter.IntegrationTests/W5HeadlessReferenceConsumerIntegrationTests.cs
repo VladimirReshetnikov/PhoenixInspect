@@ -140,7 +140,7 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
             ]);
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(
-            "W5_USEFULNESS_OK:9:OpenMissingRepresentativeCorpus",
+            "W5_USEFULNESS_OK:9:OpenGeneratedValidationOnly",
             result.StandardOutput.Trim());
         Assert.True(string.IsNullOrWhiteSpace(result.StandardError), result.StandardError);
     }
@@ -308,15 +308,15 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
     {
         using var document = JsonDocument.Parse(File.ReadAllBytes(path));
         var root = document.RootElement;
-        Assert.Equal(1, root.GetProperty("usefulnessReportSchemaVersion").GetInt32());
-        Assert.Equal(1, root.GetProperty("portfolioSchemaVersion").GetInt32());
+        Assert.Equal(2, root.GetProperty("usefulnessReportSchemaVersion").GetInt32());
+        Assert.Equal(2, root.GetProperty("portfolioSchemaVersion").GetInt32());
         Assert.Equal("w5-usefulness-generated-validation-v1", root.GetProperty("portfolioId").GetString());
         Assert.Equal("GeneratedValidation", root.GetProperty("corpusKind").GetString());
         Assert.True(root.GetProperty("predeclaredBeforeEvaluation").GetBoolean());
         Assert.False(root.GetProperty("claimsProductionReadiness").GetBoolean());
         Assert.Contains(
-            "do not count as representative",
-            root.GetProperty("generatedValidationCaveat").GetString(),
+            "do not count toward meaningful synthetic validation",
+            root.GetProperty("evidenceScopeCaveat").GetString(),
             StringComparison.Ordinal);
         var evaluationReport = Assert.Single(root.GetProperty("evaluationReports").EnumerateArray());
         Assert.Equal("GeneratedValidation", evaluationReport.GetProperty("corpusKind").GetString());
@@ -363,20 +363,24 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
             1,
             allRows.GetProperty("acquisitionFailureComposition").GetProperty("W5_MODULE_MISSING").GetInt32());
 
+        var qualifying = root.GetProperty("rawCounts").GetProperty("gateQualifyingRows");
+        Assert.Equal(0, qualifying.GetProperty("totalQuestions").GetInt32());
+        AssertRatio(qualifying.GetProperty("admission").GetProperty("admitted"), 0, 0);
+        AssertRatio(qualifying.GetProperty("exactAnswers"), 0, 0);
         var representative = root.GetProperty("rawCounts").GetProperty("representativeRows");
         Assert.Equal(0, representative.GetProperty("totalQuestions").GetInt32());
         AssertRatio(representative.GetProperty("admission").GetProperty("admitted"), 0, 0);
         AssertRatio(representative.GetProperty("exactAnswers"), 0, 0);
-        var gate = root.GetProperty("representativeGate");
-        Assert.Equal("OpenMissingRepresentativeCorpus", gate.GetProperty("status").GetString());
-        Assert.Equal(10, gate.GetProperty("minimumRepresentativeIncidents").GetInt32());
-        Assert.Equal(2, gate.GetProperty("minimumRepresentativeApplicationShapes").GetInt32());
-        Assert.Equal(0, gate.GetProperty("representativeIncidentCount").GetInt32());
-        Assert.Equal(0, gate.GetProperty("representativeApplicationShapeCount").GetInt32());
-        Assert.Equal(0, gate.GetProperty("representativeQuestionCount").GetInt32());
+        var gate = root.GetProperty("portfolioGate");
+        Assert.Equal("OpenGeneratedValidationOnly", gate.GetProperty("status").GetString());
+        Assert.Equal(10, gate.GetProperty("minimumQualifyingIncidents").GetInt32());
+        Assert.Equal(2, gate.GetProperty("minimumQualifyingApplicationShapes").GetInt32());
+        Assert.Equal(0, gate.GetProperty("qualifyingIncidentCount").GetInt32());
+        Assert.Equal(0, gate.GetProperty("qualifyingApplicationShapeCount").GetInt32());
+        Assert.Equal(0, gate.GetProperty("qualifyingQuestionCount").GetInt32());
         Assert.NotEmpty(gate.GetProperty("missingConditions").EnumerateArray());
         var decision = root.GetProperty("nextDecision");
-        Assert.Equal("DeferredRepresentativeGateOpen", decision.GetProperty("status").GetString());
+        Assert.Equal("DeferredPortfolioGateOpen", decision.GetProperty("status").GetString());
         Assert.Equal(JsonValueKind.Null, decision.GetProperty("selection").ValueKind);
         Assert.Empty(decision.GetProperty("blockerRanking").EnumerateArray());
 
@@ -388,12 +392,13 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
     private static void AssertUsefulnessHumanReport(string path)
     {
         var report = File.ReadAllText(path);
-        Assert.Contains("W5 usefulness portfolio report v1", report, StringComparison.Ordinal);
+        Assert.Contains("W5 usefulness portfolio report v2", report, StringComparison.Ordinal);
         Assert.Contains("Raw counts (all):", report, StringComparison.Ordinal);
         Assert.Contains("admitted=8/9", report, StringComparison.Ordinal);
         Assert.Contains("exact=3/9", report, StringComparison.Ordinal);
+        Assert.Contains("Raw counts (gate-qualifying): questions=0", report, StringComparison.Ordinal);
         Assert.Contains("Raw counts (representative): questions=0", report, StringComparison.Ordinal);
-        Assert.Contains("OpenMissingRepresentativeCorpus", report, StringComparison.Ordinal);
+        Assert.Contains("OpenGeneratedValidationOnly", report, StringComparison.Ordinal);
         Assert.Contains("selection=none", report, StringComparison.Ordinal);
         Assert.DoesNotContain('%', report);
         Assert.Equal(

@@ -18,6 +18,8 @@ internal static class Program
     private const int MaximumScenarios = 64;
     private const string GeneratedFixtureCaveat =
         "Generated fixture evidence views validate routing only; they are not representative incident observations.";
+    private const string SyntheticIncidentCaveat =
+        "Designed synthetic incidents validate prototype behavior and design decisions only; they are not external observations or field-readiness evidence.";
     private const string RepresentativeCorpusCaveat =
         "Representative designation comes from the predeclared incident manifest; the consumer does not independently verify provenance.";
 
@@ -500,6 +502,7 @@ internal static class Program
     private static string GetCorpusCaveat(ScenarioManifest manifest) => manifest.CorpusKind switch
     {
         "GeneratedValidation" => GeneratedFixtureCaveat,
+        "SyntheticIncident" => SyntheticIncidentCaveat,
         "RepresentativeIncident" => RepresentativeCorpusCaveat,
         _ => throw new InvalidDataException($"Unknown corpus kind '{manifest.CorpusKind}'."),
     };
