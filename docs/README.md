@@ -30,9 +30,11 @@ jobs at exact documentation-closure commit `de6cea124`, so W3 is formally closed
 scope. A whole-file-identified disk PE remains only an independent oracle, never dump resolver input.
 
 W4's closed design contract is
-`proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. The active successor is
-`plans/post-w4-path-forward.md`: make the current W2/W4 capability reachable from one expression-to-result product
-path, then use meaningful multi-shape designed incident-question evidence to select or reject the next prototype increment while keeping field-readiness evidence separate. W4.1's fixture gate is implemented at
+`proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. The completed
+`plans/post-w4-path-forward.md` records W5's expression-to-result path and meaningful synthetic selection. The active
+successor is `plans/post-w5-path-forward.md`: implement one opt-in fixed-depth member-chain query with certified
+field-backed terminal data properties, then use a larger multi-shape designed portfolio to select or defer another
+prototype increment while keeping field-readiness evidence separate. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint
 `e89e43498`. W4.3's dump-free non-exact field continuation is implemented at checkpoint `7479b1ad4`. W4.4a's
 body-free direct MethodDef resolution is implemented at pushed checkpoint `2e596c117`, and W4.4b's complete frozen
@@ -265,7 +267,8 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `plans/post-w4-path-forward.md` | Planning | Plan | Current · Closed | Closed W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, milestone-scoped hosted-gate waiver, and evidence-selected fixed-depth member-chain prototype decision. |
+| `plans/post-w5-path-forward.md` | Planning | Plan | Current · Active | Detailed W6 opt-in bounded member-chain contract, certified terminal data-property dependency, evidence/result matrix, headless synthetic corpus, checkpoint sequence, and closure/next-decision gates. |
+| `plans/post-w4-path-forward.md` | Planning | Plan | Complete · Reference | Closed W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, milestone-scoped hosted-gate waiver, and evidence-selected W6 decision. |
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4's closed rooted exact/degraded interpreted/modeled dump execution and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
@@ -283,7 +286,7 @@ docs/
 | `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical prototype layout and narrow implemented proof boundary. |
 | `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised by the dump-evidence and concrete-IL proofs; explicitly unstable. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate execution-state, domain, and provenance semantics. |
-| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence, closed W0–W4 gates, active W5 testing policy, and explicitly deferred research suites. |
+| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W5 plus the planned W6 headless/property-certificate/member-chain gates and explicitly deferred research suites. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft · Research | BCL/IL semantic lifting and projection concepts for later phases. |
 | `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft · Research | Candidate unified registry for later modeled semantics. |
 | `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Current · Supporting | Implemented closed W3 E1/E2 encodings and explicit gates for later opcode expansion. |
@@ -295,7 +298,7 @@ docs/
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft · Active | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft · Reference | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft · Active | Artifact-resolution design for PE/PDB loading and identity validation. |
-| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence, closed W4 corpus, and active W5 evidence policy. |
+| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W5 plus planned W6 reference/property/member-chain coverage. |
 | `plans/future-work-planning.md` | Planning | Plan | Current · Supporting | Detailed evidence-led W0–W4 delivery record and research entry gates. |
 | `plans/requirements-traceability-map.md` | Planning | Matrix | Current · Active | Requirements mapped separately to design, implementation, and validation evidence. |
 | `lib/README.md` | Library Notes | Index | Current · Reference | Navigation and policy for active decisions versus preserved source research. |
@@ -330,19 +333,20 @@ docs/
 ### Active delivery path
 
 1. `../DESIGN-ARCHITECTURE-REVIEW.md`
-2. `plans/post-w4-path-forward.md`
-3. `proposals/product/post-mortem-debugging-feature-proposal.md`
-4. `proposals/architecture/restricted-dump-query-contract-proposal.md`
-5. `proposals/architecture/concrete-il-execution-contract-proposal.md`
-6. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
-7. `proposals/architecture/architecture-overview-proposal.md`
-8. `proposals/architecture/prototype-solution-structure-proposal.md`
-9. `lib/mvp-backend-decision-record.md`
-10. `plans/future-work-planning.md`
-11. `proposals/architecture/testing-strategy-proposal.md`
-12. `proposals/integration-test-plan.md`
-13. `proposals/integration/clrmd-integration-proposal.md`
-14. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+2. `plans/post-w5-path-forward.md`
+3. `plans/post-w4-path-forward.md`
+4. `proposals/product/post-mortem-debugging-feature-proposal.md`
+5. `proposals/architecture/restricted-dump-query-contract-proposal.md`
+6. `proposals/architecture/concrete-il-execution-contract-proposal.md`
+7. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
+8. `proposals/architecture/architecture-overview-proposal.md`
+9. `proposals/architecture/prototype-solution-structure-proposal.md`
+10. `lib/mvp-backend-decision-record.md`
+11. `plans/future-work-planning.md`
+12. `proposals/architecture/testing-strategy-proposal.md`
+13. `proposals/integration-test-plan.md`
+14. `proposals/integration/clrmd-integration-proposal.md`
+15. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 
@@ -427,9 +431,10 @@ research designs.
 1. `governance/project-faq.md`
 2. `governance/documentation-organization-proposal.md`
 3. `governance/terminology-glossary.md`
-4. `plans/post-w4-path-forward.md`
-5. `plans/future-work-planning.md`
-6. `plans/requirements-traceability-map.md`
+4. `plans/post-w5-path-forward.md`
+5. `plans/post-w4-path-forward.md`
+6. `plans/future-work-planning.md`
+7. `plans/requirements-traceability-map.md`
 
 ## Repository license
 

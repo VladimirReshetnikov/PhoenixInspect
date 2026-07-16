@@ -1,8 +1,11 @@
 # Post-W4 Path Forward
 
-> **Lifecycle:** Current · **Roadmap:** Closed
+> **Lifecycle:** Complete · **Roadmap:** Reference
 >
 > **Decision:** fund product composition and usefulness evidence before adding interpreter breadth.
+>
+> **Successor:** W5 selected the active W6 bounded member-chain stage in
+> [`Post-W5 Path Forward`](post-w5-path-forward.md).
 
 ## 1) Executive decision
 
@@ -20,7 +23,7 @@ correlate bodies and fields, construct a resolver and frozen graph, bind the roo
 run it. A user can supply expression text to W2, but cannot use expression text to reach W4. The project therefore has
 an impressive execution proof without the smallest product-shaped route into it.
 
-The active successor is **W5 — one expression in, one honest result out**:
+The successor implemented by this completed plan was **W5 — one expression in, one honest result out**:
 
 ```csharp
 root.Marker
@@ -47,7 +50,7 @@ product result. Three gaps defined W5's work:
 2. **Meaningful synthetic usefulness:** the original admitted success evidence came from one controlled generated
    shape, so the project needed an independent, multi-shape designed-incident denominator before selecting more
    prototype behavior. This denominator remains distinct from field-readiness evidence.
-3. **Roadmap discipline:** without an explicit successor, it would be easy to promote virtual stepping, branches,
+3. **Roadmap discipline:** without an explicit successor, it would have been easy to promote virtual stepping, branches,
    exception-handler transfer, CFG analysis, async/dynamic lifting, generics, or broad models merely because their
    research entry gates are now closer.
 
@@ -124,8 +127,8 @@ navigation, and freeze the W5 scope before implementation. This checkpoint must 
 
 - No current-state status or roadmap section describes the W4 product facade, generated-dump result, or hosted
   closure as pending; checkpoint history may still state what was absent at that checkpoint.
-- `future-work-planning.md` remains the W0–W4 record and research-gate source; this document is the one active
-  post-W4 sequence.
+- `future-work-planning.md` remains the W0–W4 record and research-gate source; this document remains the completed W5
+  sequence, while `post-w5-path-forward.md` governs active W6 delivery.
 - Markdown links and headless-workflow guards pass.
 
 ### W5.1 — closed expression request and classifier
@@ -361,8 +364,8 @@ pwsh -NoLogo -NoProfile -File .\eng\verify-markdown-links.ps1
 pwsh -NoLogo -NoProfile -File .\eng\verify-headless-workflows.ps1
 ```
 
-Each W5 checkpoint is committed and pushed before the next begins. Commit messages record the scenario, ownership
-boundary, evidence added, exclusions preserved, coarse LOC scale, and exact validation run. The active plan,
+Each W5 checkpoint was committed and pushed before the next began. Commit messages record the scenario, ownership
+boundary, evidence added, exclusions preserved, coarse LOC scale, and exact validation run. This plan,
 traceability map, product proposal, and test strategy are updated at the same checkpoint so documentation cannot drift
 behind executable truth again.
 
@@ -390,3 +393,6 @@ selected fixed-depth member-chain slice.
 Virtual stepping, broad interpreter expansion, and additional product surfaces remain research rather than active
 delivery work. Only the selected fixed-depth member-chain design slice is eligible for a separately contracted next
 prototype milestone; it is selected, not implemented by W5.
+
+The selected milestone is now specified by [`Post-W5 Path Forward`](post-w5-path-forward.md). This completed W5 plan
+remains the authoritative record of why that bounded member-chain direction was chosen.
