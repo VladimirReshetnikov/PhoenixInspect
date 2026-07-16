@@ -18,6 +18,10 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
 {
     private const int ExpectedMarker = 0x13579BDF;
 
+    /// <summary>
+    /// Proves graph issuance is atomic and input-order independent, retained bodies are canonical, and valid
+    /// same-module MethodDefs omitted from the admitted graph remain body-free unavailable dependencies.
+    /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
     [Trait("Corpus", "W4DumpResolverGraphV1")]
@@ -108,6 +112,10 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
             "DUMP_EXEC_FIELD_CONTEXT_MISMATCH");
     }
 
+    /// <summary>
+    /// Proves graph construction rejects uninitialized, duplicate, metadata-conflicting, non-exact, and oversized
+    /// body sets without publishing a partially usable resolver.
+    /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
     [Trait("Corpus", "W4DumpResolverGraphV1")]
@@ -182,6 +190,10 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
             "DUMP_EXEC_METHOD_GRAPH_LIMIT");
     }
 
+    /// <summary>
+    /// Proves Int32 correlation retains exact, partial, and unavailable counted reads without value invention while
+    /// rejecting incoherent status tuples, foreign evidence, malformed owner searches, and unreferenced fields.
+    /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
     [Trait("Corpus", "W4DumpResolverGraphV1")]
@@ -326,6 +338,15 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
             resolver.CorrelateInt32FieldObservation(malformedOwnerSearch, exact),
             ResolutionFailureKind.Invalid,
             "DUMP_EXEC_OWNER_EVIDENCE_INVALID");
+
+        var fieldFreeResolver = AssertSuccess(ClrmdDumpExecutionResolver.Create(
+            fixture.Module,
+            fixture.MetadataIdentity,
+            fixture.HelperBody));
+        AssertFailure(
+            fieldFreeResolver.CorrelateInt32FieldObservation(fixture.OwnerSearch, exact),
+            ResolutionFailureKind.Conflict,
+            "DUMP_EXEC_FIELD_OPERAND_CONFLICT");
 
         var legacyResolver = AssertSuccess(ClrmdDumpExecutionResolver.Create(
             fixture.Module,

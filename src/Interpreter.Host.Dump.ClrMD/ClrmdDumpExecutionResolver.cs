@@ -840,6 +840,22 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
                 "The runtime field descriptor does not belong to the uniquely selected owner.");
         }
 
+        if (!fieldOperandScanComplete)
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Unsupported,
+                "DUMP_EXEC_FIELD_OPERAND_SCAN_UNSUPPORTED",
+                "The counted root method body is outside the closed instruction profile used for field correlation.");
+        }
+
+        if (!fieldOperandTokens.Contains(runtimeField.MetadataToken))
+        {
+            return ResolutionResult<ClrmdInt32FieldExecutionEvidence>.Failed(
+                ResolutionFailureKind.Conflict,
+                "DUMP_EXEC_FIELD_OPERAND_CONFLICT",
+                "The runtime field token is not an ldfld operand in the counted root method body.");
+        }
+
         var projectedField = ResolveField(RootMethod, runtimeField.MetadataToken);
         if (!projectedField.IsSuccess)
         {
@@ -1242,6 +1258,7 @@ public sealed class ClrmdDumpExecutionResolver : IResolutionServices
                     size = 2;
                     break;
                 case 0x20:
+                case 0x28:
                     size = 5;
                     break;
                 case 0x7B:
