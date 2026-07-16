@@ -24,6 +24,8 @@
     <ProjectReference Include="../../src/Interpreter.Host.Dump.ClrMD/Interpreter.Host.Dump.ClrMD.csproj" />
     <ProjectReference Include="../../src/Interpreter.Product.DumpDebugging/Interpreter.Product.DumpDebugging.csproj" />
     <ProjectReference Include="../../src/Interpreter.Product.DumpQuery/Interpreter.Product.DumpQuery.csproj" />
+    <ProjectReference Include="../../src/Interpreter.Headless.ReferenceConsumer/Interpreter.Headless.ReferenceConsumer.csproj"
+                      ReferenceOutputAssembly="false" />
     <ProjectReference Include="../Interpreter.OptimizedContextTestTarget/Interpreter.OptimizedContextTestTarget.csproj"
                       ReferenceOutputAssembly="false"
                       AdditionalProperties="Configuration=Release" />

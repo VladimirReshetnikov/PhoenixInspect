@@ -105,6 +105,13 @@
           "Interpreter.Metadata.Abstractions": "[1.0.0, )"
         }
       },
+      "interpreter.product.dumpquery": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.Core.Abstractions": "[1.0.0, )",
+          "Interpreter.Host.Dump.ClrMD": "[1.0.0, )"
+        }
+      },
       "Microsoft.Diagnostics.NETCore.Client": {
         "type": "CentralTransitive",
         "requested": "[0.2.410101, )",

@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "dumpPath": "__generated_dump__",
+  "root": {
+    "name": "root",
+    "typeName": "DumpProbe",
+    "maximumMatches": 2,
+    "maximumHandlesScanned": 100000
+  },
+  "scenarios": [
+    {
+      "id": "w2-exact-field",
+      "expression": "root.Marker",
+      "methodMode": "Interpreted",
+      "instructionLimit": 100,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "Captured",
+      "cancelBeforeExecution": false,
+      "repeatCount": 2
+    },
+    {
+      "id": "w4-exact-interpreted",
+      "expression": "root.GetMarkerSummary()",
+      "methodMode": "Interpreted",
+      "instructionLimit": 100,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "Captured",
+      "cancelBeforeExecution": false,
+      "repeatCount": 1
+    },
+    {
+      "id": "w4-exact-modeled",
+      "expression": "root.GetMarkerSummary()",
+      "methodMode": "Modeled",
+      "instructionLimit": 100,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "Captured",
+      "cancelBeforeExecution": false,
+      "repeatCount": 2
+    },
+    {
+      "id": "w4-partial-marker",
+      "expression": "root.GetMarkerSummary()",
+      "methodMode": "Interpreted",
+      "instructionLimit": 100,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "MarkerPartial",
+      "cancelBeforeExecution": false,
+      "repeatCount": 1
+    },
+    {
+      "id": "w4-unavailable-marker",
+      "expression": "root.GetMarkerSummary()",
+      "methodMode": "Modeled",
+      "instructionLimit": 100,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "MarkerUnavailable",
+      "cancelBeforeExecution": false,
+      "repeatCount": 1
+    },
+    {
+      "id": "method-acquisition-failure",
+      "expression": "root.GetMarkerSummary()",
+      "methodMode": "Interpreted",
+      "instructionLimit": 100,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "ModuleUnavailable",
+      "cancelBeforeExecution": false,
+      "repeatCount": 1
+    },
+    {
+      "id": "unsupported-expression",
+      "expression": "root.GetMarkerSummary() + 1",
+      "methodMode": "Interpreted",
+      "instructionLimit": 100,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "Captured",
+      "cancelBeforeExecution": false,
+      "repeatCount": 1
+    },
+    {
+      "id": "instruction-budget-exhausted",
+      "expression": "root.GetMarkerSummary()",
+      "methodMode": "Interpreted",
+      "instructionLimit": 0,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "Captured",
+      "cancelBeforeExecution": false,
+      "repeatCount": 1
+    },
+    {
+      "id": "cancel-before-execution",
+      "expression": "root.GetMarkerSummary()",
+      "methodMode": "Interpreted",
+      "instructionLimit": 100,
+      "logicalDepthLimit": 2,
+      "traversalLimit": 10,
+      "fixtureEvidenceView": "Captured",
+      "cancelBeforeExecution": true,
+      "repeatCount": 1
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Interpreter.Headless.ReferenceConsumer</AssemblyName>
+    <RootNamespace>Interpreter.Headless.ReferenceConsumer</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Host.Dump.ClrMD/Interpreter.Host.Dump.ClrMD.csproj" />
+    <ProjectReference Include="../Interpreter.Product.DumpDebugging/Interpreter.Product.DumpDebugging.csproj" />
+    <ProjectReference Include="../Interpreter.Product.DumpQuery/Interpreter.Product.DumpQuery.csproj" />
+  </ItemGroup>
+</Project>

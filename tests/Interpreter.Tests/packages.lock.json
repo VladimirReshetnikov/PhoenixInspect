@@ -203,6 +203,14 @@
           "Interpreter.Core.Execution": "[1.0.0, )",
           "Interpreter.Domain.Concrete": "[1.0.0, )",
           "Interpreter.Host.Abstractions": "[1.0.0, )",
+          "Interpreter.Host.Dump.ClrMD": "[1.0.0, )",
+          "Interpreter.Product.DumpQuery": "[1.0.0, )"
+        }
+      },
+      "interpreter.product.dumpquery": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.Core.Abstractions": "[1.0.0, )",
           "Interpreter.Host.Dump.ClrMD": "[1.0.0, )"
         }
       },
