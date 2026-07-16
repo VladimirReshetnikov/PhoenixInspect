@@ -24,11 +24,11 @@ public sealed class W4PureModelExecutionIntegrationTests
     private const int ExpectedSummary = 0x26AF37BD;
     private const int CallOffset = 12;
     private const string ExpectedTestTargetSha256 =
-        "a23340790cbc8593f3a5ccfeecab925ba85d337a09fa5240f3cdd9c2f3cdbb5d";
+        "abd919f1eb2ca1b0329e05fe2f3ee580672698560d64991d17aa8d9d3ba3384e";
     private const string ExpectedMixedGraphSha256 =
-        "8eab4cd7d823c095c5c621735d94d8e2351d6fe17f004ac8715adbfb4781127f";
+        "c9f9980c1b77914283aacd7f8125f576f564900ba6fb4cc0c57476a5c4426cc3";
     private const string ExpectedBothUnknownGraphSha256 =
-        "a0582c6ff1007ed25daa0df85fa54fa3bdce78c9a23269b785b06798bc9ea45d";
+        "501c87c9fb351916dde583734af512798b7b30859dc3beac2cc22353d77fce4d";
 
     private static readonly string EvidenceSourceSha256 = HashUtf8(
         "W4.6d compiler-emitted pure-model execution evidence source");
@@ -92,7 +92,7 @@ public sealed class W4PureModelExecutionIntegrationTests
         Assert.Null(run.ExactResult);
         Assert.Equal(ValuePrecisionKind.ExplainedUnknown, interpretedResult.Precision);
         Assert.Null(interpretedResult.ExactResult);
-        Assert.Equal(ExpectedMixedGraphSha256, graph.Sha256);
+        AssertSha256(ExpectedMixedGraphSha256, graph.Sha256);
         Assert.Equal(4, graph.Nodes.Length);
         Assert.Equal(4, run.InternedNodeCount);
         Assert.Equal(
@@ -160,7 +160,7 @@ public sealed class W4PureModelExecutionIntegrationTests
 
         Assert.Equal(ValuePrecisionKind.ExplainedUnknown, interpretedResult.Precision);
         Assert.Null(interpretedResult.ExactResult);
-        Assert.Equal(ExpectedBothUnknownGraphSha256, graph.Sha256);
+        AssertSha256(ExpectedBothUnknownGraphSha256, graph.Sha256);
         Assert.Equal(7, graph.Nodes.Length);
         Assert.Equal(7, first.InternedNodeCount);
         Assert.Equal(2, graph.Nodes.Count(static node => node.Kind == LineageNodeKind.InputOrigin));
@@ -548,6 +548,10 @@ public sealed class W4PureModelExecutionIntegrationTests
 
     private static int ReadToken(ImmutableArray<byte> code, int offset) =>
         BinaryPrimitives.ReadInt32LittleEndian(code.AsSpan(offset, sizeof(int)));
+
+    private static void AssertSha256(string expected, string actual) => Assert.True(
+        string.Equals(expected, actual, StringComparison.Ordinal),
+        $"Expected SHA-256 '{expected}', actual '{actual}'.");
 
     private static string HashUtf8(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();

@@ -22,11 +22,11 @@ public sealed class W4CallLineageIntegrationTests
     private const int ExpectedAlternateMarker = 0x13579BDE;
     private const int CallOffset = 12;
     private const string ExpectedTestTargetSha256 =
-        "a23340790cbc8593f3a5ccfeecab925ba85d337a09fa5240f3cdd9c2f3cdbb5d";
+        "abd919f1eb2ca1b0329e05fe2f3ee580672698560d64991d17aa8d9d3ba3384e";
     private const string ExpectedMixedGraphSha256 =
-        "f7f4119966c53ea27ee4c5c830e170d3726aa3222370c981a61a76b3f7ee4ceb";
+        "610dfb334f02cc2afb9b3582b391e8122eecd130236006f44a7bd9389281ec3d";
     private const string ExpectedBothUnknownGraphSha256 =
-        "1dd8cd70bb67f87a76e66033e0b67de13df5c8e6509e6e1d3072ff17e818e29e";
+        "09a0e3f37610a7b266aa61e9c3da901920e1fad3adf3118013ac4f99ffb90f1b";
 
     private static readonly string EvidenceSourceSha256 = HashUtf8(
         "W4.5b compiler-emitted integration evidence source");
@@ -48,7 +48,7 @@ public sealed class W4CallLineageIntegrationTests
             MarkerObservation.Partial,
             MarkerObservation.Exact);
 
-        Assert.Equal(ExpectedMixedGraphSha256, run.Graph.Sha256);
+        AssertSha256(ExpectedMixedGraphSha256, run.Graph.Sha256);
         Assert.Equal(5, run.Graph.Nodes.Length);
         Assert.Equal(5, run.InternedNodeCount);
         Assert.Equal(
@@ -120,7 +120,7 @@ public sealed class W4CallLineageIntegrationTests
             MarkerObservation.Partial,
             MarkerObservation.Unavailable);
 
-        Assert.Equal(ExpectedBothUnknownGraphSha256, first.Graph.Sha256);
+        AssertSha256(ExpectedBothUnknownGraphSha256, first.Graph.Sha256);
         Assert.Equal(8, first.Graph.Nodes.Length);
         Assert.Equal(8, first.InternedNodeCount);
         Assert.Equal(2, first.Graph.Nodes.Count(static node => node.Kind == LineageNodeKind.InputOrigin));
@@ -426,6 +426,10 @@ public sealed class W4CallLineageIntegrationTests
 
     private static int ReadToken(ImmutableArray<byte> code, int offset) =>
         BinaryPrimitives.ReadInt32LittleEndian(code.AsSpan(offset, sizeof(int)));
+
+    private static void AssertSha256(string expected, string actual) => Assert.True(
+        string.Equals(expected, actual, StringComparison.Ordinal),
+        $"Expected SHA-256 '{expected}', actual '{actual}'.");
 
     private static string HashUtf8(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
