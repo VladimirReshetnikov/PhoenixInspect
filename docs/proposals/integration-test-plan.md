@@ -34,7 +34,7 @@ its defined prototype scope under the milestone-scoped owner exception recorded 
 [`Post-W4 Path Forward`](../plans/post-w4-path-forward.md); rejected hosted jobs are not test evidence.
 The active [`Post-W5 Path Forward`](../plans/post-w5-path-forward.md) and
 [`C# Expression Front-End and Subset-Admission Contract`](architecture/csharp-expression-front-end-contract-proposal.md)
-define W6's not-yet-implemented pinned Roslyn front end, opt-in member-chain lanes, exact property/storage truth gate,
+define W6's implemented pinned Roslyn front end, opt-in member-chain lanes, exact property/storage truth gate,
 independent twenty-four-dump/four-shape synthetic portfolio, and same/fresh/reopen replay obligations.
 Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
@@ -578,11 +578,13 @@ coalescing and missing members without a partial plan, and replay canonical iden
 locked restore; strict serial Release at 0 warnings/0 errors; unit 502/502; Fast 121/121; complete integration 137/137;
 Markdown 65 files/89 local destinations; one headless workflow; and zero skips.
 
-The remaining W6.5 generated lane must exercise exact, exact-null, coalesced-null, partial, unavailable, conflict,
-invalid, and unsupported outcomes across the outer reference and terminal storage boundaries. It must prove lifted
-nullable behavior for null-conditional non-nullable values and descriptor-only evaluation with poisoned catalog
-sources. A hidden target and hidden reference consumer must reproduce canonical artifacts in repeated same-session,
-fresh-process, and dump-close/reopen runs within the W6 corpus.
+W6.5 is implemented through `62c4bb157`. The generated lane exercises exact, exact-null, coalesced-null, partial,
+unavailable, conflict, invalid, and unsupported outcomes across the outer reference and terminal storage boundaries.
+It proves lifted nullable behavior for null-conditional non-nullable values and descriptor-only evaluation with
+poisoned declaration sources. Eleven hidden targets and full dumps cover the four exact selected answers, all typed
+root outcomes, an admitted binding miss, and complete Roslyn syntax outside the supported subset. Same-session
+repetitions and two fresh reopened hidden consumers per row reproduce byte-identical machine and human reports; the
+human report uses value shape only, and the historical schema-v1 consumer path remains passing.
 
 The meaningful synthetic lane must contain twenty-four independent full dumps and one predeclared question per dump
 across request, batch, coordinator, and workflow/dispatch object graphs. Value-only substitutions do not count as

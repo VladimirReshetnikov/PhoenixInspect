@@ -692,6 +692,27 @@ parsing/preparation. Route the opt-in result through the existing facade and a v
 - unsupported W6 syntax and all typed failures remain present in the report rather than being dropped; and
 - every managed launch uses `eng/Invoke-HeadlessProcess.ps1` or equivalent hidden no-UI process creation.
 
+**Implemented checkpoint.** Commits `2055fd750`, `68dbe1d66`, `65b41c42c`, `48b3c93b3`, and `62c4bb157` close
+W6.5 at `~1K LOC` scale. `DumpMemberChainEngine` consumes only one frozen complete plan and descriptor-oriented
+capabilities: declaration certification is poisonable during evaluation, reference/target/storage/terminal calls are
+counted, certified getters are never invoked, and the existing W2 `String`, `Int32`, and `Nullable<Int32>` decoders
+remain the sole terminal readers. Exact null alone may short-circuit conditional access or select a compatible
+fallback; partial/unavailable evidence never becomes null, and a direct null receiver remains a blocked exact-evidence
+result. Every completion, completeness, evidence, effect, diagnostic, reached-bound, and provenance axis is retained
+independently in canonical replay.
+
+The product facade preserves its frozen-W5 default and routes a chain only when the caller explicitly selects
+`FixedDepthMemberChainV1`. The append-only consumer schema v2 records the typed root search and emits scenario rows for
+exhaustive absence, partial, unavailable, conflict, invalid, admitted preparation failure, and valid-but-unsupported
+Roslyn trees. Its generated conformance set uses eleven distinct snapshots and two fresh consumer processes per row;
+the four W5-selected exact answers are `request-failed`, `running`, `batch-failed`, and `running`, while human output
+retains only value shape. Same-session repetitions and reopened consumers produce byte-identical reports. Schema-v1
+W5 reports and behavior remain on their original path.
+
+Closure passes locked restore; strict serial Release at 0 warnings/0 errors; unit 502/502; Fast 121/121; complete
+integration 143/143; the focused eleven-snapshot W6 consumer lane; the W5 facade/report regression lane; and zero
+skips. W6.6 is the sole active next checkpoint.
+
 ### W6.6 — meaningful synthetic portfolio and next decision
 
 **Scale:** `~1K LOC`.

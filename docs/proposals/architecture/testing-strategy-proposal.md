@@ -2,7 +2,7 @@
 
 > **Lifecycle:** Current · **Roadmap:** Active
 >
-> **Current delivery policy (2026-07).** W0–W5 are the closed dump-evaluator evidence baseline; planned W6 tests
+> **Current delivery policy (2026-07).** W0–W5 are the closed dump-evaluator evidence baseline; active W6 tests
 > follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). The repository must distinguish checked-in
 > test code, a locally verified result, a CI-enforced gate, and a research proposal. The broad abstract-analysis,
 > virtual-stepping, dynamic, async, and performance matrices are deferred until their entry gates pass.
@@ -946,16 +946,16 @@ execution, including repeated attempts. Neither run is hosted dump evidence. The
 final hosted condition on 2026-07-16, closing the defined milestone scope without weakening the workflow, claiming
 field readiness, or setting policy for the selected next slice.
 
-### Planned W6 bounded-member-chain evidence gates
+### Active W6 bounded-member-chain evidence gates
 
-W6 is contract-only until its checkpoints produce executable evidence under the
+W6.1–W6.5 have produced executable evidence under the
 [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) and the
 [`C# Expression Front-End and Subset-Admission Contract`](csharp-expression-front-end-contract-proposal.md). W6.2
-must pin `Microsoft.CodeAnalysis.CSharp/5.3.0` and explicit C# 14 regular-source/full-text options, parse once, project
-only project-owned descriptors, preserve the frozen W2 and W5 schemas, counts, classifications, diagnostics, and
-semantics, and separately opt into `FixedDepthMemberChainV1`. Before any value-read
-claim, a compiler/SRM gate must prove the exact PropertyDef, getter signature/body, and backing-FieldDef relationships
-used by the selected W5 questions; arbitrary property execution remains outside the slice.
+pins `Microsoft.CodeAnalysis.CSharp/5.3.0` and explicit C# 14 regular-source/full-text options, parses once, projects
+only project-owned descriptors, preserves the frozen W2 and W5 schemas, counts, classifications, diagnostics, and
+semantics, and separately opts into `FixedDepthMemberChainV1`. The compiler/SRM gate proves the exact PropertyDef,
+getter signature/body, and backing-FieldDef relationships used by the selected W5 questions; arbitrary property
+execution remains outside the slice.
 
 The front-end lane has three explicit buckets: valid-admitted profile trees, complex Roslyn-valid but product-
 unsupported trees, and malformed/recovered/over-limit invalid inputs. The valid-unsupported bucket includes nested
@@ -970,6 +970,13 @@ nullable layout, target-type and object-extent checks, and every partial/unavail
 poison sources must prove preparation freezes both member selections and evaluation performs no catalog rebinding or
 getter execution. Same-session, fresh-process, and dump-close/reopen runs must reproduce canonical request, plan,
 reference-identity, result, and report artifacts within the W6 corpus.
+
+That generated lane is implemented through `62c4bb157`. Frozen-plan evaluation covers exact strings/integers/
+nullable integers, exact-null conditional and fallback behavior, direct-null blocking, partial/unavailable evidence,
+conflict, invalid data, incompatible coalescing, and both partial-string completion forms. Eleven independent full
+dumps drive an append-only schema-v2 consumer through same-session repetition and two fresh reopened processes per
+row. Exact roots, all non-exact root classifications, an admitted binding miss, and complete Roslyn syntax outside the
+supported subset remain deterministic report rows. The W5 schema-v1 regression path remains passing.
 
 The meaningful synthetic lane must use twenty-four independently generated dumps and questions across four genuinely
 different object-graph shapes. It must retain unsupported depth, indexer, method, and context rows; emit raw counts;

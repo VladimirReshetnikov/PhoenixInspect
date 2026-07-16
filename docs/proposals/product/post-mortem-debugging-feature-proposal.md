@@ -230,8 +230,8 @@ exact W2 closure commit `5bed47100`.
 **W2 v1 admission and plan boundary**
 
 * Admit only the closed one-hop shape with deterministic expression, identifier, and decoded-string caps. At W2
-  closure the handwritten parser enforced that boundary; the planned W6.2 front end parses complete bounded C# and
-  then projects only the versioned W2 shape.
+  closure the handwritten parser enforced that boundary; the implemented W6.2 front end parses complete bounded C#
+  and then projects only the versioned W2 shape.
 * Bind only the supplied typed root and dump runtime/metadata evidence; do not discover roots or load assemblies.
 * Select one exact instance-field descriptor during preparation and lower it to an immutable read-only plan rather
   than compiling a synthetic method.

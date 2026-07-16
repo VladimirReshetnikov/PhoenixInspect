@@ -22,10 +22,10 @@ The solution retains ten source projects, each containing contracts or behavior 
 | `Interpreter.Metadata.Abstractions` | Project-owned metadata identities and complete method/field plus contextual direct-MethodDef projection contracts. |
 | `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter and reusable body, body-independent call-signature, local, and field projection over a `MetadataReader`. |
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
-| `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, and W3 snapshot-scoped execution resolution/import correlation through ClrMD. |
-| `Interpreter.Product.DumpQuery` | Closed W2 grammar, typed snapshot-root binding, one-time field selection into immutable canonical plans, bounded `Evaluate(plan)`, closed value projection, and complete-corpus replay. |
-| `Interpreter.Product.DumpDebugging` | W4 standalone target projection and rooted preparation/execution plus W5 canonical expression request/classification, typed method acquisition, detached dump binding, and strict mode-preserving W2/W4 evaluation outcome. |
-| `Interpreter.Headless.ReferenceConsumer` | W5 prototype composition root: read-only dump open/root binding, versioned scenario execution, stable machine/human projection, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
+| `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, W3 snapshot-scoped execution resolution/import correlation, and W6 declared-member/reference/target/relative-storage projections through ClrMD. |
+| `Interpreter.Product.DumpQuery` | Sole complete Roslyn expression parse, versioned W2/W5/W6 tree recognition, typed snapshot-root binding, immutable canonical W2/W6 plans, bounded descriptor-only evaluation, closed value projection, and complete-corpus replay. |
+| `Interpreter.Product.DumpDebugging` | W4 standalone target projection and rooted preparation/execution plus canonical W5/W6 expression request/classification, typed method and member-chain preparation, detached dump binding, and strict mode-preserving product evaluation outcome. |
+| `Interpreter.Headless.ReferenceConsumer` | Prototype composition root: read-only dump open/root binding, append-only W5/W6 scenario execution, stable machine/human projection, typed root-selection reporting, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
 
 Tests are separated into a fast semantic/contract suite, a real dump integration suite, and two generated target
 executables: the general dump target and the optimized modeled-incident target. The

@@ -626,12 +626,13 @@ a later milestone and are prerequisites for debugger-grade Step Out and async `M
 
 ## 10. Validated input boundary
 
-W1–W5's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
+W1–W6.5's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
 deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. Earlier
 out-of-scope experiments have been removed. Caveat: completing these milestones establishes no behavior
 for other artifact shapes; W5's generated and meaningful synthetic usefulness portfolios contribute zero
-representative/external-observation rows. The selected fixed-depth member-chain slice now has a scenario and contract,
-but still requires its emitted-shape truth gate and executable evidence before implementation is claimed.
+representative/external-observation rows. The selected fixed-depth member-chain slice now has emitted-shape,
+full-expression-parse, declaration-certificate, immutable-plan, counted-evaluation, and fresh-process headless
+evidence. Its twenty-four-incident usefulness decision and repository closure gates remain active.
 
 ## 11. Physical topology
 
@@ -650,17 +651,17 @@ The prototype retains only projects containing behavior or contracts exercised b
   counted W3 method/field composition into a snapshot-scoped resolver/import descriptor, and W6.3's immutable
   declared-target/direct-field/data-property certificate with MethodDef-token physical getter acquisition and no
   reference or leaf read, without introducing ClrMD into core execution;
-- `Interpreter.Product.DumpQuery` — currently the bounded W2 parser and, at W6.2, the sole internal Roslyn dependency,
-  parse adapter, and W2/W5/W6 tree recognizers; typed root binding, immutable prepared plan, read-only `Evaluate(plan)`
-  path, canonical identities, and closed result-value projection remain project-owned;
+- `Interpreter.Product.DumpQuery` — the sole internal Roslyn dependency, one complete-expression parse adapter, and
+  versioned W2/W5/W6 tree recognizers; typed root binding, immutable prepared plans, descriptor-only W2 and W6
+  `Evaluate(plan)` paths, canonical identities, and closed result-value projection remain project-owned;
 - `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
   result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
   dump memory; ClrMD evidence binder; and W5 canonical expression classifier, typed acquisition facade, and strict
   mode-preserving W2/W4 evaluation union. It depends on the active query, ClrMD, and SRM boundaries to compose the
   admitted dump scenario, while the core execution projects remain backend-independent;
-- `Interpreter.Headless.ReferenceConsumer` — W5's independently launched prototype composition root, versioned
-  generated scenario consumer, stable machine/human reporter, and usefulness-portfolio raw-count/gate runner. It owns
-  no reusable semantics and is not a shipping CLI contract.
+- `Interpreter.Headless.ReferenceConsumer` — the independently launched prototype composition root, append-only W5/
+  W6 generated scenario consumer, stable machine/human reporter, typed root-selection projection, and usefulness-
+  portfolio raw-count/gate runner. It owns no reusable semantics and is not a shipping CLI contract.
 
 Logical seams may be documented without creating assemblies. A new project is justified only when it contains implementation, has an independently useful dependency boundary, and at least one test exercises that boundary. Empty product/model/backend projects are not placeholders.
 
