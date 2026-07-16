@@ -94,12 +94,116 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
         }
     }
 
+    /// <summary>
+    /// Materializes the predeclared twelve-incident synthetic portfolio as independent dump snapshots, evaluates
+    /// one question per fresh consumer process, and requires the portfolio runner to select the recurring
+    /// fixed-depth member-navigation boundary without promoting the results to representative evidence.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W5MeaningfulSyntheticV2")]
+    public void Meaningful_synthetic_incidents_select_the_recurring_design_boundary_headlessly()
+    {
+        var repositoryRoot = ResolveRepositoryRoot();
+        var executablePath = TestTargetPaths.ResolveExecutable();
+        var portfolioManifest = Path.Combine(
+            repositoryRoot,
+            "tests",
+            "corpus",
+            "w5-usefulness-meaningful-synthetic-v2.json");
+        var outputDirectory = Path.Combine(
+            Path.GetTempPath(),
+            $"w5-meaningful-synthetic-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outputDirectory);
+        try
+        {
+            using var portfolioDocument = JsonDocument.Parse(File.ReadAllBytes(portfolioManifest));
+            var definitions = portfolioDocument.RootElement
+                .GetProperty("evaluationReports")
+                .EnumerateArray()
+                .ToArray();
+            Assert.Equal(12, definitions.Length);
+            var snapshotIdentities = new HashSet<string>(StringComparer.Ordinal);
+            var rootTypes = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var definition in definitions)
+            {
+                var reportId = definition.GetProperty("id").GetString()!;
+                var reportRelativePath = definition.GetProperty("path").GetString()!;
+                var fixture = definition.GetProperty("syntheticFixture");
+                var arguments = fixture.GetProperty("targetArguments")
+                    .EnumerateArray()
+                    .Select(static item => item.GetString()!)
+                    .ToArray();
+                var dumpPath = Path.Combine(outputDirectory, $"{reportId}.dmp");
+                using (var target = TestTargetRunner.StartAndWaitReady(
+                           executablePath,
+                           arguments,
+                           isolatedDirectory: null))
+                {
+                    DumpWriter.WriteFullDump(target.Pid, dumpPath);
+                }
+
+                var scenarioManifest = Path.Combine(outputDirectory, $"{reportId}.scenario.json");
+                WriteSyntheticScenarioManifest(scenarioManifest, fixture);
+                var machineReport = Path.Combine(outputDirectory, reportRelativePath);
+                var humanReport = Path.Combine(outputDirectory, $"{reportId}.human.txt");
+                RunConsumer(
+                    repositoryRoot,
+                    scenarioManifest,
+                    dumpPath,
+                    machineReport,
+                    humanReport,
+                    expectedScenarioCount: 1);
+                AssertSyntheticIncidentReport(machineReport, fixture, snapshotIdentities, rootTypes);
+            }
+
+            Assert.Equal(12, snapshotIdentities.Count);
+            Assert.Equal(
+                ["SyntheticBatchPipelineProbe", "SyntheticRequestPipelineProbe"],
+                rootTypes.OrderBy(static type => type, StringComparer.Ordinal));
+
+            var firstMachine = Path.Combine(outputDirectory, "first.meaningful.machine.json");
+            var firstHuman = Path.Combine(outputDirectory, "first.meaningful.human.txt");
+            var secondMachine = Path.Combine(outputDirectory, "second.meaningful.machine.json");
+            var secondHuman = Path.Combine(outputDirectory, "second.meaningful.human.txt");
+            RunUsefulnessConsumer(
+                repositoryRoot,
+                portfolioManifest,
+                outputDirectory,
+                firstMachine,
+                firstHuman,
+                expectedRowCount: 12,
+                expectedStatus: "SatisfiedSyntheticValidation");
+            RunUsefulnessConsumer(
+                repositoryRoot,
+                portfolioManifest,
+                outputDirectory,
+                secondMachine,
+                secondHuman,
+                expectedRowCount: 12,
+                expectedStatus: "SatisfiedSyntheticValidation");
+
+            Assert.Equal(File.ReadAllBytes(firstMachine), File.ReadAllBytes(secondMachine));
+            Assert.Equal(File.ReadAllBytes(firstHuman), File.ReadAllBytes(secondHuman));
+            AssertMeaningfulSyntheticMachineReport(firstMachine);
+            AssertMeaningfulSyntheticHumanReport(firstHuman);
+        }
+        finally
+        {
+            if (Directory.Exists(outputDirectory))
+            {
+                Directory.Delete(outputDirectory, recursive: true);
+            }
+        }
+    }
+
     private static void RunConsumer(
         string repositoryRoot,
         string manifestPath,
         string dumpPath,
         string machineOutput,
-        string humanOutput)
+        string humanOutput,
+        int expectedScenarioCount = 9)
     {
         var result = RunHeadlessConsumer(
             repositoryRoot,
@@ -114,7 +218,7 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
                 humanOutput,
             ]);
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal("W5_CONSUMER_OK:9", result.StandardOutput.Trim());
+        Assert.Equal($"W5_CONSUMER_OK:{expectedScenarioCount}", result.StandardOutput.Trim());
         Assert.True(string.IsNullOrWhiteSpace(result.StandardError), result.StandardError);
     }
 
@@ -123,7 +227,9 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
         string portfolioManifest,
         string reportRoot,
         string machineOutput,
-        string humanOutput)
+        string humanOutput,
+        int expectedRowCount = 9,
+        string expectedStatus = "OpenGeneratedValidationOnly")
     {
         Assert.True(File.Exists(portfolioManifest), portfolioManifest);
         var result = RunHeadlessConsumer(
@@ -140,7 +246,7 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
             ]);
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(
-            "W5_USEFULNESS_OK:9:OpenGeneratedValidationOnly",
+            $"W5_USEFULNESS_OK:{expectedRowCount}:{expectedStatus}",
             result.StandardOutput.Trim());
         Assert.True(string.IsNullOrWhiteSpace(result.StandardError), result.StandardError);
     }
@@ -182,11 +288,115 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
         Assert.True(process.Start());
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
-        Assert.True(process.WaitForExit(60_000), "The headless reference consumer did not exit within its bound.");
+        if (!process.WaitForExit(180_000))
+        {
+            try
+            {
+                process.Kill(entireProcessTree: true);
+                _ = process.WaitForExit(10_000);
+            }
+            catch (InvalidOperationException)
+            {
+                // The process exited between the bounded wait and cleanup attempt.
+            }
+
+            throw new Xunit.Sdk.XunitException(
+                $"The headless reference consumer did not exit within its bound. Arguments: " +
+                string.Join(' ', arguments));
+        }
+
         return new ProcessResult(
             process.ExitCode,
             stdout.GetAwaiter().GetResult(),
             stderr.GetAwaiter().GetResult());
+    }
+
+    private static void WriteSyntheticScenarioManifest(string path, JsonElement fixture)
+    {
+        using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        writer.WriteStartObject();
+        writer.WriteNumber("schemaVersion", 1);
+        writer.WriteString("corpusKind", "SyntheticIncident");
+        writer.WriteString("dumpPath", "__synthetic_incident_dump__");
+        writer.WritePropertyName("root");
+        fixture.GetProperty("root").WriteTo(writer);
+        writer.WriteStartArray("scenarios");
+        fixture.GetProperty("scenario").WriteTo(writer);
+        writer.WriteEndArray();
+        writer.WriteEndObject();
+    }
+
+    private static void AssertSyntheticIncidentReport(
+        string path,
+        JsonElement fixture,
+        HashSet<string> snapshotIdentities,
+        HashSet<string> rootTypes)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllBytes(path));
+        var root = document.RootElement;
+        Assert.Equal("SyntheticIncident", root.GetProperty("corpusKind").GetString());
+        Assert.Contains(
+            "not external observations",
+            root.GetProperty("fixtureCaveat").GetString(),
+            StringComparison.Ordinal);
+        var expectedRoot = fixture.GetProperty("root");
+        Assert.Equal(expectedRoot.GetProperty("name").GetString(), root.GetProperty("rootName").GetString());
+        Assert.Equal(expectedRoot.GetProperty("typeName").GetString(), root.GetProperty("rootTypeName").GetString());
+        var snapshot = root.GetProperty("dumpSnapshotSha256").GetString()!;
+        Assert.Equal(64, snapshot.Length);
+        Assert.True(snapshotIdentities.Add(snapshot), "Every synthetic incident must use a distinct dump snapshot.");
+        _ = rootTypes.Add(root.GetProperty("rootTypeName").GetString()!);
+
+        var scenario = Assert.Single(root.GetProperty("scenarios").EnumerateArray());
+        var expectedScenario = fixture.GetProperty("scenario");
+        Assert.Equal(expectedScenario.GetProperty("id").GetString(), scenario.GetProperty("id").GetString());
+        Assert.Equal(
+            expectedScenario.GetProperty("expression").GetString(),
+            scenario.GetProperty("expression").GetString());
+        var outcome = scenario.GetProperty("outcome");
+        var expectedProductOutcome = fixture.GetProperty("expectedProductOutcome").GetString();
+        switch (expectedProductOutcome)
+        {
+            case "Exact":
+                Assert.Equal("Completed", outcome.GetProperty("completion").GetString());
+                Assert.Equal("Exact", outcome.GetProperty("evidence").GetString());
+                break;
+            case "Partial":
+                Assert.Equal("Completed", outcome.GetProperty("completion").GetString());
+                Assert.Equal("Partial", outcome.GetProperty("evidence").GetString());
+                break;
+            case "Unknown":
+                Assert.True(
+                    outcome.GetProperty("completion").GetString() is "Completed" or "BudgetExhausted");
+                break;
+            case "Unavailable":
+                Assert.Equal("AcquisitionFailure", outcome.GetProperty("kind").GetString());
+                break;
+            case "Unsupported":
+                Assert.Equal("ClassificationFailure", outcome.GetProperty("kind").GetString());
+                break;
+            default:
+                throw new Xunit.Sdk.XunitException($"Unexpected synthetic outcome '{expectedProductOutcome}'.");
+        }
+
+        var expectedValue = fixture.GetProperty("expectedValue");
+        var expectedPrefix = fixture.GetProperty("expectedValuePrefix");
+        if (expectedValue.ValueKind == JsonValueKind.String)
+        {
+            Assert.Equal(expectedValue.GetString(), outcome.GetProperty("value").GetString());
+        }
+        else if (expectedPrefix.ValueKind == JsonValueKind.String)
+        {
+            Assert.StartsWith(
+                expectedPrefix.GetString()!,
+                outcome.GetProperty("value").GetString(),
+                StringComparison.Ordinal);
+        }
+        else
+        {
+            Assert.Equal(JsonValueKind.Null, outcome.GetProperty("value").ValueKind);
+        }
     }
 
     private static void AssertMachineReport(string path)
@@ -403,6 +613,118 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
         Assert.DoesNotContain('%', report);
         Assert.Equal(
             9,
+            report.Split(Environment.NewLine)
+                .Count(static line => line.Contains(": admission=", StringComparison.Ordinal)));
+    }
+
+    private static void AssertMeaningfulSyntheticMachineReport(string path)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllBytes(path));
+        var root = document.RootElement;
+        Assert.Equal(2, root.GetProperty("usefulnessReportSchemaVersion").GetInt32());
+        Assert.Equal(2, root.GetProperty("portfolioSchemaVersion").GetInt32());
+        Assert.Equal("w5-usefulness-meaningful-synthetic-v2", root.GetProperty("portfolioId").GetString());
+        Assert.Equal("SyntheticIncident", root.GetProperty("corpusKind").GetString());
+        Assert.True(root.GetProperty("predeclaredBeforeEvaluation").GetBoolean());
+        Assert.False(root.GetProperty("claimsProductionReadiness").GetBoolean());
+        Assert.Contains(
+            "not external observations",
+            root.GetProperty("evidenceScopeCaveat").GetString(),
+            StringComparison.Ordinal);
+        var evaluationReports = root.GetProperty("evaluationReports").EnumerateArray().ToArray();
+        Assert.Equal(12, evaluationReports.Length);
+        Assert.Equal(
+            12,
+            evaluationReports.Select(static report => report.GetProperty("dumpSnapshotSha256").GetString())
+                .Distinct(StringComparer.Ordinal)
+                .Count());
+        Assert.All(
+            evaluationReports,
+            static report => Assert.Equal("SyntheticIncident", report.GetProperty("corpusKind").GetString()));
+
+        var questions = root.GetProperty("questions").EnumerateArray().ToArray();
+        Assert.Equal(12, questions.Length);
+        Assert.Equal(2, questions.Count(static question => question.GetProperty("admission").GetString() == "W2"));
+        Assert.Equal(6, questions.Count(static question => question.GetProperty("admission").GetString() == "W4"));
+        Assert.Equal(
+            4,
+            questions.Count(static question => question.GetProperty("admission").GetString() == "Unsupported"));
+
+        var rawCounts = root.GetProperty("rawCounts");
+        AssertMeaningfulSyntheticAggregate(rawCounts.GetProperty("allRows"));
+        AssertMeaningfulSyntheticAggregate(rawCounts.GetProperty("gateQualifyingRows"));
+        var representative = rawCounts.GetProperty("representativeRows");
+        Assert.Equal(0, representative.GetProperty("totalQuestions").GetInt32());
+        Assert.Equal(0, representative.GetProperty("distinctIncidents").GetInt32());
+        Assert.Equal(0, representative.GetProperty("distinctApplicationShapes").GetInt32());
+
+        var gate = root.GetProperty("portfolioGate");
+        Assert.Equal("SatisfiedSyntheticValidation", gate.GetProperty("status").GetString());
+        Assert.Equal(10, gate.GetProperty("minimumQualifyingIncidents").GetInt32());
+        Assert.Equal(2, gate.GetProperty("minimumQualifyingApplicationShapes").GetInt32());
+        Assert.Equal(12, gate.GetProperty("qualifyingIncidentCount").GetInt32());
+        Assert.Equal(2, gate.GetProperty("qualifyingApplicationShapeCount").GetInt32());
+        Assert.Equal(12, gate.GetProperty("qualifyingQuestionCount").GetInt32());
+        Assert.Empty(gate.GetProperty("missingConditions").EnumerateArray());
+
+        var decision = root.GetProperty("nextDecision");
+        Assert.Equal("SelectedSyntheticDesignDecision", decision.GetProperty("status").GetString());
+        Assert.Equal("AdmitFixedDepthMemberChain", decision.GetProperty("selection").GetString());
+        var ranking = decision.GetProperty("blockerRanking").EnumerateArray().ToArray();
+        Assert.Equal("MemberNavigation", ranking[0].GetProperty("blocker").GetString());
+        Assert.Equal(4, ranking[0].GetProperty("independentIncidentCount").GetInt32());
+        Assert.Equal("ContextAcquisition", ranking[1].GetProperty("blocker").GetString());
+        Assert.Equal(3, ranking[1].GetProperty("independentIncidentCount").GetInt32());
+        Assert.Equal("ExecutionBody", ranking[2].GetProperty("blocker").GetString());
+        Assert.Equal(1, ranking[2].GetProperty("independentIncidentCount").GetInt32());
+
+        var text = File.ReadAllText(path);
+        Assert.DoesNotContain('%', text);
+        Assert.DoesNotContain("percentage", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void AssertMeaningfulSyntheticAggregate(JsonElement aggregate)
+    {
+        Assert.Equal(12, aggregate.GetProperty("totalQuestions").GetInt32());
+        Assert.Equal(12, aggregate.GetProperty("distinctIncidents").GetInt32());
+        Assert.Equal(2, aggregate.GetProperty("distinctApplicationShapes").GetInt32());
+        var admission = aggregate.GetProperty("admission");
+        AssertRatio(admission.GetProperty("admitted"), 8, 12);
+        Assert.Equal(2, admission.GetProperty("w2").GetInt32());
+        Assert.Equal(6, admission.GetProperty("w4").GetInt32());
+        Assert.Equal(4, admission.GetProperty("unsupported").GetInt32());
+        AssertRatio(aggregate.GetProperty("exactAnswers"), 4, 12);
+        AssertRatio(aggregate.GetProperty("usefulPartialOrUnknownAnswers"), 2, 3);
+        AssertRatio(aggregate.GetProperty("decisionChangingUsefulness"), 6, 12);
+        var outcomes = aggregate.GetProperty("outcomeComposition");
+        Assert.Equal(4, outcomes.GetProperty("Exact").GetInt32());
+        Assert.Equal(1, outcomes.GetProperty("Partial").GetInt32());
+        Assert.Equal(2, outcomes.GetProperty("Unknown").GetInt32());
+        Assert.Equal(1, outcomes.GetProperty("Unavailable").GetInt32());
+        Assert.Equal(4, outcomes.GetProperty("Unsupported").GetInt32());
+        Assert.Equal(
+            1,
+            aggregate.GetProperty("acquisitionFailureComposition").GetProperty("W5_MODULE_MISSING").GetInt32());
+        var blockers = aggregate.GetProperty("blockerComposition");
+        Assert.Equal(4, blockers.GetProperty("MemberNavigation").GetInt32());
+        Assert.Equal(3, blockers.GetProperty("ContextAcquisition").GetInt32());
+        Assert.Equal(1, blockers.GetProperty("ExecutionBody").GetInt32());
+        Assert.Equal(4, blockers.GetProperty("None").GetInt32());
+    }
+
+    private static void AssertMeaningfulSyntheticHumanReport(string path)
+    {
+        var report = File.ReadAllText(path);
+        Assert.Contains("W5 usefulness portfolio report v2", report, StringComparison.Ordinal);
+        Assert.Contains("not external observations", report, StringComparison.Ordinal);
+        Assert.Contains("Raw counts (all): questions=12; incidents=12; application-shapes=2", report, StringComparison.Ordinal);
+        Assert.Contains("Raw counts (gate-qualifying): questions=12", report, StringComparison.Ordinal);
+        Assert.Contains("Raw counts (representative): questions=0", report, StringComparison.Ordinal);
+        Assert.Contains("SatisfiedSyntheticValidation", report, StringComparison.Ordinal);
+        Assert.Contains("selection=AdmitFixedDepthMemberChain", report, StringComparison.Ordinal);
+        Assert.DoesNotContain('%', report);
+        Assert.Equal(
+            12,
             report.Split(Environment.NewLine)
                 .Count(static line => line.Contains(": admission=", StringComparison.Ordinal)));
     }

@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 2,
+  "portfolioId": "w5-usefulness-meaningful-synthetic-v2",
+  "corpusKind": "SyntheticIncident",
+  "predeclaredBeforeEvaluation": true,
+  "declaredPurpose": "Exercise W5 against twelve independently dumped, deliberately varied incidents spanning two structurally distinct application roots. This corpus selects a next prototype design problem; it is designed evidence, not an external observation or a field-readiness claim.",
+  "evaluationReports": [
+    {
+      "id": "rq01-exact-field-report",
+      "path": "synthetic-reports/rq01-exact-field.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "request-pipeline",
+        "targetArguments": ["--synthetic-request-pipeline", "120", "-20", "clear"],
+        "root": { "name": "root", "typeName": "SyntheticRequestPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "rq01-exact-field", "expression": "root.Marker", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Exact",
+        "expectedValue": "i32:120",
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "rq02-exact-interpreted-report",
+      "path": "synthetic-reports/rq02-exact-interpreted.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "request-pipeline",
+        "targetArguments": ["--synthetic-request-pipeline", "700", "325", "running"],
+        "root": { "name": "root", "typeName": "SyntheticRequestPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "rq02-exact-interpreted", "expression": "root.GetMarkerSummary()", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Exact",
+        "expectedValue": "i32:1025",
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "rq03-partial-marker-report",
+      "path": "synthetic-reports/rq03-partial-marker.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "request-pipeline",
+        "targetArguments": ["--synthetic-request-pipeline", "90", "10", "degraded"],
+        "root": { "name": "root", "typeName": "SyntheticRequestPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "rq03-partial-marker", "expression": "root.GetMarkerSummary()", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "MarkerPartial", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Partial",
+        "expectedValue": null,
+        "expectedValuePrefix": "unknown:sha256:"
+      }
+    },
+    {
+      "id": "rq04-failure-code-report",
+      "path": "synthetic-reports/rq04-failure-code.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "request-pipeline",
+        "targetArguments": ["--synthetic-request-pipeline", "410", "-10", "failed"],
+        "root": { "name": "root", "typeName": "SyntheticRequestPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "rq04-failure-code", "expression": "root.Failure.Code", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Unsupported",
+        "expectedValue": null,
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "rq05-request-status-report",
+      "path": "synthetic-reports/rq05-request-status.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "request-pipeline",
+        "targetArguments": ["--synthetic-request-pipeline", "502", "-2", "running"],
+        "root": { "name": "root", "typeName": "SyntheticRequestPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "rq05-request-status", "expression": "root.CurrentRequest.Status", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Unsupported",
+        "expectedValue": null,
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "rq06-unavailable-marker-report",
+      "path": "synthetic-reports/rq06-unavailable-marker.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "request-pipeline",
+        "targetArguments": ["--synthetic-request-pipeline", "250", "-50", "clear"],
+        "root": { "name": "root", "typeName": "SyntheticRequestPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "rq06-unavailable-marker", "expression": "root.GetMarkerSummary()", "methodMode": "Modeled", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "MarkerUnavailable", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Unknown",
+        "expectedValue": null,
+        "expectedValuePrefix": "unknown:sha256:"
+      }
+    },
+    {
+      "id": "bt07-exact-field-report",
+      "path": "synthetic-reports/bt07-exact-field.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "batch-pipeline",
+        "targetArguments": ["--synthetic-batch-pipeline", "-400", "100", "clear"],
+        "root": { "name": "root", "typeName": "SyntheticBatchPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "bt07-exact-field", "expression": "root.Marker", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Exact",
+        "expectedValue": "i32:-400",
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "bt08-exact-modeled-report",
+      "path": "synthetic-reports/bt08-exact-modeled.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "batch-pipeline",
+        "targetArguments": ["--synthetic-batch-pipeline", "2000", "-750", "running"],
+        "root": { "name": "root", "typeName": "SyntheticBatchPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "bt08-exact-modeled", "expression": "root.GetMarkerSummary()", "methodMode": "Modeled", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Exact",
+        "expectedValue": "i32:1250",
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "bt09-instruction-bound-report",
+      "path": "synthetic-reports/bt09-instruction-bound.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "batch-pipeline",
+        "targetArguments": ["--synthetic-batch-pipeline", "33", "44", "degraded"],
+        "root": { "name": "root", "typeName": "SyntheticBatchPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "bt09-instruction-bound", "expression": "root.GetMarkerSummary()", "methodMode": "Interpreted", "instructionLimit": 0, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Unknown",
+        "expectedValue": null,
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "bt10-failure-code-report",
+      "path": "synthetic-reports/bt10-failure-code.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "batch-pipeline",
+        "targetArguments": ["--synthetic-batch-pipeline", "1001", "-1", "failed"],
+        "root": { "name": "root", "typeName": "SyntheticBatchPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "bt10-failure-code", "expression": "root.LastFailure.Code", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Unsupported",
+        "expectedValue": null,
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "bt11-progress-state-report",
+      "path": "synthetic-reports/bt11-progress-state.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "batch-pipeline",
+        "targetArguments": ["--synthetic-batch-pipeline", "64", "16", "running"],
+        "root": { "name": "root", "typeName": "SyntheticBatchPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "bt11-progress-state", "expression": "root.Progress.State", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "Captured", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Unsupported",
+        "expectedValue": null,
+        "expectedValuePrefix": null
+      }
+    },
+    {
+      "id": "bt12-module-unavailable-report",
+      "path": "synthetic-reports/bt12-module-unavailable.machine.json",
+      "syntheticFixture": {
+        "applicationShape": "batch-pipeline",
+        "targetArguments": ["--synthetic-batch-pipeline", "300", "-75", "clear"],
+        "root": { "name": "root", "typeName": "SyntheticBatchPipelineProbe", "maximumMatches": 2, "maximumHandlesScanned": 100000 },
+        "scenario": { "id": "bt12-module-unavailable", "expression": "root.GetMarkerSummary()", "methodMode": "Interpreted", "instructionLimit": 100, "logicalDepthLimit": 2, "traversalLimit": 10, "fixtureEvidenceView": "ModuleUnavailable", "cancelBeforeExecution": false, "repeatCount": 1 },
+        "expectedProductOutcome": "Unavailable",
+        "expectedValue": null,
+        "expectedValuePrefix": null
+      }
+    }
+  ],
+  "questions": [
+    {
+      "incidentId": "request-incident-01", "applicationShape": "request-pipeline", "questionId": "rq01-exact-field",
+      "userTask": "Determine the request pipeline marker captured at the incident boundary.",
+      "expressionRequested": "root.Marker", "requiredContextKind": "The unique rooted request pipeline and its captured Marker field.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "rq01-exact-field-report", "scenarioId": "rq01-exact-field",
+      "firstBoundary": { "kind": "None", "code": null, "explanation": null },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted request pipeline.", "Read the Marker field from its captured object bytes."],
+      "answerUsefulForInvestigation": true, "answerChangedNextDecision": true,
+      "decisionImpactExplanation": "The exact marker distinguishes this incident from the alternate request branch and confirms direct-field evaluation is useful.",
+      "dominantBlocker": "None"
+    },
+    {
+      "incidentId": "request-incident-02", "applicationShape": "request-pipeline", "questionId": "rq02-exact-interpreted",
+      "userTask": "Recover the combined request marker produced by the captured helper path.",
+      "expressionRequested": "root.GetMarkerSummary()", "requiredContextKind": "The rooted request pipeline plus its exact module, method, helper, and marker fields.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "rq02-exact-interpreted-report", "scenarioId": "rq02-exact-interpreted",
+      "firstBoundary": { "kind": "None", "code": null, "explanation": null },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted request pipeline.", "Resolve GetMarkerSummary and CombineMarkers.", "Read both marker fields and reproduce the bounded addition."],
+      "answerUsefulForInvestigation": true, "answerChangedNextDecision": true,
+      "decisionImpactExplanation": "The exact combined marker confirms that a bounded two-method computation answers a realistic request-pipeline question.",
+      "dominantBlocker": "None"
+    },
+    {
+      "incidentId": "request-incident-03", "applicationShape": "request-pipeline", "questionId": "rq03-partial-marker",
+      "userTask": "Determine whether a degraded request still preserves useful evidence for its combined marker.",
+      "expressionRequested": "root.GetMarkerSummary()", "requiredContextKind": "The rooted request pipeline with only a captured prefix of Marker and exact remaining method context.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Partial", "evaluationReportId": "rq03-partial-marker-report", "scenarioId": "rq03-partial-marker",
+      "firstBoundary": { "kind": "MemberEvidence", "code": "FIXTURE_MARKER_PARTIAL", "explanation": "The incident exposes only the first two of the four Marker bytes, so the combined value must remain unknown with lineage." },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted request pipeline.", "Retain the observed Marker prefix.", "Avoid inventing the missing bytes while preserving the lineage-bearing answer."],
+      "answerUsefulForInvestigation": true, "answerChangedNextDecision": true,
+      "decisionImpactExplanation": "The lineage-bearing partial result preserves enough evidence to continue triage instead of discarding the incident as wholly unreadable.",
+      "dominantBlocker": "ContextAcquisition"
+    },
+    {
+      "incidentId": "request-incident-04", "applicationShape": "request-pipeline", "questionId": "rq04-failure-code",
+      "userTask": "Read the nested failure code associated with the failed request pipeline.",
+      "expressionRequested": "root.Failure.Code", "requiredContextKind": "The rooted request pipeline, its Failure reference, and the nested Code field.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "rq04-failure-code-report", "scenarioId": "rq04-failure-code",
+      "firstBoundary": { "kind": "Syntax", "code": "QUERY_SYNTAX_UNSUPPORTED", "explanation": "The admitted expression grammar cannot traverse the Failure reference to its Code field." },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted request pipeline.", "Follow Failure to the nested object.", "Read Code from the failure object."],
+      "answerUsefulForInvestigation": false, "answerChangedNextDecision": false, "decisionImpactExplanation": "The prototype supplies no answer, so the operator must perform the complete nested walk manually.",
+      "dominantBlocker": "MemberNavigation"
+    },
+    {
+      "incidentId": "request-incident-05", "applicationShape": "request-pipeline", "questionId": "rq05-request-status",
+      "userTask": "Read the nested status of the request active at the captured boundary.",
+      "expressionRequested": "root.CurrentRequest.Status", "requiredContextKind": "The rooted request pipeline, its CurrentRequest reference, and the nested Status field.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "rq05-request-status-report", "scenarioId": "rq05-request-status",
+      "firstBoundary": { "kind": "Syntax", "code": "QUERY_SYNTAX_UNSUPPORTED", "explanation": "The admitted expression grammar cannot traverse CurrentRequest to its Status field." },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted request pipeline.", "Follow CurrentRequest to its state record.", "Read Status from the nested record."],
+      "answerUsefulForInvestigation": false, "answerChangedNextDecision": false, "decisionImpactExplanation": "The prototype cannot expose the requested nested state and therefore does not reduce the manual investigation.",
+      "dominantBlocker": "MemberNavigation"
+    },
+    {
+      "incidentId": "request-incident-06", "applicationShape": "request-pipeline", "questionId": "rq06-unavailable-marker",
+      "userTask": "Determine what can still be concluded when the primary request marker bytes are unavailable.",
+      "expressionRequested": "root.GetMarkerSummary()", "requiredContextKind": "The rooted request pipeline with attributable but unavailable Marker bytes and exact remaining modeled context.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Unavailable", "evaluationReportId": "rq06-unavailable-marker-report", "scenarioId": "rq06-unavailable-marker",
+      "firstBoundary": { "kind": "MemberEvidence", "code": "FIXTURE_MARKER_UNAVAILABLE", "explanation": "No Marker bytes are present, so the model returns a lineage-bearing unknown rather than a fabricated value." },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted request pipeline.", "Attempt the Marker read and retain its unavailable state.", "Use the unknown lineage to identify the missing prerequisite."],
+      "answerUsefulForInvestigation": true, "answerChangedNextDecision": true,
+      "decisionImpactExplanation": "The typed unknown identifies a concrete missing field and prevents an incorrect exact conclusion while preserving the next acquisition action.",
+      "dominantBlocker": "ContextAcquisition"
+    },
+    {
+      "incidentId": "batch-incident-07", "applicationShape": "batch-pipeline", "questionId": "bt07-exact-field",
+      "userTask": "Determine the batch marker captured for the active partition wave.",
+      "expressionRequested": "root.Marker", "requiredContextKind": "The unique rooted batch pipeline and its captured Marker field.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "bt07-exact-field-report", "scenarioId": "bt07-exact-field",
+      "firstBoundary": { "kind": "None", "code": null, "explanation": null },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted batch pipeline.", "Read Marker from its captured object bytes."],
+      "answerUsefulForInvestigation": true, "answerChangedNextDecision": true,
+      "decisionImpactExplanation": "The signed exact marker identifies the active partition wave and validates direct-field recovery on a second root shape.",
+      "dominantBlocker": "None"
+    },
+    {
+      "incidentId": "batch-incident-08", "applicationShape": "batch-pipeline", "questionId": "bt08-exact-modeled",
+      "userTask": "Recover the modeled combined marker for the batch pipeline.",
+      "expressionRequested": "root.GetMarkerSummary()", "requiredContextKind": "The rooted batch pipeline plus exact model identity and both marker fields.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "bt08-exact-modeled-report", "scenarioId": "bt08-exact-modeled",
+      "firstBoundary": { "kind": "None", "code": null, "explanation": null },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted batch pipeline.", "Resolve the exact GetMarkerSummary model.", "Read both fields and apply its declared pure addition."],
+      "answerUsefulForInvestigation": true, "answerChangedNextDecision": true,
+      "decisionImpactExplanation": "The exact modeled result confirms the same semantic answer on a structurally different application root.",
+      "dominantBlocker": "None"
+    },
+    {
+      "incidentId": "batch-incident-09", "applicationShape": "batch-pipeline", "questionId": "bt09-instruction-bound",
+      "userTask": "Determine whether the batch helper can run under a deliberately exhausted instruction budget.",
+      "expressionRequested": "root.GetMarkerSummary()", "requiredContextKind": "The rooted batch pipeline plus exact method and field evidence under a zero-instruction execution policy.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "bt09-instruction-bound-report", "scenarioId": "bt09-instruction-bound",
+      "firstBoundary": { "kind": "Execution", "code": "EVAL_INSTRUCTION_LIMIT", "explanation": "The predeclared execution policy allows no instruction, so evaluation stops before consuming the method body." },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Confirm exact root, method, helper, and field evidence.", "Record that the explicit execution budget prevents evaluation."],
+      "answerUsefulForInvestigation": false, "answerChangedNextDecision": false, "decisionImpactExplanation": "The result faithfully explains the policy boundary but supplies no value for this incident.",
+      "dominantBlocker": "ExecutionBody"
+    },
+    {
+      "incidentId": "batch-incident-10", "applicationShape": "batch-pipeline", "questionId": "bt10-failure-code",
+      "userTask": "Read the nested failure code for the failed batch pipeline.",
+      "expressionRequested": "root.LastFailure.Code", "requiredContextKind": "The rooted batch pipeline, its LastFailure reference, and the nested Code field.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "bt10-failure-code-report", "scenarioId": "bt10-failure-code",
+      "firstBoundary": { "kind": "Syntax", "code": "QUERY_SYNTAX_UNSUPPORTED", "explanation": "The admitted expression grammar cannot traverse LastFailure to its Code field." },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted batch pipeline.", "Follow LastFailure to the nested object.", "Read Code from that object."],
+      "answerUsefulForInvestigation": false, "answerChangedNextDecision": false, "decisionImpactExplanation": "The nested value remains inaccessible through the prototype and requires a complete manual walk.",
+      "dominantBlocker": "MemberNavigation"
+    },
+    {
+      "incidentId": "batch-incident-11", "applicationShape": "batch-pipeline", "questionId": "bt11-progress-state",
+      "userTask": "Read the nested progress state of the captured batch pipeline.",
+      "expressionRequested": "root.Progress.State", "requiredContextKind": "The rooted batch pipeline, its Progress reference, and the nested State field.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Exact", "evaluationReportId": "bt11-progress-state-report", "scenarioId": "bt11-progress-state",
+      "firstBoundary": { "kind": "Syntax", "code": "QUERY_SYNTAX_UNSUPPORTED", "explanation": "The admitted expression grammar cannot traverse Progress to its State field." },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted batch pipeline.", "Follow Progress to the nested record.", "Read State from the progress record."],
+      "answerUsefulForInvestigation": false, "answerChangedNextDecision": false, "decisionImpactExplanation": "The requested operational state is outside the admitted member-navigation depth.",
+      "dominantBlocker": "MemberNavigation"
+    },
+    {
+      "incidentId": "batch-incident-12", "applicationShape": "batch-pipeline", "questionId": "bt12-module-unavailable",
+      "userTask": "Determine whether the batch summary can be recovered when its declaring module is unavailable.",
+      "expressionRequested": "root.GetMarkerSummary()", "requiredContextKind": "The rooted batch pipeline plus an attributable declaring module and method body.",
+      "contextAttribution": "Exact", "requiredMemberEvidence": "Unavailable", "evaluationReportId": "bt12-module-unavailable-report", "scenarioId": "bt12-module-unavailable",
+      "firstBoundary": { "kind": "MethodAcquisition", "code": "W5_MODULE_MISSING", "explanation": "The incident evidence view exposes no declaring module from which the requested method body can be reacquired." },
+      "manualObjectWalkingOperationsKnown": true, "manualObjectWalkingOperations": ["Locate the rooted batch pipeline.", "Attempt to identify the declaring module and stop when no candidate is available."],
+      "answerUsefulForInvestigation": false, "answerChangedNextDecision": false, "decisionImpactExplanation": "The typed acquisition failure prevents a false answer but cannot recover the requested summary.",
+      "dominantBlocker": "ContextAcquisition"
+    }
+  ]
+}
