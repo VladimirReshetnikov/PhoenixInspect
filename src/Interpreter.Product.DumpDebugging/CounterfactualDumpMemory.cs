@@ -92,7 +92,7 @@ public sealed class CounterfactualDumpMemory :
 
     /// <summary>
     /// Gets a defensive copy of the domain-separated canonical replay bytes. These bytes contain target-derived
-    /// addresses and field prefixes and therefore are replay material rather than telemetry-safe display text.
+    /// addresses and field prefixes and therefore are replay material rather than suitable for diagnostic display display text.
     /// </summary>
     public ImmutableArray<byte> CanonicalBytes => CounterfactualCanonical.Copy(canonicalBytes);
 

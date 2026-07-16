@@ -136,7 +136,7 @@ internal sealed class TestTargetRunner : IDisposable
             process.StartInfo.ArgumentList.Add(argument);
         }
 
-        process.StartInfo.Environment["INTERPRETER_TEST_SECRET_CANARY"] =
+        process.StartInfo.Environment["INTERPRETER_TEST_ARTIFACT_CANARY"] =
             "must-not-enter-the-full-dump";
         ConfigureIsolatedEnvironment(process.StartInfo, ownedDirectory);
 

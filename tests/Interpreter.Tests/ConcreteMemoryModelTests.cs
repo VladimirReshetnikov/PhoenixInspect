@@ -319,7 +319,7 @@ public sealed class ConcreteMemoryModelTests
             memory,
             arrayReference,
             domain.ConstInt32(0),
-            domain.ConstString("redacted payload")));
+            domain.ConstString("omitted payload")));
 
         Assert.Equal("length", lengthException.ParamName);
         Assert.Equal("value", valueException.ParamName);

@@ -11,11 +11,11 @@ grammar, typed snapshot-scoped root bindings, immutable plans that select their 
 coalescing over `String` and `Nullable<Int32>` alongside direct `Int32`, canonical request/root-selection/plan
 identities, path-accurate bounds, and honest no-answer completeness. The versioned W2 corpus contains 22 cases over
 20 distinct expression texts and reproduces every complete result plus each successfully prepared plan after a fresh
-open and rebind. W2 is complete for its non-cybersecurity scope: [GitHub Actions run
+open and rebind. W2 is complete for its milestone-selected scope: [GitHub Actions run
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
 at exact closure commit `5bed47100`.
 
-W3 hardened implementation checkpoint `19c292f9f` adds structural execution identities; SRM-projected static/instance signatures,
+W3 strengthened implementation checkpoint `19c292f9f` adds structural execution identities; SRM-projected static/instance signatures,
 initialized locals, and FieldDefs; metadata-derived activation; immutable typed whole-body plans; injected persistent
 memory; exact `ldfld`; and a latched target-null outcome. Its generated-dump proof replays the counted physical body,
 correlates exactly one getter operand with one exact owner/field observation, imports that evidence without fabricating
@@ -26,7 +26,7 @@ skips. [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at the
 exact implementation commit. [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) then passed all four required
-jobs at exact documentation-closure commit `de6cea124`, so W3 is formally closed for its defined non-cybersecurity
+jobs at exact documentation-closure commit `de6cea124`, so W3 is formally closed for its defined milestone-selected
 scope. A whole-file-identified disk PE remains only an independent oracle, never dump resolver input.
 
 W4's closed design contract is
@@ -65,7 +65,7 @@ content-addressed `InputOrigin`/ordered-`BinaryTransform` lineage capture and fr
 transport and arithmetic handlers. Exact E2 `ldfld` remains executable; at that checkpoint partial/unavailable field
 continuation and `FieldLoadTransform` were still W4.3 work. Its headless evidence remains focused W4.2 53/53,
 complete unit 156/156, fast 71/71, ordinary dump 5/5, both documentation guards, zero skips, and a strict
-fifteen-project Release build with zero warnings/errors under `Scope!=Cybersecurity` for behavioral tests.
+fifteen-project Release build with zero warnings/errors within the milestone test selection for behavioral tests.
 
 W4.3 adds immutable canonical `FieldLoadEvidence` plus `MemoryLoadResult.FromFieldEvidence`, retaining the frozen
 ordinary instance `Int32` field, partial/unavailable status, reason, complete source/imported-object identities, and
@@ -79,7 +79,7 @@ proof: no ClrMD non-exact import, product facade, or dump-grounded W4 result is 
 
 At checkpoint `7479b1ad4`, the strict fifteen-project Release build passed with zero warnings/errors; focused W4.3
 passed 55/55, complete unit 211/211, fast 71/71, ordinary-dump regression 5/5, optimized-dump regression 1/1, and both
-Markdown/headless guards passed with zero skips. All test commands were headless and used `Scope!=Cybersecurity`.
+Markdown/headless guards passed with zero skips. All test commands were headless and used the milestone test selection.
 The historical W4.2 checkpoint remains 3,454 LOC: 3,429 attributable kernel LOC (1,521 production plus 1,908 focused
 tests) and 25 LOC segregating an excluded test scope; W4.1–W4.2 had realized 3,932 LOC and projected
 18,532–26,132 LOC. W4.3 realizes 3,096 LOC (1,100 production LOC plus 1,996 test LOC), so W4.1–W4.3 realized 7,028 LOC
@@ -92,13 +92,13 @@ unsupported, and the resolver seam permits W4.6 to choose a future model disposi
 read. W4.4b adds explicit legacy versus W4 graph admission modes and a public `MethodGraphPlanner`. Deterministic
 first-result caching and root-first call-site discovery retain and charge each direct edge, deduplicate shared method
 and field dependencies, reject cycles and descriptor conflicts, and freeze canonical method, field, call-site,
-admission, and required-depth facts under fixed 64-method/1,024-unit safety caps. Every failure carries no partial
+admission, and required-depth facts under fixed 64-method/1,024-unit resource caps. Every failure carries no partial
 plan and executes nothing. The exact fixture graph contains two methods, two fields, one call at IL offset 12, logical
 depth two, and five traversal units.
 
 W4.4 verification passed locked restore; a strict fifteen-project Release build with zero warnings/errors; planner
 35/35; W4 fixture 6/6; complete unit 250/250; fast 73/73; ordinary dump 5/5; optimized dump 1/1; and both guards, with
-zero skips. Every behavioral command was headless and used `Scope!=Cybersecurity`. W4.4 realizes 3,651 added LOC:
+zero skips. Every behavioral command was headless and used the milestone test selection. W4.4 realizes 3,651 added LOC:
 W4.4a contributes 1,043 (665 production plus 378 tests) and W4.4b contributes 2,608 (1,411 production plus 1,197
 tests). The post-audit split preserves each delivered package below 3,500 LOC and retains the original combined
 W4.4 estimate of 1,700–2,600 as historical calibration. W4.1–W4.4 cumulatively realize 10,679 LOC and produced the
@@ -117,10 +117,10 @@ fifteen-project Release solution build and strict Release builds of the unit and
 warnings/errors; prepared-graph
 tests 25/25; W4 fixture 7/7; complete unit 275/275; fast integration 74/74; ordinary dump 5/5; optimized dump 1/1;
 the Markdown guard across 62 files and 41 local destinations; and the headless guard across one workflow. Every test
-lane had zero skips and every behavioral command used `Scope!=Cybersecurity`. W4.5a realizes 3,334 LOC (1,590
+lane had zero skips and every behavioral command used the milestone test selection. W4.5a realizes 3,334 LOC (1,590
 production plus 1,744 tests), bringing W4.1–W4.5a to 14,013 LOC.
-The ordinary and optimized dump filters were `Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity`
-and `Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity`, respectively.
+The ordinary and optimized dump filters were `Category=Dump&Corpus!=ModeledIncidentContextV1`
+and `Category=Dump&Corpus=ModeledIncidentContextV1`, respectively.
 
 W4.5b adds optional `IInterpretedCallLineageDomain<TValue>` capability and append-only lineage node kinds 4 and 5.
 Exact values cross calls and returns unchanged. Each explained-unknown argument receives one metadata-indexed
@@ -134,7 +134,7 @@ retain distinct stable blocked/invalid taxonomy without partial state, memory, b
 At pushed checkpoint `c72f6ee9e`, locked restore and the strict fifteen-project Release build passed with zero warnings/errors;
 prepared-graph execution passed 40/40; the combined lineage/audit lane 76/76, including 29 frozen legacy identity
 cases; compiler lineage 2/2; aggregate W4 integration 9/9; complete unit 297/297; fast integration 76/76; ordinary
-dump 5/5; and optimized dump 1/1. All behavioral filters used `Scope!=Cybersecurity`, there were zero skips, and an
+dump 5/5; and optimized dump 1/1. All behavioral filters used the milestone test selection, there were zero skips, and an
 independent audit found no remaining finding.
 
 W4.6a adds bounded non-generic model identity/version, descriptor, invocation/outcome, and registry contracts. Explicit
@@ -149,7 +149,7 @@ temporary boundary with the frozen-capability-only execution described below.
 At exact pushed checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41`, locked restore; strict Release build
 0/0; contract 49/49; model planner 25/25; legacy planner 35/35; SRM 1/1; lineage 2/2; unit 371/371; fast 77/77;
 ordinary dump 5/5; optimized dump 1/1; Markdown 62/41; and workflow guard 1 all passed with zero skips. Behavioral
-filters used `Scope!=Cybersecurity`, and independent audits found no behavioral findings. The deterministic PDB-free
+filters used the milestone test selection, and independent audits found no behavioral findings. The deterministic PDB-free
 TestTarget PE SHA-256 is `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`.
 
 W4.6b adds optional modeled-return lineage/domain behavior. Exact arguments are embedded in canonical kind-6
@@ -175,8 +175,8 @@ reproduce the dual-unknown graph SHA-256 `31c45f6902e446d179cc2a5205363e0d589241
 W4.6d realizes 956 integration-test additions. W4.6 closure passed locked restore; strict fifteen-project and
 unit/integration Release builds at zero
 warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integration 13/13; complete unit 413/413; fast
-80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4, all headlessly with zero skips and
-`Scope!=Cybersecurity` on behavioral filters.
+80/80; ordinary dump 5/5; and optimized dump 1/1, all headlessly with zero skips and
+the milestone test selection on behavioral filters.
 
 W4.7a checkpoint `2e70fe76d` adds `Interpreter.Product.DumpDebugging` and projects only a complete sequence of exact
 transitions issued by the same `IlMachine`, from one legacy root activation at IL offset zero through the first exact
@@ -197,8 +197,7 @@ re-step consults no resolver, value-domain, or memory capability and that each e
 W4.7 closure passed locked restore; the strict sixteen-project Release build over eleven source projects at zero
 warnings/errors; complete unit 430/430; Fast 80/80; ordinary dump 5/5; optimized dump 1/1; W4.7a 15/15; W4.7b 2/2;
 combined W4.7 17/17; compiler differential class 23/23; Markdown 62 files/41 destinations; and the one-workflow
-headless guard. All behavioral lanes were headless, included `Scope!=Cybersecurity`, and had zero skips. External-
-worker 4/4 remains W4.6 historical evidence and was not rerun or claimed for W4.7.
+headless guard. All behavioral lanes were headless, used the milestone test selection, and had zero skips.
 
 W4.5b realizes 2,804 added LOC (766 production plus 2,038 tests). W4.6a/b/c/d realize 2,959/1,003/2,734/956 LOC,
 respectively, so combined W4.6 realizes 7,652 LOC and W4.1–W4.6d realize 24,469 LOC. W4.7a/b realize 2,448/353 LOC,
@@ -214,14 +213,17 @@ implementation closure passed in run 29463426083 at exact commit
 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) at
 `aaec73c5b987089addb539d3628de67bd815bd8f`.
 
-W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
+W1 is complete for its revised milestone-selected dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
-A versioned malformed-minidump mutation corpus and a Windows x64 one-shot external-worker prototype are retained as
-separately landed, non-gating work outside W1–W4. The worker's malformed-artifact checkpoint passed locally. Their
-five hostile-corpus facts and the ExternalWorker test project provide no milestone validation: all current W1–W4 milestone test
-invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide across all 16 projects,
-including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
-cybersecurity behavioral evidence. Their presence does not admit arbitrary external artifacts.
+Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
+out-of-scope experiments have been removed, and the workflow now runs every remaining test in
+each selected category. No result in W1–W4 establishes behavior for other artifact shapes.
+The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
+TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes remain
+evidence for their named commits rather than claims about the current fixture binary.
+Immutable upstream snapshots under `lib/` remain verbatim reference material; their vocabulary is not project-authored
+scope or a claim of supported behavior.
+Required framework namespace and member identifiers also remain literal API names; they do not widen project scope.
 
 The versioned optimized Release modeled-incident report is W1 generated-context evidence and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5 while retaining all unavailable cases. It explicitly describes one generated modeled dump, not a representative private-production incident corpus, and therefore establishes no production recoverability rate; representative production measurement is not a W1 gate. Current in-process resource admission still limits dumps to 8 GiB, ClrMD's dump cache to 256 MiB with stack-derived caches disabled, and managed PEs to 512 MiB on the actually opened stream before hashing. Branches, CFG merge/fixpoint analysis, handler-transfer EH, allocation, broad call/model catalogs, generics, virtual stepping, whole-method abstract analysis, async/dynamic lifting, multi-application hosting, and other platform extensions are research backlog until their entry gates pass.
 

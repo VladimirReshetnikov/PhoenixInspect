@@ -11,7 +11,7 @@ public enum ClrmdEvidenceStatus
     Exact,
 
     /// <summary>
-    /// A non-empty, trustworthy prefix or subset was recovered, but required evidence was incomplete.
+    /// A non-empty, evidence-backed prefix or subset was recovered, but required evidence was incomplete.
     /// </summary>
     Partial,
 

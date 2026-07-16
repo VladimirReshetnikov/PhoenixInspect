@@ -331,18 +331,18 @@ public sealed class MethodGraphPlannerModelTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SelectionCapabilityFailureIsPayloadSafeAndBodyFree(bool descriptorThrows)
+    public void SelectionCapabilityFailureIsPayloadOmittingAndBodyFree(bool descriptorThrows)
     {
         var fixture = CreateExactFixture(includeHelperDefinition: true);
         var registry = descriptorThrows
             ? new RecordingRegistry(_ => PureCallModelSelectionResult.Selected(new ThrowingDescriptorModel()))
-            : new RecordingRegistry(_ => throw new InvalidOperationException("host-controlled sensitive payload"));
+            : new RecordingRegistry(_ => throw new InvalidOperationException("host-controlled artifact detail"));
 
         var result = new MethodGraphPlanner(fixture.Resolver)
             .RequirePureModel(fixture.Root, fixture.Helper, registry);
 
         AssertFailure(result, MachineRunStatus.Blocked, "W4.Model.Capability", fixture.Root, 12);
-        Assert.DoesNotContain("sensitive", result.Failure!.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("artifact detail", result.Failure!.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(0, fixture.Resolver.DefinitionCount(fixture.Helper));
     }
 

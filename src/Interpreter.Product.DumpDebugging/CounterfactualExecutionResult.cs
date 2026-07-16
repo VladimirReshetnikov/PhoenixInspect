@@ -102,7 +102,7 @@ public sealed class CounterfactualExecutionResult
     /// <summary>Gets a defensive copy of ordered content-identified provenance entries.</summary>
     public ImmutableArray<EvaluationProvenance> Provenance => CounterfactualCanonical.Copy(provenance);
 
-    /// <summary>Gets a defensive copy of ordered stable payload-safe diagnostics.</summary>
+    /// <summary>Gets a defensive copy of ordered stable payload-omitting diagnostics.</summary>
     public ImmutableArray<EvaluationDiagnostic> Diagnostics => CounterfactualCanonical.Copy(diagnostics);
 
     /// <summary>
@@ -112,7 +112,7 @@ public sealed class CounterfactualExecutionResult
     public bool IsDeterministicReplay { get; }
 
     /// <summary>Gets a defensive copy of the domain-separated schema-v1 canonical result bytes.</summary>
-    /// <remarks>The bytes are replay material and are not automatically safe for telemetry.</remarks>
+    /// <remarks>The bytes are replay material and are not automatically suitable for diagnostic display.</remarks>
     public ImmutableArray<byte> CanonicalBytes => CounterfactualCanonical.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>

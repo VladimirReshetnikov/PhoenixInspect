@@ -117,7 +117,7 @@ public sealed class ClrmdInstanceFieldInfo
     /// for a supported nullable Int32 field, every frozen discriminator and payload token, address, and size.
     /// </returns>
     /// <remarks>
-    /// The projection contains target addresses and target-derived metadata. It is replay material, not telemetry-safe
+    /// The projection contains target addresses and target-derived metadata. It is replay material, not suitable for diagnostic display
     /// display text. Nullable child storage participates because changing either child descriptor changes which bytes
     /// the decoder observes even when every outer-field property remains identical.
     /// </remarks>

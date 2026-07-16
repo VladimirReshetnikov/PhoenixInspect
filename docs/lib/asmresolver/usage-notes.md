@@ -69,7 +69,7 @@ Design implication:
 Design implication:
 
 - while runtime is read-focused, this pipeline is useful for synthetic fixture generation,
-- we can generate targeted malformed/edge-case assemblies to harden miss-reason taxonomy.
+- we can generate targeted malformed/edge-case assemblies to strengthen miss-reason taxonomy.
 
 ### 5) PDB model breadth and symbol projection opportunities
 

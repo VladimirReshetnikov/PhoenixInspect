@@ -8,12 +8,12 @@ namespace Interpreter.IntegrationTests;
 
 /// <summary>
 /// Verifies the raw ClrMD memory boundary independently of a process dump so corrupt-backend failures cannot escape
-/// through public evidence reads or disclose backend payloads.
+/// through public evidence reads or expose backend payloads.
 /// </summary>
 public sealed class ClrmdProcessMemoryReaderTests
 {
     private const string SourceId = "dump-sha256:fixture";
-    private const string SecretPayload = "secret-backend-payload-canary";
+    private const string ArtifactPayloadCanary = "artifact-backend-payload-canary";
 
     /// <summary>
     /// Checks that expected parser, dump-reader, and operating-system read failures become valueless typed evidence
@@ -28,7 +28,7 @@ public sealed class ClrmdProcessMemoryReaderTests
     [InlineData("io")]
     [InlineData("unauthorized")]
     [InlineData("overflow")]
-    public void Expected_backend_failures_become_payload_safe_unavailable_evidence(string failureKind)
+    public void Expected_backend_failures_become_text_free_unavailable_evidence(string failureKind)
     {
         var backend = new StubDataReader(CreateExpectedFailure(failureKind));
         using var reader = new ClrmdProcessMemoryReader(backend, SourceId);
@@ -41,7 +41,7 @@ public sealed class ClrmdProcessMemoryReaderTests
         Assert.Equal(8, result.RequestedLength);
         Assert.Equal(8, result.MissingByteCount);
         Assert.Empty(result.Bytes);
-        Assert.DoesNotContain(SecretPayload, result.SourceId, StringComparison.Ordinal);
+        Assert.DoesNotContain(ArtifactPayloadCanary, result.SourceId, StringComparison.Ordinal);
         Assert.Equal(1, backend.ReadCallCount);
     }
 
@@ -107,7 +107,7 @@ public sealed class ClrmdProcessMemoryReaderTests
         Assert.Throws<ArgumentOutOfRangeException>(() => reader.Read(ulong.MaxValue, 2));
         Assert.Equal(0, backend.ReadCallCount);
 
-        var unexpected = new InvalidOperationException(SecretPayload);
+        var unexpected = new InvalidOperationException(ArtifactPayloadCanary);
         var failingBackend = new StubDataReader(unexpected);
         using var failingReader = new ClrmdProcessMemoryReader(failingBackend, SourceId);
         Assert.Same(unexpected, Assert.Throws<InvalidOperationException>(() => failingReader.Read(0x1000, 1)));
@@ -119,12 +119,12 @@ public sealed class ClrmdProcessMemoryReaderTests
 
     private static Exception CreateExpectedFailure(string failureKind) => failureKind switch
     {
-        "clr-diagnostics" => new ClrDiagnosticsException(SecretPayload),
-        "bad-image" => new BadImageFormatException(SecretPayload),
-        "invalid-data" => new InvalidDataException(SecretPayload),
-        "io" => new IOException(SecretPayload),
-        "unauthorized" => new UnauthorizedAccessException(SecretPayload),
-        "overflow" => new OverflowException(SecretPayload),
+        "clr-diagnostics" => new ClrDiagnosticsException(ArtifactPayloadCanary),
+        "bad-image" => new BadImageFormatException(ArtifactPayloadCanary),
+        "invalid-data" => new InvalidDataException(ArtifactPayloadCanary),
+        "io" => new IOException(ArtifactPayloadCanary),
+        "unauthorized" => new UnauthorizedAccessException(ArtifactPayloadCanary),
+        "overflow" => new OverflowException(ArtifactPayloadCanary),
         _ => throw new ArgumentOutOfRangeException(nameof(failureKind)),
     };
 
@@ -145,7 +145,7 @@ public sealed class ClrmdProcessMemoryReaderTests
 
         internal int ReadCallCount { get; private set; }
 
-        public string DisplayName => "payload-safe-fixture";
+        public string DisplayName => "payload-omitting-fixture";
 
         public bool IsThreadSafe => true;
 

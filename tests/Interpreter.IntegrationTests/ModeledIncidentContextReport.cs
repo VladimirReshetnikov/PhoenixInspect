@@ -177,7 +177,7 @@ internal sealed class ModeledIncidentContextReport
         Append(builder, "corpus-composition", "one-generated-dump-five-predeclared-axes");
         Append(builder, "target-profile", "net10.0-coreclr-windows-x64-release-optimized");
         Append(builder, "capture-mechanism", "diagnostics-client-full-dump");
-        Append(builder, "raw-stack-slot-observation", "not-admitted-dotnet10-dac-safety");
+        Append(builder, "raw-stack-slot-observation", "not-admitted-dotnet10-dac-boundary");
         Append(builder, "raw-member-bytes-numerator", RawMemberBytesNumerator);
         Append(builder, "raw-member-bytes-denominator", RawMemberBytesDenominator);
         Append(builder, "raw-context-attribution-numerator", RawContextNumerator);

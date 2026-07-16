@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Interpreter.IntegrationTests;
 
-/// <summary>Exercises bounded, payload-safe failure cleanup in the generated-dump target harness.</summary>
+/// <summary>Exercises bounded, payload-omitting failure cleanup in the generated-dump target harness.</summary>
 public sealed class DumpTestInfrastructureTests
 {
     /// <summary>Checks that a platform start failure is normalized and removes its owned directory.</summary>
@@ -34,7 +34,7 @@ public sealed class DumpTestInfrastructureTests
     /// <summary>Checks that an invalid readiness marker terminates the still-running target without echoing output.</summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Invalid_readiness_marker_is_payload_safe_and_leaves_no_orphan()
+    public void Invalid_readiness_marker_is_payload_omitting_and_leaves_no_orphan()
     {
         var isolatedDirectory = NewIsolatedDirectoryPath();
         var executablePath = TestTargetPaths.ResolveExecutable();
@@ -50,14 +50,14 @@ public sealed class DumpTestInfrastructureTests
             "HARNESS_TARGET_READY_INVALID",
             "The dump test target reported an invalid readiness marker.",
             isolatedDirectory);
-        Assert.DoesNotContain("secret-readiness-marker-canary", failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("artifact-readiness-marker-canary", failure.Message, StringComparison.Ordinal);
         AssertNoLiveProcess(failure.TargetProcessId);
     }
 
     /// <summary>Checks that an early target exit has a stable code and never exposes redirected stderr.</summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Early_exit_is_payload_safe_and_leaves_no_process_or_directory()
+    public void Early_exit_is_payload_omitting_and_leaves_no_process_or_directory()
     {
         var isolatedDirectory = NewIsolatedDirectoryPath();
         var executablePath = TestTargetPaths.ResolveExecutable();
@@ -73,7 +73,7 @@ public sealed class DumpTestInfrastructureTests
             "HARNESS_TARGET_EARLY_EXIT",
             "The dump test target exited before reporting readiness.",
             isolatedDirectory);
-        Assert.DoesNotContain("secret-readiness-stderr-canary", failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("artifact-readiness-stderr-canary", failure.Message, StringComparison.Ordinal);
         AssertNoLiveProcess(failure.TargetProcessId);
     }
 
@@ -100,10 +100,10 @@ public sealed class DumpTestInfrastructureTests
         AssertNoLiveProcess(failure.TargetProcessId);
     }
 
-    /// <summary>Checks that a readiness-channel fault is normalized without disclosing exception payload.</summary>
+    /// <summary>Checks that a readiness-channel fault is normalized while omitting exception payload.</summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Readiness_channel_failure_is_payload_safe_and_leaves_no_orphan()
+    public void Readiness_channel_failure_is_payload_omitting_and_leaves_no_orphan()
     {
         var isolatedDirectory = NewIsolatedDirectoryPath();
         var executablePath = TestTargetPaths.ResolveExecutable();
@@ -114,14 +114,14 @@ public sealed class DumpTestInfrastructureTests
                 ["--harness-never-ready"],
                 isolatedDirectory,
                 readReadinessLineAsync: static _ =>
-                    Task.FromException<string?>(new IOException("secret-read-channel-canary"))));
+                    Task.FromException<string?>(new IOException("artifact-read-channel-canary"))));
 
         AssertFailure(
             failure,
             "HARNESS_TARGET_READY_FAILED",
             "The dump test target readiness channel failed before reporting readiness.",
             isolatedDirectory);
-        Assert.DoesNotContain("secret-read-channel-canary", failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("artifact-read-channel-canary", failure.Message, StringComparison.Ordinal);
         AssertNoLiveProcess(failure.TargetProcessId);
     }
 

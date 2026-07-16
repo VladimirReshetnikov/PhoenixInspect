@@ -36,9 +36,9 @@ public sealed class DumpQueryParserTests
             new string('r', DumpQueryParser.MaximumIdentifierLength));
         Assert.True(maximumNames.IsSuccess);
 
-        var secretBearingFailure = DumpQueryParser.Parse("root.Secret_9283()", "root");
-        Assert.False(secretBearingFailure.IsSuccess);
-        Assert.DoesNotContain("Secret_9283", secretBearingFailure.DiagnosticMessage!, StringComparison.Ordinal);
+        var artifactTextFailure = DumpQueryParser.Parse("root.ArtifactText_9283()", "root");
+        Assert.False(artifactTextFailure.IsSuccess);
+        Assert.DoesNotContain("ArtifactText_9283", artifactTextFailure.DiagnosticMessage!, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -70,8 +70,8 @@ public sealed class DumpQueryParserTests
             DumpQueryParser.Parse("root.Field ?? \"fallback\"", "root").AppliedBounds);
     }
 
-    /// <summary>Checks stable, secret-safe rejection codes for malformed, oversized, and expanded syntax.</summary>
-    /// <param name="expression">The untrusted input scenario.</param>
+    /// <summary>Checks stable, artifact-text-free rejection codes for invalid, oversized, and expanded syntax.</summary>
+    /// <param name="expression">The input scenario.</param>
     /// <param name="rootName">The configured root name.</param>
     /// <param name="expectedCode">The stable admission failure code.</param>
     [Theory]

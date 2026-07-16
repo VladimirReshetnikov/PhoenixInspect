@@ -278,7 +278,7 @@ public sealed class CounterfactualMethodPreparationTests
     /// while removing arbitrary resolver codes and messages from the public core failure.
     /// </summary>
     [Fact]
-    public void PlannerFailureMatrixUsesClosedAxesAndSanitizedCoreFailures()
+    public void PlannerFailureMatrixUsesClosedAxesAndNormalizedCoreFailures()
     {
         AssertPlannerFailure(
             new FailingResolver(ResolutionFailureKind.Unavailable),
@@ -574,8 +574,8 @@ public sealed class CounterfactualMethodPreparationTests
         var core = Assert.IsType<ExecutionFailure>(failure.CoreFailure);
         Assert.Equal(code, core.Code);
         Assert.Equal(failure.Diagnostics[0].Message, core.Message);
-        Assert.DoesNotContain("SECRET", core.Code, StringComparison.Ordinal);
-        Assert.DoesNotContain("C:\\private", core.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ARTIFACT", core.Code, StringComparison.Ordinal);
+        Assert.DoesNotContain("C:\\fixture-source", core.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Single(failure.Context.Bounds);
         Assert.Equal("counterfactual.preparation.traversal-units", failure.Context.Bounds[0].Name);
     }
@@ -601,8 +601,8 @@ public sealed class CounterfactualMethodPreparationTests
         public ResolutionResult<ResolvedMethodDefinition> GetMethodDefinition(MethodHandle method) =>
             ResolutionResult<ResolvedMethodDefinition>.Failed(
                 kind,
-                "SECRET_RESOLVER_CODE",
-                "C:\\private\\target\\secret.dll must never escape.");
+                "ARTIFACT_RESOLVER_CODE",
+                "C:\\fixture-source\\target\\artifact-name.dll must never escape.");
 
         public ResolutionResult<ResolvedField> ResolveField(MethodHandle contextMethod, int metadataToken) =>
             throw new InvalidOperationException("Root failure must precede field resolution.");

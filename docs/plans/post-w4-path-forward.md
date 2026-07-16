@@ -76,8 +76,8 @@ W5 closes the first gap and creates the instrument needed to measure the second 
 - Frame, local, argument, static, PDB, source, or decompiler context.
 - Multi-hop member navigation, `?.`, indexers, arrays, collections, LINQ, async/dynamic lifting, and virtual stepping.
 - IDE UI, debugger protocol integration, packaging, compatibility guarantees, or a service surface.
-- Cybersecurity work or evidence. Every W5 behavioral command continues to use `Scope!=Cybersecurity`; the existing
-  non-gating worker and malformed-input work remain untouched and outside W5.
+- Artifact shapes beyond the named generated fixtures and admitted contracts. Caveat: W5 tests establish behavior
+  only for those declared shapes; removed out-of-scope experiments are not part of W5.
 
 These exclusions are not a judgment that the capabilities lack value. They prevent W5 from becoming a disguised
 platform milestone before the existing evaluator has been tested as a product.
@@ -100,7 +100,7 @@ The detailed historical ledgers remain authoritative in
 | Milestone | Closed or planned implementation order | Status |
 |---|---:|---|
 | W0 — baseline and feedback | `~1K LOC` | Closed |
-| W1 — dump evidence | `~1K LOC` for the active non-cybersecurity scope | Closed |
+| W1 — dump evidence | `~1K LOC` for the active milestone-selected scope | Closed |
 | W2 — restricted query | `~10K LOC` | Closed |
 | W3 — concrete IL proof | `~10K LOC` | Closed |
 | W4 — unknown-aware method evaluation | `~10K LOC` | Closed |
@@ -263,7 +263,7 @@ Then choose exactly one branch:
 | Observed dominant blocker | Next action |
 |---|---|
 | Roots or frame context are usually unavailable or unattributable | Admit one context-acquisition scenario; do not expand expression or IL semantics. |
-| Exact roots exist, but one-hop navigation blocks recurring questions | Admit a fixed-depth, null-safe member-chain slice; `root.Failure?.Message ?? "<none>"` is the fallback candidate, not a commitment. |
+| Exact roots exist, but one-hop navigation blocks recurring questions | Admit a fixed-depth, null-aware member-chain slice; `root.Failure?.Message ?? "<none>"` is the fallback candidate, not a commitment. |
 | The W5 method form is useful, but one repeated body shape is unsupported | Admit only that scenario's complete opcode/call/EH dependency closure. |
 | Current answers are useful but difficult to consume | Improve the reference host/result explanation before adding semantics. |
 | No recurring useful question can be answered from recoverable evidence | Stop feature expansion and reconsider the product thesis. |
@@ -275,14 +275,14 @@ entry gate is necessary but not sufficient; representative product evidence must
 ## 7) Verification and delivery discipline
 
 Every implementation slice preserves the existing gates and adds its focused corpus. Behavioral tests always exclude
-the cybersecurity scope. The expected command shape is:
+the named-fixture scope. The expected command shape is:
 
 ```powershell
 .\eng\Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode
 .\eng\Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --filter "Scope!=Cybersecurity" --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast&Scope!=Cybersecurity" --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5ExpressionFacadeV1&Scope!=Cybersecurity" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore  --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5ExpressionFacadeV1" --verbosity normal
 ```
 
 Documentation gates remain:
@@ -309,7 +309,7 @@ W5 closes only when all of the following are true:
 - the representative usefulness gate has produced its raw-count baseline; if the corpus is absent, W5.1–W5.4 may be
   recorded as completed checkpoints but the W5 umbrella remains open and no successor feature is admitted; and
 - the exact pushed closure commit passes locked restore, strict Release build, complete unit/Fast/focused dump lanes,
-  Markdown/headless guards, and hosted CI with zero skips under `Scope!=Cybersecurity`.
+  Markdown/headless guards, and hosted CI with zero skips within the milestone test selection.
 
 Until those conditions hold, virtual stepping, broad interpreter expansion, and additional product surfaces remain
 research rather than active delivery work.

@@ -3,7 +3,7 @@
 ## Status
 
 Supporting design for W3/W4. The closed W3 concrete state/domain contract is implemented and locally verified at
-hardened checkpoint `19c292f9f`; all four jobs also passed in [implementation-checkpoint run
+strengthened checkpoint `19c292f9f`; all four jobs also passed in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
  29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
@@ -16,7 +16,7 @@ active-frame high-water accounting, ordered frame events, and failure-atomic adm
 passed locked restore, the strict fifteen-project Release solution build and strict unit/integration project builds at
 0 warnings/0 errors, focused prepared-graph tests 25/25, the W4 fixture 7/7, the complete unit suite 275/275, the fast
 integration suite 74/74, ordinary dump 5/5, optimized dump 1/1, and both documentation guards with zero skips under
-`Scope!=Cybersecurity`. An independent audit found no remaining production findings after the checkpoint fixes.
+the milestone test selection. An independent audit found no remaining production findings after the checkpoint fixes.
 W4.5a realizes 3,334 added LOC (1,590 production plus 1,744 tests).
 
 Exact W4.5b commit `c72f6ee9e` adds atomic explained-unknown call/return transforms, append-only canonical lineage kinds
@@ -24,7 +24,7 @@ Exact W4.5b commit `c72f6ee9e` adds atomic explained-unknown call/return transfo
 identity. Exact-commit headless evidence passed locked restore, the strict fifteen-project Release build at 0
 warnings/errors, prepared graph 40/40, combined lineage/audit 76/76 including 29 legacy identities, compiler lineage
 2/2, W4 integration 9/9, unit 297/297, fast 76/76, ordinary dump 5/5, and optimized dump 1/1 with zero skips under
-`Scope!=Cybersecurity`. Independent audit found no remaining finding.
+the milestone test selection. Independent audit found no remaining finding.
 
 W4.5b realizes 2,804 LOC (766 production plus 2,038 tests), so combined W4.5 realizes 6,138 LOC and W4.1–W4.5
 cumulatively realize 16,817 LOC. Historical W4.5b 1,800–2,700 and combined 5,134–6,034 upper estimates were exceeded
@@ -35,7 +35,7 @@ identity, descriptor, invocation, outcome, and registry contracts; exact/no-effe
 leaves; deterministic traversal/depth facts; and fail-closed modeled-graph activation. It passed locked restore; the
 strict fifteen-project Release build at zero warnings/errors; unit 371/371; fast 77/77; ordinary dump 5/5; optimized
 dump 1/1; pure-model contracts 49/49; model planner 25/25; legacy planner 35/35; SRM compiler 1/1; lineage 2/2; both
-guards; and zero skips under `Scope!=Cybersecurity`. Independent audits found no behavioral finding. W4.6a realizes
+guards; and zero skips within the milestone test selection. Independent audits found no behavioral finding. W4.6a realizes
 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), 359 above the historical 1,800–2,600 upper
 estimate, and brings W4.1–W4.6a to 19,776 LOC.
 
@@ -44,7 +44,7 @@ Exact W4.6b commit `fd723a912` adds `IPureCallModelLineageDomain<TValue>` and ap
 same-batch atomic interning/acyclicity, structural replay validation, and fresh-domain continuation. Kinds 1–5 retain
 their bytes and IDs. Strict headless builds passed at zero warnings/errors; focused modeled lineage passed 8/8;
 combined legacy-plus-modeled lineage passed 44/44; and the standard single-node integration build plus
-`W4CallLineageIntegrationTests` passed 2/2, all with zero skips and `Scope!=Cybersecurity` on behavioral filters.
+`W4CallLineageIntegrationTests` passed 2/2, all with zero skips and the milestone test selection on behavioral filters.
 W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC.
 
 Exact W4.6c commit `877c9fb55` executes only the capability retained by a frozen modeled leaf. Exact and lineage-
@@ -60,7 +60,7 @@ agreement plus interpreted/model agreement for both partial/unavailable shapes. 
 `451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`; repeated and fresh sessions reproduce the
 both-unknown graph SHA-256 `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`. The deterministic target PE remains
 `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`. Focused W4.6d passed 3/3, aggregate W4
-integration 13/13, and Fast 80/80. Every behavioral lane used the headless wrapper and `Scope!=Cybersecurity`; strict
+integration 13/13, and Fast 80/80. Every behavioral lane used the headless wrapper and the milestone test selection; strict
 affected builds passed at zero warnings/errors. W4.6 totals 7,652 LOC and cumulative W4 realization is 24,469 LOC.
 
 Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532–26,132; post-W4.3
@@ -107,7 +107,7 @@ models, writes, EH, a counterfactual product surface, or a dump adapter that pro
 2. **Monotonic domain behavior** so fixpoint mode converges under explicit policies.
 3. **Explainable uncertainty** via first-class provenance on unknown values.
 4. **Composable extension points** so domains can evolve independently.
-5. **Host-safe envelopes** so every approximation is externally visible.
+5. **Host-visible envelopes** so every approximation is externally visible.
 
 ---
 
@@ -305,7 +305,7 @@ and must never be joined or widened at CFG merge points. Otherwise decreasing bu
 order, and traversal-dependent provenance IDs can prevent convergence or make semantic equality unstable.
 
 W4.4 graph preparation occurs before activation and exposes no semantic or operational machine state. Its
-`TraversalUnitCount` records distinct methods, fields, and direct-call edges beneath fixed internal safety ceilings;
+`TraversalUnitCount` records distinct methods, fields, and direct-call edges beneath fixed internal resource ceilings;
 it is neither instruction budget nor W4.8a's separate configurable product traversal budget. A failure returns no partial graph,
 does not consume machine budget, and emits no debug events. `RequiredLogicalDepth` is a frozen graph fact.
 
@@ -411,7 +411,7 @@ ProductValue = {
   NumericDomain,
   NullnessDomain,
   TypeDomain,
-  TaintOrProvenanceDomain,
+  OriginLabelsOrProvenanceDomain,
   ExtensionDomains...
 }
 ```
@@ -617,7 +617,7 @@ Implemented through W4.6:
 - body-independent content-equal direct-MethodDef target/signature projection with ordinary managed-IL proof before
   body acquisition; and
 - deterministic complete rooted-acyclic graph preparation with definition/signature correlation, typed boundaries,
-  canonical nodes/fields/call sites, shared-callee deduplication, required logical depth, fixed internal safety usage,
+  canonical nodes/fields/call sites, shared-callee deduplication, required logical depth, fixed internal resource usage,
   and no partial plan on failure;
 - content-stable `DirectCallSiteIdentity` and `FrameReturnSite` contracts that preserve caller/callee identity and the
   exact caller resume offset across an interpreted frame;
@@ -654,7 +654,7 @@ The issuer-certified standalone W4.7 target-outcome fragment is implemented sepa
 execution profile above. W4.8 integrates it into the common projector, and W4.9 adds detached dump execution. Deferred
 to later research gates:
 
-- hybrid nullness/constant/type/taint products,
+- hybrid nullness/constant/type/origin labels products,
 - a ClrMD producer for structured W4.3 field evidence,
 - coarse and summary heap abstractions,
 - full relational numeric domains,
@@ -677,7 +677,7 @@ to later research gates:
 ## 10) Proposed acceptance criteria
 
 W3 satisfies the concrete machine-state, persistent-memory, deterministic budget/event, and lattice-law portions of
-this proposal locally at hardened implementation checkpoint `19c292f9f`. W4.2 satisfies the dump-free
+this proposal locally at strengthened implementation checkpoint `19c292f9f`. W4.2 satisfies the dump-free
 provenance-bearing branchless-arithmetic portion at exact implementation commit `e89e43498`; W4.3 satisfies the
 dump-free structured non-exact field-transfer, precision-event, and lineage/replay portion at exact implementation
 commit `7479b1ad4`; and W4.4 satisfies complete dump-free direct-call graph preparation at exact checkpoints

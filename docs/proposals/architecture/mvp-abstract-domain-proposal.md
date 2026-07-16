@@ -1,12 +1,12 @@
-> **Roadmap status: research backlog.** This is no longer the active MVP. The active milestones first prove dump evidence, a restricted derived-query front end, and a concrete scenario-derived IL slice. CN-T enters the roadmap only after the concrete corpus and domain laws pass. Span, Task, and framework models are explicitly outside that gate.
+> **Roadmap status: research backlog.** This is no longer the active MVP. The active milestones first prove dump evidence, a restricted derived-query front end, and a concrete scenario-derived IL slice. CN-O enters the roadmap only after the concrete corpus and domain laws pass. Span, Task, and framework models are explicitly outside that gate.
 
-This document records a candidate later precision package: a minimal abstract value domain (constants, nullness, runtime type sets, and taint) plus selected BCL models.
+This document records a candidate later precision package: a minimal abstract value domain (constants, nullness, runtime type sets, and origin labels) plus selected BCL models.
 
 I’m going to assume the broader architecture we discussed: **domain-parametric IL semantics**, plus a **call dispatcher** that can replace “interpret the callee IL” with **models** that are (a) bounded, (b) deterministic, and (c) explicitly conservative in abstract mode.
 
 ---
 
-# MVP Abstract Domain Spec: `CN-T` (Constants, Nullness, Type-set, Taint)
+# MVP Abstract Domain Spec: `CN-O` (Constants, Nullness, Type-set, origin labels)
 
 ## 1) What the domain must accomplish
 
@@ -24,7 +24,7 @@ It must:
 3. Be cheap to join/widen (static analysis will do it thousands of times).
 4. Support **control-flow sensitivity**: when you branch, you can refine facts.
 
-The core idea: every value carries **(Facts)** and an optional **(Payload)** for structure/identity. Facts are what you asked for (C/N/TypeSet/Taint). Payload is how the interpreter still represents structs, refs, byrefs, etc., without bloating the fact lattice.
+The core idea: every value carries **(Facts)** and an optional **(Payload)** for structure/identity. Facts are what you asked for (C/N/TypeSet/origin labels). Payload is how the interpreter still represents structs, refs, byrefs, etc., without bloating the fact lattice.
 
 ---
 
@@ -52,7 +52,7 @@ sealed record Facts(
     Nullness Null,            // only meaningful for Ref/ByRef
     ConstValue Const,         // “exact” constant when known
     RuntimeTypeSet TypeSet,   // only meaningful for Ref (and optionally boxed)
-    TaintSet Taint            // set of tags
+    OriginLabelSet OriginLabels            // set of tags
 );
 ```
 
@@ -115,12 +115,12 @@ abstract record RuntimeTypeSet
 
 **Important:** type-set is about **runtime types**, not static typing. Static type still exists on the value (`StaticType`), type-set refines it.
 
-#### Taint lattice
+#### Origin-label lattice
 
 A set of tags:
 
 ```csharp
-enum TaintTag
+enum OriginLabelTag
 {
     Env_Socket, Env_File, Env_Time, Env_Random,
     Native, Reflection, Threading,
@@ -132,7 +132,7 @@ enum TaintTag
 * Join: set union.
 * Widen: union.
 
-Taint is conservative and monotone: once tainted, operations typically stay tainted.
+Origin labeling is conservative and monotone: once origin-labeled, operations typically stay origin-labeled.
 
 ---
 
@@ -292,10 +292,10 @@ When something becomes unknown, it **does not erase everything**. It becomes unk
 
   * for ref: `AnySubtypeOf(StaticType)` (unless you know more)
 * **Const**: `Top`
-* **Taint**: includes:
+* **origin labels**: includes:
 
   * at least one of `{MissingData, UnsupportedIL, BudgetExceeded, ExternalUnknown}` depending on origin
-  * plus union of input taints
+  * plus union of input origin labels
 
 This is what prevents the domain from devolving into “all values are just Top”.
 
@@ -309,7 +309,7 @@ A model should be able to:
 
 * return a value
 * optionally modify memory (or havoc it)
-* emit effects and taint
+* emit effects and origin labels
 * optionally attach a `ConditionInfo` to the returned value
 
 ```csharp
@@ -333,7 +333,7 @@ For MVP, every model must be one of:
 
 1. **Exact** for constant inputs
 2. **Fact-preserving unknown** for non-constant inputs
-   (typed unknown + taint union + sometimes nullness/type refinements)
+   (typed unknown + origin labels union + sometimes nullness/type refinements)
 
 If you try to model too much behavior, you’ll either:
 
@@ -355,7 +355,7 @@ Model:
 
 * If receiver is `null` ⇒ potential `NullReferenceException` (in abstract mode emit exceptional state; in concrete mode throw).
 * If receiver is constant string literal ⇒ return constant length.
-* Else return `Unknown(int)` with taint = receiver taint.
+* Else return `Unknown(int)` with `originLabels = receiver.OriginLabels`.
 
 ### 9.2 `string.Concat(...)` and `op_Addition` patterns
 
@@ -371,7 +371,7 @@ Model:
 * Otherwise return `Unknown(string)` with:
 
   * nullness = NonNull (Concat returns non-null string)
-  * taint = union(args taint)
+  * originLabels = Union(args.OriginLabels)
 
 ### 9.3 `string.IsNullOrEmpty(string)`
 
@@ -424,7 +424,7 @@ Model:
 * If receiver has a finite runtime type-set:
 
   * return a **Type object** whose “type payload” is that set.
-* Else return unknown `System.Type`, but taint union.
+* Else return unknown `System.Type`, but origin labels union.
 
 Practical representation:
 
@@ -484,15 +484,15 @@ Model:
 
 ---
 
-## 12) Span / MemoryMarshal / Unsafe models (the “modern .NET IL survival kit”)
+## 12) Span and low-level helper models (the “modern .NET IL survival kit”)
 
-This is where most naïve interpreters die—not because user code is unsafe, but because **BCL uses ref-like tricks**.
+This is where most naïve interpreters die—not because user code uses low-level operations, but because **BCL uses ref-like tricks**.
 
 The MVP goal for spans is modest:
 
 * Preserve **(base, length)** when spans are created from arrays or other spans.
 * Make `Length`, `Slice`, and indexing usable.
-* Do it without modeling the entire Unsafe universe.
+* Do it without modeling the entire low-level helper surface.
 
 ### 12.1 Minimal semantic representation
 
@@ -527,7 +527,7 @@ Output:
 
   * base = `ByRef(ArrayElem(array, start))` if start known, else `TopByRef`
   * length = known if possible else unknown int
-* taint = array taint
+* `originLabels = array.OriginLabels`
 
 #### `Span<T>.get_Length`
 
@@ -539,7 +539,7 @@ If receiver is a view and slice args are constants:
 
 * base shifts by offset
 * length becomes new length
-  Else return unknown span view, preserving taint and element type.
+  Else return unknown span view, preserving origin labels and element type.
 
 #### Indexing: `get_Item(int)`
 
@@ -547,26 +547,26 @@ For `Span<T>` indexer returns `ref T` (in IL you’ll see `call` returning `&`),
 Model:
 
 * if view base is precise and index const ⇒ return `ByRef` to that element
-* else `TopByRef` of element type, taint union
+* else `TopByRef` of element type, origin labels union
 
 This alone makes an enormous amount of code “interpretable enough”.
 
-### 12.3 Minimal Unsafe models (only what you can’t avoid)
+### 12.3 Minimal low-level helper models (only what cannot be avoided)
 
-Even if you model spans directly, you will see some Unsafe usage in real IL (especially if you ever interpret BCL IL bodies).
+Even if you model spans directly, you will see some low-level helper usage in real IL (especially if you ever interpret BCL IL bodies).
 
 Implement only “identity and simple byref arithmetic” first:
 
-* `Unsafe.As<TFrom, TTo>(ref TFrom)`
+* ref reinterpretation between admitted element types
   Treat as “same addressable, different static type”.
 
   * return byref payload identical; update `StaticType`.
 
-* `Unsafe.Add<T>(ref T source, int elementOffset)`
+* bounded ref offset addition
   If `source` is `ArrayElem(arr, constIndex)` and offset const ⇒ new element addressable.
   Else return `TopByRef`.
 
-* `Unsafe.ByteOffset<T>(ref T origin, ref T target)`
+* bounded ref byte-offset calculation
   Return unknown nativeint unless both are precise and from same array (optional).
 
 Everything else can fall back to unknown without stopping the interpreter.
@@ -596,13 +596,13 @@ Introduce an intrinsic object payload (or a memory tag) for tasks created by kno
 
 #### `Task.FromResult<T>(T)`
 
-* Return: NonNull ref `Task<T>`, taint union with result
+* Return: NonNull ref `Task<T>`, origin labels union with result
 * Payload: completed-result = result
 
 #### `Task<T>.get_Result`
 
 * If receiver is a “known completed task” payload ⇒ return stored result
-* Else return unknown `T` with taint = receiver taint, and mark effect `Threading`?
+* Else return unknown `T` with `originLabels = receiver.OriginLabels`, and mark effect `Threading`?
   (In pure semantics, `.Result` can block; in “model world” treat as “may block / may throw”. For dump-time evaluation you’d likely forbid blocking; for static analysis you mark `Threading`.)
 
 #### `Task.get_IsCompletedSuccessfully` / `Task.get_IsCompleted`
@@ -628,19 +628,19 @@ These aren’t in your example list, but in practice they remove a lot of noise:
 ### 14.1 `System.Array.get_Length` and `ldlen`
 
 `ldlen` is IL-level already; ensure it returns constant when array is concrete.
-For unknown arrays, return unknown int (taint = array taint).
+For unknown arrays, return unknown int (`originLabels = array.OriginLabels`).
 
 ### 14.2 `System.Math` simple pure functions
 
 * `Min/Max/Abs` on constant inputs ⇒ constant
-* else ⇒ unknown, taint union
+* else ⇒ unknown, origin labels union
   This improves branch pruning in analysis more than you’d expect.
 
 ### 14.3 `EqualityComparer<T>.Default` + `IEquatable<T>`
 
 Don’t model the comparer; just avoid crashing:
 
-* return unknown comparer object; calling `Equals` returns unknown bool with taint union.
+* return unknown comparer object; calling `Equals` returns unknown bool with origin labels union.
 
 ---
 
@@ -684,5 +684,5 @@ This is the single most common “precision cliff” in C# code; the predicate h
 * `MaxTypeSet = 8` (beyond that, collapse to `AnySubtypeOf`)
 * `MaxPointsTo = 16` (beyond that, collapse to top ref target)
 * `MaxStructFields = 16` (field-sensitive only for “small structs”; else top-struct)
-* `Unknown minting`: stable IDs (method+ILoffset+counter), taint includes origin
+* `Unknown minting`: stable IDs (method+ILoffset+counter), origin labels include origin
 * Analysis mode: over-approx join at merges, widen at backedges, optional path-splitting off by default

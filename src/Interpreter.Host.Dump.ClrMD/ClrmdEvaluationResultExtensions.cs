@@ -7,7 +7,7 @@ namespace Interpreter.Host.Dump.ClrMD;
 public static class ClrmdEvaluationResultExtensions
 {
     /// <summary>
-    /// Preserves the distinction between an exact null string, an exact non-null string, a trustworthy prefix, and
+    /// Preserves the distinction between an exact null string, an exact non-null string, a evidence-backed prefix, and
     /// missing string evidence in the common observation envelope.
     /// </summary>
     /// <param name="observation">The bounded string-field observation to project.</param>

@@ -8,7 +8,7 @@ This FAQ answers the questions contributors, partner teams, and prospective adop
 
 The active product target is a deterministic, read-only expression evaluator grounded in .NET dumps. The IL interpreter is enabling technology for later method evaluation, not the near-term product by itself. W3 now implements one deliberately closed architecture proof: metadata-derived activation and whole-body admission for branchless `Int32` arithmetic plus one dump-grounded direct or constant-adjusted `Int32` field getter. That proof does not expose method or property evaluation through the product query language.
 
-The committed sequence starts with direct snapshot reads and a restricted expression/query front end. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, live speculation, sandbox runtime hosting, and other applications remain research backlog until those evidence gates pass.
+The committed sequence starts with direct snapshot reads and a restricted expression/query front end. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, live speculation, no-JIT runtime hosting, and other applications remain research backlog until those evidence gates pass.
 
 Longer-term workflows may include:
 
@@ -22,7 +22,7 @@ No. The repository remains in conceptual design with a narrow executable prototy
 
 There is an intentionally narrow prototype under `src/` and `tests/`: draft public contracts; structural module/type/method/field identities; SRM-derived method signatures, locals, bodies, and field definitions; metadata-derived root activation; frozen typed whole-body admission; a persistent concrete validation heap; and bounded ClrMD dump/module/object/field/string/metadata/IL evidence. The closed W3 E1/E2 profiles execute branchless `Int32` arithmetic and one exact direct or constant-adjusted instance-field getter through the injected memory capability. The getter fixture reopens and rebinds the dump, reconstructs the prepared memory snapshot from counted evidence, and reproduces its canonical execution transcript without using the disk PE as resolver input.
 
-Hardened checkpoint `19c292f9f` passed local headless verification with a zero-warning 15-project Release build, 103 non-cybersecurity unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards, all with zero skips. Its cumulative hand-written implementation range from `e7b6a4ace` is `+8,842/-1,650` LOC (`+5,362/-928` production and `+3,480/-722` tests/fixtures), plus 39 generated lock-file lines. The primary checkpoint `12b6ef942` passed all four jobs in [GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656); [run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact hardened checkpoint `19c292f9f`. [Run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed every required job at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined non-cybersecurity scope. That closure does not turn the prototype into a production-ready expression evaluator or a product method-evaluation feature.
+Strengthened checkpoint `19c292f9f` passed local headless verification with a zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards, all with zero skips. Its cumulative hand-written implementation range from `e7b6a4ace` is `+8,842/-1,650` LOC (`+5,362/-928` production and `+3,480/-722` tests/fixtures), plus 39 generated lock-file lines. The primary checkpoint `12b6ef942` passed all four jobs in [GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656); [run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact strengthened checkpoint `19c292f9f`. [Run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed every required job at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined milestone-selected scope. That closure does not turn the prototype into a production-ready expression evaluator or a product method-evaluation feature.
 
 ## 3) Why focus on deterministic and bounded execution instead of "best effort" simulation?
 
@@ -31,7 +31,7 @@ Because dump-time debugging has incomplete runtime context by definition. Overly
 This project prefers:
 
 - deterministic behavior with explicit budgets,
-- trustworthy unknowns over fabricated certainty,
+- evidence-backed unknowns over fabricated certainty,
 - provenance and explanation attached to results.
 
 ## 4) What problem does this solve for debugger users?
@@ -52,7 +52,7 @@ This project is intended to be a composable analysis layer that can consume meta
 
 ## 6) What are the most important architecture principles?
 
-1. Safety-first semantics.
+1. Conservative semantics.
 2. Deterministic, budgeted interpretation.
 3. Explainability and provenance in outputs.
 4. Composability through explicit boundaries.
@@ -66,7 +66,7 @@ Unknown is not an error by default. It is often the most correct answer and shou
 
 ## 8) What is the expected output format of the design effort right now?
 
-The primary output is executable evidence for the active vertical slice, accompanied by only the design needed to make that evidence trustworthy. Useful artifacts include:
+The primary output is executable evidence for the active vertical slice, accompanied by only the design needed to make that evidence evidence-backed. Useful artifacts include:
 
 - an end-to-end scenario and its tests,
 - lightweight prototype code that exercises the real boundary,
@@ -131,15 +131,15 @@ Representative risks include:
 
 - capacity and scope dispersion in a single-maintainer project,
 - optimized dumps that omit the context a requested expression needs,
-- hostile or malformed dump/PE/PDB inputs and secret-bearing dump contents,
+- input shapes outside the validated fixture set and artifact-derived dump contents,
 - unsound fallback behavior around calls/effects,
 - metadata and symbol resolution inconsistencies,
 - performance trade-offs under strict determinism constraints,
 - drift between product expectations, design claims, and executable evidence.
 
 The documentation set is intentionally structured to expose and manage these risks early.
-External-input cybersecurity remains separately scoped and supplies no W1–W4 milestone evidence; current milestone
-test claims explicitly exclude `Scope=Cybersecurity`.
+Caveat: W1–W4 evidence covers only the named generated fixtures and explicitly admitted input shapes. Current test
+claims do not establish behavior for any other artifact shape.
 
 ## 15) How can external consumers evaluate whether this direction is promising?
 
@@ -163,7 +163,7 @@ Out of scope in the current phase:
 - polishing runtime tooling UX beyond design-level proposals,
 - publishing final API guarantees before executable evidence stabilizes them,
 - treating product method evaluation, broader opcode families, generic/PDB-aware execution, a second value domain,
-  virtual stepping, abstract analysis, async/dynamic lifting, live speculation, or sandbox hosting as active commitments.
+  virtual stepping, abstract analysis, async/dynamic lifting, live speculation, or no-JIT hosting as active commitments.
 
 ## 17) How should people give feedback on the docs?
 

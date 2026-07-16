@@ -280,7 +280,7 @@ public sealed class CounterfactualMethodRunnerExecutionTests
     /// logical-depth evidence advance while semantic state, instruction budget, and call event remain unchanged.
     /// </summary>
     [Fact]
-    public void ModelFailuresAreTypedAtomicAndPayloadSafe()
+    public void ModelFailuresAreTypedAtomicAndPayloadOmitting()
     {
         var cases = new[]
         {
@@ -311,7 +311,7 @@ public sealed class CounterfactualMethodRunnerExecutionTests
             Assert.DoesNotContain(result.Context.Events, static item =>
                 item.Kind == DebugEventKind.InstructionExecuted && item.Instruction == "Call");
             Assert.Equal(diagnostic, Assert.Single(result.Diagnostics).Code);
-            Assert.DoesNotContain("fixture model secret", result.Diagnostics[0].Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("fixture model detail", result.Diagnostics[0].Message, StringComparison.OrdinalIgnoreCase);
             AssertCanonicalIntegrity(result);
         }
     }
@@ -570,7 +570,7 @@ public sealed class CounterfactualMethodRunnerExecutionTests
                     invocation.Arguments[0].Int32Value!.Value + invocation.Arguments[1].Int32Value!.Value)),
                 ModelBehavior.Blocked => PureCallModelOutcome.Blocked("W4.Model.FixtureBlocked"),
                 ModelBehavior.Invalid => PureCallModelOutcome.Invalid("W4.Model.FixtureInvalid"),
-                ModelBehavior.Throw => throw new InvalidOperationException("fixture model secret must not escape"),
+                ModelBehavior.Throw => throw new InvalidOperationException("fixture model detail must not escape"),
                 _ => throw new ArgumentOutOfRangeException(),
             };
         }

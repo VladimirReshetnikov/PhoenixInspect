@@ -9,7 +9,7 @@ namespace Interpreter.Core.Abstractions;
 /// The caller supplies a deterministic value projection because value types remain product-specific. The
 /// projection must cover every semantically observable value field and must not use process-local identities,
 /// ambient culture, clocks, or unordered iteration. Replay artifacts can contain target-derived data and are not
-/// telemetry-safe merely because they are deterministic.
+/// suitable for diagnostic display merely because they are deterministic.
 /// </remarks>
 public static class EvaluationResultReplay
 {

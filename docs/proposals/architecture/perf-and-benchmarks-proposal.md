@@ -103,7 +103,7 @@ Primary metrics:
 
 3. **Extended** (scheduled/deep):
    - 500+ methods,
-   - includes adversarial/pathological fixtures.
+   - includes stress/pathological fixtures.
 
 ### 3.2 Corpus dimensions
 

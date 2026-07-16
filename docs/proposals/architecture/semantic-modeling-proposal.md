@@ -97,7 +97,7 @@ They carry:
 * effect tags (`ReadEnv`, `Threading`, `Native`, `UnsupportedLayout`)
 * optional “explainability” payload (why/what was assumed)
 
-This is critical for user trust.
+This is critical for user confidence.
 
 ---
 
@@ -133,7 +133,7 @@ Not all fields will be available for all dump types and OSes. That’s fine—Un
 ### `DateTime.UtcNow`, `DateTimeOffset.UtcNow`
 
 * If `DumpCaptureTimeUtc` is known → return it (or a deterministic derivative).
-* Else → return `Unknown<DateTime>` with `Taint=Env_Time`.
+* Else → return `Unknown<DateTime>` with `originLabels = Env_Time`.
 
 ### `DateTime.Now`, `DateTimeOffset.Now`
 
@@ -150,7 +150,7 @@ These are “relative/monotonic time sources”:
 * If you can recover them from snapshot metadata → return constant.
 * Else return `Unknown<long>` with constraints:
 
-  * `>= 0` for tickcount64 (safe), and tag `Env_Time`.
+  * `>= 0` for tickcount64 (bounded), and tag `Env_Time`.
 
 **Important**: Make them **stable within the session**. If the user evaluates `DateTime.Now` twice while stepping, returning two different values is usually misleading in dump debugging.
 
@@ -347,7 +347,7 @@ Then implement:
   * Real comparer behavior can be very complex; for debug use, you can:
 
     * special-case default comparers and common key types (string, int, Guid),
-    * otherwise treat as “scan and compare by Equals” only if Equals is safe/pure in your model, else unknown.
+    * otherwise treat as “scan and compare by Equals” only if Equals is admitted as pure in your model, else unknown.
 
 ### Copy-on-write for mutations
 
@@ -417,7 +417,7 @@ Recognize:
 * `try/finally { Dispose() }`
 * or `DisposeAsync()` patterns for async disposables
 
-In a sandboxed interpreter:
+In a bounded interpreter:
 
 * Disposal is either a no-op (with `Effect=WriteEnv?` uncertain) or a modeled effect.
 * For stepping: hide the finally plumbing.
@@ -453,14 +453,14 @@ Instead of interpreting iterator classes and closures directly:
 * model key `Enumerable.*` methods (`Where`, `Select`, `FirstOrDefault`, `ToArray`, `ToList`) as bounded query operations over projected sequences
 * lambda delegates can be:
 
-  * interpreted if they are in user code and safe,
+  * interpreted if they are in admitted user code,
   * otherwise treated as Unknown predicate leading to Unknown result or interactive branch (“assume predicate true/false”) in analysis mode
 
 This is a big feature surface, but even a small subset pays off.
 
 ---
 
-# 8) Versioning, robustness, and trust
+# 8) Versioning, robustness, and result confidence
 
 ## 8.1 Stable APIs vs unstable layouts
 

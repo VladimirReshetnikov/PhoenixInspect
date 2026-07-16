@@ -26,7 +26,7 @@ Everything the IL engine needs to be reusable across:
 * dump debugging,
 * live speculative debugging,
 * static analysis,
-* sandbox “no JIT” execution.
+* bounded runtime “no JIT” execution.
 
 So this package owns:
 
@@ -133,7 +133,7 @@ These are essential for:
 
 * stepping (avoid infinite loops),
 * static analysis (fork control),
-* sandbox execution (resource limits).
+* bounded execution (resource limits).
 
 ```csharp
 namespace Interpreter.Core.Abstractions;
@@ -242,11 +242,11 @@ public interface IValueDomain<TValue>
     TValue Box(TValue v, Interpreter.Types.TypeSig boxedType);
     TValue UnboxAny(TValue boxed, Interpreter.Types.TypeSig targetType);
 
-    // Attach/propagate effects/taint is domain-specific; keep it inside TValue.
+    // Attach/propagate effects/origin labels is domain-specific; keep it inside TValue.
 }
 ```
 
-This is intentionally “IL-complete enough” but doesn’t hardcode fancy facets like ranges/taint/type-sets; those are embedded in `TValue` implementations.
+This is intentionally “IL-complete enough” but doesn’t hardcode fancy facets like ranges/origin labels/type-sets; those are embedded in `TValue` implementations.
 
 ---
 
@@ -614,7 +614,7 @@ public interface ISourceTextProvider
 
 Host abstractions are about:
 
-* “Where do values come from?” (dump snapshot, live snapshot, sandbox runtime)
+* “Where do values come from?” (dump snapshot, live snapshot, no-JIT runtime)
 * “How do I seed a frame?” (this/args/locals)
 * “How do I read heap state behind external object refs?”
 * “What environment snapshot do we expose?” (time/env/random policy)
@@ -668,7 +668,7 @@ public sealed record SessionSnapshot(
     string? TargetMachineName,
     int? TargetProcessId,
     IReadOnlyDictionary<string, string>? EnvironmentVariables);
-    
+
 public interface ISessionSnapshotProvider
 {
     SessionSnapshot GetSnapshot();

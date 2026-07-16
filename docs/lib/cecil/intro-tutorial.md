@@ -1,6 +1,6 @@
 # Mono.Cecil intro tutorial (project-oriented)
 
-This tutorial is a practical onboarding guide for contributors who are new to Mono.Cecil and need to use it safely in this repository’s design phase.
+This tutorial is a practical onboarding guide for contributors who are new to Mono.Cecil and need to use it within this repository's declared design-phase bounds.
 
 It is source-driven from `lib/cecil` and intentionally focused on our goals:
 

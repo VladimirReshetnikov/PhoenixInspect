@@ -54,7 +54,7 @@ public sealed class DumpQueryValue
     /// A tagged canonical projection. Strings are encoded as UTF-16 code units so even an explicitly partial
     /// prefix ending in an unpaired surrogate remains replay-distinct.
     /// </returns>
-    /// <remarks>The projection contains target-derived data and must not be emitted as telemetry.</remarks>
+    /// <remarks>The projection contains target-derived data and is not a diagnostic-output format.</remarks>
     public string ToCanonicalReplayProjection()
     {
         if (Kind == DumpQueryValueKind.Null)
@@ -78,12 +78,12 @@ public sealed class DumpQueryValue
         return builder.ToString();
     }
 
-    /// <summary>Returns a shape-only description that does not disclose the target-derived value.</summary>
+    /// <summary>Returns a shape-only description that omits the target-derived value.</summary>
     /// <returns>The active kind and, for strings, only the UTF-16 length.</returns>
     public override string ToString() => Kind switch
     {
         DumpQueryValueKind.Null => "Null",
-        DumpQueryValueKind.Int32 => "Int32(redacted)",
+        DumpQueryValueKind.Int32 => "Int32(value omitted)",
         DumpQueryValueKind.String => $"String(length={StringValue!.Length})",
         _ => throw new InvalidOperationException("The dump-query value kind is invalid."),
     };

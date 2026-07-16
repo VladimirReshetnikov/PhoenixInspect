@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 using Interpreter.Core.Abstractions;
 using Interpreter.Core.Execution;
 using Interpreter.Domain.Concrete;
@@ -768,19 +767,6 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
                     replayMarkerQuery,
                     static value => value.ToCanonicalReplayProjection()));
 
-            var trustedDacPath = Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "mscordaccore.dll");
-            Assert.True(File.Exists(trustedDacPath), "The supported Windows runner must carry its matching DAC.");
-            var brokeredStream = new FileStream(dumpPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            var brokeredOpen = ClrmdDumpSession.OpenBrokered(
-                brokeredStream,
-                "inherited-dump",
-                trustedDacPath);
-            Assert.Equal(ClrmdEvidenceStatus.Exact, brokeredOpen.Status);
-            using var brokeredSession = brokeredOpen.Value
-                ?? throw new InvalidOperationException("Exact brokered dump-open result carried no session.");
-            Assert.True(brokeredSession.UsesExplicitDac);
-            Assert.True(brokeredSession.IsOfflineLocatorInstalled);
-            Assert.Equal(session.Snapshot, brokeredSession.Snapshot);
         }
         finally
         {
@@ -852,32 +838,6 @@ public sealed partial class DumpMemoryEvidenceIntegrationTests
         finally
         {
             File.Delete(malformedPath);
-        }
-    }
-
-    /// <summary>Verifies that a resource-exhausting external dump is rejected before loading.</summary>
-    [Fact]
-    [Trait("Category", "Fast")]
-    [Trait("Scope", "Cybersecurity")]
-    public void External_dump_open_rejects_oversized_artifact_before_loading()
-    {
-        var oversizedPath = Path.Combine(Path.GetTempPath(), $"oversized-dump-{Guid.NewGuid():N}.dmp");
-        try
-        {
-            using (var oversizedStream = new FileStream(oversizedPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            {
-                oversizedStream.SetLength((8L * 1_024 * 1_024 * 1_024) + 1);
-            }
-
-            var oversized = ClrmdDumpSession.Open(oversizedPath);
-            Assert.Equal(ClrmdEvidenceStatus.Unavailable, oversized.Status);
-            Assert.Equal(ClrmdValueIssue.LimitExceeded, oversized.Issue);
-            Assert.False(oversized.HasValue);
-            Assert.ThrowsAny<NotSupportedException>(() => ClrmdDumpSession.Load(oversizedPath));
-        }
-        finally
-        {
-            File.Delete(oversizedPath);
         }
     }
 

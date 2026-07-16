@@ -21,8 +21,8 @@ An opcode is not “supported” because it appears in a proposal. The companion
 
 Promotion requires an evidence link, not a documentation edit alone.
 
-The E1/E2 implementation below was hardened at checkpoint `19c292f9f` and passed all required local
-non-cybersecurity verification plus all four jobs in [implementation-checkpoint run
+The E1/E2 implementation below was strengthened at checkpoint `19c292f9f` and passed all required local
+milestone-selected verification plus all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). The normative boundary is
 [Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md). W3 formally closed at exact documentation
 commit `de6cea124`; [GitHub Actions run
@@ -140,7 +140,7 @@ capability stop without transfer. Conflict remains blocked; invalid or mismatche
 Replay validates canonical bytes, identities, ordering, uniqueness, reachability, acyclicity, and field/origin
 relationships before interning anything. The checkpoint passed 55/55 focused W4.3 and 211/211 complete unit tests;
 the strict fifteen-project Release build, 71/71 fast tests, 5/5 ordinary-dump regressions, 1/1 optimized-dump
-regression, and both repository guards also passed headlessly with zero skips and `Scope!=Cybersecurity` on every test
+regression, and both repository guards also passed headlessly with zero skips and the milestone test selection on every test
 command.
 
 This is dump-free machine/domain evidence. The current ClrMD execution descriptor still imports only exact E2 field
@@ -174,7 +174,7 @@ those caps.
 The exact fixture freezes two method nodes, two distinct fields, one call edge at caller IL offset 12, required depth
 two, and five internal units. The focused planner lane passed 35/35 and fixture lane 6/6; complete unit 250/250, fast
 73/73, ordinary dump 5/5, optimized dump 1/1, locked restore, the strict fifteen-project 0-warning/0-error Release
-build, and both guards also passed headlessly with zero skips and `Scope!=Cybersecurity` on behavioral tests. W4.4
+build, and both guards also passed headlessly with zero skips and the milestone test selection on behavioral tests. W4.4
 realizes 3,651 added LOC (2,076 production plus 1,575 tests), split into 1,043-LOC W4.4a and 2,608-LOC W4.4b.
 
 This W4.4 status does not by itself promote `call` to executable transfer support. The legacy `IlMachine` deliberately
@@ -201,7 +201,7 @@ The exact fixture executes ten instructions, performs two field loads, reaches b
 agrees with CoreCLR. Locked restore, the strict fifteen-project Release solution build and strict unit/integration
 project builds at zero warnings/errors, focused prepared-graph tests 25/25, the W4 fixture 7/7, complete unit 275/275,
 fast integration 74/74, ordinary dump 5/5, optimized dump 1/1, and both documentation guards passed headlessly with
-`Scope!=Cybersecurity` on behavioral filters and zero skips. Independent audit closed with no remaining production finding. W4.5a realizes 3,334 LOC (1,590
+the milestone test selection on behavioral filters and zero skips. Independent audit closed with no remaining production finding. W4.5a realizes 3,334 LOC (1,590
 production plus 1,744 tests); cumulative W4.1–W4.5a realization is 14,013 LOC. W4.5b was then estimated at
 1,800–2,700 LOC, projecting combined W4.5 at 5,134–6,034 LOC and full W4 at 24,013–29,313 LOC while preserving the
 original 16,860–25,310 baseline, historical combined W4.5 estimate of 2,300–3,500 LOC, and earlier projections.
@@ -230,7 +230,7 @@ taxonomy; malformed, foreign, non-executable, or semantically changed output is 
 Exact-commit headless evidence passed locked restore; the strict fifteen-project Release build at zero
 warnings/errors; prepared graph 40/40; combined lineage/audit 76/76 including 29 legacy frozen identity cases;
 compiler lineage 2/2; W4 integration 9/9; unit 297/297; fast 76/76; ordinary dump 5/5; and optimized dump 1/1, with
-zero skips and `Scope!=Cybersecurity` on behavioral filters. Independent audit found no remaining finding. W4.5b
+zero skips and the milestone test selection on behavioral filters. Independent audit found no remaining finding. W4.5b
 realizes 2,804 LOC (766 production plus 2,038 tests); combined W4.5 realizes 6,138 LOC and cumulative W4.1–W4.5
 realization is 16,817 LOC. Historical W4.5b 1,800–2,700 and combined 5,134–6,034 upper estimates were exceeded by
 104 LOC. The W4.5-closure projection was 25,017–29,417 LOC. A later design audit split W4.6 into W4.6a at
@@ -261,7 +261,7 @@ with SHA-256 `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`.
 Exact-checkpoint headless evidence passed locked restore; the strict fifteen-project Release build at zero
 warnings/errors; complete unit 371/371; fast integration 77/77; ordinary dump 5/5; optimized dump 1/1; focused pure-
 model contracts 49/49; model planner 25/25; legacy planner 35/35; SRM compiler 1/1; lineage 2/2; both repository
-guards; and zero skips, with `Scope!=Cybersecurity` on every behavioral filter. Independent audits found no
+guards; and zero skips, with only the milestone-selected behavioral tests. Independent audits found no
 behavioral finding. W4.6a realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), exceeding its
 historical 1,800–2,600 estimate by 359 LOC at the upper bound and bringing W4.1–W4.6a realization to 19,776 LOC.
 
@@ -272,7 +272,7 @@ Exact checkpoint `fd723a912` adds optional `IPureCallModelLineageDomain<TValue>`
 the complete acyclic batch is prevalidated and interned atomically. Structural capture/replay and fresh-domain
 continuation preserve every kind-1–5 byte sequence and identity. Strict headless builds passed at zero warnings/
 errors; focused 8/8, combined legacy-plus-modeled lineage 44/44, and integration call-lineage 2/2 passed with zero skips
-and `Scope!=Cybersecurity`. W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing
+and the milestone test selection. W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing
 W4.1–W4.6b realization to 20,779 LOC. This adds no executable opcode or model invocation.
 
 ### W4.6c — Frozen pure-model invocation and caller transfer
@@ -289,7 +289,7 @@ lineage failure preserve semantic state while remaining visible in immutable att
 counters and distinct logical-depth/active-frame high-water witnesses reject forged resume state; exact terminal state
 retains the completed logical-depth witness. W4.6c realizes 2,734 added LOC (1,425 production plus 1,309 tests). Strict
 affected builds passed with zero warnings/errors and focused conformance passed 34/34, headlessly with
-`Scope!=Cybersecurity`.
+the milestone test selection.
 
 ### W4.6d — Compiler/SRM exact and degraded conformance
 
@@ -301,7 +301,7 @@ metadata-reader/domain/machine runs reproduce the both-unknown graph SHA-256
 `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`. The deterministic target PE remains
 `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`. Strict affected builds passed at zero
 warnings/errors; focused W4.6d passed 3/3, aggregate W4 integration 13/13, and Fast 80/80. Every behavioral invocation
-used the headless wrapper and `Scope!=Cybersecurity`.
+used the headless wrapper and the milestone test selection.
 
 W4.6 totals 7,652 LOC and brings cumulative W4 realization to 24,469 LOC.
 
@@ -337,7 +337,7 @@ Likewise, resolution failure and code-only, conflicting, invalid, policy-disable
 memory evidence preserve state, memory, budget, and events. W4.3's one explicit exception is canonical structured
 partial/unavailable field evidence under the enabled policy and optional approximation capability; that path performs
 the conservative transfer described above. Ordinary non-catastrophic exceptions from resolver/domain/memory
-capabilities are normalized into stable payload-safe failures; out-of-memory and stack-overflow exceptions are not
+capabilities are normalized into stable payload-omitting failures; out-of-memory and stack-overflow exceptions are not
 caught. The other exceptional W3 boundary is admitted target-null `ldfld`, whose consumed budget, target event, and
 terminal latch describe a target instruction that did execute exceptionally.
 

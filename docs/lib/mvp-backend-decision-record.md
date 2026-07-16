@@ -57,16 +57,16 @@ An experiment must implement the same projected contract and run the same confor
 - AsmResolver, dnlib, Cecil, and DIA notes under `docs/lib/` remain research references, not roadmap commitments.
 - Package count and backend vocabulary shrink while the public boundary remains replaceable.
 - Any future backend decision is based on executable differential evidence.
-- Exact commit `19c292f9f` is the hardened checkpoint for the closed W3 SRM proof: structural identities, atomic
+- Exact commit `19c292f9f` is the strengthened checkpoint for the closed W3 SRM proof: structural identities, atomic
   method-shape projection, contextual FieldDef resolution, metadata-derived activation, compiler/CoreCLR plus
   real-dump getter fixtures, exact compact `ldarg.0` enforcement for E2, and positive coverage for every admitted
   arithmetic operator and `nop`. The primary checkpoint `12b6ef942` passed all four jobs in [GitHub Actions run
   29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656). [Run
   29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at
-  exact hardened checkpoint `19c292f9f`. [Run
+  exact strengthened checkpoint `19c292f9f`. [Run
   29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all
   four required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
-  non-cybersecurity scope.
+  milestone-selected scope.
 - This evidence does not implement Portable PDBs, generic-context substitution, broader opcode/token families, a
   second value domain, or a product-facing method evaluator.
 
@@ -80,7 +80,7 @@ Implemented evidence now includes:
 - contextual rejection of unsupported signatures, owners, field dispositions, value-type ancestry, EH, and opcodes;
 - a dump reopen/rebind fixture whose counted metadata, physical body, admitted `ldfld`, runtime field descriptor, and
   exact four-byte observation reconstruct the same prepared execution evidence; and
-- local headless verification at `19c292f9f`: a zero-warning 15-project Release build, 103 non-cybersecurity unit
+- local headless verification at `19c292f9f`: a zero-warning 15-project Release build, 103 milestone-selected unit
   tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane,
   and both documentation guards, all with zero skips;
 - a cumulative hand-written implementation range from `e7b6a4ace` of `+8,842/-1,650` LOC

@@ -26,7 +26,7 @@ public sealed class CounterfactualTargetOutcomeProjectionResult
     /// <summary>Gets the validated immutable fragment, or <see langword="null"/> when projection failed.</summary>
     public CounterfactualTargetOutcomeFragment? Fragment { get; }
 
-    /// <summary>Gets the stable payload-safe projection failure, or <see langword="null"/> on success.</summary>
+    /// <summary>Gets the stable payload-omitting projection failure, or <see langword="null"/> on success.</summary>
     public EvaluationDiagnostic? Failure { get; }
 
     internal static CounterfactualTargetOutcomeProjectionResult Succeeded(

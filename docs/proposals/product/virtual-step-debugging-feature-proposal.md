@@ -13,10 +13,10 @@ Explore an interactive **counterfactual stepper** that can interpret code from a
 * **Step Into / Step Over / Step Out**
 * View **locals**, **arguments**, **evaluation stack**, **virtual call stack**
 * Step through **real source** when available (PDB + source), otherwise through **decompiled source**
-* Safely handle missing data and side effects by propagating **unknown values** and/or using **models**
+* Handle missing data and side effects conservatively by propagating **unknown values** and/or using **models**
 * Support **Undo Last Step** (reverse stepping), enabled by the purely virtual, side-effect-free execution model
 
-The goal is not to recreate runtime history. It is to provide a **debugger-like counterfactual exploration workflow** over a dump snapshot, with explicit assumptions and trust boundaries.
+The goal is not to recreate runtime history. It is to provide a **debugger-like counterfactual exploration workflow** over a dump snapshot, with explicit assumptions and result boundaries.
 
 ---
 
@@ -30,7 +30,7 @@ In post-mortem analysis, users frequently want answers that require “just a bi
 * Evaluate a predicate over a collection without exporting data
 * Explore state machine logic (async/iterator) from a dump
 
-A normal debugger solves this by executing code in the debuggee. A dump cannot. This research explores a **virtual debugger** that runs on a snapshot plus a policy-constrained virtual execution environment. That policy boundary is not, by itself, a security sandbox for hostile artifacts.
+A normal debugger solves this by executing code in the debuggee. A dump cannot. This research explores a **virtual debugger** that runs on a snapshot plus a policy-constrained virtual execution environment. Caveat: the proposal covers only its named fixture and input shapes.
 
 ---
 
@@ -121,7 +121,7 @@ This is especially useful for:
 
 **Expected behavior:**
 
-* If the next operation is a call to a “safe / interpretable” method:
+* If the next operation is a call to an admitted, interpretable method:
 
   * Step Into enters it, showing its source (real or decompiled).
 * If the call is:
@@ -133,7 +133,7 @@ This is especially useful for:
     Instead it:
   * “steps into” a **model frame**: a single pseudo-frame showing an effect summary:
 
-    * “Returns unknown string (tainted: Env_Socket)”
+    * “Returns unknown string (origin-labeled: Env_Socket)”
     * “Havoc: buffer contents now unknown”
     * “May throw: IOException”
   * then returns to the caller on next step
@@ -165,7 +165,7 @@ Run until the current interpreted frame returns (or throws), then stop in the ca
 In a virtual world, Step Out should also handle:
 
 * returning **unknown values**
-* propagating modeled effects (taint, havoc regions, maybe-throw)
+* propagating modeled effects (origin labels, havoc regions, maybe-throw)
 * unwinding via exceptions (see below)
 
 ---
@@ -225,7 +225,7 @@ When a value becomes unknown, we show:
 
 * type shape (e.g., `string`, `int`, `T : IDisposable`)
 * nullness (MaybeNull/NonNull)
-* taint/effect tags (Env_Socket, Native, MissingData, UnsupportedIL)
+* origin labels/effect tags (Env_Socket, Native, MissingData, UnsupportedIL)
 * “why this became unknown” trace (clickable)
 
 That turns “we can’t run this” into “we can still reason about this.”
@@ -332,9 +332,9 @@ Even without perfect efficiency, “Undo last step” is extremely high value an
 
 ---
 
-## 10) Safety and guardrails (must-have)
+## 10) Bounds and controls (must-have)
 
-A virtual stepper is powerful, and it must stay safe and predictable:
+A virtual stepper is powerful, and it must stay bounded and predictable:
 
 * Hard budgets:
 
@@ -389,7 +389,7 @@ If this research is activated, it is working when:
 * Users can answer “what would this code compute from this captured state?” without confusing the answer with historical causation
 * Most sessions proceed without hard stops (“unsupported” becomes “modeled unknown”)
 * Undo is used frequently (strong signal of value)
-* Users trust the tool because it’s explicit about:
+* Users gain confidence because the tool is explicit about:
 
   * which values came from the dump
   * which were virtual
@@ -402,7 +402,7 @@ If this research is activated, it is working when:
 1. **Users expect live-debugger fidelity**
 
    * We frame this as “virtual execution over a snapshot.”
-   * We provide provenance and trust badges everywhere.
+   * We provide provenance and result badges everywhere.
 
 2. **Optimized builds make source stepping messy**
 
@@ -436,7 +436,7 @@ Dedicated proposals explore async virtual-task semantics and dynamic call-site l
 
 * Dynamic call-sites should resolve as explicit semantic operations with outcomes (`Resolved`, `Ambiguous`, `Unresolved`, `MetaObjectRequired`).
 * `Step Into` at unresolved multi-target sites may return `DecisionNeeded` so users can choose a target path.
-* UI should display chosen overload and runtime binding types when resolution succeeds to maintain trust.
+* UI should display chosen overload and runtime binding types when resolution succeeds to maintain clarity.
 
 ### Cross-cutting UX rule
 

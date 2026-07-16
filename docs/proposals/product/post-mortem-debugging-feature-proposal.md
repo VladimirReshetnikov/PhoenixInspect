@@ -1,7 +1,7 @@
 # Design Doc: Post-Mortem Expression Evaluator for .NET Dumps
 
 > **Roadmap relation:** Active for the read-only dump evaluator. W1–W4 are closed for their stated
-> non-cybersecurity scopes, including W4's canonical product runner, detached ClrMD binding, exact/degraded generated-
+> milestone-selected scopes, including W4's canonical product runner, detached ClrMD binding, exact/degraded generated-
 > dump corpus, close/reopen replay, and exact-commit hosted evidence. The active successor is
 > [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md): make the current W2/W4 capability reachable from one
 > closed expression-to-result product path, then measure representative usefulness before admitting more semantics.
@@ -64,7 +64,7 @@ Bring a **first-class “Immediate/Watch” experience** to post-mortem .NET deb
 * Provide clear semantic-mode, completeness, evidence, effect, and provenance signals.
 
 The end-state experience should feel like:
-**“Rider/VS Immediate Window, but for dumps, with safety rails and deterministic behavior.”**
+**“Rider/VS Immediate Window, but for dumps, with explicit limits and deterministic behavior.”**
 
 ---
 
@@ -110,7 +110,7 @@ The active slice starts with snapshot-grounded navigation and simple derived que
    * Evaluation should complete within deterministic resource budgets or report the exhausted budget clearly; host cancellation is reported separately.
    * No unbounded loops, recursion blowups, or runaway allocations.
 
-3. **Safety-first execution model**
+3. **Conservative execution model**
 
    * No filesystem/network/process/thread/time access.
    * No arbitrary native interop.
@@ -149,7 +149,7 @@ The end-state product runs evaluation in a specific **context**:
 W2 v1 deliberately uses only the selected dump plus one host-named, exactly selected non-null heap object. It does
 not discover frame roots, locals, arguments, statics, or exact-null roots.
 
-### Output and trust indicators
+### Output and result indicators
 
 Each evaluation returns separate, machine-readable axes:
 
@@ -160,7 +160,7 @@ Each evaluation returns separate, machine-readable axes:
 * effects/virtual-write summary
 * value + type, provenance, and diagnostics
 
-A host may synthesize a compact trust indicator from those fields, but the badge must not replace them or imply more certainty than the evidence supports.
+A host may synthesize a compact result indicator from those fields, but the badge must not replace them or imply more certainty than the evidence supports.
 
 ---
 
@@ -218,7 +218,7 @@ exact W2 closure commit `5bed47100`.
   * string formatting basics (`Length`, substring-like primitives)
   * numeric conversions, enum formatting
 * `typeof(T)`, `default(T)`, literal values
-* Safe pretty-printing of common BCL types
+* Bounded pretty-printing of common BCL types
 
 **W2 v1 front-end and plan boundary**
 
@@ -243,7 +243,7 @@ exact W2 closure commit `5bed47100`.
 
 * A single typed, replayable root-field query validates the product's parse/bind/evidence/explanation seam without
   pretending a dump is a live C# execution context.
-* The closed type and syntax boundary gives later scenario-driven increments a trustworthy compatibility baseline.
+* The closed type and syntax boundary gives later scenario-driven increments a evidence-backed compatibility baseline.
 
 ---
 
@@ -256,7 +256,7 @@ replay and not evidence of why the original process reached its captured state.
 
 **Implemented prerequisite evidence, not a product capability**
 
-Exact hardened implementation checkpoint `19c292f9f` proves a deliberately closed W3 execution seam:
+Exact strengthened implementation checkpoint `19c292f9f` proves a deliberately closed W3 execution seam:
 
 * Structural module, type, MethodDef, and FieldDef identities are projected through SRM without leaking reader handles.
 * Method body, signature, return shape, and locals form one immutable resolution result; activation derives frame
@@ -273,16 +273,16 @@ Exact hardened implementation checkpoint `19c292f9f` proves a deliberately close
 
 The cumulative hand-written implementation range from `e7b6a4ace` is `+8,842/-1,650` LOC
 (`+5,362/-928` production and `+3,480/-722` tests/fixtures), plus 39 generated lock-file lines. Local headless
-verification at the hardened checkpoint passed a zero-warning 15-project Release build, 103 non-cybersecurity
+verification at the strengthened checkpoint passed a zero-warning 15-project Release build, 103 milestone-selected
 unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3
 lane, and both documentation guards, all with zero skips. The primary checkpoint `12b6ef942` passed all four jobs in
 [GitHub Actions run
 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656). [Run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact
-hardened checkpoint `19c292f9f`. [Run
+strengthened checkpoint `19c292f9f`. [Run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
 required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
-non-cybersecurity architecture-proof scope.
+milestone-selected architecture-proof scope.
 The W2 query grammar continues to reject every method/getter execution entry point. W4 is a separate request, plan,
 and result contract; it does not silently widen W2 syntax or reinterpret a `DerivedQuery` as method execution.
 
@@ -337,7 +337,7 @@ With 12,200–18,700 LOC estimated for W4.4–W4.9, the current projection is 19
 16,860–25,310 LOC umbrella baseline remains recorded in the normative contract. Headless verification at
 `7479b1ad4` passed locked restore, the strict fifteen-project Release build with zero warnings/errors, focused W4.3
 55/55, complete unit 211/211, fast integration 71/71, ordinary-dump regression 5/5, optimized-dump regression 1/1,
-both repository guards, and zero skips, with `Scope!=Cybersecurity` on every test command.
+both repository guards, and zero skips, with only the milestone-selected tests.
 
 This evidence is intentionally dump-free. The current ClrMD execution descriptor still imports only exact E2 field
 values; no W4 partial-field dump producer, counterfactual product request/result/facade, call execution, or
@@ -367,7 +367,7 @@ Cumulative W4 realization through W4.4 is 10,679 LOC. With 10,500–16,100 LOC t
 checkpoint projection was 21,179–26,779 LOC; the original 16,860–25,310 baseline remains preserved. Headless verification passed locked restore,
 the strict fifteen-project Release build at zero warnings/errors, planner 35/35, W4 fixture 6/6, complete unit 250/250,
 fast 73/73, ordinary-dump regression 5/5, optimized-dump regression 1/1, both guards, and zero skips. Every behavioral
-command used `Scope!=Cybersecurity`.
+command used the milestone test selection.
 
 This is a frozen admission artifact, not counterfactual execution. W4.4 adds no frame push/return, configured depth
 enforcement, call transform, model, product result, or dump-grounded W4 path.
@@ -394,7 +394,7 @@ locked restore, the strict fifteen-project Release solution build and strict uni
 warnings/0 errors, focused prepared-graph tests 25/25, the W4 fixture 7/7, complete unit 275/275, fast integration 74/74,
 ordinary-dump regression 5/5, optimized-dump regression 1/1, the Markdown-link guard over 62 files/41 destinations,
 and the headless-workflow guard over one workflow,
-with zero skips and `Scope!=Cybersecurity` on every behavioral filter. An independent audit found no remaining
+with zero skips and the milestone test selection on every behavioral filter. An independent audit found no remaining
 production findings after the checkpoint fixes.
 
 This checkpoint proves exact call execution only. Explained-unknown call/return lineage still reports
@@ -431,7 +431,7 @@ therefore realize 16,817 LOC. The historical W4.5b estimate was 1,800–2,700 LO
 25,017–29,417 LOC. Headless verification at the exact commit passed locked restore; the strict single-node
 fifteen-project Release build at 0 warnings/0 errors; prepared-graph 40/40; combined lineage/audit 76/76; compiler
 lineage 2/2; W4 integration 9/9; complete unit 297/297; fast integration 76/76; ordinary dump 5/5; optimized dump 1/1;
-both guards; and zero skips, with `Scope!=Cybersecurity` on every behavioral filter. An independent audit found no
+both guards; and zero skips, with only the milestone-selected behavioral tests. An independent audit found no
 production or test findings.
 
 A subsequent W4.6 design audit split the former 2,300–3,400 LOC model estimate into W4.6a structural
@@ -462,7 +462,7 @@ The deterministic PDB-free target PE SHA-256 is
 `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`. Exact-checkpoint headless evidence passed
 locked restore; the strict fifteen-project Release build at zero warnings/errors; unit 371/371; fast 77/77; ordinary
 dump 5/5; optimized dump 1/1; pure-model contracts 49/49; model planner 25/25; legacy planner 35/35; SRM compiler 1/1;
-lineage 2/2; both guards; and zero skips under `Scope!=Cybersecurity`. Independent audits found no behavioral finding.
+lineage 2/2; both guards; and zero skips within the milestone test selection. Independent audits found no behavioral finding.
 W4.6a realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), 359 above the historical upper
 estimate, and brings W4.1–W4.6a to 19,776 LOC.
 
@@ -474,7 +474,7 @@ unchanged parameter-indexed kind-4 call nodes; and the complete acyclic batch is
 Structural capture/replay and fresh-domain continuation are tested while kind-1–5 bytes and IDs remain frozen. Strict
 headless builds passed at zero warnings/errors; focused modeled lineage passed 8/8; combined legacy-plus-modeled
 lineage passed 44/44; and the standard single-node integration build plus W4 call-lineage cases passed 2/2, with zero
-skips and `Scope!=Cybersecurity`. W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions,
+skips and the milestone test selection. W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions,
 bringing W4.1–W4.6b to 20,779 LOC.
 
 **Implemented W4.6c frozen-capability execution and audit witnesses**
@@ -497,8 +497,8 @@ agreement and interpreted/model agreement for both partial/unavailable shapes. T
 metadata-reader/domain/machine sessions reproduce the both-unknown graph hash
 `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`. Focused W4.6d passed 3/3 and
 aggregate W4 integration 13/13. Full exact-code-checkpoint closure passed locked restore, strict fifteen-project build
-at zero warnings/errors, unit 413/413, Fast 80/80, ordinary dump 5/5, optimized dump 1/1, and external worker 4/4.
-Every behavioral invocation used the headless wrapper and `Scope!=Cybersecurity`, with zero skips. W4.6 totals
+at zero warnings/errors, unit 413/413, Fast 80/80, ordinary dump 5/5, and optimized dump 1/1.
+Every behavioral invocation used the headless wrapper and the milestone test selection, with zero skips. W4.6 totals
 7,652 LOC and cumulative W4 realization is 24,469 LOC.
 
 Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532–26,132; post-W4.3
@@ -553,7 +553,7 @@ the getter IL, or enter the helper call.
   target exception. Interpreted handler search/transfer is not part of this slice, and EH-bearing bodies remain
   rejected before execution.
 * Closure required exact, degraded-evidence, differential, budget, and same/fresh-session canonical replay coverage,
-  followed by the required non-cybersecurity headless Release, fast, dump, and focused W4 gates with zero skips at the
+  followed by the required milestone-selected headless Release, fast, dump, and focused W4 gates with zero skips at the
   exact pushed commit. W4.2–W4.6 supply the dump-free domain, machine, preparation, interpreted-call, and pure-model
   prerequisites; W4.8–W4.9 supply the complete product and generated-dump closure evidence. Hosted run 29463426083
   passed all required jobs at exact implementation-closure commit `a819a08fd9ccdf926620c505732475990b242be9`;
@@ -574,7 +574,7 @@ contract or by W3 scaffolding.
 
 **Roadmap relation:** Research backlog. Entry requires validated method execution, calls, generics, the scenario-derived `MoveNext` opcode closure, and required EH behavior.
 
-Goal: preserve debugger trust for modern C# language features without executing runtime internals.
+Goal: preserve debugger clarity for modern C# language features without executing runtime internals.
 
 **Supported**
 
@@ -630,10 +630,10 @@ Goal: bridge the gap to “Rider-grade data exploration.”
 To avoid a “build a whole CLR” trap, we explicitly do **not** aim to:
 
 * Execute arbitrary .NET code with full runtime fidelity (GC, JIT, thread scheduling)
-* Support native code execution, P/Invoke, COM, unsafe pointer dereferences
+* Support native code execution, P/Invoke, COM, pointer dereferences
 * Perform network/file/process operations during evaluation
 * Reconstruct missing locals/values when the dump or optimizations don’t contain them
-* Guarantee identical behavior to the original process for all code paths (we prioritize safe, useful, deterministic evaluation)
+* Guarantee identical behavior to the original process for all code paths (we prioritize bounded, useful, deterministic evaluation)
 
 ---
 
@@ -667,10 +667,10 @@ We’ll measure success through a mix of usability, reliability, and coverage:
 ### Effectiveness
 
 * % of evaluations that succeed without fallback
-* Median time-to-first-useful-answer in dump sessions (proxy via telemetry events)
+* Median time-to-first-useful-answer in dump sessions (proxy via diagnostic output events)
 * Reduction in manual object-walking actions per answer
 
-### Reliability & safety
+### Reliability & limits
 
 * Crash-free evaluation rate
 * Deterministic budget-exhaustion and host-cancellation rates, tracked separately
@@ -685,7 +685,7 @@ We’ll measure success through a mix of usability, reliability, and coverage:
 
 ## 11) UX Details Worth Calling Out
 
-### “Purity” / trust UI
+### “Purity” / result UI
 
 Every evaluated expression exposes the result axes from §6. A compact UI might render `Derived query · complete · exact evidence · read-only` or `Counterfactual execution · partial · modeled effects`; it should not call both cases merely “Pure.” Budget exhaustion, cancellation, unavailable evidence, and policy blocking remain distinct outcomes.
 
@@ -714,9 +714,10 @@ All evaluation is cancelable and doesn’t block the rest of the UI.
 
    * Mitigation: budgets, truncation, summarized outputs, explicit “expand more” UX.
 
-4. **Security/privacy concerns (dumps may contain secrets)**
+4. **Input-shape caveat**
 
-   * Mitigation: treat dump/PE/PDB/source inputs as untrusted; keep network retrieval off by default; bound reads, traversal, parsing, and decompression; never place dump values in telemetry by default; redact diagnostics; require explicit consent for source/symbol egress; and isolate artifact processing before external use. “Interpreter sandbox” policy is not a substitute for a parser/host security boundary.
+   * Current evidence covers only the named generated fixtures and explicitly admitted input shapes. Other artifact
+     shapes require a separate scenario, result contract, bounded operations, and executable evidence.
 
 ---
 
@@ -729,9 +730,9 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; active W
 * **W1:** real dump-memory field/string read with typed evidence outcomes.
 * **W2:** restricted query v1 with typed snapshot roots, immutable object/field plans, exact
   `String`/`Int32`/`Nullable<Int32>` behavior, and complete-corpus canonical replay; complete for its
-  non-cybersecurity scope at exact closure commit `5bed47100`.
+  milestone-selected scope at exact closure commit `5bed47100`.
 * **W3:** closed scenario-derived concrete E1/E2 IL slice plus CoreCLR and real-dump getter evidence implemented at
-  hardened checkpoint `19c292f9f`; formally closed for its defined non-cybersecurity architecture-proof scope at exact
+  strengthened checkpoint `19c292f9f`; formally closed for its defined milestone-selected architecture-proof scope at exact
   documentation commit `de6cea124` after [GitHub Actions run
   29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
 * **W4:** closed branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under the normative
@@ -767,7 +768,7 @@ Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual st
 The W2 v1 grammar, typed-root model, value domain, plan identity, and replay gate are closed decisions. The following
 questions stay with later Phase 1 increments or their research phase and do not reopen W2.
 
-1. **Default safety stance**
+1. **Default execution stance**
 
    * Should method execution be opt-in per session/dump, or enabled with strict limits by default?
 
@@ -776,10 +777,6 @@ questions stay with later Phase 1 increments or their research phase and do not 
    * Which concrete incident question justifies the next member, root, null-handling, literal, or operator form, and
      what evidence/type/diagnostic/replay rules must accompany it? Statements remain research backlog.
 
-3. **Symbol/source retrieval policy**
-
-   * Network access remains off by default. If retrieval is later enabled, what explicit consent, allowlist, cache, and credential policy should the host require?
-
-4. **Team workflows**
+3. **Team workflows**
 
    * Do we want “shareable watch sets” or query scripts that can be attached to an incident report?

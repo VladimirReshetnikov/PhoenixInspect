@@ -1,5 +1,5 @@
 > **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-
-> only evaluator. The closed W3 concrete opcode/memory proof was hardened at implementation checkpoint `19c292f9f` and
+> only evaluator. The closed W3 concrete opcode/memory proof was strengthened at implementation checkpoint `19c292f9f` and
 > formally closed at exact documentation commit `de6cea124`; [GitHub Actions run
 > 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
 > at that exact closure commit. W4.2–W4.5 now prove a narrow dump-free explained-unknown, graph-preparation, and
@@ -48,15 +48,15 @@ metadata-reader/domain/machine runs reproduce the both-unknown graph SHA-256
 W4.6a realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support) and brings W4.1–W4.6a to
 19,776 LOC. Its headless matrix passed the strict fifteen-project Release build at zero warnings/errors; unit 371/371;
 fast 77/77; dump regressions 5/5 and 1/1; pure-model contracts 49/49; model planner 25/25; legacy planner 35/35; SRM
-compiler 1/1; lineage 2/2; both guards; and zero skips with `Scope!=Cybersecurity`. W4.6b realizes 1,003 added LOC
+compiler 1/1; lineage 2/2; both guards; and zero skips with the milestone test selection. W4.6b realizes 1,003 added LOC
 (481 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC. Strict headless builds passed
 at zero warnings/errors; focused 8/8, combined legacy-plus-modeled lineage 44/44, and integration call-lineage 2/2
-passed with zero skips and `Scope!=Cybersecurity`.
+passed with zero skips and the milestone test selection.
 
 W4.6c realizes 2,734 added LOC (1,425 production plus 1,309 tests) at `877c9fb55`; strict affected builds passed at
 zero warnings/errors and its focused lane passed 34/34. W4.6d realizes 956 test LOC at `da5346813`; its focused lane
 passed 3/3, aggregate W4 integration passed 13/13, and Fast passed 80/80. Every behavioral invocation used the
-headless wrapper and `Scope!=Cybersecurity`. W4.6 totals 7,652 LOC and brings W4.1–W4.6 to 24,469 LOC.
+headless wrapper and the milestone test selection. W4.6 totals 7,652 LOC and brings W4.1–W4.6 to 24,469 LOC.
 
 Historical full-W4 projections remain 16,860–25,310, 18,532–26,132, 19,228–25,728, 21,179–26,779,
 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276, 28,826–33,726, and
@@ -69,7 +69,7 @@ This is written as if you were going to **build and maintain this as a core libr
 * dump-time evaluation (no live runtime)
 * partial interpretation (some values concrete, others unknown)
 * symbolic-ish execution (optional)
-* abstract interpretation for static analysis (nullness, taint, ranges, effects, etc.)
+* abstract interpretation for static analysis (nullness, origin labels, ranges, effects, etc.)
 * method purity checks (“does this getter touch the world?”)
 * “explainability” tooling (why did this become unknown?)
 
@@ -108,7 +108,7 @@ after its own scenario-specific admission. Such a value is:
 * typed (at least as well as IL types allow)
 * composable through subsequent instructions
 * optionally constrained (range/nullness/type set)
-* traceable (“unknown because: Socket.Receive”, “unknown because: missing field data”, “unknown because: calli/unsafe”, etc.)
+* traceable (“unknown because: Socket.Receive”, “unknown because: missing field data”, “unknown because: calli/low-level”, etc.)
 
 W3 deliberately stops before transfer on unsupported IL or non-exact evidence. W4.3 changes only canonical structured
 partial/unavailable evidence for the already admitted field shape; code-only outcomes, conflicts, invalidity, missing
@@ -119,7 +119,7 @@ unknown-producing operation.
 
 Support **concrete**, **hybrid**, and **pure abstract** execution by swapping:
 
-* `IValueDomain<TValue>` (constants, nullness, ranges, taint, etc.)
+* `IValueDomain<TValue>` (constants, nullness, ranges, origin labels, etc.)
 * `IMemoryModel<TValue,TMemory>` plus `IPersistentMemoryState<TMemory>` (virtual heap, summary heap with aliasing,
   prepared dump-evidence adapter, etc.)
 
@@ -149,7 +149,7 @@ shape plus one exact/no-effect body-free model-selection shape. The following br
 ## 2. Non-goals (explicit so the library doesn’t become “a CLR”)
 
 * Not a JIT; no native code execution
-* Not required to exactly replicate CLR corner behavior for unverifiable/unsafe IL
+* Not required to exactly replicate CLR corner behavior for unverifiable or low-level IL
 * Not a full verification engine
 * Not a full symbolic theorem prover (constraint solving is optional and shallow)
 
@@ -406,7 +406,7 @@ public sealed record EffectSummary(
 This enables downstream consumers to say:
 
 * “allow evaluation only if `Effects.Kinds` subset of `Alloc`”
-* or “taint anything that depends on `ReadEnv`”
+* or “attach origin labels to anything that depends on `ReadEnv`”
 * or “report potential IO in this getter”
 
 ---
@@ -441,7 +441,7 @@ Proposal: each `TValue` carries:
 
 * `TypeSig StaticType` (best-known static type)
 * `StackKind Kind` (I4/I8/R/Ref/ByRef/ValueType/NativeInt)
-* plus domain-specific facts (constant/range/nullness/type set/taint)
+* plus domain-specific facts (constant/range/nullness/type set/origin labels)
 
 The domain API is responsible for conversions and normalizations.
 
@@ -564,7 +564,7 @@ If summary unavailable:
 This makes the framework usable for:
 
 * nullability analysis at IL level
-* taint propagation
+* origin-label propagation
 * “does this method read environment?”
 * identifying potential exceptions
 * inferring simple invariants
@@ -622,7 +622,7 @@ only, and fail-closed; it does not cascade to interpretation or havoc. A general
    * otherwise return `FreshUnknown(returnType, Origin.Call(method))`
    * and apply `Havoc` based on “may-write” heuristics
 
-### 8.3 Effects and trust
+### 8.3 Effects and result confidence
 
 The dispatcher emits effect summaries:
 
@@ -634,7 +634,7 @@ The dispatcher emits effect summaries:
 Consumers can then implement policies:
 
 * “expression evaluator in dump mode: disallow any `ReadEnv|WriteEnv|Threading|Native`”
-* “static analysis: propagate taint if `ReadEnv`”
+* “static analysis: propagate origin labels if `ReadEnv`”
 * “purity checker: fail if any env effect”
 
 ---
@@ -695,13 +695,13 @@ IL calls a modeled method `Socket.Receive(byte[] buf, ...)`.
 Model says:
 
 * return value `n` is unknown int with constraint `0 <= n <= buf.Length`
-* buffer elements `buf[0..n)` become unknown bytes (tainted `Env:Socket`)
+* buffer elements `buf[0..n)` become unknown bytes (origin-labeled `Env:Socket`)
 * may throw `SocketException`
 
 Subsequent IL reads bytes and computes:
 
-* if it reads `buf[0]`, result is unknown byte (tainted)
-* arithmetic with tainted unknown yields tainted unknown
+* if it reads `buf[0]`, result is unknown byte (origin-labeled)
+* arithmetic with origin-labeled unknown yields origin-labeled unknown
 * branch on `n > 0` forks/refines:
 
   * true branch refines `n >= 1`
@@ -766,7 +766,7 @@ SRM supplies the interpreter activation shape. The same/fresh metadata replay ca
 
 The generated dump E2 case goes further: method shape/body and the exact correlated `Int32` field cell come from
 counted dump evidence, and closing/reopening/rebinding the dump reproduces structural identities, state, memory,
-budget, events, and transcript. This passed locally at hardened checkpoint `19c292f9f`, whose four hosted jobs passed in
+budget, events, and transcript. This passed locally at strengthened checkpoint `19c292f9f`, whose four hosted jobs passed in
 [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 then closed formally at
 exact documentation commit `de6cea124` when [run
@@ -813,7 +813,7 @@ evidence-bearing source projects. It does not create the speculative generalized
 
 * `ConcreteDomain` (boxed primitives + virtual heap refs)
 * `HybridDomain` (optional concrete + abstract facts)
-* `NullnessDomain`, `RangeDomain`, `TypeSetDomain`, `TaintDomain`
+* `NullnessDomain`, `RangeDomain`, `TypeSetDomain`, `OriginLabelDomain`
 * product domain composition (configurable)
 
 3. **Memory models**
@@ -851,7 +851,7 @@ The long-term design aims to avoid two classic failure modes:
 And it gives you an honest, composable way to say:
 
 * “this value is known”
-* “this value is unknown but tainted from socket”
+* “this value is unknown but origin-labeled from socket”
 * “this branch refines nullness”
 * “this method is pure except for a native call”
 * “this invariant holds at this IL offset”

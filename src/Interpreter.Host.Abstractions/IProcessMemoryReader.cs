@@ -23,8 +23,8 @@ public interface IProcessMemoryReader
     /// Gets the largest byte count accepted by one read operation.
     /// </summary>
     /// <remarks>
-    /// The cap is deterministic and protects dump analysis from accidental or hostile allocation requests. Callers
-    /// should chunk larger logical reads and preserve each chunk's completeness separately.
+    /// The cap is deterministic and rejects unexpectedly large allocation requests. Caveat: callers must chunk larger
+    /// logical reads and preserve each chunk's completeness separately.
     /// </remarks>
     int MaximumReadLength { get; }
 

@@ -19,7 +19,7 @@ public enum PureModelAttemptOutcomeKind
     /// <summary>The model returned an unknown integer relation requiring engine-owned lineage.</summary>
     UnknownReturn = 2,
 
-    /// <summary>The model reported a bounded payload-safe limitation.</summary>
+    /// <summary>The model reported a bounded payload-omitting limitation.</summary>
     Blocked = 3,
 
     /// <summary>The model reported that the immutable invocation facts were invalid.</summary>
@@ -33,7 +33,7 @@ public enum PureModelAttemptOutcomeKind
 }
 
 /// <summary>
-/// Records one immutable, payload-safe invocation of a frozen pure model in deterministic operational state.
+/// Records one immutable, payload-omitting invocation of a frozen pure model in deterministic operational state.
 /// </summary>
 /// <remarks>
 /// An attempt is appended only after control enters the model capability. Preflight, graph-invariant, and instruction-
@@ -41,12 +41,12 @@ public enum PureModelAttemptOutcomeKind
 /// semantic state, persistent memory, budget, events, and active-frame high water unchanged. The record carries no
 /// model return payload, exception text, domain value, memory reference, registry, resolver, or target body.
 ///
-/// This is provisional prototype evidence rather than a stable telemetry or serialization API. Consumers should
+/// This is provisional prototype evidence rather than a stable diagnostic-output or serialization API. Consumers should
 /// treat the complete ordered vector on <see cref="MachineOperationalState"/> as part of deterministic replay.
 /// </remarks>
 public sealed record PureModelAttempt
 {
-    /// <summary>Maximum length accepted for one payload-safe diagnostic code retained by an attempt.</summary>
+    /// <summary>Maximum length accepted for one payload-omitting diagnostic code retained by an attempt.</summary>
     public const int MaximumStableCodeLength = 128;
 
     /// <summary>Creates one validated immutable modeled-call attempt.</summary>

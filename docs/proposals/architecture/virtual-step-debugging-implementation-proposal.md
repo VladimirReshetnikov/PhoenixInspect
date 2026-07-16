@@ -1,6 +1,6 @@
 > **Roadmap status: research backlog.** This is counterfactual stepping from snapshot/assumed state, not replay of
 > historical execution. W3's interpreted-method/persistent-memory proof is implemented and locally/hosted-checkpoint
-> verified at hardened checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124`; [GitHub
+> verified at strengthened checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124`; [GitHub
 > Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four
 > required jobs at that exact closure commit. Virtual stepping still
 > requires an admitted W4 method-execution slice with deterministic pause/event contracts, source mapping, and
@@ -725,7 +725,7 @@ To make this feature clean (and not a pile of special-cases), extend the W3 inte
 5. **Branch policy hook** that can stop for user decision
 6. **EH model** at least at “stop on throw”; ideally real handler transfer
 
-Everything else (unknown propagation, taint/effects, call modeling, dump-backed heap) plugs into this naturally.
+Everything else (unknown propagation, origin labels/effects, call modeling, dump-backed heap) plugs into this naturally.
 ---
 
 ## Appendix A) Current prototype contract alignment (`src/`)
@@ -740,7 +740,7 @@ The admitted E1 subset is static, branchless, EH-free `Int32` constants/argument
 same-module FieldDef `ldfld`. The injected `IMemoryModel` returns exact/non-exact/target-exception outcomes; imported
 objects do not fabricate defaults for absent fields. Exact typed null creates a budgeted/evented, idempotent terminal
 `TargetException` state. Compiler/CoreCLR and generated real-dump tests cover direct/adjusted getters and fresh-session
-replay. These implementation facts pass locally at hardened checkpoint `19c292f9f`, whose four jobs also pass in [implementation-
+replay. These implementation facts pass locally at strengthened checkpoint `19c292f9f`, whose four jobs also pass in [implementation-
 checkpoint run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally
 closed at exact documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs

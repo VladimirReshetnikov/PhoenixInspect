@@ -7,7 +7,7 @@ namespace Interpreter.Tests.Infrastructure;
 /// <summary>
 /// Supplies an execution hook that reasserts the test host's non-interactive Windows failure policy immediately before
 /// xUnit schedules test cases. This draft test-infrastructure framework complements the earlier process-wrapper and
-/// module-initializer protections; it is not a product execution contract.
+/// module-initializer controls; it is not a product execution contract.
 /// </summary>
 public sealed class HeadlessTestFramework : XunitTestFramework
 {

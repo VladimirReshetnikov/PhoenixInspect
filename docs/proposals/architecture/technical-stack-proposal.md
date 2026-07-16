@@ -9,7 +9,7 @@ The objective is to pick technologies that maximize:
 - maintainability over multiple years,
 - deterministic behavior for analysis tooling,
 - portability across hosts (CLI, IDE plugin, service), and
-- ease of incremental hardening from prototype to production.
+- ease of incremental strengthening from prototype to production.
 
 ---
 
@@ -18,7 +18,7 @@ The objective is to pick technologies that maximize:
 1. **Tight runtime control**
    Deterministic resource counters are required from the first executable slices; the prototype currently accounts
    for admitted instruction transfers. W4.4 additionally records fixed internal graph-construction use under
-   64-method and 1,024 method/field/edge-unit safety caps; those are not the later configurable product traversal
+   64-method and 1,024 method/field/edge-unit resource caps; those are not the later configurable product traversal
    budget. W4.5 separately admits a configured logical-call-depth limit before activation and records required,
    observed, and active-frame depth facts without charging them as instruction budget. Allocation, path, join, and
    widening budgets remain later requirements. W4.6 preserves active-frame depth across atomic modeled calls while
@@ -88,8 +88,6 @@ Current prototype structure:
     correlation.
 - `src/Interpreter.Product.DumpQuery`
   - the closed, bounded root-field query evaluator and result projection.
-- `src/Interpreter.Host.ExternalWorker` and `src/Interpreter.Host.ExternalWorker.Runner`
-  - a separately landed, non-gating Windows process-boundary prototype outside W1–W4.
 - `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, `tests/Interpreter.TestTarget`, and
   `tests/Interpreter.OptimizedContextTestTarget`
   - fast semantic/contract tests, real dump evidence, and the generated optimized-context report.
@@ -162,7 +160,7 @@ Use standard .NET DI for host-facing composition while allowing direct construct
 
 - Strongly-typed options classes for budgets, policies, and feature flags.
 - Immutable snapshots of effective configuration per execution session.
-- Explicit defaults with “safe by default” posture.
+- Explicit defaults with conservative behavior.
 
 ---
 
@@ -234,7 +232,7 @@ Use standard .NET DI for host-facing composition while allowing direct construct
      reachability, type, call-site identity, parameter index, and acyclicity before same-session or fresh-session replay.
      Keep modeled calls, product counterfactual contracts, dump integration, and hosted closure outside this lane.
 9. **Structural pure-model contract, planner, and compiler tests (W4.6a)**
-   - Freeze the bounded non-generic descriptor/invocation/outcome/registry vocabulary and stable payload-safe codes.
+   - Freeze the bounded non-generic descriptor/invocation/outcome/registry vocabulary and stable payload-omitting codes.
    - Require exact/no-effect selection only after caller-edge resolution/typing and before prospective target-body
      acquisition; assert opaque modeled-leaf deduplication, graph equality independent of runtime capability identity,
      five-unit/depth-two compiler topology, no fallback/partial graph, and unchanged legacy plan hashes.
@@ -255,12 +253,10 @@ Use standard .NET DI for host-facing composition while allowing direct construct
     - Prove direct interpreted/model/CoreCLR exact agreement and interpreted/model degraded-evidence agreement across
       repeated and fresh metadata-reader/domain/machine sessions, including frozen graph fingerprints.
     - The focused lane passes 3/3, aggregate W4 integration 13/13, and Fast 80/80. Every behavioral lane is headless
-      and includes `Scope!=Cybersecurity`.
+      and includes the milestone test selection.
 
-The non-cybersecurity external-worker regression lane passes 4/4 headlessly. The five hostile-corpus facts in the
-integration assembly are tagged `Scope=Cybersecurity`, and all current W1–W4 milestone test commands exclude that
-scope. Repository-wide compilation is topology/compilation-health evidence only, not cybersecurity behavioral
-validation.
+Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
+shapes. Earlier out-of-scope experiments have been removed.
 
 CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad performance suites remain research until their roadmap entry gates pass. `testing-strategy-proposal.md` is the source of truth for current evidence and milestone gates.
 
@@ -299,18 +295,11 @@ CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad 
 
 ---
 
-## 10) Future external-input and supply-chain posture
+## 10) Input-shape caveat
 
-Cybersecurity work for external artifacts is explicitly outside W1–W4. The following remains product-entry
-guidance, not a current completion gate; the landed worker and malformed corpus are non-gating prototypes and do not
-admit an external artifact product surface.
-
-- Treat dumps, PE/PDB files, symbol responses, SourceLink documents, and expression text as hostile and potentially secret-bearing.
-- Keep network acquisition off unless a host/user explicitly enables it; verify identity before combining remote/disk artifacts with dump evidence.
-- Bound raw reads, graph traversal, strings, parser work, downloads, and decompression.
-- Never place dump contents, source text, file paths, environment data, or expression results in telemetry by default.
-- Run arbitrary external artifacts in a constrained worker process before product exposure; local in-process parsing is prototype-only and is not a sandbox.
-- Use central package versions, committed lock files, deterministic builds, dependency review, and minimal dependency surface.
+W1–W4 cover only the named generated fixtures and explicitly admitted input shapes. Earlier out-of-scope experiments
+have been removed. Any later expansion must define its own scenario, bounded operations,
+identity rules, result contract, and executable evidence before entering the product surface.
 
 ---
 
@@ -334,19 +323,18 @@ SHAs rather than movable major tags.
 
 ### Revised W1 CI target
 
-The current workflow uses the same headless wrapper for locked restore, the strict 15-project Release build, fast tests,
-ordinary real-dump evidence, and optimized-context evidence; worker tests are outside the default W1 lane. All four
+The historical W1 workflow used the same headless wrapper for locked restore, the then-current 15-project Release build, fast tests,
+ordinary real-dump evidence, and optimized-context evidence. All four
 required jobs passed at exact W1 closure commit `e2580a8a8` in [GitHub Actions run
 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889).
 
-That historical W1 run predates the explicit scope filter. At W2 implementation checkpoint `ff7cd1965`, every current
-test command includes `Scope!=Cybersecurity`; restore/build intentionally remains repository-wide across all 15
-projects as topology/compilation-health evidence. [GitHub Actions run
+At W2 implementation checkpoint `ff7cd1965`, every command used the milestone-selected set at that commit and the
+then-current 15-project solution. [GitHub Actions run
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
 at exact W2 closure commit `5bed47100`.
 
-Hardened W3 checkpoint `19c292f9f` passes locally through the same headless workflow: locked restore; the strict
-15-project Release build with zero warnings/errors; Markdown-link and headless-workflow guards; 103 non-cybersecurity
+Strengthened W3 checkpoint `19c292f9f` passes locally through the same headless workflow: locked restore; the strict
+15-project Release build with zero warnings/errors; Markdown-link and headless-workflow guards; 103 milestone-selected
 unit tests; 67 fast integration tests; 5 ordinary dump tests; 1 optimized-context test; and the focused 2-test W3
 lane. All four jobs also pass at that exact implementation commit in [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Formal W3 closure is recorded
@@ -376,13 +364,13 @@ expression-to-result facade, but do not declare it a stable shipping CLI contrac
 
 ## 13) Prototype implementation snapshot (draft)
 
-> **Draft status notice:** The current solution is a reduced ten-project prototype organized around executable evidence and a small set of dependency boundaries.
+> **Draft status notice:** The current solution is a reduced nine-source-project prototype organized around executable evidence and a small set of dependency boundaries.
 > Project names, dependencies, and interfaces are exploratory and may change without compatibility guarantees.
 
 Current facts:
 
-- The solution retains ten `src/` projects with active code/contracts plus test projects; 33 empty placeholders were removed and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
-- Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Host.ExternalWorker`, and `Interpreter.Host.ExternalWorker.Runner`.
+- The solution retains nine `src/` projects with active code/contracts plus four test/target projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
+- Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, and `Interpreter.Product.DumpDebugging`.
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
   terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct
@@ -398,11 +386,7 @@ Current facts:
   the signature and exact `ldfld` FieldDef from the same metadata, correlates one exact runtime field observation, and
   imports only that cell. The independently opened disk PE carries exact whole-file length/SHA-256 identity and serves
   only as a comparison oracle; its body/signature contributes no fact to dump-backed execution.
-- External-input resource ceilings are 8 GiB per dump before hashing/ClrMD parsing, a 256 MiB ClrMD dump cache with stack-trace/root caching disabled, and 512 MiB at the typed external-PE `Open` boundary before SRM parsing. These bounds reduce resource-exhaustion risk but are not a parser/DAC sandbox; trusted-fixture convenience APIs are not external admission boundaries.
-- The Windows x64 one-shot worker and malformed-minidump corpus are separately landed, non-gating prototypes outside
-  W1–W4. The five hostile-corpus facts and worker test project provide no current milestone validation; all W1–W4
-  test invocations exclude `Scope=Cybersecurity`, while repository-wide compilation retains the projects only as
-  topology/compilation-health evidence. The projects do not create an admitted external artifact product surface.
+- Resource ceilings are 8 GiB per dump before hashing/ClrMD parsing, a 256 MiB ClrMD dump cache with stack-trace/root caching disabled, and 512 MiB at the typed external-PE `Open` boundary before SRM parsing. Caveat: these bounds are validated only on the named fixture paths and do not admit other artifact shapes.
 - `Interpreter.Core.Execution` depends on core abstractions, not on SRM or ClrMD. `MetadataResolutionServices` supplies
   the disk bridge; `ClrmdDumpExecutionResolver` supplies the counted-dump bridge while implementing the same
   `IResolutionServices` contract, including body-independent contextual direct-MethodDef targets.
@@ -419,7 +403,7 @@ Current facts:
   16,860–25,310 baseline preserved. Headless evidence passed locked restore, the strict fifteen-project Release
   solution build and strict unit/integration project builds at 0 warnings/0 errors, focused prepared-graph tests 25/25,
   the W4 fixture 7/7, complete unit 275/275, fast integration 74/74, ordinary dump 5/5, optimized dump 1/1, and both
-  documentation guards, with zero skips and `Scope!=Cybersecurity` on every behavioral filter. An independent audit found no
+  documentation guards, with zero skips and the milestone test selection on every behavioral filter. An independent audit found no
   remaining production findings after the checkpoint fixes. This is retained as the historical first-half checkpoint.
 - W4.5b commit `c72f6ee9e5545240433294cdca4f350808339aef` closes explained-unknown direct-call propagation through
   `IInterpretedCallLineageDomain<TValue>`. Complete metadata-ordered argument vectors and returns receive canonical
@@ -437,7 +421,7 @@ Current facts:
   0 warnings/0 errors; prepared-graph tests 40/40; combined audit/lineage tests 76/76, including 29 legacy identity
   cases; compiler lineage tests 2/2; the W4 integration aggregate 9/9; complete unit 297/297; fast integration 76/76;
   ordinary dump 5/5; optimized dump 1/1; and both documentation guards, with zero skips and
-  `Scope!=Cybersecurity` on every behavioral filter. An independent audit found no production or test findings.
+  the milestone test selection on every behavioral filter. An independent audit found no production or test findings.
   Product counterfactual contracts, ClrMD dump grounding, and hosted closure remained later work.
 - W4.6a exact commit `77c92789b16d9258c907d5026a36e39f8c957b41` adds bounded `PureCallModelIdentity`/
   `PureCallModelVersion`, exact structural descriptors, a non-generic two-`Int32` invocation/outcome contract,
@@ -452,7 +436,7 @@ Current facts:
 - W4.6a exact-checkpoint headless evidence passed locked restore; strict fifteen-project Release build at zero
   warnings/errors; complete unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; pure-model contracts
   49/49; model planner 25/25; legacy planner 35/35; compiler 1/1; lineage 2/2; both guards; and zero skips with
-  `Scope!=Cybersecurity`. Independent audits found no behavioral finding. It realizes 2,959 added LOC (1,210
+  the milestone test selection. Independent audits found no behavioral finding. It realizes 2,959 added LOC (1,210
   production plus 1,749 tests/fixture support), exceeding the historical upper estimate by 359 LOC and bringing
   W4.1–W4.6a to 19,776 LOC.
 - W4.6b exact commit `fd723a912` adds optional `IPureCallModelLineageDomain<TValue>` and append-only schema-v1 kind-6
@@ -460,7 +444,7 @@ Current facts:
   whole batch is interned atomically with acyclicity and later structural replay validation. Kinds 1–5 remain byte- and
   identity-compatible, and fresh-domain continuation is covered. Strict headless builds passed at zero warnings/
   errors; focused 8/8, combined legacy-plus-modeled lineage 44/44, and the standard single-node integration build plus
-  W4 call-lineage 2/2 passed with zero skips and `Scope!=Cybersecurity`. It realizes 1,003 added LOC (481 production
+  W4 call-lineage 2/2 passed with zero skips and the milestone test selection. It realizes 1,003 added LOC (481 production
   plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC. It does not execute a model.
 - W4.6c exact commit `877c9fb55` executes only the capability retained by the frozen modeled leaf. Exact and lineage-
   grounded unknown outcomes transfer atomically to the caller, with one instruction event, unchanged memory, and no
@@ -475,8 +459,8 @@ Current facts:
   `451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff`, while repeated and fresh sessions reproduce
   the both-unknown graph hash `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`. Focused W4.6d passed 3/3 and aggregate
   W4 integration 13/13. Full exact-checkpoint closure passed locked restore, strict fifteen-project build at zero
-  warnings/errors, unit 413/413, Fast 80/80, ordinary dump 5/5, optimized dump 1/1, and external worker 4/4, with
-  zero skips. Every behavioral invocation used the headless wrapper and `Scope!=Cybersecurity`.
+  warnings/errors, unit 413/413, Fast 80/80, ordinary dump 5/5, and optimized dump 1/1, with
+  zero skips. Every behavioral invocation used the headless wrapper and the milestone test selection.
 - W4.6 realizes 7,652 LOC and brings cumulative W4 realization to 24,469 LOC.
 - Historical later full-W4 projections are W4.5 closure 25,017–29,417, post-design-audit 27,217–32,117, W4.6a
   checkpoint 28,376–32,476, first concrete W4.6b recalibration 28,876–33,276, post-W4.6b-split 28,826–33,726,

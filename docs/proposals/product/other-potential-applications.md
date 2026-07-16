@@ -14,12 +14,12 @@ The proposed interpreter **spine** looks like this:
 
 * **IL semantics engine** (ECMA-335 stack machine) parameterized by:
 
-  * `IValueDomain<TValue>` (constants/nullness/type-set/taint/etc.)
+  * `IValueDomain<TValue>` (constants/nullness/type-set/origin labels/etc.)
   * `IMemoryModel<TValue, TMem>` (virtual heap, dump overlay, summary heap, etc.)
 * **Call dispatcher** (`ICallDispatcher`) that can:
 
   * interpret IL bodies (if allowed)
-  * or run **models** (intrinsics, environment, sandbox policies)
+  * or run **models** (intrinsics, environment, execution policies)
   * or return unknown + havoc
 * **Execution strategies**:
 
@@ -40,7 +40,7 @@ If these seams survive implementation in more than one mode and consumer, they m
 This is the most “obvious” sibling of dump debugging because you already designed abstract interpretation:
 
 * **Nullness + definite assignment** at IL level (useful for analyzing generated code, source generators, obfuscated code, etc.)
-* **Taint analysis / security sinks** (“data from env flows into SQL string”)
+* **Origin-flow analysis** (“which external source influenced this value?”)
 * **Effect/purity inference** (“getter does IO”, “method allocates”, “method reads ambient context”)
 * **Exception analysis** (possible throw sites, uncaught exception paths)
 * **Threading/async hazards** (ambient context usage; blocking calls in async)
@@ -82,10 +82,10 @@ Most analyses are useless without at least conservative EH edges:
 
 #### C) Interprocedural summaries + recursion handling
 
-If you want whole-program effects/taint/purity, you need summaries:
+If you want whole-program effects/origin labels/purity, you need summaries:
 
 * return value abstraction
-* memory effects (which regions become unknown/tainted)
+* memory effects (which regions become unknown/origin-labeled)
 * thrown exceptions set (optional)
 * environment effects (IO/native/reflection/threading)
 
@@ -93,7 +93,7 @@ If you want whole-program effects/taint/purity, you need summaries:
 
 #### D) Domain composition
 
-Your MVP domain (const + nullness + type-set + taint) is a great baseline. Static analysis will want:
+Your MVP domain (const + nullness + type-set + origin labels) is a great baseline. Static analysis will want:
 
 * numeric ranges
 * “definitely initialized”
@@ -102,7 +102,7 @@ Your MVP domain (const + nullness + type-set + taint) is a great baseline. Stati
 
 **Adjustment:** make domain composition first-class:
 
-* either product domains (`(Nullness × Taint × Range × …)`)
+* either product domains (`(Nullness × origin labels × Range × …)`)
 * or “fact plugins” with stable join/widen rules
 
 **Net result:** no fundamental redesign; mostly add a normalizing IR + EH CFG + summary plumbing.
@@ -115,7 +115,7 @@ Think of this as “shadow execution” that augments a normal debugger, without
 
 ### 3.1 Use cases
 
-* **Safe expression evaluation**: “what would this evaluate to?” without func-eval side effects
+* **Bounded expression evaluation**: “what would this evaluate to?” without func-eval side effects
 * **Preview Step Over**: show which locals/fields are likely to change if you Step Over
 * **Branch exploration**: “what if condition is true/false?” using forking + join
 * **Side-effect detection**: warn if expression would touch IO/threading/native/reflection
@@ -193,14 +193,14 @@ If you integrate with DAP/ICorDebug, you’ll want:
 
 ---
 
-## 4) Application: Executing IL on platforms without JIT (AOT-only / sandboxed runtime)
+## 4) Application: Executing IL on platforms without JIT (AOT-only / no-JIT runtime)
 
 This is where your framework morphs from “debugger VM” into a “runtime VM”.
 
 ### 4.1 Use cases
 
 * Run IL on iOS / restricted platforms (no JIT)
-* Game scripting / plugin execution (load untrusted IL and run it)
+* Game scripting / plugin execution (load arbitrary IL and run it)
 * Deterministic execution environments (replay, simulation)
 * “Debug build” interpreter fallback (e.g., interpret rarely used code paths)
 
@@ -216,7 +216,7 @@ You need a **fully concrete** domain and a **real runtime substrate**:
 * full generics instantiation behavior (or a chosen subset)
 * object layout consistency
 
-This is doable, but it’s a different ambition level than “evaluate safely.”
+This is doable, but it is a different ambition level than “evaluate within declared bounds.”
 
 #### B) A “runtime library model” rather than “debug models”
 
@@ -243,7 +243,7 @@ For a general runtime, eventually you need:
 * synchronization primitives
 * maybe tasks
 
-But you could ship a single-threaded runtime first (common for sandboxed environments).
+But you could ship a single-threaded runtime first (common for no-JIT environments).
 
 ### 4.3 Extensions/adjustments needed
 
@@ -266,18 +266,18 @@ The runtime interpreter calls host services for:
 * interop
 * GC (or a simplified managed heap)
 
-#### B) Verification / safety
+#### B) Verification / constraints
 
-For untrusted IL you need:
+For arbitrary IL you need:
 
 * verification-like checks (or strict subset acceptance)
 * quotas (CPU steps, memory)
-* denial of unsafe opcodes / unverifiable constructs
+* rejection of low-level opcodes / unverifiable constructs
 
 Your existing budget system helps, but you’ll want:
 
 * instruction filters
-* safe stack typing enforcement
+* strict stack typing enforcement
 * restricted reflection, etc.
 
 #### C) Performance considerations become central
@@ -308,7 +308,7 @@ Even without a live target, an interpreter is excellent for “explain what happ
 * record a “virtual execution trace” from an expression/method call
 * show how a value was computed (dataflow provenance)
 * enable time-travel stepping (Step Back) cheaply because state is virtual
-* generate minimal repro steps (in a controlled sandbox)
+* generate minimal repro steps (in a controlled bounded runtime)
 
 ### 5.2 Framework implications
 
@@ -373,7 +373,7 @@ This is the “use it as a controlled evaluator” angle.
 
 ### 7.1 Use cases
 
-* Evaluate **attribute constructors** and arguments safely (to extract configuration, analyzers, trimming hints)
+* Evaluate **attribute constructors** and arguments within declared bounds (to extract configuration, analyzers, trimming hints)
 * Evaluate **source generator helpers** or embedded DSLs in IL form
 * Infer “constant-ish” results (e.g., computed strings) without running full program
 * Derive “effect summaries” (IO/reflection/native) for build gating
@@ -412,11 +412,11 @@ A clean plugin model prevents the core VM from becoming a pile of ad-hoc `if (me
 
 ### 8.2 Treat “effects” as a primary output of execution
 
-Effects aren’t just for sandboxing. They power:
+Effects aren’t just for bounded execution. They power:
 
 * static analysis (“does this method read environment?”)
 * predictive debugging (“this expression might do IO”)
-* runtime policy enforcement (sandbox)
+* runtime policy enforcement (bounded runtime)
 * trace explanation (“unknown because external call”)
 
 So keep `EffectSummary` in the state and in summaries.

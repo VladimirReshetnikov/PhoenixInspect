@@ -102,10 +102,10 @@ public sealed class SrmMetadataModule : IMetadataModule, IDisposable
     /// <summary>
     /// Opens an SRM module from a local managed PE artifact.
     /// </summary>
-    /// <param name="modulePath">The trusted local artifact path to open.</param>
+    /// <param name="modulePath">The named local artifact path to open.</param>
     /// <returns>A disposable SRM-backed metadata module.</returns>
     /// <remarks>
-    /// This throwing convenience is intended for trusted fixtures and caller-programming errors. External artifact
+    /// This throwing convenience is intended for named fixtures and caller-programming errors. External artifact
     /// admission should use <see cref="Open"/> so absence and malformed PE content remain typed outcomes.
     /// </remarks>
     /// <exception cref="NotSupportedException">

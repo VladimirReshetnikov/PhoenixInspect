@@ -188,7 +188,7 @@ public sealed class OptimizedIncidentContextIntegrationTests
         "corpus-composition=one-generated-dump-five-predeclared-axes\n" +
         "target-profile=net10.0-coreclr-windows-x64-release-optimized\n" +
         "capture-mechanism=diagnostics-client-full-dump\n" +
-        "raw-stack-slot-observation=not-admitted-dotnet10-dac-safety\n" +
+        "raw-stack-slot-observation=not-admitted-dotnet10-dac-boundary\n" +
         "raw-member-bytes-numerator=5\n" +
         "raw-member-bytes-denominator=5\n" +
         "raw-context-attribution-numerator=1\n" +

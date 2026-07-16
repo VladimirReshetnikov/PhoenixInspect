@@ -396,7 +396,7 @@ public sealed class ProvenanceFieldTransferTests
     [InlineData(FieldCapabilityBehavior.UndefinedPrecision)]
     [InlineData(FieldCapabilityBehavior.ThrowingPrecision)]
     [InlineData(FieldCapabilityBehavior.ThrowingStaticType)]
-    public void MaliciousApproximationCapabilityIsNormalizedAtomically(FieldCapabilityBehavior behavior)
+    public void InvalidApproximationCapabilityIsNormalizedAtomically(FieldCapabilityBehavior behavior)
     {
         var evidence = CreateEvidence(EvaluationEvidenceStatus.Partial, 2);
         var domain = new FieldDomainDouble(behavior);
@@ -782,7 +782,7 @@ public sealed class ProvenanceFieldTransferTests
                     ProvenanceInputKind.RequestArgument,
                     0,
                     EvaluationEvidenceStatus.Unavailable,
-                    ProvenanceSourceKey.Hash(Encoding.UTF8.GetBytes("malicious-field-validation")),
+                    ProvenanceSourceKey.Hash(Encoding.UTF8.GetBytes("invalid-field-validation")),
                     "W4.Test.Validation",
                     TypeSig.Int32)),
                 _ => null,
@@ -850,7 +850,7 @@ public sealed class ProvenanceFieldTransferTests
         }
     }
 
-    /// <summary>Enumerates adversarial approximation-capability behaviors used by the public theory.</summary>
+    /// <summary>Enumerates fault-injection approximation-capability behaviors used by the public theory.</summary>
     public enum FieldCapabilityBehavior
     {
         /// <summary>Delegates to the production provenance domain.</summary>

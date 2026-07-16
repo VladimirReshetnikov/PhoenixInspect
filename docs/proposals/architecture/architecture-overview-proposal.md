@@ -9,7 +9,7 @@
 The funded product direction is a **deterministic, read-only expression evaluator grounded in a .NET dump**. The interpreter is enabling technology for expressions that eventually require user IL; it is not presently a general-purpose execution platform.
 
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
-revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
+revised milestone-selected scopes. W3's strengthened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.9 have since landed;
 exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four jobs in [GitHub Actions run
@@ -23,13 +23,13 @@ implementation commit `7479b1ad4` closes the dump-free structured field-continua
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
 frozen graph preparation. Their headless local evidence passed the strict fifteen-project Release
 build, focused planner 35/35, focused fixture 6/6, complete unit 250/250, fast 73/73, ordinary dump 5/5,
-optimized-context dump 1/1, and both documentation guards with zero skips under `Scope!=Cybersecurity`. W4.4 realizes
+optimized-context dump 1/1, and both documentation guards with zero skips within the milestone test selection. W4.4 realizes
 3,651 added LOC (2,076 production plus 1,575 tests), split 1,043/2,608.
 
 Pushed W4.5a checkpoint `356c07037` now consumes that exact frozen graph through a resolver-free prepared-machine
 session. It adds metadata-derived multi-frame `call`/`ret`, structural return sites, ordered frame events, configured
 and required logical-depth facts, and observed logical/frame high-water reporting while preserving memory and the
-legacy call-free path. Its headless non-cybersecurity evidence passed locked restore, the strict fifteen-project
+legacy call-free path. Its headless milestone-selected evidence passed locked restore, the strict fifteen-project
 Release solution build and strict unit/integration project builds at zero warnings/errors, focused prepared-graph tests
 25/25, the W4 fixture 7/7, the full unit suite 275/275, fast integration 74/74, ordinary dump 5/5, optimized dump 1/1,
 and both documentation guards with zero skips. Independent audit found no remaining production issue after capability-failure, depth-envelope,
@@ -42,7 +42,7 @@ return boundaries retain stable missing/throwing/malformed capability taxonomy; 
 validate types, call sites, parameter indices, dependencies, bytes, and hashes before mutation. Exact-commit evidence
 passed locked restore, the strict fifteen-project Release build at 0 warnings/errors, prepared graph 40/40, combined
 lineage/audit 76/76 including 29 legacy identity cases, compiler lineage 2/2, W4 integration 9/9, unit 297/297, fast
-76/76, ordinary dump 5/5, and optimized dump 1/1 with zero skips and `Scope!=Cybersecurity` on behavioral filters.
+76/76, ordinary dump 5/5, and optimized dump 1/1 with zero skips and the milestone test selection on behavioral filters.
 Independent audit found no remaining finding.
 
 Pushed W4.6a checkpoint `77c92789b` freezes the structural pure-model boundary without executing it. Bounded
@@ -54,7 +54,7 @@ is root plus modeled leaf, two fields, and one edge: five units at depth two.
 
 Exact-checkpoint validation passed locked restore; strict Release 0/0; contract 49/49; model planner 25/25; legacy
 planner 35/35; SRM 1/1; lineage 2/2; unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; both guards;
-and zero skips under `Scope!=Cybersecurity`. Independent audits found no behavioral findings.
+and zero skips within the milestone test selection. Independent audits found no behavioral findings.
 
 Pushed W4.6b checkpoint `fd723a912` adds optional modeled-return lineage. Schema-v1 kind 6 embeds exact arguments,
 retains kind-4 boundary nodes for explained arguments, and atomically validates/interns the complete dependency vector
@@ -79,15 +79,15 @@ Repeated and fresh SRM/domain/machine runs reproduce the dual-unknown graph SHA-
 
 W4.6 closure passed locked restore; the strict fifteen-project Release build and strict unit/integration builds with
 zero warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integration 13/13; complete unit 413/413;
-fast 80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4, all headlessly with zero skips and
-`Scope!=Cybersecurity` on behavioral filters.
+fast 80/80; ordinary dump 5/5; and optimized dump 1/1, all headlessly with zero skips and
+the milestone test selection on behavioral filters.
 
 W4.6a/b/c/d realize 2,959/1,003/2,734/956 LOC, so W4.6 totals 7,652 LOC and W4.1–W4.6d total 24,469 LOC.
 W4.7a checkpoint `2e70fe76d` adds issuer-certified complete-sequence target-outcome projection; W4.7b `dad6a6dd4`
 adds direct/adjusted compiler and fresh SRM replay plus capability poison/count evidence. W4.7 realizes 2,801 LOC
 (2,448 + 353), bringing W4 to 27,270 LOC. Closure passed strict sixteen-project build 0/0, unit 430/430, Fast 80/80,
 dumps 5/5 and 1/1, focused 15/15 plus 2/2 (17/17 combined), compiler differential 23/23, and both guards, headlessly
-with zero skips and `Scope!=Cybersecurity`. The literal fragment SHA-256 is
+with zero skips and the milestone test selection. The literal fragment SHA-256 is
 `a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
 
 W4.8a–f realize 11,924 LOC and W4.9a–c realize 2,698 LOC, bringing full W4 realization to 41,892 LOC excluding
@@ -99,7 +99,7 @@ documentation and generated lockfile changes. Preserve the original 16,860–25,
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
    plan over dump evidence without repeating member selection;
 3. execute a small, scenario-derived, EH-free IL subset through a concrete value and memory domain, checked against CoreCLR;
-4. introduce provenance-bearing unknowns only when the exact slices above are trustworthy; W4.2 proves their
+4. introduce provenance-bearing unknowns only when the exact slices above are evidence-backed; W4.2 proves their
    branchless dump-free arithmetic transport, and W4.3 proves structured non-exact field continuation plus canonical
    precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation; and
     W4.5 executes exact and explained-unknown direct calls with deterministic frames, depth accounting, and canonical
@@ -108,7 +108,7 @@ documentation and generated lockfile changes. Preserve the original 16,860–25,
     rooted reachability; W4.8 supplies the canonical product facade/runner; and W4.9 grounds six exact/degraded
     interpreted/modeled rows in detached ClrMD dump evidence with reopen replay. W4 is closed for this scope.
 
-Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
+Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, no-JIT runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
 ## 2. Truth model
 
@@ -205,8 +205,8 @@ The W4.2–W4.3 path is kernel evidence only. W4.3 adds no ClrMD producer for st
 model, product facade or result projection, and it consumes no generated dump. W4.4 is preparation evidence only: it
 freezes a call graph but adds no frame transfer, request-depth enforcement, call model, or product/dump execution.
 
-The active W1–W4 paths use generated, source-controlled fixtures directly. The worker described in section 4.5 is a
-separately landed, non-gating prototype outside those milestones and is not part of this active data flow.
+The active W1–W4 paths use generated, source-controlled fixtures directly. Caveat: the data flow covers only the
+explicitly admitted fixture and input shapes.
 
 ## 4. Active components
 
@@ -293,18 +293,9 @@ rediscovered, and the query rebound. This implementation and corpus pass locally
 `5bed47100` in [GitHub Actions run
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
 
-### 4.5 Non-gating one-shot external-artifact prototype
+### 4.5 Interpreter kernel
 
-Two separately landed Windows x64 projects provide a trusted broker/protocol boundary and a one-request runner. They
-have a dedicated headless test project; its four-test package, including a real malformed-artifact process checkpoint,
-passed locally at `9fcf00934`. The projects remain useful topology and process-boundary experiments, but cybersecurity
-work is outside W1–W4; this prototype is not a completion requirement for those milestones or an admitted external
-product surface. Its test project is not invoked by the current milestone workflow, and the five hostile-corpus facts
-in the integration assembly are tagged `Scope=Cybersecurity` and excluded from all current test commands.
-
-### 4.6 Interpreter kernel
-
-W3 hardened implementation commit `19c292f9f` closes two deliberately small profiles. E1 is static, branchless,
+W3 strengthened implementation commit `19c292f9f` closes two deliberately small profiles. E1 is static, branchless,
 EH-free `Int32` arithmetic over metadata-projected parameters and initialized locals: `nop`, integer constants,
 compact/short/long argument and local encodings, `add`, `sub`, `mul`, and `ret`. E2 is one exact instance `Int32`
 getter, either direct or with one constant `add`/`sub`/`mul` adjustment, containing exactly one `ldfld`. Its receiver
@@ -328,11 +319,11 @@ Dump-free fixtures compare E1/E2 results, overflow, and null behavior with CoreC
 snapshot-scoped module, method shape/body, exact receiver type, admitted `ldfld` token, and four-byte field value from
 counted dump evidence; it reopens and rebinds the dump to reproduce identities, outcome, events, budget, memory, and
 canonical transcript. The independently opened disk PE remains a late comparison oracle. These implementation facts
-and all required non-cybersecurity lanes pass locally at `19c292f9f`; [implementation-checkpoint run
+and all required milestone-selected lanes pass locally at `19c292f9f`; [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) also passed all four jobs.
 Exact documentation-closure commit `de6cea124` then passed all four required jobs in [closure run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), formally closing W3's defined
-non-cybersecurity scope.
+milestone-selected scope.
 
 W4.2 exact implementation commit `e89e43498` extends the same machine rather than creating a parallel interpreter.
 `IValuePrecisionDomain<TValue>` optionally reports `Exact`, `ExplainedUnknown`, or `UnexplainedUnknown`.
@@ -378,7 +369,7 @@ reachable complete definition and typed admission, canonical structural node/fie
 shared MethodDef, the longest root-to-method logical depth, and distinct-method/field/edge internal units. Discovery is
 root-first and call-site ordered for deterministic failures; successful projections are canonically ordered. Cycles,
 identity/signature disagreement, malformed/unsupported tokens, and cap exhaustion expose no partial plan; conflicts
-remain conflicts. The fixed 64-method/1,024-unit caps remain internal safety limits; W4.8a layers a separate configurable
+remain conflicts. The fixed 64-method/1,024-unit caps remain internal resource limits; W4.8a layers a separate configurable
 ordered traversal budget and exact product accounting over them.
 
 The exact fixture freezes two nodes, two fields, one edge at caller IL offset 12, required logical depth two, and five
@@ -558,7 +549,7 @@ jobs at exact W2 closure commit `5bed47100`.
 The W3 implementation proof repeats compiler-derived E1/E2 executions through one frozen machine and through freshly
 opened SRM modules. Its dump E2 proof additionally closes and reopens the dump, rebinds the runtime module and rooted
 object, reprojects the method/field from counted evidence, reimports the exact field cell, and reproduces structural
-identities plus the canonical execution transcript. This passes locally at hardened implementation commit `19c292f9f`, whose
+identities plus the canonical execution transcript. This passes locally at strengthened implementation commit `19c292f9f`, whose
 four hosted jobs also passed in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Exact documentation-closure
 commit `de6cea124` and [run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237)
@@ -614,15 +605,12 @@ one admitted exceptional boundary is exact typed-null `ldfld`, which produces st
 and an empty-stack terminal latch. Handler search/unwind, filters, `fault`, `finally`, and cross-frame propagation are
 a later milestone and are prerequisites for debugger-grade Step Out and async `MoveNext` claims.
 
-## 10. External-input scope boundary
+## 10. Validated input boundary
 
-W1–W4 are restricted to generated, source-controlled fixture artifacts and non-security evidence behavior. Their
-deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. External-input
-cybersecurity is explicitly outside those milestones, and their completion does not create an external artifact product
-surface. The already-landed malformed corpus and one-shot worker are retained only as non-gating prototypes; any future
-external-input initiative must establish its own scope and evidence independently. Restore/build intentionally remains
-repository-wide across all 16 projects, including the worker projects and integration assembly, as topology and
-compilation-health evidence only. It is not cybersecurity behavioral evidence.
+W1–W4 are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
+deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. Earlier
+out-of-scope experiments have been removed. Caveat: completing these milestones establishes no behavior
+for other artifact shapes; any later expansion requires its own scenario, contract, and executable evidence.
 
 ## 11. Physical topology
 
@@ -645,9 +633,7 @@ The prototype retains only projects containing behavior or contracts exercised b
 - `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
   result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
   dump memory; and ClrMD evidence binder. It depends on the active ClrMD and SRM boundaries to compose the admitted
-  dump scenario, while the core execution projects remain backend-independent;
-- `Interpreter.Host.ExternalWorker` and `Interpreter.Host.ExternalWorker.Runner` — the narrow Windows broker/protocol
-  and one-request AppContainer executable; they are not a generic hosting framework.
+  dump scenario, while the core execution projects remain backend-independent.
 
 Logical seams may be documented without creating assemblies. A new project is justified only when it contains implementation, has an independently useful dependency boundary, and at least one test exercises that boundary. Empty product/model/backend projects are not placeholders.
 
@@ -660,7 +646,7 @@ No research subsystem enters the active roadmap merely because a proposal exists
   stop-on-throw. A later stepping increment must separately define pause semantics and source mapping; debugger-grade
   Step Out additionally requires handler-transfer EH.
 - **Async/dynamic lifting:** ordinary compiler-generated prerequisite IL and EH are supported, with scenario fixtures.
-- **Alternative products:** a second product demonstrates reuse without weakening the dump evaluator’s correctness and security model.
+- **Alternative products:** a second product demonstrates reuse without weakening the dump evaluator’s result contract.
 - **Alternative metadata backend:** a corpus records an SRM deficiency and an adapter test demonstrates a better trade-off.
 
 The active sequence, sizing assumptions, and exit tests live in `docs/plans/future-work-planning.md`.

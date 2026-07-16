@@ -68,7 +68,7 @@ public sealed class ProvenanceConcreteValue : IEquatable<ProvenanceConcreteValue
     /// <returns><see langword="true"/> when the semantic values differ.</returns>
     public static bool operator !=(ProvenanceConcreteValue? left, ProvenanceConcreteValue? right) => !Equals(left, right);
 
-    /// <summary>Returns the payload-safe semantic diagnostic representation without a lineage identifier.</summary>
+    /// <summary>Returns the payload-omitting semantic diagnostic representation without a lineage identifier.</summary>
     /// <returns><see cref="SemanticValue"/>'s deterministic representation.</returns>
     public override string ToString() => SemanticValue.ToString();
 }

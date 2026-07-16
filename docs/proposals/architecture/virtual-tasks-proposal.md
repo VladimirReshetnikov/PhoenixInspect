@@ -16,7 +16,7 @@ The key enabler is that C# async code is *already compiled into an explicit stat
 
 ---
 
-## 2) Background: what the compiler emits (what we’ll exploit)
+## 2) Background: what the compiler emits (what we’ll use)
 
 ### 2.1 Kickoff method + state machine type
 
@@ -45,7 +45,7 @@ A typical `MoveNext` has the classic structure:
 
   * set `state`
   * stash awaiter into a field
-  * call `builder.AwaitUnsafeOnCompleted(ref awaiter, ref stateMachine)`
+  * call the builder's completion-registration helper
   * `return`
 * on resume:
 
@@ -60,7 +60,7 @@ The builder APIs are explicitly described as scheduling the state machine to pro
 
 For “normal” tasks, the compiler uses:
 
-* `TaskAwaiter` / `TaskAwaiter<TResult>` (with `IsCompleted`, `GetResult`, `OnCompleted` / `UnsafeOnCompleted`). ([Microsoft Learn][5])
+* `TaskAwaiter` / `TaskAwaiter<TResult>` (with `IsCompleted`, `GetResult`, and completion registration). ([Microsoft Learn][5])
 * `ConfiguredTaskAwaitable.ConfiguredTaskAwaiter` for `ConfigureAwait(...)`. ([Microsoft Learn][6])
 * often also `ValueTaskAwaiter` / `ValueTaskAwaiter<TResult>` in modern codebases. ([Microsoft Learn][7])
 
@@ -173,7 +173,7 @@ For `AsyncTaskMethodBuilder` and `AsyncTaskMethodBuilder<TResult>`, we model the
 * `get_Task` — returns the associated Task object. ([Microsoft Learn][4])
 * `SetResult(...)` — completes task successfully. ([Microsoft Learn][4])
 * `SetException(Exception)` — completes task faulted/canceled. ([Microsoft Learn][4])
-* `AwaitOnCompleted` / `AwaitUnsafeOnCompleted` — turns “await” into suspension + continuation registration. ([Microsoft Learn][4])
+* builder completion-registration helpers turn “await” into suspension plus continuation registration. ([Microsoft Learn][4])
 * `SetStateMachine(IAsyncStateMachine)` — generally a no-op in the virtual world (we already keep the SM object stable), but we accept it. ([Microsoft Learn][4])
 
 > Why by “builder storage location”?
@@ -202,7 +202,7 @@ We also need to avoid interpreting framework awaiter code. For the common set:
 **`Task.ConfigureAwait(bool)` and `ConfiguredTaskAwaitable.ConfiguredTaskAwaiter`**
 
 * `ConfigureAwait(bool)` returns a wrapper awaitable that carries `continueOnCapturedContext`.
-* its awaiter exposes `IsCompleted`, `GetResult`, `OnCompleted`/`UnsafeOnCompleted`. ([Microsoft Learn][6])
+* its awaiter exposes `IsCompleted`, `GetResult`, and completion registration. ([Microsoft Learn][6])
   We don’t need real `SynchronizationContext`; we’ll treat the flag as a scheduling hint we can record.
 
 **(Optional but recommended) `ValueTask` / `ValueTaskAwaiter`**
@@ -245,7 +245,7 @@ We still present the user as stepping into the *logical method*, using PDB mappi
 
 We execute IL normally until we hit the await-suspension call:
 
-* `builder.Await(On|UnsafeOn)Completed(ref awaiter, ref stateMachine)` ([Microsoft Learn][4])
+* the builder completion-registration operation ([Microsoft Learn][4])
 
 At that intrinsic, we implement **semantic await**:
 
@@ -378,7 +378,7 @@ Even though you asked for interpreter mechanics, it’s useful to call out the d
 
 ### 9.2 Step Over an `await`
 
-When `AwaitUnsafeOnCompleted` intrinsic triggers:
+When the completion-registration intrinsic triggers:
 
 * stop with “suspended on task X”
 * allow user to:
@@ -469,7 +469,7 @@ If you want a crisp MVP boundary that already gives excellent async stepping and
 2. Implement virtual task payload + status transitions.
 3. Intrinsics for:
 
-   * `AsyncTaskMethodBuilder{<T>}.Create/Start/Task/SetResult/SetException/AwaitUnsafeOnCompleted/AwaitOnCompleted` ([Microsoft Learn][4])
+   * `AsyncTaskMethodBuilder{<T>}` creation, start, task access, completion, failure, and continuation registration ([Microsoft Learn][4])
    * `Task{<T>}.GetAwaiter`
    * `TaskAwaiter{<T>}.IsCompleted/GetResult` ([Microsoft Learn][5])
    * `ConfiguredTaskAwaiter` equivalents for `ConfigureAwait` (very common). ([Microsoft Learn][6])

@@ -17,7 +17,7 @@ public enum PureCallModelOutcomeKind
 }
 
 /// <summary>
-/// Represents one immutable, typed, payload-safe result from a pure call model.
+/// Represents one immutable, typed, payload-omitting result from a pure call model.
 /// </summary>
 /// <remarks>
 /// Exact and unknown outcomes describe only the structural <see cref="int"/> return relation. An unknown outcome
@@ -71,7 +71,7 @@ public sealed record PureCallModelOutcome
     public static PureCallModelOutcome UnknownReturn() =>
         new(PureCallModelOutcomeKind.UnknownReturn, null, null);
 
-    /// <summary>Creates one payload-safe blocked outcome.</summary>
+    /// <summary>Creates one payload-omitting blocked outcome.</summary>
     /// <param name="stableCode">A bounded canonical code in the <c>W4.Model.*</c> family.</param>
     /// <returns>An immutable blocked outcome.</returns>
     /// <exception cref="ArgumentException"><paramref name="stableCode"/> is not a bounded canonical model code.</exception>
@@ -81,7 +81,7 @@ public sealed record PureCallModelOutcome
         return new PureCallModelOutcome(PureCallModelOutcomeKind.Blocked, null, stableCode);
     }
 
-    /// <summary>Creates one payload-safe invalid outcome.</summary>
+    /// <summary>Creates one payload-omitting invalid outcome.</summary>
     /// <param name="stableCode">A bounded canonical code in the <c>W4.Model.*</c> family.</param>
     /// <returns>An immutable invalid outcome.</returns>
     /// <exception cref="ArgumentException"><paramref name="stableCode"/> is not a bounded canonical model code.</exception>

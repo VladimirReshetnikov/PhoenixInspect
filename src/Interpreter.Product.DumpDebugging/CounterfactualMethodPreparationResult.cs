@@ -10,7 +10,7 @@ namespace Interpreter.Product.DumpDebugging;
 /// <remarks>
 /// Preparation never claims a partial value. Its failure keeps the public result axes independent, identifies a
 /// validated request when one existed, preserves exact graph-traversal accounting after discovery began, and may
-/// retain the sanitized core planning failure for structural diagnosis. Capability objects and exception payloads
+/// retain the normalized core planning failure for structural diagnosis. Capability objects and exception payloads
 /// are never exposed.
 /// </remarks>
 public sealed class CounterfactualMethodPreparationFailure
@@ -103,7 +103,7 @@ public sealed class CounterfactualMethodPreparationFailure
     /// <summary>Gets a defensive copy of ordered, content-identified preparation provenance.</summary>
     public ImmutableArray<EvaluationProvenance> Provenance => CounterfactualCanonical.Copy(provenance);
 
-    /// <summary>Gets a defensive copy of stable payload-safe preparation diagnostics.</summary>
+    /// <summary>Gets a defensive copy of stable payload-omitting preparation diagnostics.</summary>
     public ImmutableArray<EvaluationDiagnostic> Diagnostics => CounterfactualCanonical.Copy(diagnostics);
 
     private static ImmutableArray<T> CopyOrEmpty<T>(ImmutableArray<T> values, string parameterName)

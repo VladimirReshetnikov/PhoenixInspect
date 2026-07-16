@@ -14,7 +14,7 @@ namespace Interpreter.Core.Abstractions;
 /// should derive it from exact metadata content, PE identity fields, and complete artifact content when a PE is
 /// available, so copying the same image does not change traces while patched method bodies cannot alias. The compact
 /// value is an execution-core key; artifact binding retains the complete identities rather than treating this
-/// truncated digest as security evidence.
+/// truncated digest as an authenticity or validation claim.
 /// </remarks>
 public readonly record struct ModuleHandle(ulong High, ulong Low)
 {

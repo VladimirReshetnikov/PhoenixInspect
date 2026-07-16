@@ -4,7 +4,7 @@ namespace Interpreter.Core.Abstractions;
 
 /// <summary>Classifies the top-level source boundary from which an evaluation obtained its evidence.</summary>
 /// <remarks>
-/// This classification is backend-neutral: it describes the trust and replay boundary, not the library used to
+/// This classification is backend-neutral: it describes the identity and replay boundary, not the library used to
 /// decode it. Ordered <see cref="EvaluationProvenance"/> entries retain the more granular sources and
 /// transformations that support an individual answer.
 /// </remarks>

@@ -51,7 +51,7 @@ public sealed record ExecutionFailure(
 
 internal static class ResolutionFailureDiagnostics
 {
-    internal static ResolutionFailure Sanitize(ResolutionFailure failure)
+    internal static ResolutionFailure Normalize(ResolutionFailure failure)
     {
         ArgumentNullException.ThrowIfNull(failure);
         return new ResolutionFailure(

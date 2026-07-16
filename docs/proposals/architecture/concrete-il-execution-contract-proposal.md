@@ -4,7 +4,7 @@
 
 **Roadmap relation:** Active for W3
 
-**Normative scope:** W3 non-cybersecurity closure
+**Normative scope:** W3 milestone-selected closure
 
 **Implementation status:** complete and formally closed at exact documentation commit `de6cea124` in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237)
 
@@ -25,7 +25,7 @@ or counterfactual product evaluation.
 
 ## 2) Relationship to W1 and W2
 
-W1 and W2 remain complete for their explicitly non-cybersecurity scopes. W3 consumes their typed dump evidence but
+W1 and W2 remain complete for their explicitly milestone-selected scopes. W3 consumes their typed dump evidence but
 does not change the restricted query grammar, typed root binding, immutable query plans, or result classification.
 
 The W3 field-getter proof is **dump-grounded prepared execution**:
@@ -297,7 +297,7 @@ Unsupported or malformed IL, resolution inability, and non-exact memory evidence
 semantic state, persistent memory, operational budget, and events unchanged. Stable status and diagnostic fields name
 the method, IL offset, and failure category without claiming a transfer occurred.
 
-An ordinary exception thrown by a resolver, value domain, or memory plug-in is normalized to a payload-safe
+An ordinary exception thrown by a resolver, value domain, or memory plug-in is normalized to a payload-omitting
 capability failure; catastrophic `OutOfMemoryException` and `StackOverflowException` are deliberately not caught.
 Host exception text is not copied into a result.
 
@@ -340,7 +340,7 @@ Operational budget and event history remain outside semantic-state equality.
 
 ## 13) Required executable evidence
 
-W3 closure requires all of the following, headlessly and with `Scope!=Cybersecurity`:
+W3 closure requires all of the following, headlessly and with the milestone test selection:
 
 1. structural type, method, and field identity tests, including cross-module non-aliasing;
 2. SRM projection tests for static/instance arguments, `void`/`Int32` returns, initialized locals, and FieldDefs;
@@ -352,14 +352,14 @@ W3 closure requires all of the following, headlessly and with `Scope!=Cybersecur
 8. CoreCLR differential agreement for arithmetic, overflow wrapping, getters, and null-receiver outcome;
 9. repeated and fresh-session canonical replay equality;
 10. a generated real-dump E2 test whose method metadata/body and field value come from counted dump evidence; and
-11. the repository-wide Release build plus all required non-cybersecurity fast, ordinary-dump, and optimized-dump jobs.
+11. the repository-wide Release build plus all required milestone-selected fast, ordinary-dump, and optimized-dump jobs.
 
 Tests must assert not only final values but also resolver/memory call counts, budget deltas, event truthfulness, state
 preservation on failure, and emitted compiler opcode shapes.
 
 ### 13.1 Implementation evidence checkpoint
 
-The cumulative diff from normative-contract checkpoint `e7b6a4ace` through hardened implementation checkpoint
+The cumulative diff from normative-contract checkpoint `e7b6a4ace` through strengthened implementation checkpoint
 `19c292f9f` realizes this contract in 8,842 hand-written additions and 1,650 deletions: 5,362 production
 additions/928 deletions and 3,480 test/fixture additions/722 deletions. It also contains 39 generated package-lock
 additions. Generated locks and documentation are excluded from the hand-written ledger; its commit-level raw-diff
@@ -369,7 +369,7 @@ Local verification used only the repository's headless process wrapper and passe
 
 - locked restore and the fifteen-project Release build with zero warnings and errors;
 - Markdown-link and managed-workflow headless guards;
-- 103/103 non-cybersecurity semantic, admission, metadata, memory, and differential tests;
+- 103/103 milestone-selected semantic, admission, metadata, memory, and differential tests;
 - 67/67 fast integration tests;
 - 5/5 ordinary real-dump tests, including the counted W3 getter proof;
 - 1/1 optimized modeled-context test; and

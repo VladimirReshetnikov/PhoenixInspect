@@ -162,9 +162,9 @@ Use this as a practical starting point:
 
 Keep Roslyn object types inside adapter boundaries. Downstream interpreter layers should consume project-defined DTOs/contracts.
 
-## 6) Common beginner pitfalls (and project-safe defaults)
+## 6) Common beginner pitfalls (and project defaults)
 
-1. **Pitfall:** trusting semantic model results as runtime truth.  
+1. **Pitfall:** treating semantic model results as runtime truth.
    **Default:** treat semantic facts as hints unless runtime metadata confirms them.
 2. **Pitfall:** forgetting to include tree in compilation before asking for semantic model.  
    **Default:** enforce a single builder path that creates tree + compilation together.

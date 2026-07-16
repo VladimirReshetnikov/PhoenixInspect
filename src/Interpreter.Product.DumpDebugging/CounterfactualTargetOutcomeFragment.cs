@@ -105,7 +105,7 @@ public sealed class CounterfactualTargetOutcomeFragment :
     /// <summary>
     /// Gets a defensive copy of the domain-separated schema-v1 binary canonical representation.
     /// </summary>
-    /// <remarks>The bytes are replay material and are not automatically safe for telemetry.</remarks>
+    /// <remarks>The bytes are replay material and are not automatically suitable for diagnostic display.</remarks>
     public ImmutableArray<byte> CanonicalBytes => Copy(_canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>

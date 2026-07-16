@@ -10,7 +10,7 @@ The semantic-modeling proposal introduced three complementary mechanisms that mu
 2. IL-pattern rewrites, and
 3. object projections.
 
-This document defines a single registry contract and resolution model so these mechanisms do not drift into incompatible extension points with different diagnostics, precedence, or trust semantics.
+This document defines a single registry contract and resolution model so these mechanisms do not drift into incompatible extension points with different diagnostics, precedence, or result semantics.
 
 ---
 

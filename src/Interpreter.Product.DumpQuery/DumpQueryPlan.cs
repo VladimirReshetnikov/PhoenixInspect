@@ -95,7 +95,7 @@ public sealed class DumpQueryPlan
     /// value decoder, and complete literal payload.
     /// </returns>
     /// <remarks>
-    /// This projection includes target addresses and literal values. It is replay material, not telemetry-safe display
+    /// This projection includes target addresses and literal values. It is replay material, not suitable for diagnostic display display
     /// text, and callers should normally compare its fingerprint rather than log the projection.
     /// </remarks>
     public string ToCanonicalReplayProjection() => _canonicalProjection;

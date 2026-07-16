@@ -81,7 +81,7 @@ public sealed class ConcreteDomain : IValueDomain<ConcreteValue>
     private ConcreteValue ConstBool(bool value) => new(ConcreteValueKind.Boolean, BooleanType, value);
 
     /// <summary>Creates a known immutable string value for memory and profile-boundary validation.</summary>
-    /// <param name="value">The exact string payload, which diagnostic formatting must redact.</param>
+    /// <param name="value">The exact string payload, which diagnostic formatting must omit.</param>
     /// <returns>A concrete non-null string value.</returns>
     public ConcreteValue ConstString(string value) =>
         new(ConcreteValueKind.String, StringType, value ?? throw new ArgumentNullException(nameof(value)));

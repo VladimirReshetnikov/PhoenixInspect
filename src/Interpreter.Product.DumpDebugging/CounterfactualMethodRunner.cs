@@ -1572,7 +1572,7 @@ public sealed class CounterfactualMethodRunner<TMemory>
             CreateContext(request, includeTraversal: true, includeLogicalDepth: false),
             request,
             graphPreparation.TraversalAccounting,
-            SanitizeCoreFailure(coreFailure, code, message),
+            NormalizeCoreFailure(coreFailure, code, message),
             code,
             message);
     }
@@ -1687,7 +1687,7 @@ public sealed class CounterfactualMethodRunner<TMemory>
             "W4.Admission.PlannerResultInvalid",
             "The graph planner returned an incoherent plan, status, failure, or traversal-accounting tuple.");
 
-    private static ExecutionFailure? SanitizeCoreFailure(
+    private static ExecutionFailure? NormalizeCoreFailure(
         ExecutionFailure? failure,
         string productCode,
         string productMessage)

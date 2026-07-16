@@ -1,8 +1,8 @@
 # Tools: IL Interpreter & Dump-Time Evaluation (Concept Design)
 
-This repository is the **design home** for an experimental .NET IL interpreter and a safe, explainable system for evaluating expressions against memory dumps.
+This repository is the **design home** for an experimental .NET IL interpreter and a bounded, explainable system for evaluating expressions against memory dumps.
 
-If you only read one thing: this project is about making dump-time debugging workflows more trustworthy through deterministic execution, bounded analysis, and explicit explanations when answers are partial or unknown.
+If you only read one thing: this project is about making dump-time debugging workflows more evidence-backed through deterministic execution, bounded analysis, and explicit explanations when answers are partial or unknown.
 
 ## Project gist
 
@@ -15,7 +15,7 @@ We are designing and prototyping—not yet shipping—a library and architecture
 Core principles:
 
 - **Deterministic and budgeted execution** over unbounded simulation.
-- **Safety-first behavior** over risky “best effort” guessing.
+- **Conservative behavior** over risky “best effort” guessing.
 - **Explainability and provenance** over opaque results.
 - **Composable architecture** so hosts can integrate incrementally.
 
@@ -45,7 +45,7 @@ Core principles:
   one closed expression-to-result path, then requires representative usefulness evidence before any new interpreter
   or debugger subsystem is admitted.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. W4's generated-dump lane additionally acquires the root/helper graph and two correlated fields, detaches all product evidence before execution, produces the exact `0x26AF37BD` result or a provenance-bearing unknown for partial/unavailable input, exercises both interpretation and a body-free pure model, and reproduces all six canonical memory/request/plan/result artifacts after reopening the dump. CoreCLR remains a late outcome oracle, not an input to interpreter shape, dump evidence, preparation, or execution.
-- **Physical scope:** eleven source projects contain active contracts or behavior in a sixteen-project solution. `Interpreter.Product.DumpDebugging` now owns standalone target projection, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
+- **Physical scope:** nine source projects contain active contracts or behavior in a thirteen-project solution. `Interpreter.Product.DumpDebugging` owns standalone target projection, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources. The earlier empty placeholders and later out-of-scope experiments remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
 
 The normative W4 contract is
@@ -63,7 +63,7 @@ W4.1 implementation checkpoint `82363585b` adds the exact optimized fixture and 
 and four-byte helper bodies, relational FieldDef/MethodDef and signature/header facts, the exact CoreCLR value, and the
 current W3 whole-body boundary. At that checkpoint the boundary was the second `ldfld` at IL offset 7; the raw direct
 `call` was fixed at offset 12 but not admitted. Headless local verification passed locked restore, a fifteen-project Release
-build with zero warnings/errors, the focused W4.1 lane at 4/4, the complete non-cybersecurity fast lane at 71/71, and
+build with zero warnings/errors, the focused W4.1 lane at 4/4, the complete milestone-selected fast lane at 71/71, and
 the ordinary dump regression at 5/5 with zero skips. The realized W4.1 surface is 478 added or materially revised LOC.
 
 W4.2 implementation checkpoint `e89e43498` adds a second meaningful value domain over the shared W3 handlers. It
@@ -74,7 +74,7 @@ ordered `BinaryTransform` nodes, embeds exact operands, and replays byte-for-byt
 Exact E2 `ldfld` remains executable through the second domain; partial or unavailable field continuation and its
 `FieldLoadTransform` were intentionally left to W4.3. Headless verification passed the fifteen-project Release build with zero
 warnings/errors, focused W4.2 tests at 53/53, the full unit suite at 156/156, fast integration at 71/71, ordinary dump
-at 5/5, and both documentation guards, all with zero skips and `Scope!=Cybersecurity` on behavioral test commands.
+at 5/5, and both documentation guards, all with zero skips and the milestone test selection on behavioral test commands.
 
 W4.3 implementation checkpoint `7479b1ad4` closes that dump-free field seam without adding a ClrMD adapter or product
 surface. Immutable, content-equal `FieldLoadEvidence` retains the exact field, partial/unavailable status, stable
@@ -90,7 +90,7 @@ canonical `InputOrigin` plus `FieldLoadTransform` lineage that replays byte-for-
 Headless verification at the W4.3 checkpoint passed the strict fifteen-project Release build with zero warnings and
 errors, focused W4.3 tests at 55/55, the complete unit suite at 211/211, fast integration at 71/71, ordinary dump
 regression at 5/5, optimized dump regression at 1/1, and both Markdown/headless guards, with zero skips. Every test
-command was headless and used `Scope!=Cybersecurity`.
+command was headless and used the milestone test selection.
 
 Pushed W4.4a checkpoint `2e596c117` adds body-free contextual direct-call resolution. The content-equal
 `MethodCallSignatureShape` and `ResolvedMethodCallTarget` freeze a non-nil same-module MethodDef, its declaring
@@ -111,7 +111,7 @@ fixture freezes two methods, two fields, one call at IL offset 12, required dept
 Headless W4.4 verification passed locked restore; the strict fifteen-project Release build with zero warnings/errors;
 the planner lane at 35/35; the W4 fixture lane at 6/6; the complete unit suite at 250/250; fast integration at 73/73;
 ordinary dump regression at 5/5; optimized dump regression at 1/1; and both Markdown/headless guards, with zero skips.
-Every behavioral command ran through the headless wrapper and used `Scope!=Cybersecurity`.
+Every behavioral command ran through the headless wrapper and used the milestone test selection.
 
 Pushed W4.5a checkpoint `356c07037` binds one immutable frozen graph to an opt-in machine session and executes exact
 direct calls without re-resolution. Structural call-site and return-site identities make caller advancement, callee
@@ -128,9 +128,9 @@ Headless validation passed locked restore; the strict fifteen-project Release so
 of the unit and integration projects, all with zero warnings/errors; focused prepared-graph tests at 25/25; the W4 fixture at 7/7; the complete unit
 suite at 275/275; fast integration at 74/74; ordinary dump regression at 5/5; optimized dump regression at 1/1; the
 Markdown guard across 62 files and 41 local destinations; and the headless guard across one workflow. Every test lane
-had zero skips and every behavioral command used `Scope!=Cybersecurity`. The dump filters were
-`Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity` and
-`Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity`, respectively.
+had zero skips and every behavioral command used the milestone test selection. The dump filters were
+`Category=Dump&Corpus!=ModeledIncidentContextV1` and
+`Category=Dump&Corpus=ModeledIncidentContextV1`, respectively.
 
 Pushed W4.5b checkpoint `c72f6ee9e` completes that interpreted-call kernel. The optional
 `IInterpretedCallLineageDomain<TValue>` capability extends the precision contract: exact arguments and returns pass
@@ -152,7 +152,7 @@ same-session and fresh-session replay without metadata re-resolution.
 Headless validation at `c72f6ee9e` passed locked restore and the strict fifteen-project Release build with zero warnings/errors;
 prepared-graph execution 40/40; the combined lineage/audit lane 76/76, including 29 frozen legacy identity cases;
 compiler lineage 2/2; aggregate W4 integration 9/9; complete unit 297/297; fast integration 76/76; ordinary dump 5/5;
-and optimized dump 1/1. There were zero skips, every behavioral filter used `Scope!=Cybersecurity`, and an independent
+and optimized dump 1/1. There were zero skips, every behavioral filter used the milestone test selection, and an independent
 audit found no remaining production or test finding.
 
 Pushed W4.6a checkpoint `77c92789b` adds bounded, non-generic pure-model identity/version, descriptor, typed
@@ -169,7 +169,7 @@ state creation with `EXEC_MODEL_EXECUTION_UNAVAILABLE`. Headless validation at e
 `77c92789b16d9258c907d5026a36e39f8c957b41` passed locked restore; strict fifteen-project Release build 0/0;
 contract 49/49; model planner 25/25; legacy planner 35/35; SRM 1/1; lineage 2/2; unit 371/371; fast 77/77; ordinary
 dump 5/5; optimized dump 1/1; Markdown 62/41; workflow guard 1; and zero skips. Behavioral filters used
-`Scope!=Cybersecurity`, and independent audits found no behavioral findings. The deterministic PDB-free TestTarget PE
+the milestone test selection, and independent audits found no behavioral findings. The deterministic PDB-free TestTarget PE
 SHA-256 is `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; W4.5 lineage hashes were deliberately
 re-frozen to it.
 
@@ -201,8 +201,8 @@ artifact above. W4.6d realizes 956 integration-test additions.
 
 W4.6 closure passed locked restore; the strict fifteen-project Release build and strict unit/integration Release builds
 with zero warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integration 13/13; complete unit
-413/413; fast 80/80; ordinary dump 5/5; optimized dump 1/1; and external-worker 4/4. Every lane was headless, every
-behavioral filter used `Scope!=Cybersecurity`, and there were zero skips.
+413/413; fast 80/80; ordinary dump 5/5; and optimized dump 1/1. Every lane was headless, every
+behavioral filter used the milestone test selection, and there were zero skips.
 
 Pushed W4.7a checkpoint `2e70fe76d` adds the first counterfactual product assembly and a deliberately standalone
 `CounterfactualTargetOutcomeProjector`. Projection accepts only the complete sequence of exact `IlMachine.StepOne`
@@ -225,8 +225,7 @@ capability and repeats no field load; both projections remain byte-, content-, a
 W4.7 closure passed locked restore; the strict sixteen-project Release build, covering eleven source projects, with
 zero warnings/errors; complete unit 430/430; Fast 80/80; ordinary dump 5/5; optimized dump 1/1; focused W4.7a 15/15;
 focused W4.7b 2/2; combined W4.7 17/17; compiler differential class 23/23; Markdown 62 files/41 destinations; and the
-one-workflow headless guard. Every behavioral lane was headless, used `Scope!=Cybersecurity`, and had zero skips. The
-external-worker 4/4 result above remains W4.6 history and was deliberately not rerun or claimed as W4.7 validation.
+one-workflow headless guard. Every behavioral lane was headless, used the milestone test selection, and had zero skips.
 
 W4.8 checkpoints `4f268a4bc` through `44b050ec8` turn those kernels into the product contract. Configurable ordered
 traversal charges fail before the next capability at exact exhaustion. Schema-v1 request, field-observation, plan, and
@@ -246,7 +245,7 @@ byte-identical detached memory, request, plan, and result artifacts, while disk 
 oracles. The focused generated-dump lane passes 1/1, ordinary dump 6/6, and Fast 88/88 headlessly with zero skips.
 W4.9d local closure passes locked restore; a strict 16-project Release build at 0 warnings/errors; complete unit
 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
-local destinations; and the one-workflow headless guard. Every behavioral filter uses `Scope!=Cybersecurity` and every
+local destinations; and the one-workflow headless guard. Every behavioral filter uses the milestone test selection and every
 lane has zero skips. [GitHub Actions run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083)
 passed documentation, build/Fast/unit, real-dump, and optimized-dump jobs at exact W4 closure commit
 `a819a08fd9ccdf926620c505732475990b242be9`. Final documentation-closure commit
@@ -275,13 +274,13 @@ therefore 41,892 hand-written implementation LOC after excluding documentation a
 exceeds the last 31,670–33,970 projection and the original 16,860–25,310 baseline; both remain recorded as calibration,
 not rewritten estimates. Allocation remains unadmitted and its bound is absent/not applied until a later allocation
 scenario. All specified exact, degraded-evidence, budget, differential, same/fresh-object, and dump-close/reopen cases
-are implemented, and exact pushed hosted evidence is recorded above. W4 is closed for its defined non-cybersecurity
+are implemented, and exact pushed hosted evidence is recorded above. W4 is closed for its defined milestone-selected
 scope.
 
-The W1 dump-evidence slice is executable against generated full and intentionally sparse dumps. W2's restricted dump-query v1 is complete for its non-cybersecurity scope: typed root states, `Parse`/`Prepare`/`Evaluate(plan)` staging, immutable object-specific plans, exact `String`/`Int32`/`Nullable<Int32>` behavior, stable diagnostics, and all-case same/fresh-session replay are exercised against the generated full dump. [GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at exact W2 closure commit `5bed47100`. W1 remains complete for its revised non-security evidence scope: typed exact/partial/unavailable/conflict outcomes, honest answer completeness, stable identity/context/provenance, path-accurate bounds, fresh-session canonical replay, headless execution, truthful topology, and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
+The W1 dump-evidence slice is executable against generated full and intentionally sparse dumps. W2's restricted dump-query v1 is complete for its milestone-selected scope: typed root states, `Parse`/`Prepare`/`Evaluate(plan)` staging, immutable object-specific plans, exact `String`/`Int32`/`Nullable<Int32>` behavior, stable diagnostics, and all-case same/fresh-session replay are exercised against the generated full dump. [GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at exact W2 closure commit `5bed47100`. W1 remains complete for its revised milestone-selected evidence scope: typed exact/partial/unavailable/conflict outcomes, honest answer completeness, stable identity/context/provenance, path-accurate bounds, fresh-session canonical replay, headless execution, truthful topology, and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
-W3 hardened implementation checkpoint `19c292f9f` completes the code and local evidence for its deliberately closed
-non-cybersecurity architecture proof. Headless local verification passed locked restore; a fifteen-project Release
+W3 strengthened implementation checkpoint `19c292f9f` completes the code and local evidence for its deliberately closed
+milestone-selected architecture proof. Headless local verification passed locked restore; a fifteen-project Release
 build with zero warnings and errors; 103 semantic/admission/differential tests; 67 fast integration tests; 5 ordinary
 dump tests; 1 optimized-context dump test; and the focused 2-test W3 dump lane, all with zero skips. W3 does not add a
 product-facing method evaluator or claim historical execution. [GitHub Actions run
@@ -289,16 +288,19 @@ product-facing method evaluator or claim historical execution. [GitHub Actions r
 the exact implementation commit. [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
 required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
-non-cybersecurity scope.
+milestone-selected scope.
 
-A versioned malformed-minidump mutation corpus and a Windows x64 one-shot worker are retained as separately landed,
-non-gating prototype work outside W1–W4 milestone evidence. The worker's malformed-artifact test passed locally at its checkpoint.
-All current W1–W4 milestone test invocations exclude `Scope=Cybersecurity`; the five hostile-corpus facts and ExternalWorker test
-project provide no milestone validation. Restore/build intentionally remains repository-wide across all 16 projects,
-including the worker projects and IntegrationTests assembly, as topology/compilation-health evidence only—not
-cybersecurity behavioral evidence. Their presence does not make external artifacts a supported product input.
+Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
+out-of-scope experiments have been removed, and the workflow now runs every remaining test in
+each selected category. No result in W1–W4 establishes behavior for other artifact shapes.
+The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
+TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes above remain
+evidence for their named commits; they are not claims about the current fixture binary.
+Immutable upstream snapshots under `lib/` remain verbatim reference material; their vocabulary is not project-authored
+scope or a claim of supported behavior.
+Required framework namespace and member identifiers also remain literal API names; they do not widen project scope.
 
-A versioned optimized Release modeled-incident report keeps five predeclared axes in the denominator and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5. It is explicitly generated evidence, not a representative private-production incident corpus, so no readiness rate is claimed and representative incident measurement is not a W1 completion gate. Current in-process caps (8 GiB dump admission, 256 MiB ClrMD dump cache, and 512 MiB managed PE admission) remain resource controls. Branches, CFG merge/fixpoint analysis, handler-transfer EH, virtual stepping, broad call/model catalogs, generics, allocation, async/dynamic lifting, live speculation, sandbox runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
+A versioned optimized Release modeled-incident report keeps five predeclared axes in the denominator and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5. It is explicitly generated evidence, not a representative private-production incident corpus, so no readiness rate is claimed and representative incident measurement is not a W1 completion gate. Current in-process caps (8 GiB dump admission, 256 MiB ClrMD dump cache, and 512 MiB managed PE admission) remain resource controls. Branches, CFG merge/fixpoint analysis, handler-transfer EH, virtual stepping, broad call/model catalogs, generics, allocation, async/dynamic lifting, live speculation, no-JIT runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
 
 ## Where to go next
 
@@ -328,7 +330,7 @@ For process and roadmap context:
 
 High-value contributions advance or challenge the active executable evidence:
 
-- harden dump reads, identity joins, partial evidence, and truthful failure behavior within the supported generated
+- strengthen dump reads, identity joins, partial evidence, and truthful failure behavior within the supported generated
   fixture boundary;
 - preserve the closed restricted dump-query v1 contract, and extend it only when a concrete incident scenario justifies the next grammar/evidence step;
 - preserve W3's structural activation, typed whole-body admission, exact-evidence import, and deterministic outcome boundaries;

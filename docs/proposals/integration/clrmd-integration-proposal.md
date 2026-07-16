@@ -4,8 +4,8 @@
 
 ## Implemented W3 boundary (2026-07-14)
 
-Exact hardened implementation checkpoint `19c292f9f` turns the central binding seam into executable evidence for one closed
-non-cybersecurity profile:
+Exact strengthened implementation checkpoint `19c292f9f` turns the central binding seam into executable evidence for one closed
+milestone-selected profile:
 
 - project-owned structural module, type, MethodDef, and FieldDef identities isolate the interpreter from ClrMD and
   SRM object identity;
@@ -17,17 +17,17 @@ non-cybersecurity profile:
 - reopen/rebind replay reconstructs the same prepared-memory transcript, while a disk PE remains a late independent
   CoreCLR/equality oracle rather than resolver input.
 
-Local headless verification passed a zero-warning 15-project Release build, 103 non-cybersecurity unit tests, 67 fast
+Local headless verification passed a zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast
 integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both
 documentation guards. [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at
 the same exact pushed implementation checkpoint. Exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined
-non-cybersecurity scope.
+milestone-selected scope.
 
 This checkpoint does not implement product method evaluation, calls, branches, broader opcode families, generic
-context reconstruction, Portable PDB projection, a second meaningful value domain, or cybersecurity validation.
+context reconstruction, Portable PDB projection, a second meaningful value domain, or validation beyond the named fixture shapes.
 
 You can make this integration feel “debugger-grade” *without* welding your IL interpreter to any single dump/metadata stack — but you’ll want one deliberate layer in between. Otherwise you end up with an interpreter whose “type system” is a Frankenstein of ClrMD objects + metadata tokens + PDB concepts, and it becomes painful to reuse for static analysis or alternate runtimes.
 
@@ -174,7 +174,7 @@ When the active dump-backed path needs IL for a `MethodId`:
 
 Heap-only dumps often exclude mapped images; the runtime state exists but the metadata, header, code, or extra-section pages may be absent. The active evaluator reports that missing evidence. A future artifact-backed evaluation mode would need its own product semantics and provenance contract; silently presenting disk IL as a dump body is not a fallback.
 
-All dump reads are bounded and return exact byte counts. Sparse pages, invalid addresses, corrupt runtime structures, and policy limits are ordinary typed evidence outcomes. External dumps are rejected above 8 GiB, and ClrMD's dump cache is capped at 256 MiB with stack-trace/root caching disabled; the typed external-PE `Open` boundary rejects artifacts above 512 MiB. Dump strings, paths, environment values, and raw bytes are secret-bearing and must not enter telemetry or exception text by default. These caps are resource controls, not a sandbox. Arbitrary external dumps require worker-process and access-control isolation before product exposure.
+All dump reads are bounded and return exact byte counts. Sparse pages, invalid addresses, inconsistent runtime structures, and policy limits are ordinary typed evidence outcomes. Dumps are rejected above 8 GiB, and ClrMD's dump cache is capped at 256 MiB with stack-trace/root caching disabled; the typed PE `Open` boundary rejects artifacts above 512 MiB. Caveat: these controls and outcomes are validated only for the named generated fixtures and explicitly admitted input shapes.
 
 ### 4.3 Parsing EH clauses
 

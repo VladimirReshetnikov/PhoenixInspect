@@ -7,7 +7,7 @@ This tutorial is for contributors who are new to ClrMD and need a practical path
 You will learn how to:
 
 1. treat `DataTarget` as the adapter lifetime root,
-2. materialize `ClrRuntime` safely and explicitly,
+2. materialize `ClrRuntime` explicitly within declared bounds,
 3. enumerate threads/frames/roots/heap with partialness in mind,
 4. use cache options as an explicit policy lever,
 5. project ClrMD data into backend-neutral contracts.
@@ -116,7 +116,7 @@ Contract implication:
 
 This is a direct policy knob we should expose as controlled behavior, not implicit heuristic behavior.
 
-## 5) Common contributor pitfalls and project-safe defaults
+## 5) Common contributor pitfalls and project defaults
 
 1. **Pitfall:** letting symbol/file policy come from ambient environment accidentally.  
    **Default:** deterministic profiles should set explicit locator policy.

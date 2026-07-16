@@ -7,7 +7,7 @@ This tutorial is for contributors who are new to AsmResolver and need to become 
 You will learn how to:
 
 1. understand AsmResolver's package layout,
-2. load modules and inspect metadata safely,
+2. load modules and inspect metadata within declared bounds,
 3. extract CIL method bodies for normalization,
 4. peek at PE and PDB layers without coupling core logic to AsmResolver types, and
 5. map this knowledge to adapter boundaries in this repository.

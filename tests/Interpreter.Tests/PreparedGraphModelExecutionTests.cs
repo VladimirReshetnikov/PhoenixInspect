@@ -317,7 +317,7 @@ public sealed class PreparedGraphModelExecutionTests
     }
 
     /// <summary>
-    /// Proves every typed or malformed model failure records exactly one payload-safe attempt while semantic state,
+    /// Proves every typed or malformed model failure records exactly one payload-omitting attempt while semantic state,
     /// memory, budget, events, and active-frame depth remain unchanged.
     /// </summary>
     [Theory]

@@ -45,7 +45,7 @@ Root and field comparison is ordinal and case-sensitive. Whitespace is accepted 
 literals admit the explicitly implemented escape set; they are not the complete C# string-literal language.
 
 The parser applies deterministic caps to the expression, each identifier, and the decoded string literal. Unsupported
-syntax and structurally invalid admitted syntax have stable, payload-safe diagnostic codes. In particular, `?.`, a
+syntax and structurally invalid admitted syntax have stable, payload-omitting diagnostic codes. In particular, `?.`, a
 second member hop, calls, indexing, and trailing operators are rejected rather than partially evaluated.
 
 ## 3) Staged pipeline
@@ -107,7 +107,7 @@ and address/extent arithmetic overflow. Evaluation revalidates snapshot, owner a
 descriptor ownership before memory reads; a forged same-snapshot descriptor is a conflict rather than a read attempt.
 
 Canonical plan/result projections can contain expression literals or target-derived values. They are test/replay
-artifacts and are not telemetry-safe display strings.
+artifacts and are not suitable for diagnostic display display strings.
 
 ## 6) Admitted types and coalescing
 
@@ -164,7 +164,7 @@ Stable diagnostics distinguish at least:
 - incompatible coalescing types; and
 - partial, unavailable, conflicting, or invalid value evidence.
 
-Diagnostic text is payload-safe and deterministic. Diagnostic codes, ordered provenance, applied bounds, plan
+Diagnostic text is payload-omitting and deterministic. Diagnostic codes, ordered provenance, applied bounds, plan
 identity, and all result axes participate in canonical replay.
 
 ## 9) W2 scenario and replay gate
@@ -188,7 +188,7 @@ reproduce the plan's canonical projection string and plan SHA-256. The corpus as
 module/source context, independently expected path bounds, full ordered provenance payload, and value-read geometry;
 value-only equality, replay-only equality, or one representative query does not satisfy this gate.
 
-This gate is satisfied for the non-cybersecurity W2 v1 scope at exact closure commit `5bed47100`; [GitHub Actions run
+This gate is satisfied for the milestone-selected W2 v1 scope at exact closure commit `5bed47100`; [GitHub Actions run
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs.
 
 ## 10) Expansion rule

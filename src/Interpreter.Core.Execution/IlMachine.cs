@@ -574,7 +574,7 @@ public sealed partial class IlMachine<TValue, TMemory>
                     ResolutionFailureKind.Invalid,
                     "RESOLUTION_INVALID_RESULT",
                     "Method resolver returned an invalid default result.");
-                var sanitizedFailure = ResolutionFailureDiagnostics.Sanitize(failure);
+                var normalizedFailure = ResolutionFailureDiagnostics.Normalize(failure);
                 return PlanPreparationResult.Failed(
                     failure.Kind == ResolutionFailureKind.Invalid
                         ? MachineRunStatus.InvalidProgram
@@ -585,7 +585,7 @@ public sealed partial class IlMachine<TValue, TMemory>
                         "Method-definition resolution did not produce an executable definition.",
                         method,
                         0,
-                        sanitizedFailure));
+                        normalizedFailure));
             }
 
             var definition = definitionResult.Value;

@@ -9,8 +9,8 @@
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
 W3 concrete-IL, and W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, and target-outcome
 execution proofs. It is descriptive, not a promise of compatibility.
-Hardened W3 checkpoint `19c292f9f`
-passed the required local non-cybersecurity lanes and all four jobs in [implementation-checkpoint run
+Strengthened W3 checkpoint `19c292f9f`
+passed the required local milestone-selected lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
@@ -19,20 +19,20 @@ explained-arithmetic checkpoint; exact W4.3 implementation commit `7479b1ad4` is
 checkpoint; and W4.4 checkpoints `2e596c117`/`742ef2c4f` are the current direct-MethodDef graph-preparation checkpoint.
 Its headless local evidence passed the strict fifteen-project Release build, focused planner 35/35, focused fixture
 6/6, complete unit 250/250, fast 73/73, ordinary dump 5/5, optimized-context dump 1/1, and both documentation guards
-with zero skips under `Scope!=Cybersecurity`. W4.4 realizes 3,651 added LOC (2,076 production plus 1,575 tests), split
+with zero skips within the milestone test selection. W4.4 realizes 3,651 added LOC (2,076 production plus 1,575 tests), split
 into 1,043-LOC W4.4a and 2,608-LOC W4.4b slices.
 
 Pushed W4.5a checkpoint `356c07037` is the exact prepared-graph execution checkpoint. It passed locked restore, the
 strict fifteen-project Release solution build and strict unit/integration project builds at zero warnings/errors,
 focused 25/25, W4 fixture 7/7, complete unit 275/275, fast 74/74, ordinary dump 5/5, optimized dump 1/1, and both
 documentation guards with zero skips;
-every behavioral command was headless and used `Scope!=Cybersecurity`. Independent audit closed with no remaining
+every behavioral command was headless and used the milestone test selection. Independent audit closed with no remaining
 production finding. W4.5a realizes 3,334 LOC (1,590 production plus 1,744 tests).
 
 Pushed W4.5b checkpoint `c72f6ee9e` completes the interpreted-call contract below. Exact-commit evidence passed locked
 restore, the strict fifteen-project Release build at zero warnings/errors, prepared graph 40/40, combined
 lineage/audit 76/76 including 29 legacy identity cases, compiler lineage 2/2, W4 integration 9/9, unit 297/297, fast
-76/76, ordinary dump 5/5, and optimized dump 1/1, with zero skips and `Scope!=Cybersecurity` on behavioral filters.
+76/76, ordinary dump 5/5, and optimized dump 1/1, with zero skips and the milestone test selection on behavioral filters.
 Independent audit found no remaining finding. W4.5b realizes 2,804 LOC (766 production plus 2,038 tests), bringing
 combined W4.5 to 6,138 realized LOC and cumulative W4 realization to 16,817 LOC. The historical 1,800–2,700 W4.5b
 estimate and 5,134–6,034 combined projection were each exceeded at the upper bound by 104 LOC.
@@ -41,14 +41,14 @@ Exact W4.6a implementation checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41`
 contracts and explicit body-free planner profile described below. It passed locked restore; the strict fifteen-project
 Release build at zero warnings/errors; complete unit 371/371; fast integration 77/77; ordinary dump 5/5; optimized
 dump 1/1; focused pure-model contracts 49/49; model planner 25/25; legacy planner 35/35; SRM compiler 1/1; lineage
-2/2; both guards; and zero skips, with `Scope!=Cybersecurity` on every behavioral filter. Independent audits found no
+2/2; both guards; and zero skips, with only the milestone-selected behavioral tests. Independent audits found no
 behavioral finding. W4.6a realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), 359 LOC above
 its historical 1,800–2,600 upper estimate, and brings W4.1–W4.6a realization to 19,776 LOC.
 
 Exact W4.6b implementation checkpoint `fd723a912` adds the optional modeled-return lineage capability and the
 append-only schema-v1 kind-6 `ModeledReturnTransform` described below; it still adds no model execution. Strict
 headless builds passed at zero warnings/errors, focused modeled-lineage tests passed 8/8, and combined legacy plus
-modeled lineage passed 44/44 with zero skips and `Scope!=Cybersecurity`. W4.6b realizes 1,003 added LOC (481
+modeled lineage passed 44/44 with zero skips and the milestone test selection. W4.6b realizes 1,003 added LOC (481
 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b realization to 20,779 LOC.
 
 Exact W4.6c implementation checkpoint `877c9fb55` executes only the capability retained by the frozen modeled leaf.
@@ -56,13 +56,13 @@ It adds atomic exact/grounded-unknown caller transfer, immutable attempt chronol
 counters, logical-depth and active-frame witnesses, and stable capability/outcome/lineage/invariant failure taxonomy.
 There is no registry/resolver/descriptor/body reread, fallback, callee frame, frame event, or memory mutation. W4.6c
 realizes 2,734 added LOC (1,425 production plus 1,309 tests); strict affected builds passed at zero warnings/errors
-and its focused headless lane passed 34/34 with `Scope!=Cybersecurity`.
+and its focused headless lane passed 34/34 with the milestone test selection.
 
 Exact W4.6d checkpoint `da5346813` adds 956 test LOC and proves compiler/SRM interpreted/model/CoreCLR exact
 agreement plus interpreted/model agreement for both partial/unavailable shapes. Its mixed case freezes one canonical
 graph, while its both-unknown case repeats across same and fresh sessions. The focused lane
 passed 3/3, aggregate W4 integration 13/13, and Fast 80/80, all through the headless wrapper with
-`Scope!=Cybersecurity`. W4.6 totals 7,652 LOC and brings W4.1–W4.6 to 24,469 LOC. The target PE SHA-256 remains
+the milestone test selection. W4.6 totals 7,652 LOC and brings W4.1–W4.6 to 24,469 LOC. The target PE SHA-256 remains
 `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; the mixed and both-unknown graph hashes are
 `451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff` and
 `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`.
@@ -74,7 +74,7 @@ through the first exact null-reference latch, optionally plus one certified idem
 that re-step performs no capability call or repeated load. W4.7a/b realize 2,448/353 LOC, 2,801 total, bringing W4 to
 27,270 LOC. Closure passed strict sixteen-project build 0/0, unit 430/430, Fast 80/80, dumps 5/5 and 1/1, focused
 15/15 plus 2/2 (17/17 combined), compiler differential 23/23, and both guards, headlessly with zero skips and
-`Scope!=Cybersecurity`. The literal standalone fragment SHA-256 is
+the milestone test selection. The literal standalone fragment SHA-256 is
 `a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
 
 The original full-W4 baseline 16,860–25,310 and checkpoint projections 18,532–26,132, 19,228–25,728,
@@ -105,7 +105,7 @@ gets ahead of code.
 - `PureCallModelVersion` and `PureCallModelIdentity`, which freeze three bounded numeric components and a bounded
   canonical lowercase ASCII identifier; `PureCallModelDescriptor`, which binds that identity to one exact body-
   independent target, declared confidence, and normalized `None`/`Unsupported` effects; and bounded `W4.Model.*`
-  stable-code validation for payload-safe model failures;
+  stable-code validation for payload-omitting model failures;
 - the deliberately non-generic `PureCallModelInvocation`, `PureCallModelArgument`, and `PureCallModelOutcome`
   vocabulary: exactly two metadata-ordered structural `Int32` atoms, exact or explained unknown without lineage,
   ambient context, memory, session, dump, target delegate, or display text; exact/unknown returns or stable-code
@@ -308,9 +308,8 @@ dump-free through an injected memory model, so the existing dump field compositi
 the resolver's metadata side with the same body-independent exact direct-MethodDef target/signature proof; it does not
 acquire a callee body, prepare a dump-grounded product graph, or execute a call.
 
-The size/cache caps are deterministic resource controls. A narrow Windows x64 external-worker prototype has locally
-passed one real malformed-artifact checkpoint, but it is non-gating work outside W1–W4 and does not create an
-admitted external artifact product surface.
+The size/cache caps are deterministic resource controls. Caveat: their evidence covers only the named generated
+fixtures and explicitly admitted input shapes.
 
 ### Read-only dump query
 
@@ -356,7 +355,7 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 `Interpreter.Product.DumpDebugging` exposes three W4.7 draft types:
 
 - `CounterfactualTargetOutcomeProjector.Project`, which validates the exact machine, initial semantic/operational
-  state, and complete immutable issued-transition sequence rather than trusting a naked terminal record;
+  state, and complete immutable issued-transition sequence rather than relying on a naked terminal record;
 - `CounterfactualTargetOutcomeProjectionResult`, a fragment-or-stable-failure discriminated result; and
 - `CounterfactualTargetOutcomeFragment`, a defensively copied, content-equal schema-v1 record whose fixed axes,
   exact exception/location, one-method call trace, accounting, complete events, diagnostic, canonical bytes, and

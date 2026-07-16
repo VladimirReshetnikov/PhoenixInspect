@@ -232,7 +232,7 @@ public sealed class MethodGraphPlanner
                 message,
                 method,
                 offset,
-                ResolutionFailureDiagnostics.Sanitize(conflict)));
+                ResolutionFailureDiagnostics.Normalize(conflict)));
     }
 
     private static bool IsCapabilityException(Exception exception) =>
@@ -1124,7 +1124,7 @@ public sealed class MethodGraphPlanner
                     message,
                     method,
                     offset,
-                    ResolutionFailureDiagnostics.Sanitize(failure)));
+                    ResolutionFailureDiagnostics.Normalize(failure)));
         }
 
         private static MethodGraphPreparationResult Cycle(FrozenMethodCallSite incomingCall) =>

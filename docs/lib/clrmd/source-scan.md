@@ -67,7 +67,7 @@ Design implication:
 Observed behavior across `ClrRuntime` and `ClrThread`:
 
 - Thread and frame access patterns are lazy and may depend on data availability and cache state.
-- Stack-root and stack-frame enumeration is a high-value path but vulnerable to missing data or walk failures.
+- Stack-root and stack-frame enumeration is a high-value path but susceptible to missing data or walk failures.
 
 Design implication:
 

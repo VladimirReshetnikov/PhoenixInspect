@@ -964,7 +964,7 @@ public static class SrmMetadataProjection
         exception is BadImageFormatException or ArgumentOutOfRangeException or InvalidOperationException;
 
     private static ResolutionResult<T> UnsupportedSignature<T>(UnsupportedSignatureShapeException exception) =>
-        Failure<T>(ResolutionFailureKind.Unsupported, exception.Code, exception.SafeMessage);
+        Failure<T>(ResolutionFailureKind.Unsupported, exception.Code, exception.NormalizedMessage);
 
     private static ResolutionResult<T> Propagate<T>(ResolutionFailure failure) =>
         Failure<T>(failure.Kind, failure.Code, failure.Message);
@@ -1055,21 +1055,21 @@ public static class SrmMetadataProjection
             byte rawTypeKind) =>
             throw Unsupported("META_TYPE_SPECIFICATION_UNSUPPORTED", "TypeSpec signatures are outside the W3 execution profile.");
 
-        private static UnsupportedSignatureShapeException Unsupported(string code, string safeMessage) =>
-            new(code, safeMessage);
+        private static UnsupportedSignatureShapeException Unsupported(string code, string normalizedMessage) =>
+            new(code, normalizedMessage);
     }
 
     private sealed class UnsupportedSignatureShapeException : Exception
     {
-        internal UnsupportedSignatureShapeException(string code, string safeMessage)
-            : base(safeMessage)
+        internal UnsupportedSignatureShapeException(string code, string normalizedMessage)
+            : base(normalizedMessage)
         {
             Code = code;
-            SafeMessage = safeMessage;
+            NormalizedMessage = normalizedMessage;
         }
 
         internal string Code { get; }
 
-        internal string SafeMessage { get; }
+        internal string NormalizedMessage { get; }
     }
 }

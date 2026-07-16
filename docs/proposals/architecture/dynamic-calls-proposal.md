@@ -254,7 +254,7 @@ So the UI can show something like:
 
 > `Foo(dynamic)` resolved to `Foo(int)` (arg runtime type: `System.Int32`)
 
-This is the “I squinted; now show me what you did” transparency that keeps users trusting the tool.
+This is the “I squinted; now show me what you did” transparency that keeps the tool's result understandable.
 
 ---
 

@@ -69,7 +69,7 @@ public static class CounterfactualTargetOutcomeProjector
     /// </param>
     /// <returns>
     /// A successful canonical fragment only when the complete issued sequence, latch, accounting, legacy mode, and
-    /// event trace are mutually consistent; otherwise one stable payload-safe diagnostic and no fragment.
+    /// event trace are mutually consistent; otherwise one stable payload-omitting diagnostic and no fragment.
     /// </returns>
     public static CounterfactualTargetOutcomeProjectionResult Project<TValue, TMemory>(
         IlMachine<TValue, TMemory> machine,

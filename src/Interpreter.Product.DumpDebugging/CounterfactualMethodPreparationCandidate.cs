@@ -5,7 +5,7 @@ using Interpreter.Domain.Concrete;
 namespace Interpreter.Product.DumpDebugging;
 
 /// <summary>
-/// Snapshots untrusted host-supplied request fields and operational bindings for nonthrowing counterfactual
+/// Snapshots host-supplied request fields and operational bindings for nonthrowing counterfactual
 /// preparation.
 /// </summary>
 /// <typeparam name="TMemory">The persistent memory-snapshot type proposed by the host binding.</typeparam>
@@ -15,7 +15,8 @@ namespace Interpreter.Product.DumpDebugging;
 /// bindings remain representable so <see cref="CounterfactualMethodRunner{TMemory}.Prepare"/> can turn ordinary host
 /// mistakes into stable multi-axis failures. Initialized arrays are snapshotted defensively without normalizing a
 /// default array to empty. Public construction remains synthetic-only; dump candidates are reserved for an internal
-/// evidence adapter that has already established the dump trust boundary.
+/// evidence adapter that has already established the validated dump-input boundary. Caveat: other input shapes are
+/// outside this prototype contract.
 /// </remarks>
 public sealed class CounterfactualMethodPreparationCandidate<TMemory>
     where TMemory : IPersistentMemoryState<TMemory>

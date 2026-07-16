@@ -70,7 +70,7 @@ Design implication:
 - avoid coupling contract semantics to parser-internal recovery behavior,
 - normalize diagnostics and error recovery outputs into project-defined categories.
 
-### 6) Compiler-scale surface area and containment need
+### 6) Compiler-scale surface area and process boundary need
 
 The snapshot includes broad flow-analysis/codegen machinery far beyond our use case.
 

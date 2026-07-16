@@ -56,7 +56,7 @@ public enum EvaluationEvidenceStatus
     /// <summary>All required evidence was exact and mutually compatible.</summary>
     Exact,
 
-    /// <summary>Only a trustworthy prefix or subset of required evidence was available.</summary>
+    /// <summary>Only a evidence-backed prefix or subset of required evidence was available.</summary>
     Partial,
 
     /// <summary>Required evidence was absent.</summary>
@@ -81,7 +81,7 @@ public enum EvaluationEffectStatus
     /// <summary>One or more effects were represented through an explicit semantic model.</summary>
     Modeled,
 
-    /// <summary>The requested effect could not be represented safely.</summary>
+    /// <summary>The requested effect could not be represented within the admitted contract.</summary>
     Unsupported,
 }
 
@@ -172,12 +172,12 @@ public sealed record EvaluationProvenance
     public int? ObservedLength { get; }
 }
 
-/// <summary>Provides one stable machine-readable reason and secret-safe human explanation.</summary>
+/// <summary>Provides one stable machine-readable reason and a human explanation containing no artifact-derived text.</summary>
 public sealed record EvaluationDiagnostic
 {
     /// <summary>Creates a diagnostic whose behavior never depends on parsing its message.</summary>
     /// <param name="code">A non-empty stable reason code.</param>
-    /// <param name="message">A non-empty secret-safe human explanation.</param>
+    /// <param name="message">A non-empty human explanation containing no artifact-derived text.</param>
     public EvaluationDiagnostic(string code, string message)
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -197,7 +197,7 @@ public sealed record EvaluationDiagnostic
     /// <summary>Gets the stable machine-readable reason code.</summary>
     public string Code { get; }
 
-    /// <summary>Gets the secret-safe human explanation.</summary>
+    /// <summary>Gets the human explanation, which contains no artifact-derived text.</summary>
     public string Message { get; }
 }
 

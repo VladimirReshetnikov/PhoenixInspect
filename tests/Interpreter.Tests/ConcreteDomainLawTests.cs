@@ -225,14 +225,14 @@ public sealed class ConcreteDomainLawTests
         Assert.Throws<ArgumentException>(() => domain.Join(integer, booleanDefault));
     }
 
-    /// <summary>Checks that diagnostic formatting cannot disclose raw string or numeric target payloads.</summary>
+    /// <summary>Checks that diagnostic formatting omits raw string or numeric target payloads.</summary>
     [Fact]
-    public void DiagnosticFormattingDoesNotDisclosePayloads()
+    public void DiagnosticFormattingOmitsRawPayloads()
     {
-        var value = domain.ConstString("credential-value");
+        var value = domain.ConstString("artifact-derived-value");
 
-        Assert.DoesNotContain("credential-value", value.ToString(), StringComparison.Ordinal);
-        Assert.Contains("length=16", value.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("artifact-derived-value", value.ToString(), StringComparison.Ordinal);
+        Assert.Contains("length=22", value.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain("123456789", domain.ConstInt32(123456789).ToString(), StringComparison.Ordinal);
     }
 

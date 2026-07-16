@@ -32,7 +32,7 @@ internal static class Program
     {
         if (args is ["--harness-invalid-readiness"])
         {
-            Console.WriteLine("NOT_READY secret-readiness-marker-canary");
+            Console.WriteLine("NOT_READY artifact-readiness-marker-canary");
             Console.Out.Flush();
             Thread.Sleep(Timeout.Infinite);
             return 70;
@@ -40,7 +40,7 @@ internal static class Program
 
         if (args is ["--harness-exit-before-ready"])
         {
-            Console.Error.WriteLine("secret-readiness-stderr-canary");
+            Console.Error.WriteLine("artifact-readiness-stderr-canary");
             Console.Error.Flush();
             return 71;
         }
@@ -54,9 +54,9 @@ internal static class Program
         if (Environment.GetEnvironmentVariable("OPENAI_API_KEY") is not null ||
             Environment.GetEnvironmentVariable("GITHUB_TOKEN") is not null ||
             Environment.GetEnvironmentVariable("GH_TOKEN") is not null ||
-            Environment.GetEnvironmentVariable("INTERPRETER_TEST_SECRET_CANARY") is not null)
+            Environment.GetEnvironmentVariable("INTERPRETER_TEST_ARTIFACT_CANARY") is not null)
         {
-            Console.WriteLine("UNSAFE_ENVIRONMENT");
+            Console.WriteLine("UNEXPECTED_ENVIRONMENT");
             Console.Out.Flush();
             return 72;
         }

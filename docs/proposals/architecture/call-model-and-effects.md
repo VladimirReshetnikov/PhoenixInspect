@@ -5,7 +5,7 @@
 > structural pure-model admission profile, exact W4.6b commit `fd723a912` freezes its modeled-return lineage/domain
 > contract, exact W4.6c commit `877c9fb55` makes that frozen capability executable, and exact W4.6d commit
 > `da5346813` closes compiler/SRM conformance. The broad taxonomy, effect lattice, fallbacks, intrinsic catalog,
-> dynamic/async lifting, and host trust vocabulary below remain research unless the current-profile section explicitly
+> dynamic/async lifting, and host result vocabulary below remain research unless the current-profile section explicitly
 > says otherwise.
 
 ## Current implemented W4.6 profile
@@ -15,7 +15,7 @@ is deliberately closed:
 
 - `PureCallModelVersion` has exactly three numeric components, each in `0..65535`. `PureCallModelIdentity` adds a
   canonical lowercase ASCII stable ID of at most 128 characters, with alphanumeric segments separated singly by
-  `.`, `-`, or `_`. Payload-safe failure codes are at most 128 ASCII characters in the `W4.Model.*` family.
+  `.`, `-`, or `_`. Payload-omitting failure codes are at most 128 ASCII characters in the `W4.Model.*` family.
 - `PureCallModelDescriptor` binds the identity/version to one exact body-independent structural target, confidence,
   and normalized effects. The vocabulary can represent `Exact`, `BestEffort`, `Partial`, and `UnsupportedLayout`, but
   the W4.6a planner admits only `Exact`. Descriptors may retain effects `None` or `Unsupported`; preparation admits only
@@ -50,7 +50,7 @@ is deliberately closed:
   Budget rejection occurs before capability entry. A capability that blocks, fails, throws, or returns a malformed
   outcome transfers no semantic state and receives no fallback.
 - Every actual capability entry appends one immutable `PureModelAttempt` with frozen callsite/model identity, entered
-  logical depth, outcome, transfer status, and stable payload-safe code. Operational counters distinguish invocations
+  logical depth, outcome, transfer status, and stable payload-omitting code. Operational counters distinguish invocations
   from completed modeled calls; attempt chronology and logical-depth high-water witnesses are validated on resume.
   The stable taxonomy separates capability failure, invalid/malformed outcome, lineage unavailability/invalidity,
   and forged attempt invariants. Exact terminal activation additionally preserves the completed depth witness.
@@ -63,16 +63,16 @@ is deliberately closed:
 W4.6a exact-checkpoint headless evidence passed locked restore; a strict fifteen-project Release build at zero
 warnings/errors; unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; pure-model contracts 49/49; model
 planner 25/25; legacy planner 35/35; compiler 1/1; lineage 2/2; both guards; and zero skips with
-`Scope!=Cybersecurity`. It realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), bringing
+the milestone test selection. It realizes 2,959 added LOC (1,210 production plus 1,749 tests/fixture support), bringing
 W4.1–W4.6a to 19,776 LOC. W4.6b strict headless builds passed at zero warnings/errors; focused 8/8, combined legacy-
-plus-modeled lineage 44/44, and integration call-lineage 2/2 passed with zero skips and `Scope!=Cybersecurity`. It
+plus-modeled lineage 44/44, and integration call-lineage 2/2 passed with zero skips and the milestone test selection. It
 realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC.
 
 W4.6c exact commit `877c9fb55` realizes 2,734 added LOC (1,425 production plus 1,309 tests). Strict affected builds
 passed at zero warnings/errors and its focused machine lane passed 34/34. W4.6d exact commit `da5346813` realizes
 956 test LOC. Its compiler/SRM lane passed 3/3, the aggregate W4 integration lane passed 13/13, and the Fast lane
 passed 80/80. Every behavioral invocation used `eng/Invoke-HeadlessProcess.ps1`, included
-`Scope!=Cybersecurity`, and recorded zero skips. W4.6 realizes 7,652 LOC in total and brings W4.1–W4.6 to
+the milestone test selection, and recorded zero skips. W4.6 realizes 7,652 LOC in total and brings W4.1–W4.6 to
 24,469 LOC.
 
 Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532–26,132; post-W4.3
@@ -92,13 +92,13 @@ It covers:
 - how calls are classified and dispatched,
 - how side effects are represented,
 - how unknownness is introduced and propagated at call boundaries, and
-- how hosts can understand trust and precision impact.
+- how hosts can understand result and precision impact.
 
 ---
 
 ## 1) Design goals
 
-1. **Safety first:** never execute arbitrary target code in dump-time scenarios.
+1. **Conservative execution:** never execute arbitrary target code in dump-time scenarios.
 2. **Determinism:** call outcomes must be reproducible under the same policy and inputs.
 3. **Explainability:** approximations must emit structured diagnostics.
 4. **Composable precision:** richer models should improve results without changing core contracts.
@@ -135,7 +135,7 @@ classify calls into:
    - Used for scalable precision where full modeling is unnecessary.
 
 6. **Interpreter-reentrant**
-   - Safe and permitted to recursively interpret callee IL.
+   - Admitted and permitted to recursively interpret callee IL.
    - Subject to recursion depth and per-call budget limits.
 
 7. **Lifted semantic callsite**
@@ -160,7 +160,7 @@ All modeled classifications (`PureIntrinsic`, `EnvironmentIntrinsic`, `Projectio
 - `Partial`
 - `UnsupportedLayout`
 
-Confidence labels are mandatory for host trust synthesis and regression assertions.
+Confidence labels are mandatory for host result synthesis and regression assertions.
 
 ---
 
@@ -189,7 +189,7 @@ Dispatch returns a `CallOutcome` envelope with:
 - `EffectSummary` (normalized effect set),
 - `Diagnostics` (zero or more approximation/blocked reasons),
 - `Confidence` (`Exact`, `BestEffort`, `Partial`, `UnsupportedLayout`),
-- `TrustLabel` (`trusted`, `approximate`, `blocked`, `timed_out`).
+- `ResultLabel` (`exact`, `approximate`, `blocked`, `timed_out`).
 
 ### 3.3 Required invariants
 
@@ -241,8 +241,8 @@ Any failed or inadmissible required-model selection rejects preparation without 
 A future policy may instead select one of three strategies:
 
 1. **Block**
-   - Stop evaluating this path and produce `blocked` trust label.
-   - Recommended for strict safety modes.
+   - Stop evaluating this path and produce `blocked` result summary label.
+   - Recommended for strictly constrained modes.
 
 2. **Unknown return**
    - Continue with unknown return value and conservative effect join.
@@ -330,4 +330,4 @@ All outcomes must carry provenance linking back to callsite IL offset, lifted si
   charging, event, and unit conformance without broadening the active profile.
 - **W4.6d (implemented):** prove compiler/SRM exact, degraded, and fresh-session execution conformance.
 - **Later research:** generalized fallback diagnostics, effect joins/fixpoint integration, intrinsic catalog and summary
-  governance, and host trust/UX tuning using dump-backed validation data.
+  governance, and host result/UX tuning using dump-backed validation data.

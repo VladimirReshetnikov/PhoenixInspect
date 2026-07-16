@@ -9,10 +9,8 @@ namespace Interpreter.Host.Dump.ClrMD;
 /// </summary>
 /// <remarks>
 /// ClrMD otherwise uses a symbol-server locator derived from ambient/default policy. This replacement blocks later
-/// locator-backed acquisition, but it is not a filesystem, network, or DAC-trust boundary: pinned ClrMD may probe
-/// target-reported full paths before or outside this seam and may accept a full-path DAC without signature
-/// verification. Arbitrary dumps therefore remain behind the documented no-network access-control worker and
-/// trusted-DAC gate.
+/// locator-backed acquisition, but pinned ClrMD may probe target-reported full paths before or outside this seam.
+/// Caveat: this proof covers only requests routed through the locator and the named fixture shapes.
 /// </remarks>
 internal sealed class ClrmdOfflineFileLocator : IFileLocator
 {

@@ -22,11 +22,11 @@ public sealed class W4CallLineageIntegrationTests
     private const int ExpectedAlternateMarker = 0x13579BDE;
     private const int CallOffset = 12;
     private const string ExpectedTestTargetSha256 =
-        "fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801";
+        "a23340790cbc8593f3a5ccfeecab925ba85d337a09fa5240f3cdd9c2f3cdbb5d";
     private const string ExpectedMixedGraphSha256 =
-        "1fe99a64e0c1d70118577847f7ea473703854c217368eee27aef1ab9ee54a142";
+        "f7f4119966c53ea27ee4c5c830e170d3726aa3222370c981a61a76b3f7ee4ceb";
     private const string ExpectedBothUnknownGraphSha256 =
-        "3df1b43826066c4c9974ffc1a1013678f5a0c86ffdc7ce8d930abe737b80d967";
+        "1dd8cd70bb67f87a76e66033e0b67de13df5c8e6509e6e1d3072ff17e818e29e";
 
     private static readonly string EvidenceSourceSha256 = HashUtf8(
         "W4.5b compiler-emitted integration evidence source");

@@ -15,9 +15,9 @@ internal static class Program
         if (Environment.GetEnvironmentVariable("OPENAI_API_KEY") is not null ||
             Environment.GetEnvironmentVariable("GITHUB_TOKEN") is not null ||
             Environment.GetEnvironmentVariable("GH_TOKEN") is not null ||
-            Environment.GetEnvironmentVariable("INTERPRETER_TEST_SECRET_CANARY") is not null)
+            Environment.GetEnvironmentVariable("INTERPRETER_TEST_ARTIFACT_CANARY") is not null)
         {
-            Console.WriteLine("UNSAFE_ENVIRONMENT");
+            Console.WriteLine("UNEXPECTED_ENVIRONMENT");
             Console.Out.Flush();
             return 81;
         }

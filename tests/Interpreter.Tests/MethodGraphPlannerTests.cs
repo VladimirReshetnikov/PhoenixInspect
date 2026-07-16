@@ -488,7 +488,7 @@ public sealed class MethodGraphPlannerTests
         Assert.Equal(64, resolver.DefinitionCounts.Values.Sum());
     }
 
-    /// <summary>Proves traversal unit 1,025 is blocked atomically by the fixed preparation safety cap.</summary>
+    /// <summary>Proves traversal unit 1,025 is blocked atomically by the fixed preparation resource cap.</summary>
     [Fact]
     public void FixedTraversalCapBlocksAtUnit1025WithoutReturningPartialGraph()
     {

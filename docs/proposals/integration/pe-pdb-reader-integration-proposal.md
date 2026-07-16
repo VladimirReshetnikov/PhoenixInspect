@@ -8,15 +8,15 @@ For the active dump/query and first interpreter slices, this proposal aligns to 
 - **Alternative adapters:** research candidates, introduced only by an executable corpus gap
 - **Comparison set retained in docs:** AsmResolver, dnlib, and Mono.Cecil trade-off analysis remains useful reference material
 - **Active dump-body boundary:** MethodDef RVA, tiny/fat header, code, local-signature token, and declared extra sections come from counted dump metadata/memory. A disk PE has separate whole-file length/SHA-256 identity and is only an independent oracle; it is never a source of hidden admission facts for that body.
-- **Implemented W3 projection:** exact hardened implementation checkpoint `19c292f9f` projects structural
+- **Implemented W3 projection:** exact strengthened implementation checkpoint `19c292f9f` projects structural
   module/type/MethodDef/FieldDef identities,
   atomic method body/signature/return/local shape, and contextual same-module FieldDef resolution. Its real-dump getter
   resolver operates on counted dump metadata/body bytes, proves that the admitted `ldfld` is the correlated runtime
   field, and reproduces the prepared-memory transcript after dump reopen/rebind.
 - **Still gated:** Portable/Windows PDB projection, SourceLink, generic context, MemberRef/MethodSpec execution,
-  broader opcode families, a second meaningful domain, product method evaluation, and cybersecurity validation.
+  broader opcode families, a second meaningful domain, product method evaluation, and validation beyond the named fixture shapes.
 
-The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers. Local headless verification at `19c292f9f` passed a zero-warning 15-project Release build, 103 non-cybersecurity unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards. [GitHub Actions run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at the same exact pushed implementation checkpoint. Exact documentation-closure commit `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined non-cybersecurity scope.
+The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers. Local headless verification at `19c292f9f` passed a zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards. [GitHub Actions run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at the same exact pushed implementation checkpoint. Exact documentation-closure commit `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined milestone-selected scope.
 
 ---
 
@@ -200,10 +200,9 @@ The original `dotnet/symstore` repo is archived, and there’s an explicit conti
   * supports Microsoft public symbol server and private servers
 * Whether you literally reuse `Microsoft.SymbolStore` or reimplement the minimal subset, the important point is: **keep acquisition separate from parsing.**
 
-**External-input scope:** the W1–W4 milestone evidence does not admit externally acquired PE/PDB/SourceLink artifacts.
-The local SRM opener's 512 MiB bound remains a deterministic evidence contract. The separately landed dump-query
-worker is non-gating prototype work outside W1–W4 and does not change this scope. All current milestone test claims
-exclude `Scope=Cybersecurity`.
+**Input-shape caveat:** W1–W4 evidence covers only the named generated fixtures and explicitly admitted input shapes.
+The local SRM opener's 512 MiB bound remains a deterministic evidence contract; other shapes require separate
+executable evidence.
 
 ---
 

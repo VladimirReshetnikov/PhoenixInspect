@@ -1722,7 +1722,7 @@ public sealed partial class IlMachine<TValue, TMemory>
                     MachineRunStatus.Blocked,
                     ExecutionFailureKind.UnsupportedInstruction,
                     outcome.StableCode,
-                    "The frozen pure model reported a payload-safe capability limitation.");
+                    "The frozen pure model reported a payload-omitting capability limitation.");
 
             case PureCallModelOutcomeKind.Invalid
                 when outcome.StableCode is not null &&

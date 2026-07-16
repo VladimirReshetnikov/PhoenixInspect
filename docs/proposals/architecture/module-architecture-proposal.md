@@ -5,7 +5,7 @@ Below is a **granular logical architecture catalog** for the interpreter framewo
 * post-mortem dump debugging
 * speculative/live debugging
 * static analysis
-* “no JIT” execution hosts / sandboxes
+* “no JIT” execution hosts / bounded runtimes
 
 The catalog is a vocabulary of possible logical seams. A seam becomes a physical project only when current implementation, dependency direction, and independently useful tests justify that split.
 
@@ -34,7 +34,7 @@ Think of this as “allowed arrows”. Everything points downward.
 [Products / Tools]
     |
     v
-[Hosts: Dump / Live / Sandbox] -----> [Artifacts: binaries/PDB/source acquisition]
+[Hosts: Dump / Live / bounded runtime] -----> [Artifacts: binaries/PDB/source acquisition]
     |                                        |
     |                                        v
     |                              [Metadata+Symbols+Decompiler]
@@ -141,7 +141,7 @@ I’ll group packages by layer, and for each package list:
   * debug events emission (writes, call enter/exit, unknown minted)
 
 **Depends on:** `Interpreter.Core.Abstractions`
-**Used by:** debugger stepping host, sandbox runtime host, testing harness
+**Used by:** debugger stepping host, no-JIT runtime host, testing harness
 
 ---
 
@@ -187,7 +187,7 @@ I’ll group packages by layer, and for each package list:
   * “explain value” graph extraction helpers
 
 **Depends on:** `Interpreter.Core.Abstractions`
-**Used by:** debugger UI, replay tooling, fuzz harness, telemetry
+**Used by:** debugger UI, replay tooling, fuzz harness, diagnostic output
 
 ---
 
@@ -207,11 +207,11 @@ These are pluggable and should be independent of metadata readers.
 
 ---
 
-#### `Interpreter.Domain.CNTypeTaint` (your MVP domain)
+#### `Interpreter.Domain.CNTypeOriginLabels` (your MVP domain)
 
 **Purpose**
 
-* Constants + Nullness + Runtime Type-set + Taint
+* Constants + Nullness + Runtime Type-set + origin labels
 * plus optional small-struct field sensitivity
 
 **Depends on:** `Interpreter.Core.Abstractions`
@@ -224,7 +224,7 @@ These are pluggable and should be independent of metadata readers.
 **Purpose**
 
 * Numeric intervals and simple predicate refinement
-* Works as a product domain with CNTypeTaint
+* Works as a product domain with CNTypeOriginLabels
 
 **Depends on:** `Interpreter.Core.Abstractions`
 **Used by:** analysis, predictive stepping
@@ -257,7 +257,7 @@ These are pluggable and should be independent of metadata readers.
 * supports diffs and undo cheaply
 
 **Depends on:** `Interpreter.Core.Abstractions`, `Interpreter.Memory.VirtualHeap`
-**Used by:** dump host, live snapshot host, “sandbox runtime”
+**Used by:** dump host, live snapshot host, “no-JIT runtime”
 
 ---
 
@@ -304,7 +304,7 @@ These packages depend on the core abstractions, and optionally on metadata abstr
 
   * `string` ops, `Nullable<T>`, boxing/unboxing helpers
   * small math intrinsics
-* safe formatting helpers (debugger view)
+* bounded formatting helpers (debugger view)
 
 **Depends on:** `Interpreter.Models.Abstractions`
 **Used by:** dump/live/runtime
@@ -340,7 +340,7 @@ These packages depend on the core abstractions, and optionally on metadata abstr
 
 **Depends on:** `Interpreter.Models.Abstractions`, `Interpreter.Memory.VirtualHeap`
 **Optionally depends on:** `Interpreter.Metadata.Abstractions` (for `AsyncStateMachineAttribute` / PDB mapping)
-**Used by:** dump stepping, speculative stepping, sandbox runtime (cooperative)
+**Used by:** dump stepping, speculative stepping, no-JIT runtime (cooperative)
 
 ---
 
@@ -568,7 +568,7 @@ These packages depend on the core abstractions, and optionally on metadata abstr
 
 ---
 
-## 6) Hosts: dump, live snapshot, sandbox runtime
+## 6) Hosts: dump, live snapshot, no-JIT runtime
 
 These are the *only* packages that talk to ClrMD / debugger APIs / OS.
 
@@ -627,9 +627,9 @@ These are the *only* packages that talk to ClrMD / debugger APIs / OS.
 
 ---
 
-### 6.4 Sandbox runtime host (no-JIT execution)
+### 6.4 no-JIT runtime host (no-JIT execution)
 
-#### `Interpreter.Host.Runtime.Sandbox`
+#### `Interpreter.Host.Runtime.NoJit`
 
 **Purpose**
 
@@ -681,7 +681,7 @@ These are “glue” packages that wire everything together with reasonable defa
 * `Interpreter.Symbols.PortablePdb` (+ optional WindowsPdb plugin)
 * `Interpreter.Decompiler.ILSpy` + `Interpreter.DebugMaps`
 * `Interpreter.Debugger.Engine`
-* Domains: `CNTypeTaint` + VirtualHeap + Overlay
+* Domains: `CNTypeOriginLabels` + VirtualHeap + Overlay
 * Models: CoreLib, Environment, Async, Dynamic, Collections, CompilerPatterns
 
 **Depends on:** everything above
@@ -697,7 +697,7 @@ These are “glue” packages that wire everything together with reasonable defa
 
 * `Interpreter.Metadata.SRM`
 * `Interpreter.Core.IR` + `Interpreter.Core.Analysis`
-* Domains: CNTypeTaint + Range + SummaryHeap
+* Domains: CNTypeOriginLabels + Range + SummaryHeap
 * Models: CoreLib, Environment (for effect tagging), CompilerPatterns
 * Optional: decompiler only for presentation, not required
 
@@ -715,21 +715,21 @@ These are “glue” packages that wire everything together with reasonable defa
 
 * `Interpreter.Host.Live.Snapshot` (or whatever live snapshot provider)
 * `Interpreter.Debugger.Engine`
-* Domains: CNTypeTaint + Overlay over live snapshot backend
+* Domains: CNTypeOriginLabels + Overlay over live snapshot backend
 * Models: Environment (target-derived snapshot), Async, Dynamic, Collections, CompilerPatterns
 * Optional: RoslynAdapter for “compile expression to synthetic method” experience
 
 ---
 
-### D) No-JIT runtime / sandbox execution
+### D) No-JIT runtime / bounded execution
 
-#### `Interpreter.Product.SandboxRuntime`
+#### `Interpreter.Product.NoJitRuntime`
 
 **Includes/wires**
 
-* `Interpreter.Host.Runtime.Sandbox`
+* `Interpreter.Host.Runtime.NoJit`
 * `Interpreter.Core.Execution`
-* `Interpreter.Domain.Concrete` (+ optional CNTypeTaint for diagnostics mode)
+* `Interpreter.Domain.Concrete` (+ optional CNTypeOriginLabels for diagnostics mode)
 * `Interpreter.Memory.VirtualHeap`
 * Models: CoreLib.Primitives + a policy-driven set of environment/io services
 * No PDB, no decompiler, no artifacts, no ClrMD
@@ -764,7 +764,7 @@ These rules keep reuse intact:
 
 If you later decide granularity is too much, merge along *layer boundaries*, not across them:
 
-Safe merges (usually fine):
+Compatible merges (usually fine):
 
 * `Interpreter.Foundation` + `Interpreter.Types` + `Interpreter.IL` into `Interpreter.Core.Common`
 * `Interpreter.Core.Execution` + `Interpreter.Core.Abstractions` into `Interpreter.VM`

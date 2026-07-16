@@ -309,7 +309,7 @@ internal static class MethodPlanBuilder
                             ResolutionFailureKind.Invalid,
                             "RESOLUTION_INVALID_RESULT",
                             "Field resolver returned an invalid default result.");
-                        var sanitizedFailure = ResolutionFailureDiagnostics.Sanitize(failure);
+                        var normalizedFailure = ResolutionFailureDiagnostics.Normalize(failure);
                         return PlanPreparationResult.Failed(
                             failure.Kind == ResolutionFailureKind.Invalid
                                 ? MachineRunStatus.InvalidProgram
@@ -320,7 +320,7 @@ internal static class MethodPlanBuilder
                                 "Field resolution did not produce an executable descriptor.",
                                 method,
                                 offset,
-                                sanitizedFailure));
+                                normalizedFailure));
                     }
 
                     var field = fieldResult.Value;
@@ -369,7 +369,7 @@ internal static class MethodPlanBuilder
                             ResolutionFailureKind.Invalid,
                             "RESOLUTION_INVALID_RESULT",
                             "Method resolver returned an invalid default result.");
-                        var sanitizedFailure = ResolutionFailureDiagnostics.Sanitize(failure);
+                        var normalizedFailure = ResolutionFailureDiagnostics.Normalize(failure);
                         return PlanPreparationResult.Failed(
                             failure.Kind == ResolutionFailureKind.Invalid
                                 ? MachineRunStatus.InvalidProgram
@@ -380,7 +380,7 @@ internal static class MethodPlanBuilder
                                 "Method resolution did not produce an executable direct-call descriptor.",
                                 method,
                                 offset,
-                                sanitizedFailure));
+                                normalizedFailure));
                     }
 
                     var callTarget = callResult.Value;
@@ -868,7 +868,7 @@ internal static class MethodPlanBuilder
                 message,
                 method,
                 offset,
-                ResolutionFailureDiagnostics.Sanitize(conflict)));
+                ResolutionFailureDiagnostics.Normalize(conflict)));
     }
 
     private static bool IsValidStandaloneSignatureToken(int token) =>

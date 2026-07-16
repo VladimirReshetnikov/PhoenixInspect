@@ -53,7 +53,7 @@ If you are short on time, start with these files:
 
 ---
 
-## 3. Quick start: open a module safely
+## 3. Quick start: open a module within declared bounds
 
 ```csharp
 using dnlib.DotNet;
@@ -288,7 +288,7 @@ Design implications:
 
 - normalize decode outcomes distinctly (`Valid`, `PartiallyDecoded`, `InvalidBodyBytes`, `UnsupportedOperandShape`),
 - carry generic context identity in provenance for methods where operand interpretation depends on type/method arguments,
-- avoid assuming every `MethodDef` with RVA produces trustworthy CIL.
+- avoid assuming every `MethodDef` with RVA produces evidence-backed CIL.
 
 ### PDB reader selection is a policy tree, not a single call
 

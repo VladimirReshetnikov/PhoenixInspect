@@ -21,7 +21,7 @@ Adapters SHOULD satisfy the following contract-shape rules:
    - success, partial, and unavailable outcomes are first-class result states,
    - errors include normalized reason codes.
 3. **Stable identity model**
-   - module, type, and method identity surfaces are deterministic and serialization-safe.
+   - module, type, and method identity surfaces are deterministic and serialization-stable.
 4. **Budget-aware operations**
    - expensive lookup/materialization calls accept budget and cancellation context.
 
@@ -58,7 +58,7 @@ Use a normalized miss-reason set so hosts can explain partial outcomes consisten
 |---|---|---|
 | `NotAvailable` | Data absent in dump/artifacts | Required data is not present. |
 | `SymbolMissing` | PDB unavailable/unresolvable | Source mapping cannot be established. |
-| `Ambiguous` | Multiple plausible matches | Result is unsafe to pick deterministically. |
+| `Ambiguous` | Multiple plausible matches | Result is unsupported to pick deterministically. |
 | `UnsupportedShape` | Unsupported metadata/IL construct | Pattern recognized but not handled in current scope. |
 | `BudgetExceeded` | Budget/time bound reached | Analysis was intentionally bounded. |
 | `CorruptData` | Invalid or inconsistent artifacts | Input appears malformed or incompatible. |

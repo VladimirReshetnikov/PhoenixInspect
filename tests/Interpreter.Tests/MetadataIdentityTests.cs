@@ -135,8 +135,8 @@ public sealed class MetadataIdentityTests
     {
         using var module = SrmMetadataModule.LoadFromFile(Assembly.GetExecutingAssembly().Location);
 
-        const string missingTypeCanary = "secret-type-name-canary";
-        const string missingMethodCanary = "secret-method-name-canary";
+        const string missingTypeCanary = "artifact-type-name-canary";
+        const string missingMethodCanary = "artifact-method-name-canary";
         var missingType = module.FindMethodDefinition(missingTypeCanary, missingMethodCanary);
         var missingMethod = module.FindMethodDefinition(nameof(MetadataIdentityTests), missingMethodCanary);
         var ambiguous = module.FindMethodDefinition(nameof(MetadataIdentityTests), nameof(OverloadedFixture));
@@ -706,7 +706,7 @@ public sealed class MetadataIdentityTests
         Assert.Throws<ArgumentException>(() => ModuleContentIdentity.FromDigest(mvid, 4, "not-a-digest"));
     }
 
-    /// <summary>Checks that missing and malformed external PE artifacts produce typed, payload-safe outcomes.</summary>
+    /// <summary>Checks that missing and malformed external PE artifacts produce typed, payload-omitting outcomes.</summary>
     [Fact]
     public void ExternalArtifactOpenClassifiesMissingAndMalformedPeContent()
     {
@@ -717,12 +717,12 @@ public sealed class MetadataIdentityTests
         Assert.Equal("META_ARTIFACT_UNAVAILABLE", missing.Failure.Code);
         Assert.DoesNotContain(missingPath, missing.Failure.Message, StringComparison.Ordinal);
 
-        const string invalidPathCanary = "secret-path-canary\0.dll";
+        const string invalidPathCanary = "artifact-path-canary\0.dll";
         var invalidPath = SrmMetadataModule.Open(invalidPathCanary);
         Assert.False(invalidPath.IsSuccess);
         Assert.Equal(ResolutionFailureKind.Invalid, invalidPath.Failure!.Kind);
         Assert.Equal("META_ARTIFACT_PATH_INVALID", invalidPath.Failure.Code);
-        Assert.DoesNotContain("secret-path-canary", invalidPath.Failure.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("artifact-path-canary", invalidPath.Failure.Message, StringComparison.Ordinal);
 
         var malformedPath = Path.Combine(Path.GetTempPath(), $"malformed-pe-{Guid.NewGuid():N}.dll");
         var truncatedPath = Path.Combine(Path.GetTempPath(), $"truncated-pe-{Guid.NewGuid():N}.dll");
@@ -778,7 +778,7 @@ public sealed class MetadataIdentityTests
 
     /// <summary>Checks bounded fixture lookup rejects oversized caller-controlled names before table traversal.</summary>
     [Fact]
-    public void MethodDefinitionLookupBoundsUntrustedNames()
+    public void MethodDefinitionLookupBoundsOversizedNames()
     {
         using var module = SrmMetadataModule.LoadFromFile(Assembly.GetExecutingAssembly().Location);
 

@@ -16,7 +16,7 @@ The intent is to reduce ambiguity across product, architecture, integration, and
 
 ### Abstract domain
 
-A conservative representation of runtime values used by the interpreter when exact concrete values are unavailable or unsafe to derive from dump data.
+A conservative representation of runtime values used by the interpreter when exact concrete values are unavailable or unsupported to derive from dump data.
 
 Abstract domains enable deterministic reasoning under uncertainty and support explainable outcomes such as "unknown", "partially known", or bounded ranges.
 
@@ -60,17 +60,17 @@ For a virtual session, replay means reproducing the tool's command transcript; i
 
 Evaluation of expressions, statements, or stepping operations against a memory dump rather than a live process.
 
-Because execution is reconstructed from static snapshot artifacts, dump-time evaluation prioritizes bounded simulation, explicit uncertainty, and safety-first fallback behavior.
+Because execution is reconstructed from static snapshot artifacts, dump-time evaluation prioritizes bounded simulation, explicit uncertainty, and conservative fallback behavior.
 
 ### Evidence status
 
 The quality of the evidence supporting a result, independent of request completion or semantic mode. Working categories are exact, partial, unavailable, conflicting, and invalid.
 
-Evidence status must carry provenance and miss reasons. It must not be collapsed into a single trust or confidence badge inside engine contracts.
+Evidence status must carry provenance and miss reasons. It must not be collapsed into a single confidence badge inside engine contracts.
 
 ### Effect lattice
 
-A partially ordered model used to describe side-effect confidence and execution safety (for example no-effect, modeled-effect, unknown-effect).
+A partially ordered model used to describe side-effect confidence and execution limits (for example no-effect, modeled-effect, unknown-effect).
 
 The lattice informs whether operations can be simulated, summarized, or must terminate evaluation with an explainable miss.
 
@@ -84,7 +84,7 @@ Explainability is a core contract, not a debugging add-on.
 
 A normalized reason code and descriptive payload that explains why exact evaluation or stepping could not continue (for example missing metadata, unsupported opcode, budget exceeded, unresolved generic context).
 
-Miss reasons should be stable enough to support telemetry, testing, and user-facing guidance.
+Miss reasons should be stable enough to support diagnostic output, testing, and user-facing guidance.
 
 ### Semantic mode
 
@@ -95,7 +95,7 @@ The kind of claim an evaluation result makes:
 - **Counterfactual execution**: interpreted execution from recovered or assumed state.
 - **Abstract analysis**: may/must reasoning over a set of possible states.
 
-Every host-facing result should identify its semantic mode. A UI trust indicator may summarize mode, completion, completeness, evidence, effects, and provenance, but must not replace those axes.
+Every host-facing result should identify its semantic mode. A UI result indicator may summarize mode, completion, completeness, evidence, effects, and provenance, but must not replace those axes.
 
 ### Provenance
 
@@ -117,5 +117,5 @@ Virtual stepping explores what code would do from a selected snapshot-derived st
 
 ## Open terminology questions
 
-- Do we need separate terms for "unsupported by policy" versus "unsupported by capability" to improve user guidance and telemetry quality?
+- Do we need separate terms for "unsupported by policy" versus "unsupported by capability" to improve user guidance and diagnostic output quality?
 - Should "modeled call" be split into deterministic model versus heuristic model?

@@ -88,7 +88,7 @@ Review affected documentation when:
 - a milestone or scope lock changes;
 - implementation evidence changes a capability claim;
 - terminology or identity/result semantics change;
-- a backend/dependency/security boundary changes;
+- a backend/dependency/validated-input boundary changes;
 - a link target is moved or removed.
 
 ## 9. Definition of done

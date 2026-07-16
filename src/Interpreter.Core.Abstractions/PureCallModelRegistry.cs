@@ -37,7 +37,7 @@ public enum PureCallModelSelectionKind
 }
 
 /// <summary>
-/// Represents one immutable selected capability or one payload-safe structural selection failure.
+/// Represents one immutable selected capability or one payload-omitting structural selection failure.
 /// </summary>
 /// <remarks>
 /// A selected capability remains available for freezing into an opaque modeled graph leaf. Its object reference is

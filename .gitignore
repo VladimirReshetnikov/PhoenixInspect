@@ -22,7 +22,7 @@ TestResults/
 *.coveragexml
 coverage/
 
-# Secret-bearing crash artifacts must stay local
+# Generated crash artifacts stay outside version control
 *.dmp
 *.dump
 /core

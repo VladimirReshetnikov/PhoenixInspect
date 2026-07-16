@@ -45,7 +45,7 @@ Design implication:
 Observed behavior:
 
 - `ModuleReader` chooses `ImmediateModuleReader` or `DeferredModuleReader` from `ReadingMode`.
-- Immediate reader traverses references/resources/types and associated attributes/security declarations eagerly.
+- Immediate reader traverses references/resources/types and associated attributes/declarative-permission metadata eagerly.
 - Deferred mode leaves more materialization to lazy read paths.
 
 Design implication:

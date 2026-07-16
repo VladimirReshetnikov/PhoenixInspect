@@ -8,11 +8,11 @@
 
 The earlier solution contained 42 source projects: 34 were project-file-only placeholders before this pass, including the now-implemented concrete domain. That physical decomposition encoded an unvalidated multi-product architecture and imposed build/dependency surface without behavior.
 
-The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary. A separately landed, non-gating external-worker prototype added two behavior-bearing boundaries—a trusted Windows broker/protocol assembly and a one-request AppContainer runner. W4.7 then justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary, leaving eleven source projects and sixteen projects overall. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
+The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary, and W4.7 justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary. Three later experimental projects have now been removed, leaving nine source projects and thirteen projects overall. Caveat: the physical topology represents only the named generated fixtures and explicitly admitted input shapes. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
 
 ## 2. Current source projects
 
-The solution retains eleven source projects, each containing contracts or behavior exercised by a realized slice:
+The solution retains nine source projects, each containing contracts or behavior exercised by a realized slice:
 
 | Project | Current responsibility |
 |---|---|
@@ -25,11 +25,9 @@ The solution retains eleven source projects, each containing contracts or behavi
 | `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, and W3 snapshot-scoped execution resolution/import correlation through ClrMD. |
 | `Interpreter.Product.DumpQuery` | Closed W2 grammar, typed snapshot-root binding, one-time field selection into immutable canonical plans, bounded `Evaluate(plan)`, closed value projection, and complete-corpus replay. |
 | `Interpreter.Product.DumpDebugging` | W4.7 standalone issuer-certified exact-null target-outcome projection, stable failures, schema-v1 canonical fragment, content equality/hash, and compiler/SRM replay; no rooted request/plan/facade or dump dependency. |
-| `Interpreter.Host.ExternalWorker` | Trusted Windows x64 staging broker, bounded protocol/contracts, response validation, AppContainer/Job/handle policy, payload-free telemetry projection, and observable cleanup. |
-| `Interpreter.Host.ExternalWorker.Runner` | One-request framework-dependent AppContainer executable that re-verifies containment, pins the trusted DAC, disables ambient capabilities, evaluates the admitted dump query, and exits. |
 
-Tests are separated into a fast semantic/contract suite, a real dump integration suite, a Windows external-worker
-suite, and two generated target executables: the general dump target and the optimized modeled-incident target. The
+Tests are separated into a fast semantic/contract suite, a real dump integration suite, and two generated target
+executables: the general dump target and the optimized modeled-incident target. The
 real-dump suite contains an independently versioned 22-case/20-expression W2 corpus rather than treating one query in the W1
 omnibus test as query-product closure evidence. It also contains a dedicated W3 direct/adjusted getter lane that
 executes only exact counted dump evidence and reopens/rebinds the dump for replay. The W4.1 generated fixture freezes
@@ -38,7 +36,7 @@ explained-unknown arithmetic, lattice laws, canonical lineage identities, captur
 W4.3 evidence/domain/machine suites add canonical structured field evidence, policy-and-capability-gated non-exact
 `ldfld`, truthful precision events, imported-field lineage, atomicity, and prevalidated fresh-domain replay. W4.4
 metadata/planner suites add body-independent direct-MethodDef signatures, complete rooted-acyclic graph admission,
-shared-callee deduplication, deterministic failure precedence, fixed internal safety caps, and exact fixture topology.
+shared-callee deduplication, deterministic failure precedence, fixed internal resource caps, and exact fixture topology.
 W4.5a prepared-machine tests add exact multi-frame call/return transfers, structural return sites, configured/required
 depth facts, high-water integrity, event and budget ordering, resolver-free replay, failure atomicity, legacy-session
   isolation, and the exact ten-instruction CoreCLR-agreeing fixture execution. W4.5b domain/machine/compiler tests add
@@ -170,8 +168,8 @@ general operators, broad IL semantics, or debugger stepping. Separately, W3 prov
 the closed E1 arithmetic and E2 direct/constant-adjusted getter profiles; it does not expose that capability through
 the W2 product grammar.
 
-Hardened W3 checkpoint `19c292f9f` is locally verified through locked restore, the 15-project zero-warning Release
-build, Markdown/headless guards, 103 non-cybersecurity unit tests, 67 fast integration tests, 5 ordinary dump tests,
+Strengthened W3 checkpoint `19c292f9f` is locally verified through locked restore, the 15-project zero-warning Release
+build, Markdown/headless guards, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests,
 1 optimized-context dump test, and the focused 2-test W3 lane. All four hosted jobs also passed at that exact
 implementation checkpoint in [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
@@ -191,7 +189,7 @@ lineage/replay. Its 3,096 realized LOC comprise 1,100 production LOC plus 1,996 
 to 7,028 LOC. Replacing the first three estimates with realized values projects W4 at 19,228–25,728 LOC; the original
 16,860–25,310 baseline remains preserved. Headless local verification passed the strict fifteen-project Release
 build, focused W4.3 55/55, complete unit 211/211, fast 71/71, ordinary dump 5/5, optimized-context dump 1/1, and both
-documentation guards with zero skips under `Scope!=Cybersecurity`.
+documentation guards with zero skips within the milestone test selection.
 
 W4.4a checkpoint `2e596c117` adds body-independent content-equal `MethodCallSignatureShape`, exact managed-IL
 `ResolvedMethodCallTarget`, and contextual direct-MethodDef resolution without acquiring a body. W4.4b checkpoint
@@ -199,13 +197,13 @@ W4.4a checkpoint `2e596c117` adds body-independent content-equal `MethodCallSign
 definitions and typed boundaries, canonical nodes/fields/edges, shared-callee deduplication, required logical depth,
 and internal traversal usage; cycles and disagreement fail without exposing a partial plan. The exact fixture has two
 method nodes, two fields, one edge at IL offset 12, depth two, and five method/field/edge units. Fixed ceilings of 64
-methods and 1,024 units are internal safety guards, not the configurable product traversal budget.
+methods and 1,024 units are internal resource guards, not the configurable product traversal budget.
 
 W4.4 realizes 3,651 added LOC (2,076 production plus 1,575 tests), split into 1,043-LOC W4.4a and 2,608-LOC W4.4b.
 Cumulative W4 realization through W4.4 is 10,679 LOC. Headless local verification
 passed locked restore, the strict fifteen-project Release build at 0 warnings/0 errors, planner 35/35, W4 fixture 6/6,
 complete unit 250/250, fast 73/73, ordinary dump 5/5, optimized dump 1/1, and both guards with zero skips; every
-behavioral test command used `Scope!=Cybersecurity`.
+behavioral test command used the milestone test selection.
 
 Pushed W4.5a checkpoint `356c07037` adds `DirectCallSiteIdentity`, `FrameReturnSite`, prepared-graph activation and
 operational-state construction, exact multi-frame call/return transfers, ordered frame events, and configured,
@@ -217,7 +215,7 @@ The checkpoint realizes 3,334 LOC (1,590 production plus 1,744 tests), bringing 
 restore, the strict fifteen-project Release solution build and strict unit/integration project builds at zero
 warnings/errors, focused prepared-graph tests 25/25, the W4 fixture 7/7, complete unit 275/275, fast integration 74/74,
 ordinary dump 5/5, optimized dump 1/1, and both documentation guards passed headlessly under
-`Scope!=Cybersecurity` on behavioral filters with zero skips.
+the milestone test selection on behavioral filters with zero skips.
 
 Pushed W4.5b checkpoint `c72f6ee9e` adds `IInterpretedCallLineageDomain<TValue>` and append-only canonical kind-4
 `CallArgumentTransform`/kind-5 `InterpretedReturnTransform` nodes. Exact values bypass the capability; explained
@@ -229,7 +227,7 @@ validate complete identity, dependency, type, call-site, and parameter-index rel
 Exact-commit validation passed locked restore, the strict fifteen-project Release build at 0 warnings/errors,
 prepared graph 40/40, combined lineage/audit 76/76 including 29 legacy identity cases, compiler lineage 2/2, W4
 integration 9/9, unit 297/297, fast 76/76, ordinary dump 5/5, and optimized dump 1/1, with zero skips and
-`Scope!=Cybersecurity` on behavioral filters. Independent audit found no remaining finding.
+the milestone test selection on behavioral filters. Independent audit found no remaining finding.
 
 W4.5b realizes 2,804 LOC (766 production plus 2,038 tests), so combined W4.5 realizes 6,138 LOC and cumulative
 W4.1–W4.5 realization is 16,817 LOC. The historical W4.5b estimate of 1,800–2,700 and combined projection of
@@ -247,7 +245,7 @@ permitted, and activation blocks with `EXEC_MODEL_EXECUTION_UNAVAILABLE` before 
 
 Its exact headless evidence passed locked restore; the strict fifteen-project Release build at zero warnings/errors;
 complete unit 371/371; fast 77/77; ordinary dump 5/5; optimized dump 1/1; pure-model contracts 49/49; model planner
-25/25; legacy planner 35/35; compiler 1/1; lineage 2/2; both guards; and zero skips under `Scope!=Cybersecurity` on
+25/25; legacy planner 35/35; compiler 1/1; lineage 2/2; both guards; and zero skips within the milestone test selection on
 behavioral filters. Independent audits found no behavioral finding. W4.6a realizes 2,959 added LOC (1,210 production
 plus 1,749 tests/fixture support), 359 above its historical upper estimate, and brings W4.1–W4.6a to 19,776 LOC.
 
@@ -255,7 +253,7 @@ Exact W4.6b checkpoint `fd723a912` adds `IPureCallModelLineageDomain<TValue>` an
 `ModeledReturnTransform`. It preserves kind-1–5 bytes/IDs, embeds exact operands, wraps explained operands with
 unchanged kind-4 nodes, interns the complete batch atomically with acyclicity checks, and validates structural replay
 plus fresh-domain continuation. It does not execute a model. Strict headless builds passed at zero warnings/errors;
-focused 8/8 and combined legacy-plus-modeled lineage 44/44 passed with zero skips and `Scope!=Cybersecurity`.
+focused 8/8 and combined legacy-plus-modeled lineage 44/44 passed with zero skips and the milestone test selection.
 W4.6b realizes 1,003 added LOC (481 production plus 522 tests), with 23 deletions, bringing W4.1–W4.6b to 20,779 LOC.
 
 Exact W4.6c checkpoint `877c9fb55` dispatches only the capability frozen in the modeled leaf, with no registry,
@@ -273,7 +271,7 @@ between interpreted and model paths. The mixed case freezes graph SHA-256
 metadata-reader/domain/machine sessions reproduce the both-unknown graph SHA-256
 `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`. Focused W4.6d passed 3/3, aggregate W4
 integration 13/13, and Fast 80/80. Every behavioral lane used `eng/Invoke-HeadlessProcess.ps1` and
-`Scope!=Cybersecurity`; strict affected builds passed at zero warnings/errors. W4.6 totals 7,652 LOC and cumulative
+the milestone test selection; strict affected builds passed at zero warnings/errors. W4.6 totals 7,652 LOC and cumulative
 W4 realization is 24,469 LOC.
 
 Exact W4.7a checkpoint `2e70fe76d` adds the product boundary above and issuer-bound complete-transition
@@ -285,7 +283,7 @@ proves direct/adjusted compiler getters and fresh SRM/module/domain/machine repl
 the re-step consults no capability and repeats no load. W4.7a/b realize 2,448/353 LOC, bringing W4 to 27,270 LOC.
 W4.7 closure passed the strict sixteen-project Release build at zero warnings/errors, unit 430/430, Fast 80/80,
 dumps 5/5 and 1/1, focused 15/15 plus 2/2 (17/17 combined), compiler differential 23/23, and both guards, headlessly
-with `Scope!=Cybersecurity` and zero skips.
+with the milestone test selection and zero skips.
 
 Historical full-W4 projections remain original 16,860–25,310, post-W4.2 18,532–26,132, post-W4.3
 19,228–25,728, post-W4.4 21,179–26,779, post-W4.5a 24,013–29,313, W4.5 closure 25,017–29,417, design audit
@@ -301,10 +299,6 @@ boundaries; W4.6 executes the one structurally selected pure-model leaf with mod
 conformance; W4.8 supplies the common rooted facade/result/runner; and W4.9 supplies detached generated-dump
 execution and reopen replay. Exact W4 closure commit `a819a08fd` passed all four hosted jobs. The legacy `IlMachine` still rejects the W4 fixture before the call, while the opt-in prepared session consumes
 both interpreted and modeled graphs.
-
-The external-worker projects are separately executable, and their four-test package includes a locally passing real
-malformed-artifact process checkpoint. This is non-gating prototype work outside W1–W4; its presence does not admit
-an external artifact product surface.
 
 ## 5. Rule for adding a project
 
@@ -324,15 +318,13 @@ A desired namespace, future product, candidate backend, or possible plugin is no
 - Canonical unattended managed entry point: `./eng/Invoke-HeadlessProcess.ps1 dotnet ...`; every test assembly also
   reasserts Win32, thread, WER, and .NET no-dialog policy.
 - Required W1 CI target: local-Markdown-link and headless-workflow consistency, locked restore, Release build with
-  warnings as errors, fast tests, then the supported ordinary-dump and optimized-context Windows lanes. The worker
-  projects remain solution-build-checked, but their tests are outside the default W1 workflow. The historical exact pushed W0 commit
+  warnings as errors, fast tests, then the supported ordinary-dump and optimized-context Windows lanes. The historical exact pushed W0 commit
   `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` passed the documentation job, the build/fast job (60
   semantic/differential and 40 fast adapter/harness tests), and the dependent 3-test dump job in
   [GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
   completed 2026-07-14 UTC (2026-07-13 PDT). Third-party actions are pinned to verified release commit SHAs.
 
-That hosted run is the W0 baseline. The malformed corpus and external worker are separately landed, non-gating
-prototypes outside W1–W4.
+That hosted run is the W0 baseline. Later out-of-scope experiments have since been removed.
 
 Historical unfiltered local verification on 2026-07-14 passed locked restore, the strict 15-project Release build with
 0 warnings/errors, 64/64 core tests, 63/63 fast integration tests, 3/3 ordinary dump tests, and 1/1 optimized-context
@@ -340,15 +332,14 @@ test through the headless wrapper. [Hosted run
 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs
 at exact W1 closure commit `e2580a8a8`.
 
-The later filtered W2 v1 local checkpoint `ff7cd1965` passes the 15-project zero-warning build, 64 core tests, 67 fast
-integration tests, 4 ordinary dump tests (including its 22-case corpus), and 1 optimized-context test. All test
-invocations exclude `Scope=Cybersecurity`. Restore/build intentionally remains repository-wide, including worker
-projects and the integration assembly, as topology/compilation-health evidence only; worker projects/tests provide no
-cybersecurity or milestone behavioral evidence. [GitHub Actions run
+The later W2 v1 local checkpoint `ff7cd1965` passes the then-current 15-project zero-warning build, 64 core tests, 67 fast
+integration tests, 4 ordinary dump tests (including its 22-case corpus), and 1 optimized-context test. Historical test
+counts refer to the milestone-selected set at that commit. Caveat: they establish behavior only for the named fixture
+and input shapes. [GitHub Actions run
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
 at exact W2 closure commit `5bed47100`; the W1 run above remains W1-only history.
 
-The later hardened W3 checkpoint `19c292f9f` passes the same headless, non-cybersecurity workflow locally with
+The later strengthened W3 checkpoint `19c292f9f` passes the same headless, milestone-selected workflow locally with
 103 unit, 67 fast integration, 5 ordinary dump, 1 optimized-context, and 2 focused W3 tests; [GitHub Actions run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passes all four jobs at that
 implementation commit. Formal W3 closure is recorded at exact documentation commit `de6cea124`, whose [GitHub Actions

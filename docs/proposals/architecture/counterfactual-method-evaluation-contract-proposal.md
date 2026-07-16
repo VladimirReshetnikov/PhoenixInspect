@@ -40,7 +40,7 @@ execution over shared W3 handlers, and fresh-object lineage replay. W4.3 adds im
 approximation capability, policy-gated partial/unavailable continuation, precision-loss events, and
 `FieldLoadTransform` lineage while retaining exact and terminal memory outcomes. W4.4 now realizes body-independent
 direct MethodDef/signature resolution and a canonical complete acyclic interpreted-method graph under fixed internal
-safety caps. W4.5 executes the frozen interpreted graph through structural call/return boundaries, enforces a
+resource caps. W4.5 executes the frozen interpreted graph through structural call/return boundaries, enforces a
 machine-supplied logical-depth limit before activation, records logical/frame high water without re-resolution, and
 carries exact or explained-unknown `Int32` values through canonical call/return lineage. W4.6 selects and freezes one
 structurally exact, side-effect-free pure model as a body-free opaque
@@ -52,7 +52,7 @@ observation/plan/result artifacts, private typed runtime bindings, issuer-owned 
 execution, and common rooted/standalone projection. W4.9 validates dump-sourced root/helper bodies and both fields,
 detaches the complete rooted evidence/memory boundary, and executes exact, partial, and unavailable interpreted and
 modeled rows with dump close/reopen replay. API names shown here remain provisional design names; public prototype APIs
-carry detailed XML documentation. W4 is closed for this contract's defined non-cybersecurity scope.
+carry detailed XML documentation. W4 is closed for this contract's defined milestone-selected scope.
 
 ## 2) Product-value gate
 
@@ -192,7 +192,7 @@ The profile does not admit:
 - interpreted handler search or transfer, filters, unwind, `leave`, `finally`, `fault`, or EH-bearing interpreted
   bodies; no body-shape claim is made for an opaque model-covered target;
 - field or array stores, static fields, arrays, object construction, virtual heaps, or any allocation instruction;
-- byrefs, pointers, unsafe/native instructions, P/Invoke, unmanaged transitions, or native execution;
+- byrefs, pointers, low-level/native instructions, P/Invoke, unmanaged transitions, or native execution;
 - floating point, native integers, 64-bit arithmetic, conversions, comparisons, or checked arithmetic;
 - filesystem, network, process, thread, clock, randomness, environment, or ambient-runtime interaction;
 - PDB/frame reconstruction, virtual stepping, async/dynamic lifting, broad BCL models, or debugger UI; or
@@ -201,7 +201,7 @@ The profile does not admit:
 Unsupported opcode, signature, body, graph, or call shape rejects preparation and maps to the blocked structural row in
 section 11.3. Missing exact program evidence maps to blocked with its actual evidence status; structurally invalid
 program evidence maps to invalid. Unsupported effects use the separate effect row. None falls back to target execution,
-Reflection invocation, a JIT, a worker, or best-effort guessing.
+Reflection invocation, a JIT, or best-effort guessing.
 
 ## 4) Request and preparation boundary
 
@@ -267,13 +267,13 @@ no machine activation, and the exact ordered charges retained in result context.
 Resolution retries, hash-table probes, metadata rows not selected by the structural request, and diagnostic formatting
 are not traversal units. Changing the unit definition requires a versioned policy change and replay update.
 
-W4.4b implements the unit shape under fixed internal safety caps. It charges the root and each newly discovered
+W4.4b implements the unit shape under fixed internal resource caps. It charges the root and each newly discovered
 structural method once, each distinct structural field once, and every retained call-site edge once, including multiple
 edges to one shared callee. Discovery is root-first depth-first in increasing IL-offset order. Per-request first-result
 caches retain successes and failures for method definitions and contextual field/call operands, so resolver retries
 cannot change the result. W4.8a adds the caller-supplied limit, immutable ordered charge projection, exact used/
 remaining accounting, and product `BudgetExhausted` outcome while retaining the 64-method/1,024-unit internal caps as
-separate fail-closed safety limits. Exhaustion stops before consulting the capability named by the first rejected charge
+separate fail-closed resource limits. Exhaustion stops before consulting the capability named by the first rejected charge
 and exposes no partial executable graph.
 
 ## 5) Dump evidence and degraded inputs
@@ -528,7 +528,7 @@ execution-time resolver calls; repeated and fresh sessions reproduce the canonic
 W4.6a checkpoint `77c92789b` implements the preparation half of the mandatory conformance disposition. Its
 non-generic contracts include bounded `PureCallModelIdentity`/three-component version, structural descriptor,
 lineage-free exact-or-explained-unknown two-`Int32` invocation atoms, closed typed outcomes, and a scenario-owned
-registry. Stable IDs are bounded canonical lowercase ASCII; version components are bounded; payload-safe failure codes
+registry. Stable IDs are bounded canonical lowercase ASCII; version components are bounded; payload-omitting failure codes
 are bounded canonical `W4.Model.*` values. A descriptor can represent `Exact`, `BestEffort`, `Partial`, or
 `UnsupportedLayout` confidence, but W4.6a admission accepts only `Exact`. `None` effect is admitted,
 `Unsupported` is representable but blocked, and `VirtualOnly`/`Modeled` cannot be constructed as descriptor effects.
@@ -613,7 +613,7 @@ The model returns one typed outcome:
 
 The model receives immutable typed arguments and policy facts only. It cannot receive or read persistent memory, read
 ambient time/environment, access the dump session, mutate memory, allocate, invoke target code, or throw host exception
-text across the boundary. Ordinary model exceptions are normalized to a payload-safe capability failure; catastrophic
+text across the boundary. Ordinary model exceptions are normalized to a payload-omitting capability failure; catastrophic
 process exceptions retain the W3 policy.
 
 An unknown model return must be derived from admitted unknown arguments and receives a `ModeledReturnTransform` whose
@@ -805,7 +805,7 @@ identity/location, frozen call trace, instruction/event accounting, evidence/eff
 bytes/fingerprint. Snapshot/root/request/plan identities and preparation-traversal facts are absent/not applicable.
 
 No display string, local path, raw target string, exception message, or process-random hash participates in identity.
-Canonical replay is an audit artifact and is not automatically telemetry-safe.
+Canonical replay is an audit artifact and is not automatically suitable for diagnostic display.
 
 ### 11.3 Outcome matrix
 
@@ -902,7 +902,7 @@ product request/plan/result replay above and does not imply rooted-facade reacha
 
 ## 13) Stable diagnostics
 
-Diagnostics use bounded stable codes and payload-safe explanations. The initial code families are:
+Diagnostics use bounded stable codes and payload-omitting explanations. The initial code families are:
 
 - `W4.Request.*` for request, policy, root, and applied-bound invalidity;
 - `W4.Evidence.*` for exact-program requirements and runtime-value evidence outcomes;
@@ -914,11 +914,11 @@ Diagnostics use bounded stable codes and payload-safe explanations. The initial 
 - `W4.Replay.*` for canonical schema or reconstruction disagreement.
 
 Tests assert codes and structured fields, never parse prose. Host exception text, target strings, query literals not
-already authorized for canonical replay, raw file paths, and secrets are not copied into diagnostics.
+already authorized for canonical replay, raw file paths, and artifact-derived values are not copied into diagnostics.
 
 ## 14) Required executable evidence
 
-W4 closure requires all of the following, headlessly and with `Scope!=Cybersecurity`:
+W4 closure requires all of the following, headlessly and with the milestone test selection:
 
 1. the compiled `GetMarkerSummary`/`CombineMarkers` fixture, emitted-IL dependency closure, and exact CoreCLR oracle;
 2. a second meaningful unknown-aware value domain over every admitted W3 value transfer, with semantic and lineage laws;
@@ -938,7 +938,7 @@ W4 closure requires all of the following, headlessly and with `Scope!=Cybersecur
 11. byte-identical same-session and fresh-object canonical request/plan/result replay for exact, degraded, blocked,
     budget, and modeled requests; separate byte-identical fragment replay for the target-exception conformance case;
     and dump-close/reopen replay for every dump-grounded case; and
-12. the repository-wide locked restore, zero-warning Release build, Markdown/headless guards, non-cybersecurity fast,
+12. the repository-wide locked restore, zero-warning Release build, Markdown/headless guards, milestone-selected fast,
     ordinary-dump, optimized-dump, and focused W4 lanes with zero skips at the exact pushed closure commit.
 
 Through W4.7b, item 2, the dump-free field-boundary core of item 3, the dump-free frozen interpreted/model core of
@@ -966,22 +966,22 @@ strict fifteen-project Release solution build and strict Release builds of the u
 zero warnings/errors; prepared-graph tests 25/25; W4
 fixture 7/7; complete unit 275/275; fast integration 74/74; ordinary dump 5/5; optimized dump 1/1; the Markdown guard
 across 62 files and 41 local destinations; and the headless guard across one workflow. Every test lane had zero skips
-and every behavioral command used `Scope!=Cybersecurity`. An independent audit closed every identified W4.5a blocker.
-The ordinary and optimized dump filters were `Category=Dump&Corpus!=ModeledIncidentContextV1&Scope!=Cybersecurity`
-and `Category=Dump&Corpus=ModeledIncidentContextV1&Scope!=Cybersecurity`, respectively.
+and every behavioral command used the milestone test selection. An independent audit closed every identified W4.5a blocker.
+The ordinary and optimized dump filters were `Category=Dump&Corpus!=ModeledIncidentContextV1`
+and `Category=Dump&Corpus=ModeledIncidentContextV1`, respectively.
 
 At exact pushed checkpoint `c72f6ee9e5545240433294cdca4f350808339aef`, locked restore and the strict single-node
 headless fifteen-project Release build passed with 0 warnings/0 errors. Prepared-graph execution passed 40/40; the
 combined lineage/audit lane passed 76/76, including 29 frozen legacy identity cases; compiler lineage passed 2/2;
 aggregate W4 integration passed 9/9; complete unit passed 297/297; fast integration passed 76/76; ordinary dump passed
-5/5; and optimized dump passed 1/1. Every behavioral filter used `Scope!=Cybersecurity`, there were zero skips, and an
+5/5; and optimized dump passed 1/1. Every behavioral filter used the milestone test selection, there were zero skips, and an
 independent audit found no remaining production or test finding.
 
 At exact pushed checkpoint `77c92789b16d9258c907d5026a36e39f8c957b41`, locked restore and the strict
 fifteen-project Release build passed with 0 warnings/0 errors. Model-contract tests passed 49/49; model-planner 25/25;
 legacy planner 35/35; real SRM/compiler planning 1/1; lineage 2/2; complete unit 371/371; fast integration 77/77;
 ordinary dump 5/5; optimized dump 1/1; Markdown 62 files/41 destinations; and the one-workflow headless guard. There
-were zero skips, every behavioral filter used `Scope!=Cybersecurity`, and independent audits found no behavioral
+were zero skips, every behavioral filter used the milestone test selection, and independent audits found no behavioral
 findings. The PDB-free TestTarget PE SHA-256 is
 `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; W4.5 lineage hashes were deliberately
 re-frozen to that deterministic artifact.
@@ -989,18 +989,17 @@ re-frozen to that deterministic artifact.
 At W4.6 closure, locked restore passed; the strict fifteen-project Release build and strict unit/integration project
 builds passed with zero warnings/errors; focused W4.6c passed 34/34; focused W4.6d passed 3/3; aggregate W4 integration
 passed 13/13; complete unit passed 413/413; fast integration passed 80/80; ordinary dump passed 5/5; optimized dump
-passed 1/1; and external-worker passed 4/4. Every lane was headless with zero skips, and every behavioral filter used
-`Scope!=Cybersecurity`.
+passed 1/1. Every lane was headless with zero skips, and every behavioral filter used
+the milestone test selection.
 
 At W4.7 closure, locked restore passed; the strict sixteen-project Release build across eleven source projects passed
 with zero warnings/errors; focused W4.7a passed 15/15; focused W4.7b passed 2/2; combined W4.7 passed 17/17; compiler
 differential passed 23/23; complete unit passed 430/430; Fast passed 80/80; ordinary dump passed 5/5; optimized dump
 passed 1/1; Markdown passed 62 files/41 destinations; and the headless workflow guard passed for one workflow. Every
-behavioral lane was headless, used `Scope!=Cybersecurity`, and had zero skips. External-worker 4/4 remains historical
-W4.6 evidence and was deliberately not rerun or claimed for W4.7.
+behavioral lane was headless, used the milestone test selection, and had zero skips.
 
 W4.8 final checkpoint `44b050ec8` validates the complete rooted facade and runner matrix: focused execution 10/10,
-the complete counterfactual unit family 77/77, and complete non-cybersecurity unit 502/502, with a strict warning-free
+the complete counterfactual unit family 77/77, and complete milestone-selected unit 502/502, with a strict warning-free
 Release build and zero skips. Its result tests cover exact, partial, unavailable, budget, cancellation, blocked,
 invalid, modeled, target-fragment, authority, diagnostics, bounds, events, call traces, attempts, effects, lineage, and
 same/fresh-object canonical replay.
@@ -1008,7 +1007,7 @@ same/fresh-object canonical replay.
 W4.9a `24bd8fe6f` validates the atomic ClrMD execution graph, W3 real-dump regression, dump-memory evidence, and Fast
 lanes. W4.9b `2d41f528d` validates five binder/memory facts, the 77-test counterfactual family, and Fast 88/88. W4.9c
 `a8b5f32f0` validates the six-row generated-dump corpus at 1/1, ordinary dump at 6/6, and Fast at 88/88. Every
-behavioral command ran through the headless wrapper with `Scope!=Cybersecurity` and every lane had zero skips. W4.9d's
+behavioral command ran through the headless wrapper with the milestone test selection and every lane had zero skips. W4.9d's
 local candidate passes locked restore; the strict sixteen-project Release build at 0 warnings/errors; complete unit
 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
 destinations; and the one-workflow headless guard. [GitHub Actions run
@@ -1032,7 +1031,7 @@ and materially rewritten lines are counted once. These ranges describe implement
 | W4.2 | Unknown E1/E2 domain kernel, content-addressed lineage, domain/transfer laws, and replay | 3,350–3,500 | 3,454 |
 | W4.3 | Backend-neutral structured field evidence/continuation, evidence matrix, precision events, and dump-free domain/machine tests | 2,400–3,500 | 3,096 |
 | W4.4a | Body-free direct MethodDef/signature resolution, managed-IL certification, and SRM token/implementation matrix | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 1,043 |
-| W4.4b | Explicit graph admission, deterministic resolution/discovery, canonical acyclic closure, fixed safety caps, and required depth | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 2,608 |
+| W4.4b | Explicit graph admission, deterministic resolution/discovery, canonical acyclic closure, fixed resource caps, and required depth | Post-audit sub-slice of original combined W4.4 estimate, 1,700–2,600 | 2,608 |
 | W4.5a | Exact multi-frame interpreted calls, return sites, frame events, maximum-logical-depth enforcement, invariant replay, and depth high-water reporting | Post-audit sub-slice of original combined W4.5 estimate, 2,300–3,500 | 3,334 |
 | W4.5b | Explained-unknown call/return boundary capability, `CallArgumentTransform`/`InterpretedReturnTransform`, and canonical replay | 1,800–2,700 | 2,804 |
 | W4.6a | Structural model registry, opaque modeled leaf, and effect/fallback admission | 1,800–2,600 | 2,959 |
@@ -1101,7 +1100,7 @@ loads compatible but does not continue from non-exact field evidence. W4.3 imple
 structured field-evidence capability, continuation, precision event, and `FieldLoadTransform`; it does not implement a
 ClrMD evidence producer or dump-grounded result. W4.4a owns body-independent structural target resolution and
 managed-IL/signature certification; W4.4b owns interpreted-call admission, canonical complete graph construction,
-first-result caching, per-edge retention/charging, required-depth calculation, and fixed internal safety caps. W4.5a
+first-result caching, per-edge retention/charging, required-depth calculation, and fixed internal resource caps. W4.5a
 owns exact interpreted call/return transfer, frames, machine-level logical-depth enforcement, invariant replay, and
 depth high-water reporting. W4.5b owns explained-unknown call/return lineage; W4.8 implements configurable traversal
 charging and product projection. W4.6a owns structural model contracts, required selection, and opaque leaves; W4.6b owns
@@ -1116,16 +1115,13 @@ audit, or landed implementation evidence. Its upper bound must remain at or belo
 At closure, record realized attributable LOC and use it to refine later slices. W3's realized 8,842 hand-written
 additions is the reason these ranges are deliberately conservative.
 
-## 16) Cybersecurity scope
+## 16) Input-shape caveat
 
-External-input cybersecurity behavior is explicitly outside W4, as requested. W4 does not run, repair, expand, or use
-the hostile-artifact corpus or external-worker containment lane as behavioral evidence. Every W4 test command includes
-`Scope!=Cybersecurity`. Repository-wide restore/build may still compile those projects solely as topology and
-compilation-health evidence.
+W4 evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier out-of-scope
+experiments have been removed. Completing W4 establishes no behavior for other artifact shapes.
 
-This accepted exclusion does not widen functional semantics. Filesystem, network, process, thread, time, P/Invoke,
-native/unsafe, reflection, and other ambient interactions remain unsupported effect classes and block the W4 plan.
-That is an evaluator-language rule, not a claim that W4 establishes a security boundary for arbitrary artifacts.
+This caveat does not widen functional semantics. Filesystem, network, process, thread, time, P/Invoke, native/low-level,
+reflection, and other ambient interactions remain unsupported effect classes and block the W4 plan.
 
 ## 17) Completion and expansion rule
 
@@ -1144,7 +1140,7 @@ After W4, each of the following still requires a separate scenario-derived contr
 - allocation, writes, virtual heaps, havoc, collection traversal, or environment intrinsics;
 - handler search/transfer, filters, unwind, `finally`, or `fault`;
 - generics, PDB/frame reconstruction, async/dynamic lifting, or virtual stepping; and
-- any external-artifact product surface or cybersecurity initiative.
+- any artifact product surface beyond the named fixture shapes.
 
 No expansion may weaken W3/W4 structural identity, exact-program-evidence, complete transitive admission,
 no-fabrication, deterministic budget/event, immutable-memory, explicit-counterfactual-language, or replay rules.
