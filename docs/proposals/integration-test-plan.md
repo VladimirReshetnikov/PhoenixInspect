@@ -569,13 +569,20 @@ partial/limited catalogs and bodies, foreign snapshots, and invalid tokens. The 
 certificate issuance as an equality oracle. Strict Release, unit, Fast, focused, and complete integration lanes pass
 with zero skips.
 
-The remaining generated lane must exercise exact, exact-null, coalesced-null, partial, unavailable, conflict, invalid,
-and unsupported outcomes across the outer reference and terminal storage boundaries. W6.3 already freezes terminal
-layouts without value reads; W6.4–W6.5 must validate truthful referenced-object identity and extent, checked address
-arithmetic, lifted nullable behavior for null-conditional non-nullable values, immutable two-member preparation, and
-descriptor-only evaluation with poisoned catalog sources. A hidden target and hidden reference consumer must
-reproduce canonical artifacts in repeated same-session, fresh-process, and dump-close/reopen runs within the W6
-corpus.
+W6.4 is implemented through `40ece4446`. Synthetic four/eight-byte projections cover exact non-null/null, partial,
+unavailable, zero, and conflicting pointer/header evidence. Full-dump graphs prove truthful non-root identity and
+extent, equal intrinsic identity but distinct alias-path provenance, internally consistent exact runtime-subtype
+rejection, checked range/overflow behavior, and descriptor-only terminal-reader entry points. Complete plan tests
+poison every evaluation operation during preparation, preserve certificate evidence/bounds, reject incompatible
+coalescing and missing members without a partial plan, and replay canonical identities exactly. The closure matrix is
+locked restore; strict serial Release at 0 warnings/0 errors; unit 502/502; Fast 121/121; complete integration 137/137;
+Markdown 65 files/89 local destinations; one headless workflow; and zero skips.
+
+The remaining W6.5 generated lane must exercise exact, exact-null, coalesced-null, partial, unavailable, conflict,
+invalid, and unsupported outcomes across the outer reference and terminal storage boundaries. It must prove lifted
+nullable behavior for null-conditional non-nullable values and descriptor-only evaluation with poisoned catalog
+sources. A hidden target and hidden reference consumer must reproduce canonical artifacts in repeated same-session,
+fresh-process, and dump-close/reopen runs within the W6 corpus.
 
 The meaningful synthetic lane must contain twenty-four independent full dumps and one predeclared question per dump
 across request, batch, coordinator, and workflow/dispatch object graphs. Value-only substitutions do not count as

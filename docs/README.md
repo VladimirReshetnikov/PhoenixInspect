@@ -35,7 +35,16 @@ W4's closed design contract is
 successor is `plans/post-w5-path-forward.md`: replace parser growth with one pinned complete Roslyn C# expression parse,
 admit only versioned project-owned W2/W5/W6 tree shapes, implement one opt-in fixed-depth member-chain query with
 certified field-backed terminal data properties, then use a larger multi-shape designed portfolio to select or defer
-another prototype increment while keeping field-readiness evidence separate. W4.1's fixture gate is implemented at
+another prototype increment while keeping field-readiness evidence separate.
+
+W6.1–W6.4 are implemented through pushed checkpoint `40ece4446`. One pinned complete Roslyn parse feeds only
+versioned project-owned admitted shapes; counted metadata and physical getter bodies issue detached declared-member
+certificates; four/eight-byte reference observations preserve exact/null/partial evidence; intrinsic non-root identity
+is separate from alias-path selection; and a complete canonical plan freezes the request, certificate, relative
+terminal layout, semantics, evidence, and bounds before any reference or leaf value read. W6.5 derived-query
+evaluation and generated headless conformance are the sole active next checkpoint.
+
+The earlier W4 history remains recorded here. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint
 `e89e43498`. W4.3's dump-free non-exact field continuation is implemented at checkpoint `7479b1ad4`. W4.4a's
 body-free direct MethodDef resolution is implemented at pushed checkpoint `2e596c117`, and W4.4b's complete frozen

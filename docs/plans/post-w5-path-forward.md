@@ -638,6 +638,28 @@ canonical root shapes.
 - poison tests proving preparation performs no pointer or terminal-value read; and
 - poison tests proving evaluation never repeats member/type catalog lookup.
 
+**Implemented checkpoint.** Commits `ee788e414` and `40ece4446` close W6.4 at `~1K LOC` scale. The ClrMD boundary
+projects exact/null/partial/unavailable reference reads at four- and eight-byte pointer widths without decoding a
+missing suffix. Exact non-null validation retains one counted object-header read, exact runtime module/TypeDef/name/
+method-table identity, and checked object extent. A distinct intrinsic non-root identity contains no fabricated root
+slot or kind; enclosing selection provenance retains the parent FieldDef and pointer/header evidence, so aliases are
+intrinsically equal but path-distinct.
+
+`DumpMemberChainPlan` freezes the complete accepted request bytes, separately tagged chain identity, exact root,
+declared-member certificate, relative terminal/nullable layouts, decoder, direct/conditional and coalesce semantics,
+counted preparation evidence, reached bounds, and explicit unread-value invariants. Preparation receives a capability
+whose reference, target, storage, and terminal operations are poisoned in the test corpus, calls declaration
+certification exactly once, and exposes no partial plan on snapshot/owner/member/coalesce/invariant failure. Host
+terminal-reader overloads consume only the validated non-root owner and frozen descriptor; W6.5 will prove through
+the same poisonable seam that evaluation never re-enters a catalog.
+
+Adverse coverage includes misaligned and zero pointers, partial/unavailable/conflicting headers, foreign snapshots,
+forged owners, exact but unsupported runtime subtypes, alias-field/certificate conflicts, invalid object extent,
+undersized terminal layout, checked-add overflow, missing terminals, and incompatible direct-`Int32` coalescing.
+Closure passes locked restore; strict serial Release at 0 warnings/0 errors; unit 502/502; Fast 121/121; complete
+integration 137/137; focused W4/W6 replay and planning 24/24; Markdown 65 files/89 local destinations; the one-workflow
+headless guard; the excluded-vocabulary scan; and zero skips. W6.5 is the sole active next checkpoint.
+
 ### W6.5 — derived-query evaluation, product facade, and headless conformance
 
 **Scale:** `~1K LOC`.
