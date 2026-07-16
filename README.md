@@ -22,9 +22,9 @@ Core principles:
 ## Current phase
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
-- **Active delivery target:** W6, a deterministic, read-only, fixed-depth member-chain query grounded in a .NET dump.
-  W5 closed the W2/W4 expression-to-result path and selected this slice from meaningful multi-shape synthetic incident
-  evidence. The active [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) freezes an opt-in two-member
+- **Most recently closed delivery target:** W6, a deterministic, read-only, fixed-depth member-chain query grounded in
+  a .NET dump. W5 closed the W2/W4 expression-to-result path and selected this slice from meaningful multi-shape
+  synthetic incident evidence. The completed [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) freezes an opt-in two-member
   tree shape, one complete pinned Roslyn C# expression parse with versioned subset admission, counted reference
   evidence, truthful non-root identity, a narrowly certified field-backed data-property shape, null/coalesce semantics,
   headless replay, and a new multi-shape decision gate. Its W4 baseline has a closed branchless counterfactual-method contract, a validated W4.1
@@ -63,7 +63,7 @@ Core principles:
   first step; [run 29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) was
   rejected before any job executed. The waiver is a W5-only governance exception, not hosted dump evidence, a
   field-readiness claim, or permission to weaken the unchanged workflow.
-- **W6 delivery status:** the detailed W6 and
+- **W6 closure record:** the detailed W6 and
   [`C# expression-front-end`](docs/proposals/architecture/csharp-expression-front-end-contract-proposal.md) contracts
   are current. W6.1 is implemented and pushed at `0dc055e66`: an independent PE/SRM oracle freezes the actual
   record-property/getter/backing-field relations selected by W5, two additional graph families complete the
@@ -88,7 +88,13 @@ Core principles:
   rows, keeps representative counts at zero, rejects promotion, and defers an exact substantive tie. Six independent
   context-attribution boundaries across all four shapes uniquely clear the decision floor and select only
   `AdmitOneConcreteContextAcquisitionScenario`; no successor semantics are implemented by W6. W6.7 repository closure
-  is now the sole active checkpoint. W6's umbrella scale is `~10K LOC` split into `~1K LOC` evidence checkpoints.
+  passed at exact source baseline `440053ad1`: locked restore; strict Release at 0 warnings/errors; unit 502/502; Fast
+  121/121; complete integration 144/144; focused W6 2/2; optimized context 1/1; all with zero skips; plus Markdown,
+  headless-workflow, and authored-vocabulary guards. The owner explicitly overrode W6's hosted-only block on
+  2026-07-16 because the GitHub billing condition cannot be remediated in this milestone. That disposition is not a
+  hosted pass and does not weaken the workflow. W6 is closed; the selected context-acquisition scenario is the next
+  candidate, not an authorized implementation. W6's umbrella scale is `~10K LOC` split into `~1K LOC` evidence
+  checkpoints.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. W4's generated-dump lane additionally acquires the root/helper graph and two correlated fields, detaches all product evidence before execution, produces the exact `0x26AF37BD` result or a provenance-bearing unknown for partial/unavailable input, exercises both interpretation and a body-free pure model, and reproduces all six canonical memory/request/plan/result artifacts after reopening the dump. CoreCLR remains a late outcome oracle, not an input to interpreter shape, dump evidence, preparation, or execution.
 - **Physical scope:** ten source projects contain active contracts or behavior in a fourteen-project solution.
   `Interpreter.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
@@ -357,7 +363,7 @@ A versioned optimized Release modeled-incident report keeps five predeclared axe
 For structured topic lists, document inventory, and recommended reading paths, start here:
 
 - **Repository-wide design and architecture review:** `DESIGN-ARCHITECTURE-REVIEW.md`
-- **Active post-W5 W6 sequence:** `docs/plans/post-w5-path-forward.md`
+- **Completed post-W5 W6 sequence:** `docs/plans/post-w5-path-forward.md`
 - **C# parsing and versioned subset-admission contract:** `docs/proposals/architecture/csharp-expression-front-end-contract-proposal.md`
 - **Completed W5 selection record:** `docs/plans/post-w4-path-forward.md`
 - **Documentation index and TOC-like navigation:** `docs/README.md`

@@ -37,7 +37,7 @@ admit only versioned project-owned W2/W5/W6 tree shapes, implement one opt-in fi
 certified field-backed terminal data properties, then use a larger multi-shape designed portfolio to select or defer
 another prototype increment while keeping field-readiness evidence separate.
 
-W6.1–W6.6 are implemented through pushed checkpoint `93c1f684b`. One pinned complete Roslyn parse feeds only
+W6.1–W6.7 are closed at exact locally verified source baseline `440053ad1`. One pinned complete Roslyn parse feeds only
 versioned project-owned admitted shapes; counted metadata and physical getter bodies issue detached declared-member
 certificates; four/eight-byte reference observations preserve exact/null/partial evidence; intrinsic non-root identity
 is separate from alias-path selection; and a complete canonical plan freezes the request, certificate, relative
@@ -46,8 +46,10 @@ reuses the W2 value decoders without rebinding declarations or invoking getters,
 consumer replays exact and typed non-exact rows through fresh hidden processes while preserving schema v1. The
 schema-v3 usefulness lane now evaluates twenty-four independent incidents across four graph/root shapes, retains zero
 representative rows, rejects promotion and enum-order tie selection, and selects one concrete context-acquisition
-scenario from a uniquely qualified six-incident/four-shape boundary. W6.7 repository closure is the sole active next
-checkpoint; the selected successor is documented but not implemented as W6 work.
+scenario from a uniquely qualified six-incident/four-shape boundary. The complete local matrix and repository guards
+pass with zero skips. The owner explicitly overrode the W6 hosted-only block on 2026-07-16 because the GitHub billing
+condition cannot be remediated in this milestone; this is not hosted pass evidence. The selected successor is
+documented but not implemented or otherwise pre-approved.
 
 The earlier W4 history remains recorded here. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint
@@ -282,13 +284,13 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `plans/post-w5-path-forward.md` | Planning | Plan | Current · Active | Detailed W6 opt-in bounded member-chain contract, certified terminal data-property dependency, evidence/result matrix, headless synthetic corpus, checkpoint sequence, and closure/next-decision gates. |
+| `plans/post-w5-path-forward.md` | Planning | Plan | Complete · Reference | Closed W6 opt-in bounded member-chain contract, certified terminal data-property dependency, evidence/result matrix, headless synthetic corpus, selected context-acquisition successor, and milestone-scoped hosted disposition. |
 | `plans/post-w4-path-forward.md` | Planning | Plan | Complete · Reference | Closed W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, milestone-scoped hosted-gate waiver, and evidence-selected W6 decision. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator direction through closed W5, planned W6 bounded member chains, and explicitly gated research phases. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Read-only dump evaluator direction through closed W6, the evidence-selected context-acquisition candidate, and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
-| `proposals/architecture/csharp-expression-front-end-contract-proposal.md` | Architecture | Contract | Current · Active | Normative pinned Roslyn expression parse, stable invalid/unsupported mapping, versioned W2/W5/W6 tree admission, project-owned projection, compatibility migration, and complex three-bucket conformance contract. |
+| `proposals/architecture/csharp-expression-front-end-contract-proposal.md` | Architecture | Contract | Current · Supporting | Normative pinned Roslyn expression parse, stable invalid/unsupported mapping, versioned W2/W5/W6 tree admission, project-owned projection, compatibility migration, and complex three-bucket conformance contract. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 admitted shape, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
 | `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Reference | Normative closed W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract and executable evidence record. |
@@ -302,7 +304,7 @@ docs/
 | `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical prototype layout and narrow implemented proof boundary. |
 | `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised by the dump-evidence and concrete-IL proofs; explicitly unstable. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate execution-state, domain, and provenance semantics. |
-| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W5 plus the planned W6 headless/property-certificate/member-chain gates and explicitly deferred research suites. |
+| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W6, including headless/property-certificate/member-chain gates, plus explicitly deferred research suites. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft · Research | BCL/IL semantic lifting and projection concepts for later phases. |
 | `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft · Research | Candidate unified registry for later modeled semantics. |
 | `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Current · Supporting | Implemented closed W3 E1/E2 encodings and explicit gates for later opcode expansion. |
@@ -314,7 +316,7 @@ docs/
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft · Active | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft · Reference | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft · Active | Artifact-resolution design for PE/PDB loading and identity validation. |
-| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W5 plus planned W6 reference/property/member-chain coverage. |
+| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W6 reference/property/member-chain coverage. |
 | `plans/future-work-planning.md` | Planning | Plan | Current · Supporting | Detailed evidence-led W0–W4 delivery record and research entry gates. |
 | `plans/requirements-traceability-map.md` | Planning | Matrix | Current · Active | Requirements mapped separately to design, implementation, and validation evidence. |
 | `lib/README.md` | Library Notes | Index | Current · Reference | Navigation and policy for active decisions versus preserved source research. |

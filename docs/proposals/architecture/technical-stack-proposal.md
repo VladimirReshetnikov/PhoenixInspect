@@ -376,8 +376,8 @@ Formatting/analyzers, dependency audit, and scheduled benchmarks are added when 
 
 W5 resolves the earlier test-host question: the repository now has one headless reference consumer for the closed
 expression-to-result facade, without declaring it a stable shipping CLI contract. See the
-completed [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). The same consumer remains the planned external
-boundary for the opt-in W6 member-chain profile in the active
+completed [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). W6 reuses that consumer as the implemented
+external boundary for the opt-in member-chain profile recorded in the completed
 [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md).
 
 

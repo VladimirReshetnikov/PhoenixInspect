@@ -4,7 +4,7 @@
 
 This is the authoritative W0–W4 delivery record and research-entry-gate source for the interpreter and dump-time
 evaluation initiative. The completed W5 sequence is the [Post-W4 Path Forward](post-w4-path-forward.md), and the
-active W6 sequence is the [Post-W5 Path Forward](post-w5-path-forward.md). All three documents remain evidence-led:
+completed W6 sequence is the [Post-W5 Path Forward](post-w5-path-forward.md). All three documents remain evidence-led:
 each admitted milestone must produce a useful executable scenario or remove a concrete obstacle to the next one.
 
 ## 1) Scope lock
@@ -12,8 +12,8 @@ each admitted milestone must produce a useful executable scenario or remove a co
 The active product target is a **deterministic evaluator grounded in a read-only .NET dump**. W1/W2 provide observed
 and derived-query answers; closed W4 adds explicitly counterfactual method evaluation without mutating or claiming
 historical execution of the snapshot. W5's closed expression-to-result composition and usefulness gate live in the
-[Post-W4 Path Forward](post-w4-path-forward.md). The planned opt-in W6 bounded member-chain slice lives in the
-[Post-W5 Path Forward](post-w5-path-forward.md) and has no implementation or validation claim yet.
+[Post-W4 Path Forward](post-w4-path-forward.md). The closed opt-in W6 bounded member-chain slice and its local
+validation record live in the [Post-W5 Path Forward](post-w5-path-forward.md).
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
 enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a

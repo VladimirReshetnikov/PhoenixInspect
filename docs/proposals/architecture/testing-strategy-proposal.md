@@ -2,7 +2,7 @@
 
 > **Lifecycle:** Current · **Roadmap:** Active
 >
-> **Current delivery policy (2026-07).** W0–W5 are the closed dump-evaluator evidence baseline; active W6 tests
+> **Current delivery policy (2026-07).** W0–W6 are the closed dump-evaluator evidence baseline; the completed W6 tests
 > follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). The repository must distinguish checked-in
 > test code, a locally verified result, a CI-enforced gate, and a research proposal. The broad abstract-analysis,
 > virtual-stepping, dynamic, async, and performance matrices are deferred until their entry gates pass.
@@ -946,9 +946,9 @@ execution, including repeated attempts. Neither run is hosted dump evidence. The
 final hosted condition on 2026-07-16, closing the defined milestone scope without weakening the workflow, claiming
 field readiness, or setting policy for the selected next slice.
 
-### Active W6 bounded-member-chain evidence gates
+### Closed W6 bounded-member-chain evidence gates
 
-W6.1–W6.6 have produced executable evidence under the
+W6.1–W6.7 produced executable evidence under the
 [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) and the
 [`C# Expression Front-End and Subset-Admission Contract`](csharp-expression-front-end-contract-proposal.md). W6.2
 pins `Microsoft.CodeAnalysis.CSharp/5.3.0` and explicit C# 14 regular-source/full-text options, parses once, projects
@@ -984,6 +984,12 @@ depth, indexer, and method rows. Raw counts keep representative/external-observa
 at zero. Six root/context-attribution incidents across all four shapes uniquely clear the predeclared floor and select
 `AdmitOneConcreteContextAcquisitionScenario`; depth-three, collection, and method boundaries each remain at two
 incidents/two shapes. An exact substantive tie defers, and attempted promotion of designed rows is rejected.
+
+W6.7 closes locally at exact source baseline `440053ad1`: locked restore; strict Release at 0 warnings/errors; unit
+502/502; Fast 121/121; complete integration 144/144; focused W6 2/2; optimized context 1/1; Markdown 65 files/89 local
+destinations; one headless workflow; a clean authored-scope excluded-vocabulary scan; and zero skips. The owner
+explicitly overrode W6's hosted-only block on 2026-07-16 because the GitHub billing condition cannot be remediated in
+this milestone. That disposition is not hosted pass evidence and leaves the workflow unchanged.
 
 ## 9) Deferred research suites
 

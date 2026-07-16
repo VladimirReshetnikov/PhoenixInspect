@@ -634,7 +634,9 @@ representative/external-observation rows. The selected fixed-depth member-chain 
 full-expression-parse, declaration-certificate, immutable-plan, counted-evaluation, and fresh-process headless
 evidence. Its twenty-four-incident/four-shape usefulness gate retains zero representative rows and selects one
 concrete context-acquisition scenario from a uniquely qualified six-incident boundary; that successor is not part of
-W6 implementation. Repository closure remains active.
+W6 implementation. W6 closes locally at exact source baseline `440053ad1` with all aggregate/focused/guard gates
+passing and zero skips. The owner's separate W6-only hosted disposition records the unremediable GitHub billing block
+without claiming hosted execution or weakening the workflow.
 
 ## 11. Physical topology
 
@@ -679,6 +681,6 @@ No research subsystem enters the active roadmap merely because a proposal exists
 - **Alternative products:** a second product demonstrates reuse without weakening the dump evaluator’s result contract.
 - **Alternative metadata backend:** a corpus records an SRM deficiency and an adapter test demonstrates a better trade-off.
 
-The active W6 sequence, order-of-magnitude LOC scales, and exit tests live in
+The completed W6 sequence, order-of-magnitude LOC scales, and exit tests live in
 `docs/plans/post-w5-path-forward.md`; `docs/plans/future-work-planning.md` retains the W0–W4 delivery record and
 research entry gates.

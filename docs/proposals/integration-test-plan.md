@@ -542,16 +542,16 @@ The owner explicitly waived W5's final hosted-only condition on 2026-07-16, so t
 exact-source local matrix. This exception does not mark the rejected jobs passing, reduce the unchanged selection,
 establish field readiness, or apply to a future milestone.
 
-## Planned W6 bounded-member-chain evidence
+## Closed W6 bounded-member-chain evidence
 
-W6 begins with a physical-shape gate before the expression-front-end migration. Compiler-emitted fixtures and SRM projections must
-agree exactly on the terminal property, getter signature, trivial getter body, and backing field used by the four
-literal W5-selected questions. Only that narrow certified data-property projection, plus a direct terminal field, may
-enter the opt-in `FixedDepthMemberChainV1` plan. Tests must prove the getter is never invoked and that W2/W5 default-
-profile schemas, counts, classifications, and semantics remain unchanged.
+W6 began with a physical-shape gate before the expression-front-end migration. Compiler-emitted fixtures and SRM
+projections agree exactly on the terminal property, getter signature, trivial getter body, and backing field used by
+the four literal W5-selected questions. Only that narrow certified data-property projection, plus a direct terminal
+field, enters the opt-in `FixedDepthMemberChainV1` plan. Tests prove the getter is never invoked and that W2/W5
+default-profile schemas, counts, classifications, and semantics remain unchanged.
 
-W6.2 then pins `Microsoft.CodeAnalysis.CSharp/5.3.0` and explicit C# 14 regular-source/full-text options. Its dump-free
-lane must prove one parse per classification, no parse during preparation, no Roslyn type outside the front-end
+W6.2 pins `Microsoft.CodeAnalysis.CSharp/5.3.0` and explicit C# 14 regular-source/full-text options. Its dump-free lane
+proves one parse per classification, no parse during preparation, no Roslyn type outside the front-end
 boundary, and no metadata or memory access during tree admission. A source-controlled three-bucket corpus distinguishes
 valid-admitted profile shapes, complex valid-but-unsupported C# trees, and malformed/recovered/over-limit invalid
 inputs. Patterns, lambdas/LINQ/interpolation, casts/indexers/chains, query expressions, and switch expressions provide
@@ -593,3 +593,9 @@ and boundary counts, and zero representative/external observations. Six root/con
 four shapes uniquely clear the three-incident/two-shape/two-decision threshold and select only
 `AdmitOneConcreteContextAcquisitionScenario`. A substantive tie explicitly defers, promotion is rejected, two fresh
 portfolio processes produce byte-identical reports, and W5 schema-v1/v2 regression lanes remain passing.
+
+W6.7 closes locally at exact source baseline `440053ad1`: locked restore; strict Release with 0 warnings/errors; unit
+502/502; Fast 121/121; complete integration 144/144; focused W6 2/2; optimized context 1/1; all with zero skips; plus
+Markdown, headless-workflow, and authored-scope vocabulary guards. The owner's explicit 2026-07-16 W6-only override
+of the GitHub billing block is a governance disposition, not hosted execution or pass evidence, and the checked-in
+workflow remains unchanged.

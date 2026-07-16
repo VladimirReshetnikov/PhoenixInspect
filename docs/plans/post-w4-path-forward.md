@@ -4,7 +4,7 @@
 >
 > **Decision:** fund product composition and usefulness evidence before adding interpreter breadth.
 >
-> **Successor:** W5 selected the active W6 bounded member-chain stage in
+> **Successor:** W5 selected the now-completed W6 bounded member-chain stage in
 > [`Post-W5 Path Forward`](post-w5-path-forward.md).
 
 ## 1) Executive decision
@@ -129,7 +129,7 @@ navigation, and freeze the W5 scope before implementation. This checkpoint must 
 - No current-state status or roadmap section describes the W4 product facade, generated-dump result, or hosted
   closure as pending; checkpoint history may still state what was absent at that checkpoint.
 - `future-work-planning.md` remains the W0–W4 record and research-gate source; this document remains the completed W5
-  sequence, while `post-w5-path-forward.md` governs active W6 delivery.
+  sequence, while `post-w5-path-forward.md` governs the later W6 delivery record.
 - Markdown links and headless-workflow guards pass.
 
 ### W5.1 — closed expression request and classifier

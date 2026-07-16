@@ -1,12 +1,13 @@
 # C# Expression Front-End and Subset-Admission Contract
 
-> **Lifecycle:** Current · **Roadmap:** Active · **Milestone:** W6
+> **Lifecycle:** Current · **Roadmap:** Supporting · **Milestone:** W6 (closed)
 >
 > **Decision:** use the complete Roslyn C# expression parser once per bounded request, then admit only explicitly
 > versioned syntax-tree shapes into project-owned binding and evaluation plans.
 >
 > **Implementation status:** implemented at W6.2 checkpoint `68aaf418f` at `~1K LOC` scale, including compatibility
-> and conformance tests. W6.3 and later consume only the project-owned admitted descriptor.
+> and conformance tests. Closed W6 binding and evaluation consume only project-owned admitted descriptors and frozen
+> plans; Roslyn types remain inside the front-end adapter.
 
 ## 1) Decision
 

@@ -367,47 +367,58 @@ misaccounting, or an inconsistent transcript with stable `W4.TargetException.*` 
 root, request, plan, or traversal property. `Interpreter.Product.DumpDebugging` depends only on core abstractions and
 execution; no host, metadata backend, dump session, query product, rooted facade, or runner dependency crosses it.
 
-### W5 expression-to-result facade
+### W5/W6 expression-to-result facade
 
 W5 checkpoints `7c3d52572`/`d88b13c2c`/`fc8a43a7a` add a separate rooted path without changing the standalone W4.7
-fragment:
+fragment. W6 checkpoints extend only the explicitly selected language profile and derived-query route:
 
-- `DumpQueryEngine.ClassifySyntax` reports whether text belongs to the unchanged W2 grammar without preparing,
-  binding, or reading a field.
-- `DumpExpressionPolicy`, `DumpMethodExpressionIdentity`, `DumpExpressionRequest`,
-  `DumpExpressionClassification`, and `DumpExpressionClassifier` preserve exact expression/root text, the single
-  admitted method identity, evaluation mode, deterministic bounds, model/policy versions, canonical bytes, and stable
-  classification diagnostics.
+- `DumpQueryEngine.ClassifySyntax` reports whether text belongs to the unchanged W2 shape without preparing, binding,
+  or reading a field. Its internal front end performs the one complete pinned Roslyn expression parse shared with the
+  W5/W6 recognizers; no Roslyn type crosses the adapter boundary.
+- `DumpExpressionLanguageProfile`, `DumpCSharpExpressionProfile`, `DumpExpressionPolicy`,
+  `DumpMethodExpressionIdentity`, `DumpMemberChainExpressionIdentity`, `DumpExpressionRequest`,
+  `DumpExpressionClassification`, and `DumpExpressionClassifier` preserve exact expression/root text, the admitted
+  method or member-chain identity, evaluation mode, deterministic bounds, profile/model/policy versions, canonical
+  bytes, and stable classification diagnostics. `FrozenW5` remains the default; `FixedDepthMemberChainV1` is opt-in.
 - `DumpMethodAcquisitionFacade.Acquire` owns bounded root/module/type/caller/helper/field reacquisition and returns
   either a detached `CounterfactualDumpExecutionBinding` or a typed `DumpMethodAcquisitionFailure`; it exposes no
   live ClrMD lifetime to later preparation/execution.
+- `ClrmdDeclaredDataMemberCertificate`, its declared-type/relative-field/property records, and
+  `ClrmdObjectReferenceObservation`/`ClrmdReferencedObjectInfo` retain counted declaration, pointer, target-header,
+  extent, intrinsic-identity, and alias-path evidence without invoking a getter or treating non-exact evidence as null.
+- `DumpMemberChainPreparationFacade`, `DumpMemberChainPreparationResult`, and immutable `DumpMemberChainPlan` bind one
+  reference hop plus one direct field or exactly certified field-backed terminal property and freeze every descriptor,
+  decoder, access/fallback choice, evidence item, bound, canonical projection, and identity before evaluation.
+- `DumpMemberChainEngine.Evaluate` consumes only that plan, performs one reference observation and descriptor-only
+  terminal reads, applies null-conditional/coalescing behavior only to exact nulls, and never repeats declaration
+  lookup, invokes a getter, or performs compiler binding.
 - `DumpExpressionEvaluator.Evaluate` routes an accepted W2 request to the existing
-  `EvaluationResult<DumpQueryValue>` and an accepted method request to the existing W4 preparation/execution path.
+  `EvaluationResult<DumpQueryValue>`, an accepted method request to the existing W4 preparation/execution path, and an
+  explicitly profiled W6 member chain to the preparation facade and frozen-plan engine.
   `DumpExpressionEvaluationOutcome` is a strict union that preserves those original results plus typed
   classification, acquisition, and preparation failures; failure cases acquire no invented common semantic mode.
 
-This remains the current pre-W6.2 interface snapshot. The active
-[C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md) plans one
-internal Roslyn parse, project-owned W2/W5/W6 descriptors, and no parse during preparation. Update this catalog when
-that implementation lands; documentation does not make the new interface current prematurely.
+The [C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md) governs
+the implemented one-parse boundary, project-owned W2/W5/W6 descriptors, and no-parse preparation/evaluation rule.
 
-W5.4/5.5 add no reusable public API. `Interpreter.Headless.ReferenceConsumer` is an internal, independently launched
-prototype host whose two command modes emit versioned scenario and usefulness reports. Its generated corpus carries
-an explicit corpus kind; schema v2 rejects corpus-kind mixing, requires predeclared fixture/outcome contracts for
-meaningful synthetic incidents, and keeps controlled/generated, designed/synthetic, and representative rows separate.
-The twelve-incident synthetic portfolio selects fixed-depth member navigation for prototype design while its
+`Interpreter.Headless.ReferenceConsumer` remains an internal, independently launched prototype host rather than a
+stable CLI. Schema v1 preserves W5 scenario replay, schema v2 adds generated W6 exact and typed non-exact rows without
+changing the W5 path, and schema v3 evaluates twenty-four independent designed incidents across four graph shapes.
+Controlled/generated, designed/synthetic, and representative rows remain separate; promotion is rejected and the
 representative/external-observation denominator remains zero.
 
 ## Deliberately absent
 
-The admitted W5 expression surface still does not contain frame/local/argument/static roots, exact-null roots, member chains,
-null-conditional access, interpreted properties/getters, calls, indexers, arrays, reflection, construction, implicit
-loading, conversions, general operators, or any method expression except exact `root.GetMarkerSummary()`. W3's public
+The admitted W6 expression surface still does not contain frame/local/argument/static roots, context acquisition,
+member chains deeper than the one-reference/one-terminal profile, collection/indexer/array navigation, arbitrary
+property execution, reflection, construction, implicit loading, conversions, general operators, or any method
+expression except exact `root.GetMarkerSummary()`. Exact-null member results, null-conditional access, and typed
+coalescing exist only inside `FixedDepthMemberChainV1`; complete C# binding/evaluation remains absent. W3's public
 interpreter activation and W4.2–W4.7's provenance-aware domain/machine, graph, interpreted-call, and pure-model
 extensions remain architecture proofs rather than general query-language features. W4.6 supplies structural selection, modeled-return lineage, frozen-
 capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. W4.8 now supplies
 the rooted request/plan/result facade and runner; W4.9 supplies the ClrMD exact/degraded field producer, detached dump
-binding, and generated-dump reopen/replay result; W5 exposes only their one explicitly admitted composition. Exact
+binding, and generated-dump reopen/replay result; W5/W6 expose only their explicitly admitted compositions. Exact
 W4 hosted closure passed in run 29463426083. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.

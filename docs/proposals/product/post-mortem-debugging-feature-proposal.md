@@ -2,14 +2,13 @@
 
 > **Lifecycle:** Draft · **Roadmap:** Active
 >
-> W1–W5 are closed for their stated milestone-selected scopes. W5 made the W2/W4 capability reachable through one
-> expression-to-result path and used twelve independently dumped synthetic incidents to select fixed-depth member
-> navigation; it remains synthetic evidence rather than a
-> field-readiness claim. The active successor is the
-> [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md): an opt-in bounded member-chain query with counted
-> reference evidence, narrowly certified field-backed terminal properties, one complete Roslyn expression parse with
-> versioned subset admission, deterministic replay, and a new twenty-four-incident/four-shape synthetic decision
-> corpus.
+> W1–W6 are closed for their stated milestone-selected scopes. W5 made the W2/W4 capability reachable through one
+> expression-to-result path and selected fixed-depth member navigation. The completed
+> [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) records how W6 implemented that opt-in bounded query with
+> counted reference evidence, narrowly certified field-backed terminal properties, one complete Roslyn expression
+> parse with versioned subset admission, deterministic replay, and a twenty-four-incident/four-shape synthetic
+> decision corpus. This remains synthetic evidence rather than a field-readiness claim; W6 selected one concrete
+> context-acquisition scenario as a candidate without implementing or pre-approving it.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -734,7 +733,7 @@ All evaluation is cancelable and doesn’t block the rest of the UI.
 ## 13) Milestones (Proposed)
 
 The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; completed W5 sequencing is in
-`docs/plans/post-w4-path-forward.md`; active W6 sequencing is in `docs/plans/post-w5-path-forward.md`:
+`docs/plans/post-w4-path-forward.md`; completed W6 sequencing is in `docs/plans/post-w5-path-forward.md`:
 
 * **W0:** truthful baseline, CI, and deterministic smoke evidence.
 * **W1:** real dump-memory field/string read with typed evidence outcomes.
@@ -774,17 +773,19 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; complete
   observation rows, so no field-readiness rate is claimed and external evidence may later reverse the direction. The
   owner closed W5 under an explicit milestone-only exception after hosted jobs were rejected before executing; those
   jobs remain absent evidence and the exception does not carry into W6.
-* **W6:** active closure sequence under the
+* **W6:** closed prototype sequence under the
   [Post-W5 Path Forward](../../plans/post-w5-path-forward.md). It adds only an explicit
   `FixedDepthMemberChainV1` profile: one root reference field, one direct terminal field or exactly certified trivial
   field-backed data property, null-aware access, and existing W2 terminal value decoding. The companion
   [C# Expression Front-End and Subset-Admission Contract](../architecture/csharp-expression-front-end-contract-proposal.md)
   replaces parser growth with one pinned Roslyn parse and ordered W2/W5/W6 tree recognizers; valid C# outside those
-  profiles remains unsupported. W6.1–W6.6 are implemented through `93c1f684b`: emitted-shape proof, frozen
-  declarations/plans, counted evaluation, headless generated conformance, and twenty-four independent synthetic dumps
+  profiles remains unsupported. W6.1–W6.7 are closed through local source baseline `440053ad1`: emitted-shape proof,
+  frozen declarations/plans, counted evaluation, headless generated conformance, and twenty-four independent synthetic dumps
   across four structural shapes all replay deterministically. Six root/context-attribution incidents across all four
   shapes uniquely select `AdmitOneConcreteContextAcquisitionScenario`; the selection advances prototype design only
-  and is not implemented by W6. Repository closure remains active.
+  and is not implemented by W6. Exact local closure baseline `440053ad1` passes the complete matrix and repository
+  guards with zero skips. The owner's W6-only hosted disposition records the unremediable GitHub billing block without
+  claiming a hosted pass or weakening the workflow.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

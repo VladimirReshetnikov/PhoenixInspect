@@ -1,13 +1,14 @@
 # Post-W5 Path Forward: W6 Bounded Member-Chain Query
 
-> **Lifecycle:** Current · **Roadmap:** Active
+> **Lifecycle:** Complete · **Roadmap:** Reference
 >
 > **Decision:** implement one fixed-depth, null-aware member-chain query slice selected by W5.5b, using one complete
 > Roslyn C# expression parse followed by versioned project-owned tree-shape admission; no other successor is
 > pre-approved.
 >
 > **Evidence boundary:** W6 is a prototype-design milestone grounded in predeclared synthetic incidents. It does not
-> establish field readiness, and W5's hosted-gate exception does not carry forward.
+> establish field readiness. W5's hosted disposition did not carry forward; the owner recorded a separate W6-only
+> disposition on 2026-07-16 after the local matrix closed.
 
 ## 1) Executive decision
 
@@ -16,7 +17,7 @@ across request-pipeline and batch-pipeline shapes. Four questions stopped first 
 three at context acquisition and one at method execution. The deterministic W5.5b ranking therefore selected
 `AdmitFixedDepthMemberChain`.
 
-The next stage is **W6 — bounded member-chain query**:
+The selected stage was **W6 — bounded member-chain query**:
 
 ```csharp
 root.Failure.Code
@@ -754,7 +755,7 @@ cannot manufacture a successor. W6 records this action but does not implement it
 
 Focused W6.6 validation passes over all twenty-four dumps; the historical W5 headless/usefulness lanes pass 4/4 on
 their unchanged schema-v1/v2 paths; strict Release compilation reports zero warnings/errors; the excluded-vocabulary
-scan is clean; and zero tests are skipped. W6.7 is the sole active checkpoint.
+scan is clean; and zero tests are skipped. W6.7 subsequently closed the repository milestone as recorded below.
 
 ### W6.7 — repository closure
 
@@ -771,11 +772,25 @@ W6 only at the exact pushed commit that satisfies its required gates.
 - W2/W4/W5 canonical encodings, default classifications, schemas, outcomes, and gates remain unchanged; historical
   artifact-derived goldens stay preserved and current goldens carry the explicit W6.1 identity refresh;
 - Markdown and headless-workflow guards pass;
-- the exact pushed commit's required hosted jobs actually execute and pass; and
+- the exact pushed commit's required hosted jobs actually execute and pass, absent an explicit W6-only owner
+  disposition; and
 - the selected post-W6 action is documented but not silently implemented as W6 work.
 
-W5's 2026-07-16 hosted-only exception applies only to W5. W6 remains open if its hosted jobs do not execute, unless
-the owner gives a new explicit milestone-specific disposition.
+**Implemented checkpoint.** W6.7 closes the milestone at exact source baseline `440053ad1abcfb9d165c74bbf697774207289305`
+with an order-of-magnitude documentation scale of `~100 LOC`. Locked restore passes; the strict serial Release solution
+build reports 0 warnings and 0 errors; unit passes 502/502; Fast passes 121/121; the complete integration assembly
+passes 144/144; focused W6 passes 2/2; optimized context passes 1/1; and every lane reports zero skips. Markdown link
+verification passes for 65 files and 89 local destinations, the one managed workflow passes the headless invocation
+guard, and the authored-scope excluded-vocabulary scan is clean.
+
+GitHub billing remains outside the repository's control. The owner explicitly overrode W6's hosted-only closure block
+on 2026-07-16 and directed the milestone to proceed. This disposition does not claim a hosted job executed or passed,
+does not weaken the checked-in four-job workflow, does not establish field readiness, and does not automatically apply
+to any successor milestone. W6 is closed for its defined prototype scope. The evidence-selected
+`AdmitOneConcreteContextAcquisitionScenario` action is documented but not implemented or pre-approved as W7.
+
+W5's 2026-07-16 hosted-only exception applied only to W5. The separate W6 disposition above is the required new
+milestone-specific decision; neither disposition carries into a successor.
 
 ## 8) Synthetic scenario design
 
@@ -933,8 +948,8 @@ W6 closes only when all of the following are proven at current state:
 - every required hosted job actually executes and passes at the exact pushed closure commit, absent a new explicit
   W6-only owner disposition.
 
-Until those conditions hold, W6 remains active. Broader navigation, new execution semantics, virtual stepping, and
-additional product surfaces remain research.
+Those conditions are satisfied under the recorded W6-only hosted disposition. Broader navigation, new execution
+semantics, virtual stepping, and additional product surfaces remain research.
 
 ## 12) Delivery discipline
 
