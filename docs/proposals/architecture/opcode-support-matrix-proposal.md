@@ -168,7 +168,8 @@ successful nodes, fields, and call sites in canonical structural order. Every re
 is acquired, decoded, and typed before a plan exists. Shared MethodDefs are one graph node; self and mutual cycles
 fail; definition/signature conflicts remain `Conflict`; and every failure returns no partial plan. Required logical
 depth counts the root at one. Fixed internal ceilings of 64 distinct methods and 1,024 distinct-method/field/call-site
-units bound construction but do not implement W4.8's configurable traversal budget.
+units bound construction; W4.8a layers a separate configurable traversal budget and ordered product accounting over
+those caps.
 
 The exact fixture freezes two method nodes, two distinct fields, one call edge at caller IL offset 12, required depth
 two, and five internal units. The focused planner lane passed 35/35 and fixture lane 6/6; complete unit 250/250, fast
@@ -308,9 +309,8 @@ Historical full-W4 projections remain original 16,860–25,310, post-W4.2 18,532
 19,228–25,728, post-W4.4 21,179–26,779, post-W4.5a 24,013–29,313, W4.5 closure 25,017–29,417, post-design-audit
 27,217–32,117, W4.6a checkpoint 28,376–32,476, first W4.6b recalibration 28,876–33,276, post-split
 28,826–33,726, post-W4.6b checkpoint 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
-realized 3,690 LOC against their historical 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC,
-W4.8 at 2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC
-for full W4.
+realized 3,690 LOC against their historical 3,400–3,750 estimate. W4.7 subsequently realized 2,801 LOC, W4.8 11,924
+LOC, and W4.9 2,698 LOC, bringing full W4 implementation to 41,892 LOC; exact pushed hosted closure remains.
 
 ## 4. Later gates
 

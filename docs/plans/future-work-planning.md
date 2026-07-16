@@ -41,8 +41,9 @@ worker/corpus code remains separately scoped non-gating prototype work. W4 is no
 `GetMarkerSummary` workflow below; W4.1's fixture gate, W4.2's unknown E1/E2 kernel, W4.3's dump-free non-exact
 field seam, W4.4's body-free call resolution/frozen graph, W4.5's exact plus explained-unknown prepared-graph
 execution, and W4.6's structural model admission, lineage, machine transfer, and compiler/SRM conformance have landed,
-and W4.7's issuer-certified standalone target-outcome projection and compiler/SRM replay have landed, while W4.8–W4.9
-remain admitted work. W3 is complete for its defined non-cybersecurity architecture-validation scope
+W4.7's issuer-certified standalone target-outcome projection/compiler replay, W4.8's complete canonical product
+runner, and W4.9's detached ClrMD generated-dump corpus have landed. Exact pushed hosted closure is the remaining W4
+gate. W3 is complete for its defined non-cybersecurity architecture-validation scope
 at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
@@ -368,17 +369,19 @@ owns the exact behavior. Closure requires all of these executable gates:
 
 ### W4 — Unknown-aware method evaluation
 
-**Status:** **Active; W4.1–W4.7b are implemented and locally validated, while W4.8–W4.9 remain admitted work.**
+**Status:** **Active closure candidate; W4.1–W4.9c are implemented and locally slice-validated, while W4.9d owns the
+complete local gate and exact pushed hosted evidence.**
 
-**Current projected hand-written implementation surface:** 31,670–33,970 LOC: 27,270 realized through W4.7b plus an
-estimated 4,400–6,700 across two remaining non-overlapping, independently valuable slices. The admitted baseline
-was 16,860–25,310 LOC. The original nine-slice plan has fourteen tracked rows because W4.4 and W4.5 were each
-split once and W4.6 was split into four independently delivered sub-slices; every remaining slice has an upper estimate
-of at most 3,500 LOC, and the umbrella is not one work package. The earlier 18,532–26,132, 19,228–25,728,
+**Realized hand-written implementation surface:** 41,892 LOC: 27,270 through W4.7, 11,924 across W4.8a–f, and 2,698
+across W4.9a–c. W4.9d changes documentation and executes unchanged gates, so it carries zero implementation LOC. The
+admitted baseline was 16,860–25,310 LOC. The original nine-slice plan has 22 tracked implementation/closure rows
+because W4.4, W4.5, W4.8, and W4.9 were delivery-split and W4.6 was split into four independently delivered
+sub-slices. The earlier 18,532–26,132, 19,228–25,728,
 21,179–26,779, 24,013–29,313, W4.5-closure 25,017–29,417, post-W4.6-design-audit 27,217–32,117,
 W4.6a-checkpoint 28,376–32,476, first W4.6b recalibration 28,876–33,276, post-split 28,826–33,726,
 post-W4.6b 28,879–33,279, pre-closure W4.6c/d 30,079–33,729, and post-W4.6 closure 31,069–34,319 projections
-remain historical calibration.
+plus the later 31,670–33,970 projection remain historical calibration. W4.8e realized 3,605 LOC, 105 above the
+3,500-LOC planning ceiling; the closure ledger records that miss explicitly.
 
 **Goal:** extend the product from read-only derived queries to explicitly counterfactual method evaluation.
 
@@ -608,10 +611,23 @@ focused W4.7b 2/2; combined W4.7 17/17; compiler differential class 23/23; Markd
 one-workflow headless guard. All behavioral lanes were headless, included `Scope!=Cybersecurity`, and had zero skips.
 External-worker 4/4 remains historical W4.6 evidence; it was deliberately not rerun or counted for W4.7.
 
-The former W4.7 estimate of 2,200–3,150 LOC and its 31,069–34,319 full-W4 projection are now historical. W4.8 remains
-2,400–3,500 LOC and W4.9 remains 2,000–3,200 LOC. Remaining W4.8–W4.9 is 4,400–6,700 LOC, producing the current
-31,670–33,970 LOC projection. Configurable request traversal limits, common product facade/runner/result projection,
-ClrMD non-exact import/dump grounding, dump-grounded W4 results, and hosted exact-commit closure remain pending.
+The former W4.7 estimate of 2,200–3,150 LOC and its 31,069–34,319 full-W4 projection are historical. W4.8 checkpoints
+`4f268a4bc` through `44b050ec8` implement configurable traversal, canonical request/observation/plan/result schemas,
+private typed runtime binding and recording memory, authoritative preparation, common projection, and transition-
+validating execution. Same/fresh-object coverage freezes the exact synthetic rooted result SHA-256
+`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`. W4.8 realizes 11,924 LOC.
+
+W4.9a `24bd8fe6f` implements the atomic ClrMD execution-evidence graph; W4.9b `2d41f528d` implements the product-owned
+detached rooted binding/memory; and W4.9c `a8b5f32f0` executes exact, partial, and unavailable rows under interpreted
+and body-free modeled plans. ClrMD is disposed before execution, and dump reopen/rebind reproduces all six canonical
+memory/request/plan/result artifacts before late disk/CoreCLR comparison. W4.9a–c realize 1,389/791/518 LOC, or 2,698
+total. Focused generated dump passes 1/1, ordinary dump 6/6, and Fast 88/88 headlessly with zero skips. W4.9d owns the
+complete local gate, exact pushed hosted evidence, and closure record.
+
+W4.9d local closure passes locked restore; a strict sixteen-project Release build at zero warnings/errors; complete
+unit 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
+destinations; and the one-workflow headless guard. Every behavioral filter includes `Scope!=Cybersecurity`, with zero
+skips. Exact pushed hosted evidence remains.
 
 **Admitted work slices**
 
@@ -629,16 +645,24 @@ ClrMD non-exact import/dump grounding, dump-grounded W4 results, and hosted exac
 | W4.6c — Modeled machine transfer | Add frozen-capability-only invocation/transfer, attempt records, logical-versus-active depth witnesses, exact terminal validation, and unit conformance. | 2,550–2,750 | 2,734 |
 | W4.6d — Compiler/SRM conformance | Prove exact, degraded, repeated, and fresh-session interpreted/model agreement over the compiler-emitted W4 fixture without helper-body acquisition or execution-time metadata/model rereads. | 850–1,000 | 956 |
 | W4.7 — Target-outcome stop-on-throw contract | Define the standalone target-outcome/canonical fragment for W3's exact-null latch without admitting a fabricated helper/model throw; handler search and transfer remain excluded. | 2,200–3,150 | 2,801 |
-| W4.8 — Product canonical facade, runner, and traversal budget | Expose a bounded `CounterfactualExecution` result with assumptions, models, effects, reached bounds, stable diagnostics, and common-projector integration of W4.7's standalone target fragment; add configurable traversal charging to graph preparation without claiming the non-null rooted facade reaches that fragment. | 2,400–3,500 | — |
-| W4.9 — Dump corpus, replay, and CI closure | Execute exact and degraded generated-dump cases, compare CoreCLR where applicable, reproduce canonical results after reopen/rebind, and close the headless hosted gate. | 2,000–3,200 | — |
+| W4.8a — Traversal accounting | Add configurable ordered charges, exact exhaustion, and retained budget context without weakening fixed internal caps. | Delivery split of original W4.8 2,400–3,500 estimate | 737 |
+| W4.8b — Canonical request and issued plan | Freeze schema-v1 request, field observations, complete plan identity, issuer authority, and defensive projections. | Delivery split of original W4.8 2,400–3,500 estimate | 2,389 |
+| W4.8c — Typed runtime binding | Privately bind domain, memory, receiver, arguments, and recording evidence to the exact canonical request. | Delivery split of original W4.8 2,400–3,500 estimate | 1,564 |
+| W4.8d — Authoritative preparation | Validate raw input, evidence, graph, traversal, depth, observations, and activation in a deterministic fail-closed pipeline. | Delivery split of original W4.8 2,400–3,500 estimate | 1,732 |
+| W4.8e — Common canonical result | Project rooted and standalone axes, accounting, context, values/prefixes, diagnostics, and terminal attempts into one immutable result. | Delivery split of original W4.8 2,400–3,500 estimate | 3,605 |
+| W4.8f — Execution runner | Validate issued transitions and cover exact/degraded/budget/cancel/failure/model/replay behavior without late resolution. | Delivery split of original W4.8 2,400–3,500 estimate | 1,897 |
+| W4.9a — ClrMD execution graph | Correlate a bounded counted method graph and exact/partial/unavailable required-field evidence atomically. | Delivery split of original W4.9 2,000–3,200 estimate | 1,389 |
+| W4.9b — Detached dump binding | Derive rooted canonical identity and persistent read-only memory from issuer-validated dump evidence. | Delivery split of original W4.9 2,000–3,200 estimate | 791 |
+| W4.9c — Generated-dump corpus | Execute six interpreted/modeled exact/degraded rows and reproduce canonical artifacts after close/reopen/rebind. | Delivery split of original W4.9 2,000–3,200 estimate | 518 |
+| W4.9d — Local/hosted closure | Reconcile documentation, run every local gate, and record exact pushed hosted evidence. | 0 implementation LOC; documentation and unchanged gate execution excluded | 0 |
 
 Instruction budget remains the implemented W3 baseline. W4.4 computes required logical depth and graph traversal
 usage under fixed internal safety caps, but does not apply request policy. W4.5 applies a machine-supplied maximum
 logical call depth before prepared-graph activation, reports logical/frame high water, and carries exact or explained
 unknown values across admitted interpreted calls. W4.6 applies the same required/configured logical-depth envelope to
 the frame-free model boundary, charging one instruction only on a completed exact/grounded-unknown transfer and
-recording non-transferring attempts without semantic budget/event mutation. W4.8 adds configurable traversal charging and ordered
-charge/result context to the already frozen graph discovery.
+recording non-transferring attempts without semantic budget/event mutation. W4.8 adds configurable traversal charging,
+ordered charge/result context, canonical product projection, and authoritative execution to the already frozen graph.
 Allocation is unadmitted by the selected workflow, so no allocation operation consumes a budget and W4 adds no
 dormant allocation counter. A later allocation scenario must define the operation, charging point, result behavior, and
 tests before an allocation budget becomes an applied contract.
@@ -647,20 +671,22 @@ tests before an allocation budget becomes an applied contract.
 
 - W1–W3 are closed for their stated scopes. **Satisfied.**
 - The selected `GetMarkerSummary` workflow demonstrates method-execution value beyond W2's one-root/one-field query.
-  **Satisfied for roadmap admission and fixture evidence by W4.1; product execution belongs to later slices.**
+  **Satisfied by W4.1 fixture evidence and W4.9 generated-dump product execution.**
 - Effects, deterministic budgets, degraded-evidence behavior, product truth language, and explicit exclusions are fixed
-  by the normative W4 contract. **Satisfied for design admission; W4.1–W4.6d implementation evidence is recorded above.**
+  by the normative W4 contract. **Satisfied; W4.1–W4.9 implementation evidence is recorded above.**
 - Each admitted work slice has an explicit estimate of at most 3,500 hand-written implementation LOC before work begins.
-  **Satisfied by the table above.**
+  **Historically satisfied by the pre-work plan; W4.8e later realized 3,605 LOC and the overrun is retained.**
 
 **Exit criteria for the umbrella**
 
-- Selected methods tolerate missing inputs without fabricating concrete values.
-- Differential and degraded-evidence tests cover every supported opcode/call family.
-- Product language consistently describes results as counterfactual, not historical replay.
+- Selected methods tolerate missing inputs without fabricating concrete values. **Satisfied locally.**
+- Differential and degraded-evidence tests cover every supported opcode/call family. **Satisfied locally.**
+- Product language consistently describes results as counterfactual, not historical replay. **Satisfied locally.**
 - The exact pushed closure commit passes all required headless hosted jobs with `Scope!=Cybersecurity`, and the realized
-  hand-written implementation LOC ledger is recorded without counting documentation or generated output.
+  hand-written implementation LOC ledger is recorded without counting documentation or generated output. **Ledger
+  satisfied; local gate satisfied and exact pushed hosted gate pending W4.9d.**
 - External-input cybersecurity behavior remains an explicit accepted exclusion, not an unfilled W4 evidence gate.
+  **Satisfied.**
 
 ## 4) Research backlog and entry gates
 
@@ -710,7 +736,7 @@ A UI trust badge may summarize them but never replaces them in contracts or test
 
 - W3 admits EH-free bodies only and latches one exact typed-null `ldfld` as a terminal target exception without handler
   transfer or continuation.
-- W4.7 defines the retained exact-null target-outcome/canonical fragment for later W4.8 result-projector integration.
+- W4.7 defines the retained exact-null target-outcome/canonical fragment integrated by W4.8's common result projector.
   It has no rooted product request or plan identity. The closed non-throwing helper/model cannot fabricate
   a broader exception case, and handler transfer remains separate.
 - Full handler search, filters, unwind, `finally`/`fault`, and cross-frame propagation are prerequisites for debugger-grade exception stepping, not implicit refinements.
@@ -775,9 +801,10 @@ W4 admission decisions now applied:
    depth enforcement, frame events, and logical/frame high-water reporting. W4.5b adds atomic explained-unknown
    call/return lineage, append-only canonical node kinds, and same/fresh-session replay. W4.6 adds exact/no-effect
    structural model selection, atomic modeled-return lineage, frozen-capability-only invocation/transfer, operational
-   attempts, separate logical/frame depth witnesses, and exact/degraded/fresh compiler conformance. Configurable
-   request traversal policy, target-outcome and product projection, ClrMD non-exact import, dump-grounded W4 results,
-   and hosted umbrella closure remain later work.
+   attempts, separate logical/frame depth witnesses, and exact/degraded/fresh compiler conformance. W4.7 adds the
+   standalone target fragment, W4.8 adds configurable traversal plus common product preparation/execution/projection,
+   and W4.9 adds detached ClrMD grounding plus close/reopen generated-dump replay. Exact hosted umbrella closure is the
+   sole remaining W4 step.
 
 ### Optimized-dump recoverability measurement
 

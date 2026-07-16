@@ -11,7 +11,8 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised non-cybersecurity scopes. W3's hardened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.7b have since landed.
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.9c have since landed;
+exact pushed hosted W4 closure remains.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -84,10 +85,10 @@ dumps 5/5 and 1/1, focused 15/15 plus 2/2 (17/17 combined), compiler differentia
 with zero skips and `Scope!=Cybersecurity`. The literal fragment SHA-256 is
 `a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
 
-Remaining W4.8–W4.9 is 4,400–6,700 LOC: W4.8 remains 2,400–3,500 and W4.9 remains 2,000–3,200. Full W4 now
-projects to 31,670–33,970 LOC. Preserve the original 16,860–25,310 baseline and historical
+W4.8a–f realize 11,924 LOC and W4.9a–c realize 2,698 LOC, bringing full W4 realization to 41,892 LOC excluding
+documentation and generated lockfile changes. Preserve the original 16,860–25,310 baseline and historical
 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476,
-28,876–33,276, 28,826–33,726, 28,879–33,279, 30,079–33,729, and 31,069–34,319 projections:
+28,876–33,276, 28,826–33,726, 28,879–33,279, 30,079–33,729, 31,069–34,319, and 31,670–33,970 projections:
 
 1. recover a value from actual dump memory with explicit evidence and failure reasons;
 2. parse a restricted expression, bind one typed snapshot root and field into an immutable plan, then evaluate that
@@ -98,8 +99,9 @@ projects to 31,670–33,970 LOC. Preserve the original 16,860–25,310 baseline 
    precision lineage; W4.4 proves exact direct-call identity and complete rooted-acyclic graph preparation; and
     W4.5 executes exact and explained-unknown direct calls with deterministic frames, depth accounting, and canonical
     call/return lineage; and W4.6 freezes and executes the exact/no-effect pure-model leaf with atomic lineage/attempt
-    accounting and compiler conformance; and W4.7 validates a standalone exact-null target fragment without inventing
-    rooted reachability. The common product facade, ClrMD dump grounding, and hosted closure remain W4.8–W4.9 work.
+    accounting and compiler conformance; W4.7 validates a standalone exact-null target fragment without inventing
+    rooted reachability; W4.8 supplies the canonical product facade/runner; and W4.9 grounds six exact/degraded
+    interpreted/modeled rows in detached ClrMD dump evidence with reopen replay. Exact hosted closure remains.
 
 Virtual stepping, CFG/fixpoint analysis, async and dynamic lifting, sandbox runtime hosting, live speculation, and other product surfaces are research backlog. They do not drive packages or active contracts.
 
@@ -371,8 +373,8 @@ reachable complete definition and typed admission, canonical structural node/fie
 shared MethodDef, the longest root-to-method logical depth, and distinct-method/field/edge internal units. Discovery is
 root-first and call-site ordered for deterministic failures; successful projections are canonically ordered. Cycles,
 identity/signature disagreement, malformed/unsupported tokens, and cap exhaustion expose no partial plan; conflicts
-remain conflicts. The fixed 64-method/1,024-unit caps are internal safety limits rather than W4.8's configurable
-traversal budget.
+remain conflicts. The fixed 64-method/1,024-unit caps remain internal safety limits; W4.8a layers a separate configurable
+ordered traversal budget and exact product accounting over them.
 
 The exact fixture freezes two nodes, two fields, one edge at caller IL offset 12, required logical depth two, and five
 internal units. The legacy `IlMachine` continues using its call-free admission path and still rejects before the call.
@@ -412,8 +414,8 @@ model identities, attempt chronology, depth, counters, or terminal witnesses.
 
 W4.6d executes the compiler-emitted root through that boundary in exact, mixed partial/exact, and dual-unknown cases.
 Its frozen capability is the only runtime model authority: graph execution does not consult the registry, resolver,
-descriptor, target body, or selector again. The rooted counterfactual facade/request/plan/result, ClrMD dump-grounded
-execution, and hosted umbrella closure remain W4.8–W4.9 work.
+descriptor, target body, or selector again. W4.8 subsequently projects this behavior through the rooted product runner,
+and W4.9 executes it from detached dump evidence without acquiring the helper body.
 
 ### 4.7 Standalone target-outcome projector
 
@@ -426,8 +428,35 @@ events. Certification remains outside canonical content equality.
 The schema-v1 fragment fixes the five product axes and retains the exception, structural one-method trace,
 initial/used/remaining instruction units, events, one stable diagnostic, canonical bytes, and SHA-256. It deliberately
 contains no snapshot, root, request, plan, or traversal identity and therefore does not claim that the non-null rooted
-W4 scenario reaches it. The assembly depends only on core abstractions/execution. W4.8 owns the common rooted facade,
-runner, configurable traversal charging, and result-projector integration.
+W4 scenario reaches it. The assembly depends only on core abstractions/execution. W4.8 integrates it into the common
+result projector while preserving that absence of rooted reachability.
+
+### 4.8 Canonical product preparation and execution
+
+W4.8 adds a caller-configurable traversal ledger, schema-v1 request/field-observation/issued-plan/result artifacts, and
+private typed runtime bindings. Preparation owns authority and validates raw inputs, evidence, fresh-domain values,
+graph traversal/depth, field observations, and activation in a fixed fail-closed order. The recording memory accepts
+only the planned receiver and fields and retains temporal load attempts without permitting mutation or allocation.
+
+The execution runner activates one issued frozen graph, consults no resolver or model registry, validates every
+machine-issued transition and operational envelope, and projects exact, explained-unknown, budget, cancellation,
+blocked, invalid, modeled, and standalone-target outcomes through one immutable result vocabulary. Same/fresh-object
+reconstruction freezes exact synthetic rooted result SHA-256
+`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`.
+
+### 4.9 Detached ClrMD execution binding
+
+W4.9's host resolver admits a bounded canonical set of counted dump method bodies and correlates exact, partial, or
+unavailable `Int32` reads only when snapshot, module, root selection, owner, runtime layout, metadata field, address,
+and root-body operand membership agree. The product binder derives canonical root/receiver/field identities and a
+deeply immutable persistent memory; no ClrMD object, stream, path, callback, or native handle reaches preparation or
+execution.
+
+The generated-dump corpus acquires `GetMarkerSummary`, optional interpreted `CombineMarkers`, both marker fields, and
+the strong root, disposes ClrMD, and runs exact/partial/unavailable interpreted and body-free modeled plans. Exact rows
+return `0x26AF37BD`; degraded rows return provenance-bearing typed unknowns. Reopening the same dump reproduces all six
+detached memory, request, plan, and result artifacts byte-for-byte before disk SRM and CoreCLR are consulted as late
+independent oracles.
 
 ## 5. Identity model
 

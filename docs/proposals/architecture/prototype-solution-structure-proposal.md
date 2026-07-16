@@ -179,7 +179,7 @@ documentation commit `de6cea124`; [GitHub Actions run
 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
 at that exact commit.
 
-W4.1–W4.7 are landed. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
+W4.1–W4.9c are landed; exact pushed hosted closure remains. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
 `UnknownExecutionPolicy`, `ProvenanceConcreteDomain`/`ProvenanceConcreteValue`, canonical `InputOrigin` and
 `BinaryTransform` lineage, and shared-handler unknown arithmetic. That historical implementation checkpoint is 3,454
 LOC: 3,429 LOC for W4.2 plus a 25-LOC scope correction; cumulative W4 realization through W4.2 was 3,932 LOC.
@@ -292,14 +292,14 @@ Historical full-W4 projections remain original 16,860–25,310, post-W4.2 18,532
 27,217–32,117, W4.6a checkpoint 28,376–32,476, first W4.6b recalibration 28,876–33,276, post-W4.6b-split
 28,826–33,726, post-W4.6b checkpoint 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
 realized 3,690 LOC against their historical 3,400–3,750 estimate. The former W4.7 estimate of 2,200–3,150 LOC and
-31,069–34,319 projection are also historical. The current plan leaves W4.8 at 2,400–3,500 LOC and W4.9 at
-2,000–3,200 LOC: 4,400–6,700 LOC remaining and 31,670–33,970 LOC for full W4.
+31,069–34,319 projection and later 31,670–33,970 projection are historical. W4.8 realizes 11,924 LOC, W4.9 realizes
+2,698 LOC, and full W4 implementation realizes 41,892 LOC.
 
 The existing ClrMD field descriptor remains exact-only; W4.3 adds no partial-field dump producer or generated-dump
-counterfactual result. W4.5 executes exact and explained-unknown values across interpreted call boundaries; W4.6
-executes the one structurally selected pure-model leaf with modeled-return lineage and compiler/SRM conformance. The
-common rooted counterfactual facade/product result, generated-dump execution, and hosted closure remain absent and are W4.8–W4.9
-work. The legacy `IlMachine` still rejects the W4 fixture before the call, while the opt-in prepared session consumes
+counterfactual result at that checkpoint. W4.5 executes exact and explained-unknown values across interpreted call
+boundaries; W4.6 executes the one structurally selected pure-model leaf with modeled-return lineage and compiler/SRM
+conformance; W4.8 supplies the common rooted facade/result/runner; and W4.9 supplies detached generated-dump
+execution and reopen replay. Exact hosted closure remains. The legacy `IlMachine` still rejects the W4 fixture before the call, while the opt-in prepared session consumes
 both interpreted and modeled graphs.
 
 The external-worker projects are separately executable, and their four-test package includes a locally passing real
@@ -355,4 +355,4 @@ implementation commit. Formal W3 closure is recorded at exact documentation comm
 run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required
 jobs.
 
-The physical layout and contracts remain prototype hypotheses. They may change freely as W4.8–W4.9 force better boundaries.
+The physical layout and contracts remain prototype hypotheses. They may change freely as later evidence forces better boundaries.

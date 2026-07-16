@@ -39,7 +39,9 @@ checkpoint `356c07037`, and W4.5b's explained-unknown call/return lineage is imp
 `c72f6ee9e`. W4.6a structural pure-model admission is implemented at pushed checkpoint `77c92789b`, W4.6b modeled-
 return lineage at `fd723a912`, W4.6c machine invocation/transfer at `877c9fb55`, and W4.6d compiler/SRM conformance at
 `da5346813`. W4.7a standalone target-outcome projection is implemented at `2e70fe76d`, and W4.7b compiler/SRM
-replay at `dad6a6dd4`. W4.8–W4.9, rooted counterfactual product execution, and dump-grounded W4 behavior have not landed.
+replay at `dad6a6dd4`. W4.8's configurable traversal, canonical facade, typed binding, preparation, result, and runner
+land through `44b050ec8`. W4.9's ClrMD evidence graph, detached dump binding, and six-row generated-dump reopen/replay
+land through `a8b5f32f0`; exact pushed hosted closure is the remaining W4 gate.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
 marker fields and calls the direct `CombineMarkers` helper. W2 cannot express that question because its plan selects
 only one field and executes no user IL. Exact evidence must yield the exact CoreCLR-agreeing `Int32` result. An admitted
@@ -195,12 +197,14 @@ worker 4/4 remains W4.6 historical evidence and was not rerun or claimed for W4.
 
 W4.5b realizes 2,804 added LOC (766 production plus 2,038 tests). W4.6a/b/c/d realize 2,959/1,003/2,734/956 LOC,
 respectively, so combined W4.6 realizes 7,652 LOC and W4.1–W4.6d realize 24,469 LOC. W4.7a/b realize 2,448/353 LOC,
-so W4.7 realizes 2,801 LOC and W4.1–W4.7 realize 27,270 LOC. The former 2,200–3,150 W4.7 estimate and
-31,069–34,319 projection are historical. W4.8 remains 2,400–3,500 and W4.9 remains 2,000–3,200: remaining W4.8–W4.9
-is 4,400–6,700 LOC and current W4 is 31,670–33,970 LOC. Preserve the original 16,860–25,310 baseline and historical 18,532–26,132,
-19,228–25,728, 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
-28,826–33,726, 28,879–33,279, 30,079–33,729, and 31,069–34,319 projections. Configurable request traversal policy,
-the common rooted facade/runner and result, ClrMD dump grounding, and hosted closure remain pending.
+so W4.7 realizes 2,801 LOC and W4.1–W4.7 realize 27,270 LOC. W4.8's six delivery sub-slices realize 11,924 LOC;
+W4.9a–c realize 1,389/791/518 LOC, or 2,698 total. Current W4 realization is therefore 41,892 hand-written
+implementation LOC excluding documentation and generated lockfile changes. The original 16,860–25,310 baseline and
+historical 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117,
+28,376–32,476, 28,876–33,276, 28,826–33,726, 28,879–33,279, 30,079–33,729, 31,069–34,319, and
+31,670–33,970 projections remain calibration facts. W4.9d's local closure passes locked restore, strict Release 0/0,
+unit 502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and guards 62/44 and 1, with zero skips. Exact pushed
+hosted closure remains pending.
 
 W1 is complete for its revised non-security dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
@@ -233,13 +237,13 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4.1–W4.7's landed execution/model/target-outcome evidence, pending W4.8–W4.9 rooted-product/dump closure, and explicitly gated research phases. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Active read-only dump evaluator, including W4's landed rooted exact/degraded interpreted/modeled dump execution and explicitly gated research phases; exact pushed hosted closure remains. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 grammar, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
-| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; W4.1–W4.7 evidence is local/pushed and W4.8–W4.9 remain pending. |
+| `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract; all implementation slices and local proof lanes have landed, with exact pushed hosted closure remaining. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |

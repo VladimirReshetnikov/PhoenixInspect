@@ -20,7 +20,7 @@ When debugging a crash dump, engineers frequently need answers that are “one c
 * “What’s the effective configuration value after overrides?”
 * “What’s inside this `Task` / `ValueTask` / `Lazy<T>` / `AsyncLocal<T>`?”
 
-Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. The admitted W4 contract adds one branchless counterfactual method question to the delivery plan. W4.1 freezes that question's exact generated fixture, CoreCLR result, and W3 admission gap. W4.2 implements the dump-free value-precision, explained-unknown arithmetic, and canonical lineage kernel at `e89e43498`; W4.3 extends that same machine with canonical partial/unavailable field continuation at `7479b1ad4`; W4.4 freezes the exact direct-call dependency graph at `2e596c117`/`742ef2c4f`; W4.5a executes exact values through that frozen graph at `356c07037`; W4.5b propagates canonical explained-unknown arguments and returns at `c72f6ee9e`; W4.6a freezes exact body-free pure-model selection at `77c92789b`; W4.6b freezes modeled-return lineage at `fd723a912`; W4.6c executes that frozen capability at `877c9fb55`; W4.6d closes compiler/SRM exact/degraded/fresh conformance at `da5346813`; and W4.7 adds the standalone issuer-certified exact-null product fragment at `2e70fe76d`/`dad6a6dd4`. That fragment deliberately carries no rooted request/plan identity. W4.8–W4.9 must add the common rooted facade/result and generated-dump replay. An isolated virtual heap and broader method workflows remain research.
+Today, post-mortem workflows force users into manual object-walking and mental evaluation. A live debugger solves this with expression evaluation, but a dump has no running runtime to execute code. The active feature is a **deterministic, policy-constrained, read-only evaluator** grounded in dump evidence. W2 implements its first restricted C# query surface. The closed W3 getter proof validates architecture below the product boundary. W4 adds one branchless counterfactual method question. W4.1–W4.7 establish its fixture, unknown-aware kernel, direct-call graph/execution, one body-free pure model, and standalone exact-null outcome. W4.8 checkpoints through `44b050ec8` add configurable traversal, canonical request/plan/result contracts, private typed bindings, authoritative preparation/execution, and common rooted/standalone projection. W4.9 checkpoints through `a8b5f32f0` add the ClrMD graph/field producer, detached rooted dump memory, and six exact/degraded interpreted/modeled generated-dump rows with close/reopen canonical replay. Exact pushed hosted closure remains; an isolated virtual heap and broader method workflows remain research.
 
 ---
 
@@ -301,7 +301,7 @@ At the W4.2 checkpoint, non-exact `ldfld` evidence still stopped and `FieldLoadT
 that specific dump-free machine/domain gap. W4.4 subsequently closes direct-call metadata and graph preparation;
 W4.5 closes exact/explained interpreted transfer; and W4.6 closes structural pure-model selection, modeled-return
 lineage, frozen-capability execution/attempts, and compiler conformance. The counterfactual request/plan/result and
-rooted facade and the generated-dump product result remain W4.8–W4.9 work.
+rooted facade and the generated-dump product result were subsequently delivered by W4.8–W4.9.
 
 **Implemented W4.3 dump-free field continuation, not a product capability**
 
@@ -496,10 +496,18 @@ Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532
 27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
 28,826–33,726; post-W4.6b checkpoint 28,879–33,279; and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
 realized 3,690 LOC against their historical 3,400–3,750 estimate. W4.7a/b realize 2,448/353 LOC, 2,801 total,
-bringing W4 to 27,270 LOC. Its former 2,200–3,150 estimate and 31,069–34,319 projection are historical. W4.8 remains
-2,400–3,500 LOC and W4.9 2,000–3,200 LOC: 4,400–6,700 LOC remains and full W4 projects to 31,670–33,970 LOC.
+bringing W4 through W4.7 to 27,270 LOC. Its former 2,200–3,150 estimate and 31,069–34,319 projection are historical.
+W4.8a–f realize 11,924 LOC; W4.9a–c realize 2,698 LOC; cumulative W4 realizes 41,892 LOC excluding documentation and
+generated lockfile changes. The later 31,670–33,970 projection is retained as historical calibration.
 
-**Admitted scenario (fixture, unknown, field, graph, interpreted-call, and pure-model kernels implemented; product not implemented)**
+The product runner now returns the exact `0x26AF37BD` summary from exact dump evidence and a completed typed unknown
+with canonical field/call/return or modeled-return lineage from partial or unavailable `Marker` evidence. It reports
+independent semantic, completion, completeness, evidence, effect, value, accounting, assumption, model, provenance,
+and diagnostic axes. The modeled plan proves `CombineMarkers` remains body-free. Both ClrMD sessions are disposed
+before execution, and all six memory/request/plan/result artifacts replay byte-for-byte after reopening and rebinding
+the dump. Disk metadata and CoreCLR are consulted only afterward as independent comparisons.
+
+**Implemented scenario (rooted exact/degraded interpreted/model product execution; hosted closure pending)**
 
 The generated `DumpProbe` fixture asks: “Under the named evaluation policy and the captured marker evidence, what
 would branchless `GetMarkerSummary` compute through its direct `CombineMarkers` helper?” This is the smallest selected
@@ -721,8 +729,9 @@ The authoritative sequence is in `docs/plans/future-work-planning.md`:
   argument/return lineage is implemented at `c72f6ee9e`, W4.6a's exact/no-effect body-free pure-model selection is
   implemented at `77c92789b`, W4.6b's atomic modeled-return lineage is implemented at `fd723a912`, W4.6c's frozen-
   capability execution/attempt/depth contract is implemented at `877c9fb55`, and W4.6d's compiler/SRM conformance is
-  implemented at `da5346813`, and standalone target-outcome projection/replay at `2e70fe76d`/`dad6a6dd4`. The rooted
-  facade/common product result and generated-dump closure remain W4.8–W4.9 work.
+  implemented at `da5346813`, and standalone target-outcome projection/replay at `2e70fe76d`/`dad6a6dd4`. W4.8's
+  canonical rooted facade/runner lands through `44b050ec8`, and W4.9's detached ClrMD generated-dump corpus lands
+  through `a8b5f32f0`. Exact pushed hosted closure remains.
   Branches, broader
   calls/opcodes, generics, allocation, PDB-backed context, and whole-method abstract analysis remain gated.
 

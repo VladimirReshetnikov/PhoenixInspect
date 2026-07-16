@@ -67,10 +67,9 @@ Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532
 19,228–25,728; post-W4.4 21,179–26,779; post-W4.5a 24,013–29,313; W4.5 closure 25,017–29,417; design audit
 27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
 28,826–33,726; post-W4.6b checkpoint 28,879–33,279; and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
-realized 3,690 LOC against their historical 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC,
-W4.8 at 2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC
-for full W4. Product contracts, ClrMD dump integration, hosted closure, fixpoint, async, dynamic, and virtual-
-debug state remain pending or gated research.
+realized 3,690 LOC against their historical 3,400–3,750 estimate. W4.7 subsequently realizes 2,801 LOC, W4.8 11,924
+LOC, and W4.9 2,698 LOC, bringing full W4 implementation to 41,892 LOC. Exact hosted closure remains; fixpoint, async,
+dynamic, and virtual-debug state remain gated research.
 
 ## Scope
 
@@ -306,7 +305,7 @@ order, and traversal-dependent provenance IDs can prevent convergence or make se
 
 W4.4 graph preparation occurs before activation and exposes no semantic or operational machine state. Its
 `TraversalUnitCount` records distinct methods, fields, and direct-call edges beneath fixed internal safety ceilings;
-it is neither instruction budget nor W4.8's configurable product traversal budget. A failure returns no partial graph,
+it is neither instruction budget nor W4.8a's separate configurable product traversal budget. A failure returns no partial graph,
 does not consume machine budget, and emits no debug events. `RequiredLogicalDepth` is a frozen graph fact.
 
 W4.5a consumes that fact through `ActivatePreparedGraph` before any interpreted frame can be created. Its
@@ -651,10 +650,10 @@ Implemented through W4.6:
   repeated and fresh sessions.
 
 The issuer-certified standalone W4.7 target-outcome fragment is implemented separately and does not widen the rooted
-execution profile above. Deferred to W4.8–W4.9 or later research gates:
+execution profile above. W4.8 integrates it into the common projector, and W4.9 adds detached dump execution. Deferred
+to later research gates:
 
 - hybrid nullness/constant/type/taint products,
-- counterfactual request/plan/result and facade, and generated-dump product closure,
 - a ClrMD producer for structured W4.3 field evidence,
 - coarse and summary heap abstractions,
 - full relational numeric domains,

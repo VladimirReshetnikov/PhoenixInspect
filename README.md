@@ -31,10 +31,13 @@ Core principles:
   capability through exact or grounded-unknown atomic caller transfer, records truthful model attempts and distinct
   logical/frame depth witnesses, and proves compiler/SRM exact and degraded conformance. W4.7 now projects a complete,
   same-machine IL-zero-to-exact-null transition sequence into a standalone canonical target-outcome fragment, with
-  per-outcome issuer certification and optional idempotent terminal re-step. The rooted counterfactual facade and
-  dump-grounded W4 execution have not landed; W4.8 is the next unimplemented slice.
-- **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. CoreCLR remains an outcome oracle, not an input to interpreter shape or dump evidence.
-- **Physical scope:** eleven source projects contain active contracts or behavior in a sixteen-project solution. W4.7 adds the independently tested `Interpreter.Product.DumpDebugging` boundary for standalone target-outcome projection. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
+  per-outcome issuer certification and optional idempotent terminal re-step. W4.8 now supplies configurable traversal
+  accounting, canonical request/plan/result contracts, private typed runtime bindings, the authoritative preparation
+  and execution runner, and common projection of rooted and standalone outcomes. W4.9 now supplies the ClrMD method/
+  field evidence graph, a detached product-owned dump-memory binding, and six exact/degraded interpreted/modeled
+  generated-dump rows with close/reopen canonical replay. Exact pushed hosted closure is the remaining W4 gate.
+- **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. W4's generated-dump lane additionally acquires the root/helper graph and two correlated fields, detaches all product evidence before execution, produces the exact `0x26AF37BD` result or a provenance-bearing unknown for partial/unavailable input, exercises both interpretation and a body-free pure model, and reproduces all six canonical memory/request/plan/result artifacts after reopening the dump. CoreCLR remains a late outcome oracle, not an input to interpreter shape, dump evidence, preparation, or execution.
+- **Physical scope:** eleven source projects contain active contracts or behavior in a sixteen-project solution. `Interpreter.Product.DumpDebugging` now owns standalone target projection, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources. The earlier 33 empty placeholders remain removed, and physical boundaries are still justified by executable evidence rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
 
 The normative W4 contract is
@@ -217,6 +220,27 @@ focused W4.7b 2/2; combined W4.7 17/17; compiler differential class 23/23; Markd
 one-workflow headless guard. Every behavioral lane was headless, used `Scope!=Cybersecurity`, and had zero skips. The
 external-worker 4/4 result above remains W4.6 history and was deliberately not rerun or claimed as W4.7 validation.
 
+W4.8 checkpoints `4f268a4bc` through `44b050ec8` turn those kernels into the product contract. Configurable ordered
+traversal charges fail before the next capability at exact exhaustion. Schema-v1 request, field-observation, plan, and
+result artifacts retain every applied bound and structural dependency behind defensive copies and issuer authority.
+Private typed bindings materialize exact or explained inputs into a fresh domain and a read-only recording memory;
+`Prepare` validates authority, evidence, traversal, depth, graph, observations, and activation in a fixed order.
+`Run` then validates every issued machine transition and projects completed, budget-exhausted, cancelled, blocked,
+invalid, modeled, and standalone-target outcomes without execution-time resolver or registry queries. Same/fresh-
+object replay freezes the exact synthetic rooted result SHA-256
+`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`.
+
+W4.9a checkpoint `24bd8fe6f` adds a canonical ClrMD method graph and three-state correlated field evidence; W4.9b
+checkpoint `2d41f528d` derives rooted product identities and a detached persistent memory from issuer-validated dump
+evidence; W4.9c checkpoint `a8b5f32f0` executes six interpreted/modeled exact, partial, and unavailable rows from one
+generated full dump. Both ClrMD sessions are disposed before product preparation/execution. Reopen/rebind reproduces
+byte-identical detached memory, request, plan, and result artifacts, while disk SRM and CoreCLR remain late independent
+oracles. The focused generated-dump lane passes 1/1, ordinary dump 6/6, and Fast 88/88 headlessly with zero skips.
+W4.9d local closure passes locked restore; a strict 16-project Release build at 0 warnings/errors; complete unit
+502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
+local destinations; and the one-workflow headless guard. Every behavioral filter uses `Scope!=Cybersecurity` and every
+lane has zero skips. Exact pushed hosted verification remains.
+
 The historical W4.2 checkpoint records 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production
 plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. Together with
 W4.1, that checkpoint had realized 3,932 LOC and projected 18,532–26,132 LOC. W4.3 realizes 3,096 LOC (1,100
@@ -232,16 +256,14 @@ The W4.5-closure projection was 25,017–29,417 LOC, followed by historical 27,2
 28,876–33,276, 28,826–33,726, 28,879–33,279, and 30,079–33,729 projections. W4.6a realizes 2,959 added LOC (1,210
 production plus 1,749 tests/fixture support), W4.6b 1,003, W4.6c 2,734, and W4.6d 956. Combined W4.6 therefore
 realizes 7,652 LOC and W4.1–W4.6d cumulatively realize 24,469 LOC. W4.7a realizes 2,448 LOC and W4.7b 353 LOC, so
-W4.7 realizes 2,801 LOC and cumulative W4 realization is 27,270 LOC. Its former 2,200–3,150 estimate and the resulting
-31,069–34,319 full-W4 projection are now historical calibration. W4.8 remains 2,400–3,500 LOC and W4.9 remains
-2,000–3,200 LOC: 4,400–6,700 LOC remains, giving the current full-W4 projection 31,670–33,970 LOC. Preserve the
-original 16,860–25,310 baseline and every earlier projection. This remains a standalone target-outcome product
-fragment, not rooted product execution. Configurable request traversal budget, the common product facade/runner,
-ClrMD non-exact-field adapter, generated-dump W4 result/corpus, hosted exact-commit evidence, and umbrella closure
-remain pending. Allocation remains unadmitted and its bound is therefore absent/not
-applied until a later allocation scenario. Closure requires the specified exact, degraded-evidence, budget,
-differential, and same/fresh-session replay cases to pass through the non-cybersecurity headless Release, fast, dump,
-and focused W4 lanes with zero skips and at the exact pushed commit.
+W4.7 realizes 2,801 LOC and cumulative W4 realization through W4.7 is 27,270 LOC. Its former 2,200–3,150 estimate and
+the resulting 31,069–34,319 full-W4 projection are historical calibration. Delivery split W4.8 into six attributable
+sub-slices totaling 11,924 LOC and W4.9a–c into 1,389/791/518 LOC, totaling 2,698 LOC. Cumulative W4 realization is
+therefore 41,892 hand-written implementation LOC after excluding documentation and generated lockfile changes. This
+exceeds the last 31,670–33,970 projection and the original 16,860–25,310 baseline; both remain recorded as calibration,
+not rewritten estimates. Allocation remains unadmitted and its bound is absent/not applied until a later allocation
+scenario. All specified exact, degraded-evidence, budget, differential, same/fresh-object, and dump-close/reopen cases
+are implemented; exact pushed hosted evidence is the remaining umbrella gate.
 
 The W1 dump-evidence slice is executable against generated full and intentionally sparse dumps. W2's restricted dump-query v1 is complete for its non-cybersecurity scope: typed root states, `Parse`/`Prepare`/`Evaluate(plan)` staging, immutable object-specific plans, exact `String`/`Int32`/`Nullable<Int32>` behavior, stable diagnostics, and all-case same/fresh-session replay are exercised against the generated full dump. [GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at exact W2 closure commit `5bed47100`. W1 remains complete for its revised non-security evidence scope: typed exact/partial/unavailable/conflict outcomes, honest answer completeness, stable identity/context/provenance, path-accurate bounds, fresh-session canonical replay, headless execution, truthful topology, and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 

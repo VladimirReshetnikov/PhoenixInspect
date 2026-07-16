@@ -428,8 +428,8 @@ Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532
 28,826–33,726; post-W4.6b checkpoint 28,879–33,279; and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
 realized 3,690 LOC against their historical 3,400–3,750 estimate. The former W4.7 estimate of 2,200–3,150 LOC and
 31,069–34,319 projection are historical. W4.7a/b realize 2,448/353 LOC, 2,801 total, bringing W4 to 27,270 LOC.
-W4.8 remains 2,400–3,500 LOC and W4.9 2,000–3,200 LOC: 4,400–6,700 LOC remains and full W4 projects to
-31,670–33,970 LOC.
+W4.8 subsequently realizes 11,924 LOC and W4.9 2,698 LOC, bringing full W4 implementation to 41,892 LOC. The
+31,670–33,970 projection is historical calibration.
 
 Roadmap restore and umbrella-build gates remain repository-wide topology/compilation-health checks. Current W4.6
 evidence includes solution/affected-project strict builds plus focused contract, planner, compiler, lineage, machine,
@@ -439,7 +439,7 @@ excluded and no cybersecurity validation is claimed.
 
 No workflow uploads dumps, target output, heap values, paths, or expression results. The generated target contains only non-sensitive fixture data and all dumps remain temporary.
 
-## Post-W4.7 evidence gates
+## W4 implementation and closure evidence gates
 
 The generated-fixture W1–W2 path and its prior exact-commit hosted closure evidence remain unchanged. W3's structural
 identity, SRM projection, metadata-derived activation, typed whole-body admission, concrete-domain/persistent-memory
@@ -487,8 +487,20 @@ issuer-certified IL-zero-to-null chronology, exact latch/location/accounting/eve
 schema-v1 fragment SHA-256 `a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`, and fresh direct/adjusted compiler replay.
 Closure passed the strict sixteen-project build 0/0, unit 430/430, Fast 80/80, dumps 5/5 and 1/1, focused 15/15 plus
 2/2 (17/17 combined), compiler differential 23/23, and both guards with zero skips, headlessly and under
-`Scope!=Cybersecurity`. W4.8–W4.9 remain pending; rooted product request/plan/result projection and generated-dump ClrMD production plus close/reopen/rebind
-evidence remain later-slice obligations. New opcodes or method families enter only
+`Scope!=Cybersecurity`.
+
+W4.8 checkpoints through `44b050ec8` now demonstrate configurable traversal, canonical rooted request/observation/
+plan/result artifacts, private typed bindings and recording memory, authoritative preparation, common standalone/
+rooted projection, and transition-validating execution. Focused execution passes 10/10, the counterfactual family
+77/77, and complete unit 502/502 with exact synthetic rooted result SHA-256
+`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`.
+
+W4.9 checkpoints `24bd8fe6f`/`2d41f528d`/`a8b5f32f0` now demonstrate the atomic ClrMD graph/field producer,
+detached rooted product memory, and six exact/partial/unavailable interpreted/modeled generated-dump rows. ClrMD is
+disposed before execution; close/reopen/rebind reproduces all canonical memory/request/plan/result artifacts; exact
+rows agree with late CoreCLR and degraded rows remain typed unknown. Focused generated dump passes 1/1, ordinary dump
+6/6, and Fast 88/88. W4.9d's local candidate additionally passes locked restore, strict Release 0/0, complete unit
+502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and both guards. Exact pushed hosted jobs remain. New opcodes or method families enter only
 through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Separately landed malformed
 corpus/worker prototypes and cybersecurity validation are outside W1–W4; representative private-production

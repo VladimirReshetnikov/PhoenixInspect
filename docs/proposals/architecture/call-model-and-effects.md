@@ -79,9 +79,9 @@ Historical full-W4 projections remain original 16,860–25,310; post-W4.2 18,532
 19,228–25,728; post-W4.4 21,179–26,779; post-W4.5a 24,013–29,313; W4.5 closure 25,017–29,417; design audit
 27,217–32,117; W4.6a checkpoint 28,376–32,476; first W4.6b recalibration 28,876–33,276; post-split
 28,826–33,726; post-W4.6b checkpoint 28,879–33,279; and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d
-realized 3,690 LOC against their 3,400–3,750 estimate, and W4.6 as a whole realizes 7,652 LOC. The current remaining
-plan is W4.7 at 2,200–3,150 LOC, W4.8 at 2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC
-remaining and 31,069–34,319 LOC for full W4.
+realized 3,690 LOC against their 3,400–3,750 estimate, and W4.6 as a whole realizes 7,652 LOC. W4.7 subsequently
+realized 2,801 LOC, W4.8 11,924 LOC, and W4.9 2,698 LOC, bringing full W4 implementation to 41,892 LOC. Exact
+pushed hosted closure remains; all earlier projections remain historical calibration.
 
 ## Purpose
 

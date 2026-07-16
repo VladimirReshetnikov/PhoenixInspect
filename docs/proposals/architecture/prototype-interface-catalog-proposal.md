@@ -81,8 +81,9 @@ The original full-W4 baseline 16,860–25,310 and checkpoint projections 18,532�
 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
 28,826–33,726, 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC remain historical calibration. W4.6c/d
 realized 3,690 LOC against their 3,400–3,750 estimate. The former W4.7 estimate and 31,069–34,319 projection are now
-historical. The current plan leaves W4.8 at 2,400–3,500 LOC and W4.9 at 2,000–3,200 LOC: 4,400–6,700 LOC remaining and 31,670–33,970 LOC for full
-W4. A contract is added only with an executable consumer and is removed when it
+historical. The final pre-implementation plan left W4.8 at 2,400–3,500 LOC and W4.9 at 2,000–3,200 LOC, yielding a
+31,670–33,970 LOC full-W4 projection. That projection is now historical: W4.8 realizes 11,924 LOC, W4.9 2,698
+LOC, and full W4 41,892 LOC. A contract is added only with an executable consumer and is removed when it
 gets ahead of code.
 
 ## Active contracts
@@ -374,9 +375,9 @@ null-conditional access, interpreted properties/getters, calls, indexers, arrays
 loading, conversions, or general operators. W3's public interpreter activation and W4.2–W4.7's provenance-aware
 domain/machine, graph, interpreted-call, and pure-model extensions are architecture proofs, not query-language
 features or a counterfactual-method facade. W4.6 supplies structural selection, modeled-return lineage, frozen-
-capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. A ClrMD producer
-for W4.3 structured non-exact field evidence remains absent, as do the rooted W4 request/plan/result facade and a
-generated-dump product result with reopen/replay or hosted closure. Those are W4.8–W4.9 work. Speculative
+capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. W4.8 now supplies
+the rooted request/plan/result facade and runner; W4.9 supplies the ClrMD exact/degraded field producer, detached dump
+binding, and generated-dump reopen/replay result. Exact pushed hosted closure remains. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 

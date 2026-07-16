@@ -18,8 +18,9 @@ selection and opaque body-free leaves while deliberately blocking model executio
 atomic modeled-return lineage construction. W4.6c commit `877c9fb55` executes only the frozen capability with atomic
 return transfer and attempt/depth evidence; W4.6d commit `da5346813` closes compiler/SRM exact/degraded/fresh-session
 conformance. W4.7a `2e70fe76d` adds standalone issuer-certified target-outcome projection, and W4.7b `dad6a6dd4`
-adds compiler/SRM fresh replay plus capability poison/count evidence. None creates a rooted or dump-grounded product
-result or CI-enforced umbrella gate. Section 8 separates completed W4.1–W4.7 from remaining W4.8–W4.9 capability.
+adds compiler/SRM fresh replay plus capability poison/count evidence. W4.8 checkpoints through `44b050ec8` add the
+canonical rooted product runner, and W4.9 checkpoints through `a8b5f32f0` add detached ClrMD exact/degraded
+generated-dump execution plus close/reopen replay. Section 8 records the remaining exact pushed hosted gate.
 
 ## 1) Evidence language
 
@@ -562,8 +563,20 @@ getters, fresh SRM/module/domain/machine replay, and no re-step resolver/domain/
 
 Every behavioral lane was headless, included `Scope!=Cybersecurity`, and had zero skips. External-worker 4/4 is
 retained only as historical W4.6 evidence and was deliberately not rerun or claimed for W4.7. W4.7a/b realize
-2,448/353 LOC, 2,801 total, bringing W4 to 27,270 LOC. W4.8 remains 2,400–3,500 LOC and W4.9 2,000–3,200 LOC:
-4,400–6,700 LOC remains and current full W4 is 31,670–33,970 LOC.
+2,448/353 LOC, 2,801 total, bringing W4 through W4.7 to 27,270 LOC. W4.8 later realizes 11,924 LOC and W4.9
+2,698 LOC, bringing full W4 implementation to 41,892 LOC.
+
+### Current local W4.8–W4.9 implementation verification — 2026-07-15
+
+W4.8's final runner checkpoint passes focused execution 10/10, the complete counterfactual family 77/77, and complete
+non-cybersecurity unit 502/502 with a strict zero-warning Release build. W4.9a validates the atomic ClrMD graph/field
+producer; W4.9b passes binder 5/5, counterfactual 77/77, and Fast 88/88; W4.9c passes generated dump 1/1, ordinary
+dump 6/6, and Fast 88/88. All behavioral commands use the headless wrapper and `Scope!=Cybersecurity`, with zero
+skips. W4.9d owns repository-wide local and exact pushed hosted closure.
+
+W4.9d's local candidate passes locked restore, a strict sixteen-project Release build at 0 warnings/errors, complete
+unit 502/502, Fast 88/88, ordinary dump 6/6, optimized dump 1/1, aggregate W4 integration 14/14, Markdown 62/44, and
+the one-workflow headless guard. Exact pushed hosted jobs remain.
 
 ## 3) Active test layers
 
@@ -836,14 +849,16 @@ W4.6c checkpoint `877c9fb55` delivers frozen-capability execution, atomic exact/
 depth witnesses, failure taxonomy, and unit conformance in 2,734 LOC. W4.6d checkpoint `da5346813` delivers 956 test
 LOC of compiler/SRM exact, degraded, repeated, and fresh-session conformance. Combined W4.6 realizes 7,652 LOC and
 brings W4 to 24,469 realized LOC. W4.7a/b checkpoints `2e70fe76d`/`dad6a6dd4` deliver complete issuer-certified
-target projection and compiler/SRM replay in 2,801 LOC, bringing W4 to 27,270 realized LOC. The current remaining
-W4.8–W4.9 plan is 4,400–6,700 LOC and full W4 is 31,670–33,970 LOC. The earlier 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
-28,826–33,726, 28,879–33,279, 30,079–33,729, and 31,069–34,319 projections remain historical.
+target projection and compiler/SRM replay in 2,801 LOC, bringing W4 to 27,270 realized LOC. W4.8/W4.9 implementation
+realizes 11,924/2,698 LOC and full W4 realizes 41,892 LOC. The earlier 25,017–29,417,
+27,217–32,117, 28,376–32,476, 28,876–33,276, 28,826–33,726, 28,879–33,279, 30,079–33,729,
+31,069–34,319, and 31,670–33,970 projections remain historical.
 
-The remaining W4.8–W4.9 slices must finish the rooted product/dump/closure portions below before the umbrella is described as
-implemented or verified. W4.4 satisfies interpreted structural graph preparation; W4.5 satisfies exact and explained-
-unknown interpreted direct-call/depth/lineage behavior; and W4.6 satisfies structural model selection, modeled-return
-lineage, machine invocation/transfer/attempt/depth behavior, and compiler/SRM conformance:
+W4.8/W4.9 implement the rooted product and dump portions below. Items 1–10 have focused local evidence; item 11
+remains the exact pushed W4.9d closure gate. W4.4 satisfies interpreted structural graph preparation; W4.5 satisfies
+exact and explained-unknown interpreted direct-call/depth/lineage behavior; W4.6 satisfies structural model behavior;
+W4.7 satisfies the standalone target fragment; W4.8 satisfies product preparation/execution/projection; and W4.9
+satisfies detached dump production and replay:
 
 1. The complete root and reachable helper bodies are admitted before instruction zero from counted dump body and
    metadata evidence; a disk PE and direct CoreCLR invocation remain independent oracles, never execution inputs.

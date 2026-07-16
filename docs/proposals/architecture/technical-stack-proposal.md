@@ -478,8 +478,8 @@ Current facts:
 - Historical later full-W4 projections are W4.5 closure 25,017–29,417, post-design-audit 27,217–32,117, W4.6a
   checkpoint 28,376–32,476, first concrete W4.6b recalibration 28,876–33,276, post-W4.6b-split 28,826–33,726,
   post-W4.6b checkpoint 28,879–33,279, and pre-W4.6c/d closure 30,079–33,729 LOC. W4.6c/d realized 3,690 LOC
-  against their historical 3,400–3,750 estimate. The current plan leaves W4.7 at 2,200–3,150 LOC, W4.8 at
-  2,400–3,500 LOC, and W4.9 at 2,000–3,200 LOC: 6,600–9,850 LOC remaining and 31,069–34,319 LOC for full W4.
+  against their historical 3,400–3,750 estimate. W4.7 subsequently realizes 2,801 LOC, W4.8 11,924 LOC, and W4.9
+  2,698 LOC, bringing full W4 implementation to 41,892 LOC; exact pushed hosted closure remains.
 - The first product composition is a deliberately closed root-field dump query. There is not yet a frame-root binder, general C# expression front end, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
