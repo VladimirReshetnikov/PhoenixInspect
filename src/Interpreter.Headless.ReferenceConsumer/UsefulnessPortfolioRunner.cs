@@ -29,6 +29,15 @@ internal static class UsefulnessPortfolioRunner
         try
         {
             var options = PortfolioCommandLineOptions.Parse(args);
+            if (W6UsefulnessPortfolioRunner.IsSchemaThreeManifest(options.ManifestPath))
+            {
+                return W6UsefulnessPortfolioRunner.Run(
+                    options.ManifestPath,
+                    options.ReportRoot,
+                    options.MachineOutputPath,
+                    options.HumanOutputPath);
+            }
+
             var manifest = LoadManifest(options.ManifestPath);
             var reports = LoadEvaluationReports(manifest, options);
             var rows = JoinQuestions(manifest, reports);

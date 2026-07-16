@@ -191,22 +191,49 @@ internal static class Program
         FixtureEvidenceView view,
         CancellationToken cancellationToken)
     {
+        if (manifestSchemaVersion == W6ManifestSchemaVersion)
+        {
+            var profile = ParseLanguageProfile(scenario.LanguageProfile);
+            if (view == FixtureEvidenceView.Captured)
+            {
+                return DumpExpressionEvaluator.Evaluate(
+                    session,
+                    scenario.Expression,
+                    root,
+                    policy,
+                    profile,
+                    cancellationToken);
+            }
+
+            var chainClassification = DumpExpressionClassifier.Classify(
+                scenario.Expression,
+                root,
+                policy,
+                profile);
+            if (chainClassification.Status != DumpExpressionClassificationStatus.Accepted)
+            {
+                return DumpExpressionEvaluationOutcome.FromClassificationFailure(chainClassification);
+            }
+
+            if (chainClassification.Kind != DumpExpressionKind.FixedDepthMemberChain)
+            {
+                throw new InvalidDataException(
+                    $"Scenario '{scenario.Id}' applies a generated member-evidence view to a non-chain expression.");
+            }
+
+            return DumpExpressionEvaluator.EvaluateMemberChain(
+                new FixtureMemberChainEvidenceSource(session, view),
+                chainClassification.Request!);
+        }
+
         if (view == FixtureEvidenceView.Captured)
         {
-            return manifestSchemaVersion == ManifestSchemaVersion
-                ? DumpExpressionEvaluator.Evaluate(
-                    session,
-                    scenario.Expression,
-                    root,
-                    policy,
-                    cancellationToken)
-                : DumpExpressionEvaluator.Evaluate(
-                    session,
-                    scenario.Expression,
-                    root,
-                    policy,
-                    ParseLanguageProfile(scenario.LanguageProfile),
-                    cancellationToken);
+            return DumpExpressionEvaluator.Evaluate(
+                session,
+                scenario.Expression,
+                root,
+                policy,
+                cancellationToken);
         }
 
         var classification = DumpExpressionClassifier.Classify(scenario.Expression, root, policy);
@@ -734,6 +761,11 @@ internal static class Program
         nameof(FixtureEvidenceView.MarkerPartial) => FixtureEvidenceView.MarkerPartial,
         nameof(FixtureEvidenceView.MarkerUnavailable) => FixtureEvidenceView.MarkerUnavailable,
         nameof(FixtureEvidenceView.ModuleUnavailable) => FixtureEvidenceView.ModuleUnavailable,
+        nameof(FixtureEvidenceView.ReferencePartial) => FixtureEvidenceView.ReferencePartial,
+        nameof(FixtureEvidenceView.ReferenceUnavailable) => FixtureEvidenceView.ReferenceUnavailable,
+        nameof(FixtureEvidenceView.TargetConflict) => FixtureEvidenceView.TargetConflict,
+        nameof(FixtureEvidenceView.TargetInvalid) => FixtureEvidenceView.TargetInvalid,
+        nameof(FixtureEvidenceView.StringPartialLimit) => FixtureEvidenceView.StringPartialLimit,
         _ => throw new InvalidDataException($"Unknown fixture evidence view '{value}'."),
     };
 
@@ -796,12 +828,108 @@ internal static class Program
         }
     }
 
+    private sealed class FixtureMemberChainEvidenceSource(
+        ClrmdDumpSession session,
+        FixtureEvidenceView view) : IDumpMemberChainEvidenceSource
+    {
+        public ClrmdSnapshotIdentity Snapshot => session.Snapshot;
+
+        public int MaximumReadLength => session.Memory.MaximumReadLength;
+
+        public ClrmdEvidenceResult<ClrmdDeclaredDataMemberCertificate> CertifyDeclaredDataMember(
+            ClrmdHeapObjectInfo root,
+            string referenceFieldName,
+            string terminalMemberName) =>
+            session.CertifyDeclaredDataMember(root, referenceFieldName, terminalMemberName);
+
+        public ClrmdEvidenceResult<ClrmdObjectReferenceObservation> ReadObjectReference(
+            ClrmdHeapObjectInfo root,
+            ClrmdInstanceFieldInfo field)
+        {
+            var exact = session.ReadObjectReference(root, field);
+            if (view is not (FixtureEvidenceView.ReferencePartial or FixtureEvidenceView.ReferenceUnavailable))
+            {
+                return exact;
+            }
+
+            if (exact.Status != ClrmdEvidenceStatus.Exact || exact.Value is null)
+            {
+                throw new InvalidDataException(
+                    $"Generated view '{view}' requires an exact captured reference observation.");
+            }
+
+            var bytes = view == FixtureEvidenceView.ReferencePartial
+                ? exact.Value.Memory.Bytes.AsSpan(0, Math.Min(2, exact.Value.Memory.BytesRead)).ToArray()
+                : [];
+            return ClrmdObjectReferenceObservation.Project(
+                field,
+                field.Size,
+                MemoryReadResult.Create(
+                    field.Snapshot.MemorySourceId,
+                    field.Address,
+                    field.Size,
+                    bytes));
+        }
+
+        public ClrmdEvidenceResult<ClrmdReferencedObjectInfo> ValidateReferencedObject(
+            ClrmdDeclaredDataMemberCertificate certificate,
+            ClrmdObjectReferenceObservation reference) => view switch
+        {
+            FixtureEvidenceView.TargetConflict => ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch,
+                evidence: [reference.Memory]),
+            FixtureEvidenceView.TargetInvalid => ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                evidence: [reference.Memory]),
+            _ => session.ValidateReferencedObject(certificate, reference),
+        };
+
+        public ClrmdEvidenceResult<ClrmdInstanceFieldInfo> BindTerminalStorage(
+            ClrmdDeclaredDataMemberCertificate certificate,
+            ClrmdReferencedObjectInfo target) => session.BindTerminalStorage(certificate, target);
+
+        public ClrmdEvidenceResult<ClrmdInt32FieldObservation> ReadInt32Field(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field) => session.ReadInt32Field(target, field);
+
+        public ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation> ReadNullableInt32Field(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field) => session.ReadNullableInt32Field(target, field);
+
+        public ClrmdStringFieldObservation ReadStringField(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field,
+            int maximumCharacters)
+        {
+            if (view != FixtureEvidenceView.StringPartialLimit)
+            {
+                return session.ReadStringField(target, field, maximumCharacters);
+            }
+
+            var limited = session.ReadStringField(target, field, maximumCharacters: 2);
+            if (limited.Status != ClrmdEvidenceStatus.Partial || limited.Issue != ClrmdValueIssue.LimitExceeded)
+            {
+                throw new InvalidDataException(
+                    "The generated string-limit view requires a captured string longer than two UTF-16 code units.");
+            }
+
+            return limited;
+        }
+    }
+
     private enum FixtureEvidenceView
     {
         Captured,
         MarkerPartial,
         MarkerUnavailable,
         ModuleUnavailable,
+        ReferencePartial,
+        ReferenceUnavailable,
+        TargetConflict,
+        TargetInvalid,
+        StringPartialLimit,
     }
 
     private enum RootFixtureEvidenceView
@@ -992,10 +1120,16 @@ internal static class Program
             else
             {
                 _ = ParseLanguageProfile(LanguageProfile);
-                if (ParseView(FixtureEvidenceView) != Program.FixtureEvidenceView.Captured)
+                if (ParseView(FixtureEvidenceView) is not (
+                        Program.FixtureEvidenceView.Captured or
+                        Program.FixtureEvidenceView.ReferencePartial or
+                        Program.FixtureEvidenceView.ReferenceUnavailable or
+                        Program.FixtureEvidenceView.TargetConflict or
+                        Program.FixtureEvidenceView.TargetInvalid or
+                        Program.FixtureEvidenceView.StringPartialLimit))
                 {
                     throw new InvalidDataException(
-                        $"Scenario '{Id}' requires captured member evidence in manifest schema v2.");
+                        $"Scenario '{Id}' selects an unsupported member-evidence view in manifest schema v2.");
                 }
             }
 
