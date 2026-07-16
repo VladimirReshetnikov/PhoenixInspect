@@ -18,6 +18,7 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
     [Fact]
     [Trait("Category", "Dump")]
     [Trait("Corpus", "W5ExpressionFacadeV1")]
+    [Trait("Corpus", "W5UsefulnessGeneratedV1")]
     public void Checked_in_manifest_replays_through_fresh_headless_consumer_processes()
     {
         var executablePath = TestTargetPaths.ResolveExecutable();
@@ -38,7 +39,7 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
                 "corpus",
                 "w5-expression-facade-v1.json");
             Assert.True(File.Exists(manifestPath));
-            var firstMachine = Path.Combine(outputDirectory, "first.machine.json");
+            var firstMachine = Path.Combine(outputDirectory, "w5-expression-facade.machine.json");
             var firstHuman = Path.Combine(outputDirectory, "first.human.txt");
             var secondMachine = Path.Combine(outputDirectory, "second.machine.json");
             var secondHuman = Path.Combine(outputDirectory, "second.human.txt");
@@ -50,6 +51,34 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
             Assert.Equal(File.ReadAllBytes(firstHuman), File.ReadAllBytes(secondHuman));
             AssertMachineReport(firstMachine);
             AssertHumanReport(firstHuman);
+
+            var portfolioManifest = Path.Combine(
+                repositoryRoot,
+                "tests",
+                "corpus",
+                "w5-usefulness-generated-validation-v1.json");
+            var firstUsefulnessMachine = Path.Combine(outputDirectory, "first.usefulness.machine.json");
+            var firstUsefulnessHuman = Path.Combine(outputDirectory, "first.usefulness.human.txt");
+            var secondUsefulnessMachine = Path.Combine(outputDirectory, "second.usefulness.machine.json");
+            var secondUsefulnessHuman = Path.Combine(outputDirectory, "second.usefulness.human.txt");
+            RunUsefulnessConsumer(
+                repositoryRoot,
+                portfolioManifest,
+                outputDirectory,
+                firstUsefulnessMachine,
+                firstUsefulnessHuman);
+            RunUsefulnessConsumer(
+                repositoryRoot,
+                portfolioManifest,
+                outputDirectory,
+                secondUsefulnessMachine,
+                secondUsefulnessHuman);
+
+            Assert.Equal(File.ReadAllBytes(firstUsefulnessMachine), File.ReadAllBytes(secondUsefulnessMachine));
+            Assert.Equal(File.ReadAllBytes(firstUsefulnessHuman), File.ReadAllBytes(secondUsefulnessHuman));
+            AssertUsefulnessMachineReport(firstUsefulnessMachine);
+            AssertUsefulnessHumanReport(firstUsefulnessHuman);
+            AssertGeneratedReportCannotBePromoted(repositoryRoot, portfolioManifest, outputDirectory);
         }
         finally
         {
@@ -71,6 +100,54 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
         string dumpPath,
         string machineOutput,
         string humanOutput)
+    {
+        var result = RunHeadlessConsumer(
+            repositoryRoot,
+            [
+                "--manifest",
+                manifestPath,
+                "--dump",
+                dumpPath,
+                "--machine-output",
+                machineOutput,
+                "--human-output",
+                humanOutput,
+            ]);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal("W5_CONSUMER_OK:9", result.StandardOutput.Trim());
+        Assert.True(string.IsNullOrWhiteSpace(result.StandardError), result.StandardError);
+    }
+
+    private static void RunUsefulnessConsumer(
+        string repositoryRoot,
+        string portfolioManifest,
+        string reportRoot,
+        string machineOutput,
+        string humanOutput)
+    {
+        Assert.True(File.Exists(portfolioManifest), portfolioManifest);
+        var result = RunHeadlessConsumer(
+            repositoryRoot,
+            [
+                "--portfolio-manifest",
+                portfolioManifest,
+                "--report-root",
+                reportRoot,
+                "--machine-output",
+                machineOutput,
+                "--human-output",
+                humanOutput,
+            ]);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(
+            "W5_USEFULNESS_OK:9:OpenMissingRepresentativeCorpus",
+            result.StandardOutput.Trim());
+        Assert.True(string.IsNullOrWhiteSpace(result.StandardError), result.StandardError);
+    }
+
+    private static ProcessResult RunHeadlessConsumer(
+        string repositoryRoot,
+        IReadOnlyList<string> arguments)
     {
         var consumer = ResolveConsumerExecutable(repositoryRoot);
         var wrapper = Path.Combine(repositoryRoot, "eng", "Invoke-HeadlessProcess.ps1");
@@ -96,22 +173,20 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
         process.StartInfo.ArgumentList.Add("-File");
         process.StartInfo.ArgumentList.Add(wrapper);
         process.StartInfo.ArgumentList.Add(consumer);
-        process.StartInfo.ArgumentList.Add("--manifest");
-        process.StartInfo.ArgumentList.Add(manifestPath);
-        process.StartInfo.ArgumentList.Add("--dump");
-        process.StartInfo.ArgumentList.Add(dumpPath);
-        process.StartInfo.ArgumentList.Add("--machine-output");
-        process.StartInfo.ArgumentList.Add(machineOutput);
-        process.StartInfo.ArgumentList.Add("--human-output");
-        process.StartInfo.ArgumentList.Add(humanOutput);
+        foreach (var argument in arguments)
+        {
+            process.StartInfo.ArgumentList.Add(argument);
+        }
+
         process.StartInfo.Environment["DOTNET_DISABLE_GUI_ERRORS"] = "1";
         Assert.True(process.Start());
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
         Assert.True(process.WaitForExit(60_000), "The headless reference consumer did not exit within its bound.");
-        Assert.Equal(0, process.ExitCode);
-        Assert.Equal("W5_CONSUMER_OK:9", stdout.GetAwaiter().GetResult().Trim());
-        Assert.True(string.IsNullOrWhiteSpace(stderr.GetAwaiter().GetResult()));
+        return new ProcessResult(
+            process.ExitCode,
+            stdout.GetAwaiter().GetResult(),
+            stderr.GetAwaiter().GetResult());
     }
 
     private static void AssertMachineReport(string path)
@@ -123,6 +198,7 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
         Assert.Equal(64, root.GetProperty("dumpSnapshotSha256").GetString()!.Length);
         Assert.Equal("root", root.GetProperty("rootName").GetString());
         Assert.Equal("DumpProbe", root.GetProperty("rootTypeName").GetString());
+        Assert.Equal("GeneratedValidation", root.GetProperty("corpusKind").GetString());
         Assert.Contains("not representative", root.GetProperty("fixtureCaveat").GetString(), StringComparison.Ordinal);
         var scenarios = root.GetProperty("scenarios").EnumerateArray().ToArray();
         Assert.Equal(9, scenarios.Length);
@@ -228,6 +304,138 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
         Assert.Equal(9, report.Split(Environment.NewLine).Count(static line => line.Contains(": outcome=", StringComparison.Ordinal)));
     }
 
+    private static void AssertUsefulnessMachineReport(string path)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllBytes(path));
+        var root = document.RootElement;
+        Assert.Equal(1, root.GetProperty("usefulnessReportSchemaVersion").GetInt32());
+        Assert.Equal(1, root.GetProperty("portfolioSchemaVersion").GetInt32());
+        Assert.Equal("w5-usefulness-generated-validation-v1", root.GetProperty("portfolioId").GetString());
+        Assert.Equal("GeneratedValidation", root.GetProperty("corpusKind").GetString());
+        Assert.True(root.GetProperty("predeclaredBeforeEvaluation").GetBoolean());
+        Assert.False(root.GetProperty("claimsProductionReadiness").GetBoolean());
+        Assert.Contains(
+            "do not count as representative",
+            root.GetProperty("generatedValidationCaveat").GetString(),
+            StringComparison.Ordinal);
+        var evaluationReport = Assert.Single(root.GetProperty("evaluationReports").EnumerateArray());
+        Assert.Equal("GeneratedValidation", evaluationReport.GetProperty("corpusKind").GetString());
+        Assert.Equal(9, evaluationReport.GetProperty("scenarioCount").GetInt32());
+
+        var questions = root.GetProperty("questions").EnumerateArray().ToArray();
+        Assert.Equal(9, questions.Length);
+        var byId = questions.ToDictionary(
+            static question => question.GetProperty("questionId").GetString()!,
+            StringComparer.Ordinal);
+        Assert.Equal("W2", byId["generated-w2-exact-field"].GetProperty("admission").GetString());
+        Assert.Equal("Exact", byId["generated-w2-exact-field"].GetProperty("productOutcome").GetString());
+        Assert.Equal("W4", byId["generated-w4-partial-marker"].GetProperty("admission").GetString());
+        Assert.Equal("Partial", byId["generated-w4-partial-marker"].GetProperty("productOutcome").GetString());
+        Assert.Equal("Unknown", byId["generated-w4-unavailable-marker"].GetProperty("productOutcome").GetString());
+        Assert.Equal(
+            "Unavailable",
+            byId["generated-method-acquisition-failure"].GetProperty("productOutcome").GetString());
+        Assert.Equal(
+            "Unsupported",
+            byId["generated-unsupported-expression"].GetProperty("admission").GetString());
+        Assert.Equal(
+            "Unsupported",
+            byId["generated-unsupported-expression"].GetProperty("productOutcome").GetString());
+
+        var allRows = root.GetProperty("rawCounts").GetProperty("allRows");
+        Assert.Equal(9, allRows.GetProperty("totalQuestions").GetInt32());
+        Assert.Equal(1, allRows.GetProperty("distinctIncidents").GetInt32());
+        Assert.Equal(1, allRows.GetProperty("distinctApplicationShapes").GetInt32());
+        AssertRatio(allRows.GetProperty("admission").GetProperty("admitted"), 8, 9);
+        Assert.Equal(1, allRows.GetProperty("admission").GetProperty("w2").GetInt32());
+        Assert.Equal(7, allRows.GetProperty("admission").GetProperty("w4").GetInt32());
+        Assert.Equal(1, allRows.GetProperty("admission").GetProperty("unsupported").GetInt32());
+        AssertRatio(allRows.GetProperty("exactAnswers"), 3, 9);
+        AssertRatio(allRows.GetProperty("usefulPartialOrUnknownAnswers"), 0, 4);
+        AssertRatio(allRows.GetProperty("decisionChangingUsefulness"), 0, 9);
+        var outcomes = allRows.GetProperty("outcomeComposition");
+        Assert.Equal(3, outcomes.GetProperty("Exact").GetInt32());
+        Assert.Equal(1, outcomes.GetProperty("Partial").GetInt32());
+        Assert.Equal(3, outcomes.GetProperty("Unknown").GetInt32());
+        Assert.Equal(1, outcomes.GetProperty("Unavailable").GetInt32());
+        Assert.Equal(1, outcomes.GetProperty("Unsupported").GetInt32());
+        Assert.Equal(
+            1,
+            allRows.GetProperty("acquisitionFailureComposition").GetProperty("W5_MODULE_MISSING").GetInt32());
+
+        var representative = root.GetProperty("rawCounts").GetProperty("representativeRows");
+        Assert.Equal(0, representative.GetProperty("totalQuestions").GetInt32());
+        AssertRatio(representative.GetProperty("admission").GetProperty("admitted"), 0, 0);
+        AssertRatio(representative.GetProperty("exactAnswers"), 0, 0);
+        var gate = root.GetProperty("representativeGate");
+        Assert.Equal("OpenMissingRepresentativeCorpus", gate.GetProperty("status").GetString());
+        Assert.Equal(10, gate.GetProperty("minimumRepresentativeIncidents").GetInt32());
+        Assert.Equal(2, gate.GetProperty("minimumRepresentativeApplicationShapes").GetInt32());
+        Assert.Equal(0, gate.GetProperty("representativeIncidentCount").GetInt32());
+        Assert.Equal(0, gate.GetProperty("representativeApplicationShapeCount").GetInt32());
+        Assert.Equal(0, gate.GetProperty("representativeQuestionCount").GetInt32());
+        Assert.NotEmpty(gate.GetProperty("missingConditions").EnumerateArray());
+        var decision = root.GetProperty("nextDecision");
+        Assert.Equal("DeferredRepresentativeGateOpen", decision.GetProperty("status").GetString());
+        Assert.Equal(JsonValueKind.Null, decision.GetProperty("selection").ValueKind);
+        Assert.Empty(decision.GetProperty("blockerRanking").EnumerateArray());
+
+        var text = File.ReadAllText(path);
+        Assert.DoesNotContain('%', text);
+        Assert.DoesNotContain("percentage", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void AssertUsefulnessHumanReport(string path)
+    {
+        var report = File.ReadAllText(path);
+        Assert.Contains("W5 usefulness portfolio report v1", report, StringComparison.Ordinal);
+        Assert.Contains("Raw counts (all):", report, StringComparison.Ordinal);
+        Assert.Contains("admitted=8/9", report, StringComparison.Ordinal);
+        Assert.Contains("exact=3/9", report, StringComparison.Ordinal);
+        Assert.Contains("Raw counts (representative): questions=0", report, StringComparison.Ordinal);
+        Assert.Contains("OpenMissingRepresentativeCorpus", report, StringComparison.Ordinal);
+        Assert.Contains("selection=none", report, StringComparison.Ordinal);
+        Assert.DoesNotContain('%', report);
+        Assert.Equal(
+            9,
+            report.Split(Environment.NewLine)
+                .Count(static line => line.Contains(": admission=", StringComparison.Ordinal)));
+    }
+
+    private static void AssertGeneratedReportCannotBePromoted(
+        string repositoryRoot,
+        string portfolioManifest,
+        string reportRoot)
+    {
+        var promotedManifest = Path.Combine(reportRoot, "attempted-promoted-portfolio.json");
+        var text = File.ReadAllText(portfolioManifest).Replace(
+            "\"corpusKind\": \"GeneratedValidation\"",
+            "\"corpusKind\": \"RepresentativeIncident\"",
+            StringComparison.Ordinal);
+        File.WriteAllText(promotedManifest, text);
+        var result = RunHeadlessConsumer(
+            repositoryRoot,
+            [
+                "--portfolio-manifest",
+                promotedManifest,
+                "--report-root",
+                reportRoot,
+                "--machine-output",
+                Path.Combine(reportRoot, "attempted-promoted.machine.json"),
+                "--human-output",
+                Path.Combine(reportRoot, "attempted-promoted.human.txt"),
+            ]);
+        Assert.Equal(3, result.ExitCode);
+        Assert.True(string.IsNullOrWhiteSpace(result.StandardOutput), result.StandardOutput);
+        Assert.Contains("cannot be promoted or mixed", result.StandardError, StringComparison.Ordinal);
+    }
+
+    private static void AssertRatio(JsonElement ratio, int numerator, int denominator)
+    {
+        Assert.Equal(numerator, ratio.GetProperty("numerator").GetInt32());
+        Assert.Equal(denominator, ratio.GetProperty("denominator").GetInt32());
+    }
+
     private static string ResolveRepositoryRoot() =>
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
 
@@ -247,4 +455,6 @@ public sealed class W5HeadlessReferenceConsumerIntegrationTests
             targetFramework,
             fileName);
     }
+
+    private sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError);
 }

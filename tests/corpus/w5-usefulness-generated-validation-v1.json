@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "portfolioId": "w5-usefulness-generated-validation-v1",
+  "corpusKind": "GeneratedValidation",
+  "predeclaredBeforeEvaluation": true,
+  "declaredPurpose": "Validate deterministic W5.5 joining, classification, raw-count reporting, gate withholding, and unsupported/unavailable retention against the controlled W5.4 fixture corpus.",
+  "evaluationReports": [
+    {
+      "id": "generated-dumpprobe-report",
+      "path": "w5-expression-facade.machine.json"
+    }
+  ],
+  "questions": [
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-w2-exact-field",
+      "userTask": "Validate that an exact one-field W2 question reaches the derived-query path.",
+      "expressionRequested": "root.Marker",
+      "requiredContextKind": "Strong-handle DumpProbe root attributable to the captured process snapshot.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Exact",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "w2-exact-field",
+      "firstBoundary": {
+        "kind": "None",
+        "code": null,
+        "explanation": null
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Locate the unique strong-handle DumpProbe object.",
+        "Resolve the Marker instance field and read its four captured bytes."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "None"
+    },
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-w4-exact-interpreted",
+      "userTask": "Validate exact interpreted W4 evaluation through the public facade.",
+      "expressionRequested": "root.GetMarkerSummary()",
+      "requiredContextKind": "Strong-handle DumpProbe root plus exact module and method identity.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Exact",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "w4-exact-interpreted",
+      "firstBoundary": {
+        "kind": "None",
+        "code": null,
+        "explanation": null
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Locate the unique strong-handle DumpProbe object.",
+        "Resolve GetMarkerSummary and its helper closure from the captured module.",
+        "Read Marker and reproduce the bounded method computation manually."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "None"
+    },
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-w4-exact-modeled",
+      "userTask": "Validate exact modeled W4 evaluation without changing its semantic identity.",
+      "expressionRequested": "root.GetMarkerSummary()",
+      "requiredContextKind": "Strong-handle DumpProbe root plus exact module, method, helper, and field identity.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Exact",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "w4-exact-modeled",
+      "firstBoundary": {
+        "kind": "None",
+        "code": null,
+        "explanation": null
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Locate the unique strong-handle DumpProbe object.",
+        "Resolve the exact versioned GetMarkerSummary model identity.",
+        "Read Marker and apply the declared pure model manually."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "None"
+    },
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-w4-partial-marker",
+      "userTask": "Validate retention of a partial field observation as a completed non-exact W4 answer.",
+      "expressionRequested": "root.GetMarkerSummary()",
+      "requiredContextKind": "Strong-handle DumpProbe root with an attributable two-byte Marker prefix.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Partial",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "w4-partial-marker",
+      "firstBoundary": {
+        "kind": "MemberEvidence",
+        "code": "FIXTURE_MARKER_PARTIAL",
+        "explanation": "The controlled evidence view exposes only the first two of four requested Marker bytes."
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Locate the unique strong-handle DumpProbe object.",
+        "Observe that only a two-byte prefix of Marker is available.",
+        "Record an unknown result with the observed prefix instead of inventing the missing bytes."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "ContextAcquisition"
+    },
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-w4-unavailable-marker",
+      "userTask": "Validate retention of unavailable field evidence as a completed unknown W4 answer.",
+      "expressionRequested": "root.GetMarkerSummary()",
+      "requiredContextKind": "Strong-handle DumpProbe root with an attributable but unavailable Marker read.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Unavailable",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "w4-unavailable-marker",
+      "firstBoundary": {
+        "kind": "MemberEvidence",
+        "code": "FIXTURE_MARKER_UNAVAILABLE",
+        "explanation": "The controlled evidence view exposes none of the four requested Marker bytes."
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Locate the unique strong-handle DumpProbe object.",
+        "Attempt the Marker read and retain its unavailable status.",
+        "Record an unknown result instead of substituting a value."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "ContextAcquisition"
+    },
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-method-acquisition-failure",
+      "userTask": "Validate typed W4 method-acquisition failure when the module set is unavailable.",
+      "expressionRequested": "root.GetMarkerSummary()",
+      "requiredContextKind": "Strong-handle DumpProbe root plus an attributable declaring module.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Unavailable",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "method-acquisition-failure",
+      "firstBoundary": {
+        "kind": "MethodAcquisition",
+        "code": "W5_MODULE_MISSING",
+        "explanation": "The controlled evidence source exposes no module from which the method body can be reacquired."
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Locate the unique strong-handle DumpProbe object.",
+        "Attempt to identify the declaring module and stop when no candidate is present."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "ContextAcquisition"
+    },
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-unsupported-expression",
+      "userTask": "Validate that syntax outside the admitted W2 and W4 forms remains in the denominator.",
+      "expressionRequested": "root.GetMarkerSummary() + 1",
+      "requiredContextKind": "Strong-handle DumpProbe root; evaluation stops before member evidence is consumed.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Exact",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "unsupported-expression",
+      "firstBoundary": {
+        "kind": "Syntax",
+        "code": "QUERY_SYNTAX_UNSUPPORTED",
+        "explanation": "The arithmetic suffix is outside the bounded W5 expression admission contract."
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Evaluate GetMarkerSummary manually.",
+        "Add one to the recovered result outside the prototype consumer."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "ProductThesis"
+    },
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-instruction-budget-exhausted",
+      "userTask": "Validate an admitted W4 question that reaches the explicit zero-instruction execution bound.",
+      "expressionRequested": "root.GetMarkerSummary()",
+      "requiredContextKind": "Strong-handle DumpProbe root plus exact method and field evidence.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Exact",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "instruction-budget-exhausted",
+      "firstBoundary": {
+        "kind": "Execution",
+        "code": "EVAL_INSTRUCTION_LIMIT",
+        "explanation": "The predeclared instruction limit is zero, so execution cannot consume the first instruction."
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Locate the exact root, method, helper, and field evidence.",
+        "Observe that the declared execution budget permits no instruction and stop."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "ExecutionBody"
+    },
+    {
+      "incidentId": "generated-dumpprobe-fixture",
+      "applicationShape": "generated-dumpprobe-shape",
+      "questionId": "generated-cancel-before-execution",
+      "userTask": "Validate that pre-cancellation remains a typed terminal W4 outcome.",
+      "expressionRequested": "root.GetMarkerSummary()",
+      "requiredContextKind": "Strong-handle DumpProbe root plus exact method and field evidence.",
+      "contextAttribution": "Exact",
+      "requiredMemberEvidence": "Exact",
+      "evaluationReportId": "generated-dumpprobe-report",
+      "scenarioId": "cancel-before-execution",
+      "firstBoundary": {
+        "kind": "Execution",
+        "code": "EVAL_CANCELLED",
+        "explanation": "The caller cancels before evaluation begins."
+      },
+      "manualObjectWalkingOperationsKnown": true,
+      "manualObjectWalkingOperations": [
+        "Honor the caller cancellation and perform no manual evaluation."
+      ],
+      "answerUsefulForInvestigation": false,
+      "answerChangedNextDecision": false,
+      "decisionImpactExplanation": "Controlled fixture output has no real investigation decision to change.",
+      "dominantBlocker": "None"
+    }
+  ]
+}

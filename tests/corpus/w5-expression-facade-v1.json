@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "corpusKind": "GeneratedValidation",
   "dumpPath": "__generated_dump__",
   "root": {
     "name": "root",

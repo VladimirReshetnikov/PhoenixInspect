@@ -16,11 +16,18 @@ internal static class Program
     private const int MachineSchemaVersion = 1;
     private const int ManifestSchemaVersion = 1;
     private const int MaximumScenarios = 64;
-    private const string FixtureCaveat =
+    private const string GeneratedFixtureCaveat =
         "Generated fixture evidence views validate routing only; they are not representative incident observations.";
+    private const string RepresentativeCorpusCaveat =
+        "Representative designation comes from the predeclared incident manifest; the consumer does not independently verify provenance.";
 
     internal static int Main(string[] args)
     {
+        if (UsefulnessPortfolioRunner.IsRequested(args))
+        {
+            return UsefulnessPortfolioRunner.Run(args);
+        }
+
         try
         {
             var options = CommandLineOptions.Parse(args);
@@ -49,7 +56,7 @@ internal static class Program
                 .Select(scenario => RunScenario(session, rootBinding, scenario))
                 .ToImmutableArray();
             WriteMachineReport(options.MachineOutputPath, manifest, session.Snapshot, rows);
-            WriteHumanReport(options.HumanOutputPath, rows);
+            WriteHumanReport(options.HumanOutputPath, manifest, rows);
             Console.WriteLine($"W5_CONSUMER_OK:{rows.Length}");
             return 0;
         }
@@ -373,10 +380,11 @@ internal static class Program
         writer.WriteStartObject();
         writer.WriteNumber("machineSchemaVersion", MachineSchemaVersion);
         writer.WriteNumber("manifestSchemaVersion", manifest.SchemaVersion);
+        writer.WriteString("corpusKind", manifest.CorpusKind);
         writer.WriteString("dumpSnapshotSha256", snapshot.Sha256);
         writer.WriteString("rootName", manifest.Root.Name);
         writer.WriteString("rootTypeName", manifest.Root.TypeName);
-        writer.WriteString("fixtureCaveat", FixtureCaveat);
+        writer.WriteString("fixtureCaveat", GetCorpusCaveat(manifest));
         writer.WriteStartArray("scenarios");
         foreach (var row in rows)
         {
@@ -461,12 +469,16 @@ internal static class Program
         writer.WriteEndObject();
     }
 
-    private static void WriteHumanReport(string path, ImmutableArray<ScenarioRow> rows)
+    private static void WriteHumanReport(
+        string path,
+        ScenarioManifest manifest,
+        ImmutableArray<ScenarioRow> rows)
     {
         EnsureParentDirectory(path);
         using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         writer.WriteLine("W5 expression-facade report v1");
-        writer.WriteLine($"Caveat: {FixtureCaveat}");
+        writer.WriteLine($"Corpus: {manifest.CorpusKind}");
+        writer.WriteLine($"Caveat: {GetCorpusCaveat(manifest)}");
         foreach (var row in rows)
         {
             var outcome = row.Outcome;
@@ -484,6 +496,13 @@ internal static class Program
                 $"diagnostics={diagnostics}; fixture-view={row.FixtureEvidenceView}; repetitions={row.Repetitions}");
         }
     }
+
+    private static string GetCorpusCaveat(ScenarioManifest manifest) => manifest.CorpusKind switch
+    {
+        "GeneratedValidation" => GeneratedFixtureCaveat,
+        "RepresentativeIncident" => RepresentativeCorpusCaveat,
+        _ => throw new InvalidDataException($"Unknown corpus kind '{manifest.CorpusKind}'."),
+    };
 
     private static void EnsureParentDirectory(string path)
     {
@@ -657,6 +676,9 @@ internal static class Program
         [JsonPropertyName("dumpPath")]
         public string? DumpPath { get; init; }
 
+        [JsonPropertyName("corpusKind")]
+        public string CorpusKind { get; init; } = "GeneratedValidation";
+
         [JsonPropertyName("root")]
         public RootDefinition Root { get; init; } = null!;
 
@@ -674,6 +696,8 @@ internal static class Program
             {
                 throw new InvalidDataException("The manifest root selector is required.");
             }
+
+            _ = GetCorpusCaveat(this);
 
             Root.Validate();
             if (Scenarios.IsDefaultOrEmpty || Scenarios.Length > MaximumScenarios ||
