@@ -22,6 +22,7 @@
     <ProjectReference Include="../../src/Interpreter.Domain.Concrete/Interpreter.Domain.Concrete.csproj" />
     <ProjectReference Include="../../src/Interpreter.Metadata.SRM/Interpreter.Metadata.SRM.csproj" />
     <ProjectReference Include="../../src/Interpreter.Host.Dump.ClrMD/Interpreter.Host.Dump.ClrMD.csproj" />
+    <ProjectReference Include="../../src/Interpreter.Product.DumpDebugging/Interpreter.Product.DumpDebugging.csproj" />
     <ProjectReference Include="../../src/Interpreter.Product.DumpQuery/Interpreter.Product.DumpQuery.csproj" />
     <ProjectReference Include="../Interpreter.OptimizedContextTestTarget/Interpreter.OptimizedContextTestTarget.csproj"
                       ReferenceOutputAssembly="false"

@@ -6,6 +6,7 @@ using System.Reflection.PortableExecutable;
 using Interpreter.Core.Abstractions;
 using Interpreter.Host.Abstractions;
 using Interpreter.Host.Dump.ClrMD;
+using Interpreter.Product.DumpDebugging;
 using Xunit;
 using ModuleHandle = Interpreter.Core.Abstractions.ModuleHandle;
 
@@ -17,6 +18,8 @@ namespace Interpreter.IntegrationTests;
 public sealed class ClrmdDumpExecutionResolverGraphTests
 {
     private const int ExpectedMarker = 0x13579BDF;
+    private const int ExpectedAlternateMarker = 0x13579BDE;
+    private static readonly PureCallModelVersion Version = new(1, 0, 0);
 
     /// <summary>
     /// Proves graph issuance is atomic and input-order independent, retained bodies are canonical, and valid
@@ -357,12 +360,209 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
         Assert.Equal(exactEvidence.Field, legacyExact.Field);
     }
 
+    /// <summary>
+    /// Proves the product binder canonicalizes unordered ClrMD rows into detached immutable memory and reproduces an
+    /// exact or explained-missing interpreted result through independent bindings and runner issuers.
+    /// </summary>
+    [Theory]
+    [InlineData(ClrmdEvidenceStatus.Exact)]
+    [InlineData(ClrmdEvidenceStatus.Partial)]
+    [InlineData(ClrmdEvidenceStatus.Unavailable)]
+    [Trait("Category", "Fast")]
+    [Trait("Corpus", "W4DumpBindingV1")]
+    public void Dump_binding_detaches_canonical_memory_and_executes_interpreted_graph(
+        ClrmdEvidenceStatus markerStatus)
+    {
+        var fixture = SyntheticFixture.Create();
+        var resolver = AssertSuccess(ClrmdDumpExecutionResolver.CreateMethodGraph(
+            fixture.Module,
+            fixture.MetadataIdentity,
+            fixture.RootBody,
+            ImmutableArray.Create(fixture.HelperBody)));
+        var marker = AssertSuccess(resolver.CorrelateInt32FieldObservation(
+            fixture.OwnerSearch,
+            CreateFieldObservation(fixture, markerStatus)));
+        var alternate = AssertSuccess(resolver.CorrelateInt32FieldObservation(
+            fixture.OwnerSearch,
+            CreateFieldObservation(fixture, ClrmdEvidenceStatus.Exact, alternate: true)));
+
+        var binding = Bind(resolver, ImmutableArray.Create(alternate, marker));
+        var replayBinding = Bind(resolver, ImmutableArray.Create(marker, alternate));
+
+        Assert.Equal(EvaluationEvidenceSourceKind.DumpSnapshot, binding.Candidate.EvidenceSource);
+        Assert.Equal(fixture.Module.Identity.Snapshot.MemorySourceId, binding.Candidate.SnapshotIdentity!.SourceId);
+        Assert.Equal(fixture.Module.Identity.SourceId, binding.Candidate.ModuleIdentity!.SourceId);
+        Assert.Equal(binding.RootSelectionId, binding.Candidate.RootSelectionId);
+        Assert.Equal(binding.RootEvidenceSha256, binding.Candidate.RootEvidenceSha256);
+        Assert.Equal(binding.RootEvidenceSha256, binding.Memory.RootEvidenceSha256);
+        Assert.Equal(2, binding.Memory.FieldCount);
+        Assert.Same(binding.Memory, binding.Memory.Fork());
+        Assert.NotSame(binding.Memory, replayBinding.Memory);
+        Assert.Equal(binding.Memory, replayBinding.Memory);
+        Assert.Equal(binding.Memory.Sha256, replayBinding.Memory.Sha256);
+        Assert.Equal(
+            new[] { fixture.MarkerFieldToken, fixture.AlternateMarkerFieldToken }.OrderBy(static token => token),
+            binding.FieldObservations.Select(static item => item.Field.Handle.MetadataToken));
+
+        var runner = new CounterfactualMethodRunner<CounterfactualDumpMemory>();
+        var preparation = runner.Prepare(binding.Candidate);
+        Assert.True(preparation.IsSuccess, preparation.Failure?.Diagnostics[0].Code);
+        var result = runner.Run(preparation.Plan);
+        var replayRunner = new CounterfactualMethodRunner<CounterfactualDumpMemory>();
+        var replayPreparation = replayRunner.Prepare(replayBinding.Candidate);
+        Assert.True(replayPreparation.IsSuccess, replayPreparation.Failure?.Diagnostics[0].Code);
+        var replayResult = replayRunner.Run(replayPreparation.Plan);
+
+        var expectedEvidence = markerStatus switch
+        {
+            ClrmdEvidenceStatus.Exact => EvaluationEvidenceStatus.Exact,
+            ClrmdEvidenceStatus.Partial => EvaluationEvidenceStatus.Partial,
+            ClrmdEvidenceStatus.Unavailable => EvaluationEvidenceStatus.Unavailable,
+            _ => throw new ArgumentOutOfRangeException(nameof(markerStatus)),
+        };
+        Assert.Equal(EvaluationCompletionStatus.Completed, result.Completion);
+        Assert.Equal(
+            markerStatus == ClrmdEvidenceStatus.Exact
+                ? EvaluationCompleteness.Complete
+                : EvaluationCompleteness.Partial,
+            result.Completeness);
+        Assert.Equal(expectedEvidence, result.Evidence);
+        Assert.Equal(10, result.Context.Accounting.InstructionUsed);
+        Assert.True(result.Context.ReachedFieldLoadOrdinals.SequenceEqual([0, 1]));
+        if (markerStatus == ClrmdEvidenceStatus.Exact)
+        {
+            Assert.Equal(CounterfactualExecutionValueKind.ExactReturn, result.Value!.Kind);
+            Assert.Equal(0x26AF37BD, result.Value.ExactInt32);
+        }
+        else
+        {
+            Assert.Equal(CounterfactualExecutionValueKind.UnknownReturn, result.Value!.Kind);
+            Assert.Null(result.Value.ExactInt32);
+            Assert.NotNull(result.Value.Lineage);
+        }
+
+        Assert.Equal(result.Sha256, replayResult.Sha256);
+        Assert.True(result.CanonicalBytes.AsSpan().SequenceEqual(replayResult.CanonicalBytes.AsSpan()));
+    }
+
+    /// <summary>
+    /// Proves the same detached binding executes through a body-free pure model and never requires the omitted helper
+    /// MethodDef body to be admitted by the dump resolver.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    [Trait("Corpus", "W4DumpBindingV1")]
+    public void Dump_binding_executes_body_free_modeled_target()
+    {
+        var fixture = SyntheticFixture.Create();
+        var resolver = AssertSuccess(ClrmdDumpExecutionResolver.Create(
+            fixture.Module,
+            fixture.MetadataIdentity,
+            fixture.RootBody));
+        var marker = AssertSuccess(resolver.CorrelateInt32FieldObservation(
+            fixture.OwnerSearch,
+            CreateFieldObservation(fixture, ClrmdEvidenceStatus.Exact)));
+        var alternate = AssertSuccess(resolver.CorrelateInt32FieldObservation(
+            fixture.OwnerSearch,
+            CreateFieldObservation(fixture, ClrmdEvidenceStatus.Exact, alternate: true)));
+        var modeledTarget = new MethodHandle(resolver.ModuleHandle, fixture.HelperToken);
+        var registry = new SumModelRegistry();
+        var binding = Bind(
+            resolver,
+            ImmutableArray.Create(marker, alternate),
+            modeledTarget,
+            registry);
+
+        AssertFailure(
+            resolver.GetMethodDefinition(modeledTarget),
+            ResolutionFailureKind.Unavailable,
+            "DUMP_EXEC_METHOD_BODY_UNAVAILABLE");
+        var runner = new CounterfactualMethodRunner<CounterfactualDumpMemory>();
+        var preparation = runner.Prepare(binding.Candidate);
+        Assert.True(preparation.IsSuccess, preparation.Failure?.Diagnostics[0].Code);
+        var result = runner.Run(preparation.Plan);
+
+        Assert.Equal(EvaluationCompletionStatus.Completed, result.Completion);
+        Assert.Equal(EvaluationCompleteness.Complete, result.Completeness);
+        Assert.Equal(EvaluationEvidenceStatus.Exact, result.Evidence);
+        Assert.Equal(CounterfactualExecutionValueKind.ExactReturn, result.Value!.Kind);
+        Assert.Equal(0x26AF37BD, result.Value.ExactInt32);
+        Assert.Equal(6, result.Context.Accounting.InstructionUsed);
+        Assert.Equal(1, result.Context.ModelInvocationCount);
+        Assert.Equal(1, result.Context.CompletedModeledCallCount);
+        Assert.Equal(1, registry.SelectionCount);
+        Assert.Equal(1, registry.Model.InvocationCount);
+    }
+
+    /// <summary>
+    /// Proves the binder rejects duplicate FieldDefs and individually valid rows issued for a different root method,
+    /// rather than publishing memory from a cross-request evidence mixture.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    [Trait("Corpus", "W4DumpBindingV1")]
+    public void Dump_binding_rejects_duplicate_and_mixed_root_rows()
+    {
+        var fixture = SyntheticFixture.Create();
+        var rootResolver = AssertSuccess(ClrmdDumpExecutionResolver.Create(
+            fixture.Module,
+            fixture.MetadataIdentity,
+            fixture.RootBody));
+        var getterResolver = AssertSuccess(ClrmdDumpExecutionResolver.Create(
+            fixture.Module,
+            fixture.MetadataIdentity,
+            fixture.ExtraBody));
+        var markerObservation = CreateFieldObservation(fixture, ClrmdEvidenceStatus.Exact);
+        var alternateObservation = CreateFieldObservation(
+            fixture,
+            ClrmdEvidenceStatus.Exact,
+            alternate: true);
+        var rootMarker = AssertSuccess(rootResolver.CorrelateInt32FieldObservation(
+            fixture.OwnerSearch,
+            markerObservation));
+        var rootAlternate = AssertSuccess(rootResolver.CorrelateInt32FieldObservation(
+            fixture.OwnerSearch,
+            alternateObservation));
+        var getterMarker = AssertSuccess(getterResolver.CorrelateInt32FieldObservation(
+            fixture.OwnerSearch,
+            markerObservation));
+
+        Assert.Throws<ArgumentException>(() => Bind(
+            rootResolver,
+            ImmutableArray.Create(rootMarker, rootMarker)));
+        Assert.Throws<ArgumentException>(() => Bind(
+            rootResolver,
+            ImmutableArray.Create(rootAlternate, getterMarker)));
+    }
+
+    private static CounterfactualDumpExecutionBinding Bind(
+        ClrmdDumpExecutionResolver resolver,
+        ImmutableArray<ClrmdInt32FieldExecutionEvidence> evidence,
+        MethodHandle? modeledTarget = null,
+        IPureCallModelRegistry? registry = null) =>
+        CounterfactualDumpExecutionBinder.Bind(
+            resolver,
+            evidence,
+            "policy.counterfactual.dump",
+            Version,
+            instructionLimit: 100,
+            logicalDepthLimit: 2,
+            traversalLimit: 10,
+            "catalog.counterfactual.dump",
+            Version,
+            modeledTarget,
+            ["assume.read-only", "assume.counterfactual-not-historical"],
+            registry);
+
     private static ClrmdEvidenceResult<ClrmdInt32FieldObservation> CreateFieldObservation(
         SyntheticFixture fixture,
-        ClrmdEvidenceStatus status)
+        ClrmdEvidenceStatus status,
+        bool alternate = false)
     {
+        var expectedValue = alternate ? ExpectedAlternateMarker : ExpectedMarker;
+        var runtimeField = alternate ? fixture.RuntimeAlternateField : fixture.RuntimeField;
         Span<byte> exactBytes = stackalloc byte[sizeof(int)];
-        BinaryPrimitives.WriteInt32LittleEndian(exactBytes, ExpectedMarker);
+        BinaryPrimitives.WriteInt32LittleEndian(exactBytes, expectedValue);
         ReadOnlySpan<byte> observedBytes = status switch
         {
             ClrmdEvidenceStatus.Exact => exactBytes,
@@ -372,13 +572,13 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
         };
         var memory = MemoryReadResult.Create(
             fixture.Module.Identity.Snapshot.MemorySourceId,
-            fixture.RuntimeField.Address,
+            runtimeField.Address,
             sizeof(int),
             observedBytes);
         var observation = new ClrmdInt32FieldObservation(
-            fixture.RuntimeField,
+            runtimeField,
             memory,
-            status == ClrmdEvidenceStatus.Exact ? ExpectedMarker : null);
+            status == ClrmdEvidenceStatus.Exact ? expectedValue : null);
         return ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
             status,
             status == ClrmdEvidenceStatus.Exact
@@ -478,6 +678,7 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
         private const string ExtraName = "GetMarker";
         private const string ProbeName = "DumpProbe";
         private const string MarkerName = "Marker";
+        private const string AlternateMarkerName = "AlternateMarker";
 
         private SyntheticFixture(
             ClrmdModuleInfo module,
@@ -489,8 +690,10 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
             int helperToken,
             int extraToken,
             int markerFieldToken,
+            int alternateMarkerFieldToken,
             ClrmdHeapObjectSearchResult ownerSearch,
-            ClrmdInstanceFieldInfo runtimeField)
+            ClrmdInstanceFieldInfo runtimeField,
+            ClrmdInstanceFieldInfo runtimeAlternateField)
         {
             Module = module;
             MetadataIdentity = metadataIdentity;
@@ -501,8 +704,10 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
             HelperToken = helperToken;
             ExtraToken = extraToken;
             MarkerFieldToken = markerFieldToken;
+            AlternateMarkerFieldToken = alternateMarkerFieldToken;
             OwnerSearch = ownerSearch;
             RuntimeField = runtimeField;
+            RuntimeAlternateField = runtimeAlternateField;
         }
 
         internal ClrmdModuleInfo Module { get; }
@@ -523,9 +728,13 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
 
         internal int MarkerFieldToken { get; }
 
+        internal int AlternateMarkerFieldToken { get; }
+
         internal ClrmdHeapObjectSearchResult OwnerSearch { get; }
 
         internal ClrmdInstanceFieldInfo RuntimeField { get; }
+
+        internal ClrmdInstanceFieldInfo RuntimeAlternateField { get; }
 
         internal static SyntheticFixture Create()
         {
@@ -585,6 +794,7 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
             var helperHandle = methodHandles[HelperName];
             var extraHandle = methodHandles[ExtraName];
             var markerHandle = fieldHandles[MarkerName];
+            var alternateMarkerHandle = fieldHandles[AlternateMarkerName];
             var standaloneSignatureRowCount = metadata.GetTableRowCount(TableIndex.StandAloneSig);
             var rootBody = CreateBody(
                 peReader,
@@ -648,6 +858,19 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
                 elementType: "Int32",
                 fieldTypeName: "System.Int32",
                 nullableInt32Layout: null);
+            var runtimeAlternateField = new ClrmdInstanceFieldInfo(
+                snapshot,
+                ownerAddress,
+                methodTable,
+                ProbeName,
+                AlternateMarkerName,
+                MetadataTokens.GetToken(alternateMarkerHandle),
+                checked(ownerAddress + 0x24UL),
+                sizeof(int),
+                isObjectReference: false,
+                elementType: "Int32",
+                fieldTypeName: "System.Int32",
+                nullableInt32Layout: null);
 
             return new SyntheticFixture(
                 module,
@@ -659,8 +882,10 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
                 MetadataTokens.GetToken(helperHandle),
                 MetadataTokens.GetToken(extraHandle),
                 MetadataTokens.GetToken(markerHandle),
+                MetadataTokens.GetToken(alternateMarkerHandle),
                 ownerSearch,
-                runtimeField);
+                runtimeField,
+                runtimeAlternateField);
         }
 
         private static ClrmdEvidenceResult<ClrmdMethodBodyInfo> CreateBody(
@@ -754,6 +979,44 @@ public sealed class ClrmdDumpExecutionResolverGraphTests
             }
 
             return read;
+        }
+    }
+
+    private sealed class SumModelRegistry : IPureCallModelRegistry
+    {
+        internal int SelectionCount { get; private set; }
+
+        internal SumModel Model { get; private set; } = null!;
+
+        public PureCallModelSelectionResult Select(ResolvedMethodCallTarget target)
+        {
+            SelectionCount++;
+            var descriptor = new PureCallModelDescriptor(
+                new PureCallModelIdentity("w4.combine-markers", Version),
+                target,
+                PureCallModelConfidence.Exact,
+                EvaluationEffectStatus.None);
+            Model = new SumModel(descriptor);
+            return PureCallModelSelectionResult.Selected(Model);
+        }
+    }
+
+    private sealed class SumModel(PureCallModelDescriptor descriptor) : IPureCallModel
+    {
+        public PureCallModelDescriptor Descriptor { get; } = descriptor;
+
+        internal int InvocationCount { get; private set; }
+
+        public PureCallModelOutcome Invoke(PureCallModelInvocation invocation)
+        {
+            ArgumentNullException.ThrowIfNull(invocation);
+            InvocationCount++;
+            return invocation.Arguments.Any(static item =>
+                    item.Kind == PureCallModelArgumentKind.ExplainedUnknownInt32)
+                ? PureCallModelOutcome.UnknownReturn()
+                : PureCallModelOutcome.ExactReturn(unchecked(
+                    invocation.Arguments[0].Int32Value!.Value +
+                    invocation.Arguments[1].Int32Value!.Value));
         }
     }
 }

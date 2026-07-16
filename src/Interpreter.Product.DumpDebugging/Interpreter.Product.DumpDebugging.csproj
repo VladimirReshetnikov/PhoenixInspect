@@ -7,5 +7,7 @@
     <ProjectReference Include="../Interpreter.Core.Abstractions/Interpreter.Core.Abstractions.csproj" />
     <ProjectReference Include="../Interpreter.Core.Execution/Interpreter.Core.Execution.csproj" />
     <ProjectReference Include="../Interpreter.Domain.Concrete/Interpreter.Domain.Concrete.csproj" />
+    <ProjectReference Include="../Interpreter.Host.Abstractions/Interpreter.Host.Abstractions.csproj" />
+    <ProjectReference Include="../Interpreter.Host.Dump.ClrMD/Interpreter.Host.Dump.ClrMD.csproj" />
   </ItemGroup>
 </Project>
