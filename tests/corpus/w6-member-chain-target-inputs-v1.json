@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "scenarioSetId": "w6-member-chain-target-inputs-v1",
+  "corpusKind": "Synthetic",
+  "lifecycle": "W6.1TargetShapeFreeze",
+  "caveat": "This draft freezes target-affecting graph families, arguments, roots, and expressions before the W6.1 artifact refresh. It is not W6 evaluation evidence or a field-readiness corpus.",
+  "scenarios": [
+    {
+      "id": "w6-01-request-current-status",
+      "shape": "RequestPipeline",
+      "targetArguments": ["--synthetic-request-pipeline", "101", "-1001", "running"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "expression": "root.CurrentRequest.Status"
+    },
+    {
+      "id": "w6-02-request-failure-code",
+      "shape": "RequestPipeline",
+      "targetArguments": ["--synthetic-request-pipeline", "102", "-1002", "failed"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "expression": "root.Failure?.Code"
+    },
+    {
+      "id": "w6-03-request-null-fallback",
+      "shape": "RequestPipeline",
+      "targetArguments": ["--synthetic-request-pipeline", "103", "-1003", "clear"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "expression": "root.Failure?.Code ?? \"<none>\""
+    },
+    {
+      "id": "w6-04-request-direct-null",
+      "shape": "RequestPipeline",
+      "targetArguments": ["--synthetic-request-pipeline", "104", "-1004", "clear"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "expression": "root.Failure.Code"
+    },
+    {
+      "id": "w6-05-request-partial-reference",
+      "shape": "RequestPipeline",
+      "targetArguments": ["--synthetic-request-pipeline", "105", "-1005", "degraded"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "expression": "root.Failure?.Code ?? \"<none>\""
+    },
+    {
+      "id": "w6-06-request-capped-status",
+      "shape": "RequestPipeline",
+      "targetArguments": ["--synthetic-request-pipeline", "106", "-1006", "running"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "expression": "root.CurrentRequest.Status"
+    },
+    {
+      "id": "w6-07-batch-progress-state",
+      "shape": "BatchPipeline",
+      "targetArguments": ["--synthetic-batch-pipeline", "107", "-1007", "running"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "expression": "root.Progress.State"
+    },
+    {
+      "id": "w6-08-batch-completed-partitions",
+      "shape": "BatchPipeline",
+      "targetArguments": ["--synthetic-batch-pipeline", "108", "-1008", "running"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "expression": "root.Progress.CompletedPartitions"
+    },
+    {
+      "id": "w6-09-batch-null-failure",
+      "shape": "BatchPipeline",
+      "targetArguments": ["--synthetic-batch-pipeline", "109", "-1009", "clear"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "expression": "root.LastFailure?.Code"
+    },
+    {
+      "id": "w6-10-batch-failure-code",
+      "shape": "BatchPipeline",
+      "targetArguments": ["--synthetic-batch-pipeline", "110", "-1010", "failed"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "expression": "root.LastFailure?.Code ?? \"<none>\""
+    },
+    {
+      "id": "w6-11-batch-unavailable-progress",
+      "shape": "BatchPipeline",
+      "targetArguments": ["--synthetic-batch-pipeline", "111", "-1011", "running"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "expression": "root.Progress.State"
+    },
+    {
+      "id": "w6-12-workflow-attempt-status",
+      "shape": "WorkflowDispatch",
+      "targetArguments": ["--synthetic-workflow-dispatch", "112", "-1012", "running"],
+      "rootType": "SyntheticWorkflowDispatchProbe",
+      "expression": "root.CurrentAttempt.Status"
+    },
+    {
+      "id": "w6-13-coordinator-owner-name",
+      "shape": "CoordinatorPipeline",
+      "targetArguments": ["--synthetic-coordinator-pipeline", "113", "-1013", "running"],
+      "rootType": "SyntheticCoordinatorPipelineProbe",
+      "expression": "root.Owner?.Name ?? \"<unassigned>\""
+    },
+    {
+      "id": "w6-14-coordinator-null-job",
+      "shape": "CoordinatorPipeline",
+      "targetArguments": ["--synthetic-coordinator-pipeline", "114", "-1014", "running"],
+      "rootType": "SyntheticCoordinatorPipelineProbe",
+      "expression": "root.ActiveJob?.RetryCount ?? 0"
+    },
+    {
+      "id": "w6-15-coordinator-deep-health",
+      "shape": "CoordinatorPipeline",
+      "targetArguments": ["--synthetic-coordinator-pipeline", "115", "-1015", "degraded"],
+      "rootType": "SyntheticCoordinatorPipelineProbe",
+      "expression": "root.ActiveShard.Health.State"
+    },
+    {
+      "id": "w6-16-coordinator-worker-index",
+      "shape": "CoordinatorPipeline",
+      "targetArguments": ["--synthetic-coordinator-pipeline", "116", "-1016", "running"],
+      "rootType": "SyntheticCoordinatorPipelineProbe",
+      "expression": "root.Workers[0].State"
+    },
+    {
+      "id": "w6-17-coordinator-status-method",
+      "shape": "CoordinatorPipeline",
+      "targetArguments": ["--synthetic-coordinator-pipeline", "117", "-1017", "running"],
+      "rootType": "SyntheticCoordinatorPipelineProbe",
+      "expression": "root.CurrentTask.GetState()"
+    },
+    {
+      "id": "w6-18-coordinator-root-absence",
+      "shape": "CoordinatorPipeline",
+      "targetArguments": ["--synthetic-coordinator-pipeline", "118", "-1018", "clear"],
+      "rootType": "SyntheticCoordinatorPipelineProbe",
+      "expression": "root.Owner?.Name"
+    },
+    {
+      "id": "w6-19-workflow-unavailable-attempt",
+      "shape": "WorkflowDispatch",
+      "targetArguments": ["--synthetic-workflow-dispatch", "119", "-1019", "running"],
+      "rootType": "SyntheticWorkflowDispatchProbe",
+      "expression": "root.CurrentAttempt.Status"
+    },
+    {
+      "id": "w6-20-workflow-display-method",
+      "shape": "WorkflowDispatch",
+      "targetArguments": ["--synthetic-workflow-dispatch", "120", "-1020", "running"],
+      "rootType": "SyntheticWorkflowDispatchProbe",
+      "expression": "root.CurrentAttempt.GetDisplayStatus()"
+    },
+    {
+      "id": "w6-21-request-target-conflict",
+      "shape": "RequestPipeline",
+      "targetArguments": ["--synthetic-request-pipeline", "121", "-1021", "running"],
+      "rootType": "SyntheticRequestPipelineProbe",
+      "expression": "root.CurrentRequest.Status"
+    },
+    {
+      "id": "w6-22-workflow-deep-worker",
+      "shape": "WorkflowDispatch",
+      "targetArguments": ["--synthetic-workflow-dispatch", "122", "-1022", "running"],
+      "rootType": "SyntheticWorkflowDispatchProbe",
+      "expression": "root.CurrentAttempt.Worker.State"
+    },
+    {
+      "id": "w6-23-workflow-attempt-index",
+      "shape": "WorkflowDispatch",
+      "targetArguments": ["--synthetic-workflow-dispatch", "123", "-1023", "degraded"],
+      "rootType": "SyntheticWorkflowDispatchProbe",
+      "expression": "root.Attempts[0].Status"
+    },
+    {
+      "id": "w6-24-batch-invalid-progress-target",
+      "shape": "BatchPipeline",
+      "targetArguments": ["--synthetic-batch-pipeline", "124", "-1024", "running"],
+      "rootType": "SyntheticBatchPipelineProbe",
+      "expression": "root.Progress.CompletedPartitions"
+    }
+  ]
+}

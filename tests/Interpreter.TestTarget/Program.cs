@@ -72,6 +72,16 @@ internal static class Program
             return RunSyntheticBatchPipeline(batchMarker, batchAlternate, batchState);
         }
 
+        if (args is ["--synthetic-coordinator-pipeline", var coordinatorMarker, var coordinatorAlternate, var coordinatorState])
+        {
+            return RunSyntheticCoordinatorPipeline(coordinatorMarker, coordinatorAlternate, coordinatorState);
+        }
+
+        if (args is ["--synthetic-workflow-dispatch", var workflowMarker, var workflowAlternate, var workflowState])
+        {
+            return RunSyntheticWorkflowDispatch(workflowMarker, workflowAlternate, workflowState);
+        }
+
         RetOnly();
         if (FatBodyWithLocalsAndExceptionRegions(41) != 42)
         {
@@ -143,6 +153,47 @@ internal static class Program
         if (root.GetMarkerSummary() != unchecked(marker + alternate))
         {
             return 80;
+        }
+
+        return PauseWithStrongRoot(root);
+    }
+
+    private static int RunSyntheticCoordinatorPipeline(
+        string markerText,
+        string alternateText,
+        string state)
+    {
+        if (!TryParseSyntheticArguments(markerText, alternateText, state, out var marker, out var alternate))
+        {
+            return 81;
+        }
+
+        var root = new SyntheticCoordinatorPipelineProbe(marker, alternate, state);
+        if (root.GetMarkerSummary() != unchecked(marker + alternate) ||
+            root.Owner is null ||
+            root.CurrentTask.GetState() != state)
+        {
+            return 82;
+        }
+
+        return PauseWithStrongRoot(root);
+    }
+
+    private static int RunSyntheticWorkflowDispatch(
+        string markerText,
+        string alternateText,
+        string state)
+    {
+        if (!TryParseSyntheticArguments(markerText, alternateText, state, out var marker, out var alternate))
+        {
+            return 83;
+        }
+
+        var root = new SyntheticWorkflowDispatchProbe(marker, alternate, state);
+        if (root.GetMarkerSummary() != unchecked(marker + alternate) ||
+            root.CurrentAttempt.GetDisplayStatus() != state)
+        {
+            return 84;
         }
 
         return PauseWithStrongRoot(root);
@@ -305,3 +356,137 @@ internal sealed record SyntheticFailureRecord(string Code);
 internal sealed record SyntheticRequestState(string Status, string CorrelationId);
 
 internal sealed record SyntheticBatchProgress(string State, int CompletedPartitions, int TotalPartitions);
+
+internal sealed class SyntheticCoordinatorPipelineProbe
+{
+    internal SyntheticCoordinatorPipelineProbe(int marker, int alternateMarker, string state)
+    {
+        Marker = marker;
+        AlternateMarker = alternateMarker;
+        Owner = new SyntheticCoordinatorOwner(
+            Name: $"coordinator-{marker:X8}",
+            Region: marker >= 0 ? "west" : "east");
+        ActiveJob = state is "failed" or "degraded"
+            ? new SyntheticCoordinatorJob(
+                RetryCount: Math.Abs(alternateMarker % 7),
+                JobId: $"job-{alternateMarker:X8}")
+            : null;
+        ActiveShard = new SyntheticCoordinatorShard(
+            Id: $"shard-{Math.Abs(marker % 11)}",
+            Health: new SyntheticShardHealth(
+                State: state is "failed" ? "unhealthy" : state,
+                FailedWorkers: state is "failed" ? 2 : state is "degraded" ? 1 : 0));
+        Workers =
+        [
+            new SyntheticCoordinatorWorker(State: state, QueueDepth: Math.Abs(marker % 13)),
+            new SyntheticCoordinatorWorker(State: "standby", QueueDepth: Math.Abs(alternateMarker % 13)),
+        ];
+        CurrentTask = new SyntheticCoordinatorTask(state);
+    }
+
+    internal readonly int Marker;
+
+    internal readonly int AlternateMarker;
+
+    internal readonly SyntheticCoordinatorOwner? Owner;
+
+    internal readonly SyntheticCoordinatorJob? ActiveJob;
+
+    internal readonly SyntheticCoordinatorShard ActiveShard;
+
+    internal readonly SyntheticCoordinatorWorker[] Workers;
+
+    internal readonly SyntheticCoordinatorTask CurrentTask;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal int GetMarkerSummary() => CombineMarkers(Marker, AlternateMarker);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CombineMarkers(int marker, int alternateMarker) =>
+        unchecked(marker + alternateMarker);
+}
+
+internal sealed record SyntheticCoordinatorOwner(string Name, string Region);
+
+internal sealed record SyntheticCoordinatorJob(int RetryCount, string JobId);
+
+internal sealed record SyntheticCoordinatorShard(string Id, SyntheticShardHealth Health);
+
+internal sealed record SyntheticShardHealth(string State, int FailedWorkers);
+
+internal sealed record SyntheticCoordinatorWorker(string State, int QueueDepth);
+
+internal sealed class SyntheticCoordinatorTask
+{
+    private readonly string state;
+
+    internal SyntheticCoordinatorTask(string state)
+    {
+        this.state = state;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal string GetState() => state;
+}
+
+internal sealed class SyntheticWorkflowDispatchProbe
+{
+    internal SyntheticWorkflowDispatchProbe(int marker, int alternateMarker, string state)
+    {
+        Marker = marker;
+        AlternateMarker = alternateMarker;
+        var primaryWorker = new SyntheticAssignedWorker(
+            State: state is "failed" ? "draining" : "assigned",
+            Node: $"worker-{Math.Abs(marker % 19)}");
+        var standbyWorker = new SyntheticAssignedWorker(
+            State: "standby",
+            Node: $"worker-{Math.Abs(alternateMarker % 19)}");
+        CurrentAttempt = new SyntheticWorkflowAttempt(
+            Status: state,
+            Worker: primaryWorker,
+            Sequence: Math.Abs(marker % 31));
+        OptionalError = state is "failed" or "degraded"
+            ? new SyntheticWorkflowError(
+                Code: state == "failed" ? "dispatch-failed" : "dispatch-degraded",
+                Message: $"workflow-{marker:X8}-{alternateMarker:X8}")
+            : null;
+        AssignedWorker = primaryWorker;
+        Attempts =
+        [
+            CurrentAttempt,
+            new SyntheticWorkflowAttempt(
+                Status: "queued",
+                Worker: standbyWorker,
+                Sequence: Math.Abs(alternateMarker % 31)),
+        ];
+    }
+
+    internal readonly int Marker;
+
+    internal readonly int AlternateMarker;
+
+    internal readonly SyntheticWorkflowAttempt CurrentAttempt;
+
+    internal readonly SyntheticWorkflowError? OptionalError;
+
+    internal readonly SyntheticAssignedWorker AssignedWorker;
+
+    internal readonly SyntheticWorkflowAttempt[] Attempts;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal int GetMarkerSummary() => CombineMarkers(Marker, AlternateMarker);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CombineMarkers(int marker, int alternateMarker) =>
+        unchecked(marker + alternateMarker);
+}
+
+internal sealed record SyntheticWorkflowAttempt(string Status, SyntheticAssignedWorker Worker, int Sequence)
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal string GetDisplayStatus() => Status;
+}
+
+internal sealed record SyntheticAssignedWorker(string State, string Node);
+
+internal sealed record SyntheticWorkflowError(string Code, string Message);
