@@ -1,4 +1,7 @@
 using System.Collections.Immutable;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using Interpreter.Core.Abstractions;
 using Interpreter.Host.Abstractions;
 using Interpreter.Host.Dump.ClrMD;
 using Xunit;
@@ -110,8 +113,79 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
                 Assert.Single(unsupportedReferenceLeaf.Evidence);
             });
 
-        Assert.Equal(6, detached.Count);
-        Assert.Equal(6, detached.Select(item => item.ToCanonicalReplayProjection()).Distinct().Count());
+        CaptureGraph(
+            "--synthetic-certificate-profiles",
+            "SyntheticCertificateProfileProbe",
+            session =>
+            {
+                var root = FindExactRoot(session, "SyntheticCertificateProfileProbe");
+                detached.Add(AssertDirectField(
+                    session,
+                    root,
+                    "Direct",
+                    "Text",
+                    ClrmdTerminalDecoderKind.String));
+                detached.Add(AssertDirectField(
+                    session,
+                    root,
+                    "Direct",
+                    "Count",
+                    ClrmdTerminalDecoderKind.Int32));
+                var directNullable = AssertDirectField(
+                    session,
+                    root,
+                    "Direct",
+                    "OptionalCount",
+                    ClrmdTerminalDecoderKind.NullableInt32);
+                Assert.NotNull(directNullable.Storage.NullableInt32Layout);
+                detached.Add(directNullable);
+
+                var propertyNullable = AssertProperty(
+                    session,
+                    root,
+                    "AutoNullable",
+                    "OptionalValue",
+                    ClrmdTerminalDecoderKind.NullableInt32);
+                Assert.NotNull(propertyNullable.Storage.NullableInt32Layout);
+                detached.Add(propertyNullable);
+
+                AssertRejected(
+                    session.CertifyDeclaredDataMember(root, "Computed", "Value"),
+                    ClrmdValueIssue.MethodBodyUnavailable,
+                    minimumEvidenceReads: 4);
+                AssertRejected(
+                    session.CertifyDeclaredDataMember(root, "Indexed", "Item"),
+                    ClrmdValueIssue.TypeMismatch,
+                    minimumEvidenceReads: 1);
+                AssertRejected(
+                    session.CertifyDeclaredDataMember(root, "Static", "Value"),
+                    ClrmdValueIssue.TypeMismatch,
+                    minimumEvidenceReads: 1);
+                AssertRejected(
+                    session.CertifyDeclaredDataMember(root, "Inherited", "Value"),
+                    ClrmdValueIssue.FieldUnavailable,
+                    minimumEvidenceReads: 1);
+                AssertRejected(
+                    session.CertifyDeclaredDataMember(root, "Unsupported", "Value"),
+                    ClrmdValueIssue.TypeMismatch,
+                    minimumEvidenceReads: 1);
+                AssertRejected(
+                    session.CertifyDeclaredDataMember(root, "Mismatched", "Value"),
+                    ClrmdValueIssue.TypeMismatch,
+                    minimumEvidenceReads: 1);
+                AssertRejected(
+                    session.CertifyDeclaredDataMember(root, "Call", "Value"),
+                    ClrmdValueIssue.MethodBodyUnavailable,
+                    minimumEvidenceReads: 4);
+                AssertRejected(
+                    session.CertifyDeclaredDataMember(root, "Virtual", "Value"),
+                    ClrmdValueIssue.TypeMismatch,
+                    minimumEvidenceReads: 1);
+            });
+
+        Assert.Equal(10, detached.Count);
+        Assert.Equal(10, detached.Select(item => item.ToCanonicalReplayProjection()).Distinct().Count());
+        var diskMetadata = ReadDiskMetadataIdentity();
         Assert.All(detached, certificate =>
         {
             Assert.False(string.IsNullOrWhiteSpace(certificate.ToCanonicalReplayProjection()));
@@ -119,6 +193,7 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
             Assert.Equal(64, certificate.DeclaredTarget.ModuleContent.MetadataSha256.Length);
             Assert.True(certificate.Storage.OffsetFromObject >= IntPtr.Size);
             Assert.True(certificate.Storage.Size > 0);
+            Assert.Equal(diskMetadata, certificate.DeclaredTarget.ModuleContent);
         });
     }
 
@@ -151,6 +226,18 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
             certificate.ToCanonicalReplayProjection(),
             replay.Value!.ToCanonicalReplayProjection());
         return certificate;
+    }
+
+    private static void AssertRejected(
+        ClrmdEvidenceResult<ClrmdDeclaredDataMemberCertificate> result,
+        ClrmdValueIssue issue,
+        int minimumEvidenceReads)
+    {
+        Assert.Equal(ClrmdEvidenceStatus.Unavailable, result.Status);
+        Assert.Equal(issue, result.Issue);
+        Assert.Null(result.Value);
+        Assert.True(result.Evidence.Length >= minimumEvidenceReads);
+        Assert.All(result.Evidence, read => Assert.Equal(MemoryReadStatus.Exact, read.Status));
     }
 
     private static ClrmdDeclaredDataMemberCertificate AssertDirectField(
@@ -225,5 +312,16 @@ public sealed class W6DeclaredDataMemberCertificateIntegrationTests
         var opened = ClrmdDumpSession.Open(dumpPath);
         Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
         return Assert.IsType<ClrmdDumpSession>(opened.Value);
+    }
+
+    private static ModuleContentIdentity ReadDiskMetadataIdentity()
+    {
+        using var stream = File.OpenRead(TestTargetPaths.ResolveAssembly(TestTargetPaths.ResolveExecutable()));
+        using var peReader = new PEReader(stream);
+        var metadata = peReader.GetMetadata().GetContent();
+        var reader = peReader.GetMetadataReader();
+        return ModuleContentIdentity.FromMetadata(
+            reader.GetGuid(reader.GetModuleDefinition().Mvid),
+            metadata.AsSpan());
     }
 }

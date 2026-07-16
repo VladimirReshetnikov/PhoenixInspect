@@ -193,12 +193,16 @@ public sealed record ClrmdDataPropertyCertificate
         ImmutableArray<byte> propertySignature,
         int getterToken,
         ImmutableArray<byte> getterSignature,
+        int? setterToken,
+        ImmutableArray<int> otherAccessorTokens,
         ClrmdMethodBodyInfo getterBody)
     {
         PropertyToken = propertyToken;
         PropertySignature = propertySignature;
         GetterToken = getterToken;
         GetterSignature = getterSignature;
+        SetterToken = setterToken;
+        OtherAccessorTokens = otherAccessorTokens;
         GetterBody = getterBody;
     }
 
@@ -213,6 +217,16 @@ public sealed record ClrmdDataPropertyCertificate
 
     /// <summary>Gets an immutable copy of the exact getter MethodDef signature blob.</summary>
     public ImmutableArray<byte> GetterSignature { get; }
+
+    /// <summary>
+    /// Gets the non-participating setter MethodDef association, or <see langword="null"/> when no setter exists.
+    /// </summary>
+    /// <remarks>The setter identity is retained for replay completeness but is never acquired or executed.</remarks>
+    public int? SetterToken { get; }
+
+    /// <summary>Gets every non-getter/non-setter method-semantics MethodDef token in metadata order.</summary>
+    /// <remarks>W6 does not execute or otherwise interpret these draft non-participating associations.</remarks>
+    public ImmutableArray<int> OtherAccessorTokens { get; }
 
     /// <summary>Gets the complete counted physical getter body whose exact instruction sequence was certified.</summary>
     public ClrmdMethodBodyInfo GetterBody { get; }
@@ -349,6 +363,13 @@ public sealed class ClrmdDeclaredDataMemberCertificate
         Append(builder, Convert.ToHexString(Property.PropertySignature.AsSpan()));
         Append(builder, Property.GetterToken.ToString(CultureInfo.InvariantCulture));
         Append(builder, Convert.ToHexString(Property.GetterSignature.AsSpan()));
+        Append(builder, Property.SetterToken?.ToString(CultureInfo.InvariantCulture) ?? "none");
+        Append(builder, Property.OtherAccessorTokens.Length.ToString(CultureInfo.InvariantCulture));
+        foreach (var token in Property.OtherAccessorTokens)
+        {
+            Append(builder, token.ToString(CultureInfo.InvariantCulture));
+        }
+
         Append(builder, Property.GetterBody.RelativeVirtualAddress.ToString(CultureInfo.InvariantCulture));
         Append(builder, Property.GetterBody.HeaderAddress.ToString("x16", CultureInfo.InvariantCulture));
         Append(builder, Property.GetterBody.HeaderKind.ToString());

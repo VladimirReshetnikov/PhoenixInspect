@@ -24,11 +24,11 @@ public sealed class W4PureModelExecutionIntegrationTests
     private const int ExpectedSummary = 0x26AF37BD;
     private const int CallOffset = 12;
     private const string ExpectedTestTargetSha256 =
-        "35922edc1898aaaf3942a4edcb3d2045eac67d7e69b08fd2f56a68e2be30f153";
+        "1eee4384cc891aa7908b7b425b0626e66cd1ddd08bac11a4ad26d917d378e05a";
     private const string ExpectedMixedGraphSha256 =
-        "1733ca2d6acf1fd6d3cffc5c744e034a0d5ef73543e36d2941779e0d353b85bd";
+        "0fc4508aa7681102e7be1eb0fa95f391ef7ac29df01d57009d58faf7f27d4e7d";
     private const string ExpectedBothUnknownGraphSha256 =
-        "592a19f686c2719309b3222a5806892382fccd8748aad2c630ffc058bf35d477";
+        "9bc0f1dc6a8cd38b520d6454ca62179337b2ccb7bb3d90c1a44ba8b3f7b00db2";
 
     private static readonly string EvidenceSourceSha256 = HashUtf8(
         "W4.6d compiler-emitted pure-model execution evidence source");

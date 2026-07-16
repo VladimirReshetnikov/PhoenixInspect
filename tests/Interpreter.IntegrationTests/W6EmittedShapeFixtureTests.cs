@@ -19,13 +19,13 @@ namespace Interpreter.IntegrationTests;
 /// </remarks>
 public sealed class W6EmittedShapeFixtureTests
 {
-    private const int ExpectedArtifactLength = 28160;
+    private const int ExpectedArtifactLength = 30720;
     private const string ExpectedArtifactSha256 =
-        "35922edc1898aaaf3942a4edcb3d2045eac67d7e69b08fd2f56a68e2be30f153";
-    private const string ExpectedMvid = "826aa3bd-c8a6-4397-9641-df7782f285ec";
-    private const int ExpectedMetadataLength = 16768;
+        "1eee4384cc891aa7908b7b425b0626e66cd1ddd08bac11a4ad26d917d378e05a";
+    private const string ExpectedMvid = "6039baaa-605a-480b-a989-53f6e68acabc";
+    private const int ExpectedMetadataLength = 18680;
     private const string ExpectedMetadataSha256 =
-        "27089eb8b8559ab02f1b4ecec73b6f72d21d7f9131821e453aadaa121117a55b";
+        "c8e0207d7b7c1553a862c6fe1383c446637f36d5025be5136fea4e45095311e5";
     private const byte TinyMethodHeaderForSevenCodeBytes = 0x1E;
     private const byte LoadArgumentZero = 0x02;
     private const byte LoadInstanceField = 0x7B;

@@ -82,6 +82,11 @@ internal static class Program
             return RunSyntheticWorkflowDispatch(workflowMarker, workflowAlternate, workflowState);
         }
 
+        if (args is ["--synthetic-certificate-profiles", var profileMarker, var profileAlternate, var profileState])
+        {
+            return RunSyntheticCertificateProfiles(profileMarker, profileAlternate, profileState);
+        }
+
         RetOnly();
         if (FatBodyWithLocalsAndExceptionRegions(41) != 42)
         {
@@ -194,6 +199,25 @@ internal static class Program
             root.CurrentAttempt.GetDisplayStatus() != state)
         {
             return 84;
+        }
+
+        return PauseWithStrongRoot(root);
+    }
+
+    private static int RunSyntheticCertificateProfiles(
+        string markerText,
+        string alternateText,
+        string state)
+    {
+        if (!TryParseSyntheticArguments(markerText, alternateText, state, out var marker, out var alternate))
+        {
+            return 85;
+        }
+
+        var root = new SyntheticCertificateProfileProbe(marker, alternate, state);
+        if (root.Marker != marker || root.AlternateMarker != alternate || root.Direct.Count != marker)
+        {
+            return 86;
         }
 
         return PauseWithStrongRoot(root);
@@ -490,3 +514,168 @@ internal sealed record SyntheticWorkflowAttempt(string Status, SyntheticAssigned
 internal sealed record SyntheticAssignedWorker(string State, string Node);
 
 internal sealed record SyntheticWorkflowError(string Code, string Message);
+
+internal sealed class SyntheticCertificateProfileProbe
+{
+    internal SyntheticCertificateProfileProbe(int marker, int alternateMarker, string state)
+    {
+        Marker = marker;
+        AlternateMarker = alternateMarker;
+        Direct = new SyntheticDirectTerminalProfile(state, marker, alternateMarker < 0 ? null : alternateMarker);
+        AutoNullable = new SyntheticAutoNullableProfile(alternateMarker < 0 ? null : alternateMarker);
+        Computed = new SyntheticComputedPropertyProfile(marker);
+        Indexed = new SyntheticIndexedPropertyProfile(state);
+        Static = new SyntheticStaticPropertyProfile();
+        Inherited = new SyntheticInheritedPropertyProfile(marker);
+        Unsupported = new SyntheticUnsupportedPropertyProfile(state == "failed");
+        Mismatched = new SyntheticMismatchedPropertyProfile(state);
+        Call = new SyntheticCallPropertyProfile(marker);
+        Virtual = new SyntheticVirtualPropertyProfile(alternateMarker);
+    }
+
+    internal readonly int Marker;
+
+    internal readonly int AlternateMarker;
+
+    internal readonly SyntheticDirectTerminalProfile Direct;
+
+    internal readonly SyntheticAutoNullableProfile AutoNullable;
+
+    internal readonly SyntheticComputedPropertyProfile Computed;
+
+    internal readonly SyntheticIndexedPropertyProfile Indexed;
+
+    internal readonly SyntheticStaticPropertyProfile Static;
+
+    internal readonly SyntheticInheritedPropertyProfile Inherited;
+
+    internal readonly SyntheticUnsupportedPropertyProfile Unsupported;
+
+    internal readonly SyntheticMismatchedPropertyProfile Mismatched;
+
+    internal readonly SyntheticCallPropertyProfile Call;
+
+    internal readonly SyntheticVirtualPropertyProfile Virtual;
+}
+
+internal sealed class SyntheticDirectTerminalProfile
+{
+    internal SyntheticDirectTerminalProfile(string text, int count, int? optionalCount)
+    {
+        Text = text;
+        Count = count;
+        OptionalCount = optionalCount;
+    }
+
+    internal readonly string Text;
+
+    internal readonly int Count;
+
+    internal readonly int? OptionalCount;
+}
+
+internal sealed class SyntheticAutoNullableProfile
+{
+    internal SyntheticAutoNullableProfile(int? optionalValue)
+    {
+        OptionalValue = optionalValue;
+    }
+
+    internal int? OptionalValue { get; }
+}
+
+internal sealed class SyntheticComputedPropertyProfile
+{
+    private readonly int value;
+
+    internal SyntheticComputedPropertyProfile(int value)
+    {
+        this.value = value;
+    }
+
+    internal int Value => checked((value * 3) + 1);
+}
+
+internal sealed class SyntheticIndexedPropertyProfile
+{
+    private readonly string value;
+
+    internal SyntheticIndexedPropertyProfile(string value)
+    {
+        this.value = value;
+    }
+
+    internal string this[int index] => index == 0 ? value : string.Empty;
+}
+
+internal sealed class SyntheticStaticPropertyProfile
+{
+    internal static int Value => 17;
+}
+
+internal class SyntheticInheritedPropertyBaseProfile
+{
+    internal SyntheticInheritedPropertyBaseProfile(int value)
+    {
+        Value = value;
+    }
+
+    internal int Value { get; }
+}
+
+internal sealed class SyntheticInheritedPropertyProfile : SyntheticInheritedPropertyBaseProfile
+{
+    internal SyntheticInheritedPropertyProfile(int value)
+        : base(value)
+    {
+    }
+}
+
+internal sealed class SyntheticUnsupportedPropertyProfile
+{
+    internal SyntheticUnsupportedPropertyProfile(bool value)
+    {
+        Value = value;
+    }
+
+    internal bool Value { get; }
+}
+
+internal sealed class SyntheticMismatchedPropertyProfile
+{
+    private readonly string value;
+
+    internal SyntheticMismatchedPropertyProfile(string value)
+    {
+        this.value = value;
+    }
+
+    internal object Value => value;
+}
+
+internal sealed class SyntheticCallPropertyProfile
+{
+    private readonly int value;
+
+    internal SyntheticCallPropertyProfile(int value)
+    {
+        this.value = value;
+    }
+
+    internal int Value => Echo(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Echo(int value) => value;
+}
+
+internal class SyntheticVirtualPropertyProfile
+{
+    private readonly int value;
+
+    internal SyntheticVirtualPropertyProfile(int value)
+    {
+        this.value = value;
+    }
+
+    internal virtual int Value => value;
+}

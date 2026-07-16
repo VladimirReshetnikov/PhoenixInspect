@@ -18,6 +18,7 @@ public sealed partial class ClrmdDumpSession
     private const byte LoadArgumentZero = 0x02;
     private const byte LoadInstanceField = 0x7B;
     private const byte Return = 0x2A;
+    private const int MaximumTerminalMethodSemanticsCount = 16;
     private static readonly ImmutableArray<EvaluationDeterministicBound> TerminalFieldTraversalBounds =
         ImmutableArray.Create(new EvaluationDeterministicBound(
             "dump.terminal-fields.traversed",
@@ -26,6 +27,10 @@ public sealed partial class ClrmdDumpSession
         ImmutableArray.Create(new EvaluationDeterministicBound(
             "dump.terminal-properties.traversed",
             MaximumRuntimeInstanceFieldCount));
+    private static readonly ImmutableArray<EvaluationDeterministicBound> TerminalMethodSemanticsBounds =
+        ImmutableArray.Create(new EvaluationDeterministicBound(
+            "dump.terminal-method-semantics.traversed",
+            MaximumTerminalMethodSemanticsCount));
 
     /// <summary>
     /// Certifies one directly declared terminal field or trivial field-backed property reached through an outer
@@ -261,6 +266,8 @@ public sealed partial class ClrmdDumpSession
                     terminal.PublicSignature,
                     terminal.GetterToken!.Value,
                     terminal.GetterSignature,
+                    terminal.SetterToken,
+                    terminal.OtherAccessorTokens,
                     getterBody!);
             var certificate = new ClrmdDeclaredDataMemberCertificate(
                 root.TypeName,
@@ -421,12 +428,18 @@ public sealed partial class ClrmdDumpSession
                 ClrmdValueIssue.MetadataUnavailable);
         }
 
-        if (module.MetadataLength > (ulong)Memory.MaximumReadLength ||
-            module.MetadataAddress > ulong.MaxValue - (module.MetadataLength - 1))
+        if (module.MetadataLength > (ulong)Memory.MaximumReadLength)
         {
             return ClrmdEvidenceResult<CompleteMetadataImage>.Create(
                 ClrmdEvidenceStatus.Unavailable,
                 ClrmdValueIssue.LimitExceeded);
+        }
+
+        if (module.MetadataAddress > ulong.MaxValue - (module.MetadataLength - 1))
+        {
+            return ClrmdEvidenceResult<CompleteMetadataImage>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData);
         }
 
         var read = Memory.Read(module.MetadataAddress, checked((int)module.MetadataLength));
@@ -532,6 +545,16 @@ public sealed partial class ClrmdDumpSession
             return UnsupportedTerminal(bounds);
         }
 
+        bounds = MergeAppliedBounds(bounds, TerminalMethodSemanticsBounds);
+        var semanticsCount = 1 + (accessors.Setter.IsNil ? 0 : 1) + accessors.Others.Count();
+        if (semanticsCount > MaximumTerminalMethodSemanticsCount)
+        {
+            return ClrmdEvidenceResult<TerminalMetadataProjection>.Create(
+                ClrmdEvidenceStatus.Partial,
+                ClrmdValueIssue.LimitExceeded,
+                appliedBounds: bounds);
+        }
+
         var getter = reader.GetMethodDefinition(accessors.Getter);
         if (getter.GetDeclaringType() != targetTypeHandle ||
             (getter.Attributes & MethodAttributes.Static) != 0 ||
@@ -566,7 +589,9 @@ public sealed partial class ClrmdDumpSession
                 propertyDecoder,
                 ImmutableArray.Create(reader.GetBlobBytes(property.Signature)),
                 ImmutableArray.Create(reader.GetBlobBytes(getter.Signature)),
-                ImmutableArray<byte>.Empty),
+                ImmutableArray<byte>.Empty,
+                accessors.Setter.IsNil ? null : MetadataTokens.GetToken(accessors.Setter),
+                accessors.Others.Select(static handle => MetadataTokens.GetToken((EntityHandle)handle)).ToImmutableArray()),
             appliedBounds: bounds);
     }
 
@@ -861,7 +886,9 @@ public sealed partial class ClrmdDumpSession
         ClrmdTerminalDecoderKind Decoder,
         ImmutableArray<byte> PublicSignature,
         ImmutableArray<byte> GetterSignature,
-        ImmutableArray<byte> StorageSignature);
+        ImmutableArray<byte> StorageSignature,
+        int? SetterToken = null,
+        ImmutableArray<int> OtherAccessorTokens = default);
 
     private enum DeclaredSignatureKind
     {
