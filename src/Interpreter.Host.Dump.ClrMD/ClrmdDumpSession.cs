@@ -1892,7 +1892,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
     }
 
     private ClrmdValueIssue ValidateBoundFieldOwner(
-        ClrmdHeapObjectInfo obj,
+        IClrmdObjectIdentity obj,
         ClrmdInstanceFieldInfo field)
     {
         if (obj.Snapshot != Snapshot || field.Snapshot != Snapshot)

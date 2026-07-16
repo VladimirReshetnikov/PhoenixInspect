@@ -6,7 +6,7 @@ namespace Interpreter.Host.Dump.ClrMD;
 /// <summary>
 /// Carries snapshot identity, root-selection provenance, and runtime type evidence for a dump object.
 /// </summary>
-public sealed class ClrmdHeapObjectInfo
+public sealed class ClrmdHeapObjectInfo : IClrmdObjectIdentity
 {
     internal ClrmdHeapObjectInfo(
         ClrmdSnapshotIdentity snapshot,

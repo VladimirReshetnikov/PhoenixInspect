@@ -21,11 +21,11 @@ public sealed class W6EmittedShapeFixtureTests
 {
     private const int ExpectedArtifactLength = 30720;
     private const string ExpectedArtifactSha256 =
-        "1eee4384cc891aa7908b7b425b0626e66cd1ddd08bac11a4ad26d917d378e05a";
-    private const string ExpectedMvid = "6039baaa-605a-480b-a989-53f6e68acabc";
-    private const int ExpectedMetadataLength = 18680;
+        "43ddaf846274f2e535a8cd95a5ecddee49d4f8ada7033a67d0af23211edfe295";
+    private const string ExpectedMvid = "ebc49e1f-c62e-432e-913d-c7cfeee73534";
+    private const int ExpectedMetadataLength = 18852;
     private const string ExpectedMetadataSha256 =
-        "c8e0207d7b7c1553a862c6fe1383c446637f36d5025be5136fea4e45095311e5";
+        "edd3053700f59ffec843a5511622d174f20488f2c629f5c59d17c8c8485bca90";
     private const byte TinyMethodHeaderForSevenCodeBytes = 0x1E;
     private const byte LoadArgumentZero = 0x02;
     private const byte LoadInstanceField = 0x7B;

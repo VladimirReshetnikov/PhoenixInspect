@@ -215,7 +215,10 @@ internal static class Program
         }
 
         var root = new SyntheticCertificateProfileProbe(marker, alternate, state);
-        if (root.Marker != marker || root.AlternateMarker != alternate || root.Direct.Count != marker)
+        if (root.Marker != marker ||
+            root.AlternateMarker != alternate ||
+            root.Direct.Count != marker ||
+            !ReferenceEquals(root.Direct, root.DirectAlias))
         {
             return 86;
         }
@@ -522,6 +525,7 @@ internal sealed class SyntheticCertificateProfileProbe
         Marker = marker;
         AlternateMarker = alternateMarker;
         Direct = new SyntheticDirectTerminalProfile(state, marker, alternateMarker < 0 ? null : alternateMarker);
+        DirectAlias = Direct;
         AutoNullable = new SyntheticAutoNullableProfile(alternateMarker < 0 ? null : alternateMarker);
         Computed = new SyntheticComputedPropertyProfile(marker);
         Indexed = new SyntheticIndexedPropertyProfile(state);
@@ -531,6 +535,7 @@ internal sealed class SyntheticCertificateProfileProbe
         Mismatched = new SyntheticMismatchedPropertyProfile(state);
         Call = new SyntheticCallPropertyProfile(marker);
         Virtual = new SyntheticVirtualPropertyProfile(alternateMarker);
+        Polymorphic = new SyntheticDerivedTerminalProfile(marker);
     }
 
     internal readonly int Marker;
@@ -538,6 +543,8 @@ internal sealed class SyntheticCertificateProfileProbe
     internal readonly int AlternateMarker;
 
     internal readonly SyntheticDirectTerminalProfile Direct;
+
+    internal readonly SyntheticDirectTerminalProfile DirectAlias;
 
     internal readonly SyntheticAutoNullableProfile AutoNullable;
 
@@ -556,6 +563,8 @@ internal sealed class SyntheticCertificateProfileProbe
     internal readonly SyntheticCallPropertyProfile Call;
 
     internal readonly SyntheticVirtualPropertyProfile Virtual;
+
+    internal readonly SyntheticBaseTerminalProfile Polymorphic;
 }
 
 internal sealed class SyntheticDirectTerminalProfile
@@ -678,4 +687,22 @@ internal class SyntheticVirtualPropertyProfile
     }
 
     internal virtual int Value => value;
+}
+
+internal class SyntheticBaseTerminalProfile
+{
+    internal SyntheticBaseTerminalProfile(int value)
+    {
+        Value = value;
+    }
+
+    internal readonly int Value;
+}
+
+internal sealed class SyntheticDerivedTerminalProfile : SyntheticBaseTerminalProfile
+{
+    internal SyntheticDerivedTerminalProfile(int value)
+        : base(value)
+    {
+    }
 }
