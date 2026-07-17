@@ -31,11 +31,12 @@ scope. A whole-file-identified disk PE remains only an independent oracle, never
 
 W4's closed design contract is
 `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. The completed
-`plans/post-w4-path-forward.md` records W5's expression-to-result path and meaningful synthetic selection. The active
-successor is `plans/post-w5-path-forward.md`: replace parser growth with one pinned complete Roslyn C# expression parse,
-admit only versioned project-owned W2/W5/W6 tree shapes, implement one opt-in fixed-depth member-chain query with
-certified field-backed terminal data properties, then use a larger multi-shape designed portfolio to select or defer
-another prototype increment while keeping field-readiness evidence separate.
+`plans/post-w4-path-forward.md` records W5's expression-to-result path and meaningful synthetic selection, and the
+completed `plans/post-w5-path-forward.md` records W6's Roslyn migration and fixed-depth member-chain slice. The active
+successor is `plans/post-w6-path-forward.md`: acquire one ordinary non-generic static reference field as an explicit
+root context, then feed that exact binding into the unchanged W2/W5/W6 pipeline. The complete pinned Roslyn expression
+parser remains the sole syntax front end; supported behavior remains a versioned project-owned binder/evaluator
+subset.
 
 W6.1–W6.7 are closed at exact locally verified source baseline `440053ad1`. One pinned complete Roslyn parse feeds only
 versioned project-owned admitted shapes; counted metadata and physical getter bodies issue detached declared-member
@@ -48,8 +49,15 @@ schema-v3 usefulness lane now evaluates twenty-four independent incidents across
 representative rows, rejects promotion and enum-order tie selection, and selects one concrete context-acquisition
 scenario from a uniquely qualified six-incident/four-shape boundary. The complete local matrix and repository guards
 pass with zero skips. The owner explicitly overrode the W6 hosted-only block on 2026-07-16 because the GitHub billing
-condition cannot be remediated in this milestone; this is not hosted pass evidence. The selected successor is
-documented but not implemented or otherwise pre-approved.
+condition cannot be remediated in this milestone; this is not hosted pass evidence. W6's selected context category
+now informs the separately approved W7 static-field-root plan; it is not retroactive W6 implementation evidence.
+
+W7 is planned, not implemented. Its physical truth gate must prove an initialized static field slot and one exact raw
+pointer without using a product value read. Exact null and every non-exact outcome remain distinct; no failure falls
+back to a strong-handle search, heap-type scan, arbitrary address, or repaired target. W7 adds a separate generated
+fixture and sixteen independent full-dump incidents across four unrelated shapes, all through hidden processes. It
+does not add expression syntax: Roslyn still parses the complete bounded expression once, and the existing project
+binder/evaluator subset still decides what is supported.
 
 The earlier W4 history remains recorded here. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint
@@ -254,7 +262,7 @@ W1 is complete for its revised milestone-selected dump-evidence scope: real read
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
-each selected category. No result in W1–W5 establishes behavior for other artifact shapes.
+each selected category. No result in W1–W6 establishes behavior for other artifact shapes.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes remain
 evidence for their named commits rather than claims about the current fixture binary.
@@ -284,9 +292,10 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
+| `plans/post-w6-path-forward.md` | Planning | Plan | Current · Active | Planned W7 ordinary static-reference-field root profile, physical truth gate, typed evidence/result matrix, unchanged Roslyn/binder boundary, headless generated conformance, and sixteen-incident/four-shape decision corpus. |
 | `plans/post-w5-path-forward.md` | Planning | Plan | Complete · Reference | Closed W6 opt-in bounded member-chain contract, certified terminal data-property dependency, evidence/result matrix, headless synthetic corpus, selected context-acquisition successor, and milestone-scoped hosted disposition. |
 | `plans/post-w4-path-forward.md` | Planning | Plan | Complete · Reference | Closed W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, milestone-scoped hosted-gate waiver, and evidence-selected W6 decision. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Read-only dump evaluator direction through closed W6, the evidence-selected context-acquisition candidate, and explicitly gated research phases. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Read-only dump evaluator direction through closed W6, planned W7 static-field-root acquisition, and explicitly gated research phases. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
@@ -298,13 +307,13 @@ docs/
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft · Research | Candidate abstract domains and analysis behavior for a later research phase. |
-| `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices. |
+| `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices, including the durable sole-Roslyn-parser boundary and planned W7 consumer reuse. |
 | `proposals/architecture/call-model-and-effects.md` | Architecture | Proposal | Draft · Supporting | Call classification, fallback behavior, and effect lattice contract for later method evaluation. |
 | `proposals/architecture/generic-context-resolver-proposal.md` | Architecture | Proposal | Draft · Research | Generic-context reconstruction strategy for later dump-backed method interpretation. |
 | `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical prototype layout and narrow implemented proof boundary. |
-| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised by the dump-evidence and concrete-IL proofs; explicitly unstable. |
+| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised through closed W6, explicitly excluding planned-but-absent W7 surfaces; unstable. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate execution-state, domain, and provenance semantics. |
-| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W6, including headless/property-certificate/member-chain gates, plus explicitly deferred research suites. |
+| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W6 plus planned W7 static-slot/root, parser-regression, and sixteen-incident headless gates. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft · Research | BCL/IL semantic lifting and projection concepts for later phases. |
 | `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft · Research | Candidate unified registry for later modeled semantics. |
 | `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Current · Supporting | Implemented closed W3 E1/E2 encodings and explicit gates for later opcode expansion. |
@@ -316,7 +325,7 @@ docs/
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft · Active | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft · Reference | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft · Active | Artifact-resolution design for PE/PDB loading and identity validation. |
-| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W6 reference/property/member-chain coverage. |
+| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W6, plus planned W7 static-root verification. |
 | `plans/future-work-planning.md` | Planning | Plan | Current · Supporting | Detailed evidence-led W0–W4 delivery record and research entry gates. |
 | `plans/requirements-traceability-map.md` | Planning | Matrix | Current · Active | Requirements mapped separately to design, implementation, and validation evidence. |
 | `lib/README.md` | Library Notes | Index | Current · Reference | Navigation and policy for active decisions versus preserved source research. |
@@ -351,21 +360,22 @@ docs/
 ### Active delivery path
 
 1. `../DESIGN-ARCHITECTURE-REVIEW.md`
-2. `plans/post-w5-path-forward.md`
-3. `proposals/architecture/csharp-expression-front-end-contract-proposal.md`
-4. `plans/post-w4-path-forward.md`
-5. `proposals/product/post-mortem-debugging-feature-proposal.md`
-6. `proposals/architecture/restricted-dump-query-contract-proposal.md`
-7. `proposals/architecture/concrete-il-execution-contract-proposal.md`
-8. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
-9. `proposals/architecture/architecture-overview-proposal.md`
-10. `proposals/architecture/prototype-solution-structure-proposal.md`
-11. `lib/mvp-backend-decision-record.md`
-12. `plans/future-work-planning.md`
-13. `proposals/architecture/testing-strategy-proposal.md`
-14. `proposals/integration-test-plan.md`
-15. `proposals/integration/clrmd-integration-proposal.md`
-16. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+2. `plans/post-w6-path-forward.md`
+3. `plans/post-w5-path-forward.md`
+4. `proposals/architecture/csharp-expression-front-end-contract-proposal.md`
+5. `plans/post-w4-path-forward.md`
+6. `proposals/product/post-mortem-debugging-feature-proposal.md`
+7. `proposals/architecture/restricted-dump-query-contract-proposal.md`
+8. `proposals/architecture/concrete-il-execution-contract-proposal.md`
+9. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
+10. `proposals/architecture/architecture-overview-proposal.md`
+11. `proposals/architecture/prototype-solution-structure-proposal.md`
+12. `lib/mvp-backend-decision-record.md`
+13. `plans/future-work-planning.md`
+14. `proposals/architecture/testing-strategy-proposal.md`
+15. `proposals/integration-test-plan.md`
+16. `proposals/integration/clrmd-integration-proposal.md`
+17. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 
@@ -450,10 +460,11 @@ research designs.
 1. `governance/project-faq.md`
 2. `governance/documentation-organization-proposal.md`
 3. `governance/terminology-glossary.md`
-4. `plans/post-w5-path-forward.md`
-5. `plans/post-w4-path-forward.md`
-6. `plans/future-work-planning.md`
-7. `plans/requirements-traceability-map.md`
+4. `plans/post-w6-path-forward.md`
+5. `plans/post-w5-path-forward.md`
+6. `plans/post-w4-path-forward.md`
+7. `plans/future-work-planning.md`
+8. `plans/requirements-traceability-map.md`
 
 ## Repository license
 

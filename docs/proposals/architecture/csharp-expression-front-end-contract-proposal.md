@@ -8,10 +8,14 @@
 > **Implementation status:** implemented at W6.2 checkpoint `68aaf418f` at `~1K LOC` scale, including compatibility
 > and conformance tests. Closed W6 binding and evaluation consume only project-owned admitted descriptors and frozen
 > plans; Roslyn types remain inside the front-end adapter.
+>
+> **Durable architecture rule:** every future product expression uses this same complete parser boundary. Later
+> milestones may add versioned tree admission, binding, or evaluation semantics, but must not grow a second lexer,
+> parser, token repair path, or raw-text recognizer.
 
 ## 1) Decision
 
-The project will not extend its handwritten C# lexer and parser. Roslyn owns C# lexical analysis, expression grammar,
+The project does not and will not extend a handwritten C# lexer or parser. Roslyn owns C# lexical analysis, expression grammar,
 error recovery, token values, and syntax-tree construction. The project owns every product decision after parsing:
 
 - which versioned expression profiles are enabled;
@@ -38,11 +42,17 @@ Parsing a complete C# expression language is not a commitment to bind or evaluat
 C# expression trees remain unsupported. This is intentional: syntax correctness is delegated to the mature compiler
 front end while the product's semantic and evidence boundary stays narrow, reviewable, and scenario-driven.
 
+This split is permanent rather than a W6 implementation convenience. A later scenario that needs a new construct
+adds a recognizer or normalization rule for the existing Roslyn tree, a binder rule that issues a project-owned plan,
+and an evaluator rule with explicit evidence and resource contracts. It does not add punctuation scanning, token
+decoding, delimiter recovery, or a parallel grammar. Syntax that Roslyn accepts but no enabled binder profile can
+lower remains valid-but-unsupported, with no metadata or memory access.
+
 ## 2) Why this replaces parser growth
 
-The W2 parser currently owns identifier tokenization, whitespace rules, punctuation, signed-decimal parsing, string
-escape decoding, recovery, bounds, and diagnostics. W5 then recognizes its one method expression with an exact raw-
-text comparison after the W2 parser rejects it. Extending that mechanism for conditional access, nested member
+Before W6.2, the W2 parser owned identifier tokenization, whitespace rules, punctuation, signed-decimal parsing,
+string escape decoding, recovery, bounds, and diagnostics. W5 then recognized its one method expression with an exact
+raw-text comparison after the W2 parser rejected it. Extending that mechanism for conditional access, nested member
 access, additional literal spellings, parentheses, invocations, or later C# syntax would duplicate compiler behavior
 incrementally and create two sources of syntactic truth.
 

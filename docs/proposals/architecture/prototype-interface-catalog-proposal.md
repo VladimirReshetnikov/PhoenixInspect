@@ -7,8 +7,9 @@
 ## Purpose
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
-W3 concrete-IL, and W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, and target-outcome
-execution proofs. It is descriptive, not a promise of compatibility.
+W3 concrete-IL, W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, target-outcome,
+and closed W5/W6 product proofs. It is descriptive, not a promise of compatibility. W7's static-field-root contracts
+are planned and therefore intentionally absent from this implementation inventory.
 Strengthened W3 checkpoint `19c292f9f`
 passed the required local milestone-selected lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
@@ -319,9 +320,10 @@ host-named root, one direct field, and an optional admitted coalescing literal. 
 
 - `DumpQueryRootBinding` plus `DumpQueryRootBindingStatus`, which retain exact object, exhaustive absence, partial,
   unavailable, conflicting, and invalid host-selection states without converting any non-exact state to null;
-- `DumpQueryEngine.Prepare(session, expression, rootBinding)`, which currently parses the closed W2 grammar, verifies snapshot
-  identity, performs the exact outer-field lookup once, checks the `Int32`/`Nullable<Int32>`/`String` and coalescing
-  combination, and returns `DumpQueryPreparationResult`;
+- `DumpQueryEngine.Prepare(session, expression, rootBinding)`, which uses the sole complete Roslyn expression parse,
+  consumes only the admitted project descriptor, verifies snapshot identity, performs the exact outer-field lookup
+  once, checks the `Int32`/`Nullable<Int32>`/`String` and coalescing combination, and returns
+  `DumpQueryPreparationResult`;
 - immutable `DumpQueryPlan`, which freezes the object-specific binding, selected field descriptor, decoder,
   optional literal, reached bounds, canonical v1 replay projection, and SHA-256 fingerprint; and
 - `DumpQueryEngine.Evaluate(session, plan)`, which reads through the selected descriptor without repeating member
@@ -409,7 +411,7 @@ representative/external-observation denominator remains zero.
 
 ## Deliberately absent
 
-The admitted W6 expression surface still does not contain frame/local/argument/static roots, context acquisition,
+The admitted W6 expression surface still does not contain frame/local/argument/static roots or context syntax,
 member chains deeper than the one-reference/one-terminal profile, collection/indexer/array navigation, arbitrary
 property execution, reflection, construction, implicit loading, conversions, general operators, or any method
 expression except exact `root.GetMarkerSummary()`. Exact-null member results, null-conditional access, and typed
@@ -422,6 +424,11 @@ binding, and generated-dump reopen/replay result; W5/W6 expose only their explic
 W4 hosted closure passed in run 29463426083. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
+
+The active W7 plan proposes a separate out-of-band `StaticFieldRootV1` acquisition contract, not a C# static-member
+syntax form. No selector, observation, root-source provenance, facade overload, report schema, or target project for W7
+is listed here until executable code lands. Roslyn remains the sole complete expression parser, and project-owned
+binder/evaluator profiles remain the only route from a valid tree to a plan.
 
 ## Change rule
 

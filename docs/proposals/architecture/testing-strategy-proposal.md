@@ -3,9 +3,11 @@
 > **Lifecycle:** Current · **Roadmap:** Active
 >
 > **Current delivery policy (2026-07).** W0–W6 are the closed dump-evaluator evidence baseline; the completed W6 tests
-> follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). The repository must distinguish checked-in
-> test code, a locally verified result, a CI-enforced gate, and a research proposal. The broad abstract-analysis,
-> virtual-stepping, dynamic, async, and performance matrices are deferred until their entry gates pass.
+> follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Active W7 planning follows the
+> [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) and must not be reported as implemented evidence. The
+> repository must distinguish checked-in test code, a locally verified result, a CI-enforced gate, and a research
+> proposal. The broad abstract-analysis, virtual-stepping, dynamic, async, and performance matrices are deferred until
+> their entry gates pass.
 
 ## Status
 
@@ -991,6 +993,30 @@ destinations; one headless workflow; a clean authored-scope excluded-vocabulary 
 explicitly overrode W6's hosted-only block on 2026-07-16 because the GitHub billing condition cannot be remediated in
 this milestone. That disposition is not hosted pass evidence and leaves the workflow unchanged.
 
+### Planned W7 static-root evidence gates
+
+W7 begins with a physical truth gate against a dedicated generated target. The test must obtain one initialized
+ordinary static-reference-field slot through the pinned runtime adapter, read exactly one pointer-width value through
+project-owned dump memory, and validate the exact non-null target independently. A ClrMD product-value read and a
+heap-type search may be late comparison oracles only; neither may issue product evidence. If the slot address is not
+stable and nonzero for the pinned fixture, W7 stops rather than adding a heuristic.
+
+Contract and adapter tests then cover one exact selector plus exhaustive absence, exact null, partial, unavailable,
+conflict, invalid, and unsupported field/target shapes. Counting and poison sources prove deterministic module/type/
+field/domain bounds, one slot read, no candidate leakage, no strong-handle or heap-search fallback, and no expression
+parse before exact root acquisition. Existing W2/W5/W6 canonical artifacts remain byte-identical.
+
+The generated integration lane uses hidden target, dump-writer, and consumer processes and routes an exact static root
+through unchanged W2 and W6 evaluation. It retains the existing complete-Roslyn three-bucket corpus, including complex
+valid-but-unsupported trees paired with malformed neighbors, so root acquisition cannot introduce syntax shortcuts.
+Same-process repetition, fresh processes, and dump close/reopen must reproduce the new W7 artifacts.
+
+The meaningful synthetic lane requires sixteen independently generated full dumps across four unrelated graph shapes,
+one predeclared question per dump, the complete typed non-exact outcome set, exact answers on every shape, two fresh
+byte-identical portfolio reports, zero
+representative rows, and explicit tie deferral. These are planned obligations; no passing count or W7 validation claim
+exists until the implementation and complete headless matrix land.
+
 ## 9) Deferred research suites
 
 The following are not active CI commitments:
@@ -1021,7 +1047,9 @@ Record the failing fixture/test, exact command and environment, expected versus 
 
 ## 11) Selected decision and remaining evidence question
 
-W5.5b answers the prototype-design question with twelve predeclared designed incidents: fixed-depth member navigation
-is the recurring blocker and is the one selected post-W5 slice. The remaining question is deliberately separate:
-whether later external observations confirm, reverse, or stop that direction. No readiness threshold is inferred from
-the designed corpus, and broader external-input handling remains separately scoped.
+W5.5b selected fixed-depth member navigation, and closed W6 implemented it. W6.6 then used twenty-four predeclared
+designed incidents across four shapes to select one context-acquisition category. The active W7 plan narrows that
+category to one ordinary static-reference-field root scenario with its own physical, generated, and meaningful
+synthetic gates. The remaining external question is deliberately separate: whether later representative observations
+confirm, reverse, or stop that direction. No readiness threshold is inferred from a designed corpus, and broader
+external-input handling remains separately scoped.

@@ -8,7 +8,9 @@
 > counted reference evidence, narrowly certified field-backed terminal properties, one complete Roslyn expression
 > parse with versioned subset admission, deterministic replay, and a twenty-four-incident/four-shape synthetic
 > decision corpus. This remains synthetic evidence rather than a field-readiness claim; W6 selected one concrete
-> context-acquisition scenario as a candidate without implementing or pre-approving it.
+> context-acquisition category without implementing it. The active
+> [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) now narrows W7 to one ordinary static-reference-field
+> root profile before the unchanged W2/W5/W6 pipeline. W7 is planned, not implemented, and adds no expression syntax.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -187,8 +189,8 @@ immutable dump, return one exact instance field, optionally replacing an exactly
 literal.
 
 - Admitted shape: one ordinal, case-sensitive `root.field`, optionally followed by `?? null`, a signed decimal
-  `Int32`, or a bounded string literal. W2 closed with a handwritten parser; W6.2 plans its compatibility-preserving
-  replacement under the common C# expression-front-end contract.
+  `Int32`, or a bounded string literal. W2 closed with a handwritten parser; W6.2 implemented its compatibility-
+  preserving replacement under the common C# expression-front-end contract.
 - Root evidence: typed `ExactObject`, `ExhaustiveAbsence`, `Partial`, `Unavailable`, `Conflict`, and `Invalid` states.
   Only an exact non-null object can produce a plan; missing or non-exact evidence is never treated as null.
 - Pipeline: parse, admit/classify, prepare/bind, freeze an immutable object-specific plan, then evaluate that plan.
@@ -733,7 +735,8 @@ All evaluation is cancelable and doesn’t block the rest of the UI.
 ## 13) Milestones (Proposed)
 
 The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; completed W5 sequencing is in
-`docs/plans/post-w4-path-forward.md`; completed W6 sequencing is in `docs/plans/post-w5-path-forward.md`:
+`docs/plans/post-w4-path-forward.md`; completed W6 sequencing is in `docs/plans/post-w5-path-forward.md`; and active
+W7 sequencing is in `docs/plans/post-w6-path-forward.md`:
 
 * **W0:** truthful baseline, CI, and deterministic smoke evidence.
 * **W1:** real dump-memory field/string read with typed evidence outcomes.
@@ -786,6 +789,12 @@ The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; complete
   and is not implemented by W6. Exact local closure baseline `440053ad1` passes the complete matrix and repository
   guards with zero skips. The owner's W6-only hosted disposition records the unremediable GitHub billing block without
   claiming a hosted pass or weakening the workflow.
+* **W7:** active planned prototype sequence under the
+  [Post-W6 Path Forward](../../plans/post-w6-path-forward.md). It admits one opt-in `StaticFieldRootV1` selector for an
+  ordinary non-generic static reference field, requires counted module/type/field/domain/slot/pointer/target evidence,
+  and feeds only an exact non-null object into the unchanged query pipeline. It retains Roslyn as the sole complete
+  expression parser, adds no tree shape, and requires a separate generated fixture plus sixteen independent full-dump
+  incidents across four unrelated shapes. No W7 implementation or validation is claimed yet.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 
@@ -794,7 +803,7 @@ Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual st
 ## 14) Open Questions (for later product increments)
 
 The W2 v1 admitted shape, typed-root model, value domain, plan identity, and replay gate are closed decisions. Roslyn
-will own complete bounded expression parsing, but the following binding/evaluation questions stay with later Phase 1
+owns complete bounded expression parsing, but the following binding/evaluation questions stay with later Phase 1
 increments or their research phase and do not reopen W2.
 
 1. **Default execution stance**

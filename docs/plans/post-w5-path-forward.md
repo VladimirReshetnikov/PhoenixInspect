@@ -6,6 +6,10 @@
 > Roslyn C# expression parse followed by versioned project-owned tree-shape admission; no other successor is
 > pre-approved.
 >
+> **Successor record:** W6 later selected one context-acquisition category. The separately approved active
+> [Post-W6 Path Forward](post-w6-path-forward.md) narrows it to one ordinary static-reference-field root scenario.
+> This later decision does not retroactively make W7 part of, or pre-approved by, this completed W6 plan.
+>
 > **Evidence boundary:** W6 is a prototype-design milestone grounded in predeclared synthetic incidents. It does not
 > establish field readiness. W5's hosted disposition did not carry forward; the owner recorded a separate W6-only
 > disposition on 2026-07-16 after the local matrix closed.
@@ -787,7 +791,8 @@ GitHub billing remains outside the repository's control. The owner explicitly ov
 on 2026-07-16 and directed the milestone to proceed. This disposition does not claim a hosted job executed or passed,
 does not weaken the checked-in four-job workflow, does not establish field readiness, and does not automatically apply
 to any successor milestone. W6 is closed for its defined prototype scope. The evidence-selected
-`AdmitOneConcreteContextAcquisitionScenario` action is documented but not implemented or pre-approved as W7.
+`AdmitOneConcreteContextAcquisitionScenario` action is documented but not implemented by W6. The separately approved
+[Post-W6 Path Forward](post-w6-path-forward.md) now defines W7 without changing this historical gate.
 
 W5's 2026-07-16 hosted-only exception applied only to W5. The separate W6 disposition above is the required new
 milestone-specific decision; neither disposition carries into a successor.

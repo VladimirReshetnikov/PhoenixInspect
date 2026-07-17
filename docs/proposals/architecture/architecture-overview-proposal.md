@@ -19,10 +19,11 @@ Final documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` pa
 The bounded expression-to-result composition and meaningful synthetic usefulness gate in the
 [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md) is closed for W5's stated prototype scope. W5.5b
 checkpoint `90ade6d92` selects one fixed-depth member-chain prototype slice from twelve designed incidents across two
-root shapes; it adds no interpreter semantics by itself and makes no field-readiness claim. The active
-[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) gives that W6 slice an opt-in language profile, counted
-reference evidence, a narrow exact certificate for trivial field-backed terminal data properties, and independent
-headless replay and usefulness gates. It is a design contract, not an implementation claim.
+root shapes; it adds no interpreter semantics by itself and makes no field-readiness claim. The completed
+[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) gave W6 an opt-in language profile, counted reference
+evidence, a narrow exact certificate for trivial field-backed terminal data properties, and independent headless
+replay and usefulness gates. The active [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) plans one
+ordinary static-reference-field root profile before that unchanged expression pipeline. W7 is not implemented.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -273,8 +274,9 @@ literals after parsing. Roslyn-valid but unadmitted trees are `Unsupported`; par
 selects the exact outer field once, classifies its decoder and coalescing combination, and freezes those choices into
 an object-specific plan. The evaluator caps string reads and preserves missing or partial evidence instead of treating
 it as null. A selected nullable field may produce exact null and may then be coalesced; unavailable or partial evidence
-never triggers a fallback. W6 plans one exact null-aware two-member shape and one certified data-property projection;
-arrays, other operators, deeper traversal, and frame roots remain later scenario-driven increments.
+never triggers a fallback. W6 implements one exact null-aware two-member shape and one certified data-property
+projection. Planned W7 changes only root acquisition; arrays, other operators, deeper traversal, and frame roots
+remain later scenario-driven increments.
 
 The frozen W5 profile additionally admits one exact empty instance invocation. Other calls, construction, reflection,
 implicit assembly loading, user-defined conversions, and unbounded enumeration remain unsupported. Parse, admission,
@@ -638,6 +640,12 @@ W6 implementation. W6 closes locally at exact source baseline `440053ad1` with a
 passing and zero skips. The owner's separate W6-only hosted disposition records the unremediable GitHub billing block
 without claiming hosted execution or weakening the workflow.
 
+The active W7 plan admits only `StaticFieldRootV1`: counted resolution of one ordinary non-generic static reference
+field, one raw slot-pointer read, exact target validation, and no fallback. It uses a separate generated target and a
+sixteen-incident/four-shape synthetic portfolio. Roslyn remains the sole complete expression parser; the supported
+tree, binding, and evaluation subset remains project-owned and unchanged. These are planned gates, not evidence that
+W7 behavior exists.
+
 ## 11. Physical topology
 
 The prototype retains only projects containing behavior or contracts exercised by the active slices:
@@ -681,6 +689,6 @@ No research subsystem enters the active roadmap merely because a proposal exists
 - **Alternative products:** a second product demonstrates reuse without weakening the dump evaluator’s result contract.
 - **Alternative metadata backend:** a corpus records an SRM deficiency and an adapter test demonstrates a better trade-off.
 
-The completed W6 sequence, order-of-magnitude LOC scales, and exit tests live in
-`docs/plans/post-w5-path-forward.md`; `docs/plans/future-work-planning.md` retains the W0–W4 delivery record and
-research entry gates.
+The active W7 sequence, order-of-magnitude LOC scales, and exit tests live in
+`docs/plans/post-w6-path-forward.md`; completed W6 remains in `docs/plans/post-w5-path-forward.md`; and
+`docs/plans/future-work-planning.md` retains the W0–W4 delivery record and research entry gates.

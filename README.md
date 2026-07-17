@@ -22,6 +22,12 @@ Core principles:
 ## Current phase
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
+- **Active delivery target:** W7, one opt-in ordinary static-reference-field root context grounded in counted module
+  metadata and raw dump-memory reads. The active [`Post-W6 Path Forward`](docs/plans/post-w6-path-forward.md) admits no
+  new expression syntax: it acquires one exact root through `StaticFieldRootV1`, then feeds that binding into the
+  unchanged W2/W5/W6 pipeline. The existing optimized-context static axis is the physical truth gate; stack slots,
+  arbitrary addresses, nested-pointer reconstruction, target repair, deeper navigation, collections, and broader calls
+  remain excluded. W7 is planned, not implemented.
 - **Most recently closed delivery target:** W6, a deterministic, read-only, fixed-depth member-chain query grounded in
   a .NET dump. W5 closed the W2/W4 expression-to-result path and selected this slice from meaningful multi-shape
   synthetic incident evidence. The completed [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) freezes an opt-in two-member
@@ -44,8 +50,9 @@ Core principles:
   `a819a08fd`; [GitHub Actions run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083)
   passed all four required jobs. Final documentation-closure commit `aaec73c5b` passed the same matrix in
   [run 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230). The completed
-  [`Post-W4 Path Forward`](docs/plans/post-w4-path-forward.md) records W5 and its selection decision; the governing
-  active sequence is the [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md).
+  [`Post-W4 Path Forward`](docs/plans/post-w4-path-forward.md) records W5 and its selection decision. The completed
+  [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) records W6; the active sequence is the
+  [`Post-W6 Path Forward`](docs/plans/post-w6-path-forward.md).
 - **W5 implementation status:** W5.1–W5.5b are implemented and pushed through checkpoints `7c3d52572`, `d88b13c2c`,
   `fc8a43a7a`, `59d9bb590`, `0f5230e13`, `b788f4f66`, and `90ade6d92`. One canonical request classifier now admits the unchanged W2 grammar or
   exact `root.GetMarkerSummary()` method form; one product facade owns dump reacquisition and detached W4 binding; one
@@ -92,10 +99,10 @@ Core principles:
   121/121; complete integration 144/144; focused W6 2/2; optimized context 1/1; all with zero skips; plus Markdown,
   headless-workflow, and authored-vocabulary guards. The owner explicitly overrode W6's hosted-only block on
   2026-07-16 because the GitHub billing condition cannot be remediated in this milestone. That disposition is not a
-  hosted pass and does not weaken the workflow. W6 is closed; the selected context-acquisition scenario is the next
-  candidate, not an authorized implementation. W6's umbrella scale is `~10K LOC` split into `~1K LOC` evidence
-  checkpoints.
-- **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The W2 query path parses a closed root/field grammar, binds a typed snapshot-scoped root, selects the field once into an immutable plan, and evaluates that plan without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. W4's generated-dump lane additionally acquires the root/helper graph and two correlated fields, detaches all product evidence before execution, produces the exact `0x26AF37BD` result or a provenance-bearing unknown for partial/unavailable input, exercises both interpretation and a body-free pure model, and reproduces all six canonical memory/request/plan/result artifacts after reopening the dump. CoreCLR remains a late outcome oracle, not an input to interpreter shape, dump evidence, preparation, or execution.
+  hosted pass and does not weaken the workflow. W6 is closed; its selected context-acquisition category now informs
+  the planned W7 static-field-root scenario without retroactively implementing successor work. W6's umbrella scale is
+  `~10K LOC` split into `~1K LOC` evidence checkpoints.
+- **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The query path parses each bounded expression once with the pinned complete Roslyn expression parser, admits only the versioned W2/W5/W6 tree subset, binds a typed snapshot-scoped root, selects fields into immutable plans, and evaluates without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. W4's generated-dump lane additionally acquires the root/helper graph and two correlated fields, detaches all product evidence before execution, produces the exact `0x26AF37BD` result or a provenance-bearing unknown for partial/unavailable input, exercises both interpretation and a body-free pure model, and reproduces all six canonical memory/request/plan/result artifacts after reopening the dump. CoreCLR remains a late outcome oracle, not an input to interpreter shape, dump evidence, preparation, or execution.
 - **Physical scope:** ten source projects contain active contracts or behavior in a fourteen-project solution.
   `Interpreter.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
   evaluation, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources.
@@ -348,7 +355,7 @@ milestone-selected scope.
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
-each selected category. No result in W1–W5 establishes behavior for other artifact shapes.
+each selected category. No result in W1–W6 establishes behavior for other artifact shapes.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes above remain
 evidence for their named commits; they are not claims about the current fixture binary.
@@ -363,6 +370,7 @@ A versioned optimized Release modeled-incident report keeps five predeclared axe
 For structured topic lists, document inventory, and recommended reading paths, start here:
 
 - **Repository-wide design and architecture review:** `DESIGN-ARCHITECTURE-REVIEW.md`
+- **Active post-W6 W7 sequence:** `docs/plans/post-w6-path-forward.md`
 - **Completed post-W5 W6 sequence:** `docs/plans/post-w5-path-forward.md`
 - **C# parsing and versioned subset-admission contract:** `docs/proposals/architecture/csharp-expression-front-end-contract-proposal.md`
 - **Completed W5 selection record:** `docs/plans/post-w4-path-forward.md`
@@ -375,6 +383,7 @@ For process and roadmap context:
 
 - `docs/governance/project-faq.md`
 - `docs/governance/documentation-organization-proposal.md`
+- `docs/plans/post-w6-path-forward.md`
 - `docs/plans/post-w5-path-forward.md`
 - `docs/plans/post-w4-path-forward.md`
 - `docs/plans/future-work-planning.md`
@@ -391,14 +400,16 @@ High-value contributions advance or challenge the active executable evidence:
 
 - strengthen dump reads, identity joins, partial evidence, and truthful failure behavior within the supported generated
   fixture boundary;
-- preserve the closed restricted dump-query v1 behavior, replace parser growth with the pinned Roslyn front end, and
-  extend binding/evaluation only when a concrete incident scenario justifies the next tree/evidence step;
+- preserve the closed restricted dump-query v1 behavior and the pinned Roslyn front end as the sole expression parser,
+  and extend only versioned binding/evaluation when a concrete incident scenario justifies the next tree/evidence step;
 - preserve W3's structural activation, typed whole-body admission, exact-evidence import, and deterministic outcome boundaries;
 - preserve the closed W4 `GetMarkerSummary`/`CombineMarkers` contract and make it reachable through W5's bounded
   expression-to-result product path without widening interpreter semantics;
-- implement or challenge W6's one-parse/versioned-admission boundary and opt-in fixed-depth member-chain contract,
+- preserve W6's one-parse/versioned-admission boundary and opt-in fixed-depth member-chain contract,
   including complex valid-but-unsupported parser tests, certified terminal data properties, counted reference evidence,
   no-rebinding plans, null/coalesce truth, and unchanged W5 default reports;
+- implement or challenge W7's one ordinary static-reference-field root profile, counted slot-pointer evidence,
+  exact-null/non-exact context outcomes, no-fallback acquisition, and unchanged Roslyn expression language;
 - preserve W5.5b's designed-evidence caveat; do not substitute broader syntax, context, opcode, EH, model, or debugger
   work without a new evidence decision;
 - add deterministic, differential, and scenario tests at proven boundaries;

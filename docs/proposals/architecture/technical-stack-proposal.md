@@ -87,8 +87,8 @@ Current prototype structure:
   - dump loading, runtime discovery, raw evidence reads, and snapshot-scoped W3 execution resolution/import
     correlation.
 - `src/Interpreter.Product.DumpQuery`
-  - the closed, bounded root-field query evaluator and result projection; W6.2 adds the internal C# expression front
-    end and versioned tree-shape recognizers here.
+  - the closed, bounded root-field query evaluator and result projection; W6.2 contains the internal C# expression
+    front end and versioned tree-shape recognizers here.
 - `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, `tests/Interpreter.TestTarget`, and
   `tests/Interpreter.OptimizedContextTestTarget`
   - fast semantic/contract tests, real dump evidence, and the generated optimized-context report.
@@ -104,7 +104,7 @@ the same no-dialog process policy applies locally and in CI.
 
 ### C# expression front-end dependency
 
-W6.2 adopts `Microsoft.CodeAnalysis.CSharp` as the sole production expression parser under the normative
+W6.2 uses `Microsoft.CodeAnalysis.CSharp` as the sole production expression parser under the normative
 [C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md). The initial
 package is centrally pinned at `5.3.0`, matching the Roslyn train in the repository's pinned .NET SDK 10.0.201. The
 front end calls `SyntaxFactory.ParseExpression` with explicit C# 14 regular-source options and full-text consumption.
@@ -378,7 +378,9 @@ W5 resolves the earlier test-host question: the repository now has one headless 
 expression-to-result facade, without declaring it a stable shipping CLI contract. See the
 completed [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). W6 reuses that consumer as the implemented
 external boundary for the opt-in member-chain profile recorded in the completed
-[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md).
+[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Planned W7 reuses it through an append-only report mode
+for one static-field-root profile under the [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md); this does
+not turn the reference consumer into a shipping CLI.
 
 
 ## 13) Prototype implementation snapshot (draft)
@@ -488,7 +490,7 @@ Current facts:
   2,698 LOC, bringing full W4 implementation to 41,892 LOC; exact implementation closure passed in run 29463426083,
   and final documentation closure passed in run 29463847230.
 - The first product composition is a deliberately closed root-field dump query. The complete Roslyn expression front
-  end is selected but not implemented until W6.2; there is no general C# binder/evaluator, frame-root binder,
+  end is implemented at W6.2; there is no general C# binder/evaluator, implemented frame/static-root binder,
   production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
