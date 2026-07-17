@@ -22,11 +22,12 @@ Core principles:
 ## Current phase
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
-- **Active delivery target:** W7, one opt-in ordinary static-reference-field root context grounded in counted module
-  metadata and raw dump-memory reads. The active [`Post-W6 Path Forward`](docs/plans/post-w6-path-forward.md) admits no
-  new expression syntax: it acquires one exact root through `StaticFieldRootV1`, then feeds that binding into the
-  unchanged W2/W5/W6 pipeline. The existing optimized-context static axis is the physical truth gate; stack slots,
-  arbitrary addresses, nested-pointer reconstruction, target repair, deeper navigation, collections, and broader calls
+- **Active delivery target:** W7, one opt-in `StaticFieldExpressionV1` profile grounded in complete Roslyn parsing,
+  counted module metadata, optional selected-frame/Portable-PDB import context, and raw dump-memory reads. A
+  non-ambiguous fully qualified ordinary static field must bind without stack or PDB evidence; exact current-namespace,
+  namespace-import, and simple-alias facts may also bind `Type.Field`. A reference-valued static can feed the unchanged
+  W2/W6 suffix evaluator. The existing optimized-context static axis is the physical truth gate; stack values,
+  arbitrary addresses, pointer reconstruction, target repair, general C# binding, collections, and broader calls
   remain excluded. W7 is planned, not implemented.
 - **Most recently closed delivery target:** W6, a deterministic, read-only, fixed-depth member-chain query grounded in
   a .NET dump. W5 closed the W2/W4 expression-to-result path and selected this slice from meaningful multi-shape
@@ -100,8 +101,8 @@ Core principles:
   headless-workflow, and authored-vocabulary guards. The owner explicitly overrode W6's hosted-only block on
   2026-07-16 because the GitHub billing condition cannot be remediated in this milestone. That disposition is not a
   hosted pass and does not weaken the workflow. W6 is closed; its selected context-acquisition category now informs
-  the planned W7 static-field-root scenario without retroactively implementing successor work. W6's umbrella scale is
-  `~10K LOC` split into `~1K LOC` evidence checkpoints.
+  the planned W7 static-field-expression and debugger-context slice without retroactively implementing successor
+  work. W6's umbrella scale is `~10K LOC` split into `~1K LOC` evidence checkpoints.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The query path parses each bounded expression once with the pinned complete Roslyn expression parser, admits only the versioned W2/W5/W6 tree subset, binds a typed snapshot-scoped root, selects fields into immutable plans, and evaluates without rebinding. Canonical request, plan, root-selection policy, and complete-result identities preserve the exact literal, selector state, owner, full field layout, evidence, and applied-policy distinctions needed for replay. A versioned 22-case corpus spanning 20 distinct expression texts reproduces the complete canonical result byte sequence/SHA-256 for all cases and the canonical plan projection string/SHA-256 for the 13 cases whose preparation succeeds, both within one session and after disposing, reopening, rediscovering, and rebinding the dump. The W3 architecture proof adds structural module/type/method/field identities, SRM-derived signatures and initialized locals, metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and closed branchless `Int32` arithmetic plus direct/constant-adjusted instance getters. Its generated-dump lane replays the counted physical body, correlates exactly one `ldfld` with one exact imported field observation, executes through the real memory model, terminates typed-null access in a latched target-exception state, and reproduces the canonical prepared-memory result after reopening and rebinding the dump. W4's generated-dump lane additionally acquires the root/helper graph and two correlated fields, detaches all product evidence before execution, produces the exact `0x26AF37BD` result or a provenance-bearing unknown for partial/unavailable input, exercises both interpretation and a body-free pure model, and reproduces all six canonical memory/request/plan/result artifacts after reopening the dump. CoreCLR remains a late outcome oracle, not an input to interpreter shape, dump evidence, preparation, or execution.
 - **Physical scope:** ten source projects contain active contracts or behavior in a fourteen-project solution.
   `Interpreter.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
@@ -408,8 +409,8 @@ High-value contributions advance or challenge the active executable evidence:
 - preserve W6's one-parse/versioned-admission boundary and opt-in fixed-depth member-chain contract,
   including complex valid-but-unsupported parser tests, certified terminal data properties, counted reference evidence,
   no-rebinding plans, null/coalesce truth, and unchanged W5 default reports;
-- implement or challenge W7's one ordinary static-reference-field root profile, counted slot-pointer evidence,
-  exact-null/non-exact context outcomes, no-fallback acquisition, and unchanged Roslyn expression language;
+- implement or challenge W7's fully qualified/contextual static-field expression profile, selected-frame/PDB/import
+  evidence, counted slot/value reads, exact-null/non-exact outcomes, and no-fallback binding;
 - preserve W5.5b's designed-evidence caveat; do not substitute broader syntax, context, opcode, EH, model, or debugger
   work without a new evidence decision;
 - add deterministic, differential, and scenario tests at proven boundaries;

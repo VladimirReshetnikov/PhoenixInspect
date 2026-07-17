@@ -23,7 +23,9 @@ root shapes; it adds no interpreter semantics by itself and makes no field-readi
 [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) gave W6 an opt-in language profile, counted reference
 evidence, a narrow exact certificate for trivial field-backed terminal data properties, and independent headless
 replay and usefulness gates. The active [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) plans one
-ordinary static-reference-field root profile before that unchanged expression pipeline. W7 is not implemented.
+`StaticFieldExpressionV1` profile with a fully qualified metadata-binding floor, a selected-frame/Portable-PDB import-
+context slice for simple type names, counted static value reads, and reuse of unchanged W2/W6 suffix evaluation. W7 is
+not implemented.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -243,7 +245,10 @@ Reflection invokes CoreCLR only as the result oracle.
 The dump execution resolver applies the same SRM projection to exact counted metadata bytes, while the MethodDef RVA,
 physical tiny/fat header, code, local-signature token, padding, and declared extra sections come from counted dump
 memory. It re-parses those physical bytes, rejects disagreement, and never substitutes a disk body or signature.
-Portable PDB support may use SRM when the expression slice needs names or source mapping.
+Planned W7 uses SRM for its first Portable PDB projection: bounded bytes must match the module debug identity, and
+MethodDebugInformation/LocalScope/ImportScope rows become immutable current-namespace/import/alias evidence for one
+selected frame. Missing symbol context degrades only dependent simple-name binding; fully qualified lookup remains a
+counted-metadata operation.
 
 AsmResolver, dnlib, Cecil, ILSpy, and Windows-PDB readers remain comparison or future adapter candidates. A new backend is introduced only when a fixture demonstrates a material gap or cost in the active SRM path.
 
@@ -275,8 +280,9 @@ selects the exact outer field once, classifies its decoder and coalescing combin
 an object-specific plan. The evaluator caps string reads and preserves missing or partial evidence instead of treating
 it as null. A selected nullable field may produce exact null and may then be coalesced; unavailable or partial evidence
 never triggers a fallback. W6 implements one exact null-aware two-member shape and one certified data-property
-projection. Planned W7 changes only root acquisition; arrays, other operators, deeper traversal, and frame roots
-remain later scenario-driven increments.
+projection. Planned W7 admits qualified and exact context-bound static-member trees, binds one ordinary static field,
+and either returns its direct value or supplies a validated reference to the unchanged suffix planner. Arrays, other
+operators, deeper traversal, and frame values remain later scenario-driven increments.
 
 The frozen W5 profile additionally admits one exact empty instance invocation. Other calls, construction, reflection,
 implicit assembly loading, user-defined conversions, and unbounded enumeration remain unsupported. Parse, admission,
@@ -640,11 +646,13 @@ W6 implementation. W6 closes locally at exact source baseline `440053ad1` with a
 passing and zero skips. The owner's separate W6-only hosted disposition records the unremediable GitHub billing block
 without claiming hosted execution or weakening the workflow.
 
-The active W7 plan admits only `StaticFieldRootV1`: counted resolution of one ordinary non-generic static reference
-field, one raw slot-pointer read, exact target validation, and no fallback. It uses a separate generated target and a
-sixteen-incident/four-shape synthetic portfolio. Roslyn remains the sole complete expression parser; the supported
-tree, binding, and evaluation subset remains project-owned and unchanged. These are planned gates, not evidence that
-W7 behavior exists.
+The active W7 plan admits `StaticFieldExpressionV1`: bounded projection of complete Roslyn member-access trees,
+counted resolution of one ordinary static field on a non-generic class, direct scalar/string/nullable/reference reads,
+and exact reference validation before optional W2/W6 suffix evaluation. Fully qualified lookup is independent of
+frame/PDB availability. A bounded selected-frame producer validates one Portable PDB and supplies current namespace,
+namespace imports, and simple aliases for contextual `Type.Field` lookup; missing or ambiguous context stays typed. A
+separate generated target/PDB and sixteen-incident/four-shape synthetic portfolio exercise the contract. These are
+planned gates, not evidence that W7 behavior exists.
 
 ## 11. Physical topology
 

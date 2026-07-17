@@ -379,8 +379,9 @@ expression-to-result facade, without declaring it a stable shipping CLI contract
 completed [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). W6 reuses that consumer as the implemented
 external boundary for the opt-in member-chain profile recorded in the completed
 [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Planned W7 reuses it through an append-only report mode
-for one static-field-root profile under the [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md); this does
-not turn the reference consumer into a shipping CLI.
+for fully qualified and selected-frame/PDB-contextual static-field expressions under the
+[`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md); this does not turn the reference consumer into a shipping
+CLI.
 
 
 ## 13) Prototype implementation snapshot (draft)
@@ -490,7 +491,8 @@ Current facts:
   2,698 LOC, bringing full W4 implementation to 41,892 LOC; exact implementation closure passed in run 29463426083,
   and final documentation closure passed in run 29463847230.
 - The first product composition is a deliberately closed root-field dump query. The complete Roslyn expression front
-  end is implemented at W6.2; there is no general C# binder/evaluator, implemented frame/static-root binder,
+  end is implemented at W6.2; there is no general C# binder/evaluator, implemented selected-frame/static-expression
+  binder,
   production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,

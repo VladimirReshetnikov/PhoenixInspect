@@ -36,9 +36,9 @@ The completed [`Post-W5 Path Forward`](../plans/post-w5-path-forward.md) and
 [`C# Expression Front-End and Subset-Admission Contract`](architecture/csharp-expression-front-end-contract-proposal.md)
 define W6's implemented pinned Roslyn front end, opt-in member-chain lanes, exact property/storage truth gate,
 independent twenty-four-dump/four-shape synthetic portfolio, and same/fresh/reopen replay obligations.
-The active [`Post-W6 Path Forward`](../plans/post-w6-path-forward.md) plans W7's one ordinary static-reference-field
-root profile, no-fallback acquisition, unchanged parser/binder/evaluator boundary, and sixteen-dump/four-shape
-synthetic gate. It is not implemented evidence.
+The active [`Post-W6 Path Forward`](../plans/post-w6-path-forward.md) plans W7's fully qualified/contextual static-field
+expression profile, selected-frame/Portable-PDB import producer, counted no-fallback static reads, unchanged W2/W6
+suffix evaluator, and sixteen-dump/four-shape synthetic gate. It is not implemented evidence.
 Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
@@ -603,25 +603,36 @@ Markdown, headless-workflow, and authored-scope vocabulary guards. The owner's e
 of the GitHub billing block is a governance disposition, not hosted execution or pass evidence, and the checked-in
 workflow remains unchanged.
 
-## Planned W7 static-field-root evidence
+## Planned W7 static-expression and binding-context evidence
 
-W7 first requires a dedicated generated target and a physical truth test that obtains one initialized ordinary static
-reference field's slot from the pinned runtime, reads its pointer through project-owned dump memory, and independently
-validates the exact target. Product evidence cannot come from a convenience value read or a heap-type scan. A missing
-stable slot defers W7 rather than authorizing reconstruction or fallback.
+W7 first requires a physical truth test against the existing optimized target. It parses
+`global::Interpreter.OptimizedContextTestTarget.StaticContextProbe.Root` once with pinned Roslyn, uniquely binds its
+ordinary static field from counted dump metadata, obtains the initialized slot from the pinned runtime, reads the
+pointer through project-owned dump memory, and independently validates the exact target. Convenience value reads and
+heap-type scans are late oracles only. A missing stable slot defers W7 rather than authorizing reconstruction or
+fallback.
 
-The adapter lane must distinguish exhaustive absence, exact null, partial, unavailable, conflict, invalid, and
-unsupported shapes across module, TypeDef, FieldDef, application-domain, slot, pointer, and target boundaries. Counting
-and poison implementations prove fixed bounds, one authoritative pointer read, no candidate leakage, no strong-handle
-fallback, and no parse before exact acquisition. Only an exact non-null target can issue a root binding.
+The parser/binder lane covers fully qualified, dot-qualified, current-namespace, namespace-import, type-alias, and
+namespace-alias spellings; bounded static-field/suffix splits; symbol absence/ambiguity; complex valid-but-unadmitted
+Roslyn trees; and malformed neighbors. Poison/count implementations prove one parse, deterministic candidate bounds,
+no first/longest-prefix selection, and no context/metadata/dump calls for unsupported syntax. Fully qualified results
+must remain byte-identical with stack and PDB sources absent.
 
-The product lane routes that binding through unchanged W2 and W6 preparation/evaluation while keeping Roslyn as the
-sole complete expression parser. The existing complex valid-admitted, valid-but-unsupported, and invalid corpus stays
-passing; W7 adds no syntax recognizer. Hidden same-session, fresh-process, and close/reopen consumers must reproduce
-canonical W7 artifacts without changing legacy W2/W5/W6 bytes.
+The context-adapter lane selects one managed frame, correlates module/MethodDef/instruction evidence, validates bounded
+Portable PDB bytes by exact module debug identity, and reconstructs the active LocalScope/ImportScope chain. It tests
+exact current namespace/import/alias facts plus missing frame, missing/partial PDB, identity conflict, unresolved scope,
+and competing imports. A dependent simple name stops at its first context boundary; the fully qualified control still
+binds.
 
-The meaningful lane consists of sixteen independent full dumps over four unrelated object-graph shapes. Each dump has
-one predeclared question and expected acquisition/expression outcome. Exact, null, absent, partial, unavailable,
-conflict, invalid, and unsupported cases remain first-stop truthful; two fresh reports must be byte-identical;
-representative counts remain zero; and a substantive tie defers the successor. This section defines gates only and
-claims no W7 implementation or result.
+The storage/product lane distinguishes exact `Int32`, nullable, string, null, and validated object-reference values
+from exhaustive symbol absence, partial/unavailable storage, ambiguity, conflict, invalid, and unsupported shapes
+across module, TypeDef, FieldDef, application-domain, slot, decoder, pointer, and target boundaries. Counting proves the
+frozen raw-read set, no candidate leakage, no strong-handle/value-read fallback, and no reparse/rebind. An exact
+reference may feed unchanged W2/W6 suffix preparation/evaluation. Legacy W2/W5/W6 bytes stay unchanged.
+
+Hidden same-session, fresh-process, and close/reopen consumers reproduce canonical syntax, context, symbol, storage,
+plan, result, and report artifacts. The meaningful lane consists of sixteen independent full dumps over four unrelated
+object-graph shapes, with exact fully qualified/contextual answers and explicit context-poison controls. Exact, null,
+absent, partial, unavailable, ambiguous, conflict, invalid, and unsupported cases remain first-stop truthful; two fresh
+reports are byte-identical; representative counts remain zero; and a substantive tie defers the successor. This
+section defines gates only and claims no W7 implementation or result.

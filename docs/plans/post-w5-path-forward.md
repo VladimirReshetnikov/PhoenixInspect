@@ -7,7 +7,8 @@
 > pre-approved.
 >
 > **Successor record:** W6 later selected one context-acquisition category. The separately approved active
-> [Post-W6 Path Forward](post-w6-path-forward.md) narrows it to one ordinary static-reference-field root scenario.
+> [Post-W6 Path Forward](post-w6-path-forward.md) turns it into a static-field expression slice with a fully qualified
+> floor and one selected-frame/Portable-PDB import-context profile.
 > This later decision does not retroactively make W7 part of, or pre-approved by, this completed W6 plan.
 >
 > **Evidence boundary:** W6 is a prototype-design milestone grounded in predeclared synthetic incidents. It does not

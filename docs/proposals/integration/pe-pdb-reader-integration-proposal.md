@@ -495,8 +495,10 @@ Implementations:
 ```csharp
 public interface ISymbolInfo
 {
+    PdbContentIdentity ContentIdentity { get; }
     IReadOnlyList<SequencePointSpan> GetSequencePoints(MethodKey method);
     LocalScopeTree GetLocalScopes(MethodKey method);
+    BindingImportContext GetBindingImports(MethodKey method, InstructionLocation location);
     SourceDocumentInfo GetDocument(DocumentId doc);
     SourceLinkInfo? TryGetSourceLink();     // from Portable PDB custom debug info
     EmbeddedSourceInfo? TryGetEmbeddedSource(DocumentId doc);
@@ -505,6 +507,12 @@ public interface ISymbolInfo
 
 Portable PDB gives you these concepts structurally (documents, method debug info, locals/scopes, embedded source, SourceLink). ([GitHub][2])
 SRM is the recommended reader for portable PDB in new tools. ([GitHub][14])
+
+The active [Post-W6 Path Forward](../../plans/post-w6-path-forward.md) makes `GetBindingImports` the first planned W7
+symbol use. The adapter must validate bounded PDB bytes against the module's exact debug identity and project nested
+`LocalScope`/`ImportScope` records into project-owned namespace/type/alias facts. A missing instruction location may be
+used only when all candidate method scopes yield the same effective imports. Decompiled source is never an import-
+binding fallback, and unavailable symbol context never blocks a non-ambiguous fully qualified static expression.
 
 Windows PDB support sits behind the same interface (if present), but as a plugin. ([GitHub][13])
 
@@ -595,8 +603,9 @@ ClrMD gives you runtime facts (loaded modules, method tables, object addresses, 
 
 # Concrete recommendation (if you want the least-friction path)
 
-Only item 1's closed metadata/IL subset is implemented for W3. The PDB, decompiler, acquisition, and optional-plugin
-items remain evidence-gated product/research work.
+Only item 1's closed metadata/IL subset is implemented at current state. W7 now plans the narrow Portable-PDB identity,
+scope, and import projection described above; decompiler, broader acquisition, Windows-PDB, and optional-plugin items
+remain evidence-gated product/research work.
 
 If I had to pick a default stack that minimizes impedance mismatch:
 

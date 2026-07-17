@@ -14,9 +14,11 @@ The active product target is a **deterministic evaluator grounded in a read-only
 and derived-query answers; closed W4 adds explicitly counterfactual method evaluation without mutating or claiming
 historical execution of the snapshot. W5's closed expression-to-result composition and usefulness gate live in the
 [Post-W4 Path Forward](post-w4-path-forward.md). The closed opt-in W6 bounded member-chain slice and its local
-validation record live in the [Post-W5 Path Forward](post-w5-path-forward.md). Planned W7 admits only one explicit
-ordinary static-reference-field root profile before the unchanged query pipeline; it retains Roslyn as the sole
-complete expression parser and adds no syntax or evaluator semantics.
+validation record live in the [Post-W5 Path Forward](post-w5-path-forward.md). Planned W7 adds one explicit
+`StaticFieldExpressionV1` tree-admission/binding profile: fully qualified ordinary static fields bind from counted
+metadata without frame/PDB context, while a bounded selected-frame/Portable-PDB slice supplies current namespace,
+namespace imports, and simple aliases for `Type.Field`. Roslyn remains the sole complete expression parser, and a
+reference-valued static reuses the unchanged W2/W6 suffix evaluator.
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
 enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a

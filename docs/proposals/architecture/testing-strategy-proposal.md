@@ -993,29 +993,39 @@ destinations; one headless workflow; a clean authored-scope excluded-vocabulary 
 explicitly overrode W6's hosted-only block on 2026-07-16 because the GitHub billing condition cannot be remediated in
 this milestone. That disposition is not hosted pass evidence and leaves the workflow unchanged.
 
-### Planned W7 static-root evidence gates
+### Planned W7 static-expression and debugger-context evidence gates
 
-W7 begins with a physical truth gate against a dedicated generated target. The test must obtain one initialized
-ordinary static-reference-field slot through the pinned runtime adapter, read exactly one pointer-width value through
-project-owned dump memory, and validate the exact non-null target independently. A ClrMD product-value read and a
-heap-type search may be late comparison oracles only; neither may issue product evidence. If the slot address is not
-stable and nonzero for the pinned fixture, W7 stops rather than adding a heuristic.
+W7 begins with a physical truth gate against the existing optimized target. The test must parse the fully qualified
+static expression once with pinned Roslyn, bind exactly one ordinary static reference field from counted metadata,
+obtain its initialized slot through the pinned runtime adapter, read exactly one pointer-width value through project-
+owned dump memory, and validate the exact non-null target independently. A ClrMD product-value read and heap-type search
+may be late comparison oracles only. If the slot is not stable and nonzero for the pinned fixture, W7 stops rather than
+adding a heuristic.
 
-Contract and adapter tests then cover one exact selector plus exhaustive absence, exact null, partial, unavailable,
-conflict, invalid, and unsupported field/target shapes. Counting and poison sources prove deterministic module/type/
-field/domain bounds, one slot read, no candidate leakage, no strong-handle or heap-search fallback, and no expression
-parse before exact root acquisition. Existing W2/W5/W6 canonical artifacts remain byte-identical.
+Parser/binder contract tests cover fully qualified, current-namespace, namespace-import, type-alias, namespace-alias,
+ambiguous, valid-but-unadmitted, and invalid Roslyn trees. Counting and poison sources prove one parse, bounded prefix/
+suffix splits and metadata candidates, no first/longest candidate selection, and no metadata or dump capability on an
+unsupported tree. Fully qualified binding must produce the same result when every frame/PDB capability is absent.
 
-The generated integration lane uses hidden target, dump-writer, and consumer processes and routes an exact static root
-through unchanged W2 and W6 evaluation. It retains the existing complete-Roslyn three-bucket corpus, including complex
-valid-but-unsupported trees paired with malformed neighbors, so root acquisition cannot introduce syntax shortcuts.
-Same-process repetition, fresh processes, and dump close/reopen must reproduce the new W7 artifacts.
+The context lane selects one managed frame, correlates its module/MethodDef/instruction location, validates bounded
+Portable PDB bytes against exact module debug identity, reconstructs nested LocalScope/ImportScope evidence, and emits
+current-namespace/import/alias facts with independent exact/partial/unavailable/conflict/invalid status. Dump-free
+vectors and at least one real dump/PDB case must agree. Missing or competing context makes a dependent simple name
+unavailable or ambiguous without affecting its fully qualified control.
 
-The meaningful synthetic lane requires sixteen independently generated full dumps across four unrelated graph shapes,
-one predeclared question per dump, the complete typed non-exact outcome set, exact answers on every shape, two fresh
-byte-identical portfolio reports, zero
-representative rows, and explicit tie deferral. These are planned obligations; no passing count or W7 validation claim
-exists until the implementation and complete headless matrix land.
+Storage and product tests cover exact `Int32`, nullable, string, null, and validated object-reference values plus
+exhaustive absence, partial, unavailable, ambiguous, conflict, invalid, and unsupported declaration/storage/target
+shapes. One exact reference may feed unchanged W2/W6 suffix evaluation. Counts prove the frozen read set, no candidate
+leakage, no strong-handle/heap-search/value-read fallback, and no reparse or rebind. Existing W2/W5/W6 canonical
+artifacts remain byte-identical.
+
+The generated integration lane uses hidden target, dump-writer, and consumer processes. Same-process repetition, fresh
+processes, and dump close/reopen reproduce syntax/context/symbol/storage/plan/result artifacts. The meaningful lane
+requires sixteen independently generated full dumps across four unrelated graph shapes, one predeclared question per
+dump, the complete typed outcome set, exact answers through fully qualified and admitted contextual spellings on every
+shape, context-poison controls, two fresh byte-identical portfolio reports, zero representative rows, and explicit tie
+deferral. These are planned obligations; no passing count or W7 validation claim exists until the implementation and
+complete headless matrix land.
 
 ## 9) Deferred research suites
 
@@ -1048,8 +1058,9 @@ Record the failing fixture/test, exact command and environment, expected versus 
 ## 11) Selected decision and remaining evidence question
 
 W5.5b selected fixed-depth member navigation, and closed W6 implemented it. W6.6 then used twenty-four predeclared
-designed incidents across four shapes to select one context-acquisition category. The active W7 plan narrows that
-category to one ordinary static-reference-field root scenario with its own physical, generated, and meaningful
-synthetic gates. The remaining external question is deliberately separate: whether later representative observations
-confirm, reverse, or stop that direction. No readiness threshold is inferred from a designed corpus, and broader
-external-input handling remains separately scoped.
+designed incidents across four shapes to select one context-acquisition category. The active W7 plan turns that
+category into a static-field expression slice with a fully qualified floor and one exact selected-frame/Portable-PDB
+import-context profile, plus its own physical, generated, and meaningful synthetic gates. The remaining external
+question is deliberately separate: whether later representative observations confirm, reverse, or stop that
+direction. No readiness threshold is inferred from a designed corpus, and broader external-input handling remains
+separately scoped.

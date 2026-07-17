@@ -8,8 +8,9 @@
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
 W3 concrete-IL, W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, target-outcome,
-and closed W5/W6 product proofs. It is descriptive, not a promise of compatibility. W7's static-field-root contracts
-are planned and therefore intentionally absent from this implementation inventory.
+and closed W5/W6 product proofs. It is descriptive, not a promise of compatibility. W7's static-expression,
+binding-context, symbol, storage, and value contracts are planned and therefore intentionally absent from this
+implementation inventory.
 Strengthened W3 checkpoint `19c292f9f`
 passed the required local milestone-selected lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
@@ -425,10 +426,12 @@ W4 hosted closure passed in run 29463426083. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 
-The active W7 plan proposes a separate out-of-band `StaticFieldRootV1` acquisition contract, not a C# static-member
-syntax form. No selector, observation, root-source provenance, facade overload, report schema, or target project for W7
-is listed here until executable code lands. Roslyn remains the sole complete expression parser, and project-owned
-binder/evaluator profiles remain the only route from a valid tree to a plan.
+The active W7 plan proposes a `StaticFieldExpressionV1` admission/binding contract over complete Roslyn trees, plus a
+selected-frame/Portable-PDB binding context and counted static-storage value observation. Fully qualified lookup must
+work without contextual evidence; exact current-namespace/import/alias context may bind simple type names. No syntax
+descriptor, context/symbol/value observation, root-source provenance, facade overload, report schema, or target/PDB
+project for W7 is listed here until executable code lands. Roslyn remains the sole complete expression parser, and
+project-owned binder/evaluator profiles remain the only route from a valid tree to a plan.
 
 ## Change rule
 
