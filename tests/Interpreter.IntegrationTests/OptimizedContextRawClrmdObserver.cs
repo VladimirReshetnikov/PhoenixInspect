@@ -26,6 +26,11 @@ internal static class OptimizedContextRawClrmdObserver
             CacheStackRoots = false,
             CacheStackTraces = false,
         };
+        var dataTargetOptions = new DataTargetOptions
+        {
+            CacheOptions = cacheOptions,
+            FileLocator = ClrmdOfflineFileLocator.Instance,
+        };
         using var dumpStream = new FileStream(
             dumpPath,
             FileMode.Open,
@@ -36,9 +41,8 @@ internal static class OptimizedContextRawClrmdObserver
         using var dataTarget = DataTarget.LoadDump(
             Path.GetFileName(dumpPath),
             dumpStream,
-            cacheOptions,
-            leaveOpen: true);
-        dataTarget.FileLocator = ClrmdOfflineFileLocator.Instance;
+            leaveOpen: true,
+            dataTargetOptions);
 
         if (dataTarget.ClrVersions.Length != 1)
         {

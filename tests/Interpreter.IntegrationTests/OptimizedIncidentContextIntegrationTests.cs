@@ -56,6 +56,8 @@ public sealed class OptimizedIncidentContextIntegrationTests
     [Fact]
     [Trait("Category", "Dump")]
     [Trait("Corpus", "ModeledIncidentContextV1")]
+    [Trait("ReportSchema", "V1")]
+    [Trait("ReportSchema", "V2")]
     public void Optimized_release_dump_reports_all_predeclared_context_axes_without_dropping_unavailable_cases()
     {
         var targetExecutable = OptimizedContextTestTargetPaths.ResolveExecutable();
@@ -110,25 +112,34 @@ public sealed class OptimizedIncidentContextIntegrationTests
             }
 
             var report = new ModeledIncidentContextReport(measurements.MoveToImmutable());
-            var canonical = report.ToCanonicalText();
-            _output.WriteLine(canonical);
+            var v1Canonical = report.ToCanonicalText();
+            var v2Canonical = report.ToCurrentCanonicalText();
+            _output.WriteLine(v2Canonical);
 
             Assert.Equal(5, report.RawMemberBytesNumerator);
             Assert.Equal(5, report.RawMemberBytesDenominator);
-            Assert.Equal(1, report.RawContextNumerator);
+            Assert.Equal(2, report.RawContextNumerator);
             Assert.Equal(5, report.RawContextDenominator);
             Assert.Equal(1, report.ProductQueryNumerator);
             Assert.Equal(5, report.ProductQueryDenominator);
 
-            Assert.Equal(ExpectedCanonicalReport, canonical);
-            Assert.DoesNotContain('%', canonical);
-            Assert.DoesNotContain(dumpPath, canonical, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain(targetExecutable, canonical, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(ExpectedV1CanonicalReport, v1Canonical);
+            Assert.Equal(ExpectedV2CanonicalReport, v2Canonical);
+            Assert.DoesNotContain('%', v1Canonical);
+            Assert.DoesNotContain('%', v2Canonical);
+            Assert.DoesNotContain(dumpPath, v1Canonical, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(targetExecutable, v1Canonical, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(dumpPath, v2Canonical, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(targetExecutable, v2Canonical, StringComparison.OrdinalIgnoreCase);
             foreach (var definition in ModeledIncidentContextCorpus.Axes)
             {
                 Assert.DoesNotContain(
                     definition.ExpectedMarker.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    canonical,
+                    v1Canonical,
+                    StringComparison.Ordinal);
+                Assert.DoesNotContain(
+                    definition.ExpectedMarker.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    v2Canonical,
                     StringComparison.Ordinal);
             }
         }
@@ -181,7 +192,46 @@ public sealed class OptimizedIncidentContextIntegrationTests
             diagnostic.Code);
     }
 
-    private const string ExpectedCanonicalReport =
+    private const string ExpectedV2CanonicalReport =
+        "schema=interpreter-modeled-incident-context-report/v2\n" +
+        "corpus=generated-optimized-release-full-dump\n" +
+        "scope=modeled-incident-not-private-production\n" +
+        "corpus-composition=one-generated-dump-five-predeclared-axes\n" +
+        "target-profile=net10.0-coreclr-windows-x64-release-optimized\n" +
+        "capture-mechanism=diagnostics-client-full-dump\n" +
+        "raw-stack-slot-observation=not-admitted-dotnet10-dac-boundary\n" +
+        "raw-member-bytes-numerator=5\n" +
+        "raw-member-bytes-denominator=5\n" +
+        "raw-context-attribution-numerator=2\n" +
+        "raw-context-attribution-denominator=5\n" +
+        "product-query-availability-numerator=1\n" +
+        "product-query-availability-denominator=5\n" +
+        "raw-context-this-numerator=0\n" +
+        "raw-context-this-denominator=1\n" +
+        "raw-context-argument-numerator=0\n" +
+        "raw-context-argument-denominator=1\n" +
+        "raw-context-local-numerator=0\n" +
+        "raw-context-local-denominator=1\n" +
+        "raw-context-static-numerator=1\n" +
+        "raw-context-static-denominator=1\n" +
+        "raw-context-strong-root-numerator=1\n" +
+        "raw-context-strong-root-denominator=1\n" +
+        "axis=this;selection=unique;member-bytes=exact;" +
+        "raw-context=unavailable-stack-slot-observation-not-admitted;" +
+        "product-query=unavailable;diagnostic=QUERY_ROOT_UNAVAILABLE\n" +
+        "axis=argument;selection=unique;member-bytes=exact;" +
+        "raw-context=unavailable-stack-slot-observation-not-admitted;" +
+        "product-query=unavailable;diagnostic=QUERY_ROOT_UNAVAILABLE\n" +
+        "axis=local;selection=unique;member-bytes=exact;" +
+        "raw-context=unavailable-stack-slot-observation-not-admitted;" +
+        "product-query=unavailable;diagnostic=QUERY_ROOT_UNAVAILABLE\n" +
+        "axis=static;selection=unique;member-bytes=exact;" +
+        "raw-context=exact-static-field;" +
+        "product-query=unavailable;diagnostic=QUERY_ROOT_UNAVAILABLE\n" +
+        "axis=strong-root;selection=unique;member-bytes=exact;raw-context=exact-strong-handle;" +
+        "product-query=exact;diagnostic=none\n";
+
+    private const string ExpectedV1CanonicalReport =
         "schema=interpreter-modeled-incident-context-report/v1\n" +
         "corpus=generated-optimized-release-full-dump\n" +
         "scope=modeled-incident-not-private-production\n" +

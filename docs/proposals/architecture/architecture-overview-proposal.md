@@ -24,8 +24,9 @@ root shapes; it adds no interpreter semantics by itself and makes no field-readi
 evidence, a narrow exact certificate for trivial field-backed terminal data properties, and independent headless
 replay and usefulness gates. The active [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) plans one
 `StaticFieldExpressionV1` profile with a fully qualified metadata-binding floor, a selected-frame/Portable-PDB import-
-context slice for simple type names, counted static value reads, and reuse of unchanged W2/W6 suffix evaluation. W7 is
-not implemented.
+context slice for simple type names, counted static value reads, and reuse of unchanged W2/W6 suffix evaluation. W7.1
+now proves the ClrMD 4.0/.NET 10 physical static-slot chain and freezes the four-shape/sixteen-incident manifest;
+immutable product contracts, binding, context, value evaluation, conformance, and closure remain active work.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -634,7 +635,7 @@ a later milestone and are prerequisites for debugger-grade Step Out and async `M
 
 ## 10. Validated input boundary
 
-W1–W6.6's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
+W1–W7.1's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
 deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. Earlier
 out-of-scope experiments have been removed. Caveat: completing these milestones establishes no behavior
 for other artifact shapes; W5's generated and meaningful synthetic usefulness portfolios contribute zero
@@ -652,7 +653,8 @@ and exact reference validation before optional W2/W6 suffix evaluation. Fully qu
 frame/PDB availability. A bounded selected-frame producer validates one Portable PDB and supplies current namespace,
 namespace imports, and simple aliases for contextual `Type.Field` lookup; missing or ambiguous context stays typed. A
 separate generated target/PDB and sixteen-incident/four-shape synthetic portfolio exercise the contract. These are
-planned gates, not evidence that W7 behavior exists.
+W7.2–W7.7 gates, not evidence that product static-expression behavior exists. W7.1 separately proves the physical
+slot/replay chain, typed dump-free stage stops, and frozen artifact/incident inputs.
 
 ## 11. Physical topology
 

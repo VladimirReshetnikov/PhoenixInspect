@@ -428,10 +428,12 @@ worklists, and service locators also remain absent; their research documents do 
 
 The active W7 plan proposes a `StaticFieldExpressionV1` admission/binding contract over complete Roslyn trees, plus a
 selected-frame/Portable-PDB binding context and counted static-storage value observation. Fully qualified lookup must
-work without contextual evidence; exact current-namespace/import/alias context may bind simple type names. No syntax
-descriptor, context/symbol/value observation, root-source provenance, facade overload, report schema, or target/PDB
-project for W7 is listed here until executable code lands. Roslyn remains the sole complete expression parser, and
-project-owned binder/evaluator profiles remain the only route from a valid tree to a plan.
+work without contextual evidence; exact current-namespace/import/alias context may bind simple type names. W7.1 adds
+no public interface: it proves the counted metadata/static-slot/raw-pointer/raw-header chain, advances the modeled-
+context report append-only to v2 while retaining v1 replay, and freezes the future target/PDB/incident manifest. No W7
+syntax descriptor, context/symbol/value observation, root-source provenance, facade overload, or target project is
+listed here until W7.2 or later lands it. Roslyn remains the sole complete expression parser, and project-owned binder/
+evaluator profiles remain the only route from a valid tree to a plan.
 
 ## Change rule
 

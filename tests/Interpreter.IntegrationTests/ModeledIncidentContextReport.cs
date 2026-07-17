@@ -104,6 +104,7 @@ internal static class ModeledIncidentContextCorpus
 internal sealed class ModeledIncidentContextReport
 {
     internal const string Schema = "interpreter-modeled-incident-context-report/v1";
+    internal const string CurrentSchema = "interpreter-modeled-incident-context-report/v2";
     internal const string Corpus = "generated-optimized-release-full-dump";
     internal const string Scope = "modeled-incident-not-private-production";
 
@@ -168,10 +169,15 @@ internal sealed class ModeledIncidentContextReport
 
     internal int ProductQueryDenominator => _measurements.Length;
 
-    internal string ToCanonicalText()
+    internal string ToCanonicalText() => FormatCanonicalText(Schema, projectV1StaticBoundary: true);
+
+    internal string ToCurrentCanonicalText() =>
+        FormatCanonicalText(CurrentSchema, projectV1StaticBoundary: false);
+
+    private string FormatCanonicalText(string schema, bool projectV1StaticBoundary)
     {
         var builder = new StringBuilder(capacity: 1_024);
-        Append(builder, "schema", Schema);
+        Append(builder, "schema", schema);
         Append(builder, "corpus", Corpus);
         Append(builder, "scope", Scope);
         Append(builder, "corpus-composition", "one-generated-dump-five-predeclared-axes");
@@ -180,15 +186,17 @@ internal sealed class ModeledIncidentContextReport
         Append(builder, "raw-stack-slot-observation", "not-admitted-dotnet10-dac-boundary");
         Append(builder, "raw-member-bytes-numerator", RawMemberBytesNumerator);
         Append(builder, "raw-member-bytes-denominator", RawMemberBytesDenominator);
-        Append(builder, "raw-context-attribution-numerator", RawContextNumerator);
+        Append(
+            builder,
+            "raw-context-attribution-numerator",
+            _measurements.Count(item => IsContextAvailable(GetRawContext(item, projectV1StaticBoundary))));
         Append(builder, "raw-context-attribution-denominator", RawContextDenominator);
         Append(builder, "product-query-availability-numerator", ProductQueryNumerator);
         Append(builder, "product-query-availability-denominator", ProductQueryDenominator);
 
         foreach (var measurement in _measurements)
         {
-            var contextAvailable = measurement.RawContext is
-                RawContextAttributionKind.ExactStaticField or RawContextAttributionKind.ExactStrongHandle;
+            var contextAvailable = IsContextAvailable(GetRawContext(measurement, projectV1StaticBoundary));
             Append(
                 builder,
                 $"raw-context-{measurement.Definition.CanonicalName}-numerator",
@@ -205,7 +213,7 @@ internal sealed class ModeledIncidentContextReport
             builder.Append(";member-bytes=");
             builder.Append(ToCanonical(measurement.RawMemberBytes));
             builder.Append(";raw-context=");
-            builder.Append(ToCanonical(measurement.RawContext));
+            builder.Append(ToCanonical(GetRawContext(measurement, projectV1StaticBoundary)));
             builder.Append(";product-query=");
             builder.Append(ToCanonical(measurement.ProductQuery));
             builder.Append(";diagnostic=");
@@ -215,6 +223,16 @@ internal sealed class ModeledIncidentContextReport
 
         return builder.ToString();
     }
+
+    private static RawContextAttributionKind GetRawContext(
+        ModeledIncidentAxisMeasurement measurement,
+        bool projectV1StaticBoundary) =>
+        projectV1StaticBoundary && measurement.Definition.Axis == ModeledIncidentAxis.Static
+            ? RawContextAttributionKind.UnavailableStaticFieldObservation
+            : measurement.RawContext;
+
+    private static bool IsContextAvailable(RawContextAttributionKind value) => value is
+        RawContextAttributionKind.ExactStaticField or RawContextAttributionKind.ExactStrongHandle;
 
     private static void Append(StringBuilder builder, string name, string value)
     {

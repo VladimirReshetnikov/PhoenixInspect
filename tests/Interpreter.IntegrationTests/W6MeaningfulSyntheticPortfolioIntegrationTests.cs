@@ -299,7 +299,9 @@ public sealed class W6MeaningfulSyntheticPortfolioIntegrationTests
                 "--machine-output", machinePath,
                 "--human-output", humanPath,
             ]);
-        Assert.Equal(0, result.ExitCode);
+        Assert.True(
+            result.ExitCode == 0,
+            $"The W6 row consumer exited with {result.ExitCode}. stdout='{result.StandardOutput}' stderr='{result.StandardError}'.");
         Assert.Equal("W6_CONSUMER_OK:1", result.StandardOutput.Trim());
         Assert.True(string.IsNullOrWhiteSpace(result.StandardError), result.StandardError);
     }
@@ -319,7 +321,9 @@ public sealed class W6MeaningfulSyntheticPortfolioIntegrationTests
                 "--machine-output", machinePath,
                 "--human-output", humanPath,
             ]);
-        Assert.Equal(0, result.ExitCode);
+        Assert.True(
+            result.ExitCode == 0,
+            $"The W6 portfolio consumer exited with {result.ExitCode}. stdout='{result.StandardOutput}' stderr='{result.StandardError}'.");
         Assert.Equal(
             "W6_USEFULNESS_OK:24:SatisfiedSyntheticValidation:SelectedSyntheticDesignDecision",
             result.StandardOutput.Trim());

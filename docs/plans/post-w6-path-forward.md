@@ -35,11 +35,11 @@ contextual pair:  StaticValues.Counter
 required context: selected frame + exact `using Interpreter.W7TestTarget;` import scope
 ```
 
-The existing optimized-context fixture already predeclares this axis. Its heap object and `Marker` bytes are exact,
-but the current product cannot attribute that object through the static field, so the report retains
-`raw-context-static=unavailable-static-field-observation` and a `QUERY_ROOT_UNAVAILABLE` product result. W7 closes
-that one gap through the expression itself. It does not infer a static context from heap uniqueness and does not
-substitute a strong handle.
+The existing optimized-context fixture already predeclares this axis. Its heap object and `Marker` bytes are exact.
+W7.1's ClrMD 4.0 dependency correction advances the raw modeled-context report to schema v2 and exact static-field
+attribution, while the product result deliberately remains `QUERY_ROOT_UNAVAILABLE`. W7 closes that product gap
+through the expression itself. It does not infer a static context from heap uniqueness and does not substitute a
+strong handle.
 
 The scenario is narrow but architectural. A project-owned name binder must project the Roslyn member-access tree into
 a candidate fully qualified type name, directly declared static field name, and optional instance-member suffix. It
@@ -567,8 +567,10 @@ PDB identity, nested lexical scope, and active imports are predeclared evidence:
 Every exact case has a fully qualified expression and, where the context profile admits it, a current-namespace,
 namespace-import, or alias spelling that must resolve to the same symbol/value. Poison variants independently remove
 the selected frame, MethodDef correlation, instruction scope, PDB, one import, or one module so the first unavailable,
-partial, conflict, or ambiguous boundary is observable. Fully qualified variants must remain exact under every poison
-that affects only contextual lookup.
+partial, conflict, invalid, or ambiguous boundary is observable. Fully qualified variants must remain exact under
+every poison that affects only contextual lookup. Separate frozen companion projects provide the identity-mismatching
+Portable PDB and the second explicitly loaded assembly containing a duplicate fully qualified declaration; neither is
+left to an unspecified test mutation.
 
 The target is separate from `Interpreter.TestTarget` and `Interpreter.OptimizedContextTestTarget`, so W7 does not
 silently refresh W2–W6 artifact identities. Every target launch and dump/consumer process is hidden and headless.
@@ -579,8 +581,8 @@ Before implementation changes target bytes, a source-controlled manifest freezes
 
 | # | Shape | Binding/storage condition | Expression / expected first result |
 |---:|---|---|---|
-| 1 | Request | Fully qualified scalar, no context required | `global::Interpreter.W7TestTarget.RequestStatics.Counter` → exact `Int32` |
-| 2 | Batch | Exact namespace import | `BatchStatics.State` → exact string and same symbol/value as its fully qualified spelling |
+| 1 | Request | Fully qualified scalar, no context required | `global::Interpreter.W7TestTarget.StaticValues.Counter` → exact `Int32` |
+| 2 | Batch | Exact namespace import plus one W2 direct-field suffix | `BatchStatics.Root.State` → exact string and same symbol/value as its fully qualified spelling |
 | 3 | Coordinator | Exact type alias | `CoordinatorValues.Root.Owner?.Name` → exact string through a frozen conditional suffix |
 | 4 | Workflow | Exact current namespace | `WorkflowStatics.Root.CurrentAttempt.Status` → exact string through a frozen W6 chain |
 | 5 | Request | Exact null static reference | Fully qualified terminal expression → exact null after parse and binding |
@@ -590,7 +592,7 @@ Before implementation changes target bytes, a source-controlled manifest freezes
 | 9 | Request | PDB identity disagrees with module | Simple name → context conflict; no metadata candidate search |
 | 10 | Batch | Two active imports define the same simple type | Simple name → ambiguous symbol; fully qualified control remains exact |
 | 11 | Coordinator | Duplicate fully qualified type/field in two loaded modules | Fully qualified name → ambiguous symbol; no slot read |
-| 12 | Workflow | Exact metadata, field absent | Exhaustive symbol absence; no slot read |
+| 12 | Workflow | Exact field absence plus invalid projected-signature comparison | Exhaustive absence and invalid symbol payload remain distinct; no slot read in either view |
 | 13 | Request | Ordinary static slot address unavailable | Storage unavailable after exact syntax/name binding |
 | 14 | Batch | Partial scalar/reference slot bytes | Partial value; no decoder fabrication or target lookup |
 | 15 | Coordinator | Reference target type/header conflict | Conflict before object value or suffix plan issuance |
@@ -658,6 +660,16 @@ portfolio outline, and closure rule before implementation.
 
 **Scale:** `~1K LOC` implementation and tests.
 
+**Current status (2026-07-17):** implemented locally. ClrMD 3.1.455904 correlated the exact module, TypeDef, and
+FieldDef but returned a zero slot for the .NET 10 fixture. The pin therefore moved to ClrMD 4.0.732401 and diagnostics
+client 0.2.661903, with the offline locator installed through `DataTargetOptions` at construction. The unchanged
+optimized target now proves the full counted metadata → runtime declaration/domain → slot → raw pointer → raw method
+table → late oracle chain, including dump close/reopen/rebind replay. The source-controlled v1 manifest freezes sixteen
+independent designed incidents, four application shapes, qualified-control equality contracts, one-hop W2 and W6
+suffix coverage, dedicated target/Portable-PDB/companion-assembly inputs, and the complete typed status taxonomy before
+target implementation. A capability-injected dump-free stage seam proves short-circuit behavior for selected frame,
+PDB identity/import, exact-null, partial, unavailable, ambiguous, conflict, invalid, and unsupported outcomes.
+
 Prove the complete fully qualified physical chain against the existing optimized target without changing product
 behavior. Freeze the dedicated W7 target source/PDB inputs and sixteen-incident draft before target-affecting
 implementation.
@@ -676,7 +688,9 @@ implementation.
 
 ### W7.2 — immutable syntax, context, symbol, observation, and provenance contracts
 
-**Scale:** `~1K LOC` implementation and tests.
+**Scale:** `~10K LOC` implementation and tests. The initial `~1K LOC` scale understated the complete immutable contract
+family, canonical encodings, defensive-copy rules, legacy golden tests, XML documentation, and invalid-input invariant
+matrix required by this checkpoint.
 
 Add defensively immutable, content-equal host/product contracts for the projected static-access tree, selected frame,
 PDB/import evidence, symbol binding, storage observation, terminal value/object, and typed root provenance. Freeze
@@ -714,7 +728,9 @@ metadata binder for `global::Namespace.Type.Field` and unique dot-qualified equi
 
 ### W7.4 — selected-frame, Portable PDB, and contextual name binding
 
-**Scale:** `~1K LOC` implementation and tests.
+**Scale:** `~10K LOC` implementation and tests. This includes selected-frame correlation, counted mapped-PE debug
+identity, artifact resolution, Portable-PDB scope/import projection, contextual alias/reference binding, and real-dump
+plus dump-free replay tests.
 
 Implement the bounded selected-frame context producer, exact Portable PDB identity/scope/import reader, and the
 version-one current-namespace, namespace-import, and type/namespace-alias name-resolution rules.

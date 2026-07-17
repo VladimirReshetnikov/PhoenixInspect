@@ -993,14 +993,17 @@ destinations; one headless workflow; a clean authored-scope excluded-vocabulary 
 explicitly overrode W6's hosted-only block on 2026-07-16 because the GitHub billing condition cannot be remediated in
 this milestone. That disposition is not hosted pass evidence and leaves the workflow unchanged.
 
-### Planned W7 static-expression and debugger-context evidence gates
+### Active W7 static-expression and debugger-context evidence gates
 
-W7 begins with a physical truth gate against the existing optimized target. The test must parse the fully qualified
-static expression once with pinned Roslyn, bind exactly one ordinary static reference field from counted metadata,
-obtain its initialized slot through the pinned runtime adapter, read exactly one pointer-width value through project-
-owned dump memory, and validate the exact non-null target independently. A ClrMD product-value read and heap-type search
-may be late comparison oracles only. If the slot is not stable and nonzero for the pinned fixture, W7 stops rather than
-adding a heuristic.
+W7.1 passes locally against the existing optimized target. ClrMD 3.1 correlated the exact declaration but returned a
+zero static slot for the .NET 10 dump, so the dependency pin moved to ClrMD 4.0.732401 and diagnostics client
+0.2.661903. The gate parses the fully qualified expression with pinned Roslyn, correlates exactly one ordinary static
+reference field with counted metadata, obtains a stable nonzero initialized slot, reads the pointer and target method
+table through project-owned dump memory, and reproduces them after close/reopen. `ReadObject` and heap enumeration are
+late comparison oracles only. The separate v1 manifest freezes sixteen independent incidents and future target/PDB
+plus companion-artifact inputs across four application shapes. Its capability-injected dump-free stage seam proves
+selected-frame/PDB/import progression, typed stops, no later calls after a stop, and context-independent qualified
+controls. The remaining paragraphs are W7.2–W7.7 obligations.
 
 Parser/binder contract tests cover fully qualified, current-namespace, namespace-import, type-alias, namespace-alias,
 ambiguous, valid-but-unadmitted, and invalid Roslyn trees. Counting and poison sources prove one parse, bounded prefix/
@@ -1024,8 +1027,8 @@ processes, and dump close/reopen reproduce syntax/context/symbol/storage/plan/re
 requires sixteen independently generated full dumps across four unrelated graph shapes, one predeclared question per
 dump, the complete typed outcome set, exact answers through fully qualified and admitted contextual spellings on every
 shape, context-poison controls, two fresh byte-identical portfolio reports, zero representative rows, and explicit tie
-deferral. These are planned obligations; no passing count or W7 validation claim exists until the implementation and
-complete headless matrix land.
+deferral. These remain closure obligations; W7.1's physical and manifest counts do not substitute for the complete
+headless matrix.
 
 ## 9) Deferred research suites
 

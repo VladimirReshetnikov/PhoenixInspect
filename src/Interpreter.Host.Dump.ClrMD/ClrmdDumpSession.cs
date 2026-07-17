@@ -247,12 +247,16 @@ public sealed partial class ClrmdDumpSession : IDisposable
                 CacheStackTraces = false,
                 CacheStackRoots = false,
             };
+            var dataTargetOptions = new DataTargetOptions
+            {
+                CacheOptions = cacheOptions,
+                FileLocator = ClrmdOfflineFileLocator.Instance,
+            };
             dataTarget = DataTarget.LoadDump(
                 displayName,
                 dumpStream,
-                cacheOptions,
-                leaveOpen: true);
-            dataTarget.FileLocator = ClrmdOfflineFileLocator.Instance;
+                leaveOpen: true,
+                dataTargetOptions);
 
             if (dataTarget.ClrVersions.Length == 0)
             {

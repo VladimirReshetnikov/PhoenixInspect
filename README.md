@@ -28,7 +28,10 @@ Core principles:
   namespace-import, and simple-alias facts may also bind `Type.Field`. A reference-valued static can feed the unchanged
   W2/W6 suffix evaluator. The existing optimized-context static axis is the physical truth gate; stack values,
   arbitrary addresses, pointer reconstruction, target repair, general C# binding, collections, and broader calls
-  remain excluded. W7 is planned, not implemented.
+  remain excluded. W7.1 now passes: the dependency pin moved to ClrMD 4.0 for .NET 10 static-base support, and one
+  generated full dump proves counted TypeDef/FieldDef/signature agreement, a stable nonzero slot, exact raw pointer
+  and method-table reads, close/reopen/rebind replay, and late oracle agreement. A separate dump-free capability seam
+  freezes every typed stop and qualified context-poison control. W7.2–W7.7 remain active implementation.
 - **Most recently closed delivery target:** W6, a deterministic, read-only, fixed-depth member-chain query grounded in
   a .NET dump. W5 closed the W2/W4 expression-to-result path and selected this slice from meaningful multi-shape
   synthetic incident evidence. The completed [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) freezes an opt-in two-member
@@ -364,7 +367,13 @@ Immutable upstream snapshots under `lib/` remain verbatim reference material; th
 scope or a claim of supported behavior.
 Required framework namespace and member identifiers also remain literal API names; they do not widen project scope.
 
-A versioned optimized Release modeled-incident report keeps five predeclared axes in the denominator and records raw member bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5. It is explicitly generated evidence, not a representative private-production incident corpus, so no readiness rate is claimed and representative incident measurement is not a W1 completion gate. Current in-process caps (8 GiB dump admission, 256 MiB ClrMD dump cache, and 512 MiB managed PE admission) remain resource controls. Branches, CFG merge/fixpoint analysis, handler-transfer EH, virtual stepping, broad call/model catalogs, generics, allocation, async/dynamic lifting, live speculation, no-JIT runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
+A versioned optimized Release modeled-incident report keeps five predeclared axes in the denominator. The current v2
+report records raw member bytes at 5/5, attributable context at 2/5 after the ClrMD 4.0 static-slot correction, and
+unchanged product-query availability at 1/5. This is explicitly generated evidence, not a representative external
+incident corpus, so no readiness rate is claimed. Current in-process caps (8 GiB dump admission, 256 MiB ClrMD dump
+cache, and 512 MiB managed PE admission) remain resource controls. Branches, CFG merge/fixpoint analysis, handler-
+transfer EH, virtual stepping, broad call/model catalogs, generics, allocation, async/dynamic lifting, live
+speculation, no-JIT runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
 
 ## Where to go next
 

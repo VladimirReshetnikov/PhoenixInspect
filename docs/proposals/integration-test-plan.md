@@ -38,7 +38,8 @@ define W6's implemented pinned Roslyn front end, opt-in member-chain lanes, exac
 independent twenty-four-dump/four-shape synthetic portfolio, and same/fresh/reopen replay obligations.
 The active [`Post-W6 Path Forward`](../plans/post-w6-path-forward.md) plans W7's fully qualified/contextual static-field
 expression profile, selected-frame/Portable-PDB import producer, counted no-fallback static reads, unchanged W2/W6
-suffix evaluator, and sixteen-dump/four-shape synthetic gate. It is not implemented evidence.
+suffix evaluator, and sixteen-dump/four-shape synthetic gate. W7.1 now supplies the physical slot/replay proof,
+dump-free typed stage seam, and frozen manifest/artifact inputs; it is not product binding or value evidence.
 Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
@@ -184,10 +185,12 @@ item 20 is W3's prepared-execution dump/run:
     canonical identities, transcript bytes, and SHA-256. The disk PE is opened only after dump execution as an
     independent CoreCLR/body oracle.
 
-A separate dump test generates an optimized Release modeled-incident target, retains `this`, argument, local, static,
-and strong-root axes, and emits a canonical report with raw member bytes at 5/5, attributable context at 1/5, and
-product-query availability at 1/5. Those counts describe one generated dump, not representative private-production
-recoverability. The generated report is W1 context evidence; representative production measurement is not a W1 gate.
+A separate dump test generates an optimized Release modeled-incident target and retains `this`, argument, local,
+static, and strong-root axes. Historical schema v1 recorded raw member bytes at 5/5, attributable context at 1/5, and
+product-query availability at 1/5. W7.1 moves the runtime adapter to ClrMD 4.0 for .NET 10 static-base support and emits
+schema v2 with attributable context at 2/5 while product-query availability remains 1/5. Those counts describe one
+generated dump, not representative external recoverability. The W7.1 truth gate separately proves counted metadata,
+a stable nonzero slot, exact raw pointer/header reads, reopen replay, and only then high-level/heap oracle agreement.
 
 ## W3 concrete-execution evidence lane
 
@@ -635,4 +638,5 @@ plan, result, and report artifacts. The meaningful lane consists of sixteen inde
 object-graph shapes, with exact fully qualified/contextual answers and explicit context-poison controls. Exact, null,
 absent, partial, unavailable, ambiguous, conflict, invalid, and unsupported cases remain first-stop truthful; two fresh
 reports are byte-identical; representative counts remain zero; and a substantive tie defers the successor. This
-section defines gates only and claims no W7 implementation or result.
+section defines W7.2–W7.7 gates. W7.1's physical, dump-free, and manifest results do not claim that the product path or
+sixteen real dump incidents already exist.
