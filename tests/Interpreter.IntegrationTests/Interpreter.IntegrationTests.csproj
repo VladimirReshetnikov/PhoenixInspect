@@ -38,6 +38,12 @@
     <ProjectReference Include="../Interpreter.W7DuplicateTypeFixture/Interpreter.W7DuplicateTypeFixture.csproj"
                       ReferenceOutputAssembly="false"
                       AdditionalProperties="Configuration=Release" />
+    <ProjectReference Include="../Interpreter.W8AliasTarget/Interpreter.W8AliasTarget.csproj"
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="Configuration=Release" />
+    <ProjectReference Include="../Interpreter.W8TestTarget/Interpreter.W8TestTarget.csproj"
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="Configuration=Release" />
     <ProjectReference Include="../Interpreter.TestTarget/Interpreter.TestTarget.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Interpreter.W8TestTarget</AssemblyName>
+    <RootNamespace>Interpreter.W8TestTarget</RootNamespace>
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Interpreter.W8AliasTarget/Interpreter.W8AliasTarget.csproj">
+      <Aliases>requestlib</Aliases>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../TestInfrastructure/HeadlessTestProcess.cs"
+             Link="TestInfrastructure/HeadlessTestProcess.cs" />
+  </ItemGroup>
+</Project>
