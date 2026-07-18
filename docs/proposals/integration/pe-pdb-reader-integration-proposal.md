@@ -1,4 +1,6 @@
-# PE/PDB reader integration proposal (draft)
+# PE/PDB reader integration proposal
+
+> **Lifecycle:** Current · **Roadmap:** Active · **Last reconciled:** 2026-07-17
 
 ## Decision and W3 implementation alignment (2026-07-14)
 
@@ -13,14 +15,46 @@ For the active dump/query and first interpreter slices, this proposal aligns to 
   atomic method body/signature/return/local shape, and contextual same-module FieldDef resolution. Its real-dump getter
   resolver operates on counted dump metadata/body bytes, proves that the admitted `ldfld` is the correlated runtime
   field, and reproduces the prepared-memory transcript after dump reopen/rebind.
-- **Still gated:** Portable/Windows PDB projection, SourceLink, generic context, MemberRef/MethodSpec execution,
-  broader opcode families, a second meaningful domain, product method evaluation, and validation beyond the named fixture shapes.
+- **Still gated at this historical W3 checkpoint:** Portable/Windows PDB projection, SourceLink, generic context,
+  MemberRef/MethodSpec execution, broader opcode families, a second meaningful domain, product method evaluation, and
+  validation beyond the named fixture shapes. Later sections distinguish capabilities closed by W4/W7 from active W8
+  work.
 
 The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers. Local headless verification at `19c292f9f` passed a zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards. [GitHub Actions run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at the same exact pushed implementation checkpoint. Exact documentation-closure commit `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined milestone-selected scope.
 
+## Current implementation and W8 gate alignment (2026-07-17)
+
+W4 closes the second meaningful value domain, direct-call/model execution, detached ClrMD binding, and dump-grounded
+product composition in its declared profiles. W7 closes the first Portable-PDB product use: bounded candidate bytes
+are validated against exact module debug identity, one selected frame is correlated to MethodDef/instruction evidence,
+and the active LocalScope/ImportScope chain is projected into project-owned namespace/import/alias facts. W7 also binds
+and reads non-generic ordinary static fields, including an equivalent fully qualified route that makes zero frame/PDB
+calls. Windows PDB, SourceLink, decompilation, and broader symbol acquisition remain separate evidence-led decisions.
+
+The approved-but-unimplemented [Post-W7 Path Forward](../../plans/post-w7-path-forward.md) is the sole active W8
+sequence. Its SRM/Portable-PDB work is broader than record decoding: it must preserve lexical scope levels, alias
+hiding, first-viable namespace-level stopping, same-level import accumulation, TypeSpec aliases, `using static`, exact
+extern-alias/AssemblyRef identity, nested per-segment generic arity, and complete lexical blocker catalogs. A fully
+qualified nested/constructed route remains independent of every frame and PDB service.
+
+W8.1 blocks V2 contracts until compiler/SRM and real full-dump fixtures prove the relation among emitted TypeDefs,
+GenericParam rows, TypeSpec bytes, field signatures, exact ordered runtime construction arguments, declaring owner,
+per-construction static slot, and decoded value. Display-derived runtime names cannot select a construction. Metadata
+literals form a separate zero-runtime/zero-storage path. Ordinary application-domain storage, thread-relative storage,
+context-relative storage, and RVA-backed storage each receive an exact admitted or typed non-admitted disposition.
+Selected-frame import context, an exact live frame-value location, and frame generic construction remain separate
+branches; address-backed values use counted dump memory, while register-backed values require a frozen raw thread
+context.
+
+The gate is executable and headless: fast compiler/SRM/PDB differentials precede hidden full-dump targets, generated
+V2 conformance, and the fixed thirty-two-core-incident/four-shape synthetic portfolio plus one incident for every
+W8.1-admitted branch. Every repository-invoked managed command runs through `eng/Invoke-HeadlessProcess.ps1`; every
+target, helper, or consumer child process is configured as hidden and windowless.
+
 ---
 
-I’m going to (1) survey the best OSS building blocks for PE/metadata + PDB + decompilation, then (2) propose the “glue layer” that makes them cooperate cleanly with **ClrMD** and your **IL interpretation framework**.
+The survey below compares the relevant OSS building blocks for PE/metadata, PDB, and decompilation, then defines the
+glue layer that lets them cooperate with **ClrMD** and the **IL interpretation framework**.
 
 ---
 
@@ -200,7 +234,7 @@ The original `dotnet/symstore` repo is archived, and there’s an explicit conti
   * supports Microsoft public symbol server and private servers
 * Whether you literally reuse `Microsoft.SymbolStore` or reimplement the minimal subset, the important point is: **keep acquisition separate from parsing.**
 
-**Input-shape caveat:** W1–W4 evidence covers only the named generated fixtures and explicitly admitted input shapes.
+**Input-shape caveat:** W1–W7 evidence covers only the named generated fixtures and explicitly admitted input shapes.
 The local SRM opener's 512 MiB bound remains a deterministic evidence contract; other shapes require separate
 executable evidence.
 
@@ -268,7 +302,7 @@ This keeps every “mixed concern” in exactly one place.
 **Responsibility**
 
 * Convert ClrMD runtime objects into stable IDs and runtime facts.
-* Provide dump-backed memory and frame materialization.
+* Provide dump-backed memory, selected-frame identity, and bounded candidate frame-location/context evidence.
 * Never parse metadata tables or PDB records directly.
 
 **Consumes**
@@ -278,7 +312,8 @@ This keeps every “mixed concern” in exactly one place.
 **Produces**
 
 * `RuntimeMethodHandle`, `RuntimeTypeHandle`, `RuntimeModuleHandle`
-* Raw frame values (`this`, args, locals) with confidence/provenance tags.
+* W7 selected-frame/method/instruction correlation and candidate `this`/argument/local location facts. Exact live frame
+  values remain a conditional W8 branch until name/scope/liveness/location/type and address/register source are proven.
 * Optional “runtime hint set” (IL RVA/size, native code ranges, module path hints).
 
 **Why this matters**
@@ -318,7 +353,8 @@ This is where correctness guardrails live. The interpreter should never execute 
 **Consumes**
 
 * PE/PDB blobs from Layer 2.
-* Optional runtime generic context hints from Layer 1 only after a generic scenario is admitted; W3 has none.
+* Exact runtime generic context only after W8.1 proves an ordered candidate-keyed source. W3–W7 provide none; display-
+  derived names remain probe evidence rather than projection input.
 
 **Produces**
 
@@ -334,8 +370,9 @@ You can swap readers later (or run dual-read validation) without changing interp
 **Responsibility**
 
 * Join runtime facts (Layer 1) with decoded metadata/artifact facts (Layer 3).
-* In W3, freeze one exact non-generic method/field execution view; resolve generic instantiation context for call sites
-  only in a later admitted slice.
+* Freeze one exact non-generic method/field execution view in W3/W4 and one non-generic static-expression view in W7.
+* Under W8, join a metadata construction to one exact runtime construction and declaring/static-slot identity only
+  after the physical truth gate; keep literals and each admitted storage/frame branch strategy-distinct.
 * Materialize interpreter start state and provide call/field/heap callbacks.
 
 **Consumes**
@@ -389,11 +426,15 @@ This is the only layer allowed to “speak both languages” (runtime and metada
    profile with deterministic outcome, budget, ordered events, and resulting memory. The host/test composition retains
    the cross-layer correlation provenance and fresh-session replay evidence around that execution.
 
-#### Scenario B: Resolve a method from a dump frame (future)
+#### Scenario B: Use a selected dump frame (partly implemented; W8 branches gated)
 
-1. Layer 1 maps `ClrStackFrame` + `ClrMethod` to runtime handles and attempts to recover `this`, arguments, and locals.
-2. The same counted method-evidence boundary applies, but frame seeding, optimized-frame degradation, and generic
-   context require a separately admitted product scenario before Layer 5 may execute it.
+1. W7 maps one selected `ClrStackFrame` + `ClrMethod` to exact module/MethodDef/instruction evidence and projects the
+   identity-validated Portable-PDB import context. It does not seed a value.
+2. W8.1 independently probes exact live `this`, argument, and local locations plus frame-generic construction. Address-
+   backed values require counted dump reads; register-backed values require a frozen raw thread context.
+3. Only a branch with exact name/scope/liveness/location/type and source attribution may produce a detached root. Every
+   absent, duplicate, partial, unsupported, or conflicting fact stops before a read and never falls through to static
+   binding.
 
 #### Scenario C: Missing PDB, decompilation fallback (future research)
 
@@ -401,8 +442,9 @@ This is the only layer allowed to “speak both languages” (runtime and metada
 2. After a debug-map slice is admitted, Layer 3 may build “no source” markers and an explicitly lower-confidence
    decompiler mapping.
 3. After a virtual-stepping controller is admitted, Layer 4 may classify that mapping as `DecompiledFallback`.
-4. Layer 5 may continue with downgraded source confidence only after W4 method execution, deterministic pause/event,
-   source-map/decompiler, and stepping gates have their own executable evidence. None is part of W3.
+4. Layer 5 may continue with downgraded source confidence only after source-map/decompiler and stepping controllers
+   have their own executable evidence. W4 method execution and deterministic target outcomes are closed in their
+   declared profiles, but neither proves source mapping or virtual stepping. None is part of W3.
 
 #### Scenario D: Identity mismatch between dump module and disk module
 
@@ -427,9 +469,10 @@ That model prevents silent degradation and keeps interpreter behavior auditable 
 
 ## Recommended internal interfaces (thin but powerful)
 
-The sketches below describe a possible broader artifact/symbol platform. They are not the implemented W3 public API.
-W3 uses narrower project-owned structural resolution contracts and no symbol, decompiler, acquisition, or generic
-service.
+The sketches below describe a possible broader artifact/symbol platform. They are not the implemented public API.
+W3/W4 use narrower structural resolution contracts; W7 uses a narrower selected-frame/Portable-PDB import adapter.
+No decompiler or broad acquisition service exists, and W8 generic/frame contracts remain unimplemented until their
+physical gates pass.
 
 ### 1) Acquisition & identity
 
@@ -513,6 +556,9 @@ symbol use. The adapter validates bounded PDB bytes against the module's exact d
 `LocalScope`/`ImportScope` records into project-owned namespace/type/alias facts. A missing instruction location may be
 used only when all candidate method scopes yield the same effective imports. Decompiled source is never an import-
 binding fallback, and unavailable symbol context never blocks a non-ambiguous fully qualified static expression.
+W8 must preserve the exact scope chain rather than flatten it, decode retained TypeSpec/`using static`/extern facts,
+correlate extern aliases to AssemblyRefs, and prove complete lexical blocker catalogs before bare-field binding. Those
+requirements are active design gates, not implemented `ISymbolInfo` behavior.
 
 Windows PDB support sits behind the same interface (if present), but as a plugin. ([GitHub][13])
 
@@ -607,6 +653,12 @@ Item 1's closed metadata/IL subset and W7's narrow Portable-PDB identity, scope,
 at current state. W7 validates bounded artifact bytes against the module debug identity and projects the active nested
 scope/import facts for one selected frame. Decompiler, broader acquisition, Windows-PDB, and optional-plugin items
 remain evidence-gated product/research work.
+
+W8 retains SRM/PEReader and the same project-owned boundary. It adds no second metadata stack: compiler/SRM fixtures
+must first prove closed TypeSpec and nested generic construction, literal encodings, constraints, accessibility, and
+extern-alias facts; real dumps must separately prove exact candidate-keyed runtime arguments and per-construction
+storage. Conditional thread/context/RVA/frame branches land only when W8.1 records exact physical evidence, otherwise
+their typed executable non-admissions remain part of the conformance corpus.
 
 If I had to pick a default stack that minimizes impedance mismatch:
 
