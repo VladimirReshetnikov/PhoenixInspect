@@ -920,6 +920,39 @@ public sealed class StaticFieldSyntaxOutcome : IEquatable<StaticFieldSyntaxOutco
             {
                 return true;
             }
+            if (string.Equals(
+                    bound.Name,
+                    StaticFieldExpressionParser.IdentifierCharacterBoundName,
+                    StringComparison.Ordinal) &&
+                bound.Value == CSharpExpressionFrontEnd.MaximumIdentifierLength &&
+                rawExpression.Length >= CSharpExpressionFrontEnd.MaximumIdentifierLength)
+            {
+                return true;
+            }
+            if (string.Equals(
+                    bound.Name,
+                    StaticFieldExpressionParser.StringLiteralCharacterBoundName,
+                    StringComparison.Ordinal) &&
+                bound.Value == CSharpExpressionFrontEnd.MaximumStringLiteralLength &&
+                rawExpression.Length >= CSharpExpressionFrontEnd.MaximumStringLiteralLength)
+            {
+                return true;
+            }
+            if (string.Equals(bound.Name, StaticFieldExpressionParser.SegmentCountBoundName, StringComparison.Ordinal) &&
+                bound.Value == StaticFieldExpressionParser.MaximumSegmentCount &&
+                parserCounts.ProjectedSegmentCount >= StaticFieldExpressionParser.MaximumSegmentCount)
+            {
+                return true;
+            }
+            if (string.Equals(
+                    bound.Name,
+                    StaticFieldExpressionParser.CandidateShapeCountBoundName,
+                    StringComparison.Ordinal) &&
+                bound.Value == StaticFieldExpressionParser.MaximumCandidateShapeCount &&
+                parserCounts.ProjectedCandidateShapeCount >= StaticFieldExpressionParser.MaximumCandidateShapeCount)
+            {
+                return true;
+            }
         }
         return false;
     }
