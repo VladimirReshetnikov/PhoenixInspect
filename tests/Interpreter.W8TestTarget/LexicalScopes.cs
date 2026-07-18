@@ -1,7 +1,9 @@
 extern alias requestlib;
 
 using ConstructedAlias = Interpreter.W8TestTarget.GenericSlot<Interpreter.W8TestTarget.RequestContext>;
+using ExternalInterfaceAlias = requestlib::Interpreter.W8AliasTarget.IExternalInterfaceSlot<requestlib::Interpreter.W8AliasTarget.ExternalRequestContext>;
 using MatrixAlias = Interpreter.W8TestTarget.RequestContext[,];
+using NestedOwnerAlias = Interpreter.W8TestTarget.Outer<Interpreter.W8TestTarget.RequestContext>.Middle.Inner<Interpreter.W8TestTarget.BatchContext>;
 using TypeDefinitionAlias = Interpreter.W8TestTarget.RequestContext;
 using TypeReferenceAlias = requestlib::Interpreter.W8AliasTarget.ExternalRequestContext;
 using VectorAlias = Interpreter.W8TestTarget.RequestContext[];
@@ -47,7 +49,10 @@ public static class ParameterBlockerProbe
 }
 
 /// <summary>Supplies the complete optimized lexical-name and local-scope evidence frame.</summary>
-/// <remarks>This is a draft frame/PDB fixture and not a frame-value product contract.</remarks>
+/// <remarks>
+/// This is a draft frame/PDB fixture and not a frame-value product contract. The language modifier on
+/// <see cref="Run"/> exists only to emit the fixed pointer local consumed by the physical PDB oracle.
+/// </remarks>
 public static class LexicalCatalogProbe
 {
     /// <summary>Enters nested source scopes and pauses while every named witness remains live.</summary>
@@ -62,9 +67,11 @@ public static class LexicalCatalogProbe
         var ordinaryLocal = new TypeDefinitionAlias(request.Name);
         TypeReferenceAlias typeReferenceLocal = new("lexical-type-reference");
         ConstructedAlias.Current = ordinaryLocal;
+        var externalInterfaceAliasWitness = typeof(ExternalInterfaceAlias);
         VectorAlias vectorLocal = [ordinaryLocal];
         MatrixAlias matrixLocal = new RequestContext[1, 1];
         matrixLocal[0, 0] = ordinaryLocal;
+        var nestedOwnerAliasWitness = typeof(NestedOwnerAlias);
         using var usingLocal = new MemoryStream([0x17, 0x29, 0x41, 0x53], writable: false);
         var (deconstructionNumber, deconstructionText) = (number ^ localConstant, request.Name);
         var byteVector = new byte[] { 0x17, 0x29, 0x41, 0x53 };
@@ -100,8 +107,10 @@ public static class LexicalCatalogProbe
                             GC.KeepAlive(profile);
                             GC.KeepAlive(ordinaryLocal);
                             GC.KeepAlive(typeReferenceLocal);
+                            GC.KeepAlive(externalInterfaceAliasWitness);
                             GC.KeepAlive(vectorLocal);
                             GC.KeepAlive(matrixLocal);
+                            GC.KeepAlive(nestedOwnerAliasWitness);
                             GC.KeepAlive(usingLocal.Position);
                             GC.KeepAlive(deconstructionText);
                             GC.KeepAlive(catchLocal);

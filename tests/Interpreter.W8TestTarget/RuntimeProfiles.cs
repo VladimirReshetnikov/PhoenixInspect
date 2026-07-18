@@ -133,6 +133,47 @@ namespace Interpreter.W8TestTarget
         }
     }
 
+    /// <summary>Supplies disjoint lexical locals that test whether the pinned compiler reuses one named slot.</summary>
+    /// <remarks>
+    /// The current compiler emits distinct slots, which is an evidence-backed result of this draft Portable-PDB fixture
+    /// rather than a frame-value product contract.
+    /// </remarks>
+    public static class SlotReuseProfile
+    {
+        /// <summary>Ends one addressed local scope before pausing inside a second addressed local scope.</summary>
+        /// <param name="profile">The selected target profile retained in the active scope.</param>
+        /// <param name="number">The deterministic input used to distinguish the two local values.</param>
+        /// <returns>A process exit code if the pause unexpectedly returns.</returns>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int Run(string profile, int number)
+        {
+            {
+                var inactiveSlot = number ^ unchecked((int)0xE4047A04);
+                ObserveAddressedValue(ref inactiveSlot);
+            }
+
+            {
+                var activeSlot = number ^ unchecked((int)0xE5057A05);
+                Console.WriteLine("READY");
+                Console.Out.Flush();
+                Thread.Sleep(Timeout.Infinite);
+
+                ObserveAddressedValue(ref activeSlot);
+                GC.KeepAlive(profile);
+                return activeSlot;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private static void ObserveAddressedValue(ref int value)
+        {
+            if (value == int.MinValue)
+            {
+                throw new InvalidOperationException("The disjoint-local sentinel reached its excluded value.");
+            }
+        }
+    }
+
     /// <summary>Supplies selected-frame retention for the explicitly named RVA-backed fields.</summary>
     /// <remarks>This is a draft PE/runtime fixture and not a module-storage product contract.</remarks>
     public static class NamedRvaProfile

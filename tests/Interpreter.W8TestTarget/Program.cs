@@ -1,6 +1,7 @@
 extern alias requestlib;
 
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using ExternalTypeAlias = requestlib::Interpreter.W8AliasTarget.ExternalRequestContext;
 using ForwardedTypeAlias = Interpreter.W8AliasTarget.ForwardedRequestContext;
 using IntMatrixSlot = Interpreter.W8TestTarget.GenericSlot<int[,]>;
@@ -46,6 +47,10 @@ internal static class Program
 /// <remarks>This is a draft target entry point and not a product API.</remarks>
 public static class W8TruthGate
 {
+    private static AssemblyLoadContext? retainedCollectibleLoadContext;
+    private static Type? retainedCollectibleConstruction;
+    private static object? retainedCollectibleValue;
+
     /// <summary>Initializes the physical fixture and enters the selected frame profile.</summary>
     /// <param name="profile">The predeclared selected-frame profile.</param>
     /// <returns>A process exit code if the target does not remain paused.</returns>
@@ -111,6 +116,7 @@ public static class W8TruthGate
             requestlib::Interpreter.W8AliasTarget.ExternalRequestContext>.Sentinel = unchecked((int)0xDD0D7A01);
         requestlib::Interpreter.W8AliasTarget.FriendVisibleOwner.Sentinel = unchecked((int)0xDD0D7A02);
         var nonFriendAccessibility = Interpreter.W8ForwarderTarget.NonFriendAccessibilityOwner.ReadAllForFixture();
+        MaterializeCollectibleConstruction();
 
         LocalTypeAlias localTypeAlias = request;
         RequestVectorAlias requestVectorAlias = [request];
@@ -140,6 +146,7 @@ public static class W8TruthGate
             "shadow-frame" => ScopeEvidence.OuterScopeProbe.Run(profile, request, batch, importedNested, retainedRva),
             "lexical-frame" => LexicalEvidence.LexicalCatalogProbe.Run(profile, request, PrimitiveStorage.Int32),
             "optimized-frame" => OptimizedFrameProfile.Run(profile, request, PrimitiveStorage.Int32),
+            "slot-reuse-frame" => SlotReuseProfile.Run(profile, PrimitiveStorage.Int32),
             "thread-relative" => ThreadRelativeProfile.Run(profile),
             "context-relative" => ContextRelativeProfile.Run(profile),
             "query-frame" => QueryRangeProfile.Run(profile, request),
@@ -147,6 +154,34 @@ public static class W8TruthGate
             "rva-frame" => NamedRvaProfile.Run(profile, namedRvaSentinel, namedRvaWideSentinel),
             _ => 92,
         };
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    private static void MaterializeCollectibleConstruction()
+    {
+        if (retainedCollectibleLoadContext is not null)
+        {
+            return;
+        }
+
+        var loadContext = new AssemblyLoadContext("w8-collectible-argument", isCollectible: true);
+        var sourceAssemblyPath = typeof(
+            requestlib::Interpreter.W8AliasTarget.ExternalRequestContext).Assembly.Location;
+        var loadedAssembly = loadContext.LoadFromAssemblyPath(sourceAssemblyPath);
+        var argumentType = loadedAssembly.GetType(
+            "Interpreter.W8AliasTarget.ExternalRequestContext",
+            throwOnError: true,
+            ignoreCase: false)!;
+        var argumentValue = Activator.CreateInstance(argumentType, "collectible-external-79")!;
+        var constructedOwner = typeof(GenericSlot<>).MakeGenericType(argumentType);
+        constructedOwner.GetField(nameof(GenericSlot<RequestContext>.Sentinel))!
+            .SetValue(null, unchecked((int)0xCE0E7A01));
+        constructedOwner.GetField(nameof(GenericSlot<RequestContext>.Current))!
+            .SetValue(null, argumentValue);
+
+        retainedCollectibleLoadContext = loadContext;
+        retainedCollectibleConstruction = constructedOwner;
+        retainedCollectibleValue = argumentValue;
     }
 }
 
