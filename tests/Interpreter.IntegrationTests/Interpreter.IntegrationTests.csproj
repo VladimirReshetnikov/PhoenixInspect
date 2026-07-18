@@ -29,6 +29,9 @@
     <ProjectReference Include="../Interpreter.OptimizedContextTestTarget/Interpreter.OptimizedContextTestTarget.csproj"
                       ReferenceOutputAssembly="false"
                       AdditionalProperties="Configuration=Release" />
+    <ProjectReference Include="../Interpreter.W7TestTarget/Interpreter.W7TestTarget.csproj"
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="Configuration=Release" />
     <ProjectReference Include="../Interpreter.TestTarget/Interpreter.TestTarget.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>
