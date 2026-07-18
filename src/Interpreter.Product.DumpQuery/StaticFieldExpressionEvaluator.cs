@@ -29,7 +29,7 @@ public static class StaticFieldExpressionEvaluator
         string? expression)
     {
         ArgumentNullException.ThrowIfNull(session);
-        return EvaluateCore(session, expression, context: null);
+        return EvaluateCore(session, StaticFieldExpressionParser.Parse(expression), context: null);
     }
 
     /// <summary>Evaluates a static-field expression with additive selected-frame and Portable-PDB binding context.</summary>
@@ -55,15 +55,76 @@ public static class StaticFieldExpressionEvaluator
                 "The expression binding context belongs to another immutable dump snapshot.",
                 nameof(context));
         }
-        return EvaluateCore(session, expression, context);
+        return EvaluateCore(session, StaticFieldExpressionParser.Parse(expression), context);
+    }
+
+    /// <summary>
+    /// Evaluates an expression while acquiring selected-frame and Portable-PDB context only when context-independent
+    /// binding did not already select one exact declaration.
+    /// </summary>
+    /// <param name="session">The open immutable dump session.</param>
+    /// <param name="expression">The complete expression text parsed exactly once.</param>
+    /// <param name="selector">The snapshot-scoped managed thread/frame ordinal request used only when needed.</param>
+    /// <param name="portablePdbCandidates">Initialized caller-discovered PDB candidate paths, possibly empty.</param>
+    /// <returns>
+    /// The complete typed pipeline result. Exact context-independent names do not enumerate frames or inspect PDB
+    /// candidates; simple names preserve independently typed context acquisition failures.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="session"/> or <paramref name="selector"/> is null.</exception>
+    /// <exception cref="ArgumentException">The selector belongs to another snapshot or the candidate array is invalid.</exception>
+    public static StaticFieldExpressionEvaluationResult Evaluate(
+        ClrmdDumpSession session,
+        string? expression,
+        DumpSelectedFrameSelector selector,
+        ImmutableArray<string> portablePdbCandidates)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(selector);
+        var syntax = StaticFieldExpressionParser.Parse(expression);
+        return EvaluateWithOptionalContext(
+            session,
+            syntax,
+            selector,
+            () => session.AcquireExpressionBindingContext(selector, portablePdbCandidates));
+    }
+
+    /// <summary>
+    /// Evaluates an expression with lazy selected-frame/PDB context supplied by one bounded artifact resolver.
+    /// </summary>
+    /// <param name="session">The open immutable dump session.</param>
+    /// <param name="expression">The complete expression text parsed exactly once.</param>
+    /// <param name="selector">The snapshot-scoped managed thread/frame ordinal request used only when needed.</param>
+    /// <param name="artifactResolver">The bounded resolver invoked only after exact frame and debug identity evidence.</param>
+    /// <returns>
+    /// The complete typed pipeline result. A fully qualified exact bind bypasses frame selection and never invokes
+    /// <paramref name="artifactResolver"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="selector"/> belongs to another snapshot.</exception>
+    public static StaticFieldExpressionEvaluationResult Evaluate(
+        ClrmdDumpSession session,
+        string? expression,
+        DumpSelectedFrameSelector selector,
+        IDumpPortablePdbArtifactResolver artifactResolver)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(artifactResolver);
+        var syntax = StaticFieldExpressionParser.Parse(expression);
+        return EvaluateWithOptionalContext(
+            session,
+            syntax,
+            selector,
+            () => session.AcquireExpressionBindingContext(selector, artifactResolver));
     }
 
     private static StaticFieldExpressionEvaluationResult EvaluateCore(
         ClrmdDumpSession session,
-        string? expression,
-        DumpExpressionBindingContext? context)
+        StaticFieldSyntaxOutcome syntax,
+        DumpExpressionBindingContext? context,
+        ClrmdStaticFieldMetadataBindingSource? source = null,
+        StaticFieldSymbolBindingOutcome? prebound = null)
     {
-        var syntax = StaticFieldExpressionParser.Parse(expression);
         if (syntax.Status != StaticFieldSyntaxStatus.Accepted)
         {
             return Result(
@@ -77,11 +138,11 @@ public static class StaticFieldExpressionEvaluator
                 diagnosticMessage: syntax.DiagnosticMessage);
         }
 
-        var source = new ClrmdStaticFieldMetadataBindingSource(session);
+        source ??= new ClrmdStaticFieldMetadataBindingSource(session);
         var descriptor = syntax.Descriptor!;
-        var binding = context is null
+        var binding = prebound ?? (context is null
             ? StaticFieldFullyQualifiedBinder.Bind(source, descriptor)
-            : StaticFieldContextualBinder.Bind(source, descriptor, context);
+            : StaticFieldContextualBinder.Bind(source, descriptor, context));
         if (binding.Status != StaticFieldBindingStatus.Exact)
         {
             return Result(
@@ -314,6 +375,44 @@ public static class StaticFieldExpressionEvaluator
             hostObservation,
             observation,
             objectBinding);
+    }
+
+    private static StaticFieldExpressionEvaluationResult EvaluateWithOptionalContext(
+        ClrmdDumpSession session,
+        StaticFieldSyntaxOutcome syntax,
+        DumpSelectedFrameSelector selector,
+        Func<DumpExpressionBindingContext> acquireContext)
+    {
+        if (syntax.Status != StaticFieldSyntaxStatus.Accepted)
+        {
+            return EvaluateCore(session, syntax, context: null);
+        }
+
+        var source = new ClrmdStaticFieldMetadataBindingSource(session);
+        var descriptor = syntax.Descriptor!;
+        var hasBareShape = !descriptor.HasGlobalQualifier &&
+            descriptor.CandidateShapes.Any(static shape => shape.StaticFieldSegmentIndex == 1);
+        if (!hasBareShape)
+        {
+            var contextIndependent = StaticFieldFullyQualifiedBinder.Bind(source, descriptor);
+            if (contextIndependent.Status == StaticFieldBindingStatus.Exact || descriptor.HasGlobalQualifier)
+            {
+                return EvaluateCore(
+                    session,
+                    syntax,
+                    context: null,
+                    source,
+                    contextIndependent);
+            }
+        }
+        if (selector.Snapshot != session.Snapshot)
+        {
+            throw new ArgumentException(
+                "The selected-frame request belongs to another immutable dump snapshot.",
+                nameof(selector));
+        }
+        var context = acquireContext();
+        return EvaluateCore(session, syntax, context, source);
     }
 
     private static StaticFieldExpressionEvaluationResult EvaluateSuffix(

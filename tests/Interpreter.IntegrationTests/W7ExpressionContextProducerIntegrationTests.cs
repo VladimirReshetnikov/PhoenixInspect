@@ -240,11 +240,23 @@ public sealed class W7ExpressionContextProducerIntegrationTests
         Assert.Equal(targetModule.Identity.ImageBase, declaration.Module.ImageBase);
         Assert.Equal(targetModule.Identity.ImageSize, declaration.Module.ImageSize);
 
+        var evaluation = StaticFieldExpressionEvaluator.Evaluate(
+            session,
+            expression,
+            frame.Selector,
+            [portablePdb, portablePdb]);
+        Assert.Equal(StaticFieldBindingStatus.Exact, evaluation.SymbolBinding!.Status);
+        Assert.Equal(binding, evaluation.SymbolBinding);
+        Assert.Equal(binding.ConsultedContextSha256, evaluation.SymbolBinding.ConsultedContextSha256);
+
         return new ContextObservation(
             frame.Sha256,
             pdb.Sha256,
             context.Sha256,
             binding.Sha256,
+            evaluation.Sha256,
+            evaluation.Stage,
+            evaluation.Status,
             declaration.FieldName,
             string.Join(
                 ",",
@@ -388,6 +400,9 @@ public sealed class W7ExpressionContextProducerIntegrationTests
         string PortablePdbSha256,
         string ContextSha256,
         string BindingSha256,
+        string EvaluationSha256,
+        StaticFieldExpressionEvaluationStage EvaluationStage,
+        StaticFieldExpressionEvaluationStatus EvaluationStatus,
         string FieldName,
         string ExpansionKinds);
 

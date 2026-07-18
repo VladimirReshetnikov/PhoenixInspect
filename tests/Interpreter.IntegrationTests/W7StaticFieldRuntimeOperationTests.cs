@@ -1,5 +1,6 @@
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Collections.Immutable;
 using Interpreter.Core.Abstractions;
 using Interpreter.Host.Abstractions;
 using Interpreter.Host.Dump.ClrMD;
@@ -435,9 +436,20 @@ public sealed class W7StaticFieldRuntimeOperationTests
         Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
         using var session = Assert.IsType<ClrmdDumpSession>(opened.Value);
         const string owner = "Interpreter.W7TestTarget.Batch.BatchStatics";
+        var poisonResolver = new PoisonArtifactResolver();
+        var selector = DumpSelectedFrameSelector.Create(
+            session.Snapshot,
+            threadOrdinal: int.MaxValue,
+            frameOrdinal: int.MaxValue);
+        var totalItems = StaticFieldExpressionEvaluator.Evaluate(
+            session,
+            $"global::{owner}.TotalItems",
+            selector,
+            poisonResolver);
+        Assert.False(poisonResolver.WasCalled);
         return
         [
-            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.TotalItems"),
+            totalItems,
             StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.State"),
             StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.Progress"),
             StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.Root"),
@@ -648,4 +660,17 @@ public sealed class W7StaticFieldRuntimeOperationTests
         ulong? ObjectAddress,
         StaticFieldRuntimeAssignabilityKind? AssignabilityKind,
         string Sha256);
+
+    private sealed class PoisonArtifactResolver : IDumpPortablePdbArtifactResolver
+    {
+        internal bool WasCalled { get; private set; }
+
+        ImmutableArray<DumpPortablePdbArtifactRead> IDumpPortablePdbArtifactResolver.Resolve(
+            DumpPortablePdbArtifactResolutionRequest request)
+        {
+            WasCalled = true;
+            throw new InvalidOperationException(
+                "A fully qualified exact static bind must not acquire selected-frame or Portable-PDB context.");
+        }
+    }
 }
