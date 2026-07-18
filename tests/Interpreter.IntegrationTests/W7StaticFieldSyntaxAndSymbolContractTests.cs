@@ -1422,7 +1422,9 @@ public sealed class W7StaticFieldSyntaxAndSymbolContractTests
                 0x02000007,
                 "System",
                 "Nullable`1",
-                genericArity: 1);
+                genericArity: 1,
+                fieldListRowId: 9,
+                fieldListEndExclusiveRowId: 11);
         var assemblyReference = StaticFieldAssemblyReferenceIdentity.Create(
             0x23000002,
             "System.Private.CoreLib",
@@ -1472,6 +1474,115 @@ public sealed class W7StaticFieldSyntaxAndSymbolContractTests
             nullableType: nullableTarget,
             systemInt32TypeAncestry: int32Ancestry);
         Assert.Equal("Nullable`1", nullableDeclaration.NullableType!.TypeName);
+
+        var booleanAncestry = CreateValueTypeAncestry(
+            coreLibraryModule,
+            coreLibraryContent,
+            0x02000009,
+            "System",
+            "Boolean");
+        var hasValueDefinition = CreateFieldDefinition(
+            nullableAncestry.SubjectType,
+            "hasValue",
+            0x04000009,
+            (int)FieldAttributes.Private,
+            [0x06, 0x02]);
+        var valueDefinition = CreateFieldDefinition(
+            nullableAncestry.SubjectType,
+            "value",
+            0x0400000A,
+            (int)FieldAttributes.Private,
+            [0x06, 0x13, 0x00]);
+        var snapshot = new ClrmdSnapshotIdentity(SnapshotDigest);
+        var runtimeProgramModule = RuntimeModule(snapshot, module);
+        var runtimeCoreLibraryModule = RuntimeModule(snapshot, coreLibraryModule);
+        var runtimeInt32 = RuntimeType(
+            snapshot,
+            runtimeCoreLibraryModule,
+            coreLibraryContent,
+            int32Ancestry.SubjectType,
+            "System.Int32",
+            methodTable: 0x7100,
+            isValueType: true,
+            isPrimitive: true);
+        var runtimeBoolean = RuntimeType(
+            snapshot,
+            runtimeCoreLibraryModule,
+            coreLibraryContent,
+            booleanAncestry.SubjectType,
+            "System.Boolean",
+            methodTable: 0x7200,
+            isValueType: true,
+            isPrimitive: true);
+        var runtimeNullable = RuntimeType(
+            snapshot,
+            runtimeCoreLibraryModule,
+            coreLibraryContent,
+            nullableAncestry.SubjectType,
+            "System.Nullable<System.Int32>",
+            methodTable: 0x7300,
+            isValueType: true,
+            isPrimitive: false,
+            [runtimeInt32]);
+        var runtimeOwner = RuntimeType(
+            snapshot,
+            runtimeProgramModule,
+            content,
+            nullableOwner.SubjectType,
+            "Synthetic.Incident.Probe",
+            methodTable: 0x7400,
+            isValueType: false,
+            isPrimitive: false);
+        var runtimeField = ClrmdStaticRuntimeFieldIdentity.Create(
+            runtimeOwner,
+            nullableDeclaration.FieldDefinitionToken,
+            nullableDeclaration.FieldName,
+            (FieldAttributes)nullableDeclaration.FieldAttributes,
+            runtimeReportsThreadStatic: false,
+            runtimeReportsContextStatic: false,
+            ClrmdStaticExpectedDecoderKind.NullableInt32,
+            runtimeNullable);
+        var runtimeMapping = ClrmdStaticRuntimeDeclarationMappingIdentity.Create(
+            runtimeOwner,
+            runtimeField,
+            ClrmdStaticRuntimeDeclarationMappingCounters.Create(17, 6, 1, 1, true, true));
+        var rawLayout = ClrmdStaticNullableRuntimeLayoutIdentity.Create(
+            runtimeMapping,
+            storageSize: 8,
+            [
+                ClrmdStaticNullableRuntimeFieldIdentity.Create(
+                    runtimeNullable,
+                    valueDefinition.FieldDefinitionToken,
+                    valueDefinition.Name,
+                    offset: 4,
+                    size: sizeof(int),
+                    runtimeInt32),
+                ClrmdStaticNullableRuntimeFieldIdentity.Create(
+                    runtimeNullable,
+                    hasValueDefinition.FieldDefinitionToken,
+                    hasValueDefinition.Name,
+                    offset: 0,
+                    size: sizeof(byte),
+                    runtimeBoolean),
+            ]);
+
+        var semanticLayout = StaticFieldNullableInt32RuntimeLayoutIdentity.Create(
+            nullableDeclaration,
+            booleanAncestry,
+            hasValueDefinition,
+            valueDefinition,
+            rawLayout);
+
+        Assert.Equal(rawLayout.StorageSize, semanticLayout.StorageSize);
+        Assert.Equal(0, semanticLayout.HasValueRuntimeField.Offset);
+        Assert.Equal(4, semanticLayout.ValueRuntimeField.Offset);
+        Assert.Equal(rawLayout.RuntimeMapping.Field.ObservedFieldType, semanticLayout.RuntimeNullableType);
+        Assert.Throws<ArgumentException>(() => StaticFieldNullableInt32RuntimeLayoutIdentity.Create(
+            nullableDeclaration,
+            booleanAncestry,
+            valueDefinition,
+            hasValueDefinition,
+            rawLayout));
 
         var forgedOwner = CreateReferenceClassAncestry(
             module,
@@ -1899,6 +2010,42 @@ public sealed class W7StaticFieldSyntaxAndSymbolContractTests
             imageBase: 0x400000 + moduleAddress,
             imageSize: 0x18000);
 
+    private static ClrmdRuntimeModuleIdentity RuntimeModule(
+        ClrmdSnapshotIdentity snapshot,
+        StaticFieldModuleInstanceIdentity module) =>
+        new(
+            snapshot,
+            module.ApplicationDomainAddress,
+            module.ModuleAddress,
+            module.ImageBase,
+            module.ImageSize);
+
+    private static ClrmdStaticRuntimeTypeIdentity RuntimeType(
+        ClrmdSnapshotIdentity snapshot,
+        ClrmdRuntimeModuleIdentity runtimeModule,
+        ModuleContentIdentity content,
+        StaticFieldTypeDefinitionIdentity type,
+        string fullName,
+        ulong methodTable,
+        bool isValueType,
+        bool isPrimitive,
+        ImmutableArray<ClrmdStaticRuntimeTypeIdentity> genericArguments = default) =>
+        ClrmdStaticRuntimeTypeIdentity.Create(
+            snapshot,
+            sizeof(ulong),
+            runtimeModule,
+            content,
+            type.TypeDefinitionToken,
+            fullName,
+            methodTable,
+            isValueType,
+            isPrimitive,
+            isArray: false,
+            isInterface: false,
+            genericArguments.IsDefault
+                ? ImmutableArray<ClrmdStaticRuntimeTypeIdentity>.Empty
+                : genericArguments);
+
     private static ModuleContentIdentity CreateModuleContent(char digestCharacter) =>
         ModuleContentIdentity.FromDigest(
             Guid.Parse("00112233-4455-6677-8899-aabbccddeeff"),
@@ -2016,7 +2163,9 @@ public sealed class W7StaticFieldSyntaxAndSymbolContractTests
         string namespaceName,
         string typeName,
         int genericArity = 0,
-        int valueTypeDefinitionToken = 0x02000002)
+        int valueTypeDefinitionToken = 0x02000002,
+        int fieldListRowId = 1,
+        int fieldListEndExclusiveRowId = 1)
     {
         var metadataModule = CreateMetadataModule(module, content);
         var coreLibrary = CreateCoreLibrary(metadataModule, objectTypeDefinitionToken: 0x02000001);
@@ -2032,7 +2181,9 @@ public sealed class W7StaticFieldSyntaxAndSymbolContractTests
             typeName,
             (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed),
             genericArity,
-            extendsMetadataToken: valueTypeDefinitionToken);
+            extendsMetadataToken: valueTypeDefinitionToken,
+            fieldListRowId: fieldListRowId,
+            fieldListEndExclusiveRowId: fieldListEndExclusiveRowId);
         return StaticFieldTypeAncestryIdentity.Create(
             subject,
             [StaticFieldTypeAncestryEdge.Create(subject, valueType)],

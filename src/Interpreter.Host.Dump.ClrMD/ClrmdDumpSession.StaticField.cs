@@ -512,6 +512,186 @@ public sealed partial class ClrmdDumpSession
         };
     }
 
+    /// <summary>
+    /// Projects the complete raw specialized-value field catalog needed for Product's nullable layout proof.
+    /// </summary>
+    /// <param name="runtimeMapping">
+    /// The exact outer declaration mapping whose Product-supplied decoder tag is Nullable&lt;Int32&gt;.
+    /// </param>
+    /// <returns>
+    /// An exact detached payload extent and complete raw child catalog, or a typed failure before Product assigns
+    /// semantic HasValue/value roles. Counted metadata reads used to project child runtime types are retained.
+    /// </returns>
+    /// <remarks>
+    /// This draft operation is deliberately metadata-semantic-blind: it does not select children by name, recognize
+    /// Boolean or Int32, or assume offsets. Product must correlate every role with its independently resolved metadata.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="runtimeMapping"/> is null.</exception>
+    /// <exception cref="ArgumentException">The mapping belongs to a different immutable dump snapshot.</exception>
+    public ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity> MapStaticNullableRuntimeLayout(
+        ClrmdStaticRuntimeDeclarationMappingIdentity runtimeMapping)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(runtimeMapping);
+        if (runtimeMapping.DeclaringType.Snapshot != Snapshot)
+        {
+            throw new ArgumentException(
+                "The nullable runtime mapping belongs to a different immutable dump snapshot.",
+                nameof(runtimeMapping));
+        }
+        if (runtimeMapping.Field.ExpectedDecoderKind != ClrmdStaticExpectedDecoderKind.NullableInt32)
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch);
+        }
+
+        var rebound = RebindStaticField(runtimeMapping);
+        if (rebound.Field is null)
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ToEvidenceStatus(rebound.Status),
+                rebound.Issue);
+        }
+        if (rebound.Field.Type is not { } runtimeNullableType ||
+            rebound.Field.Size <= 0 ||
+            !RuntimeTypeMatchesIdentity(runtimeNullableType, runtimeMapping.Field.ObservedFieldType))
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch);
+        }
+
+        var fieldBound = ImmutableArray.Create(
+            ClrmdStaticNullableRuntimeLayoutIdentity.DeclaredRuntimeFieldCountBound);
+        var fields = runtimeNullableType.Fields;
+        if (fields.IsDefault)
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                appliedBounds: fieldBound);
+        }
+        if (fields.Length == 0)
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.FieldUnavailable,
+                appliedBounds: fieldBound);
+        }
+        if (fields.Length > ClrmdStaticNullableRuntimeLayoutIdentity.MaximumRuntimeFields)
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ClrmdEvidenceStatus.Partial,
+                ClrmdValueIssue.LimitExceeded,
+                appliedBounds: fieldBound);
+        }
+
+        var moduleKey = (runtimeNullableType.Module.AppDomain.Address, runtimeNullableType.Module.Address);
+        if (!_moduleInfos.TryGetValue(moduleKey, out var module))
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.ModuleUnavailable,
+                appliedBounds: fieldBound);
+        }
+        var metadata = ReadStaticMetadata(module);
+        if (metadata.Status != ClrmdEvidenceStatus.Exact || metadata.Value is null)
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                metadata.Status,
+                metadata.Issue,
+                evidence: metadata.Evidence,
+                appliedBounds: fieldBound.AddRange(metadata.AppliedBounds));
+        }
+
+        using var metadataImage = metadata.Value;
+        using var projectionContext = new StaticRuntimeTypeProjectionContext(this, metadataImage);
+        var projectedFields = ImmutableArray.CreateBuilder<ClrmdStaticNullableRuntimeFieldIdentity>(fields.Length);
+        foreach (var field in fields)
+        {
+            if (field.Type is not { } observedType ||
+                string.IsNullOrEmpty(field.Name) ||
+                field.Offset < 0 || field.Size <= 0)
+            {
+                return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                    ClrmdEvidenceStatus.Invalid,
+                    ClrmdValueIssue.InvalidData,
+                    evidence: projectionContext.Evidence,
+                    appliedBounds: fieldBound);
+            }
+
+            var observedProjection = projectionContext.Project(observedType);
+            if (observedProjection.Status != ClrmdEvidenceStatus.Exact || observedProjection.Value is null)
+            {
+                return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                    observedProjection.Status,
+                    observedProjection.Issue,
+                    evidence: projectionContext.Evidence,
+                    appliedBounds: fieldBound.AddRange(observedProjection.AppliedBounds));
+            }
+
+            try
+            {
+                projectedFields.Add(ClrmdStaticNullableRuntimeFieldIdentity.Create(
+                    runtimeMapping.Field.ObservedFieldType,
+                    field.Token,
+                    field.Name,
+                    field.Offset,
+                    field.Size,
+                    observedProjection.Value));
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+            {
+                return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                    ClrmdEvidenceStatus.Conflict,
+                    ClrmdValueIssue.TypeMismatch,
+                    evidence: projectionContext.Evidence,
+                    appliedBounds: fieldBound);
+            }
+        }
+
+        try
+        {
+            var layout = ClrmdStaticNullableRuntimeLayoutIdentity.Create(
+                runtimeMapping,
+                rebound.Field.Size,
+                projectedFields.MoveToImmutable());
+            var bounds = CanonicalReplayEncoding.NormalizeBounds(
+                fieldBound.AddRange(
+                    ImmutableArray.Create(
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredRuntimeNameCharacterBound,
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredGenericArgumentCountBound,
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredRuntimeTypeGraphDepthBound,
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredRuntimeTypeGraphNodeCountBound)),
+                "nullableRuntimeLayoutBounds");
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ClrmdEvidenceStatus.Exact,
+                ClrmdValueIssue.None,
+                layout,
+                projectionContext.Evidence,
+                bounds);
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+        {
+            return ClrmdEvidenceResult<ClrmdStaticNullableRuntimeLayoutIdentity>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch,
+                evidence: projectionContext.Evidence,
+                appliedBounds: fieldBound);
+        }
+    }
+
+    private static ClrmdEvidenceStatus ToEvidenceStatus(ClrmdStaticFieldObservationStatus status) => status switch
+    {
+        ClrmdStaticFieldObservationStatus.Partial => ClrmdEvidenceStatus.Partial,
+        ClrmdStaticFieldObservationStatus.Unavailable or ClrmdStaticFieldObservationStatus.Unsupported =>
+            ClrmdEvidenceStatus.Unavailable,
+        ClrmdStaticFieldObservationStatus.Conflict => ClrmdEvidenceStatus.Conflict,
+        ClrmdStaticFieldObservationStatus.Invalid => ClrmdEvidenceStatus.Invalid,
+        _ => throw new ArgumentOutOfRangeException(nameof(status)),
+    };
+
     private StaticFieldRebindResult RebindStaticField(ClrmdStaticRuntimeDeclarationMappingIdentity mapping)
     {
         var declaringIdentity = mapping.DeclaringType;

@@ -850,6 +850,22 @@ public sealed class StaticFieldNullableRuntimeFieldIdentity :
             observedType);
     }
 
+    /// <summary>Adapts one metadata-blind Host nullable child row into Product's semantic-composition input.</summary>
+    /// <param name="runtimeField">The exact detached raw Host row from the exhausted nullable field catalog.</param>
+    /// <returns>An equivalent Product-owned raw row; no semantic HasValue or value role is assigned.</returns>
+    public static StaticFieldNullableRuntimeFieldIdentity Create(
+        ClrmdStaticNullableRuntimeFieldIdentity runtimeField)
+    {
+        ArgumentNullException.ThrowIfNull(runtimeField);
+        return Create(
+            runtimeField.DeclaringRuntimeType,
+            runtimeField.FieldDefinitionToken,
+            runtimeField.Name,
+            runtimeField.Offset,
+            runtimeField.Size,
+            runtimeField.ObservedType);
+    }
+
     /// <inheritdoc />
     public bool Equals(StaticFieldNullableRuntimeFieldIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
@@ -1048,6 +1064,65 @@ public sealed class StaticFieldNullableInt32RuntimeLayoutIdentity :
             hasValueRuntimeField,
             valueFieldDefinition,
             valueRuntimeField);
+    }
+
+    /// <summary>
+    /// Correlates a complete metadata-blind Host layout with Product-selected nullable child FieldDefs and type anchors.
+    /// </summary>
+    /// <param name="declaration">The exact admitted Nullable&lt;Int32&gt; outer static declaration.</param>
+    /// <param name="systemBooleanTypeAncestry">Exact runtime-core-library System.Boolean ancestry.</param>
+    /// <param name="hasValueFieldDefinition">The exact directly owned Boolean HasValue FieldDef selected by Product.</param>
+    /// <param name="valueFieldDefinition">The exact directly owned generic-parameter value FieldDef selected by Product.</param>
+    /// <param name="runtimeLayout">The complete raw Host payload extent and exhausted runtime child catalog.</param>
+    /// <returns>An exact semantic layout proof usable to construct the metadata-blind physical request.</returns>
+    /// <exception cref="ArgumentException">
+    /// The outer mapping, child tokens, catalog uniqueness, metadata signatures, raw runtime types, or offsets disagree.
+    /// </exception>
+    public static StaticFieldNullableInt32RuntimeLayoutIdentity Create(
+        StaticFieldSymbolDeclarationIdentity declaration,
+        StaticFieldTypeAncestryIdentity systemBooleanTypeAncestry,
+        StaticFieldDefinitionIdentity hasValueFieldDefinition,
+        StaticFieldDefinitionIdentity valueFieldDefinition,
+        ClrmdStaticNullableRuntimeLayoutIdentity runtimeLayout)
+    {
+        ArgumentNullException.ThrowIfNull(declaration);
+        ArgumentNullException.ThrowIfNull(systemBooleanTypeAncestry);
+        ArgumentNullException.ThrowIfNull(hasValueFieldDefinition);
+        ArgumentNullException.ThrowIfNull(valueFieldDefinition);
+        ArgumentNullException.ThrowIfNull(runtimeLayout);
+        if (runtimeLayout.RuntimeMapping.Field.ExpectedDecoderKind != ClrmdStaticExpectedDecoderKind.NullableInt32 ||
+            !runtimeLayout.RuntimeMapping.Field.ObservedFieldType.Equals(
+                runtimeLayout.Fields[0].DeclaringRuntimeType))
+        {
+            throw new ArgumentException(
+                "The Host layout must describe the exact outer Nullable<Int32> runtime mapping.",
+                nameof(runtimeLayout));
+        }
+
+        var hasValueMatches = runtimeLayout.Fields
+            .Where(field => field.FieldDefinitionToken == hasValueFieldDefinition.FieldDefinitionToken)
+            .Take(2)
+            .ToImmutableArray();
+        var valueMatches = runtimeLayout.Fields
+            .Where(field => field.FieldDefinitionToken == valueFieldDefinition.FieldDefinitionToken)
+            .Take(2)
+            .ToImmutableArray();
+        if (hasValueMatches.Length != 1 || valueMatches.Length != 1)
+        {
+            throw new ArgumentException(
+                "Each Product-selected nullable child FieldDef must map to exactly one raw runtime row.",
+                nameof(runtimeLayout));
+        }
+
+        return Create(
+            declaration,
+            runtimeLayout.RuntimeMapping.Field.ObservedFieldType,
+            systemBooleanTypeAncestry,
+            runtimeLayout.StorageSize,
+            hasValueFieldDefinition,
+            StaticFieldNullableRuntimeFieldIdentity.Create(hasValueMatches[0]),
+            valueFieldDefinition,
+            StaticFieldNullableRuntimeFieldIdentity.Create(valueMatches[0]));
     }
 
     /// <inheritdoc />

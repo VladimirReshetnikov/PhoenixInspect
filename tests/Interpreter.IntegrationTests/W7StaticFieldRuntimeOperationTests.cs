@@ -249,8 +249,7 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 "Interpreter.W7TestTarget.Batch",
                 "BatchStatics",
                 "Progress",
-                ClrmdStaticExpectedDecoderKind.NullableInt32,
-                ClrmdStaticNullableInt32Layout.Create(storageSize: 8, hasValueOffset: 0, valueOffset: 4)),
+                ClrmdStaticExpectedDecoderKind.NullableInt32),
             Read(
                 "Interpreter.W7TestTarget.Batch",
                 "BatchStatics",
@@ -262,8 +261,7 @@ public sealed class W7StaticFieldRuntimeOperationTests
             string namespaceName,
             string typeName,
             string fieldName,
-            ClrmdStaticExpectedDecoderKind decoder,
-            ClrmdStaticNullableInt32Layout? nullableLayout = null)
+            ClrmdStaticExpectedDecoderKind decoder)
         {
             var typeHandle = Assert.Single(reader.TypeDefinitions, handle => IsType(
                 reader,
@@ -287,6 +285,28 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 mapped.Status == ClrmdEvidenceStatus.Exact,
                 $"Mapping {runtimeName}.{fieldName} stopped as {mapped.Status}/{mapped.Issue}.");
             var mapping = Assert.IsType<ClrmdStaticRuntimeDeclarationMappingIdentity>(mapped.Value);
+            ClrmdStaticNullableInt32Layout? nullableLayout = null;
+            if (decoder == ClrmdStaticExpectedDecoderKind.NullableInt32)
+            {
+                var rawLayoutResult = session.MapStaticNullableRuntimeLayout(mapping);
+                Assert.Equal(ClrmdEvidenceStatus.Exact, rawLayoutResult.Status);
+                var rawLayout = Assert.IsType<ClrmdStaticNullableRuntimeLayoutIdentity>(rawLayoutResult.Value);
+                Assert.Equal(2, rawLayout.RuntimeFieldCount);
+                var hasValue = Assert.Single(rawLayout.Fields, static field => string.Equals(
+                    field.Name,
+                    "hasValue",
+                    StringComparison.Ordinal));
+                var valueChild = Assert.Single(rawLayout.Fields, static field => string.Equals(
+                    field.Name,
+                    "value",
+                    StringComparison.Ordinal));
+                Assert.Equal("System.Boolean", hasValue.ObservedType.FullName);
+                Assert.Equal("System.Int32", valueChild.ObservedType.FullName);
+                nullableLayout = ClrmdStaticNullableInt32Layout.Create(
+                    rawLayout.StorageSize,
+                    hasValue.Offset,
+                    valueChild.Offset);
+            }
             var request = ClrmdStaticFieldEvaluationRequest.Create(mapping, nullableLayout);
             var observation = session.ReadStaticField(request);
             Assert.True(
