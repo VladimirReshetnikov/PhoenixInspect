@@ -142,6 +142,16 @@ internal static class CSharpExpressionFrontEnd
         kind: SourceCodeKind.Regular,
         preprocessorSymbols: Array.Empty<string>());
 
+    internal static ExpressionSyntax ParseCompleteExpression(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return SyntaxFactory.ParseExpression(
+            text,
+            offset: 0,
+            options: ParseOptions,
+            consumeFullText: true);
+    }
+
     internal static CSharpExpressionAdmissionResult Classify(
         string? text,
         string? expectedRootName,
@@ -184,11 +194,7 @@ internal static class CSharpExpressionFrontEnd
                 bounds);
         }
 
-        var syntax = SyntaxFactory.ParseExpression(
-            text,
-            offset: 0,
-            options: ParseOptions,
-            consumeFullText: true);
+        var syntax = ParseCompleteExpression(text);
         AddLegacyShapeBounds(syntax, text, expectedRootName!, ref bounds);
 
         if (syntax.DescendantTrivia(descendIntoTrivia: true).Any(static trivia =>

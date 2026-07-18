@@ -38,12 +38,6 @@ public static class StaticFieldExpressionParser
     private const string ExpressionCharacterBoundName = "query.expression.characters";
     private const string SyntaxNodeTokenBoundName = "query.syntax.nodes-and-tokens";
     private const string SyntaxDepthBoundName = "query.syntax.depth";
-    private static readonly CSharpParseOptions ParseOptions = new(
-        LanguageVersion.CSharp14,
-        DocumentationMode.None,
-        SourceCodeKind.Regular,
-        preprocessorSymbols: Array.Empty<string>());
-
     /// <summary>Gets the fixed decoded-identifier character bound applied to every parsed identifier token.</summary>
     public static EvaluationDeterministicBound DeclaredIdentifierCharacterBound =>
         new(IdentifierCharacterBoundName, CSharpExpressionFrontEnd.MaximumIdentifierLength);
@@ -106,12 +100,8 @@ public static class StaticFieldExpressionParser
                 earlyBounds);
         }
 
-        // This is the sole complete parse. Every disposition below consumes this one tree.
-        var syntax = SyntaxFactory.ParseExpression(
-            expression,
-            offset: 0,
-            options: ParseOptions,
-            consumeFullText: true);
+        // The shared front end performs the sole complete parse. Every disposition below consumes this one tree.
+        var syntax = CSharpExpressionFrontEnd.ParseCompleteExpression(expression);
         var nodeCount = syntax.DescendantNodesAndSelf(descendIntoTrivia: false).Count();
         var tokens = syntax.DescendantTokens(descendIntoTrivia: true).ToImmutableArray();
         var tokenCount = tokens.Length;
