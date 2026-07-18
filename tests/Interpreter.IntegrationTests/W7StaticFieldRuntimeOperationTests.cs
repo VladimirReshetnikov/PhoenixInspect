@@ -286,7 +286,11 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 mapped.Status == ClrmdEvidenceStatus.Exact,
                 $"Mapping {runtimeName}.{fieldName} stopped as {mapped.Status}/{mapped.Issue}.");
             var mapping = Assert.IsType<ClrmdStaticRuntimeDeclarationMappingIdentity>(mapped.Value);
-            ClrmdStaticFieldEvaluationRequest request;
+            var syntax = StaticFieldExpressionParser.Parse($"global::{runtimeName}.{fieldName}");
+            var descriptor = Assert.IsType<StaticFieldExpressionDescriptor>(syntax.Descriptor);
+            var binding = StaticFieldFullyQualifiedBinder.Bind(session, descriptor);
+            Assert.Equal(StaticFieldBindingStatus.Exact, binding.Status);
+            StaticFieldNullableInt32RuntimeLayoutIdentity? semanticLayout = null;
             if (decoder == ClrmdStaticExpectedDecoderKind.NullableInt32)
             {
                 var rawLayoutResult = session.MapStaticNullableRuntimeLayout(mapping);
@@ -303,22 +307,14 @@ public sealed class W7StaticFieldRuntimeOperationTests
                     StringComparison.Ordinal));
                 Assert.Equal("System.Boolean", hasValue.ObservedType.FullName);
                 Assert.Equal("System.Int32", valueChild.ObservedType.FullName);
-                var syntax = StaticFieldExpressionParser.Parse($"global::{runtimeName}.{fieldName}");
-                var descriptor = Assert.IsType<StaticFieldExpressionDescriptor>(syntax.Descriptor);
-                var binding = StaticFieldFullyQualifiedBinder.Bind(session, descriptor);
-                Assert.Equal(StaticFieldBindingStatus.Exact, binding.Status);
-                var semanticLayout = StaticFieldRuntimeComposer.ComposeNullableInt32Layout(
+                semanticLayout = StaticFieldRuntimeComposer.ComposeNullableInt32Layout(
                     session,
                     binding,
                     rawLayout);
                 Assert.Equal(hasValue.Offset, semanticLayout.HasValueRuntimeField.Offset);
                 Assert.Equal(valueChild.Offset, semanticLayout.ValueRuntimeField.Offset);
-                request = StaticFieldObservation.CreatePhysicalRequest(binding, mapping, semanticLayout);
             }
-            else
-            {
-                request = ClrmdStaticFieldEvaluationRequest.Create(mapping, nullableInt32Layout: null);
-            }
+            var request = StaticFieldObservation.CreatePhysicalRequest(binding, mapping, semanticLayout);
             var observation = session.ReadStaticField(request);
             Assert.True(
                 observation.Status == ClrmdStaticFieldObservationStatus.Exact,
@@ -334,6 +330,21 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 ClrmdStaticFieldTerminalKind.ObjectReference => value.ObjectReference,
                 _ => null,
             };
+            StaticFieldRuntimeAssignabilityProof? assignability = null;
+            if (objectReference is not null)
+            {
+                assignability = StaticFieldRuntimeComposer.ProveReferenceAssignability(
+                    session,
+                    binding,
+                    observation);
+                Assert.Equal(objectReference, assignability.ObjectReference);
+            }
+            var productObservation = StaticFieldObservation.FromExactSymbol(
+                binding,
+                observation,
+                semanticLayout,
+                assignability);
+            Assert.Equal(observation, productObservation.HostObservation);
             return new ValueObservation(
                 fieldName,
                 observation.Status,

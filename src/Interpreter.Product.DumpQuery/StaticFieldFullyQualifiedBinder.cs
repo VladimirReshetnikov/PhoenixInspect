@@ -128,6 +128,27 @@ public static class StaticFieldFullyQualifiedBinder
         return universe.ComposeNullableInt32RuntimeLayout(declaration, runtimeLayout, coreLibrary);
     }
 
+    internal static StaticFieldRuntimeAssignabilityProof ProveReferenceAssignability(
+        IStaticFieldMetadataBindingSource source,
+        StaticFieldSymbolDeclarationIdentity declaration,
+        ClrmdExactObjectReference objectReference)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(declaration);
+        ArgumentNullException.ThrowIfNull(objectReference);
+        using var universe = MetadataUniverse.Acquire(source);
+        if (universe.ModuleFacts.Any(static fact => fact.Status != StaticFieldModuleSearchStatus.Exact) ||
+            universe.ModuleFacts.Length > StaticFieldRuntimeAssignabilityProof.MaximumModuleFactCount ||
+            !universe.TryCreateCoreLibrary(out var coreLibrary, out _))
+        {
+            throw new ArgumentException(
+                "Reference assignability requires a complete bounded exact metadata universe.",
+                nameof(source));
+        }
+
+        return universe.ProveReferenceAssignability(declaration, objectReference, coreLibrary);
+    }
+
     internal static StaticFieldSymbolBindingOutcome BindContextual(
         IStaticFieldMetadataBindingSource source,
         StaticFieldExpressionDescriptor descriptor,
@@ -1657,6 +1678,249 @@ public static class StaticFieldFullyQualifiedBinder
                 (int)field.Attributes,
                 ImmutableArray.CreateRange(module.Reader.GetBlobBytes(field.Signature)),
                 CreateCustomAttributeProjection(module, fieldHandle, fieldToken, coreLibrary));
+        }
+
+        internal StaticFieldRuntimeAssignabilityProof ProveReferenceAssignability(
+            StaticFieldSymbolDeclarationIdentity declaration,
+            ClrmdExactObjectReference objectReference,
+            StaticFieldCoreLibraryIdentity coreLibrary)
+        {
+            var runtimeType = objectReference.HeaderRuntimeType;
+            if (runtimeType.Kind == ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition)
+            {
+                var actualAncestry = GetRuntimeAncestry(runtimeType, coreLibrary);
+                var catalogs = declaration.ReferenceTarget?.TargetTypeAncestry.Classification ==
+                    StaticFieldTypeClassification.Interface
+                        ? CreateInterfaceCatalogClosure(
+                            ImmutableArray.Create(actualAncestry.SubjectType)
+                                .AddRange(actualAncestry.Edges.Select(static edge => edge.ResolvedBaseType)),
+                            coreLibrary)
+                        : ImmutableArray<StaticFieldInterfaceImplementationCatalogIdentity>.Empty;
+                return StaticFieldRuntimeAssignabilityProof.ForTypeDefinition(
+                    declaration,
+                    objectReference,
+                    actualAncestry,
+                    catalogs,
+                    ModuleFacts);
+            }
+
+            if (runtimeType.BaseType is null)
+            {
+                throw new ArgumentException(
+                    "A runtime array requires an exact System.Array base identity.",
+                    nameof(objectReference));
+            }
+
+            var arrayBase = GetRuntimeAncestry(runtimeType.BaseType, coreLibrary);
+            var interfaceTarget = declaration.ReferenceTarget?.TargetTypeAncestry.Classification ==
+                StaticFieldTypeClassification.Interface;
+            var interfaceAncestries = interfaceTarget
+                ? runtimeType.InterfaceTypes.Select(type => GetRuntimeAncestry(type, coreLibrary)).ToImmutableArray()
+                : ImmutableArray<StaticFieldTypeAncestryIdentity>.Empty;
+            var interfaceCatalogs = interfaceTarget
+                ? CreateInterfaceCatalogClosure(
+                    interfaceAncestries.Select(static ancestry => ancestry.SubjectType).ToImmutableArray(),
+                    coreLibrary)
+                : ImmutableArray<StaticFieldInterfaceImplementationCatalogIdentity>.Empty;
+            return StaticFieldRuntimeAssignabilityProof.ForArray(
+                declaration,
+                objectReference,
+                arrayBase,
+                interfaceAncestries,
+                interfaceCatalogs,
+                ModuleFacts);
+        }
+
+        private StaticFieldTypeAncestryIdentity GetRuntimeAncestry(
+            ClrmdStaticRuntimeTypeIdentity runtimeType,
+            StaticFieldCoreLibraryIdentity coreLibrary)
+        {
+            if (runtimeType.Kind != ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition ||
+                runtimeType.RuntimeModule is not { } runtimeModule ||
+                runtimeType.ModuleContent is not { } content ||
+                runtimeType.TypeDefinitionToken is not { } typeToken)
+            {
+                throw new ArgumentException(
+                    "A metadata ancestry anchor requires a TypeDef-backed runtime type.",
+                    nameof(runtimeType));
+            }
+
+            var module = exactModules.SingleOrDefault(candidate =>
+                candidate.MetadataModule is not null &&
+                candidate.Content.Equals(content) &&
+                candidate.Input.Module.ApplicationDomainAddress == runtimeModule.AppDomainAddress &&
+                candidate.Input.Module.ModuleAddress == runtimeModule.ModuleAddress &&
+                candidate.Input.Module.ImageBase == runtimeModule.ImageBase &&
+                candidate.Input.Module.ImageSize == runtimeModule.ImageSize);
+            var rowId = typeToken & 0x00FF_FFFF;
+            if (module is null ||
+                (typeToken >>> 24) != 0x02 ||
+                rowId == 0 ||
+                rowId > module.TypeDefinitionCount)
+            {
+                throw new ArgumentException(
+                    "The runtime TypeDef is absent from the complete counted metadata universe.",
+                    nameof(runtimeType));
+            }
+
+            return GetAncestry(
+                module.GetTypeIdentity(MetadataTokens.TypeDefinitionHandle(rowId)),
+                coreLibrary);
+        }
+
+        private ImmutableArray<StaticFieldInterfaceImplementationCatalogIdentity> CreateInterfaceCatalogClosure(
+            ImmutableArray<StaticFieldTypeDefinitionIdentity> seeds,
+            StaticFieldCoreLibraryIdentity coreLibrary)
+        {
+            var queue = new Queue<StaticFieldTypeDefinitionIdentity>(seeds);
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var catalogs = ImmutableArray.CreateBuilder<StaticFieldInterfaceImplementationCatalogIdentity>();
+            var retainedRows = 0;
+            while (queue.Count != 0)
+            {
+                var implementingType = queue.Dequeue();
+                var key = StaticFieldTypeDefinitionIdentity.PhysicalTypeDefinitionKey(implementingType);
+                if (!seen.Add(key))
+                {
+                    continue;
+                }
+                if (seen.Count > StaticFieldRuntimeAssignabilityProof.MaximumInterfaceClosureNodeCount)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(seeds),
+                        "The complete InterfaceImpl closure exceeds its fixed node bound.");
+                }
+
+                var catalog = CreateInterfaceCatalog(implementingType, coreLibrary);
+                catalogs.Add(catalog);
+                retainedRows = checked(retainedRows + catalog.MatchingRows.Length);
+                if (retainedRows > StaticFieldRuntimeAssignabilityProof.MaximumRetainedInterfaceImplementationCount)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(seeds),
+                        "The complete InterfaceImpl closure exceeds its retained-row bound.");
+                }
+                foreach (var row in catalog.MatchingRows)
+                {
+                    queue.Enqueue(row.ResolvedInterfaceType);
+                }
+            }
+
+            return catalogs.MoveToImmutable();
+        }
+
+        private StaticFieldInterfaceImplementationCatalogIdentity CreateInterfaceCatalog(
+            StaticFieldTypeDefinitionIdentity implementingType,
+            StaticFieldCoreLibraryIdentity coreLibrary)
+        {
+            var module = exactModules.SingleOrDefault(candidate =>
+                candidate.MetadataModule?.Equals(implementingType.MetadataModule) == true);
+            if (module is null)
+            {
+                throw new ArgumentException(
+                    "An InterfaceImpl owner module is absent from the exact metadata universe.",
+                    nameof(implementingType));
+            }
+
+            var rowCount = module.Reader.GetTableRowCount(TableIndex.InterfaceImpl);
+            if (rowCount > StaticFieldInterfaceImplementationCatalogIdentity.MaximumInterfaceImplementationRowsExamined)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(implementingType),
+                    "The complete InterfaceImpl table exceeds its fixed scan bound.");
+            }
+
+            var rows = ImmutableArray.CreateBuilder<StaticFieldInterfaceImplementationRowIdentity>();
+            foreach (var ownerHandle in module.Reader.TypeDefinitions)
+            {
+                var owner = module.Reader.GetTypeDefinition(ownerHandle);
+                foreach (var handle in owner.GetInterfaceImplementations())
+                {
+                    if (MetadataTokens.GetToken(ownerHandle) != implementingType.TypeDefinitionToken)
+                    {
+                        continue;
+                    }
+
+                    var implementation = module.Reader.GetInterfaceImplementation(handle);
+                    rows.Add(CreateInterfaceImplementationRow(
+                        module,
+                        handle,
+                        implementingType,
+                        implementation.Interface,
+                        coreLibrary));
+                }
+            }
+
+            return StaticFieldInterfaceImplementationCatalogIdentity.Create(
+                implementingType,
+                module.CreateSearchFact(),
+                rows.MoveToImmutable());
+        }
+
+        private StaticFieldInterfaceImplementationRowIdentity CreateInterfaceImplementationRow(
+            ModuleModel module,
+            InterfaceImplementationHandle implementationHandle,
+            StaticFieldTypeDefinitionIdentity implementingType,
+            EntityHandle interfaceHandle,
+            StaticFieldCoreLibraryIdentity coreLibrary)
+        {
+            var implementationToken = MetadataTokens.GetToken(implementationHandle);
+            if (interfaceHandle.Kind == HandleKind.TypeDefinition)
+            {
+                var directTarget = module.GetTypeIdentity((TypeDefinitionHandle)interfaceHandle);
+                return StaticFieldInterfaceImplementationRowIdentity.Create(
+                    module.MetadataModule!,
+                    implementationToken,
+                    implementingType,
+                    MetadataTokens.GetToken(interfaceHandle),
+                    interfaceTypeReferenceResolution: null,
+                    GetAncestry(directTarget, coreLibrary));
+            }
+            if (interfaceHandle.Kind == HandleKind.TypeReference)
+            {
+                var directResolution = module.ResolveTypeReference((TypeReferenceHandle)interfaceHandle);
+                return StaticFieldInterfaceImplementationRowIdentity.Create(
+                    module.MetadataModule!,
+                    implementationToken,
+                    implementingType,
+                    MetadataTokens.GetToken(interfaceHandle),
+                    directResolution,
+                    GetAncestry(directResolution.ResolvedTargetType, coreLibrary));
+            }
+            if (interfaceHandle.Kind != HandleKind.TypeSpecification)
+            {
+                throw new UnsupportedMetadataShapeException("W7_ASSIGNABILITY_INTERFACE_TOKEN_UNSUPPORTED");
+            }
+
+            var specification = module.Reader.GetTypeSpecification((TypeSpecificationHandle)interfaceHandle);
+            var signature = ImmutableArray.CreateRange(module.Reader.GetBlobBytes(specification.Signature));
+            if (!BoundedEcmaTypeSpecificationProjection.TryDecodeGenericClass(
+                    signature.AsSpan(),
+                    StaticFieldTypeAncestryEdge.MaximumTypeSpecificationSignatureLength,
+                    StaticFieldTypeAncestryEdge.MaximumTypeSpecificationDepth,
+                    StaticFieldTypeAncestryEdge.MaximumTypeSpecificationGenericArgumentCount,
+                    out var projection))
+            {
+                throw new UnsupportedMetadataShapeException("W7_ASSIGNABILITY_INTERFACE_TYPESPEC_UNSUPPORTED");
+            }
+
+            var head = MetadataTokens.EntityHandle(projection.GenericHeadMetadataToken);
+            StaticFieldTypeReferenceResolutionIdentity? resolution = null;
+            var target = head.Kind switch
+            {
+                HandleKind.TypeDefinition => module.GetTypeIdentity((TypeDefinitionHandle)head),
+                HandleKind.TypeReference =>
+                    (resolution = module.ResolveTypeReference((TypeReferenceHandle)head)).ResolvedTargetType,
+                _ => throw new UnsupportedMetadataShapeException("W7_ASSIGNABILITY_INTERFACE_HEAD_UNSUPPORTED"),
+            };
+            return StaticFieldInterfaceImplementationRowIdentity.ForTypeSpecification(
+                module.MetadataModule!,
+                implementationToken,
+                implementingType,
+                MetadataTokens.GetToken(interfaceHandle),
+                signature,
+                resolution,
+                GetAncestry(target, coreLibrary));
         }
 
         private StaticFieldTypeAncestryIdentity GetCoreAncestry(
