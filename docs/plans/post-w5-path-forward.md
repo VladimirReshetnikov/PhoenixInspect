@@ -6,7 +6,7 @@
 > Roslyn C# expression parse followed by versioned project-owned tree-shape admission; no other successor is
 > pre-approved.
 >
-> **Successor record:** W6 later selected one context-acquisition category. The separately approved active
+> **Successor record:** W6 later selected one context-acquisition category. The separately approved completed
 > [Post-W6 Path Forward](post-w6-path-forward.md) turns it into a static-field expression slice with a fully qualified
 > floor and one selected-frame/Portable-PDB import-context profile.
 > This later decision does not retroactively make W7 part of, or pre-approved by, this completed W6 plan.
@@ -279,7 +279,7 @@ flowchart LR
 
 ### 4.3 Physical ownership
 
-W6 adds no project. Responsibilities remain aligned with the current fourteen-project solution:
+W6 adds no project. Responsibilities remain aligned with the then-current fourteen-project solution:
 
 | Project / area | W6 responsibility |
 |---|---|

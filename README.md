@@ -22,16 +22,26 @@ Core principles:
 ## Current phase
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
-- **Delivery status:** W7 is complete for its stated synthetic prototype scope. Its opt-in `StaticFieldExpressionV1`
+- **Delivery status:** W8 is the sole active design/implementation sequence and has not started implementation. The
+  [`Post-W7 Path Forward`](docs/plans/post-w7-path-forward.md) defines an additive `StaticFieldExpressionV2` profile
+  for bounded C# namespace/type/member binding over nested and closed constructed generic owners, exact scoped
+  imports/type/namespace/extern aliases, current-type and evidence-qualified `using static` bare fields, general closed
+  TypeSpecs, constraints/accessibility/constructed assignability, stored values, metadata literals, and distinct
+  per-construction storage. W8.1 also resolves predeclared thread/context/RVA and exact frame-value branches before
+  contracts. Its inclusive umbrella scale is `~100K LOC`,
+  generally split into `~10K LOC` implementation/evidence checkpoints. W7's context-independent fully qualified
+  guarantee, raw-memory authority, result axes, and unchanged W2/W6 suffix semantics remain mandatory controls.
+- **Most recently closed delivery target:** W7. Its opt-in `StaticFieldExpressionV1`
   profile uses the sole complete Roslyn parse, counted module metadata, optional selected-frame/identity-validated
   Portable-PDB import context, and raw dump-memory reads. Non-ambiguous fully qualified ordinary static fields bind
   without stack or PDB evidence; exact current-namespace, namespace-import, type-alias, and namespace-alias facts may
   bind contextual names. Direct scalar, string, nullable, exact-null, and validated object-reference values are
   supported, and exact references feed the unchanged W2/W6 suffix evaluators. Sixteen independent full dumps across
   four application shapes reproduce exact and deliberately imperfect context/storage outcomes through two fresh
-  hidden consumers. The unique post-W7 synthetic leader is `BindingContextPrecision`; its narrowly named successor
-  action is documented but not implemented or pre-approved as W8 work.
-- **Most recently closed delivery target:** W7. Its exact implementation source baseline `f99b12ee7` passes locked
+  hidden consumers. The manifest-assigned post-W7 leader is `BindingContextPrecision`; W7 permits choosing one
+  successor rule along its frame/PDB/import/alias/generic trajectory but does not itself select or implement that
+  concrete rule. The separately approved W8 plan makes the broader V2 decision explicitly.
+  W7's exact implementation source baseline `f99b12ee7` passes locked
   restore; a strict zero-warning Release solution build; unit 507/507; complete integration 242/242; Fast 184/184;
   ordinary dump 29/29; optimized-context 1/1; focused W7 98/98; static-expression 1/1; and meaningful synthetic 1/1,
   all with zero skips. Markdown, headless-workflow, and authored-scope vocabulary guards pass. The owner explicitly
@@ -60,12 +70,13 @@ Core principles:
   passed all four required jobs. Final documentation-closure commit `aaec73c5b` passed the same matrix in
   [run 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230). The completed
   [`Post-W4 Path Forward`](docs/plans/post-w4-path-forward.md) records W5 and its selection decision. The completed
-  [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) records W6; the active sequence is the
-  [`Post-W6 Path Forward`](docs/plans/post-w6-path-forward.md).
+  [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) records W6, and the completed
+  [`Post-W6 Path Forward`](docs/plans/post-w6-path-forward.md) records W7. The active sequence is the
+  [`Post-W7 Path Forward`](docs/plans/post-w7-path-forward.md).
 - **W5 implementation status:** W5.1–W5.5b are implemented and pushed through checkpoints `7c3d52572`, `d88b13c2c`,
   `fc8a43a7a`, `59d9bb590`, `0f5230e13`, `b788f4f66`, and `90ade6d92`. One canonical request classifier now admits the unchanged W2 grammar or
   exact `root.GetMarkerSummary()` method form; one product facade owns dump reacquisition and detached W4 binding; one
-  strict result union preserves the original W2/W4 modes and typed failure cases; and the 14-project solution includes
+  strict result union preserves the original W2/W4 modes and typed failure cases; and the then-current 14-project solution includes
   a headless reference consumer plus deterministic usefulness-report mode. The generated nine-question validation
   report is 8/9 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers. A second
   predeclared portfolio runs 12 independently dumped incidents over request-pipeline and batch-pipeline roots: 8/12
@@ -364,7 +375,8 @@ milestone-selected scope.
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
-each selected category. No result in W1–W6 establishes behavior for other artifact shapes.
+each selected category. No result in W1–W7 establishes behavior for other artifact shapes, and the W8 plan is not
+implementation evidence.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes above remain
 evidence for their named commits; they are not claims about the current fixture binary.
@@ -377,7 +389,8 @@ report records raw member bytes at 5/5, attributable context at 2/5 after the Cl
 unchanged product-query availability at 1/5. This is explicitly generated evidence, not a representative external
 incident corpus, so no readiness rate is claimed. Current in-process caps (8 GiB dump admission, 256 MiB ClrMD dump
 cache, and 512 MiB managed PE admission) remain resource controls. Branches, CFG merge/fixpoint analysis, handler-
-transfer EH, virtual stepping, broad call/model catalogs, generics, allocation, async/dynamic lifting, live
+transfer EH, virtual stepping, broad call/model catalogs, open generic execution/context reconstruction beyond W8's
+closed owners and evidence-conditioned branches, allocation, async/dynamic lifting, live
 speculation, no-JIT runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
 
 ## Where to go next
@@ -385,6 +398,7 @@ speculation, no-JIT runtime hosting, and additional product surfaces are **resea
 For structured topic lists, document inventory, and recommended reading paths, start here:
 
 - **Repository-wide design and architecture review:** `DESIGN-ARCHITECTURE-REVIEW.md`
+- **Active post-W7 W8 sequence:** `docs/plans/post-w7-path-forward.md`
 - **Completed post-W6 W7 sequence:** `docs/plans/post-w6-path-forward.md`
 - **Completed post-W5 W6 sequence:** `docs/plans/post-w5-path-forward.md`
 - **C# parsing and versioned subset-admission contract:** `docs/proposals/architecture/csharp-expression-front-end-contract-proposal.md`
@@ -398,6 +412,7 @@ For process and roadmap context:
 
 - `docs/governance/project-faq.md`
 - `docs/governance/documentation-organization-proposal.md`
+- `docs/plans/post-w7-path-forward.md`
 - `docs/plans/post-w6-path-forward.md`
 - `docs/plans/post-w5-path-forward.md`
 - `docs/plans/post-w4-path-forward.md`
@@ -425,6 +440,10 @@ High-value contributions advance or challenge the active executable evidence:
   no-rebinding plans, null/coalesce truth, and unchanged W5 default reports;
 - preserve or challenge W7's fully qualified/contextual static-field expression profile, selected-frame/PDB/import
   evidence, counted slot/value reads, exact-null/non-exact outcomes, and no-fallback binding;
+- implement or challenge W8's additive V2 plan as one coherent bounded name-binding pipeline: nested/constructed
+  owners, scope-precise aliases/imports, constraints/accessibility/assignability, stored/literal value strategies,
+  lexical completeness for bare members/`using static`, evidence-conditioned frame/storage branches, and unchanged
+  fully qualified/raw-memory/suffix controls;
 - preserve W5.5b's designed-evidence caveat; do not substitute broader syntax, context, opcode, EH, model, or debugger
   work without a new evidence decision;
 - add deterministic, differential, and scenario tests at proven boundaries;

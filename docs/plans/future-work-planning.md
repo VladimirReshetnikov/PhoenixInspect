@@ -5,7 +5,8 @@
 This is the authoritative W0–W4 delivery record and research-entry-gate source for the interpreter and dump-time
 evaluation initiative. The completed W5 sequence is the [Post-W4 Path Forward](post-w4-path-forward.md), and the
 completed W6 sequence is the [Post-W5 Path Forward](post-w5-path-forward.md). The completed W7 sequence is the
-[Post-W6 Path Forward](post-w6-path-forward.md). All four documents remain evidence-led: each admitted milestone must
+[Post-W6 Path Forward](post-w6-path-forward.md). The active, approved but unimplemented W8 sequence is the
+[Post-W7 Path Forward](post-w7-path-forward.md). All five documents remain evidence-led: each admitted milestone must
 produce a useful executable scenario or remove a concrete obstacle to the next one.
 
 ## 1) Scope lock
@@ -19,6 +20,13 @@ validation record live in the [Post-W5 Path Forward](post-w5-path-forward.md). C
 metadata without frame/PDB context, while a bounded selected-frame/Portable-PDB slice supplies current namespace,
 namespace imports, and simple aliases for `Type.Field`. Roslyn remains the sole complete expression parser, and a
 reference-valued static reuses the unchanged W2/W6 suffix evaluator.
+
+Active W8 defines an additive `StaticFieldExpressionV2` design over the same parser and stored/literal value paths.
+It adds bounded nested and closed constructed generic owners, exact scoped import/type/namespace/extern aliases,
+current-type and evidence-qualified `using static` bare fields, general TypeSpec construction, constraints,
+accessibility, field-signature substitution, constructed assignability, per-construction runtime slots, and metadata
+literals. W8.1 resolves predeclared thread/context/RVA and exact frame-value branches before contracts. This is roadmap
+intent only until the named W8 truth gates and implementation land.
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
 enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a
@@ -62,14 +70,15 @@ at exact documentation-closure commit
 
 ## 2) LOC sizing and work-in-progress
 
-Planning estimates use ranges of **hand-written implementation LOC**. They include production code, tests, fixtures,
-harnesses, scripts, and material CI/configuration logic. They exclude documentation, generated output, package lock files,
-solution-file churn, vendored snapshots, and deletion-only scaffold removal. Count additions and materially rewritten lines
-once rather than treating raw diff churn as delivered scope.
+New planning uses logarithmic orders of magnitude for **hand-written changed LOC**: `~100 LOC`, `~1K LOC`, `~10K LOC`,
+`~100K LOC`, and so on. A `~1K LOC` band covers roughly 320–3,000 LOC. The bands include production code, tests,
+fixtures, harnesses, scripts, material CI/configuration logic, and authored documentation. They exclude generated
+output, package lock files, mechanical solution-file churn, vendored snapshots, and deletion-only scaffold removal.
+Count additions and materially rewritten lines once rather than treating raw diff churn as delivered scope.
 
-LOC ranges are implementation-surface envelopes, not productivity or schedule forecasts. Record the realized count when a
-milestone closes and recalibrate later ranges from that evidence. Split any independently deliverable work package whose
-upper estimate exceeds 3,500 LOC.
+These bands describe changed surface, not duration or productivity. Revise past, current, and remaining bands whenever
+implementation or documentation work exposes a different order of magnitude. The exact ranges and realized ledgers below are
+preserved historical calibration and do not define the sizing policy for W8 or subsequent work.
 
 Work-in-progress limit:
 
@@ -78,10 +87,10 @@ Work-in-progress limit:
 3. Do not create an empty project to reserve a hypothetical boundary.
 4. A planned test is not validation; only a running artifact counts as evidence.
 
-### Work-package LOC estimates for the funded path
+### Historical work-package LOC records for the closed path
 
-The ranges make large milestones decomposable and expose scope growth without converting uncertain architecture work into
-a calendar forecast. A milestone total is the sum of its non-overlapping package ranges.
+The ranges below preserve the planning convention used when W0–W4 were active. New milestones use the logarithmic
+bands above; historical values are not rewritten post hoc.
 
 The W1 and W2 rows below and W3's original aggregate forecast preserve planning assumptions for calibration only. They
 are superseded by the attributable realized-work ledgers in their milestone sections and must not be read as either
@@ -684,8 +693,9 @@ tests before an allocation budget becomes an applied contract.
   **Satisfied by W4.1 fixture evidence and W4.9 generated-dump product execution.**
 - Effects, deterministic budgets, degraded-evidence behavior, product truth language, and explicit exclusions are fixed
   by the normative W4 contract. **Satisfied; W4.1–W4.9 implementation evidence is recorded above.**
-- Each admitted work slice has an explicit estimate of at most 3,500 hand-written implementation LOC before work begins.
-  **Historically satisfied by the pre-work plan; W4.8e later realized 3,605 LOC and the overrun is retained.**
+- Each admitted W4 work slice had an explicit estimate of at most 3,500 hand-written implementation LOC before work
+  began. **Historically satisfied by the pre-work plan; W4.8e later realized 3,605 LOC and the overrun is retained.
+  W8 and subsequent planning instead use the logarithmic policy in section 2.**
 
 **Exit criteria for the umbrella**
 
@@ -758,10 +768,10 @@ A UI result badge may summarize them but never replaces them in contracts or tes
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | Scope disperses across research subsystems | High | Critical | Scope lock, one active milestone, explicit research gates. |
-| A single maintainer cannot sustain a platform-sized surface | High | Critical | Give every active slice an implementation-LOC envelope; split slices above 3,500 LOC; prefer one product path. |
+| A single maintainer cannot sustain a platform-sized surface | High | Critical | Give every active slice a logarithmic implementation-LOC band, push coherent checkpoints, and preserve one product path. |
 | Maintainer unavailability leaves the active slice without continuity | Medium | Critical | Keep one canonical vertical-slice path, executable fixtures, explicit evidence boundaries, and a current handoff map; avoid private operational knowledge. |
 | Optimized dumps omit roots, locals, arguments, or `this` | High | High | Make unavailable/partial expected outcomes; measure scenario recovery rather than guessing. |
-| Artifact shapes outside the validated fixture set produce unsupported behavior | Medium | Critical | Keep those shapes outside W1–W4 and admit no broader artifact product surface through their completion; any future initiative owns separate requirements and evidence. |
+| Artifact shapes outside the validated fixture set produce unsupported behavior | Medium | Critical | Keep those shapes outside the validated milestone surfaces; each later initiative owns its own requirements and evidence before admitting a broader artifact product surface. |
 | Documentation volume is mistaken for capability | High | High | Track implementation and validation separately; design just ahead of code. |
 | Backend or identity mismatch yields plausible wrong reads | Medium | Critical | Identity validation, conflict outcomes, real-dump fixtures, no silent fallback. |
 | The evaluator does not materially improve incident workflows | Medium | High | Keep W4 tied to the exact two-field `GetMarkerSummary` question; require the gate fixture, CoreCLR comparison, dump corpus, and product result to demonstrate value beyond W2 before claiming the admitted design is useful. W3 alone remains architecture validation. |
@@ -833,11 +843,12 @@ optimized Release modeled-incident dump and records, for every predeclared expre
 4. the exact query result axes and stable diagnostic code; and
 5. the numerator and denominator for each context kind, with unsupported scenarios retained in the denominator.
 
-Its canonical v1 report retains `this`, argument, local, static, and strong-root axes and records raw member bytes at
-5/5, attributable context at 1/5, and product-query availability at 1/5. The exact attributable/product result is the
-strong root. Stack-slot observation for `this`, argument, and local is deliberately not admitted under the pinned
-.NET 10 DAC support boundary, and static attribution remains unavailable. These are raw counts from one generated
-modeled dump, not a representative private-production corpus and not a production recoverability rate.
+The historical schema-v1 report retained `this`, argument, local, static, and strong-root axes and recorded raw member
+bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5. W7's current canonical schema-v2 report
+records attributable context at 2/5 because both the static field and strong root are exact at their relevant stages;
+product-query availability remains 1/5 at the strong root. Stack-slot observation for `this`, argument, and local is
+deliberately not admitted under the pinned .NET 10 DAC support boundary. These are raw counts from one generated modeled
+dump, not a representative private-production corpus and not a production recoverability rate.
 
 Continue to report raw counts and corpus composition before any aggregate percentage. Do not extrapolate from the
 modeled fixture to production incidents, and do not set a readiness threshold until a representative

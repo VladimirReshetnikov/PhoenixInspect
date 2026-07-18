@@ -86,7 +86,8 @@ Recommended quick-start order:
 
 ## 10) How should contributors choose what to work on next?
 
-Start with the active milestone in `docs/plans/post-w6-path-forward.md`; use
+Start with the active milestone in `docs/plans/post-w7-path-forward.md`; use
+`docs/plans/post-w6-path-forward.md` for the completed W7 sequence,
 `docs/plans/post-w5-path-forward.md` for the completed W6 sequence,
 `docs/plans/post-w4-path-forward.md` for the completed W5 sequence, and
 `docs/plans/future-work-planning.md` for the detailed W0–W4 record and research entry gates:

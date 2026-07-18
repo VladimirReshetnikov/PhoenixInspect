@@ -38,6 +38,15 @@ qualified class name or exact selected-frame/Portable-PDB import context, read i
 reference value into the unchanged W2/W6 suffix evaluator. The complete pinned Roslyn expression parser remains the
 sole syntax front end; supported behavior remains a versioned project-owned binder/evaluator subset.
 
+The active [`Post-W7 Path Forward`](plans/post-w7-path-forward.md) separately approves W8 as an inclusive additive
+`StaticFieldExpressionV2` design. W8 will preserve the fully qualified/context-independent W7 floor while adding
+bounded nested and closed constructed generic owners, scoped namespace/type/extern aliases, TypeSpec imports,
+current-type and evidence-qualified `using static` bare fields, constraints/accessibility/constructed assignability,
+exact field-signature substitution, per-construction stored values, and runtime-free metadata literals. W8.1 resolves
+predeclared thread/context/RVA and frame-value branches before contracts. The umbrella scale is `~100K LOC`, split
+primarily into `~10K LOC` checkpoints. No W8 source, test, runtime,
+or validation evidence exists yet.
+
 W6.1–W6.7 are closed at exact locally verified source baseline `440053ad1`. One pinned complete Roslyn parse feeds only
 versioned project-owned admitted shapes; counted metadata and physical getter bodies issue detached declared-member
 certificates; four/eight-byte reference observations preserve exact/null/partial evidence; intrinsic non-root identity
@@ -62,8 +71,9 @@ dumps across four unrelated application shapes, an identity-conflict PDB, and a 
 run through two fresh hidden consumers with byte-identical reports; representative counts remain zero and promotion
 is rejected. The local closure matrix passes unit 507/507, complete integration 242/242, Fast 184/184, ordinary dump
 29/29, optimized context 1/1, focused W7 98/98, static-expression 1/1, and meaningful synthetic 1/1 with zero skips,
-plus all repository guards. The W7 portfolio selects `BindingContextPrecision`; its narrow successor action remains
-documentation only. Roslyn still parses each complete bounded expression once through the sole production parse site;
+plus all repository guards. The W7 portfolio selects the manifest-assigned `BindingContextPrecision` category and
+permits a bounded successor along a frame/PDB/import/alias/generic trajectory; it does not prove or implement one
+particular rule. The separate W8 plan makes the V2 decision. Roslyn still parses each complete bounded expression once through the sole production parse site;
 `StaticFieldExpressionV1` is a project-owned tree-admission/binding profile, not another parser.
 
 The earlier W4 history remains recorded here. W4.1's fixture gate is implemented at
@@ -269,7 +279,8 @@ W1 is complete for its revised milestone-selected dump-evidence scope: real read
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
-each selected category. No result in W1–W6 establishes behavior for other artifact shapes.
+each selected category. No result in W1–W7 establishes behavior for other artifact shapes, and planned W8 behavior
+is not current evidence.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes remain
 evidence for their named commits rather than claims about the current fixture binary.
@@ -283,7 +294,8 @@ availability at 1/5 while retaining all unavailable cases. It describes one gene
 representative external incident corpus, and therefore establishes no production recoverability rate. Current in-
 process resource admission still limits dumps to 8 GiB, ClrMD's dump cache to 256 MiB with stack-derived caches
 disabled, and managed PEs to 512 MiB on the actually opened stream before hashing. Branches, CFG merge/fixpoint
-analysis, handler-transfer EH, allocation, broad call/model catalogs, generics, virtual stepping, whole-method abstract
+analysis, handler-transfer EH, allocation, broad call/model catalogs, open generic execution/context reconstruction
+beyond W8's closed static-owner design, virtual stepping, whole-method abstract
 analysis, async/dynamic lifting, multi-application hosting, and other platform extensions remain gated research.
 
 Current, active, and supporting documents use two dimensions: lifecycle (`Draft`, `Current`, `Complete`, `Historical`, `Superseded`) and roadmap relation (`Active`, `Supporting`, `Research`, `Reference`, `Historical`). Historical source/library records may use one combined status when a second axis would add no decision value. A designed or documented capability is not thereby implemented or validated. `Historical` and `Superseded` documents are preserved for rationale and source research; they are not instructions to recreate their proposed topology or backend choice.
@@ -306,6 +318,7 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
+| `plans/post-w7-path-forward.md` | Planning | Plan | Current · Active | Approved but unimplemented W8 V2 sequence: physical TypeSpec/runtime truth gates; nested generic owners; scoped aliases/current-member/extern/using-static binding; constraints, accessibility, assignability, stored/literal strategies and evidence-conditioned frame/storage branches; suffix composition; thirty-two core plus admitted-branch dumps; corrected decision gate. |
 | `plans/post-w6-path-forward.md` | Planning | Plan | Complete · Reference | Closed W7 static-field expression/context sequence: physical truth, immutable contracts, one-parser admission, fully qualified and selected-frame/PDB/import binding, counted values, suffix composition, sixteen-dump portfolio, selected successor category, and milestone-scoped hosted disposition. |
 | `plans/post-w5-path-forward.md` | Planning | Plan | Complete · Reference | Closed W6 opt-in bounded member-chain contract, certified terminal data-property dependency, evidence/result matrix, headless synthetic corpus, selected context-acquisition successor, and milestone-scoped hosted disposition. |
 | `plans/post-w4-path-forward.md` | Planning | Plan | Complete · Reference | Closed W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, milestone-scoped hosted-gate waiver, and evidence-selected W6 decision. |
@@ -374,22 +387,23 @@ docs/
 ### Active delivery path
 
 1. `../DESIGN-ARCHITECTURE-REVIEW.md`
-2. `plans/post-w6-path-forward.md`
-3. `plans/post-w5-path-forward.md`
-4. `proposals/architecture/csharp-expression-front-end-contract-proposal.md`
-5. `plans/post-w4-path-forward.md`
-6. `proposals/product/post-mortem-debugging-feature-proposal.md`
-7. `proposals/architecture/restricted-dump-query-contract-proposal.md`
-8. `proposals/architecture/concrete-il-execution-contract-proposal.md`
-9. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
-10. `proposals/architecture/architecture-overview-proposal.md`
-11. `proposals/architecture/prototype-solution-structure-proposal.md`
-12. `lib/mvp-backend-decision-record.md`
-13. `plans/future-work-planning.md`
-14. `proposals/architecture/testing-strategy-proposal.md`
-15. `proposals/integration-test-plan.md`
-16. `proposals/integration/clrmd-integration-proposal.md`
-17. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+2. `plans/post-w7-path-forward.md`
+3. `plans/post-w6-path-forward.md`
+4. `plans/post-w5-path-forward.md`
+5. `proposals/architecture/csharp-expression-front-end-contract-proposal.md`
+6. `plans/post-w4-path-forward.md`
+7. `proposals/product/post-mortem-debugging-feature-proposal.md`
+8. `proposals/architecture/restricted-dump-query-contract-proposal.md`
+9. `proposals/architecture/concrete-il-execution-contract-proposal.md`
+10. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
+11. `proposals/architecture/architecture-overview-proposal.md`
+12. `proposals/architecture/prototype-solution-structure-proposal.md`
+13. `lib/mvp-backend-decision-record.md`
+14. `plans/future-work-planning.md`
+15. `proposals/architecture/testing-strategy-proposal.md`
+16. `proposals/integration-test-plan.md`
+17. `proposals/integration/clrmd-integration-proposal.md`
+18. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 
@@ -474,11 +488,12 @@ research designs.
 1. `governance/project-faq.md`
 2. `governance/documentation-organization-proposal.md`
 3. `governance/terminology-glossary.md`
-4. `plans/post-w6-path-forward.md`
-5. `plans/post-w5-path-forward.md`
-6. `plans/post-w4-path-forward.md`
-7. `plans/future-work-planning.md`
-8. `plans/requirements-traceability-map.md`
+4. `plans/post-w7-path-forward.md`
+5. `plans/post-w6-path-forward.md`
+6. `plans/post-w5-path-forward.md`
+7. `plans/post-w4-path-forward.md`
+8. `plans/future-work-planning.md`
+9. `plans/requirements-traceability-map.md`
 
 ## Repository license
 

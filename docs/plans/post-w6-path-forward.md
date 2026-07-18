@@ -16,6 +16,11 @@
 > **Evidence boundary:** W7 is a prototype-design milestone grounded in generated and predeclared synthetic evidence.
 > It does not establish field readiness. The owner recorded a separate W7-only disposition on 2026-07-17 after the
 > complete local matrix closed; it does not claim hosted execution and does not weaken the workflow.
+>
+> **Successor:** the separately approved, active
+> [Post-W7 Path Forward](post-w7-path-forward.md) defines W8 `StaticFieldExpressionV2`. This completed W7 record's
+> statement that it did not pre-approve W8 remains historically true; W8 receives its authority from the successor
+> plan rather than retroactively from W7.
 
 ## 1) Executive decision
 
@@ -911,9 +916,11 @@ qualified access and its first selected-frame/PDB/import slice.
 The synthetic decision advances prototype design only. No W8 implementation is pre-approved by this plan, and later
 representative observations may confirm, reverse, or stop the selected direction.
 
-The completed W7 portfolio selected `BindingContextPrecision` as its unique substantive leader. Its permitted next
-action is the narrowly named `AddOneEvidenceBackedFramePdbImportAliasGenericRule`; this is a successor-design input,
-not implementation included in W7 and not a blanket admission of broader C# binding.
+The completed W7 portfolio selected the manifest-assigned `BindingContextPrecision` label as its unique substantive
+leader. Its permitted next action is the narrowly named `AddOneEvidenceBackedFramePdbImportAliasGenericRule`; this is
+a successor-design input, not executable proof of a particular generic or alias rule. The separately approved
+[Post-W7 Path Forward](post-w7-path-forward.md) makes the inclusive V2 product/architecture choice explicitly rather
+than presenting it as a measurement directly inferred by W7.
 
 ## 12) Completion definition
 
