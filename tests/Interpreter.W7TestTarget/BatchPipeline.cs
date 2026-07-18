@@ -12,9 +12,20 @@ namespace Interpreter.W7TestTarget.Batch
         internal static int? Progress;
 
         internal static int TotalItems;
+
+        internal static IBatchRoot InterfaceRoot = Root;
+
+        internal static Array NumberArray = Array.Empty<int>();
+
+        internal static object ObjectArray = Array.Empty<string>();
     }
 
-    internal sealed record BatchRoot(string State, BatchPartition[] Partitions);
+    internal interface IBatchRoot
+    {
+        string State { get; }
+    }
+
+    internal sealed record BatchRoot(string State, BatchPartition[] Partitions) : IBatchRoot;
 
     internal sealed record BatchPartition(string Name, int CompletedItems, int TotalItems);
 }
@@ -36,9 +47,15 @@ namespace Interpreter.W7TestTarget.BatchContext
                     new BatchPartition("primary", CompletedItems: 17, TotalItems: 29),
                     new BatchPartition("secondary", CompletedItems: 11, TotalItems: 31),
                 ]);
+            BatchStatics.InterfaceRoot = BatchStatics.Root;
+            BatchStatics.NumberArray = new[] { 13, 21, 34, 55 };
+            BatchStatics.ObjectArray = new[] { "north", "south", "east", "west" };
 
             IncidentPause.WaitForDump(incidentId);
             GC.KeepAlive(BatchStatics.Root);
+            GC.KeepAlive(BatchStatics.InterfaceRoot);
+            GC.KeepAlive(BatchStatics.NumberArray);
+            GC.KeepAlive(BatchStatics.ObjectArray);
             return 0;
         }
     }

@@ -875,13 +875,13 @@ public sealed class ClrmdRawMemoryEvidence : IEquatable<ClrmdRawMemoryEvidence>
 /// <summary>Classifies the raw-header-first target boundary reached after a nonzero reference slot.</summary>
 public enum ClrmdStaticTargetEvidenceKind
 {
-    /// <summary>The raw method-table header and subsequent GetTypeByMethodTable projection agree structurally.</summary>
+    /// <summary>The raw method-table header and subsequent direct runtime-type projection agree structurally.</summary>
     Matched = 1,
 
     /// <summary>The raw method-table header read was partial or unavailable.</summary>
     HeaderUnavailable = 2,
 
-    /// <summary>The exact raw method table was read, but GetTypeByMethodTable returned no runtime type.</summary>
+    /// <summary>The exact raw method table was read, but post-header runtime lookup returned no type.</summary>
     RuntimeTypeUnavailable = 3,
 
     /// <summary>The exact raw method table and returned runtime type projection disagree.</summary>
@@ -905,7 +905,7 @@ public enum ClrmdStaticTargetStructureIssue
 }
 
 /// <summary>
-/// Retains raw method-table header evidence before the optional post-header GetTypeByMethodTable projection.
+/// Retains raw method-table header evidence before the optional post-header direct runtime-type projection.
 /// </summary>
 public sealed class ClrmdStaticTargetEvidence : IEquatable<ClrmdStaticTargetEvidence>
 {
@@ -964,7 +964,7 @@ public sealed class ClrmdStaticTargetEvidence : IEquatable<ClrmdStaticTargetEvid
     /// <summary>Gets the attempted raw pointer-width header read, except for a pre-read structural failure.</summary>
     public ClrmdRawMemoryEvidence? HeaderEvidence { get; }
 
-    /// <summary>Gets the detached runtime type returned after the raw header by GetTypeByMethodTable when available.</summary>
+    /// <summary>Gets the detached runtime type returned by direct runtime lookup after the raw header when available.</summary>
     public ClrmdStaticRuntimeTypeIdentity? HeaderRuntimeType { get; }
 
     /// <summary>Gets the exact structural issue only for <see cref="ClrmdStaticTargetEvidenceKind.InvalidStructure"/>.</summary>
@@ -981,7 +981,7 @@ public sealed class ClrmdStaticTargetEvidence : IEquatable<ClrmdStaticTargetEvid
     /// <param name="pointerWidth">The target pointer width.</param>
     /// <param name="targetAddress">The nonzero target address.</param>
     /// <param name="headerEvidence">The exact pointer-width raw header read.</param>
-    /// <param name="headerRuntimeType">The type returned by GetTypeByMethodTable for the decoded method table.</param>
+    /// <param name="headerRuntimeType">The directly projected type matching the decoded method table.</param>
     /// <returns>A structurally matched target witness; Product still proves semantic declared-type parity.</returns>
     public static ClrmdStaticTargetEvidence Matched(
         ClrmdSnapshotIdentity snapshot,

@@ -1058,6 +1058,22 @@ public sealed partial class ClrmdDumpSession
 
         if (runtimeType is null)
         {
+            try
+            {
+                var objectType = _runtime.Heap.GetObjectType(targetAddress);
+                if (objectType?.MethodTable == methodTable)
+                {
+                    runtimeType = objectType;
+                }
+            }
+            catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+            {
+                runtimeType = null;
+            }
+        }
+
+        if (runtimeType is null)
+        {
             var unavailableTarget = ClrmdStaticTargetEvidence.RuntimeTypeUnavailable(
                 Snapshot,
                 request.PointerWidth,
@@ -1441,7 +1457,8 @@ public sealed partial class ClrmdDumpSession
             appliedBounds: source.AppliedBounds);
 
     private static bool IsClrmdRuntimeFailure(Exception exception) =>
-        exception is ClrDiagnosticsException or InvalidOperationException or NotSupportedException or OverflowException;
+        exception is ClrDiagnosticsException or InvalidDataException or InvalidOperationException or
+            ArgumentOutOfRangeException or NotSupportedException or OverflowException;
 
     private sealed record StaticFieldRebindResult(
         ClrStaticField? Field,
@@ -1481,10 +1498,7 @@ public sealed partial class ClrmdDumpSession
             ArgumentNullException.ThrowIfNull(runtimeType);
             if (runtimeType.IsArray)
             {
-                return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
-                    ClrmdEvidenceStatus.Unavailable,
-                    ClrmdValueIssue.RuntimeUnsupported,
-                    evidence: Evidence);
+                return ProjectArray(runtimeType);
             }
 
             if (runtimeType.MethodTable != 0 &&
@@ -1626,6 +1640,203 @@ public sealed partial class ClrmdDumpSession
                     ClrmdValueIssue.TypeMismatch,
                     evidence: Evidence);
             }
+        }
+
+        private ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity> ProjectArray(ClrType runtimeType)
+        {
+            if (runtimeType.MethodTable != 0 &&
+                projectedMethodTables.TryGetValue(runtimeType.MethodTable, out var cached))
+            {
+                return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                    ClrmdEvidenceStatus.Exact,
+                    ClrmdValueIssue.None,
+                    cached,
+                    Evidence);
+            }
+
+            var name = runtimeType.Name;
+            if (runtimeType.MethodTable == 0 ||
+                string.IsNullOrEmpty(name) ||
+                name.Length > ClrmdStaticRuntimeTypeIdentity.MaximumRuntimeNameCharacters ||
+                !TryParseArrayShape(name, out var rank, out var isSzArray, out var componentName) ||
+                runtimeType.BaseType is not { } baseType)
+            {
+                return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                    ClrmdEvidenceStatus.Unavailable,
+                    ClrmdValueIssue.TypeUnavailable,
+                    evidence: Evidence,
+                    appliedBounds: ImmutableArray.Create(
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredRuntimeNameCharacterBound,
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredArrayRankBound));
+            }
+
+            var componentType = runtimeType.ComponentType;
+            if (componentType is null)
+            {
+                var candidates = FindRuntimeTypesByName(componentName);
+                if (candidates.Length == 0)
+                {
+                    return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                        ClrmdEvidenceStatus.Unavailable,
+                        ClrmdValueIssue.TypeUnavailable,
+                        evidence: Evidence);
+                }
+                if (candidates.Length != 1)
+                {
+                    return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                        ClrmdEvidenceStatus.Conflict,
+                        ClrmdValueIssue.AmbiguousMatch,
+                        evidence: Evidence);
+                }
+                componentType = candidates[0];
+            }
+
+            ImmutableArray<ClrInterface> interfaceTypes;
+            try
+            {
+                interfaceTypes = runtimeType.EnumerateInterfaces()
+                    .Take(ClrmdStaticRuntimeTypeIdentity.MaximumRuntimeInterfaceTypeCount + 1)
+                    .ToImmutableArray();
+            }
+            catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+            {
+                return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                    ClrmdEvidenceStatus.Unavailable,
+                    ClrmdValueIssue.RuntimeUnsupported,
+                    evidence: Evidence);
+            }
+            if (interfaceTypes.Length > ClrmdStaticRuntimeTypeIdentity.MaximumRuntimeInterfaceTypeCount)
+            {
+                return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                    ClrmdEvidenceStatus.Partial,
+                    ClrmdValueIssue.LimitExceeded,
+                    evidence: Evidence,
+                    appliedBounds: ImmutableArray.Create(
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredRuntimeInterfaceTypeCountBound));
+            }
+
+            var component = Project(componentType);
+            if (component.Status != ClrmdEvidenceStatus.Exact || component.Value is null)
+            {
+                return component;
+            }
+            var projectedBase = Project(baseType);
+            if (projectedBase.Status != ClrmdEvidenceStatus.Exact || projectedBase.Value is null)
+            {
+                return projectedBase;
+            }
+            var interfaces = ImmutableArray.CreateBuilder<ClrmdStaticRuntimeTypeIdentity>(interfaceTypes.Length);
+            foreach (var interfaceType in interfaceTypes)
+            {
+                if (string.IsNullOrEmpty(interfaceType.Name))
+                {
+                    return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                        ClrmdEvidenceStatus.Unavailable,
+                        ClrmdValueIssue.TypeUnavailable,
+                        evidence: Evidence);
+                }
+                var candidates = FindRuntimeTypesByName(interfaceType.Name);
+                if (candidates.Length == 0)
+                {
+                    return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                        ClrmdEvidenceStatus.Unavailable,
+                        ClrmdValueIssue.TypeUnavailable,
+                        evidence: Evidence);
+                }
+                if (candidates.Length != 1)
+                {
+                    return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                        ClrmdEvidenceStatus.Conflict,
+                        ClrmdValueIssue.AmbiguousMatch,
+                        evidence: Evidence);
+                }
+
+                var projectedInterface = Project(candidates[0]);
+                if (projectedInterface.Status != ClrmdEvidenceStatus.Exact || projectedInterface.Value is null)
+                {
+                    return projectedInterface;
+                }
+                interfaces.Add(projectedInterface.Value);
+            }
+
+            try
+            {
+                var projection = ClrmdStaticRuntimeTypeIdentity.CreateArray(
+                    session.Snapshot,
+                    session.Memory.PointerSize,
+                    name,
+                    runtimeType.MethodTable,
+                    rank,
+                    isSzArray,
+                    component.Value,
+                    projectedBase.Value,
+                    interfaces.MoveToImmutable());
+                projectedMethodTables.TryAdd(runtimeType.MethodTable, projection);
+                return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                    ClrmdEvidenceStatus.Exact,
+                    ClrmdValueIssue.None,
+                    projection,
+                    Evidence,
+                    ImmutableArray.Create(
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredRuntimeNameCharacterBound,
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredArrayRankBound,
+                        ClrmdStaticRuntimeTypeIdentity.DeclaredRuntimeInterfaceTypeCountBound));
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+            {
+                return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                    ClrmdEvidenceStatus.Conflict,
+                    ClrmdValueIssue.TypeMismatch,
+                    evidence: Evidence);
+            }
+        }
+
+        private ImmutableArray<ClrType> FindRuntimeTypesByName(string name) =>
+            session._runtimeModules
+                .OrderBy(static pair => pair.Key.AppDomainAddress)
+                .ThenBy(static pair => pair.Key.ModuleAddress)
+                .Select(pair => pair.Value.GetTypeByName(name))
+                .Where(static candidate => candidate is not null)
+                .Cast<ClrType>()
+                .GroupBy(static candidate => (candidate.Module.Address, candidate.MetadataToken, candidate.MethodTable))
+                .Select(static group => group.First())
+                .Take(2)
+                .ToImmutableArray();
+
+        private static bool TryParseArrayShape(
+            string name,
+            out int rank,
+            out bool isSzArray,
+            out string componentName)
+        {
+            rank = 0;
+            isSzArray = false;
+            componentName = string.Empty;
+            var opening = name.LastIndexOf('[');
+            if (opening <= 0 || name[^1] != ']')
+            {
+                return false;
+            }
+
+            componentName = name[..opening];
+            var shape = name.AsSpan(opening + 1, name.Length - opening - 2);
+            if (shape.IsEmpty)
+            {
+                rank = 1;
+                isSzArray = true;
+                return true;
+            }
+            if (shape.Length == 1 && shape[0] == '*')
+            {
+                rank = 1;
+                return true;
+            }
+            if (shape.IndexOfAnyExcept(',') < 0)
+            {
+                rank = shape.Length + 1;
+                return rank <= ClrmdStaticRuntimeTypeIdentity.MaximumArrayRank;
+            }
+            return false;
         }
 
         internal ClrmdEvidenceResult<T> CopyProjectionFailure<T>(

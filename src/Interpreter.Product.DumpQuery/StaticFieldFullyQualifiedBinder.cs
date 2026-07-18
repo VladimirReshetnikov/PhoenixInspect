@@ -1806,7 +1806,7 @@ public static class StaticFieldFullyQualifiedBinder
                 }
             }
 
-            return catalogs.MoveToImmutable();
+            return catalogs.ToImmutable();
         }
 
         private StaticFieldInterfaceImplementationCatalogIdentity CreateInterfaceCatalog(
@@ -1854,7 +1854,7 @@ public static class StaticFieldFullyQualifiedBinder
             return StaticFieldInterfaceImplementationCatalogIdentity.Create(
                 implementingType,
                 module.CreateSearchFact(),
-                rows.MoveToImmutable());
+                rows.ToImmutable());
         }
 
         private StaticFieldInterfaceImplementationRowIdentity CreateInterfaceImplementationRow(

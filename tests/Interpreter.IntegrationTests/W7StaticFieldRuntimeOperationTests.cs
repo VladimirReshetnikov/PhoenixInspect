@@ -38,6 +38,18 @@ public sealed class W7StaticFieldRuntimeOperationTests
             Assert.Equal(first, replay);
             Assert.Collection(
                 first.OrderBy(static value => value.FieldName, StringComparer.Ordinal),
+                value => AssertReference(
+                    value,
+                    "InterfaceRoot",
+                    StaticFieldRuntimeAssignabilityKind.InterfaceClosure),
+                value => AssertReference(
+                    value,
+                    "NumberArray",
+                    StaticFieldRuntimeAssignabilityKind.SystemArray),
+                value => AssertReference(
+                    value,
+                    "ObjectArray",
+                    StaticFieldRuntimeAssignabilityKind.SystemObject),
                 value =>
                 {
                     Assert.Equal("Progress", value.FieldName);
@@ -45,6 +57,7 @@ public sealed class W7StaticFieldRuntimeOperationTests
                     Assert.Null(value.Int32Value);
                     Assert.Null(value.StringValue);
                     Assert.Null(value.ObjectAddress);
+                    Assert.Null(value.AssignabilityKind);
                     Assert.Equal(3, value.RawReadCount);
                 },
                 value =>
@@ -55,6 +68,7 @@ public sealed class W7StaticFieldRuntimeOperationTests
                     Assert.Null(value.StringValue);
                     Assert.NotNull(value.ObjectAddress);
                     Assert.NotEqual(0UL, value.ObjectAddress!.Value);
+                    Assert.Equal(StaticFieldRuntimeAssignabilityKind.ExactRuntimeType, value.AssignabilityKind);
                     Assert.Equal(2, value.RawReadCount);
                 },
                 value =>
@@ -64,6 +78,7 @@ public sealed class W7StaticFieldRuntimeOperationTests
                     Assert.Null(value.Int32Value);
                     Assert.Equal("processing", value.StringValue);
                     Assert.NotNull(value.ObjectAddress);
+                    Assert.Equal(StaticFieldRuntimeAssignabilityKind.ExactRuntimeType, value.AssignabilityKind);
                     Assert.Equal(4, value.RawReadCount);
                 },
                 value =>
@@ -73,6 +88,7 @@ public sealed class W7StaticFieldRuntimeOperationTests
                     Assert.Equal(0x7A17C042, value.Int32Value);
                     Assert.Null(value.StringValue);
                     Assert.Null(value.ObjectAddress);
+                    Assert.Null(value.AssignabilityKind);
                     Assert.Equal(1, value.RawReadCount);
                 });
             Assert.All(first, static value =>
@@ -81,6 +97,21 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 Assert.Equal(ClrmdStaticStorageAcquisitionKind.SlotAddressAcquired, value.AcquisitionKind);
                 Assert.NotEqual(0UL, value.SlotAddress);
             });
+
+            static void AssertReference(
+                ValueObservation value,
+                string fieldName,
+                StaticFieldRuntimeAssignabilityKind assignabilityKind)
+            {
+                Assert.Equal(fieldName, value.FieldName);
+                Assert.Equal(ClrmdStaticFieldTerminalKind.ObjectReference, value.TerminalKind);
+                Assert.Null(value.Int32Value);
+                Assert.Null(value.StringValue);
+                Assert.NotNull(value.ObjectAddress);
+                Assert.NotEqual(0UL, value.ObjectAddress!.Value);
+                Assert.Equal(assignabilityKind, value.AssignabilityKind);
+                Assert.Equal(2, value.RawReadCount);
+            }
         }
         finally
         {
@@ -256,6 +287,21 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 "BatchStatics",
                 "Root",
                 ClrmdStaticExpectedDecoderKind.ManagedReference),
+            Read(
+                "Interpreter.W7TestTarget.Batch",
+                "BatchStatics",
+                "InterfaceRoot",
+                ClrmdStaticExpectedDecoderKind.ManagedReference),
+            Read(
+                "Interpreter.W7TestTarget.Batch",
+                "BatchStatics",
+                "NumberArray",
+                ClrmdStaticExpectedDecoderKind.ManagedReference),
+            Read(
+                "Interpreter.W7TestTarget.Batch",
+                "BatchStatics",
+                "ObjectArray",
+                ClrmdStaticExpectedDecoderKind.ManagedReference),
         };
 
         ValueObservation Read(
@@ -355,6 +401,7 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 value.Int32Value,
                 value.StringValue?.Value,
                 objectReference?.Address,
+                assignability?.Kind,
                 observation.Sha256);
         }
     }
@@ -392,5 +439,6 @@ public sealed class W7StaticFieldRuntimeOperationTests
         int? Int32Value,
         string? StringValue,
         ulong? ObjectAddress,
+        StaticFieldRuntimeAssignabilityKind? AssignabilityKind,
         string Sha256);
 }
