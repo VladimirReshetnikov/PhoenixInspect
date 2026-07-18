@@ -285,6 +285,97 @@ public sealed partial class ClrmdDumpSession
             PortablePdbLocalScopeBound,
             PortablePdbImportScopeBound,
             PortablePdbImportBound);
+        if (portablePdbCandidates.Length > MaximumPortablePdbCandidateCount)
+        {
+            return DumpPortablePdbObservation.Partial(
+                DumpPortablePdbEvidenceSource.ForSnapshot(Snapshot),
+                DumpContextEvidenceIssue.BoundReached,
+                bounds);
+        }
+
+        return ReadExpressionPortablePdbContextWithResolver(
+            selectedFrame,
+            new PathPortablePdbArtifactResolver(portablePdbCandidates),
+            bounds);
+    }
+
+    /// <summary>
+    /// Acquires mapped-module debug identity and Portable-PDB context through one bounded host artifact resolver.
+    /// </summary>
+    /// <param name="selectedFrame">The independently typed selected-frame observation.</param>
+    /// <param name="artifactResolver">
+    /// The host capability that returns complete, partial, or unavailable candidate reads without selecting a winner.
+    /// </param>
+    /// <returns>An exact or typed non-exact Portable-PDB observation scoped to this dump.</returns>
+    /// <remarks>
+    /// The resolver is called only after exact selected-frame and counted mapped-PE CodeView evidence are available.
+    /// Default output, exceptions, over-bound results, and incomplete reads become typed evidence; source identifiers
+    /// never enter the canonical result. Caveat: resolver execution is synchronous in this draft seam.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">An argument is null.</exception>
+    public DumpPortablePdbObservation ReadExpressionPortablePdbContext(
+        DumpSelectedFrameObservation selectedFrame,
+        IDumpPortablePdbArtifactResolver artifactResolver)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(selectedFrame);
+        ArgumentNullException.ThrowIfNull(artifactResolver);
+        var bounds = ImmutableArray.Create(
+            MappedPeHeaderByteBound,
+            MappedPeDebugDirectoryBound,
+            MappedPeCodeViewByteBound,
+            PortablePdbCandidateBound,
+            PortablePdbByteBound,
+            PortablePdbLocalScopeBound,
+            PortablePdbImportScopeBound,
+            PortablePdbImportBound);
+        return ReadExpressionPortablePdbContextWithResolver(selectedFrame, artifactResolver, bounds);
+    }
+
+    /// <summary>Acquires the complete additive selected-frame and Portable-PDB context for one expression bind.</summary>
+    /// <param name="selector">The snapshot-scoped selected-frame ordinal request.</param>
+    /// <param name="portablePdbCandidates">Initialized caller-discovered PDB candidate paths, possibly empty.</param>
+    /// <returns>A validated additive context retaining independent frame and PDB dispositions.</returns>
+    /// <remarks>
+    /// PDB acquisition does not advance beyond the snapshot when frame selection is non-exact. Exact fully qualified
+    /// binding may subsequently choose not to consult either source.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is null.</exception>
+    /// <exception cref="ArgumentException">The candidate array is default or contains a null/blank path.</exception>
+    public DumpExpressionBindingContext AcquireExpressionBindingContext(
+        DumpSelectedFrameSelector selector,
+        ImmutableArray<string> portablePdbCandidates)
+    {
+        var frame = SelectExpressionFrame(selector);
+        var pdb = ReadExpressionPortablePdbContext(frame, portablePdbCandidates);
+        return DumpExpressionBindingContext.Acquire(Snapshot, frame, pdb);
+    }
+
+    /// <summary>Acquires the additive frame/PDB context through a bounded host artifact resolver.</summary>
+    /// <param name="selector">The snapshot-scoped selected-frame ordinal request.</param>
+    /// <param name="artifactResolver">The non-null resolver called only after exact mapped-module debug identity.</param>
+    /// <returns>A validated context retaining independent frame and artifact-resolution dispositions.</returns>
+    /// <remarks>
+    /// A non-exact frame prevents resolver invocation. This overload is the injectable producer seam for partial and
+    /// unavailable artifact reads; fully qualified binding may still elect not to consult the returned context.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">An argument is null.</exception>
+    public DumpExpressionBindingContext AcquireExpressionBindingContext(
+        DumpSelectedFrameSelector selector,
+        IDumpPortablePdbArtifactResolver artifactResolver)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(artifactResolver);
+        var frame = SelectExpressionFrame(selector);
+        var pdb = ReadExpressionPortablePdbContext(frame, artifactResolver);
+        return DumpExpressionBindingContext.Acquire(Snapshot, frame, pdb);
+    }
+
+    private DumpPortablePdbObservation ReadExpressionPortablePdbContextWithResolver(
+        DumpSelectedFrameObservation selectedFrame,
+        IDumpPortablePdbArtifactResolver artifactResolver,
+        ImmutableArray<EvaluationDeterministicBound> bounds)
+    {
         if (selectedFrame.Selector.Snapshot != Snapshot)
         {
             return DumpPortablePdbObservation.Conflict(
@@ -301,37 +392,12 @@ public sealed partial class ClrmdDumpSession
                 ImmutableArray<EvaluationDeterministicBound>.Empty);
         }
 
-        if (portablePdbCandidates.Length > MaximumPortablePdbCandidateCount)
-        {
-            return DumpPortablePdbObservation.Partial(
-                DumpPortablePdbEvidenceSource.ForSnapshot(Snapshot),
-                DumpContextEvidenceIssue.BoundReached,
-                bounds);
-        }
-
-        return ReadExpressionPortablePdbContextCore(frame, portablePdbCandidates, bounds);
-    }
-
-    /// <summary>Acquires the complete additive selected-frame and Portable-PDB context for one expression bind.</summary>
-    /// <param name="selector">The snapshot-scoped selected-frame ordinal request.</param>
-    /// <param name="portablePdbCandidates">Initialized caller-discovered PDB candidate paths, possibly empty.</param>
-    /// <returns>A validated additive context retaining independent frame and PDB dispositions.</returns>
-    /// <remarks>
-    /// PDB acquisition does not advance beyond the snapshot when frame selection is non-exact. Exact fully qualified
-    /// binding may subsequently choose not to consult either source.
-    /// </remarks>
-    public DumpExpressionBindingContext AcquireExpressionBindingContext(
-        DumpSelectedFrameSelector selector,
-        ImmutableArray<string> portablePdbCandidates)
-    {
-        var frame = SelectExpressionFrame(selector);
-        var pdb = ReadExpressionPortablePdbContext(frame, portablePdbCandidates);
-        return DumpExpressionBindingContext.Acquire(Snapshot, frame, pdb);
+        return ReadExpressionPortablePdbContextCore(frame, artifactResolver, bounds);
     }
 
     private DumpPortablePdbObservation ReadExpressionPortablePdbContextCore(
         DumpSelectedFrameIdentity frame,
-        ImmutableArray<string> candidatePaths,
+        IDumpPortablePdbArtifactResolver artifactResolver,
         ImmutableArray<EvaluationDeterministicBound> bounds)
     {
         if (!_moduleInfos.TryGetValue(
@@ -372,7 +438,11 @@ public sealed partial class ClrmdDumpSession
         }
 
         var expected = moduleDebug.Identity;
-        var candidates = ReadPortablePdbCandidates(candidatePaths, expected, out var candidateFailure);
+        var candidates = ReadPortablePdbCandidates(
+            artifactResolver,
+            expected,
+            bounds,
+            out var candidateFailure);
         if (candidates.Length == 0)
         {
             if (candidateFailure is { } failure)
@@ -634,57 +704,149 @@ public sealed partial class ClrmdDumpSession
             : ModuleDebugReadResult.Unavailable(DumpContextEvidenceIssue.PortablePdbDebugIdentityUnavailable);
 
     private static ImmutableArray<PortablePdbCandidate> ReadPortablePdbCandidates(
-        ImmutableArray<string> paths,
+        IDumpPortablePdbArtifactResolver resolver,
         DumpModulePortablePdbDebugIdentity expected,
+        ImmutableArray<EvaluationDeterministicBound> bounds,
         out DumpPortablePdbObservation? failure)
     {
+        ImmutableArray<DumpPortablePdbArtifactRead> reads;
+        try
+        {
+            reads = resolver.Resolve(new DumpPortablePdbArtifactResolutionRequest(
+                expected,
+                PortablePdbCandidateBound,
+                PortablePdbByteBound));
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            failure = DumpPortablePdbObservation.Unavailable(
+                DumpPortablePdbEvidenceSource.ForModule(expected),
+                DumpContextEvidenceIssue.PortablePdbUnavailable,
+                bounds);
+            return ImmutableArray<PortablePdbCandidate>.Empty;
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or InvalidOperationException or OverflowException)
+        {
+            failure = DumpPortablePdbObservation.Invalid(
+                DumpPortablePdbEvidenceSource.ForModule(expected),
+                DumpContextEvidenceIssue.InvalidPortablePdb,
+                bounds);
+            return ImmutableArray<PortablePdbCandidate>.Empty;
+        }
+
+        if (reads.IsDefault)
+        {
+            failure = DumpPortablePdbObservation.Invalid(
+                DumpPortablePdbEvidenceSource.ForModule(expected),
+                DumpContextEvidenceIssue.InvalidPortablePdb,
+                bounds);
+            return ImmutableArray<PortablePdbCandidate>.Empty;
+        }
+
+        if (reads.Length > MaximumPortablePdbCandidateCount)
+        {
+            failure = DumpPortablePdbObservation.Partial(
+                DumpPortablePdbEvidenceSource.ForModule(expected),
+                DumpContextEvidenceIssue.BoundReached,
+                bounds);
+            return ImmutableArray<PortablePdbCandidate>.Empty;
+        }
+
+        if (reads.Any(static read => read is null))
+        {
+            failure = DumpPortablePdbObservation.Invalid(
+                DumpPortablePdbEvidenceSource.ForModule(expected),
+                DumpContextEvidenceIssue.InvalidPortablePdb,
+                bounds);
+            return ImmutableArray<PortablePdbCandidate>.Empty;
+        }
+
+        var partialReads = reads.Where(static read => read.Status == DumpPortablePdbArtifactReadStatus.Partial).ToArray();
+        if (partialReads.Length != 0)
+        {
+            var issue = partialReads.Any(static read =>
+                read.DeclaredByteLength > MaximumPortablePdbByteLength ||
+                read.Bytes.Length > MaximumPortablePdbByteLength)
+                ? DumpContextEvidenceIssue.BoundReached
+                : DumpContextEvidenceIssue.SourceIncomplete;
+            failure = DumpPortablePdbObservation.Partial(
+                DumpPortablePdbEvidenceSource.ForModule(expected),
+                issue,
+                bounds);
+            return ImmutableArray<PortablePdbCandidate>.Empty;
+        }
+
+        var unavailableCount = reads.Count(static read =>
+            read.Status == DumpPortablePdbArtifactReadStatus.Unavailable);
+        var exactReadCount = reads.Length - unavailableCount;
+        if (unavailableCount != 0)
+        {
+            failure = exactReadCount == 0
+                ? DumpPortablePdbObservation.Unavailable(
+                    DumpPortablePdbEvidenceSource.ForModule(expected),
+                    DumpContextEvidenceIssue.PortablePdbUnavailable,
+                    bounds)
+                : DumpPortablePdbObservation.Partial(
+                    DumpPortablePdbEvidenceSource.ForModule(expected),
+                    DumpContextEvidenceIssue.SourceIncomplete,
+                    bounds);
+            return ImmutableArray<PortablePdbCandidate>.Empty;
+        }
+
         var candidates = ImmutableArray.CreateBuilder<PortablePdbCandidate>();
         var invalidSources = new List<DumpPortablePdbEvidenceSource>();
-        foreach (var path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var read in reads)
         {
-            if (!File.Exists(path))
+            if (read.Status != DumpPortablePdbArtifactReadStatus.Exact ||
+                read.DeclaredByteLength != read.Bytes.Length)
             {
-                continue;
+                failure = DumpPortablePdbObservation.Invalid(
+                    DumpPortablePdbEvidenceSource.ForModule(expected),
+                    DumpContextEvidenceIssue.InvalidPortablePdb,
+                    bounds);
+                return ImmutableArray<PortablePdbCandidate>.Empty;
             }
 
+            if (read.Bytes.Length == 0)
+            {
+                failure = DumpPortablePdbObservation.Invalid(
+                    DumpPortablePdbEvidenceSource.ForModule(expected),
+                    DumpContextEvidenceIssue.InvalidPortablePdb,
+                    bounds);
+                return ImmutableArray<PortablePdbCandidate>.Empty;
+            }
+
+            if (read.Bytes.Length > MaximumPortablePdbByteLength)
+            {
+                failure = DumpPortablePdbObservation.Partial(
+                    DumpPortablePdbEvidenceSource.ForModule(expected),
+                    DumpContextEvidenceIssue.BoundReached,
+                    bounds);
+                return ImmutableArray<PortablePdbCandidate>.Empty;
+            }
+
+            var bytes = read.Bytes;
+            var content = DumpPortablePdbContentIdentity.Create(
+                bytes.Length,
+                Convert.ToHexString(SHA256.HashData(bytes.AsSpan())).ToLowerInvariant());
             try
             {
-                var info = new FileInfo(path);
-                if (info.Length <= 0 || info.Length > MaximumPortablePdbByteLength || info.Length > int.MaxValue)
-                {
-                    failure = DumpPortablePdbObservation.Partial(
-                        DumpPortablePdbEvidenceSource.ForModule(expected),
-                        DumpContextEvidenceIssue.BoundReached,
-                        ImmutableArray.Create(PortablePdbCandidateBound, PortablePdbByteBound));
-                    return ImmutableArray<PortablePdbCandidate>.Empty;
-                }
-
-                var bytes = ImmutableArray.CreateRange(File.ReadAllBytes(path));
-                var content = DumpPortablePdbContentIdentity.Create(
-                    bytes.Length,
-                    Convert.ToHexString(SHA256.HashData(bytes.AsSpan())).ToLowerInvariant());
-                try
-                {
-                    using var provider = MetadataReaderProvider.FromPortablePdbImage(bytes);
-                    var reader = provider.GetMetadataReader();
-                    var debugHeader = reader.DebugMetadataHeader ??
-                        throw new BadImageFormatException("A Portable PDB requires a debug metadata header.");
-                    var contentId = new BlobContentId(debugHeader.Id);
-                    var debugIdentity = DumpPortablePdbDebugIdentity.Create(contentId.Guid, contentId.Stamp);
-                    candidates.Add(new PortablePdbCandidate(
-                        bytes,
-                        DumpPortablePdbArtifactIdentity.Create(content, debugIdentity)));
-                }
-                catch (Exception exception) when (
-                    exception is BadImageFormatException or ArgumentException or InvalidOperationException)
-                {
-                    invalidSources.Add(DumpPortablePdbEvidenceSource.ForCandidate(expected, content, null));
-                }
+                using var provider = MetadataReaderProvider.FromPortablePdbImage(bytes);
+                var reader = provider.GetMetadataReader();
+                var debugHeader = reader.DebugMetadataHeader ??
+                    throw new BadImageFormatException("A Portable PDB requires a debug metadata header.");
+                var contentId = new BlobContentId(debugHeader.Id);
+                var debugIdentity = DumpPortablePdbDebugIdentity.Create(contentId.Guid, contentId.Stamp);
+                candidates.Add(new PortablePdbCandidate(
+                    bytes,
+                    DumpPortablePdbArtifactIdentity.Create(content, debugIdentity)));
             }
             catch (Exception exception) when (
-                exception is IOException or UnauthorizedAccessException or NotSupportedException)
+                exception is BadImageFormatException or ArgumentException or InvalidOperationException)
             {
-                continue;
+                invalidSources.Add(DumpPortablePdbEvidenceSource.ForCandidate(expected, content, null));
             }
         }
 
@@ -693,14 +855,14 @@ public sealed partial class ClrmdDumpSession
             failure = DumpPortablePdbObservation.Invalid(
                 invalidSources[0],
                 DumpContextEvidenceIssue.InvalidPortablePdb,
-                ImmutableArray.Create(PortablePdbCandidateBound, PortablePdbByteBound));
+                bounds);
         }
         else if (candidates.Count == 0 && invalidSources.Count > 1)
         {
             failure = DumpPortablePdbObservation.Ambiguous(
                 DumpPortablePdbEvidenceSource.ForModule(expected),
                 DumpContextEvidenceIssue.PortablePdbAmbiguous,
-                ImmutableArray.Create(PortablePdbCandidateBound, PortablePdbByteBound));
+                bounds);
         }
         else
         {
@@ -1172,6 +1334,54 @@ public sealed partial class ClrmdDumpSession
     private sealed record PortablePdbCandidate(
         ImmutableArray<byte> Bytes,
         DumpPortablePdbArtifactIdentity Artifact);
+
+    private sealed class PathPortablePdbArtifactResolver : IDumpPortablePdbArtifactResolver
+    {
+        private readonly ImmutableArray<string> paths;
+
+        internal PathPortablePdbArtifactResolver(ImmutableArray<string> paths)
+        {
+            this.paths = paths;
+        }
+
+        ImmutableArray<DumpPortablePdbArtifactRead> IDumpPortablePdbArtifactResolver.Resolve(
+            DumpPortablePdbArtifactResolutionRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            var reads = ImmutableArray.CreateBuilder<DumpPortablePdbArtifactRead>();
+            foreach (var path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var info = new FileInfo(path);
+                    if (info.Length > request.ByteBound.Value || info.Length > int.MaxValue)
+                    {
+                        reads.Add(DumpPortablePdbArtifactRead.Partial(
+                            path,
+                            Math.Max(1, info.Length),
+                            ImmutableArray<byte>.Empty));
+                        continue;
+                    }
+
+                    reads.Add(DumpPortablePdbArtifactRead.Exact(
+                        path,
+                        ImmutableArray.CreateRange(File.ReadAllBytes(path))));
+                }
+                catch (Exception exception) when (
+                    exception is IOException or UnauthorizedAccessException or NotSupportedException)
+                {
+                    reads.Add(DumpPortablePdbArtifactRead.Unavailable(path));
+                }
+            }
+
+            return reads.ToImmutable();
+        }
+    }
 
     private sealed class UnsupportedImportProjectionException : Exception
     {

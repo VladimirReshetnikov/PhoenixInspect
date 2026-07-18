@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using Interpreter.Host.Dump.ClrMD;
 using Interpreter.Product.DumpQuery;
@@ -41,6 +42,43 @@ public sealed class W7ExpressionContextProducerIntegrationTests
 {
     private const int MaximumTestThreadOrdinals = 64;
     private const int MaximumTestFrameOrdinals = 32;
+
+    /// <summary>
+    /// Proves exact, partial, and unavailable resolver reads are immutable and reject structurally contradictory
+    /// lengths before any dump or artifact capability is involved.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Artifact_read_contract_freezes_complete_and_incomplete_prefixes()
+    {
+        var source = ImmutableArray.Create<byte>(0x42, 0x53, 0x4A, 0x42);
+        var exact = DumpPortablePdbArtifactRead.Exact("synthetic:exact-contract", source);
+        var partial = DumpPortablePdbArtifactRead.Partial(
+            "synthetic:partial-contract",
+            declaredByteLength: 11,
+            source[..2]);
+        var unavailable = DumpPortablePdbArtifactRead.Unavailable("synthetic:unavailable-contract");
+
+        Assert.Equal(DumpPortablePdbArtifactReadStatus.Exact, exact.Status);
+        Assert.Equal(4, exact.DeclaredByteLength);
+        Assert.Equal(source.ToArray(), exact.Bytes.ToArray());
+        Assert.Equal(DumpPortablePdbArtifactReadStatus.Partial, partial.Status);
+        Assert.Equal(11, partial.DeclaredByteLength);
+        Assert.Equal(source[..2].ToArray(), partial.Bytes.ToArray());
+        Assert.Equal(DumpPortablePdbArtifactReadStatus.Unavailable, unavailable.Status);
+        Assert.Null(unavailable.DeclaredByteLength);
+        Assert.Empty(unavailable.Bytes);
+
+        Assert.Throws<ArgumentException>(() => DumpPortablePdbArtifactRead.Exact("source", default));
+        Assert.Throws<ArgumentException>(() => DumpPortablePdbArtifactRead.Exact(" ", source));
+        Assert.Throws<ArgumentException>(() => DumpPortablePdbArtifactRead.Exact(new string('s', 4_097), source));
+        Assert.Throws<ArgumentOutOfRangeException>(() => DumpPortablePdbArtifactRead.Partial(
+            "source", 0, ImmutableArray<byte>.Empty));
+        Assert.Throws<ArgumentException>(() => DumpPortablePdbArtifactRead.Partial(
+            "source", source.Length, source));
+        Assert.Throws<ArgumentException>(() => DumpPortablePdbArtifactRead.Partial(
+            "source", source.Length + 1, default));
+    }
 
     /// <summary>
     /// Proves namespace-import, type-alias, and current-namespace lookup from real generated dumps, with close/reopen
@@ -164,6 +202,8 @@ public sealed class W7ExpressionContextProducerIntegrationTests
                 $"mapped image 0x{targetModule.Identity.ImageBase:X}+0x{targetModule.Identity.ImageSize:X}.");
             Assert.Equal(DumpContextEvidenceIssue.PortablePdbIdentityMismatch, conflict.Issue);
             Assert.True(conflict.Source.HasIdentityMismatch);
+
+            VerifyResolverDispositions(session, frame, portablePdb, targetModule.Identity);
         }
 
         var pdb = session.ReadExpressionPortablePdbContext(frame, [portablePdb, portablePdb]);
@@ -211,6 +251,106 @@ public sealed class W7ExpressionContextProducerIntegrationTests
                 binding.Expansions.Select(static expansion => expansion.Kind).Distinct().Order()));
     }
 
+    private static void VerifyResolverDispositions(
+        ClrmdDumpSession session,
+        DumpSelectedFrameObservation frame,
+        string portablePdb,
+        ClrmdRuntimeModuleIdentity targetModule)
+    {
+        var bytes = ImmutableArray.CreateRange(File.ReadAllBytes(portablePdb));
+        var partialResolver = new DelegateArtifactResolver(_ =>
+            [DumpPortablePdbArtifactRead.Partial("synthetic:partial", bytes.Length, bytes[..113])]);
+        var partial = session.ReadExpressionPortablePdbContext(frame, partialResolver);
+        Assert.Equal(DumpContextEvidenceStatus.Partial, partial.Status);
+        Assert.Equal(DumpContextEvidenceIssue.SourceIncomplete, partial.Issue);
+        AssertResolutionRequest(partialResolver, targetModule);
+
+        var overBoundResolver = new DelegateArtifactResolver(request =>
+            [DumpPortablePdbArtifactRead.Partial(
+                "synthetic:over-bound",
+                request.ByteBound.Value + 1,
+                ImmutableArray<byte>.Empty)]);
+        var overBound = session.ReadExpressionPortablePdbContext(frame, overBoundResolver);
+        Assert.Equal(DumpContextEvidenceStatus.Partial, overBound.Status);
+        Assert.Equal(DumpContextEvidenceIssue.BoundReached, overBound.Issue);
+
+        var unavailableResolver = new DelegateArtifactResolver(_ =>
+            [DumpPortablePdbArtifactRead.Unavailable("synthetic:unavailable")]);
+        var unavailable = session.ReadExpressionPortablePdbContext(frame, unavailableResolver);
+        Assert.Equal(DumpContextEvidenceStatus.Unavailable, unavailable.Status);
+        Assert.Equal(DumpContextEvidenceIssue.PortablePdbUnavailable, unavailable.Issue);
+
+        var mixedResolver = new DelegateArtifactResolver(_ =>
+            [
+                DumpPortablePdbArtifactRead.Exact("synthetic:exact", bytes),
+                DumpPortablePdbArtifactRead.Unavailable("synthetic:unavailable-peer"),
+            ]);
+        var mixed = session.ReadExpressionPortablePdbContext(frame, mixedResolver);
+        Assert.Equal(DumpContextEvidenceStatus.Partial, mixed.Status);
+        Assert.Equal(DumpContextEvidenceIssue.SourceIncomplete, mixed.Issue);
+
+        var firstExact = session.ReadExpressionPortablePdbContext(
+            frame,
+            new DelegateArtifactResolver(_ =>
+                [DumpPortablePdbArtifactRead.Exact("synthetic:first-store", bytes)]));
+        var duplicateExact = session.ReadExpressionPortablePdbContext(
+            frame,
+            new DelegateArtifactResolver(_ =>
+                [
+                    DumpPortablePdbArtifactRead.Exact("synthetic:second-store", bytes),
+                    DumpPortablePdbArtifactRead.Exact("synthetic:third-store", bytes),
+                ]));
+        Assert.Equal(DumpContextEvidenceStatus.Exact, firstExact.Status);
+        Assert.Equal(firstExact.Sha256, duplicateExact.Sha256);
+
+        var defaultResolver = new DelegateArtifactResolver(_ => default);
+        var invalidDefault = session.ReadExpressionPortablePdbContext(frame, defaultResolver);
+        Assert.Equal(DumpContextEvidenceStatus.Invalid, invalidDefault.Status);
+        Assert.Equal(DumpContextEvidenceIssue.InvalidPortablePdb, invalidDefault.Issue);
+
+        var overCountResolver = new DelegateArtifactResolver(request =>
+            Enumerable.Range(0, checked((int)request.CandidateBound.Value) + 1)
+                .Select(index => DumpPortablePdbArtifactRead.Unavailable($"synthetic:over-count:{index}"))
+                .ToImmutableArray());
+        var overCount = session.ReadExpressionPortablePdbContext(frame, overCountResolver);
+        Assert.Equal(DumpContextEvidenceStatus.Partial, overCount.Status);
+        Assert.Equal(DumpContextEvidenceIssue.BoundReached, overCount.Issue);
+
+        var unavailableException = session.ReadExpressionPortablePdbContext(
+            frame,
+            new DelegateArtifactResolver(_ => throw new IOException("synthetic resolver failure")));
+        Assert.Equal(DumpContextEvidenceStatus.Unavailable, unavailableException.Status);
+        Assert.Equal(DumpContextEvidenceIssue.PortablePdbUnavailable, unavailableException.Issue);
+
+        var invalidException = session.ReadExpressionPortablePdbContext(
+            frame,
+            new DelegateArtifactResolver(_ => throw new InvalidOperationException("synthetic resolver defect")));
+        Assert.Equal(DumpContextEvidenceStatus.Invalid, invalidException.Status);
+        Assert.Equal(DumpContextEvidenceIssue.InvalidPortablePdb, invalidException.Issue);
+
+        var missingFrame = session.SelectExpressionFrame(DumpSelectedFrameSelector.Create(
+            session.Snapshot,
+            threadOrdinal: int.MaxValue,
+            frameOrdinal: 0));
+        Assert.Equal(DumpContextEvidenceStatus.Unavailable, missingFrame.Status);
+        var poisonResolver = new DelegateArtifactResolver(_ =>
+            throw new InvalidOperationException("The resolver must not run without an exact frame."));
+        var prerequisite = session.ReadExpressionPortablePdbContext(missingFrame, poisonResolver);
+        Assert.Equal(DumpContextEvidenceStatus.Unavailable, prerequisite.Status);
+        Assert.Equal(DumpContextEvidenceIssue.PrerequisiteUnavailable, prerequisite.Issue);
+        Assert.Null(poisonResolver.LastRequest);
+    }
+
+    private static void AssertResolutionRequest(
+        DelegateArtifactResolver resolver,
+        ClrmdRuntimeModuleIdentity targetModule)
+    {
+        var request = Assert.IsType<DumpPortablePdbArtifactResolutionRequest>(resolver.LastRequest);
+        Assert.Equal(targetModule, request.ExpectedModule.RuntimeModule);
+        Assert.Equal(ClrmdDumpSession.PortablePdbCandidateTraversalBound, request.CandidateBound);
+        Assert.Equal(ClrmdDumpSession.PortablePdbArtifactByteBound, request.ByteBound);
+    }
+
     private static DumpSelectedFrameObservation SelectExactFrame(
         ClrmdDumpSession session,
         ClrmdRuntimeModuleIdentity targetModule,
@@ -250,4 +390,18 @@ public sealed class W7ExpressionContextProducerIntegrationTests
         string BindingSha256,
         string FieldName,
         string ExpansionKinds);
+
+    private sealed class DelegateArtifactResolver(
+        Func<DumpPortablePdbArtifactResolutionRequest, ImmutableArray<DumpPortablePdbArtifactRead>> resolve)
+        : IDumpPortablePdbArtifactResolver
+    {
+        internal DumpPortablePdbArtifactResolutionRequest? LastRequest { get; private set; }
+
+        ImmutableArray<DumpPortablePdbArtifactRead> IDumpPortablePdbArtifactResolver.Resolve(
+            DumpPortablePdbArtifactResolutionRequest request)
+        {
+            LastRequest = request;
+            return resolve(request);
+        }
+    }
 }
