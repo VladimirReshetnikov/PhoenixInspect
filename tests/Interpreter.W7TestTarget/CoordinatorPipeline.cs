@@ -11,16 +11,40 @@ namespace Interpreter.W7TestTarget.Coordinator
             Array.Empty<CoordinatorWorker>());
     }
 
-    internal sealed record CoordinatorRoot(
-        CoordinatorOwner? Owner,
-        CoordinatorJob? ActiveJob,
-        CoordinatorWorker[] Workers);
+    internal sealed class CoordinatorRoot(
+        CoordinatorOwner? OwnerValue,
+        CoordinatorJob? ActiveJobValue,
+        CoordinatorWorker[] WorkersValue)
+    {
+        internal CoordinatorOwner? Owner = OwnerValue;
 
-    internal sealed record CoordinatorOwner(string Name, string Region);
+        internal CoordinatorJob? ActiveJob = ActiveJobValue;
 
-    internal sealed record CoordinatorJob(string Id, int RetryCount);
+        internal CoordinatorWorker[] Workers = WorkersValue;
+    }
 
-    internal sealed record CoordinatorWorker(string Node, string State, int QueueDepth);
+    internal sealed class CoordinatorOwner(string NameValue, string RegionValue)
+    {
+        internal string Name = NameValue;
+
+        internal string Region = RegionValue;
+    }
+
+    internal sealed class CoordinatorJob(string IdValue, int RetryCountValue)
+    {
+        internal string Id = IdValue;
+
+        internal int RetryCount = RetryCountValue;
+    }
+
+    internal sealed class CoordinatorWorker(string NodeValue, string StateValue, int QueueDepthValue)
+    {
+        internal string Node = NodeValue;
+
+        internal string State = StateValue;
+
+        internal int QueueDepth = QueueDepthValue;
+    }
 }
 
 namespace Interpreter.W7TestTarget.CoordinatorContext
@@ -32,10 +56,10 @@ namespace Interpreter.W7TestTarget.CoordinatorContext
         {
             CoordinatorValues.Root = new Coordinator.CoordinatorRoot(
                 new Coordinator.CoordinatorOwner("coordinator-west", "west"),
-                new Coordinator.CoordinatorJob($"job-{StaticValues.Counter:X8}", RetryCount: 3),
+                new Coordinator.CoordinatorJob($"job-{StaticValues.Counter:X8}", 3),
                 [
-                    new Coordinator.CoordinatorWorker("node-17", "active", QueueDepth: 7),
-                    new Coordinator.CoordinatorWorker("node-29", "standby", QueueDepth: 2),
+                    new Coordinator.CoordinatorWorker("node-17", "active", 7),
+                    new Coordinator.CoordinatorWorker("node-29", "standby", 2),
                 ]);
 
             IncidentPause.WaitForDump(incidentId);

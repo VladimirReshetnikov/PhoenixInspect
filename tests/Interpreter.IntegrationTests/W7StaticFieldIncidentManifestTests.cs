@@ -115,10 +115,18 @@ public sealed class W7StaticFieldIncidentManifestTests
             Assert.False(string.IsNullOrWhiteSpace(RequiredString(incident, "usefulness")));
             Assert.False(string.IsNullOrWhiteSpace(RequiredString(incident, "decisionImpact")));
             Assert.False(string.IsNullOrWhiteSpace(RequiredString(incident, "firstBoundary")));
+            Assert.Contains(
+                RequiredString(incident, "postW7Boundary"),
+                new[]
+                {
+                    "None", "BindingContextPrecision", "NestedReferenceSource", "TargetIdentity",
+                    "RepeatedZeroArgumentMethod", "ResultExplanation",
+                });
 
             var expected = incident.GetProperty("expected");
             AssertExpectedShape(expected);
             AssertValidStageProgression(expected, RequiredString(incident, "firstBoundary"));
+            AssertTerminalShape(incident.GetProperty("expectedTerminal"), RequiredString(expected, "value"));
             foreach (var stage in StageNames)
             {
                 var status = RequiredString(expected, stage);
@@ -179,6 +187,9 @@ public sealed class W7StaticFieldIncidentManifestTests
                 Assert.Contains(
                     relationship,
                     new[] { "same-symbol-and-value", "fully-qualified-exact-baseline" });
+                AssertTerminalShape(
+                    incident.GetProperty("controlExpectedTerminal"),
+                    RequiredString(controlExpected, "value"));
             }
         }
 
@@ -210,6 +221,14 @@ public sealed class W7StaticFieldIncidentManifestTests
         Assert.Equal(
             "global::Interpreter.W7TestTarget.StaticValues.Counter",
             RequiredString(incidents[0], "expression"));
+        Assert.Equal(
+            6,
+            incidents.Count(static incident =>
+                RequiredString(incident, "postW7Boundary") == "None"));
+        Assert.Equal(
+            4,
+            incidents.Count(static incident =>
+                RequiredString(incident, "postW7Boundary") == "BindingContextPrecision"));
 
         var contextPoisonControls = incidents.Where(static incident =>
             RequiredString(incident, "controlRelationship") == "fully-qualified-exact-baseline").ToArray();
@@ -338,6 +357,19 @@ public sealed class W7StaticFieldIncidentManifestTests
                 "ExactInt32", "ExactString", "ExactNullableNoValue", "ExactNull", "ExactObject", "Partial",
                 "Unavailable", "Conflict", "Invalid", "Unsupported", "NotReached",
             });
+    }
+
+    private static void AssertTerminalShape(JsonElement terminal, string expectedValue)
+    {
+        if (expectedValue.StartsWith("Exact", StringComparison.Ordinal))
+        {
+            Assert.Equal(JsonValueKind.String, terminal.ValueKind);
+            Assert.False(string.IsNullOrWhiteSpace(terminal.GetString()));
+        }
+        else
+        {
+            Assert.Equal(JsonValueKind.Null, terminal.ValueKind);
+        }
     }
 
     private static void AssertValidStageProgression(JsonElement expected, string firstBoundary)

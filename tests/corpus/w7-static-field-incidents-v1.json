@@ -71,7 +71,10 @@
       "expected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactInt32" },
       "usefulness": "answers-request-throughput-counter",
       "decisionImpact": "proves-context-independent-qualified-binding",
-      "firstBoundary": "value-exact"
+      "firstBoundary": "value-exact",
+      "postW7Boundary": "None",
+      "expectedTerminal": "i32:2048376898",
+      "controlExpectedTerminal": null
     },
     {
       "id": "batch-imported-direct-field",
@@ -90,7 +93,10 @@
       "expected": { "syntax": "Exact", "context": "ExactNamespaceImport", "symbol": "Exact", "storage": "Exact", "value": "ExactString" },
       "usefulness": "answers-current-batch-state-through-one-field",
       "decisionImpact": "proves-portable-pdb-import-and-w2-direct-suffix",
-      "firstBoundary": "value-exact"
+      "firstBoundary": "value-exact",
+      "postW7Boundary": "None",
+      "expectedTerminal": "string:processing",
+      "controlExpectedTerminal": "string:processing"
     },
     {
       "id": "coordinator-type-alias-owner",
@@ -109,7 +115,10 @@
       "expected": { "syntax": "Exact", "context": "ExactTypeAlias", "symbol": "Exact", "storage": "Exact", "value": "ExactString" },
       "usefulness": "answers-coordinator-owner-name",
       "decisionImpact": "proves-alias-and-conditional-suffix-composition",
-      "firstBoundary": "value-exact"
+      "firstBoundary": "value-exact",
+      "postW7Boundary": "None",
+      "expectedTerminal": "string:coordinator-west",
+      "controlExpectedTerminal": "string:coordinator-west"
     },
     {
       "id": "workflow-current-namespace-chain",
@@ -128,7 +137,10 @@
       "expected": { "syntax": "Exact", "context": "ExactCurrentNamespace", "symbol": "Exact", "storage": "Exact", "value": "ExactString" },
       "usefulness": "answers-active-workflow-attempt-status",
       "decisionImpact": "proves-current-namespace-and-two-member-suffix",
-      "firstBoundary": "value-exact"
+      "firstBoundary": "value-exact",
+      "postW7Boundary": "None",
+      "expectedTerminal": "string:running",
+      "controlExpectedTerminal": "string:running"
     },
     {
       "id": "request-exact-null-reference",
@@ -147,7 +159,10 @@
       "expected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactNull" },
       "usefulness": "distinguishes-no-current-request-from-missing-storage",
       "decisionImpact": "proves-exact-null-reference",
-      "firstBoundary": "value-exact-null"
+      "firstBoundary": "value-exact-null",
+      "postW7Boundary": "None",
+      "expectedTerminal": "null",
+      "controlExpectedTerminal": null
     },
     {
       "id": "batch-nullable-no-value",
@@ -166,7 +181,10 @@
       "expected": { "syntax": "Exact", "context": "ExactNamespaceImport", "symbol": "Exact", "storage": "Exact", "value": "ExactNullableNoValue" },
       "usefulness": "distinguishes-unreported-progress-from-zero",
       "decisionImpact": "proves-nullable-layout-no-value",
-      "firstBoundary": "value-exact"
+      "firstBoundary": "value-exact",
+      "postW7Boundary": "None",
+      "expectedTerminal": "nullable-int32:none",
+      "controlExpectedTerminal": "nullable-int32:none"
     },
     {
       "id": "coordinator-frame-unavailable",
@@ -185,7 +203,10 @@
       "expected": { "syntax": "Exact", "context": "Unavailable", "symbol": "NotReached", "storage": "NotReached", "value": "NotReached" },
       "usefulness": "separates-frame-loss-from-qualified-lookup",
       "decisionImpact": "requires-typed-frame-unavailable-result",
-      "firstBoundary": "selected-frame-unavailable"
+      "firstBoundary": "selected-frame-unavailable",
+      "postW7Boundary": "BindingContextPrecision",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": "object:Interpreter.W7TestTarget.Coordinator.CoordinatorRoot"
     },
     {
       "id": "workflow-pdb-partial",
@@ -195,16 +216,19 @@
       "targetArguments": ["--incident", "workflow-pdb-partial"],
       "artifactInputs": [],
       "evidenceView": "exact",
-      "expression": "WorkflowStatics.Root",
+      "expression": "BatchStatics.Root",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W7TestTarget.Workflow.WorkflowStatics.Root",
+      "controlExpression": "global::Interpreter.W7TestTarget.Batch.BatchStatics.Root",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactObject" },
       "controlRelationship": "fully-qualified-exact-baseline",
       "contextRequest": { "mode": "managed-thread-and-frame", "frameOrdinal": 0, "pdbMode": "partial-bytes" },
       "expected": { "syntax": "Exact", "context": "Partial", "symbol": "NotReached", "storage": "NotReached", "value": "NotReached" },
       "usefulness": "separates-truncated-symbol-artifact-from-absence",
       "decisionImpact": "requires-partial-portable-pdb-result",
-      "firstBoundary": "portable-pdb-partial"
+      "firstBoundary": "portable-pdb-partial",
+      "postW7Boundary": "BindingContextPrecision",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": "object:Interpreter.W7TestTarget.Batch.BatchRoot"
     },
     {
       "id": "request-pdb-identity-conflict",
@@ -223,7 +247,10 @@
       "expected": { "syntax": "Exact", "context": "Conflict", "symbol": "NotReached", "storage": "NotReached", "value": "NotReached" },
       "usefulness": "prevents-imports-from-unrelated-build",
       "decisionImpact": "requires-pdb-identity-conflict-before-binding",
-      "firstBoundary": "portable-pdb-identity-conflict"
+      "firstBoundary": "portable-pdb-identity-conflict",
+      "postW7Boundary": "BindingContextPrecision",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": "i32:2048376898"
     },
     {
       "id": "batch-import-ambiguity",
@@ -242,7 +269,10 @@
       "expected": { "syntax": "Exact", "context": "Exact", "symbol": "Ambiguous", "storage": "NotReached", "value": "NotReached" },
       "usefulness": "prevents-first-import-selection",
       "decisionImpact": "requires-order-independent-symbol-ambiguity",
-      "firstBoundary": "symbol-ambiguous"
+      "firstBoundary": "symbol-ambiguous",
+      "postW7Boundary": "BindingContextPrecision",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": "string:ambiguous-import"
     },
     {
       "id": "coordinator-duplicate-qualified-definition",
@@ -261,7 +291,10 @@
       "expected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Ambiguous", "storage": "NotReached", "value": "NotReached" },
       "usefulness": "prevents-first-module-selection",
       "decisionImpact": "requires-duplicate-module-ambiguity",
-      "firstBoundary": "symbol-ambiguous"
+      "firstBoundary": "symbol-ambiguous",
+      "postW7Boundary": "TargetIdentity",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": null
     },
     {
       "id": "workflow-field-absence-vs-invalid-signature",
@@ -287,7 +320,10 @@
       },
       "usefulness": "distinguishes-exhaustive-absence-from-invalid-declaration",
       "decisionImpact": "requires-two-symbol-stops-without-slot-read",
-      "firstBoundary": "field-absent"
+      "firstBoundary": "field-absent",
+      "postW7Boundary": "ResultExplanation",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": null
     },
     {
       "id": "request-slot-unavailable",
@@ -306,7 +342,10 @@
       "expected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Unavailable", "value": "NotReached" },
       "usefulness": "distinguishes-slot-unavailable-from-null",
       "decisionImpact": "requires-zero-slot-storage-result",
-      "firstBoundary": "static-slot-unavailable"
+      "firstBoundary": "static-slot-unavailable",
+      "postW7Boundary": "NestedReferenceSource",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": null
     },
     {
       "id": "batch-partial-slot-bytes",
@@ -325,7 +364,10 @@
       "expected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "Partial" },
       "usefulness": "prevents-partial-nullable-fabrication",
       "decisionImpact": "requires-raw-read-partial-result",
-      "firstBoundary": "static-value-partial"
+      "firstBoundary": "static-value-partial",
+      "postW7Boundary": "NestedReferenceSource",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": null
     },
     {
       "id": "coordinator-target-header-conflict",
@@ -344,7 +386,10 @@
       "expected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "Conflict" },
       "usefulness": "prevents-mistyped-object-suffix-evaluation",
       "decisionImpact": "requires-header-type-conflict-before-plan",
-      "firstBoundary": "reference-target-conflict"
+      "firstBoundary": "reference-target-conflict",
+      "postW7Boundary": "TargetIdentity",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": null
     },
     {
       "id": "workflow-valid-unadmitted-generic-call",
@@ -363,7 +408,10 @@
       "expected": { "syntax": "Unsupported", "context": "NotReached", "symbol": "NotReached", "storage": "NotReached", "value": "NotReached" },
       "usefulness": "proves-valid-csharp-remains-bounded",
       "decisionImpact": "requires-syntax-stop-before-capabilities",
-      "firstBoundary": "syntax-unsupported"
+      "firstBoundary": "syntax-unsupported",
+      "postW7Boundary": "RepeatedZeroArgumentMethod",
+      "expectedTerminal": null,
+      "controlExpectedTerminal": null
     }
   ]
 }

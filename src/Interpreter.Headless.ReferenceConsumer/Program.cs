@@ -27,6 +27,11 @@ internal static class Program
 
     internal static int Main(string[] args)
     {
+        if (W7StaticFieldPortfolioRunner.IsRequested(args))
+        {
+            return W7StaticFieldPortfolioRunner.Run(args);
+        }
+
         if (UsefulnessPortfolioRunner.IsRequested(args))
         {
             return UsefulnessPortfolioRunner.Run(args);
