@@ -2,19 +2,17 @@
 
 > **Lifecycle:** Draft · **Roadmap:** Active
 >
-> W1–W6 are closed for their stated milestone-selected scopes. W5 made the W2/W4 capability reachable through one
-> expression-to-result path and selected fixed-depth member navigation. The completed
-> [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) records how W6 implemented that opt-in bounded query with
-> counted reference evidence, narrowly certified field-backed terminal properties, one complete Roslyn expression
-> parse with versioned subset admission, deterministic replay, and a twenty-four-incident/four-shape synthetic
-> decision corpus. This remains synthetic evidence rather than a field-readiness claim; W6 selected one concrete
-> context-acquisition category without implementing it. The completed
-> [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) makes W7 a real static-field expression-binding
-> slice: non-ambiguous fully qualified names work without frame/PDB context, while exact selected-frame/Portable-PDB
-> current-namespace, import, and simple-alias facts may bind `Type.Field`. A reference value may then enter the
-> unchanged W2/W6 suffix evaluator. W7.1–W7.7 prove the physical static-slot chain, sole-parser projection, immutable
-> context/symbol/value contracts, selected-frame/PDB/import binding, counted values, suffix composition, and sixteen-
-> incident deterministic portfolio. Roslyn remains the sole syntax parser.
+> W1–W7 are closed for their stated milestone-selected scopes. W5 made the W2/W4 capability reachable through one
+> expression-to-result path, W6 added fixed-depth member navigation and replaced parser growth with one complete
+> Roslyn expression parse plus versioned subset admission, and W7 added `StaticFieldExpressionV1`. W7 binds a
+> non-ambiguous fully qualified ordinary static field without frame/PDB context; exact selected-frame/Portable-PDB
+> current-namespace, import, and simple-alias facts may additionally bind contextual `Type.Field` forms. Direct
+> values and exact references can enter the unchanged W2/W6 suffix evaluator. Its physical slot proof, immutable
+> contracts, counted reads, suffix composition, and sixteen-incident/four-shape portfolio are implemented evidence.
+> The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) separately approves the inclusive
+> `StaticFieldExpressionV2` W8 design for nested and closed constructed generic owners, scope-precise context,
+> constraints, accessibility, assignability, stored values, metadata literals, and evidence-conditioned storage/frame
+> branches. W8 has no implementation or validation evidence yet. Roslyn remains the sole syntax parser.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -156,8 +154,10 @@ The end-state product runs evaluation in a specific **context**:
 * `this`, locals, and arguments (to the extent recoverable)
 * Imported namespaces and type aliases (configurable)
 
-W2 v1 deliberately uses only the selected dump plus one host-named, exactly selected non-null heap object. It does
-not discover frame roots, locals, arguments, statics, or exact-null roots.
+W2 v1 deliberately uses only the selected dump plus one host-named, exactly selected non-null heap object. W7's
+separate opt-in profile adds a selected-frame/PDB context only for contextual static names; its fully qualified route
+does not need that context. W8 plans a more complete, still bounded context model, but it does not make `this`, locals,
+arguments, or unavailable optimized values recoverable by assumption.
 
 ### Output and result indicators
 
@@ -219,10 +219,41 @@ The implementation and full corpus are locally headless-verified. [GitHub Action
 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at
 exact W2 closure commit `5bed47100`.
 
-**Later Phase 1 candidates (not W2 v1)**
+**Closed W7 static-field profile and approved W8 expansion**
 
-* Names: `this`, locals/args (when available), statics
-* Member access: fields, auto-properties (as data, not code)
+W7 is the implemented static-expression baseline. Its opt-in `StaticFieldExpressionV1` binds one ordinary static
+field on a non-generic class from either an unambiguous fully qualified name or exact selected-frame/Portable-PDB
+namespace, import, and simple-alias context. Counted metadata/runtime/storage evidence supplies direct scalar, string,
+nullable, null, and validated reference results. Exact references may continue through the unchanged W2/W6 suffix
+evaluator; a contextual failure never redirects a fully qualified request, and no profile falls through to another.
+
+W8 is the active approved design, not an implemented capability. Its additive `StaticFieldExpressionV2` profile will:
+
+- bind top-level and nested non-generic owners plus closed constructed generic class, value-type, and interface owners,
+  preserving per-segment generic arity, nested construction identity, and distinct stored slots for simultaneously
+  loaded constructions;
+- resolve fully qualified, current/enclosing namespace, namespace-import, type-alias, namespace-alias, TypeSpec-alias,
+  exact extern-alias, current/enclosing type, and evidence-qualified `using static` routes under scoped precedence and
+  complete lexical-blocker evidence;
+- support ordinary stored static fields and runtime-free metadata literals, including the bounded primitive, enum,
+  decimal, string, null, nullable, array, and constructed-reference value forms admitted by the final V2 contract;
+- validate substituted generic constraints and inspection accessibility before runtime mapping, substitute owner
+  `VAR` parameters through field signatures, and validate constructed base/interface/array assignability before a
+  non-null reference becomes a suffix receiver; and
+- retain independent symbol, construction, storage, value, and suffix outcomes, with no first-match selection,
+  context fallback, missing-construction creation, or target-code execution.
+
+W8.1 first tests the physical compiler/runtime facts. Thread-relative, context-relative, and RVA-backed static
+storage, exact frame values (`this`, parameters, and locals), and declaring/method generic arguments join the public
+profile only when an exact attributable identity/location/argument source exists. Each unavailable branch receives an
+executable typed non-admission instead of a placeholder API or guessed value. The mandatory stored/literal V2 core is
+independent of those branch outcomes. The planned conformance and at-least-thirty-two-incident/four-shape synthetic
+portfolio remain future evidence and contribute no representative observations today.
+
+**Other later Phase 1 candidates (outside the approved W8 core)**
+
+* Frame-root names beyond any exact W8.1-admitted `this`, local, or argument form
+* Member access beyond the closed W2/W6/W7 profiles and approved W8 static-field surface
 * Indexers for arrays and common collection patterns (where structure is inspectable)
 * Operators: `?.`, `??`, `?:`, `==`, `!=`, `<`, `>`, `&&`, `||`, `!`
 * Simple method-like intrinsics implemented as evaluator primitives:
@@ -348,15 +379,16 @@ Exact implementation commit `7479b1ad4` admits one conservative continuation for
   preserving every W4.2 golden identity under schema version 1.
 
 W4.3 contributes 3,096 realized LOC: 1,100 production LOC and 1,996 test LOC. W4.1–W4.3 therefore realize 7,028 LOC.
-With 12,200–18,700 LOC estimated for W4.4–W4.9, the current projection is 19,228–25,728 LOC; the original
+The then-current projection, based on the historical 12,200–18,700 LOC estimate for W4.4–W4.9, was
+19,228–25,728 LOC; the original
 16,860–25,310 LOC umbrella baseline remains recorded in the normative contract. Headless verification at
 `7479b1ad4` passed locked restore, the strict fifteen-project Release build with zero warnings/errors, focused W4.3
 55/55, complete unit 211/211, fast integration 71/71, ordinary-dump regression 5/5, optimized-dump regression 1/1,
 both repository guards, and zero skips, with only the milestone-selected tests.
 
-This evidence is intentionally dump-free. The current ClrMD execution descriptor still imports only exact E2 field
-values; no W4 partial-field dump producer, counterfactual product request/result/facade, call execution, or
-generated-dump W4 result exists yet.
+This evidence was intentionally dump-free. At that checkpoint the ClrMD execution descriptor imported only exact E2
+field values; no W4 partial-field dump producer, counterfactual product request/result/facade, call execution, or
+generated-dump W4 result existed yet. Later W4 checkpoints closed those named product gaps.
 
 **Implemented W4.4 direct-MethodDef graph preparation, not call execution**
 
@@ -739,8 +771,9 @@ All evaluation is cancelable and doesn’t block the rest of the UI.
 ## 13) Milestones (Proposed)
 
 The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; completed W5 sequencing is in
-`docs/plans/post-w4-path-forward.md`; completed W6 sequencing is in `docs/plans/post-w5-path-forward.md`; and completed
-W7 sequencing is in `docs/plans/post-w6-path-forward.md`:
+`docs/plans/post-w4-path-forward.md`; completed W6 sequencing is in `docs/plans/post-w5-path-forward.md`; completed
+W7 sequencing is in `docs/plans/post-w6-path-forward.md`; and the active approved-but-unimplemented W8 sequence is in
+`docs/plans/post-w7-path-forward.md`:
 
 * **W0:** truthful baseline, CI, and deterministic smoke evidence.
 * **W1:** real dump-memory field/string read with typed evidence outcomes.
@@ -805,8 +838,22 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`:
   storage/value/provenance contracts, real frame/PDB/import producer, fully qualified/contextual binding, raw value
   decoding, target validation, suffix composition, and materialized sixteen-dump validation. Exact implementation
   source baseline `f99b12ee7` passes the complete local headless matrix and repository guards with zero skips. The
-  portfolio uniquely selects `BindingContextPrecision`; its narrow successor action remains documentation only. The
-  W7-specific owner disposition records rejected hosted jobs without claiming execution or weakening the workflow.
+  portfolio uniquely selects the manifest label `BindingContextPrecision`; that result permits a successor along its
+  frame/PDB/import/alias/generic trajectory but neither chooses nor implements a concrete rule. The separately approved
+  W8 plan makes the broader V2 product decision. The W7-specific owner disposition records rejected hosted jobs
+  without claiming execution or weakening the workflow.
+* **W8:** active design/implementation sequence under the
+  [Post-W7 Path Forward](../../plans/post-w7-path-forward.md). The additive `StaticFieldExpressionV2` plan preserves
+  W7's context-independent fully qualified floor and expands binding coherently across nested types, closed
+  constructed generic owners, exact scoped imports and aliases, extern aliases, current/enclosing types, and
+  evidence-qualified bare fields. It includes ordinary stored fields, metadata literals, constraint and accessibility
+  validation, field-signature substitution, constructed assignability, distinct per-construction slots, and unchanged
+  exact-reference suffix composition. W8.1 decides thread/context/RVA storage and exact frame-value/generic-context
+  branches from physical evidence before public contracts freeze. Later checkpoints require sole-parser projection,
+  immutable V2 contracts, metadata/context/runtime binding, lexical completeness, raw value projection, generated
+  conformance, and an at-least-thirty-two-incident/four-shape decision portfolio. None of those W8 checkpoints is
+  implemented or validated yet; the plan's inclusive umbrella scale is `~100K LOC`, generally divided into `~10K LOC`
+  evidence and implementation checkpoints.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 
@@ -814,19 +861,34 @@ Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual st
 
 ## 14) Open Questions (for later product increments)
 
-The W2 v1 admitted shape, typed-root model, value domain, plan identity, and replay gate are closed decisions. Roslyn
-owns complete bounded expression parsing, but the following binding/evaluation questions stay with later Phase 1
-increments or their research phase and do not reopen W2.
+W1–W7 remain closed decisions for their named profiles. W8 has already chosen the next binding/evaluation increment;
+its physical truth gates decide only whether the predeclared evidence-conditioned branches can join that profile.
+The following product questions remain after, or orthogonal to, the active W8 sequence.
 
 1. **Default execution stance**
 
    * Should method execution be opt-in per session/dump, or enabled with strict limits by default?
 
-2. **Next restricted syntax increment**
+2. **Post-W8 evidence decision**
 
-   * Which concrete incident question justifies the next member, root, null-handling, literal, or operator form, and
-     what evidence/type/diagnostic/replay rules must accompany it? Statements remain research backlog.
+   * Which predeclared successor, if any, qualifies under W8's corrected attributable-evidence, usefulness,
+     decision-changing, shape, and substantive-tie rules? W8 implements no portfolio winner.
 
 3. **Team workflows**
 
    * Do we want “shareable watch sets” or query scripts that can be attached to an incident report?
+
+---
+
+## 15) Current navigation
+
+1. Start with the active, approved-but-unimplemented
+   [Post-W7 W8 plan](../../plans/post-w7-path-forward.md).
+2. Use the completed [Post-W6 W7 plan](../../plans/post-w6-path-forward.md) for the implemented static-expression
+   baseline and its evidence limits.
+3. Use the [C# expression front-end contract](../architecture/csharp-expression-front-end-contract-proposal.md) for
+   the sole-Roslyn-parse and versioned tree-admission boundary.
+4. Use the [Restricted Dump Query v1 contract](../architecture/restricted-dump-query-contract-proposal.md) and
+   [Counterfactual Method Evaluation contract](../architecture/counterfactual-method-evaluation-contract-proposal.md)
+   for the closed value/suffix and method-execution foundations.
+5. Return to the [documentation index](../../README.md) for testing, integration, architecture, and historical paths.

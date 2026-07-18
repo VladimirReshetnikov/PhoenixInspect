@@ -6,9 +6,23 @@ This FAQ answers the questions contributors, partner teams, and prospective adop
 
 ## 1) What is this project trying to build?
 
-The active product target is a deterministic, read-only expression evaluator grounded in .NET dumps. The IL interpreter is enabling technology for later method evaluation, not the near-term product by itself. W3 now implements one deliberately closed architecture proof: metadata-derived activation and whole-body admission for branchless `Int32` arithmetic plus one dump-grounded direct or constant-adjusted `Int32` field getter. That proof does not expose method or property evaluation through the product query language.
+The active product target is a deterministic, read-only expression evaluator grounded in .NET dumps. The IL
+interpreter supports bounded counterfactual method evaluation, but it is enabling technology rather than the product
+by itself. W1–W7 are closed for their named prototype scopes. Most recently, W7 implemented an opt-in
+`StaticFieldExpressionV1`: a non-ambiguous fully qualified ordinary static field works without frame/PDB context,
+while exact selected-frame/Portable-PDB namespace, import, and simple-alias facts can bind contextual `Type.Field`
+forms. Direct values and exact references can continue through the unchanged W2/W6 suffix evaluator.
 
-The committed sequence starts with direct snapshot reads and a restricted expression/query front end. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, live speculation, no-JIT runtime hosting, and other applications remain research backlog until those evidence gates pass.
+W8 is the sole active design/implementation sequence and is not implemented yet. Its approved additive
+`StaticFieldExpressionV2` profile expands the same pipeline across nested types, closed constructed generic owners,
+scope-precise aliases/imports, constraints, accessibility, constructed assignability, ordinary stored fields,
+metadata literals, and evidence-qualified bare static fields. W8.1 first decides predeclared thread/context/RVA
+storage and exact frame-value/generic-context branches from physical compiler/runtime evidence. A branch without an
+exact attributable source remains typed non-admitted; it is not guessed or represented by a placeholder API.
+
+The committed sequence started with direct snapshot reads and a restricted expression/query front end and now advances
+one evidence-led profile at a time. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, live
+speculation, no-JIT runtime hosting, and other applications remain research backlog until their evidence gates pass.
 
 Longer-term workflows may include:
 
@@ -20,9 +34,34 @@ Longer-term workflows may include:
 
 No. The repository remains in conceptual design with a narrow executable prototype.
 
-There is an intentionally narrow prototype under `src/` and `tests/`: draft public contracts; structural module/type/method/field identities; SRM-derived method signatures, locals, bodies, and field definitions; metadata-derived root activation; frozen typed whole-body admission; a persistent concrete validation heap; and bounded ClrMD dump/module/object/field/string/metadata/IL evidence. The closed W3 E1/E2 profiles execute branchless `Int32` arithmetic and one exact direct or constant-adjusted instance-field getter through the injected memory capability. The getter fixture reopens and rebinds the dump, reconstructs the prepared memory snapshot from counted evidence, and reproduces its canonical execution transcript without using the disk PE as resolver input.
+The prototype under `src/` and `tests/` now includes the closed W1–W7 evidence: typed dump reads; restricted rooted
+queries; bounded concrete IL and counterfactual method execution; a product facade and hidden reference consumer;
+fixed-depth field/data-property navigation; one complete pinned Roslyn parse with versioned profile admission; and
+fully qualified/contextual ordinary static-field reads with direct or suffix results. W7's closure baseline passes its
+complete local headless matrix and repository guards, including sixteen independent full dumps across four application
+shapes. This remains generated and meaningful-synthetic evidence with zero representative observations; it does not
+establish production readiness. The approved W8 plan contributes no source, test, runtime, or validation evidence yet.
 
-Strengthened checkpoint `19c292f9f` passed local headless verification with a zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards, all with zero skips. Its cumulative hand-written implementation range from `e7b6a4ace` is `+8,842/-1,650` LOC (`+5,362/-928` production and `+3,480/-722` tests/fixtures), plus 39 generated lock-file lines. The primary checkpoint `12b6ef942` passed all four jobs in [GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656); [run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact strengthened checkpoint `19c292f9f`. [Run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed every required job at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined milestone-selected scope. That closure does not turn the prototype into a production-ready expression evaluator or a product method-evaluation feature.
+The following W3 checkpoint record is retained as historical evidence for one of those foundations. At that point the
+prototype contained draft public contracts; structural module/type/method/field identities; SRM-derived method
+signatures, locals, bodies, and field definitions; metadata-derived root activation; frozen typed whole-body admission;
+a persistent concrete validation heap; and bounded ClrMD dump/module/object/field/string/metadata/IL evidence. The
+closed W3 E1/E2 profiles execute branchless `Int32` arithmetic and one exact direct or constant-adjusted instance-field
+getter through the injected memory capability. The getter fixture reopens and rebinds the dump, reconstructs the
+prepared memory snapshot from counted evidence, and reproduces its canonical execution transcript without using the
+disk PE as resolver input.
+
+Strengthened checkpoint `19c292f9f` passed local headless verification with a zero-warning 15-project Release build,
+103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test,
+the focused 2-test W3 lane, and both documentation guards, all with zero skips. Its cumulative hand-written
+implementation range from `e7b6a4ace` is `+8,842/-1,650` LOC (`+5,362/-928` production and `+3,480/-722`
+tests/fixtures), plus 39 generated lock-file lines. The primary checkpoint `12b6ef942` passed all four jobs in
+[GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656);
+[run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at
+exact strengthened checkpoint `19c292f9f`. [Run
+29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed every
+required job at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
+milestone-selected scope. That historical closure did not by itself create the later product-facing capabilities.
 
 ## 3) Why focus on deterministic and bounded execution instead of "best effort" simulation?
 
@@ -99,13 +138,36 @@ Start with the active milestone in `docs/plans/post-w7-path-forward.md`; use
 
 Do not begin a new subsystem proposal simply because it appears in the research backlog. The project keeps one active vertical slice at a time.
 
-## 11) How stable are current decisions?
+## 11) What exactly does the active W8 plan include?
+
+W8 keeps W7's fully qualified route independent of frame/PDB context and adds one coherent V2 binder rather than a
+sequence of spelling-specific parsers:
+
+- **Owners and construction:** top-level and nested non-generic types, plus recursively closed constructed generic
+  class, value-type, and interface owners represented through exact TypeDef/TypeRef/TypeSpec and runtime-construction
+  identity. Different loaded constructions of one TypeDef/FieldDef pair retain different slots and values.
+- **Context:** current/enclosing namespaces and types, namespace imports, type and namespace aliases, exact extern
+  aliases, TypeSpec aliases, and evidence-qualified current-type/`using static` bare fields. Import scopes follow
+  lexical precedence; incomplete blocker facts stop bare-field binding rather than selecting a convenient candidate.
+- **Fields and values:** ordinary stored static fields use exact construction/storage and counted value evidence;
+  metadata literals cover the admitted primitive, enum, decimal, string, and null forms without runtime construction, slot
+  lookup, or memory reads. Exact references may use the unchanged W2/W6 suffix evaluator.
+- **Validation:** substituted generic constraints, inspection accessibility, field `VAR` substitution, declaration
+  hiding, and constructed base/interface/array assignability are checked before a non-null value is accepted.
+- **Evidence-conditioned branches:** W8.1 tests thread-relative, context-relative, and RVA-backed storage plus exact
+  `this`/parameter/local locations and declaring/method generic arguments. Each branch is admitted only from an exact
+  attributable source; otherwise its executable typed non-admission remains the result.
+
+The plan is intentionally broad (`~100K LOC` umbrella scale, mostly `~10K LOC` checkpoints), but it is still a bounded
+versioned profile. It does not imply arbitrary C# binding or evaluation, and it is not implementation evidence.
+
+## 12) How stable are current decisions?
 
 Most documents are still in draft status. Treat them as directional, not final.
 
 Contributors should feel comfortable proposing changes when they improve consistency, reduce risk, or increase clarity.
 
-## 12) What does good uncertainty handling look like in this project?
+## 13) What does good uncertainty handling look like in this project?
 
 Good uncertainty handling is:
 
@@ -114,9 +176,9 @@ Good uncertainty handling is:
 - actionable (state what evidence would reduce it),
 - deterministic (same inputs/policies produce same uncertainty markers).
 
-## 13) How is this project moving from design to implementation?
+## 14) How is this project moving from design to implementation?
 
-The first walking skeleton is implemented. The intended progression is now evidence-led:
+The walking skeleton and W1–W7 vertical slices are implemented. Progression remains evidence-led:
 
 1. Keep one product scope and one active slice explicit.
 2. Write the minimum contract that the next slice needs.
@@ -124,11 +186,14 @@ The first walking skeleton is implemented. The intended progression is now evide
 4. Validate success, partialness, failure, and determinism.
 5. Revise the design from that evidence before expanding scope.
 
-W3 demonstrates this progression at the interpreter/memory seam, but expansion remains gated. Calls, branches, broader
-opcodes, exception handling, generics, Portable PDB projection, a second meaningful value domain, and product-facing
-counterfactual method evaluation each require their own scenario and acceptance evidence.
+W3 demonstrated this progression at the interpreter/memory seam; W4–W7 subsequently delivered bounded call/model,
+product-composition, member-navigation, sole-parser, and static-context slices without widening their closed profiles.
+W8 now applies the same progression to constructed static owners and complete bounded context rules. Its physical
+TypeSpec/runtime/storage/frame probes precede public contracts; implementation, generated conformance, and the
+meaningful synthetic decision corpus must then agree before closure. Branches, broader opcode and exception-transfer
+behavior, general method/property execution, and research workflows retain their own scenario gates.
 
-## 14) What are the main technical risks currently anticipated?
+## 15) What are the main technical risks currently anticipated?
 
 Representative risks include:
 
@@ -141,10 +206,10 @@ Representative risks include:
 - drift between product expectations, design claims, and executable evidence.
 
 The documentation set is intentionally structured to expose and manage these risks early.
-Caveat: W1–W5 evidence covers only the named generated fixtures and explicitly admitted input shapes. Current test
-claims do not establish behavior for any other artifact shape.
+Caveat: W1–W7 evidence covers only the named generated fixtures and explicitly admitted input shapes. Current test
+claims do not establish behavior for any other artifact shape, and the W8 plan is not test evidence.
 
-## 15) How can external consumers evaluate whether this direction is promising?
+## 16) How can external consumers evaluate whether this direction is promising?
 
 A practical evaluation rubric is:
 
@@ -157,18 +222,19 @@ A practical evaluation rubric is:
 
 If these answers become stronger over time, the design is moving in the right direction.
 
-## 16) What is out of scope for this repository right now?
+## 17) What is out of scope for this repository right now?
 
 Out of scope in the current phase:
 
-- claiming product or general-interpreter implementation completeness from the closed W3 proof,
+- claiming production or general-interpreter completeness from the closed W1–W7 prototype evidence,
+- presenting W8's approved V2 surface or evidence-conditioned branches as already implemented,
 - promising production timelines,
 - polishing runtime tooling UX beyond design-level proposals,
 - publishing final API guarantees before executable evidence stabilizes them,
-- treating product method evaluation, broader opcode families, generic/PDB-aware execution, a second value domain,
-  virtual stepping, abstract analysis, async/dynamic lifting, live speculation, or no-JIT hosting as active commitments.
+- broad method/property execution beyond W4's closed shape, broader opcode/EH families, virtual stepping, abstract
+  analysis, async/dynamic lifting, live speculation, and no-JIT hosting.
 
-## 17) How should people give feedback on the docs?
+## 18) How should people give feedback on the docs?
 
 High-value feedback:
 
@@ -179,3 +245,17 @@ High-value feedback:
 - contributes executable evidence for or against a design claim.
 
 Feedback that improves decision quality or traceability is especially valuable.
+
+## 19) Where should I go next?
+
+1. Read the active, approved-but-unimplemented
+   [Post-W7 W8 plan](../plans/post-w7-path-forward.md) for the current scope, evidence branches, checkpoints, and
+   closure rules.
+2. Read the completed [Post-W6 W7 plan](../plans/post-w6-path-forward.md) for the implemented static-expression
+   baseline and its evidence limits.
+3. Read the [product proposal](../proposals/product/post-mortem-debugging-feature-proposal.md) for the user-facing
+   capability sequence and research boundary.
+4. Read the [C# expression front-end contract](../proposals/architecture/csharp-expression-front-end-contract-proposal.md)
+   for the sole-Roslyn-parse and versioned-admission rule.
+5. Return to the [documentation index](../README.md) for architecture, testing, integration, governance, and
+   historical reading paths.
