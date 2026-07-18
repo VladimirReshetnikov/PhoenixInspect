@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Interpreter.Core.Abstractions;
 using Interpreter.Host.Dump.ClrMD;
@@ -100,6 +101,30 @@ public sealed class W7FullyQualifiedStaticFieldBinderTests
         Assert.All(source.ReadCounts, static pair => Assert.Equal(1, pair.Value));
     }
 
+    /// <summary>Proves a current-namespace miss cannot manufacture exact absence when imports were unavailable.</summary>
+    [Fact]
+    public void UnavailablePortablePdbStopsAfterExactCurrentNamespaceMiss()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        var descriptor = Parse($"{TypeName}.{nameof(W7FullyQualifiedSyntheticTarget.Int32Value)}");
+        var context = CreateContext(
+            source,
+            exactFrame: true,
+            declaringNamespace: "Synthetic.Client");
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Unavailable, result.Status);
+        Assert.Equal(StaticFieldBindingIssue.ContextUnavailable, result.Issue);
+        Assert.True(result.ConsultedContext.CurrentNamespaceConsulted);
+        Assert.True(result.ConsultedContext.ImportsConsulted);
+        Assert.Equal(DumpContextEvidenceStatus.Unavailable, result.ConsultedContext.ImportEvidenceStatus);
+        Assert.True(result.ModuleCatalogExhaustive);
+        Assert.NotEmpty(result.ModuleSearchFacts);
+        Assert.Null(result.SelectedDeclaration);
+        Assert.All(source.ReadCounts, static pair => Assert.Equal(1, pair.Value));
+    }
+
     /// <summary>Proves unavailable selected-frame evidence stops a bare lookup before any metadata image is read.</summary>
     [Fact]
     public void UnavailableFrameStopsBareBindingBeforeMetadataSearch()
@@ -136,6 +161,174 @@ public sealed class W7FullyQualifiedStaticFieldBinderTests
         Assert.Equal(StaticFieldBindingStatus.Exact, contextual.Status);
         Assert.Equal(independent.Sha256, contextual.Sha256);
         Assert.Null(contextual.ConsultedContext.ConsultedFrameEvidence);
+    }
+
+    /// <summary>Proves one exact active namespace import contributes a source-attributed bare-type candidate.</summary>
+    [Fact]
+    public void NamespaceImportBindsBareTypeFromExactPortablePdbContext()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        var import = DumpPortablePdbImportFact.NamespaceImport(
+            0x35000001,
+            ordinal: 0,
+            rawKind: 1,
+            NamespaceName,
+            [0x01]);
+        var context = CreateExactPortablePdbContext(source, "Synthetic.Client", [import]);
+        var descriptor = Parse($"{TypeName}.{nameof(W7FullyQualifiedSyntheticTarget.Int32Value)}");
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Exact, result.Status);
+        Assert.True(result.ConsultedContext.CurrentNamespaceConsulted);
+        Assert.True(result.ConsultedContext.ImportsConsulted);
+        Assert.Equal(import, Assert.Single(result.ConsultedContext.ConsultedImports));
+        Assert.Equal(
+            StaticFieldNameExpansionKind.NamespaceImport,
+            Assert.Single(result.Candidates).Origins[0].Kind);
+        Assert.All(source.ReadCounts, static pair => Assert.Equal(1, pair.Value));
+    }
+
+    /// <summary>Proves a TypeDef-bearing type alias is resolved from the selected-frame module to its exact owner.</summary>
+    [Fact]
+    public void TypeAliasCarriesCountedSameModuleResolution()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        const string alias = "IncidentStatics";
+        var targetToken = source.FindTypeDefinitionToken(NamespaceName, TypeName);
+        var import = DumpPortablePdbImportFact.TypeAlias(
+            0x35000001,
+            ordinal: 0,
+            rawKind: 9,
+            alias,
+            $"{NamespaceName}.{TypeName}",
+            targetToken,
+            [0x09]);
+        var context = CreateExactPortablePdbContext(source, "Synthetic.Client", [import]);
+        var descriptor = Parse($"{alias}.{nameof(W7FullyQualifiedSyntheticTarget.Int32Value)}");
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Exact, result.Status);
+        var origin = Assert.Single(result.Candidates).Origins.Single(static item =>
+            item.Kind == StaticFieldNameExpansionKind.TypeAlias);
+        Assert.Equal(import.Sha256, origin.ContextFactSha256);
+        Assert.Equal(targetToken, origin.ReferenceResolution!.SourceTypeToken);
+        Assert.Equal(targetToken, origin.ReferenceResolution.TargetTypeDefinitionToken);
+        Assert.Equal(source.TargetContent, origin.ReferenceResolution.TargetModuleContent);
+        Assert.All(source.ReadCounts, static pair => Assert.Equal(1, pair.Value));
+    }
+
+    /// <summary>Proves a TypeRef-bearing alias retains its complete counted reference/forwarder relation.</summary>
+    [Fact]
+    public void TypeAliasCarriesClosedTypeReferenceResolution()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        const string alias = "TextType";
+        var targetToken = source.FindTypeReferenceToken("System", "String");
+        var import = DumpPortablePdbImportFact.TypeAlias(
+            0x35000001,
+            ordinal: 0,
+            rawKind: 9,
+            alias,
+            "System.String",
+            targetToken,
+            [0x09, 0x01]);
+        var context = CreateExactPortablePdbContext(source, "Synthetic.Client", [import]);
+        var descriptor = Parse($"{alias}.Empty");
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Exact, result.Status);
+        Assert.Equal("System", result.SelectedDeclaration!.NamespaceName);
+        Assert.Equal("String", result.SelectedDeclaration.TypeName);
+        Assert.Equal("Empty", result.SelectedDeclaration.FieldName);
+        var origin = Assert.Single(result.Candidates).Origins.Single(static item =>
+            item.Kind == StaticFieldNameExpansionKind.TypeAlias);
+        Assert.Equal(targetToken, origin.ReferenceResolution!.SourceTypeToken);
+        Assert.NotNull(origin.ReferenceResolution.TypeReferenceResolution);
+        Assert.Equal(
+            origin.ReferenceResolution.TargetTypeDefinitionToken,
+            result.SelectedDeclaration.TypeDefinitionToken);
+        Assert.All(source.ReadCounts, static pair => Assert.Equal(1, pair.Value));
+    }
+
+    /// <summary>Proves an assembly-qualified namespace import resolves through loaded assembly identity and forwarding.</summary>
+    [Fact]
+    public void AssemblyNamespaceImportNarrowsToResolvedAssemblyType()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        var assemblyReferenceToken = source.FindAssemblyReferenceToken("System.Runtime");
+        var import = DumpPortablePdbImportFact.NamespaceImport(
+            0x35000001,
+            ordinal: 0,
+            rawKind: 2,
+            "System",
+            [0x02, 0x23],
+            assemblyReferenceToken);
+        var context = CreateExactPortablePdbContext(source, "Synthetic.Client", [import]);
+        var descriptor = Parse("String.Empty");
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Exact, result.Status);
+        var origin = Assert.Single(result.Candidates).Origins.Single(static item =>
+            item.Kind == StaticFieldNameExpansionKind.NamespaceImport);
+        Assert.Equal(assemblyReferenceToken, origin.ReferenceResolution!.AssemblyReferenceToken);
+        Assert.Null(origin.ReferenceResolution.SourceTypeToken);
+        Assert.Equal(result.SelectedDeclaration!.Module, origin.ReferenceResolution.TargetModule);
+        Assert.Equal(result.SelectedDeclaration.TypeDefinitionToken, origin.ReferenceResolution.TargetTypeDefinitionToken);
+        Assert.All(source.ReadCounts, static pair => Assert.Equal(1, pair.Value));
+    }
+
+    /// <summary>Proves a namespace alias contributes a qualified interpretation without replacing dot qualification.</summary>
+    [Fact]
+    public void NamespaceAliasAddsQualifiedInterpretation()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        const string alias = "Incident";
+        var import = DumpPortablePdbImportFact.NamespaceAlias(
+            0x35000001,
+            ordinal: 0,
+            rawKind: 7,
+            alias,
+            NamespaceName,
+            [0x07]);
+        var context = CreateExactPortablePdbContext(source, "Synthetic.Client", [import]);
+        var descriptor = Parse(
+            $"{alias}.{TypeName}.{nameof(W7FullyQualifiedSyntheticTarget.Int32Value)}");
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Exact, result.Status);
+        Assert.True(result.ConsultedContext.CurrentNamespaceConsulted);
+        Assert.True(result.ConsultedContext.ImportsConsulted);
+        Assert.Contains(result.Expansions, static expansion =>
+            expansion.Kind == StaticFieldNameExpansionKind.DotQualified);
+        Assert.Equal(
+            StaticFieldNameExpansionKind.NamespaceAlias,
+            Assert.Single(result.Candidates).Origins[0].Kind);
+    }
+
+    /// <summary>Proves two imported namespaces producing distinct declarations remain ambiguity, never import order.</summary>
+    [Fact]
+    public void CompetingNamespaceImportsRemainAmbiguous()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        var first = DumpPortablePdbImportFact.NamespaceImport(
+            0x35000001, 0, 1, "Synthetic.Context.One", [0x01]);
+        var second = DumpPortablePdbImportFact.NamespaceImport(
+            0x35000001, 1, 1, "Synthetic.Context.Two", [0x01]);
+        var context = CreateExactPortablePdbContext(source, "Synthetic.Client", [first, second]);
+        var descriptor = Parse($"SharedStatics.{nameof(Synthetic.Context.One.SharedStatics.Value)}");
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Ambiguous, result.Status);
+        Assert.Equal(StaticFieldBindingIssue.MultipleCandidates, result.Issue);
+        Assert.Equal(2, result.DistinctCandidateCount);
+        Assert.Null(result.SelectedDeclaration);
+        Assert.Equal(2, result.ConsultedContext.ConsultedImports.Length);
     }
 
     /// <summary>Proves exact absence requires exhaustive search of every physical module.</summary>
@@ -312,6 +505,63 @@ public sealed class W7FullyQualifiedStaticFieldBinderTests
         return DumpExpressionBindingContext.Acquire(source.Snapshot, frame, pdb);
     }
 
+    private static DumpExpressionBindingContext CreateExactPortablePdbContext(
+        SyntheticMetadataSource source,
+        string declaringNamespace,
+        ImmutableArray<DumpPortablePdbImportFact> imports)
+    {
+        var selector = DumpSelectedFrameSelector.Create(source.Snapshot, threadOrdinal: 0, frameOrdinal: 0);
+        var frame = DumpSelectedFrameIdentity.Create(
+            selector,
+            managedThreadId: 17,
+            runtimeThreadAddress: 0x7100,
+            stackPointer: 0x7FFF_1000,
+            source.TargetRuntimeModule,
+            source.TargetContent,
+            methodDefinitionToken: 0x06000001,
+            declaringTypeDefinitionToken: 0x02000001,
+            declaringNamespace,
+            DumpInstructionLocation.Create(0x0040_1234, ilOffset: 0));
+        var debugIdentity = DumpPortablePdbDebugIdentity.Create(
+            Guid.Parse("01234567-89ab-cdef-0123-456789abcdef"),
+            stamp: 0x1020_3040);
+        var moduleDebugIdentity = DumpModulePortablePdbDebugIdentity.Create(
+            source.TargetRuntimeModule,
+            source.TargetContent,
+            debugIdentity);
+        var artifact = DumpPortablePdbArtifactIdentity.Create(
+            DumpPortablePdbContentIdentity.Create(4_096, new string('d', 64)),
+            debugIdentity);
+        var importScope = DumpPortablePdbImportScopeIdentity.Create(
+            0x35000001,
+            parentImportScopeToken: null,
+            nestingDepth: 0,
+            imports);
+        var localScope = DumpPortablePdbLocalScopeIdentity.Create(
+            0x32000001,
+            0x06000001,
+            0x35000001,
+            startOffset: 0,
+            length: 16,
+            nestingDepth: 0);
+        var facts = DumpPortablePdbContextFacts.Acquire(
+            frame,
+            moduleDebugIdentity,
+            artifact,
+            methodDebugInformationToken: 0x31000001,
+            document: null,
+            [localScope],
+            [importScope]);
+        return DumpExpressionBindingContext.Acquire(
+            source.Snapshot,
+            DumpSelectedFrameObservation.Exact(
+                frame,
+                ImmutableArray<EvaluationDeterministicBound>.Empty),
+            DumpPortablePdbObservation.Exact(
+                facts,
+                ImmutableArray<EvaluationDeterministicBound>.Empty));
+    }
+
     private sealed class SyntheticMetadataSource : IStaticFieldMetadataBindingSource, IDisposable
     {
         private static readonly ClrmdSnapshotIdentity SharedSnapshot = new(new string('a', 64));
@@ -354,6 +604,45 @@ public sealed class W7FullyQualifiedStaticFieldBinderTests
         }
 
         internal ModuleContentIdentity TargetContent => observations[Modules[2].Module.Sha256].ExactContent!;
+
+        internal int FindTypeDefinitionToken(string namespaceName, string typeName)
+        {
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                observations[Modules[2].Module.Sha256].Bytes);
+            var reader = provider.GetMetadataReader();
+            return MetadataTokens.GetToken(reader.TypeDefinitions.Single(handle =>
+            {
+                var definition = reader.GetTypeDefinition(handle);
+                return definition.GetDeclaringType().IsNil &&
+                    string.Equals(reader.GetString(definition.Namespace), namespaceName, StringComparison.Ordinal) &&
+                    string.Equals(reader.GetString(definition.Name), typeName, StringComparison.Ordinal);
+            }));
+        }
+
+        internal int FindTypeReferenceToken(string namespaceName, string typeName)
+        {
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                observations[Modules[2].Module.Sha256].Bytes);
+            var reader = provider.GetMetadataReader();
+            return MetadataTokens.GetToken(reader.TypeReferences.First(handle =>
+            {
+                var reference = reader.GetTypeReference(handle);
+                return string.Equals(reader.GetString(reference.Namespace), namespaceName, StringComparison.Ordinal) &&
+                    string.Equals(reader.GetString(reference.Name), typeName, StringComparison.Ordinal);
+            }));
+        }
+
+        internal int FindAssemblyReferenceToken(string assemblyName)
+        {
+            using var provider = MetadataReaderProvider.FromMetadataImage(
+                observations[Modules[2].Module.Sha256].Bytes);
+            var reader = provider.GetMetadataReader();
+            return MetadataTokens.GetToken(reader.AssemblyReferences.Single(handle =>
+                string.Equals(
+                    reader.GetString(reader.GetAssemblyReference(handle).Name),
+                    assemblyName,
+                    StringComparison.Ordinal)));
+        }
 
         internal static SyntheticMetadataSource Create(
             bool duplicateTargetModule = false,

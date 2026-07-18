@@ -183,11 +183,94 @@ public static class StaticFieldFullyQualifiedBinder
             currentNamespaceConsulted,
             importsConsulted,
             consultedImports);
-        var expansions = CreateContextualExpansions(
+        var result = BindContextualExpanded(
+            source,
             descriptor,
+            context,
             acquiredContext.SelectedFrame.Frame!,
             consultedImports);
-        return BindExpanded(source, descriptor, context, expansions);
+        if (currentNamespaceConsulted &&
+            !importsConsulted &&
+            acquiredContext.PortablePdb.Status != DumpContextEvidenceStatus.Exact &&
+            result.Status == StaticFieldBindingStatus.Absent)
+        {
+            var blockedContext = DumpConsultedBindingContextIdentity.FromAcquiredContext(
+                acquiredContext,
+                currentNamespaceConsulted: true,
+                importsConsulted: true,
+                ImmutableArray<DumpPortablePdbImportFact>.Empty);
+            return CreateContextStop(
+                source,
+                descriptor,
+                blockedContext,
+                acquiredContext.PortablePdb.Status,
+                result.Expansions,
+                result.ModuleSearchFacts,
+                result.Candidates,
+                result.ModuleCatalogExhaustive,
+                result.ReachedBounds);
+        }
+
+        return result;
+    }
+
+    private static StaticFieldSymbolBindingOutcome BindContextualExpanded(
+        IStaticFieldMetadataBindingSource source,
+        StaticFieldExpressionDescriptor descriptor,
+        DumpConsultedBindingContextIdentity context,
+        DumpSelectedFrameIdentity frame,
+        ImmutableArray<DumpPortablePdbImportFact> imports)
+    {
+        var reachedBounds = ImmutableArray.CreateBuilder<EvaluationDeterministicBound>();
+        reachedBounds.Add(DeclaredModuleCountBound);
+        if (source.Modules.IsDefault || source.Modules.Length > MaximumModuleCount ||
+            source.Modules.Any(static module => module is null))
+        {
+            reachedBounds.Add(DeclaredTypeDefinitionCountPerModuleBound);
+            reachedBounds.Add(DeclaredFieldDefinitionCountPerModuleBound);
+            reachedBounds.Add(DeclaredCandidateOccurrenceCountBound);
+            return StaticFieldSymbolBindingOutcome.Partial(
+                descriptor,
+                source.Snapshot.Sha256,
+                context,
+                StaticFieldBindingIssue.SearchBoundReached,
+                "W7_CONTEXT_MODULE_BOUND",
+                "The physical managed-module catalog exceeded the declared contextual binding bound.",
+                ImmutableArray<StaticFieldNameExpansion>.Empty,
+                ImmutableArray<StaticFieldModuleSearchFact>.Empty,
+                ImmutableArray<StaticFieldSymbolCandidate>.Empty,
+                moduleCatalogExhaustive: false,
+                expansionSearchExhaustive: false,
+                reachedBounds.ToImmutable());
+        }
+
+        reachedBounds.Add(DeclaredTypeDefinitionCountPerModuleBound);
+        reachedBounds.Add(DeclaredFieldDefinitionCountPerModuleBound);
+        reachedBounds.Add(DeclaredCandidateOccurrenceCountBound);
+        using var universe = MetadataUniverse.Acquire(source);
+        ImmutableArray<StaticFieldNameExpansion> expansions;
+        try
+        {
+            expansions = CreateContextualExpansions(descriptor, frame, imports, universe);
+        }
+        catch (UnsupportedMetadataShapeException exception)
+        {
+            return StaticFieldSymbolBindingOutcome.Unsupported(
+                descriptor,
+                source.Snapshot.Sha256,
+                context,
+                StaticFieldBindingIssue.ExpansionUnsupported,
+                exception.Code,
+                "A contextual import requires a counted metadata relation outside the admitted W7 projection.",
+                ImmutableArray<StaticFieldNameExpansion>.Empty,
+                universe.ModuleFacts,
+                ImmutableArray<StaticFieldRejectedDeclarationEvidence>.Empty,
+                moduleCatalogExhaustive: true,
+                expansionSearchExhaustive: false,
+                reachedBounds.ToImmutable());
+        }
+
+        return BindExpanded(source, descriptor, context, expansions, universe, reachedBounds);
     }
 
     internal static StaticFieldSymbolBindingOutcome BindExpanded(
@@ -234,6 +317,23 @@ public static class StaticFieldFullyQualifiedBinder
         reachedBounds.Add(DeclaredCandidateOccurrenceCountBound);
 
         using var universe = MetadataUniverse.Acquire(source);
+        return BindExpanded(
+            source,
+            descriptor,
+            context,
+            expansions,
+            universe,
+            reachedBounds);
+    }
+
+    private static StaticFieldSymbolBindingOutcome BindExpanded(
+        IStaticFieldMetadataBindingSource source,
+        StaticFieldExpressionDescriptor descriptor,
+        DumpConsultedBindingContextIdentity context,
+        ImmutableArray<StaticFieldNameExpansion> expansions,
+        MetadataUniverse universe,
+        ImmutableArray<EvaluationDeterministicBound>.Builder reachedBounds)
+    {
         var facts = universe.ModuleFacts;
         var sourceDisposition = FirstNonExactDisposition(facts);
         if (sourceDisposition is not null)
@@ -281,6 +381,14 @@ public static class StaticFieldFullyQualifiedBinder
             {
                 foreach (var match in module.FindFields(expansion.NamespaceName, expansion.TypeName, expansion.FieldName))
                 {
+                    if (expansion.ReferenceResolution is { } referenceResolution &&
+                        (!module.Input.Module.Equals(referenceResolution.TargetModule) ||
+                         !module.Content.Equals(referenceResolution.TargetModuleContent) ||
+                         MetadataTokens.GetToken(match.TypeHandle) != referenceResolution.TargetTypeDefinitionToken))
+                    {
+                        continue;
+                    }
+
                     if (candidates.Count + rejected.Count == MaximumCandidateOccurrenceCount)
                     {
                         candidateBoundReached = true;
@@ -529,11 +637,12 @@ public static class StaticFieldFullyQualifiedBinder
         return import.Kind switch
         {
             DumpPortablePdbImportKind.Namespace =>
-                import.AssemblyReferenceToken is null &&
                 descriptor.CandidateShapes.Any(static shape => shape.StaticFieldSegmentIndex == 1),
-            DumpPortablePdbImportKind.TypeAlias => false,
+            DumpPortablePdbImportKind.TypeAlias =>
+                descriptor.CandidateShapes.Any(shape =>
+                    shape.StaticFieldSegmentIndex == 1 &&
+                    string.Equals(segments[0].DecodedIdentifier, import.Alias, StringComparison.Ordinal)),
             DumpPortablePdbImportKind.NamespaceAlias =>
-                import.AssemblyReferenceToken is null &&
                 descriptor.CandidateShapes.Any(shape =>
                     shape.StaticFieldSegmentIndex >= 2 &&
                     string.Equals(
@@ -547,7 +656,8 @@ public static class StaticFieldFullyQualifiedBinder
     private static ImmutableArray<StaticFieldNameExpansion> CreateContextualExpansions(
         StaticFieldExpressionDescriptor descriptor,
         DumpSelectedFrameIdentity frame,
-        ImmutableArray<DumpPortablePdbImportFact> imports)
+        ImmutableArray<DumpPortablePdbImportFact> imports,
+        MetadataUniverse universe)
     {
         var segments = descriptor.Segments;
         var builder = ImmutableArray.CreateBuilder<StaticFieldNameExpansion>();
@@ -567,22 +677,45 @@ public static class StaticFieldFullyQualifiedBinder
                     fieldName,
                     contextFactSha256: frame.Sha256));
                 foreach (var import in imports.Where(static import =>
-                             import.Kind == DumpPortablePdbImportKind.Namespace &&
-                             import.AssemblyReferenceToken is null))
+                             import.Kind == DumpPortablePdbImportKind.Namespace))
                 {
+                    var resolution = import.AssemblyReferenceToken.HasValue
+                        ? universe.ResolveImport(frame, import, import.Target!, typeName)
+                        : null;
                     builder.Add(StaticFieldNameExpansion.Create(
                         shape,
                         StaticFieldNameExpansionKind.NamespaceImport,
                         import.Target!,
                         typeName,
                         fieldName,
-                        contextFactSha256: import.Sha256));
+                        contextFactSha256: import.Sha256,
+                        referenceResolution: resolution));
+                }
+
+                foreach (var import in imports.Where(import =>
+                             import.Kind == DumpPortablePdbImportKind.TypeAlias &&
+                             string.Equals(import.Alias, typeName, StringComparison.Ordinal)))
+                {
+                    var target = SplitQualifiedTypeName(import.Target!);
+                    var resolution = universe.ResolveImport(
+                        frame,
+                        import,
+                        target.NamespaceName,
+                        target.TypeName);
+                    builder.Add(StaticFieldNameExpansion.Create(
+                        shape,
+                        StaticFieldNameExpansionKind.TypeAlias,
+                        target.NamespaceName,
+                        target.TypeName,
+                        fieldName,
+                        alias: import.Alias,
+                        contextFactSha256: import.Sha256,
+                        referenceResolution: resolution));
                 }
             }
 
             foreach (var import in imports.Where(import =>
                          import.Kind == DumpPortablePdbImportKind.NamespaceAlias &&
-                         import.AssemblyReferenceToken is null &&
                          prefixLength >= 2 &&
                          string.Equals(segments[0].DecodedIdentifier, import.Alias, StringComparison.Ordinal)))
             {
@@ -595,18 +728,31 @@ public static class StaticFieldFullyQualifiedBinder
                 var namespaceName = relativeNamespace.Length == 0
                     ? import.Target!
                     : $"{import.Target}.{relativeNamespace}";
+                var typeName = segments[prefixLength - 1].DecodedIdentifier;
+                var resolution = import.AssemblyReferenceToken.HasValue
+                    ? universe.ResolveImport(frame, import, namespaceName, typeName)
+                    : null;
                 builder.Add(StaticFieldNameExpansion.Create(
                     shape,
                     StaticFieldNameExpansionKind.NamespaceAlias,
                     namespaceName,
-                    segments[prefixLength - 1].DecodedIdentifier,
+                    typeName,
                     fieldName,
                     alias: import.Alias,
-                    contextFactSha256: import.Sha256));
+                    contextFactSha256: import.Sha256,
+                    referenceResolution: resolution));
             }
         }
 
         return builder.ToImmutable();
+    }
+
+    private static (string NamespaceName, string TypeName) SplitQualifiedTypeName(string qualifiedTypeName)
+    {
+        var separator = qualifiedTypeName.LastIndexOf('.');
+        return separator < 0
+            ? (string.Empty, qualifiedTypeName)
+            : (qualifiedTypeName[..separator], qualifiedTypeName[(separator + 1)..]);
     }
 
     private static StaticFieldSymbolBindingOutcome CreateContextStop(
@@ -614,40 +760,57 @@ public static class StaticFieldFullyQualifiedBinder
         StaticFieldExpressionDescriptor descriptor,
         DumpConsultedBindingContextIdentity context,
         DumpContextEvidenceStatus status)
+        => CreateContextStop(
+            source,
+            descriptor,
+            context,
+            status,
+            ImmutableArray<StaticFieldNameExpansion>.Empty,
+            ImmutableArray<StaticFieldModuleSearchFact>.Empty,
+            ImmutableArray<StaticFieldSymbolCandidate>.Empty,
+            moduleCatalogExhaustive: false,
+            ImmutableArray<EvaluationDeterministicBound>.Empty);
+
+    private static StaticFieldSymbolBindingOutcome CreateContextStop(
+        IStaticFieldMetadataBindingSource source,
+        StaticFieldExpressionDescriptor descriptor,
+        DumpConsultedBindingContextIdentity context,
+        DumpContextEvidenceStatus status,
+        ImmutableArray<StaticFieldNameExpansion> expansions,
+        ImmutableArray<StaticFieldModuleSearchFact> modules,
+        ImmutableArray<StaticFieldSymbolCandidate> candidates,
+        bool moduleCatalogExhaustive,
+        ImmutableArray<EvaluationDeterministicBound> bounds)
     {
-        var expansions = ImmutableArray<StaticFieldNameExpansion>.Empty;
-        var modules = ImmutableArray<StaticFieldModuleSearchFact>.Empty;
-        var candidates = ImmutableArray<StaticFieldSymbolCandidate>.Empty;
-        var bounds = ImmutableArray<EvaluationDeterministicBound>.Empty;
         return status switch
         {
             DumpContextEvidenceStatus.Partial => StaticFieldSymbolBindingOutcome.Partial(
                 descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextPartial,
                 "W7_CONTEXT_PARTIAL", "Required selected-frame or import context was only partially observed.",
-                expansions, modules, candidates, false, false, bounds),
+                expansions, modules, candidates, moduleCatalogExhaustive, false, bounds),
             DumpContextEvidenceStatus.Unavailable => StaticFieldSymbolBindingOutcome.Unavailable(
                 descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextUnavailable,
                 "W7_CONTEXT_UNAVAILABLE", "Required selected-frame or import context was unavailable.",
-                expansions, modules, candidates, false, false, bounds),
+                expansions, modules, candidates, moduleCatalogExhaustive, false, bounds),
             DumpContextEvidenceStatus.Ambiguous => StaticFieldSymbolBindingOutcome.ContextAmbiguous(
                 descriptor, source.Snapshot.Sha256, context,
                 "W7_CONTEXT_AMBIGUOUS", "Required selected-frame or import context retained multiple candidates.",
-                expansions, modules, candidates, false, false, bounds),
+                expansions, modules, candidates, moduleCatalogExhaustive, false, bounds),
             DumpContextEvidenceStatus.Conflict => StaticFieldSymbolBindingOutcome.Conflict(
                 descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextConflict,
                 "W7_CONTEXT_CONFLICT", "Required selected-frame or import context facts disagreed.",
                 expansions, modules, candidates, ImmutableArray<StaticFieldRejectedDeclarationEvidence>.Empty,
-                false, false, bounds),
+                moduleCatalogExhaustive, false, bounds),
             DumpContextEvidenceStatus.Invalid => StaticFieldSymbolBindingOutcome.Invalid(
                 descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextInvalid,
                 "W7_CONTEXT_INVALID", "Required selected-frame or import context was structurally invalid.",
                 expansions, modules, candidates, ImmutableArray<StaticFieldRejectedDeclarationEvidence>.Empty,
-                false, false, bounds),
+                moduleCatalogExhaustive, false, bounds),
             DumpContextEvidenceStatus.Unsupported => StaticFieldSymbolBindingOutcome.Unsupported(
                 descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextUnsupported,
                 "W7_CONTEXT_UNSUPPORTED", "Required selected-frame or import context used an unsupported representation.",
                 expansions, modules, ImmutableArray<StaticFieldRejectedDeclarationEvidence>.Empty,
-                false, false, bounds),
+                moduleCatalogExhaustive, false, bounds),
             _ => throw new ArgumentOutOfRangeException(nameof(status)),
         };
     }
@@ -864,6 +1027,92 @@ public static class StaticFieldFullyQualifiedBinder
                     manifests[0].MetadataModule!.ContainingAssembly,
                     model.Input.RuntimeOrdinal);
             }
+        }
+
+        internal StaticFieldReferenceResolutionFact ResolveImport(
+            DumpSelectedFrameIdentity frame,
+            DumpPortablePdbImportFact import,
+            string namespaceName,
+            string typeName)
+        {
+            var sourceModels = exactModules.Where(model =>
+                    model.Input.Module.ApplicationDomainAddress == frame.RuntimeModule.AppDomainAddress &&
+                    model.Input.Module.ModuleAddress == frame.RuntimeModule.ModuleAddress &&
+                    model.Input.Module.ImageBase == frame.RuntimeModule.ImageBase &&
+                    model.Input.Module.ImageSize == frame.RuntimeModule.ImageSize &&
+                    model.Content.Equals(frame.ModuleContent))
+                .ToArray();
+            if (sourceModels.Length != 1 || sourceModels[0].MetadataModule is null)
+            {
+                throw new UnsupportedMetadataShapeException("W7_CONTEXT_SOURCE_MODULE_UNRESOLVED");
+            }
+
+            var source = sourceModels[0];
+            StaticFieldTypeDefinitionIdentity target;
+            if (import.TargetTypeToken is { } typeToken)
+            {
+                var rowId = typeToken & 0x00FF_FFFF;
+                StaticFieldTypeReferenceResolutionIdentity? typeReferenceResolution = null;
+                target = (typeToken >>> 24) switch
+                {
+                    0x01 when rowId <= source.Reader.GetTableRowCount(TableIndex.TypeRef) =>
+                        (typeReferenceResolution = source.ResolveTypeReference(
+                            MetadataTokens.TypeReferenceHandle(rowId))).ResolvedTargetType,
+                    0x02 when rowId <= source.Reader.GetTableRowCount(TableIndex.TypeDef) =>
+                        source.GetTypeIdentity(MetadataTokens.TypeDefinitionHandle(rowId)),
+                    0x1B => throw new UnsupportedMetadataShapeException("W7_CONTEXT_TYPESPEC_IMPORT_UNSUPPORTED"),
+                    _ => throw new UnsupportedMetadataShapeException("W7_CONTEXT_TYPE_TOKEN_INVALID"),
+                };
+                if (!string.Equals(target.NamespaceName, namespaceName, StringComparison.Ordinal) ||
+                    !string.Equals(target.TypeName, typeName, StringComparison.Ordinal))
+                {
+                    throw new UnsupportedMetadataShapeException("W7_CONTEXT_TYPE_IMPORT_NAME_MISMATCH");
+                }
+
+                if (typeReferenceResolution is not null)
+                {
+                    return StaticFieldReferenceResolutionFact.ForTypeReference(
+                        import.Sha256,
+                        typeReferenceResolution);
+                }
+
+                return StaticFieldReferenceResolutionFact.Create(
+                    import.Sha256,
+                    source.Input.Module,
+                    source.Content,
+                    assemblyReferenceToken: null,
+                    sourceTypeToken: typeToken,
+                    target.Module,
+                    target.ModuleContent,
+                    target.TypeDefinitionToken);
+            }
+
+            if (import.AssemblyReferenceToken is not { } assemblyToken)
+            {
+                throw new UnsupportedMetadataShapeException("W7_CONTEXT_IMPORT_TOKEN_MISSING");
+            }
+
+            var assemblyRowId = assemblyToken & 0x00FF_FFFF;
+            if ((assemblyToken >>> 24) != 0x23 ||
+                assemblyRowId == 0 ||
+                assemblyRowId > source.Reader.GetTableRowCount(TableIndex.AssemblyRef))
+            {
+                throw new UnsupportedMetadataShapeException("W7_CONTEXT_ASSEMBLY_REFERENCE_INVALID");
+            }
+
+            target = source.ResolveAssemblyReferenceType(
+                MetadataTokens.AssemblyReferenceHandle(assemblyRowId),
+                namespaceName,
+                typeName);
+            return StaticFieldReferenceResolutionFact.Create(
+                import.Sha256,
+                source.Input.Module,
+                source.Content,
+                assemblyToken,
+                sourceTypeToken: null,
+                target.Module,
+                target.ModuleContent,
+                target.TypeDefinitionToken);
         }
 
         internal bool TryCreateCoreLibrary(
@@ -1766,6 +2015,55 @@ public static class StaticFieldFullyQualifiedBinder
                 MetadataTokens.GetToken(moduleReferenceHandle),
                 moduleName,
                 ResolveTargetType(rows, targets[0]));
+        }
+
+        internal StaticFieldTypeDefinitionIdentity ResolveAssemblyReferenceType(
+            AssemblyReferenceHandle assemblyHandle,
+            string namespaceName,
+            string typeName)
+        {
+            var assemblyReference = CreateAssemblyReference(Reader, assemblyHandle);
+            var targets = Universe.FindAssemblies(assemblyReference);
+            if (targets.Length != 1)
+            {
+                throw new UnsupportedMetadataShapeException("W7_CONTEXT_ASSEMBLY_REFERENCE_AMBIGUOUS");
+            }
+
+            var current = targets[0];
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            while (seen.Add(current.MetadataModule!.Sha256))
+            {
+                var handle = current.GetUniqueTopLevelType(namespaceName, typeName);
+                if (handle.HasValue)
+                {
+                    return current.GetTypeIdentity(handle.Value);
+                }
+
+                var forwarders = current.FindForwarders(namespaceName, typeName).ToArray();
+                if (forwarders.Length != 1)
+                {
+                    break;
+                }
+
+                var exported = current.Reader.GetExportedType(forwarders[0]);
+                if (exported.Implementation.Kind != HandleKind.AssemblyReference)
+                {
+                    break;
+                }
+
+                var nextReference = CreateAssemblyReference(
+                    current.Reader,
+                    (AssemblyReferenceHandle)exported.Implementation);
+                var nextTargets = Universe.FindAssemblies(nextReference);
+                if (nextTargets.Length != 1)
+                {
+                    break;
+                }
+
+                current = nextTargets[0];
+            }
+
+            throw new UnsupportedMetadataShapeException("W7_CONTEXT_ASSEMBLY_TYPE_UNRESOLVED");
         }
 
         private StaticFieldTypeReferenceResolutionIdentity ResolveAssemblyTypeReference(

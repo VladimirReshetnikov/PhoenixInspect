@@ -5436,7 +5436,10 @@ public sealed class StaticFieldReferenceResolutionFact : IEquatable<StaticFieldR
     /// <summary>Gets the complete counted metadata identity in which the reference token was decoded.</summary>
     public ModuleContentIdentity SourceModuleContent { get; }
 
-    /// <summary>Gets the non-nil AssemblyRef token for an assembly-qualified import, when one applies.</summary>
+    /// <summary>
+    /// Gets the non-nil AssemblyRef token carried by an assembly-qualified import or reached as the root of a
+    /// type-bearing import's complete TypeRef resolution, when either relation applies.
+    /// </summary>
     public int? AssemblyReferenceToken { get; }
 
     /// <summary>Gets the source TypeDef or TypeRef token for a type-bearing alias, when one applies.</summary>
@@ -8096,7 +8099,8 @@ internal static class StaticFieldSymbolContractEncoding
                 if (frame is null ||
                     !MatchesRuntimeModule(resolution.SourceModule, frame.RuntimeModule) ||
                     !resolution.SourceModuleContent.Equals(frame.ModuleContent) ||
-                    resolution.AssemblyReferenceToken != import.AssemblyReferenceToken ||
+                    import.AssemblyReferenceToken.HasValue &&
+                        resolution.AssemblyReferenceToken != import.AssemblyReferenceToken ||
                     resolution.SourceTypeToken != import.TargetTypeToken)
                 {
                     throw new ArgumentException(
