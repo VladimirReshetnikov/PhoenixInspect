@@ -1763,7 +1763,11 @@ public sealed class W7StaticFieldSyntaxAndSymbolContractTests
         var assembly = typeof(StaticFieldExpressionDescriptor).Assembly;
         var contractTypes = assembly.GetExportedTypes()
             .Where(static type => type.Namespace == "Interpreter.Product.DumpQuery" &&
-                                  type.Name.StartsWith("StaticField", StringComparison.Ordinal))
+                (type.Name.StartsWith("StaticField", StringComparison.Ordinal) ||
+                 type.Name.StartsWith("DumpObject", StringComparison.Ordinal) ||
+                 type.Name.StartsWith("DumpStrongHandle", StringComparison.Ordinal) ||
+                 type.Name.StartsWith("DumpHostSuppliedObject", StringComparison.Ordinal) ||
+                 type.Name.StartsWith("DumpStaticFieldExpression", StringComparison.Ordinal)))
             .ToArray();
         Assert.NotEmpty(contractTypes);
 

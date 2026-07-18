@@ -81,7 +81,7 @@ The end-state experience should feel like:
 
 ### Primary users
 
-* Engineers doing production incident response
+* Engineers diagnosing production failures
 * Performance engineers analyzing hangs and memory dumps
 * Support/triage engineers doing initial dump investigation
 
