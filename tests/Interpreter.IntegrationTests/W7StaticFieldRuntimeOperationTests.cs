@@ -11,6 +11,134 @@ namespace Interpreter.IntegrationTests;
 public sealed class W7StaticFieldRuntimeOperationTests
 {
     /// <summary>
+    /// Exercises the public one-call evaluator over all seven scalar, nullable, string, class, interface, array-base,
+    /// and object-base declarations, proves static object provenance, retains typed syntax/symbol stops, and replays
+    /// every complete pipeline envelope byte-for-byte from a freshly opened session.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W7StaticExpressionPipelineV1")]
+    public void Public_static_expression_pipeline_is_typed_composable_and_replayable()
+    {
+        var executable = W7TestTargetPaths.ResolveExecutable();
+        Assert.True(File.Exists(executable), $"Expected the W7 target at '{executable}'.");
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"w7-static-pipeline-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                       executable,
+                       ["--incident", "batch-imported-direct-field"],
+                       isolatedDirectory: null))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            var first = EvaluatePipeline(dumpPath);
+            var replay = EvaluatePipeline(dumpPath);
+            Assert.Equal(first.Length, replay.Length);
+            for (var index = 0; index < first.Length; index++)
+            {
+                Assert.Equal(first[index], replay[index]);
+                Assert.Equal(first[index].Sha256, replay[index].Sha256);
+                Assert.True(first[index].CanonicalBytes.AsSpan().SequenceEqual(replay[index].CanonicalBytes.AsSpan()));
+            }
+
+            Assert.Collection(
+                first,
+                result => AssertExact(result, "TotalItems", ClrmdStaticFieldTerminalKind.Int32),
+                result => AssertExact(result, "State", ClrmdStaticFieldTerminalKind.String),
+                result =>
+                {
+                    AssertExact(result, "Progress", ClrmdStaticFieldTerminalKind.NullableInt32NoValue);
+                    Assert.NotNull(result.RawNullableLayout);
+                    Assert.NotNull(result.NullableLayout);
+                    Assert.NotEmpty(result.NullableLayoutBounds);
+                },
+                result => AssertStaticObject(
+                    result,
+                    "Root",
+                    StaticFieldRuntimeAssignabilityKind.ExactRuntimeType),
+                result => AssertStaticObject(
+                    result,
+                    "InterfaceRoot",
+                    StaticFieldRuntimeAssignabilityKind.InterfaceClosure),
+                result => AssertStaticObject(
+                    result,
+                    "NumberArray",
+                    StaticFieldRuntimeAssignabilityKind.SystemArray),
+                result => AssertStaticObject(
+                    result,
+                    "ObjectArray",
+                    StaticFieldRuntimeAssignabilityKind.SystemObject),
+                result =>
+                {
+                    Assert.Equal(StaticFieldExpressionEvaluationStage.Syntax, result.Stage);
+                    Assert.Equal(StaticFieldExpressionEvaluationStatus.Invalid, result.Status);
+                    Assert.Null(result.SymbolBinding);
+                    Assert.Null(result.Observation);
+                    Assert.Equal(StaticFieldSyntaxIssue.ParserDiagnostic, result.Syntax.Issue);
+                },
+                result =>
+                {
+                    Assert.Equal(StaticFieldExpressionEvaluationStage.Syntax, result.Stage);
+                    Assert.Equal(StaticFieldExpressionEvaluationStatus.Unsupported, result.Status);
+                    Assert.Null(result.SymbolBinding);
+                    Assert.Null(result.Observation);
+                    Assert.Equal(StaticFieldSyntaxIssue.TreeShapeUnsupported, result.Syntax.Issue);
+                },
+                result =>
+                {
+                    Assert.Equal(StaticFieldExpressionEvaluationStage.SymbolBinding, result.Stage);
+                    Assert.Equal(StaticFieldExpressionEvaluationStatus.Absent, result.Status);
+                    Assert.Equal(StaticFieldBindingStatus.Absent, result.SymbolBinding!.Status);
+                    Assert.Equal(StaticFieldSymbolIdentityStatus.Failed, result.Observation!.SymbolStatus);
+                    Assert.Null(result.HostObservation);
+                });
+
+            static void AssertExact(
+                StaticFieldExpressionEvaluationResult result,
+                string fieldName,
+                ClrmdStaticFieldTerminalKind terminalKind)
+            {
+                Assert.Equal(StaticFieldExpressionEvaluationStage.Complete, result.Stage);
+                Assert.Equal(StaticFieldExpressionEvaluationStatus.Exact, result.Status);
+                Assert.Equal(fieldName, result.SymbolBinding!.SelectedDeclaration!.FieldName);
+                Assert.NotNull(result.RuntimeDeclaration);
+                Assert.NotEmpty(result.RuntimeDeclarationEvidence);
+                Assert.NotEmpty(result.RuntimeDeclarationBounds);
+                Assert.Equal(ClrmdStaticFieldObservationStatus.Exact, result.HostObservation!.Status);
+                Assert.Equal(terminalKind, result.HostObservation.Value!.Kind);
+                Assert.Equal(result.HostObservation, result.Observation!.HostObservation);
+                Assert.Null(result.RuntimeIssue);
+                Assert.Null(result.DiagnosticCode);
+                Assert.Null(result.DiagnosticMessage);
+            }
+
+            static void AssertStaticObject(
+                StaticFieldExpressionEvaluationResult result,
+                string fieldName,
+                StaticFieldRuntimeAssignabilityKind assignabilityKind)
+            {
+                AssertExact(result, fieldName, ClrmdStaticFieldTerminalKind.ObjectReference);
+                var proof = Assert.IsType<StaticFieldRuntimeAssignabilityProof>(
+                    result.Observation!.RuntimeAssignabilityProof);
+                Assert.Equal(assignabilityKind, proof.Kind);
+                var binding = Assert.IsType<DumpObjectBinding>(result.ObjectBinding);
+                Assert.Equal(DumpObjectProvenanceKind.StaticFieldExpression, binding.Provenance.Kind);
+                Assert.Equal(proof.ObjectReference.Address, binding.Identity.Address);
+                Assert.Equal(result.Observation, binding.Provenance.StaticField!.Observation);
+            }
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+        }
+    }
+
+    /// <summary>
     /// Proves scalar, bounded string, nullable no-value, and non-null object terminals are decoded from ordered raw
     /// memory reads after exact domain and slot acquisition, then replay byte-for-byte in a fresh session.
     /// </summary>
@@ -248,6 +376,29 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 result.Evidence.Length,
                 mapping.Sha256);
         }
+    }
+
+    private static StaticFieldExpressionEvaluationResult[] EvaluatePipeline(string dumpPath)
+    {
+        var opened = ClrmdDumpSession.Open(dumpPath);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
+        using var session = Assert.IsType<ClrmdDumpSession>(opened.Value);
+        const string owner = "Interpreter.W7TestTarget.Batch.BatchStatics";
+        return
+        [
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.TotalItems"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.State"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.Progress"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.Root"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.InterfaceRoot"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.NumberArray"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.ObjectArray"),
+            StaticFieldExpressionEvaluator.Evaluate(session, "global::"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.Root.ToString()"),
+            StaticFieldExpressionEvaluator.Evaluate(
+                session,
+                "global::Interpreter.W7TestTarget.Missing.NoSuchType.Value"),
+        ];
     }
 
     private static ValueObservation[] ObserveValues(string dumpPath)
