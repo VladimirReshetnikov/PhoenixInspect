@@ -200,7 +200,7 @@ public sealed class ClrmdStaticFieldEvaluationRequest : IEquatable<ClrmdStaticFi
     public int StorageSize => ValueShape switch
     {
         ClrmdStaticFieldValueShape.Int32 => sizeof(int),
-        ClrmdStaticFieldValueShape.NullableInt32 => NullableInt32Layout!.StorageSize,
+        ClrmdStaticFieldValueShape.NullableInt32 => PointerWidth,
         ClrmdStaticFieldValueShape.String or ClrmdStaticFieldValueShape.ObjectReference => PointerWidth,
         _ => throw new InvalidOperationException("The request contains an unknown decoder shape."),
     };
@@ -899,6 +899,9 @@ public enum ClrmdStaticTargetStructureIssue
 
     /// <summary>The pointer-width raw header range exceeds the target address space.</summary>
     HeaderAddressOverflow = 1,
+
+    /// <summary>The exact raw object header contains a zero method-table pointer.</summary>
+    NullMethodTable = 2,
 }
 
 /// <summary>
@@ -1106,6 +1109,37 @@ public sealed class ClrmdStaticTargetEvidence : IEquatable<ClrmdStaticTargetEvid
             headerEvidence: null,
             headerRuntimeType: null,
             ClrmdStaticTargetStructureIssue.HeaderAddressOverflow);
+    }
+
+    /// <summary>Creates a structural stop for an exact raw object header whose method table is zero.</summary>
+    /// <param name="snapshot">The immutable dump identity.</param>
+    /// <param name="pointerWidth">The target pointer width.</param>
+    /// <param name="targetAddress">The nonzero target address.</param>
+    /// <param name="headerEvidence">The exact pointer-width all-zero raw header.</param>
+    /// <returns>A typed invalid-method-table witness retaining the exact header bytes.</returns>
+    public static ClrmdStaticTargetEvidence InvalidMethodTable(
+        ClrmdSnapshotIdentity snapshot,
+        int pointerWidth,
+        ulong targetAddress,
+        ClrmdRawMemoryEvidence headerEvidence)
+    {
+        ValidateHeaderCoordinates(snapshot, pointerWidth, targetAddress, headerEvidence);
+        if (!headerEvidence.IsExact ||
+            ClrmdStaticPhysicalCanonical.DecodePointer(headerEvidence.Bytes.AsSpan(), pointerWidth) != 0)
+        {
+            throw new ArgumentException(
+                "Invalid-method-table evidence requires an exact all-zero pointer-width header.",
+                nameof(headerEvidence));
+        }
+        return new ClrmdStaticTargetEvidence(
+            ClrmdStaticTargetEvidenceKind.InvalidStructure,
+            snapshot,
+            pointerWidth,
+            targetAddress,
+            rawMethodTable: null,
+            headerEvidence,
+            headerRuntimeType: null,
+            ClrmdStaticTargetStructureIssue.NullMethodTable);
     }
 
     /// <inheritdoc />
@@ -1709,6 +1743,56 @@ public sealed class ClrmdStaticFieldValueObservation : IEquatable<ClrmdStaticFie
         NonExact(snapshot, ClrmdStaticFieldObservationStatus.Conflict, issue, request, slotAddress, reads,
             reachedBounds, targetEvidence, storageAcquisitionEvidence);
 
+    /// <summary>Creates a post-slot physical conflict that does not describe a managed-reference target.</summary>
+    /// <param name="snapshot">The immutable dump identity.</param>
+    /// <param name="issue">The exact conflicting physical fact.</param>
+    /// <param name="request">The Product-created scalar or nullable physical request.</param>
+    /// <param name="slotAddress">The exact acquired slot.</param>
+    /// <param name="reads">Ordered raw reads ending at the conflicting fact.</param>
+    /// <param name="reachedBounds">Only fixed operation bounds actually reached.</param>
+    /// <param name="storageAcquisitionEvidence">Exact acquired-slot topology.</param>
+    /// <returns>An immutable conflict with no managed-target projection.</returns>
+    public static ClrmdStaticFieldValueObservation Conflict(
+        ClrmdSnapshotIdentity snapshot,
+        ClrmdValueIssue issue,
+        ClrmdStaticFieldEvaluationRequest request,
+        ulong slotAddress,
+        ImmutableArray<ClrmdRawMemoryEvidence> reads,
+        ImmutableArray<EvaluationDeterministicBound> reachedBounds,
+        ClrmdStaticStorageAcquisitionEvidence storageAcquisitionEvidence) =>
+        NonExact(
+            snapshot,
+            ClrmdStaticFieldObservationStatus.Conflict,
+            issue,
+            request,
+            slotAddress,
+            reads,
+            reachedBounds,
+            targetEvidence: null,
+            storageAcquisitionEvidence);
+
+    /// <summary>Creates an exhaustive no-slot conflict for an ambiguous requested application domain.</summary>
+    /// <param name="snapshot">The immutable dump identity.</param>
+    /// <param name="request">The exact Product-created physical request.</param>
+    /// <param name="reachedBounds">Only the reached application-domain catalog bound.</param>
+    /// <param name="storageAcquisitionEvidence">The exhaustive ambiguous-domain acquisition topology.</param>
+    /// <returns>An immutable conflict proving storage was not selected or read.</returns>
+    public static ClrmdStaticFieldValueObservation Conflict(
+        ClrmdSnapshotIdentity snapshot,
+        ClrmdStaticFieldEvaluationRequest request,
+        ImmutableArray<EvaluationDeterministicBound> reachedBounds,
+        ClrmdStaticStorageAcquisitionEvidence storageAcquisitionEvidence) =>
+        NonExact(
+            snapshot,
+            ClrmdStaticFieldObservationStatus.Conflict,
+            ClrmdValueIssue.AmbiguousMatch,
+            request,
+            slotAddress: null,
+            ImmutableArray<ClrmdRawMemoryEvidence>.Empty,
+            reachedBounds,
+            targetEvidence: null,
+            storageAcquisitionEvidence);
+
     /// <summary>Creates an invalid physical-layout observation with no exact terminal.</summary>
     /// <param name="snapshot">The immutable dump identity.</param>
     /// <param name="issue">The exact invalid-data issue.</param>
@@ -1744,6 +1828,31 @@ public sealed class ClrmdStaticFieldValueObservation : IEquatable<ClrmdStaticFie
         ClrmdStaticStorageAcquisitionEvidence storageAcquisitionEvidence) =>
         NonExact(snapshot, ClrmdStaticFieldObservationStatus.Unsupported, ClrmdValueIssue.RuntimeUnsupported,
             request, null, ImmutableArray<ClrmdRawMemoryEvidence>.Empty, reachedBounds, null, storageAcquisitionEvidence);
+
+    /// <summary>Creates a typed stop when an exact detached request cannot be rebound before storage acquisition.</summary>
+    /// <param name="snapshot">The immutable active dump identity.</param>
+    /// <param name="status">The non-exact mapping or rebind status.</param>
+    /// <param name="issue">The exact non-None reason storage was not consulted.</param>
+    /// <returns>A pre-request-shaped observation carrying no slot, memory, or acquisition evidence.</returns>
+    /// <remarks>
+    /// This internal seam deliberately omits the supplied request: a failed live-object rebind has not re-established
+    /// the physical declaration needed to authorize storage access. The canonical request remains available to the
+    /// caller, while the observation truthfully proves that no storage operation occurred.
+    /// </remarks>
+    internal static ClrmdStaticFieldValueObservation PreStorageRebindFailure(
+        ClrmdSnapshotIdentity snapshot,
+        ClrmdStaticFieldObservationStatus status,
+        ClrmdValueIssue issue) =>
+        NonExact(
+            snapshot,
+            status,
+            issue,
+            request: null,
+            slotAddress: null,
+            ImmutableArray<ClrmdRawMemoryEvidence>.Empty,
+            ImmutableArray<EvaluationDeterministicBound>.Empty,
+            targetEvidence: null,
+            acquisitionEvidence: null);
 
     /// <inheritdoc />
     public bool Equals(ClrmdStaticFieldValueObservation? other) =>
@@ -1871,9 +1980,49 @@ public sealed class ClrmdStaticFieldValueObservation : IEquatable<ClrmdStaticFie
             case ClrmdStaticFieldValueShape.NullableInt32:
             {
                 var layout = request.NullableInt32Layout!;
+                var slotRead = RequireExactReadAt(
+                    reads,
+                    0,
+                    slotAddress,
+                    request.PointerWidth,
+                    "Nullable storage reference slot");
+                var targetAddress = ClrmdStaticPhysicalCanonical.DecodePointer(
+                    slotRead.Bytes.AsSpan(),
+                    request.PointerWidth);
+                CanonicalReplayEncoding.ValidatePointerValue(
+                    targetAddress,
+                    request.PointerWidth,
+                    allowZero: false,
+                    nameof(reads));
+                var headerRead = RequireExactReadAt(
+                    reads,
+                    1,
+                    targetAddress,
+                    request.PointerWidth,
+                    "Nullable storage target header");
+                var methodTable = ClrmdStaticPhysicalCanonical.DecodePointer(
+                    headerRead.Bytes.AsSpan(),
+                    request.PointerWidth);
+                if (request.ObservedFieldType.MethodTable is not { } expectedMethodTable ||
+                    methodTable != expectedMethodTable)
+                {
+                    throw new ArgumentException(
+                        "Nullable storage must be reached through the exact raw constructed-type method table.",
+                        nameof(reads));
+                }
+                var valueStorageAddress = ClrmdStaticPhysicalCanonical.AddOffset(
+                    targetAddress,
+                    request.PointerWidth,
+                    layout.StorageSize,
+                    request.PointerWidth,
+                    "Nullable value storage");
                 var hasValueAddress = ClrmdStaticPhysicalCanonical.AddOffset(
-                    slotAddress, layout.HasValueOffset, sizeof(byte), request.PointerWidth, "Nullable HasValue");
-                var hasValueRead = RequireExactReadAt(reads, 0, hasValueAddress, sizeof(byte), "Nullable HasValue");
+                    valueStorageAddress,
+                    layout.HasValueOffset,
+                    sizeof(byte),
+                    request.PointerWidth,
+                    "Nullable HasValue");
+                var hasValueRead = RequireExactReadAt(reads, 2, hasValueAddress, sizeof(byte), "Nullable HasValue");
                 var rawHasValue = hasValueRead.Bytes[0];
                 if (rawHasValue > 1)
                 {
@@ -1881,16 +2030,20 @@ public sealed class ClrmdStaticFieldValueObservation : IEquatable<ClrmdStaticFie
                 }
                 if (rawHasValue == 0)
                 {
-                    if (reads.Length != 1 || value.Kind != ClrmdStaticFieldTerminalKind.NullableInt32NoValue)
+                    if (reads.Length != 3 || value.Kind != ClrmdStaticFieldTerminalKind.NullableInt32NoValue)
                     {
                         throw new ArgumentException("Nullable no-value terminal must stop after the exact false flag.", nameof(value));
                     }
                     return;
                 }
                 var valueAddress = ClrmdStaticPhysicalCanonical.AddOffset(
-                    slotAddress, layout.ValueOffset, sizeof(int), request.PointerWidth, "Nullable value");
-                var valueRead = RequireExactReadAt(reads, 1, valueAddress, sizeof(int), "Nullable value");
-                if (reads.Length != 2 || value.Kind != ClrmdStaticFieldTerminalKind.NullableInt32Value ||
+                    valueStorageAddress,
+                    layout.ValueOffset,
+                    sizeof(int),
+                    request.PointerWidth,
+                    "Nullable value");
+                var valueRead = RequireExactReadAt(reads, 3, valueAddress, sizeof(int), "Nullable value");
+                if (reads.Length != 4 || value.Kind != ClrmdStaticFieldTerminalKind.NullableInt32Value ||
                     value.Int32Value != BinaryPrimitives.ReadInt32LittleEndian(valueRead.Bytes.AsSpan()))
                 {
                     throw new ArgumentException("Nullable value terminal and exact child bytes disagree.", nameof(value));
@@ -2065,16 +2218,111 @@ public sealed class ClrmdStaticFieldValueObservation : IEquatable<ClrmdStaticFie
         ClrmdValueIssue issue)
     {
         var layout = request.NullableInt32Layout!;
-        var hasValueAddress = ClrmdStaticPhysicalCanonical.AddOffset(
+        var slot = RequireReadAt(
+            reads,
+            0,
             slotAddress,
+            request.PointerWidth,
+            "Nullable storage reference slot");
+        if (!slot.IsExact)
+        {
+            if (reads.Length != 1)
+            {
+                throw new ArgumentException(
+                    "An incomplete Nullable storage slot is the first and final attempted read.",
+                    nameof(reads));
+            }
+            ValidateIncompleteRead(slot, status, issue);
+            return;
+        }
+
+        var targetAddress = ClrmdStaticPhysicalCanonical.DecodePointer(slot.Bytes.AsSpan(), request.PointerWidth);
+        if (targetAddress == 0)
+        {
+            if (reads.Length != 1 ||
+                status != ClrmdStaticFieldObservationStatus.Invalid ||
+                issue != ClrmdValueIssue.InvalidData)
+            {
+                throw new ArgumentException("An initialized Nullable storage reference cannot be null.", nameof(reads));
+            }
+            return;
+        }
+
+        var maximum = request.PointerWidth == sizeof(uint) ? uint.MaxValue : ulong.MaxValue;
+        if ((ulong)(request.PointerWidth - 1) > maximum - targetAddress)
+        {
+            if (reads.Length != 1 ||
+                status != ClrmdStaticFieldObservationStatus.Invalid ||
+                issue != ClrmdValueIssue.InvalidData)
+            {
+                throw new ArgumentException("An unaddressable Nullable target header must stop after the slot.");
+            }
+            return;
+        }
+
+        var header = RequireReadAt(
+            reads,
+            1,
+            targetAddress,
+            request.PointerWidth,
+            "Nullable storage target header");
+        if (!header.IsExact)
+        {
+            if (reads.Length != 2)
+            {
+                throw new ArgumentException(
+                    "An incomplete Nullable target header is the final attempted read.",
+                    nameof(reads));
+            }
+            ValidateIncompleteRead(header, status, issue);
+            return;
+        }
+
+        var methodTable = ClrmdStaticPhysicalCanonical.DecodePointer(header.Bytes.AsSpan(), request.PointerWidth);
+        if (request.ObservedFieldType.MethodTable is not { } expectedMethodTable || methodTable != expectedMethodTable)
+        {
+            if (reads.Length != 2 ||
+                status != ClrmdStaticFieldObservationStatus.Conflict ||
+                issue != ClrmdValueIssue.TypeMismatch)
+            {
+                throw new ArgumentException(
+                    "A conflicting Nullable target method table must stop after the exact header.",
+                    nameof(reads));
+            }
+            return;
+        }
+
+        ulong valueStorageAddress;
+        try
+        {
+            valueStorageAddress = ClrmdStaticPhysicalCanonical.AddOffset(
+                targetAddress,
+                request.PointerWidth,
+                layout.StorageSize,
+                request.PointerWidth,
+                "Nullable value storage");
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            if (reads.Length != 2 ||
+                status != ClrmdStaticFieldObservationStatus.Invalid ||
+                issue != ClrmdValueIssue.InvalidData)
+            {
+                throw new ArgumentException("Unaddressable Nullable value storage must stop after the exact header.");
+            }
+            return;
+        }
+
+        var hasValueAddress = ClrmdStaticPhysicalCanonical.AddOffset(
+            valueStorageAddress,
             layout.HasValueOffset,
             sizeof(byte),
             request.PointerWidth,
             "Nullable HasValue");
-        var hasValue = RequireReadAt(reads, 0, hasValueAddress, sizeof(byte), "Nullable HasValue");
+        var hasValue = RequireReadAt(reads, 2, hasValueAddress, sizeof(byte), "Nullable HasValue");
         if (!hasValue.IsExact)
         {
-            if (reads.Length != 1)
+            if (reads.Length != 3)
             {
                 throw new ArgumentException("An incomplete Nullable flag is the first and final attempted read.", nameof(reads));
             }
@@ -2085,7 +2333,7 @@ public sealed class ClrmdStaticFieldValueObservation : IEquatable<ClrmdStaticFie
         var rawHasValue = hasValue.Bytes[0];
         if (rawHasValue > 1)
         {
-            if (reads.Length != 1 ||
+            if (reads.Length != 3 ||
                 status != ClrmdStaticFieldObservationStatus.Invalid ||
                 issue != ClrmdValueIssue.InvalidData)
             {
@@ -2099,17 +2347,17 @@ public sealed class ClrmdStaticFieldValueObservation : IEquatable<ClrmdStaticFie
         }
 
         var valueAddress = ClrmdStaticPhysicalCanonical.AddOffset(
-            slotAddress,
+            valueStorageAddress,
             layout.ValueOffset,
             sizeof(int),
             request.PointerWidth,
             "Nullable value");
-        var value = RequireReadAt(reads, 1, valueAddress, sizeof(int), "Nullable value");
+        var value = RequireReadAt(reads, 3, valueAddress, sizeof(int), "Nullable value");
         if (value.IsExact)
         {
             throw new ArgumentException("Exact true Nullable flag and exact value are decoder-complete.");
         }
-        if (reads.Length != 2)
+        if (reads.Length != 4)
         {
             throw new ArgumentException("An incomplete Nullable value must be the final attempted read.", nameof(reads));
         }
@@ -2151,12 +2399,23 @@ public sealed class ClrmdStaticFieldValueObservation : IEquatable<ClrmdStaticFie
         switch (targetEvidence.Kind)
         {
             case ClrmdStaticTargetEvidenceKind.InvalidStructure:
-                if (targetEvidence.StructureIssue != ClrmdStaticTargetStructureIssue.HeaderAddressOverflow ||
-                    reads.Length != 1 ||
+                var validInvalidStructure = targetEvidence.StructureIssue switch
+                {
+                    ClrmdStaticTargetStructureIssue.HeaderAddressOverflow =>
+                        reads.Length == 1 && targetEvidence.HeaderEvidence is null,
+                    ClrmdStaticTargetStructureIssue.NullMethodTable =>
+                        reads.Length == 2 &&
+                        targetEvidence.HeaderEvidence is { } invalidHeader &&
+                        invalidHeader.Equals(reads[1]) &&
+                        reads[1].IsExact,
+                    _ => false,
+                };
+                if (!validInvalidStructure ||
                     status != ClrmdStaticFieldObservationStatus.Invalid ||
                     issue != ClrmdValueIssue.InvalidData)
                 {
-                    throw new ArgumentException("A pre-header overflow must stop after the exact slot pointer.");
+                    throw new ArgumentException(
+                        "Invalid target structure must stop at its exact overflow or null-method-table prefix.");
                 }
                 return;
             case ClrmdStaticTargetEvidenceKind.HeaderUnavailable:

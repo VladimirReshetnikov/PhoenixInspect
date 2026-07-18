@@ -10,6 +10,8 @@ namespace Interpreter.W7TestTarget.Batch
         internal static string State = "uninitialized";
 
         internal static int? Progress;
+
+        internal static int TotalItems;
     }
 
     internal sealed record BatchRoot(string State, BatchPartition[] Partitions);
@@ -27,6 +29,7 @@ namespace Interpreter.W7TestTarget.BatchContext
             var state = incidentId == "batch-import-ambiguity" ? "ambiguous-import" : "processing";
             BatchStatics.State = state;
             BatchStatics.Progress = null;
+            BatchStatics.TotalItems = StaticValues.Counter;
             BatchStatics.Root = new BatchRoot(
                 state,
                 [

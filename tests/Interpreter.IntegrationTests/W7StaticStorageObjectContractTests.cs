@@ -182,7 +182,11 @@ public sealed class W7StaticStorageObjectContractTests
         var nullableType = NullableType(Int32Type());
         var request = CreateRequest(ClrmdStaticExpectedDecoderKind.NullableInt32, nullableType, layout);
         var acquisition = Acquired(request);
-        var flagAddress = Slot + 4;
+        var slotRead = PointerRead(Slot, Target);
+        var headerRead = PointerRead(Target, nullableType.MethodTable!.Value);
+        var valueStorage = Target + PointerWidth;
+        var flagAddress = valueStorage + 4;
+        var valueAddress = valueStorage;
 
         var flagPartial = ClrmdRawMemoryEvidence.Unavailable(Snapshot, flagAddress, sizeof(byte));
         var flagStop = ClrmdStaticFieldValueObservation.Unavailable(
@@ -190,10 +194,12 @@ public sealed class W7StaticStorageObjectContractTests
             ClrmdValueIssue.MemoryUnavailable,
             request,
             Slot,
-            ImmutableArray.Create(flagPartial),
+            ImmutableArray.Create(slotRead, headerRead, flagPartial),
             ReadBounds,
             storageAcquisitionEvidence: acquisition);
-        Assert.Equal(flagAddress, Assert.Single(flagStop.Reads).Address);
+        Assert.Equal(
+            new[] { Slot, Target, flagAddress },
+            flagStop.Reads.Select(static read => read.Address));
 
         var invalidBoolean = ByteRead(flagAddress, 2);
         var invalid = ClrmdStaticFieldValueObservation.Invalid(
@@ -201,7 +207,7 @@ public sealed class W7StaticStorageObjectContractTests
             ClrmdValueIssue.InvalidData,
             request,
             Slot,
-            ImmutableArray.Create(invalidBoolean),
+            ImmutableArray.Create(slotRead, headerRead, invalidBoolean),
             ReadBounds,
             targetEvidence: null,
             acquisition);
@@ -210,7 +216,7 @@ public sealed class W7StaticStorageObjectContractTests
         var trueFlag = ByteRead(flagAddress, 1);
         var valuePartial = ClrmdRawMemoryEvidence.Partial(
             Snapshot,
-            Slot,
+            valueAddress,
             sizeof(int),
             ImmutableArray.Create((byte)0x34, (byte)0x12));
         var valueStop = ClrmdStaticFieldValueObservation.Partial(
@@ -218,23 +224,27 @@ public sealed class W7StaticStorageObjectContractTests
             ClrmdValueIssue.MemoryUnavailable,
             request,
             Slot,
-            ImmutableArray.Create(trueFlag, valuePartial),
+            ImmutableArray.Create(slotRead, headerRead, trueFlag, valuePartial),
             ReadBounds,
             storageAcquisitionEvidence: acquisition);
-        Assert.Equal(new[] { flagAddress, Slot }, valueStop.Reads.Select(static read => read.Address));
+        Assert.Equal(
+            new[] { Slot, Target, flagAddress, valueAddress },
+            valueStop.Reads.Select(static read => read.Address));
 
-        var valueRead = Int32Read(Slot, 0x12345678);
+        var valueRead = Int32Read(valueAddress, 0x12345678);
         var exact = ClrmdStaticFieldValueObservation.Exact(
             request,
             acquisition,
-            ImmutableArray.Create(trueFlag, valueRead),
+            ImmutableArray.Create(slotRead, headerRead, trueFlag, valueRead),
             ClrmdStaticFieldValue.NullableInt32Value(0x12345678),
             ReadBounds);
-        Assert.Equal(new[] { flagAddress, Slot }, exact.Reads.Select(static read => read.Address));
+        Assert.Equal(
+            new[] { Slot, Target, flagAddress, valueAddress },
+            exact.Reads.Select(static read => read.Address));
         Assert.Throws<ArgumentException>(() => ClrmdStaticFieldValueObservation.Exact(
             request,
             acquisition,
-            ImmutableArray.Create(valueRead, trueFlag),
+            ImmutableArray.Create(headerRead, slotRead, trueFlag, valueRead),
             ClrmdStaticFieldValue.NullableInt32Value(0x12345678),
             ReadBounds));
         Assert.Throws<ArgumentException>(() => ClrmdStaticFieldValueObservation.Partial(
@@ -242,7 +252,7 @@ public sealed class W7StaticStorageObjectContractTests
             ClrmdValueIssue.MemoryUnavailable,
             request,
             Slot,
-            ImmutableArray.Create(flagPartial, valueRead),
+            ImmutableArray.Create(slotRead, headerRead, flagPartial, valueRead),
             ReadBounds,
             storageAcquisitionEvidence: acquisition));
         Assert.Throws<ArgumentException>(() => ClrmdStaticFieldValueObservation.Invalid(
@@ -250,7 +260,7 @@ public sealed class W7StaticStorageObjectContractTests
             ClrmdValueIssue.InvalidData,
             request,
             Slot,
-            ImmutableArray.Create(invalidBoolean, valueRead),
+            ImmutableArray.Create(slotRead, headerRead, invalidBoolean, valueRead),
             ReadBounds,
             targetEvidence: null,
             acquisition));
@@ -320,6 +330,28 @@ public sealed class W7StaticStorageObjectContractTests
             ReadBounds,
             headerUnavailable,
             acquisition);
+
+        var zeroHeader = PointerRead(Target, 0);
+        var invalidMethodTable = ClrmdStaticTargetEvidence.InvalidMethodTable(
+            Snapshot,
+            PointerWidth,
+            Target,
+            zeroHeader);
+        var invalidTarget = ClrmdStaticFieldValueObservation.Invalid(
+            Snapshot,
+            ClrmdValueIssue.InvalidData,
+            request,
+            Slot,
+            ImmutableArray.Create(slotRead, zeroHeader),
+            ReadBounds,
+            invalidMethodTable,
+            acquisition);
+        Assert.Equal(ClrmdStaticTargetStructureIssue.NullMethodTable, invalidTarget.TargetEvidence!.StructureIssue);
+        Assert.Throws<ArgumentException>(() => ClrmdStaticTargetEvidence.InvalidMethodTable(
+            Snapshot,
+            PointerWidth,
+            Target,
+            headerRead));
         Assert.Throws<ArgumentException>(() => ClrmdStaticFieldValueObservation.Partial(
             Snapshot,
             ClrmdValueIssue.MemoryUnavailable,

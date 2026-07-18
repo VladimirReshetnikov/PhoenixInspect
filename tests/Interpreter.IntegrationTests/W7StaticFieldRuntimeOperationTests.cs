@@ -10,6 +10,87 @@ namespace Interpreter.IntegrationTests;
 public sealed class W7StaticFieldRuntimeOperationTests
 {
     /// <summary>
+    /// Proves scalar, bounded string, nullable no-value, and non-null object terminals are decoded from ordered raw
+    /// memory reads after exact domain and slot acquisition, then replay byte-for-byte in a fresh session.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W7StaticStorageReadV1")]
+    public void Real_static_storage_decoders_produce_exact_replayable_terminals()
+    {
+        var executable = W7TestTargetPaths.ResolveExecutable();
+        Assert.True(File.Exists(executable), $"Expected the W7 target at '{executable}'.");
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"w7-static-storage-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                       executable,
+                       ["--incident", "batch-imported-direct-field"],
+                       isolatedDirectory: null))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            var first = ObserveValues(dumpPath);
+            var replay = ObserveValues(dumpPath);
+
+            Assert.Equal(first, replay);
+            Assert.Collection(
+                first.OrderBy(static value => value.FieldName, StringComparer.Ordinal),
+                value =>
+                {
+                    Assert.Equal("Progress", value.FieldName);
+                    Assert.Equal(ClrmdStaticFieldTerminalKind.NullableInt32NoValue, value.TerminalKind);
+                    Assert.Null(value.Int32Value);
+                    Assert.Null(value.StringValue);
+                    Assert.Null(value.ObjectAddress);
+                    Assert.Equal(3, value.RawReadCount);
+                },
+                value =>
+                {
+                    Assert.Equal("Root", value.FieldName);
+                    Assert.Equal(ClrmdStaticFieldTerminalKind.ObjectReference, value.TerminalKind);
+                    Assert.Null(value.Int32Value);
+                    Assert.Null(value.StringValue);
+                    Assert.NotNull(value.ObjectAddress);
+                    Assert.NotEqual(0UL, value.ObjectAddress!.Value);
+                    Assert.Equal(2, value.RawReadCount);
+                },
+                value =>
+                {
+                    Assert.Equal("State", value.FieldName);
+                    Assert.Equal(ClrmdStaticFieldTerminalKind.String, value.TerminalKind);
+                    Assert.Null(value.Int32Value);
+                    Assert.Equal("processing", value.StringValue);
+                    Assert.NotNull(value.ObjectAddress);
+                    Assert.Equal(4, value.RawReadCount);
+                },
+                value =>
+                {
+                    Assert.Equal("TotalItems", value.FieldName);
+                    Assert.Equal(ClrmdStaticFieldTerminalKind.Int32, value.TerminalKind);
+                    Assert.Equal(0x7A17C042, value.Int32Value);
+                    Assert.Null(value.StringValue);
+                    Assert.Null(value.ObjectAddress);
+                    Assert.Equal(1, value.RawReadCount);
+                });
+            Assert.All(first, static value =>
+            {
+                Assert.Equal(ClrmdStaticFieldObservationStatus.Exact, value.Status);
+                Assert.Equal(ClrmdStaticStorageAcquisitionKind.SlotAddressAcquired, value.AcquisitionKind);
+                Assert.NotEqual(0UL, value.SlotAddress);
+            });
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+        }
+    }
+
+    /// <summary>
     /// Proves one optimized incident maps scalar, string, nullable, and managed-reference FieldDefs through complete
     /// TypeDef-to-MethodTable and directly owned static-field catalogs, then replays identical canonical evidence in a
     /// fresh dump session.
@@ -137,6 +218,105 @@ public sealed class W7StaticFieldRuntimeOperationTests
         }
     }
 
+    private static ValueObservation[] ObserveValues(string dumpPath)
+    {
+        var opened = ClrmdDumpSession.Open(dumpPath);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
+        using var session = Assert.IsType<ClrmdDumpSession>(opened.Value);
+        var module = Assert.Single(session.Modules, static candidate => string.Equals(
+            candidate.Name,
+            W7TestTargetPaths.AssemblyFileName,
+            StringComparison.Ordinal));
+        var content = session.ReadModuleContentIdentity(module);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, content.Status);
+        var metadataRead = Assert.Single(content.Evidence);
+        using var provider = MetadataReaderProvider.FromMetadataImage(metadataRead.Bytes);
+        var reader = provider.GetMetadataReader();
+
+        return new[]
+        {
+            Read(
+                "Interpreter.W7TestTarget.Batch",
+                "BatchStatics",
+                "TotalItems",
+                ClrmdStaticExpectedDecoderKind.Int32),
+            Read(
+                "Interpreter.W7TestTarget.Batch",
+                "BatchStatics",
+                "State",
+                ClrmdStaticExpectedDecoderKind.String),
+            Read(
+                "Interpreter.W7TestTarget.Batch",
+                "BatchStatics",
+                "Progress",
+                ClrmdStaticExpectedDecoderKind.NullableInt32,
+                ClrmdStaticNullableInt32Layout.Create(storageSize: 8, hasValueOffset: 0, valueOffset: 4)),
+            Read(
+                "Interpreter.W7TestTarget.Batch",
+                "BatchStatics",
+                "Root",
+                ClrmdStaticExpectedDecoderKind.ManagedReference),
+        };
+
+        ValueObservation Read(
+            string namespaceName,
+            string typeName,
+            string fieldName,
+            ClrmdStaticExpectedDecoderKind decoder,
+            ClrmdStaticNullableInt32Layout? nullableLayout = null)
+        {
+            var typeHandle = Assert.Single(reader.TypeDefinitions, handle => IsType(
+                reader,
+                handle,
+                namespaceName,
+                typeName));
+            var type = reader.GetTypeDefinition(typeHandle);
+            var fieldHandle = Assert.Single(type.GetFields(), handle => string.Equals(
+                reader.GetString(reader.GetFieldDefinition(handle).Name),
+                fieldName,
+                StringComparison.Ordinal));
+            var runtimeName = namespaceName.Length == 0 ? typeName : $"{namespaceName}.{typeName}";
+            var mapped = session.MapStaticFieldDeclaration(
+                module,
+                MetadataTokens.GetToken(typeHandle),
+                runtimeName,
+                MetadataTokens.GetToken(fieldHandle),
+                fieldName,
+                decoder);
+            Assert.True(
+                mapped.Status == ClrmdEvidenceStatus.Exact,
+                $"Mapping {runtimeName}.{fieldName} stopped as {mapped.Status}/{mapped.Issue}.");
+            var mapping = Assert.IsType<ClrmdStaticRuntimeDeclarationMappingIdentity>(mapped.Value);
+            var request = ClrmdStaticFieldEvaluationRequest.Create(mapping, nullableLayout);
+            var observation = session.ReadStaticField(request);
+            Assert.True(
+                observation.Status == ClrmdStaticFieldObservationStatus.Exact,
+                $"Reading {runtimeName}.{fieldName} stopped as {observation.Status}/{observation.Issue} " +
+                $"after {observation.Reads.Length} raw reads: " +
+                string.Join(", ", observation.Reads.Select(static read =>
+                    $"0x{read.Address:x}:{Convert.ToHexString(read.Bytes.AsSpan())}")));
+            Assert.Equal(ClrmdValueIssue.None, observation.Issue);
+            var value = Assert.IsType<ClrmdStaticFieldValue>(observation.Value);
+            var objectReference = value.Kind switch
+            {
+                ClrmdStaticFieldTerminalKind.String => value.StringValue!.ObjectReference,
+                ClrmdStaticFieldTerminalKind.ObjectReference => value.ObjectReference,
+                _ => null,
+            };
+            return new ValueObservation(
+                fieldName,
+                observation.Status,
+                observation.StorageAcquisitionEvidence!.Kind,
+                observation.SlotAddress!.Value,
+                observation.Reads.Length,
+                value.Kind,
+                value.Int32Value,
+                value.StringValue?.Value,
+                objectReference?.Address,
+                observation.Sha256);
+        }
+    }
+
     private static bool IsType(
         MetadataReader reader,
         TypeDefinitionHandle handle,
@@ -158,5 +338,17 @@ public sealed class W7StaticFieldRuntimeOperationTests
         int DeclaringTypeMatchesRetained,
         int StaticFieldMatchesRetained,
         int MetadataReadCount,
+        string Sha256);
+
+    private sealed record ValueObservation(
+        string FieldName,
+        ClrmdStaticFieldObservationStatus Status,
+        ClrmdStaticStorageAcquisitionKind AcquisitionKind,
+        ulong SlotAddress,
+        int RawReadCount,
+        ClrmdStaticFieldTerminalKind TerminalKind,
+        int? Int32Value,
+        string? StringValue,
+        ulong? ObjectAddress,
         string Sha256);
 }

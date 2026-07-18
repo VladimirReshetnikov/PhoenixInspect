@@ -1,7 +1,9 @@
+using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using Interpreter.Core.Abstractions;
 using Interpreter.Host.Abstractions;
 using Microsoft.Diagnostics.Runtime;
@@ -301,6 +303,855 @@ public sealed partial class ClrmdDumpSession
         }
     }
 
+    /// <summary>Acquires and decodes one exact Product-authorized ordinary-static slot through bounded raw reads.</summary>
+    /// <param name="request">
+    /// The detached physical request created only after Product proved the declaration, decoder, and optional nullable
+    /// child layout against the exact runtime mapping.
+    /// </param>
+    /// <returns>
+    /// An immutable observation containing exhaustive domain topology, the returned slot when any, every ordered raw
+    /// read, raw-header-first target evidence, and either one exact terminal or the first typed stop.
+    /// </returns>
+    /// <remarks>
+    /// This draft operation uses ClrMD only to rebind the already proved declaration, enumerate application domains,
+    /// obtain the ordinary-static slot, and map a raw method table back to a runtime type. Scalar, nullable, reference,
+    /// object-header, string-length, and string-character values are decoded exclusively from <see cref="Memory"/>.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
+    /// <exception cref="ArgumentException">The request belongs to a different immutable dump snapshot.</exception>
+    public ClrmdStaticFieldValueObservation ReadStaticField(ClrmdStaticFieldEvaluationRequest request)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Snapshot != Snapshot)
+        {
+            throw new ArgumentException(
+                "The physical static-field request belongs to a different immutable dump snapshot.",
+                nameof(request));
+        }
+
+        var rebound = RebindStaticField(request.RuntimeMapping);
+        if (rebound.Field is null)
+        {
+            return ClrmdStaticFieldValueObservation.PreStorageRebindFailure(
+                Snapshot,
+                rebound.Status,
+                rebound.Issue);
+        }
+
+        var domainBound = ImmutableArray.Create(
+            ClrmdStaticStorageAcquisitionEvidence.DeclaredApplicationDomainCountBound);
+        ImmutableArray<ClrAppDomain> domainPrefix;
+        try
+        {
+            domainPrefix = _runtime.AppDomains
+                .OrderBy(static domain => domain.Address)
+                .ThenBy(static domain => domain.Id)
+                .Take(checked(ClrmdStaticStorageAcquisitionEvidence.MaximumApplicationDomains + 1))
+                .ToImmutableArray();
+        }
+        catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+        {
+            return ClrmdStaticFieldValueObservation.PreStorageRebindFailure(
+                Snapshot,
+                ClrmdStaticFieldObservationStatus.Unsupported,
+                ClrmdValueIssue.RuntimeUnsupported);
+        }
+
+        var prefixLength = Math.Min(
+            domainPrefix.Length,
+            ClrmdStaticStorageAcquisitionEvidence.MaximumApplicationDomains);
+        var matchingOrdinals = Enumerable.Range(0, prefixLength)
+            .Where(index => domainPrefix[index].Address == request.ApplicationDomainAddress)
+            .ToImmutableArray();
+        if (domainPrefix.Length > ClrmdStaticStorageAcquisitionEvidence.MaximumApplicationDomains)
+        {
+            var acquisition = ClrmdStaticStorageAcquisitionEvidence.CatalogLimitReached(
+                request.PointerWidth,
+                request.ApplicationDomainAddress,
+                matchingOrdinals);
+            return ClrmdStaticFieldValueObservation.Partial(
+                Snapshot,
+                ClrmdValueIssue.LimitExceeded,
+                request,
+                slotAddress: null,
+                ImmutableArray<ClrmdRawMemoryEvidence>.Empty,
+                domainBound,
+                storageAcquisitionEvidence: acquisition);
+        }
+
+        if (matchingOrdinals.IsEmpty)
+        {
+            var acquisition = ClrmdStaticStorageAcquisitionEvidence.DomainUnavailable(
+                request.PointerWidth,
+                request.ApplicationDomainAddress,
+                domainPrefix.Length);
+            return ClrmdStaticFieldValueObservation.Unavailable(
+                Snapshot,
+                ClrmdValueIssue.FieldUnavailable,
+                request,
+                slotAddress: null,
+                ImmutableArray<ClrmdRawMemoryEvidence>.Empty,
+                domainBound,
+                storageAcquisitionEvidence: acquisition);
+        }
+
+        if (matchingOrdinals.Length != 1)
+        {
+            var acquisition = ClrmdStaticStorageAcquisitionEvidence.DomainAmbiguous(
+                request.PointerWidth,
+                request.ApplicationDomainAddress,
+                domainPrefix.Length,
+                matchingOrdinals);
+            return ClrmdStaticFieldValueObservation.Conflict(
+                Snapshot,
+                request,
+                domainBound,
+                acquisition);
+        }
+
+        var domainOrdinal = matchingOrdinals[0];
+        var domain = domainPrefix[domainOrdinal];
+        ulong slotAddress;
+        try
+        {
+            if (!rebound.Field.IsInitialized(domain))
+            {
+                var acquisition = ClrmdStaticStorageAcquisitionEvidence.SlotUnavailable(
+                    request.PointerWidth,
+                    request.ApplicationDomainAddress,
+                    domainPrefix.Length,
+                    domainOrdinal);
+                return ClrmdStaticFieldValueObservation.Unavailable(
+                    Snapshot,
+                    ClrmdValueIssue.FieldUnavailable,
+                    request,
+                    slotAddress: null,
+                    ImmutableArray<ClrmdRawMemoryEvidence>.Empty,
+                    domainBound,
+                    storageAcquisitionEvidence: acquisition);
+            }
+
+            slotAddress = rebound.Field.GetAddress(domain);
+        }
+        catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+        {
+            var acquisition = ClrmdStaticStorageAcquisitionEvidence.RuntimeUnsupported(
+                request.PointerWidth,
+                request.ApplicationDomainAddress,
+                domainPrefix.Length,
+                domainOrdinal);
+            return ClrmdStaticFieldValueObservation.Unsupported(
+                Snapshot,
+                request,
+                domainBound,
+                acquisition);
+        }
+
+        if (slotAddress == 0)
+        {
+            var acquisition = ClrmdStaticStorageAcquisitionEvidence.SlotUnavailable(
+                request.PointerWidth,
+                request.ApplicationDomainAddress,
+                domainPrefix.Length,
+                domainOrdinal);
+            return ClrmdStaticFieldValueObservation.Unavailable(
+                Snapshot,
+                ClrmdValueIssue.FieldUnavailable,
+                request,
+                slotAddress: null,
+                ImmutableArray<ClrmdRawMemoryEvidence>.Empty,
+                domainBound,
+                storageAcquisitionEvidence: acquisition);
+        }
+
+        var maximumAddress = request.PointerWidth == sizeof(uint) ? uint.MaxValue : ulong.MaxValue;
+        if (slotAddress > maximumAddress ||
+            (ulong)(request.StorageSize - 1) > maximumAddress - slotAddress)
+        {
+            if (slotAddress > maximumAddress)
+            {
+                return ClrmdStaticFieldValueObservation.PreStorageRebindFailure(
+                    Snapshot,
+                    ClrmdStaticFieldObservationStatus.Invalid,
+                    ClrmdValueIssue.InvalidData);
+            }
+
+            var acquisition = ClrmdStaticStorageAcquisitionEvidence.InvalidSlot(
+                request.PointerWidth,
+                request.ApplicationDomainAddress,
+                domainPrefix.Length,
+                domainOrdinal,
+                slotAddress,
+                request.StorageSize);
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress: null,
+                ImmutableArray<ClrmdRawMemoryEvidence>.Empty,
+                domainBound,
+                targetEvidence: null,
+                acquisition);
+        }
+
+        var acquired = ClrmdStaticStorageAcquisitionEvidence.Acquired(
+            request.PointerWidth,
+            request.ApplicationDomainAddress,
+            domainPrefix.Length,
+            domainOrdinal,
+            slotAddress,
+            request.StorageSize);
+        return request.ValueShape switch
+        {
+            ClrmdStaticFieldValueShape.Int32 => ReadStaticInt32(request, slotAddress, acquired),
+            ClrmdStaticFieldValueShape.NullableInt32 => ReadStaticNullableInt32(request, slotAddress, acquired),
+            ClrmdStaticFieldValueShape.String or ClrmdStaticFieldValueShape.ObjectReference =>
+                ReadStaticReference(request, slotAddress, acquired),
+            _ => throw new InvalidOperationException("The physical request contains an unknown decoder shape."),
+        };
+    }
+
+    private StaticFieldRebindResult RebindStaticField(ClrmdStaticRuntimeDeclarationMappingIdentity mapping)
+    {
+        var declaringIdentity = mapping.DeclaringType;
+        if (declaringIdentity.RuntimeModule is not { } runtimeModuleIdentity ||
+            !_runtimeModules.TryGetValue(runtimeModuleIdentity, out var runtimeModule))
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Unavailable,
+                ClrmdValueIssue.ModuleUnavailable);
+        }
+
+        ClrType? runtimeType;
+        try
+        {
+            runtimeType = runtimeModule.GetTypeByName(declaringIdentity.FullName);
+        }
+        catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Unsupported,
+                ClrmdValueIssue.RuntimeUnsupported);
+        }
+
+        if (runtimeType is null)
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Unavailable,
+                ClrmdValueIssue.TypeUnavailable);
+        }
+
+        if (!RuntimeTypeMatchesIdentity(runtimeType, declaringIdentity))
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch);
+        }
+
+        ImmutableArray<ClrStaticField> fields;
+        try
+        {
+            fields = runtimeType.StaticFields
+                .Take(checked(ClrmdStaticRuntimeDeclarationMappingCounters.MaximumRuntimeStaticFieldsExamined + 1))
+                .ToImmutableArray();
+        }
+        catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Unsupported,
+                ClrmdValueIssue.RuntimeUnsupported);
+        }
+
+        if (fields.Length > ClrmdStaticRuntimeDeclarationMappingCounters.MaximumRuntimeStaticFieldsExamined)
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Partial,
+                ClrmdValueIssue.LimitExceeded);
+        }
+
+        if (fields.Length != mapping.Counters.RuntimeStaticFieldsExamined)
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch);
+        }
+
+        var matches = fields
+            .Where(field => field.Token == mapping.Field.FieldDefinitionToken)
+            .Take(2)
+            .ToImmutableArray();
+        if (matches.IsEmpty)
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Unavailable,
+                ClrmdValueIssue.FieldUnavailable);
+        }
+
+        if (matches.Length != 1)
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Conflict,
+                ClrmdValueIssue.AmbiguousMatch);
+        }
+
+        var field = matches[0];
+        if (!ReferenceEquals(field.ContainingType, runtimeType) ||
+            !string.Equals(field.Name, mapping.Field.Name, StringComparison.Ordinal) ||
+            field.Attributes != mapping.Field.Attributes ||
+            field.Type is not { } fieldType ||
+            !RuntimeTypeMatchesIdentity(fieldType, mapping.Field.ObservedFieldType))
+        {
+            return StaticFieldRebindResult.Failure(
+                ClrmdStaticFieldObservationStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch);
+        }
+
+        return StaticFieldRebindResult.Success(field);
+    }
+
+    private static bool RuntimeTypeMatchesIdentity(
+        ClrType runtimeType,
+        ClrmdStaticRuntimeTypeIdentity identity)
+    {
+        if (identity.Kind != ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition ||
+            identity.RuntimeModule is not { } module ||
+            runtimeType.IsArray ||
+            runtimeType.MetadataToken != identity.TypeDefinitionToken ||
+            !string.Equals(runtimeType.Name, identity.FullName, StringComparison.Ordinal) ||
+            (runtimeType.MethodTable == 0 ? null : runtimeType.MethodTable) != identity.MethodTable ||
+            runtimeType.IsValueType != identity.IsValueType ||
+            runtimeType.IsPrimitive != identity.IsPrimitive ||
+            ((runtimeType.TypeAttributes & TypeAttributes.Interface) != 0) != identity.IsInterface)
+        {
+            return false;
+        }
+
+        return runtimeType.Module.AppDomain.Address == module.AppDomainAddress &&
+            runtimeType.Module.Address == module.ModuleAddress &&
+            runtimeType.Module.ImageBase == module.ImageBase &&
+            runtimeType.Module.Size == module.ImageSize;
+    }
+
+    private ClrmdStaticFieldValueObservation ReadStaticInt32(
+        ClrmdStaticFieldEvaluationRequest request,
+        ulong slotAddress,
+        ClrmdStaticStorageAcquisitionEvidence acquisition)
+    {
+        var read = ReadStaticRaw(slotAddress, sizeof(int));
+        var reads = ImmutableArray.Create(read);
+        var bounds = DecoderBounds(includeStringCap: false);
+        if (!read.IsExact)
+        {
+            return IncompleteRead(request, slotAddress, reads, bounds, acquisition);
+        }
+
+        return ClrmdStaticFieldValueObservation.Exact(
+            request,
+            acquisition,
+            reads,
+            ClrmdStaticFieldValue.ExactInt32(BinaryPrimitives.ReadInt32LittleEndian(read.Bytes.AsSpan())),
+            bounds);
+    }
+
+    private ClrmdStaticFieldValueObservation ReadStaticNullableInt32(
+        ClrmdStaticFieldEvaluationRequest request,
+        ulong slotAddress,
+        ClrmdStaticStorageAcquisitionEvidence acquisition)
+    {
+        var layout = request.NullableInt32Layout!;
+        var bounds = DecoderBounds(includeStringCap: false);
+        var slot = ReadStaticRaw(slotAddress, request.PointerWidth);
+        var reads = ImmutableArray.Create(slot);
+        if (!slot.IsExact)
+        {
+            return IncompleteRead(request, slotAddress, reads, bounds, acquisition);
+        }
+
+        var targetAddress = ClrmdStaticPhysicalCanonical.DecodePointer(slot.Bytes.AsSpan(), request.PointerWidth);
+        if (targetAddress == 0)
+        {
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence: null,
+                acquisition);
+        }
+
+        var maximumAddress = request.PointerWidth == sizeof(uint) ? uint.MaxValue : ulong.MaxValue;
+        if ((ulong)(request.PointerWidth - 1) > maximumAddress - targetAddress)
+        {
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence: null,
+                acquisition);
+        }
+
+        var header = ReadStaticRaw(targetAddress, request.PointerWidth);
+        reads = reads.Add(header);
+        if (!header.IsExact)
+        {
+            return IncompleteRead(request, slotAddress, reads, bounds, acquisition);
+        }
+
+        var methodTable = ClrmdStaticPhysicalCanonical.DecodePointer(header.Bytes.AsSpan(), request.PointerWidth);
+        if (request.ObservedFieldType.MethodTable is not { } expectedMethodTable ||
+            methodTable != expectedMethodTable)
+        {
+            return ClrmdStaticFieldValueObservation.Conflict(
+                Snapshot,
+                ClrmdValueIssue.TypeMismatch,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                acquisition);
+        }
+
+        ulong valueStorageAddress;
+        try
+        {
+            valueStorageAddress = checked(targetAddress + (ulong)request.PointerWidth);
+            if ((ulong)(layout.StorageSize - 1) > maximumAddress - valueStorageAddress)
+            {
+                throw new OverflowException();
+            }
+        }
+        catch (OverflowException)
+        {
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence: null,
+                acquisition);
+        }
+
+        var flagAddress = checked(valueStorageAddress + (ulong)layout.HasValueOffset);
+        var flag = ReadStaticRaw(flagAddress, sizeof(byte));
+        reads = reads.Add(flag);
+        if (!flag.IsExact)
+        {
+            return IncompleteRead(request, slotAddress, reads, bounds, acquisition);
+        }
+
+        if (flag.Bytes[0] > 1)
+        {
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence: null,
+                acquisition);
+        }
+
+        if (flag.Bytes[0] == 0)
+        {
+            return ClrmdStaticFieldValueObservation.Exact(
+                request,
+                acquisition,
+                reads,
+                ClrmdStaticFieldValue.NullableInt32NoValue(),
+                bounds);
+        }
+
+        var valueAddress = checked(valueStorageAddress + (ulong)layout.ValueOffset);
+        var value = ReadStaticRaw(valueAddress, sizeof(int));
+        reads = reads.Add(value);
+        if (!value.IsExact)
+        {
+            return IncompleteRead(request, slotAddress, reads, bounds, acquisition);
+        }
+
+        return ClrmdStaticFieldValueObservation.Exact(
+            request,
+            acquisition,
+            reads,
+            ClrmdStaticFieldValue.NullableInt32Value(
+                BinaryPrimitives.ReadInt32LittleEndian(value.Bytes.AsSpan())),
+            bounds);
+    }
+
+    private ClrmdStaticFieldValueObservation ReadStaticReference(
+        ClrmdStaticFieldEvaluationRequest request,
+        ulong slotAddress,
+        ClrmdStaticStorageAcquisitionEvidence acquisition)
+    {
+        var slot = ReadStaticRaw(slotAddress, request.PointerWidth);
+        var reads = ImmutableArray.Create(slot);
+        var bounds = DecoderBounds(includeStringCap: false);
+        if (!slot.IsExact)
+        {
+            return IncompleteRead(request, slotAddress, reads, bounds, acquisition);
+        }
+
+        var targetAddress = ClrmdStaticPhysicalCanonical.DecodePointer(slot.Bytes.AsSpan(), request.PointerWidth);
+        if (targetAddress == 0)
+        {
+            return ClrmdStaticFieldValueObservation.Exact(
+                request,
+                acquisition,
+                reads,
+                ClrmdStaticFieldValue.NullReference(),
+                bounds);
+        }
+
+        var maximumAddress = request.PointerWidth == sizeof(uint) ? uint.MaxValue : ulong.MaxValue;
+        if ((ulong)(request.PointerWidth - 1) > maximumAddress - targetAddress)
+        {
+            var invalidTarget = ClrmdStaticTargetEvidence.InvalidHeaderAddress(
+                Snapshot,
+                request.PointerWidth,
+                targetAddress);
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                invalidTarget,
+                acquisition);
+        }
+
+        var header = ReadStaticRaw(targetAddress, request.PointerWidth);
+        reads = reads.Add(header);
+        if (!header.IsExact)
+        {
+            var unavailableTarget = ClrmdStaticTargetEvidence.HeaderUnavailable(
+                Snapshot,
+                request.PointerWidth,
+                targetAddress,
+                header);
+            return IncompleteRead(
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                acquisition,
+                unavailableTarget);
+        }
+
+        var methodTable = ClrmdStaticPhysicalCanonical.DecodePointer(header.Bytes.AsSpan(), request.PointerWidth);
+        if (methodTable == 0)
+        {
+            var invalidTarget = ClrmdStaticTargetEvidence.InvalidMethodTable(
+                Snapshot,
+                request.PointerWidth,
+                targetAddress,
+                header);
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                invalidTarget,
+                acquisition);
+        }
+
+        ClrType? runtimeType;
+        try
+        {
+            runtimeType = _runtime.GetTypeByMethodTable(methodTable);
+        }
+        catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+        {
+            runtimeType = null;
+        }
+
+        if (runtimeType is null)
+        {
+            var unavailableTarget = ClrmdStaticTargetEvidence.RuntimeTypeUnavailable(
+                Snapshot,
+                request.PointerWidth,
+                targetAddress,
+                header);
+            return ClrmdStaticFieldValueObservation.Unavailable(
+                Snapshot,
+                ClrmdValueIssue.TypeUnavailable,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                unavailableTarget,
+                acquisition);
+        }
+
+        var projectedTarget = ProjectStaticTargetType(runtimeType);
+        var targetType = projectedTarget.Status == ClrmdEvidenceStatus.Exact
+            ? projectedTarget.Value
+            : null;
+
+        if (targetType is null)
+        {
+            var unavailableTarget = ClrmdStaticTargetEvidence.RuntimeTypeUnavailable(
+                Snapshot,
+                request.PointerWidth,
+                targetAddress,
+                header);
+            return ClrmdStaticFieldValueObservation.Unavailable(
+                Snapshot,
+                ClrmdValueIssue.TypeUnavailable,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                unavailableTarget,
+                acquisition);
+        }
+
+        ClrmdStaticTargetEvidence targetEvidence;
+        if (targetType.MethodTable != methodTable)
+        {
+            targetEvidence = ClrmdStaticTargetEvidence.RuntimeTypeConflict(
+                Snapshot,
+                request.PointerWidth,
+                targetAddress,
+                header,
+                targetType);
+            return ClrmdStaticFieldValueObservation.Conflict(
+                Snapshot,
+                ClrmdValueIssue.TypeMismatch,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence,
+                acquisition);
+        }
+
+        targetEvidence = ClrmdStaticTargetEvidence.Matched(
+            Snapshot,
+            request.PointerWidth,
+            targetAddress,
+            header,
+            targetType);
+        var objectReference = ClrmdExactObjectReference.Create(targetEvidence);
+        if (request.ValueShape == ClrmdStaticFieldValueShape.ObjectReference)
+        {
+            return ClrmdStaticFieldValueObservation.Exact(
+                request,
+                acquisition,
+                reads,
+                ClrmdStaticFieldValue.ExactObjectReference(objectReference),
+                bounds);
+        }
+
+        return ReadStaticString(request, slotAddress, acquisition, reads, targetEvidence, objectReference);
+    }
+
+    private ClrmdStaticFieldValueObservation ReadStaticString(
+        ClrmdStaticFieldEvaluationRequest request,
+        ulong slotAddress,
+        ClrmdStaticStorageAcquisitionEvidence acquisition,
+        ImmutableArray<ClrmdRawMemoryEvidence> reads,
+        ClrmdStaticTargetEvidence targetEvidence,
+        ClrmdExactObjectReference objectReference)
+    {
+        ulong lengthAddress;
+        try
+        {
+            lengthAddress = checked(objectReference.Address + (ulong)request.PointerWidth);
+        }
+        catch (OverflowException)
+        {
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                DecoderBounds(includeStringCap: false),
+                targetEvidence,
+                acquisition);
+        }
+
+        var length = ReadStaticRaw(lengthAddress, sizeof(int));
+        reads = reads.Add(length);
+        var bounds = DecoderBounds(includeStringCap: length.IsExact &&
+            BinaryPrimitives.ReadInt32LittleEndian(length.Bytes.AsSpan()) >= 0);
+        if (!length.IsExact)
+        {
+            return IncompleteRead(request, slotAddress, reads, bounds, acquisition, targetEvidence);
+        }
+
+        var characterCount = BinaryPrimitives.ReadInt32LittleEndian(length.Bytes.AsSpan());
+        if (characterCount < 0)
+        {
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence,
+                acquisition);
+        }
+
+        if (characterCount > ClrmdExactStringValue.MaximumCharacters)
+        {
+            return ClrmdStaticFieldValueObservation.Partial(
+                Snapshot,
+                ClrmdValueIssue.LimitExceeded,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence,
+                acquisition);
+        }
+
+        if (characterCount == 0)
+        {
+            var exactString = ClrmdExactStringValue.Create(
+                objectReference,
+                string.Empty,
+                length,
+                characterEvidence: null);
+            return ClrmdStaticFieldValueObservation.Exact(
+                request,
+                acquisition,
+                reads,
+                ClrmdStaticFieldValue.ExactString(exactString),
+                bounds);
+        }
+
+        var characterByteCount = checked(characterCount * sizeof(char));
+        ulong characterAddress;
+        try
+        {
+            characterAddress = checked(lengthAddress + sizeof(int));
+            var maximumAddress = request.PointerWidth == sizeof(uint) ? uint.MaxValue : ulong.MaxValue;
+            if ((ulong)(characterByteCount - 1) > maximumAddress - characterAddress)
+            {
+                throw new OverflowException();
+            }
+        }
+        catch (OverflowException)
+        {
+            return ClrmdStaticFieldValueObservation.Invalid(
+                Snapshot,
+                ClrmdValueIssue.InvalidData,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence,
+                acquisition);
+        }
+
+        var characters = ReadStaticRaw(characterAddress, characterByteCount);
+        reads = reads.Add(characters);
+        if (!characters.IsExact)
+        {
+            return IncompleteRead(request, slotAddress, reads, bounds, acquisition, targetEvidence);
+        }
+
+        var value = Encoding.Unicode.GetString(characters.Bytes.AsSpan());
+        var exactValue = ClrmdExactStringValue.Create(objectReference, value, length, characters);
+        return ClrmdStaticFieldValueObservation.Exact(
+            request,
+            acquisition,
+            reads,
+            ClrmdStaticFieldValue.ExactString(exactValue),
+            bounds);
+    }
+
+    private ClrmdStaticFieldValueObservation IncompleteRead(
+        ClrmdStaticFieldEvaluationRequest request,
+        ulong slotAddress,
+        ImmutableArray<ClrmdRawMemoryEvidence> reads,
+        ImmutableArray<EvaluationDeterministicBound> bounds,
+        ClrmdStaticStorageAcquisitionEvidence acquisition,
+        ClrmdStaticTargetEvidence? targetEvidence = null)
+    {
+        var finalRead = reads[^1];
+        return finalRead.Status == ClrmdRawMemoryStatus.Partial
+            ? ClrmdStaticFieldValueObservation.Partial(
+                Snapshot,
+                ClrmdValueIssue.MemoryUnavailable,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence,
+                acquisition)
+            : ClrmdStaticFieldValueObservation.Unavailable(
+                Snapshot,
+                ClrmdValueIssue.MemoryUnavailable,
+                request,
+                slotAddress,
+                reads,
+                bounds,
+                targetEvidence,
+                acquisition);
+    }
+
+    private ClrmdRawMemoryEvidence ReadStaticRaw(ulong address, int length)
+    {
+        var read = Memory.Read(address, length);
+        return read.Status switch
+        {
+            MemoryReadStatus.Exact => ClrmdRawMemoryEvidence.Exact(Snapshot, address, read.Bytes),
+            MemoryReadStatus.Partial => ClrmdRawMemoryEvidence.Partial(
+                Snapshot,
+                address,
+                length,
+                read.Bytes),
+            MemoryReadStatus.Unavailable => ClrmdRawMemoryEvidence.Unavailable(Snapshot, address, length),
+            _ => throw new InvalidOperationException("The memory reader returned an unknown completeness status."),
+        };
+    }
+
+    private static ImmutableArray<EvaluationDeterministicBound> DecoderBounds(bool includeStringCap)
+    {
+        var bounds = ImmutableArray.Create(
+            ClrmdStaticStorageAcquisitionEvidence.DeclaredApplicationDomainCountBound,
+            ClrmdStaticFieldValueObservation.DeclaredRawReadCountBound);
+        return includeStringCap
+            ? bounds.Add(ClrmdExactStringValue.DeclaredCharacterLimitBound)
+            : bounds;
+    }
+
+    private ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity> ProjectStaticTargetType(ClrType runtimeType)
+    {
+        var moduleKey = (runtimeType.Module.AppDomain.Address, runtimeType.Module.Address);
+        if (!_moduleInfos.TryGetValue(moduleKey, out var module))
+        {
+            return ClrmdEvidenceResult<ClrmdStaticRuntimeTypeIdentity>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.ModuleUnavailable);
+        }
+
+        var metadata = ReadStaticMetadata(module);
+        if (metadata.Status != ClrmdEvidenceStatus.Exact || metadata.Value is null)
+        {
+            return CopyFailure<ClrmdStaticRuntimeTypeIdentity, StaticMetadataImage>(metadata);
+        }
+
+        using var metadataImage = metadata.Value;
+        using var context = new StaticRuntimeTypeProjectionContext(this, metadataImage);
+        return context.Project(runtimeType);
+    }
+
     private ClrmdEvidenceResult<StaticMetadataImage> ReadStaticMetadata(ClrmdModuleInfo module)
     {
         var metadata = ReadCompleteMetadata(module);
@@ -411,6 +1262,20 @@ public sealed partial class ClrmdDumpSession
 
     private static bool IsClrmdRuntimeFailure(Exception exception) =>
         exception is ClrDiagnosticsException or InvalidOperationException or NotSupportedException or OverflowException;
+
+    private sealed record StaticFieldRebindResult(
+        ClrStaticField? Field,
+        ClrmdStaticFieldObservationStatus Status,
+        ClrmdValueIssue Issue)
+    {
+        internal static StaticFieldRebindResult Success(ClrStaticField field) =>
+            new(field, ClrmdStaticFieldObservationStatus.Exact, ClrmdValueIssue.None);
+
+        internal static StaticFieldRebindResult Failure(
+            ClrmdStaticFieldObservationStatus status,
+            ClrmdValueIssue issue) =>
+            new(null, status, issue);
+    }
 
     private sealed class StaticRuntimeTypeProjectionContext : IDisposable
     {
