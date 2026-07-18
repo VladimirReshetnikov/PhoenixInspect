@@ -12,12 +12,14 @@ public sealed class ClrmdModuleInfo
         int appDomainId,
         ulong metadataAddress,
         ulong metadataLength,
-        string layout)
+        string layout,
+        ulong assemblyAddress = 0)
     {
         Identity = identity;
         Name = name;
         TargetPathHint = targetPathHint;
         AppDomainId = appDomainId;
+        AssemblyAddress = assemblyAddress;
         MetadataAddress = metadataAddress;
         MetadataLength = metadataLength;
         Layout = layout;
@@ -46,6 +48,15 @@ public sealed class ClrmdModuleInfo
     /// Gets the runtime-reported numeric application-domain identifier.
     /// </summary>
     public int AppDomainId { get; }
+
+    /// <summary>
+    /// Gets the target address of the runtime assembly relation reported by ClrMD, or zero when unavailable.
+    /// </summary>
+    /// <remarks>
+    /// This internal coordinate groups a manifest module and its netmodules inside one application domain. Product
+    /// metadata binding retains the relation as operation provenance; it is not a metadata or display-name identity.
+    /// </remarks>
+    internal ulong AssemblyAddress { get; }
 
     /// <summary>
     /// Gets the target virtual address of the module metadata root, or zero when unavailable.

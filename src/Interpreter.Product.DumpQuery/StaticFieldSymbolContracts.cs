@@ -4731,7 +4731,6 @@ public sealed class StaticFieldCustomAttributeRowIdentity : IEquatable<StaticFie
         {
             var typeFlags = (TypeAttributes)target.TypeAttributes;
             if (!target.IsTopLevel || target.GenericParameterCount != 0 || target.IsAbstract ||
-                (typeFlags & System.Reflection.TypeAttributes.Sealed) == 0 ||
                 (typeFlags & System.Reflection.TypeAttributes.VisibilityMask) != System.Reflection.TypeAttributes.Public ||
                 !resolvedConstructor.Signature.AsSpan().SequenceEqual(new byte[] { 0x20, 0x00, 0x01 }) ||
                 !value.AsSpan().SequenceEqual(new byte[] { 0x01, 0x00, 0x00, 0x00 }))

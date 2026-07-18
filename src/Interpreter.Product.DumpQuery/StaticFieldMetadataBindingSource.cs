@@ -18,17 +18,21 @@ internal sealed class StaticFieldMetadataModuleInput
 {
     internal StaticFieldMetadataModuleInput(
         StaticFieldModuleInstanceIdentity module,
-        int runtimeOrdinal)
+        int runtimeOrdinal,
+        ulong assemblyAddress)
     {
         ArgumentNullException.ThrowIfNull(module);
         ArgumentOutOfRangeException.ThrowIfNegative(runtimeOrdinal);
         Module = module;
         RuntimeOrdinal = runtimeOrdinal;
+        AssemblyAddress = assemblyAddress;
     }
 
     internal StaticFieldModuleInstanceIdentity Module { get; }
 
     internal int RuntimeOrdinal { get; }
+
+    internal ulong AssemblyAddress { get; }
 }
 
 internal sealed class StaticFieldMetadataImageObservation
@@ -159,7 +163,8 @@ internal sealed class ClrmdStaticFieldMetadataBindingSource : IStaticFieldMetada
                     identity.ModuleAddress,
                     identity.ImageBase,
                     identity.ImageSize),
-                ordinal);
+                ordinal,
+                sourceModule.AssemblyAddress);
             inputs.Add(projected);
             mappings.Add(projected.Module.Sha256, sourceModule);
             if (selectedCoreLibrary is not null && sourceModule.Identity.Equals(selectedCoreLibrary.Identity))

@@ -316,7 +316,8 @@ public sealed partial class ClrmdDumpSession : IDisposable
                     module.AppDomain.Id,
                     module.MetadataAddress,
                     module.MetadataLength,
-                    module.Layout.ToString());
+                    module.Layout.ToString(),
+                    module.AssemblyAddress);
 
                 projectedModules.Add((info, module));
             }
