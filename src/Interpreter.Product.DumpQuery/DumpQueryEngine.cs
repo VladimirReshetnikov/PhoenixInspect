@@ -141,6 +141,48 @@ public static class DumpQueryEngine
             rawExpression: null);
     }
 
+    internal static DumpQueryPreparationResult PrepareStaticSuffix(
+        ClrmdDumpSession session,
+        StaticFieldExpressionDescriptor descriptor,
+        StaticFieldCandidateShape shape,
+        DumpQueryRootBinding rootBinding)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(shape);
+        ArgumentNullException.ThrowIfNull(rootBinding);
+        if (shape.SuffixShape != StaticFieldSuffixShape.DirectMember ||
+            rootBinding.ObjectBinding is null ||
+            !descriptor.CandidateShapes.Contains(shape))
+        {
+            throw new ArgumentException(
+                "Static direct-suffix preparation requires the selected descriptor shape and authoritative object binding.",
+                nameof(shape));
+        }
+
+        var member = descriptor.Segments[shape.StaticFieldSegmentIndex + 1].DecodedIdentifier;
+        var literal = shape.FallbackKind switch
+        {
+            StaticFieldFallbackKind.None => null,
+            StaticFieldFallbackKind.Null => new DumpQueryLiteral(DumpQueryLiteralKind.Null, 0, null),
+            StaticFieldFallbackKind.Int32 => new DumpQueryLiteral(
+                DumpQueryLiteralKind.Int32,
+                shape.Int32Fallback!.Value,
+                null),
+            StaticFieldFallbackKind.String => new DumpQueryLiteral(
+                DumpQueryLiteralKind.String,
+                0,
+                shape.StringFallback!),
+            _ => throw new ArgumentOutOfRangeException(nameof(shape)),
+        };
+        var parsed = new DumpQueryParseResult(
+            new ParsedDumpQuery(rootBinding.Name!, member, literal),
+            DiagnosticCode: null,
+            DiagnosticMessage: null,
+            DumpQueryParserBounds.None);
+        return PrepareCore(session, parsed, rootBinding, rawExpression: null);
+    }
+
     private static DumpQueryPreparationResult PrepareCore(
         ClrmdDumpSession session,
         DumpQueryParseResult parsed,
@@ -893,6 +935,12 @@ public static class DumpQueryEngine
     internal static EvaluationProvenance? CreateRootSelectionProvenance(DumpQueryRootBinding binding)
     {
         ArgumentNullException.ThrowIfNull(binding);
+        if (binding.ObjectBinding is { } objectBinding)
+        {
+            return new EvaluationProvenance(
+                EvaluationProvenanceKind.Policy,
+                $"dump-object-binding:sha256:{objectBinding.Sha256}");
+        }
         if (binding.TypeNameSelector is null)
         {
             return null;

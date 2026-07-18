@@ -513,6 +513,107 @@ public sealed partial class ClrmdDumpSession
     }
 
     /// <summary>
+    /// Projects an already exact raw-header-first object into the compatibility shape consumed by existing W2/W6
+    /// instance-member engines without inventing a CLR handle source.
+    /// </summary>
+    /// <param name="value">The exact non-null TypeDef-backed object selected by a typed Product source.</param>
+    /// <returns>
+    /// An exact direct-address projection after runtime object, method table, TypeDef, name, module, and extent agree;
+    /// otherwise a typed unavailable, conflict, invalid, or unsupported result. The projection uses zero for the
+    /// legacy handle slot and the non-handle marker <c>TypedObjectBinding</c>.
+    /// </returns>
+    /// <remarks>
+    /// The operation performs one direct heap lookup at the already proved address and no heap enumeration or raw
+    /// memory read. It reuses the exact header bytes carried by <paramref name="value"/> as detached evidence. The
+    /// caller must retain the authoritative typed source provenance separately.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+    public ClrmdEvidenceResult<ClrmdHeapObjectInfo> ProjectExactObjectForInstanceEvaluation(
+        ClrmdExactObjectReference value)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(value);
+        if (value.Snapshot != Snapshot)
+        {
+            return ClrmdEvidenceResult<ClrmdHeapObjectInfo>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.SnapshotMismatch);
+        }
+        var identity = value.HeaderRuntimeType;
+        if (identity.Kind != ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition ||
+            identity.RuntimeModule is not { } runtimeModuleIdentity ||
+            identity.TypeDefinitionToken is not { } typeDefinitionToken)
+        {
+            return ClrmdEvidenceResult<ClrmdHeapObjectInfo>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.MemberShapeUnsupported);
+        }
+
+        var modules = Modules.Where(module => module.Identity == runtimeModuleIdentity).ToArray();
+        if (modules.Length != 1)
+        {
+            return ClrmdEvidenceResult<ClrmdHeapObjectInfo>.Create(
+                modules.Length == 0 ? ClrmdEvidenceStatus.Unavailable : ClrmdEvidenceStatus.Conflict,
+                modules.Length == 0 ? ClrmdValueIssue.ModuleUnavailable : ClrmdValueIssue.AmbiguousMatch);
+        }
+
+        ClrObject runtimeObject;
+        ClrType? runtimeType;
+        ulong objectSize;
+        try
+        {
+            runtimeObject = _runtime.Heap.GetObject(value.Address);
+            runtimeType = runtimeObject.Type;
+            objectSize = runtimeObject.Size;
+        }
+        catch (Exception exception) when (IsClrmdRuntimeFailure(exception) || exception is OverflowException)
+        {
+            return ClrmdEvidenceResult<ClrmdHeapObjectInfo>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData);
+        }
+        if (!runtimeObject.IsValid || runtimeType is null || objectSize < (ulong)Memory.PointerSize ||
+            value.Address > ulong.MaxValue - (objectSize - 1))
+        {
+            return ClrmdEvidenceResult<ClrmdHeapObjectInfo>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.ObjectUnavailable);
+        }
+        if (runtimeType.MethodTable != value.MethodTable ||
+            runtimeType.MetadataToken != typeDefinitionToken ||
+            !string.Equals(runtimeType.Name, identity.FullName, StringComparison.Ordinal) ||
+            !RuntimeTypeMatchesIdentity(runtimeType, identity))
+        {
+            return ClrmdEvidenceResult<ClrmdHeapObjectInfo>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch);
+        }
+
+        var header = value.HeaderEvidence;
+        var evidence = ImmutableArray.Create(MemoryReadResult.Create(
+            Memory.SourceId,
+            header.Address,
+            header.RequestedLength,
+            header.Bytes.AsSpan()));
+        var result = new ClrmdHeapObjectInfo(
+            Snapshot,
+            value.Address,
+            identity.FullName,
+            typeDefinitionToken,
+            value.MethodTable,
+            rootAddress: 0,
+            rootKind: nameof(ClrmdHeapObjectSelectionKind.TypedObjectBinding),
+            modules[0],
+            evidence,
+            ClrmdHeapObjectSelectionKind.TypedObjectBinding);
+        return ClrmdEvidenceResult<ClrmdHeapObjectInfo>.Create(
+            ClrmdEvidenceStatus.Exact,
+            ClrmdValueIssue.None,
+            result,
+            evidence);
+    }
+
+    /// <summary>
     /// Projects the complete raw specialized-value field catalog needed for Product's nullable layout proof.
     /// </summary>
     /// <param name="runtimeMapping">

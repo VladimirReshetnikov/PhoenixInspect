@@ -25,7 +25,19 @@ namespace Interpreter.W7TestTarget.Batch
         string State { get; }
     }
 
-    internal sealed record BatchRoot(string State, BatchPartition[] Partitions) : IBatchRoot;
+    internal sealed record BatchRoot(string State, BatchPartition[] Partitions) : IBatchRoot
+    {
+        internal int Marker = 0x1837A24C;
+
+        internal BatchSummary Summary = new(State, CompletedItems: 28, TotalItems: 60);
+    }
+
+    internal sealed record BatchSummary(string State, int CompletedItems, int TotalItems)
+    {
+        internal string DisplayState = State;
+
+        internal int Completed = CompletedItems;
+    }
 
     internal sealed record BatchPartition(string Name, int CompletedItems, int TotalItems);
 }

@@ -1,5 +1,6 @@
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Interpreter.Core.Abstractions;
 using Interpreter.Host.Abstractions;
 using Interpreter.Host.Dump.ClrMD;
 using Interpreter.Product.DumpQuery;
@@ -70,6 +71,21 @@ public sealed class W7StaticFieldRuntimeOperationTests
                     result,
                     "ObjectArray",
                     StaticFieldRuntimeAssignabilityKind.SystemObject),
+                result => AssertSuffix(
+                    result,
+                    StaticFieldExpressionSuffixKind.DirectMember,
+                    DumpQueryValueKind.Int32,
+                    expectedInt32: 0x1837A24C),
+                result => AssertSuffix(
+                    result,
+                    StaticFieldExpressionSuffixKind.FixedDepthMemberChain,
+                    DumpQueryValueKind.Int32,
+                    expectedInt32: 28),
+                result => AssertSuffix(
+                    result,
+                    StaticFieldExpressionSuffixKind.FixedDepthMemberChain,
+                    DumpQueryValueKind.String,
+                    expectedString: "processing"),
                 result =>
                 {
                     Assert.Equal(StaticFieldExpressionEvaluationStage.Syntax, result.Stage);
@@ -127,6 +143,41 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 Assert.Equal(DumpObjectProvenanceKind.StaticFieldExpression, binding.Provenance.Kind);
                 Assert.Equal(proof.ObjectReference.Address, binding.Identity.Address);
                 Assert.Equal(result.Observation, binding.Provenance.StaticField!.Observation);
+            }
+
+            static void AssertSuffix(
+                StaticFieldExpressionEvaluationResult result,
+                StaticFieldExpressionSuffixKind suffixKind,
+                DumpQueryValueKind valueKind,
+                int? expectedInt32 = null,
+                string? expectedString = null)
+            {
+                Assert.Equal(StaticFieldExpressionEvaluationStage.Complete, result.Stage);
+                Assert.Equal(StaticFieldExpressionEvaluationStatus.Exact, result.Status);
+                Assert.Equal(suffixKind, result.SuffixKind);
+                Assert.NotNull(result.ObjectBinding);
+                Assert.Equal(ClrmdStaticFieldTerminalKind.ObjectReference, result.HostObservation!.Value!.Kind);
+                var suffix = Assert.IsType<EvaluationResult<DumpQueryValue>>(result.SuffixResult);
+                Assert.Equal(EvaluationCompletionStatus.Completed, suffix.Completion);
+                Assert.Equal(EvaluationCompleteness.Complete, suffix.Completeness);
+                Assert.Equal(EvaluationEvidenceStatus.Exact, suffix.Evidence);
+                Assert.Equal(EvaluationEffectStatus.None, suffix.Effects);
+                var value = Assert.IsType<DumpQueryValue>(suffix.Value);
+                Assert.Equal(valueKind, value.Kind);
+                Assert.Equal(expectedInt32, value.Int32Value);
+                Assert.Equal(expectedString, value.StringValue);
+                Assert.Contains(suffix.Provenance, provenance =>
+                    provenance.SourceId == $"dump-object-binding:sha256:{result.ObjectBinding.Sha256}");
+                if (suffixKind == StaticFieldExpressionSuffixKind.DirectMember)
+                {
+                    Assert.NotNull(result.DirectSuffixPlan);
+                    Assert.Null(result.MemberChainSuffixPlan);
+                }
+                else
+                {
+                    Assert.Null(result.DirectSuffixPlan);
+                    Assert.NotNull(result.MemberChainSuffixPlan);
+                }
             }
         }
         finally
@@ -393,6 +444,11 @@ public sealed class W7StaticFieldRuntimeOperationTests
             StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.InterfaceRoot"),
             StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.NumberArray"),
             StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.ObjectArray"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.Root.Marker"),
+            StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.Root.Summary.Completed"),
+            StaticFieldExpressionEvaluator.Evaluate(
+                session,
+                $"global::{owner}.Root.Summary?.DisplayState ?? \"<missing>\""),
             StaticFieldExpressionEvaluator.Evaluate(session, "global::"),
             StaticFieldExpressionEvaluator.Evaluate(session, $"global::{owner}.Root.ToString()"),
             StaticFieldExpressionEvaluator.Evaluate(

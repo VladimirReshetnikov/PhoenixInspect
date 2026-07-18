@@ -3,6 +3,18 @@ using Interpreter.Host.Abstractions;
 
 namespace Interpreter.Host.Dump.ClrMD;
 
+/// <summary>Identifies how a <see cref="ClrmdHeapObjectInfo"/> entered an instance-evaluation boundary.</summary>
+public enum ClrmdHeapObjectSelectionKind
+{
+    /// <summary>The object was selected through one CLR strong-handle family slot.</summary>
+    StrongHandle = 1,
+
+    /// <summary>
+    /// The object was already selected by a typed Product binding and is projected only for legacy instance engines.
+    /// </summary>
+    TypedObjectBinding = 2,
+}
+
 /// <summary>
 /// Carries snapshot identity, root-selection provenance, and runtime type evidence for a dump object.
 /// </summary>
@@ -16,7 +28,8 @@ public sealed class ClrmdHeapObjectInfo : IClrmdObjectIdentity
         ulong rootAddress,
         string rootKind,
         ClrmdModuleInfo module,
-        ImmutableArray<MemoryReadResult> evidence)
+        ImmutableArray<MemoryReadResult> evidence,
+        ClrmdHeapObjectSelectionKind selectionKind = ClrmdHeapObjectSelectionKind.StrongHandle)
         : this(
             snapshot,
             address,
@@ -26,7 +39,8 @@ public sealed class ClrmdHeapObjectInfo : IClrmdObjectIdentity
             rootAddress,
             rootKind,
             module,
-            evidence)
+            evidence,
+            selectionKind)
     {
     }
 
@@ -39,7 +53,8 @@ public sealed class ClrmdHeapObjectInfo : IClrmdObjectIdentity
         ulong rootAddress,
         string rootKind,
         ClrmdModuleInfo module,
-        ImmutableArray<MemoryReadResult> evidence)
+        ImmutableArray<MemoryReadResult> evidence,
+        ClrmdHeapObjectSelectionKind selectionKind = ClrmdHeapObjectSelectionKind.StrongHandle)
     {
         Snapshot = snapshot;
         Address = address;
@@ -50,6 +65,7 @@ public sealed class ClrmdHeapObjectInfo : IClrmdObjectIdentity
         RootKind = rootKind;
         Module = module;
         Evidence = evidence;
+        SelectionKind = selectionKind;
     }
 
     /// <summary>
@@ -81,13 +97,19 @@ public sealed class ClrmdHeapObjectInfo : IClrmdObjectIdentity
     /// </summary>
     public ulong MethodTable { get; }
 
+    /// <summary>Gets whether selection came from a legacy strong handle or an independently typed Product binding.</summary>
+    public ClrmdHeapObjectSelectionKind SelectionKind { get; }
+
     /// <summary>
-    /// Gets the target address of the CLR handle slot through which the object was selected.
+    /// Gets the target address of the CLR handle slot through which the object was selected, or zero for a typed
+    /// object-binding projection whose source remains outside this compatibility descriptor.
     /// </summary>
     public ulong RootAddress { get; }
 
     /// <summary>
-    /// Gets the CLR handle kind retained as root-selection provenance.
+    /// Gets the CLR handle kind retained as compatibility provenance, or the stable non-handle marker
+    /// <c>TypedObjectBinding</c> when <see cref="SelectionKind"/> is
+    /// <see cref="ClrmdHeapObjectSelectionKind.TypedObjectBinding"/>.
     /// </summary>
     public string RootKind { get; }
 

@@ -49,6 +49,7 @@ public sealed class DumpQueryRootBinding
         ClrmdHeapObjectInfo? root,
         ClrmdValueIssue issue,
         ClrmdHeapObjectSearchResult? search,
+        DumpObjectBinding? objectBinding,
         ImmutableArray<MemoryReadResult> evidence,
         ImmutableArray<EvaluationDeterministicBound> appliedBounds)
     {
@@ -59,6 +60,7 @@ public sealed class DumpQueryRootBinding
         Issue = issue;
         TypeNameSelector = search?.TypeNameSelector;
         SearchStatus = search?.Status;
+        ObjectBinding = objectBinding;
         HandlesScanned = search?.HandlesScanned;
         MaximumHandlesScanned = search?.MaximumHandlesScanned;
         MaximumMatches = search?.MaximumMatches;
@@ -88,6 +90,12 @@ public sealed class DumpQueryRootBinding
     /// <see cref="DumpQueryRootBindingStatus.ExactObject"/>; otherwise, gets <see langword="null"/>.
     /// </summary>
     public ClrmdHeapObjectInfo? Root { get; }
+
+    /// <summary>
+    /// Gets the authoritative typed object/source binding when this exact compatibility root was projected from a
+    /// common object binding; legacy host and handle selection paths return null.
+    /// </summary>
+    public DumpObjectBinding? ObjectBinding { get; }
 
     /// <summary>
     /// Gets the adapter issue explaining a partial, unavailable, conflicting, or invalid search. Exact selection and
@@ -166,6 +174,12 @@ public sealed class DumpQueryRootBinding
         ImmutableArray<EvaluationDeterministicBound> appliedBounds = default)
     {
         ArgumentNullException.ThrowIfNull(root);
+        if (root.SelectionKind == ClrmdHeapObjectSelectionKind.TypedObjectBinding)
+        {
+            throw new ArgumentException(
+                "A typed object projection requires FromObjectBinding so its authoritative source is not discarded.",
+                nameof(root));
+        }
         return new DumpQueryRootBinding(
             name,
             root.Snapshot,
@@ -173,8 +187,60 @@ public sealed class DumpQueryRootBinding
             root,
             ClrmdValueIssue.None,
             search: null,
+            objectBinding: null,
             root.Evidence,
             appliedBounds.IsDefault ? ImmutableArray<EvaluationDeterministicBound>.Empty : appliedBounds);
+    }
+
+    /// <summary>
+    /// Creates an exact compatibility root for an independently typed common object binding without treating its
+    /// source as a CLR handle.
+    /// </summary>
+    /// <param name="name">The bounded case-sensitive compatibility identifier used by an existing instance engine.</param>
+    /// <param name="root">The direct-address Host projection marked as a typed object binding.</param>
+    /// <param name="objectBinding">The authoritative source-agnostic identity and complete typed selection provenance.</param>
+    /// <returns>
+    /// An exact binding whose legacy root fields support unchanged instance-member code while
+    /// <see cref="ObjectBinding"/> preserves the actual non-handle source.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// The Host projection is not typed, the intrinsic object facts disagree, or the compatibility name is invalid.
+    /// </exception>
+    public static DumpQueryRootBinding FromObjectBinding(
+        string name,
+        ClrmdHeapObjectInfo root,
+        DumpObjectBinding objectBinding)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(objectBinding);
+        if (string.IsNullOrWhiteSpace(name) || name.Length > DumpQueryParser.MaximumIdentifierLength)
+        {
+            throw new ArgumentException("A bounded compatibility root identifier is required.", nameof(name));
+        }
+        var identity = objectBinding.Identity;
+        if (root.SelectionKind != ClrmdHeapObjectSelectionKind.TypedObjectBinding ||
+            root.RootAddress != 0 ||
+            root.Snapshot != identity.Snapshot ||
+            root.Address != identity.Address ||
+            root.MethodTable != identity.MethodTable ||
+            root.TypeMetadataToken != identity.TypeMetadataToken ||
+            root.Module.Identity != identity.RuntimeModule ||
+            !string.Equals(root.TypeName, identity.TypeName, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "The compatibility projection and authoritative common object binding disagree.",
+                nameof(root));
+        }
+        return new DumpQueryRootBinding(
+            name,
+            root.Snapshot,
+            DumpQueryRootBindingStatus.ExactObject,
+            root,
+            ClrmdValueIssue.None,
+            search: null,
+            objectBinding,
+            root.Evidence,
+            ImmutableArray<EvaluationDeterministicBound>.Empty);
     }
 
     /// <summary>
@@ -208,6 +274,7 @@ public sealed class DumpQueryRootBinding
                     null,
                     ClrmdValueIssue.None,
                     search,
+                    objectBinding: null,
                     search.Evidence,
                     bounds),
                 1 => new DumpQueryRootBinding(
@@ -217,6 +284,7 @@ public sealed class DumpQueryRootBinding
                     search.Matches[0],
                     ClrmdValueIssue.None,
                     search,
+                    objectBinding: null,
                     search.Evidence,
                     bounds),
                 _ => new DumpQueryRootBinding(
@@ -226,6 +294,7 @@ public sealed class DumpQueryRootBinding
                     null,
                     ClrmdValueIssue.AmbiguousMatch,
                     search,
+                    objectBinding: null,
                     search.Evidence,
                     bounds),
             };
@@ -246,6 +315,7 @@ public sealed class DumpQueryRootBinding
             null,
             search.Issue,
             search,
+            objectBinding: null,
             search.Evidence,
             bounds);
     }
@@ -259,6 +329,7 @@ public sealed class DumpQueryRootBinding
         null,
         ClrmdValueIssue.ObjectUnavailable,
         search: null,
+        objectBinding: null,
         ImmutableArray<MemoryReadResult>.Empty,
         ImmutableArray<EvaluationDeterministicBound>.Empty);
 

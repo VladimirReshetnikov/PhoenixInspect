@@ -33,6 +33,25 @@ public enum StaticFieldExpressionEvaluationStage
 
     /// <summary>Every required stage completed and a final exact product observation is available.</summary>
     Complete = 7,
+
+    /// <summary>An exact static receiver could not produce one immutable W2/W6 suffix plan.</summary>
+    SuffixPreparation = 8,
+
+    /// <summary>A frozen W2/W6 suffix plan ran but did not produce one exact complete answer.</summary>
+    SuffixEvaluation = 9,
+}
+
+/// <summary>Identifies whether a selected static field is terminal or feeds an existing instance-suffix engine.</summary>
+public enum StaticFieldExpressionSuffixKind
+{
+    /// <summary>The static field itself is the complete expression terminal.</summary>
+    None = 0,
+
+    /// <summary>One direct member is evaluated by the unchanged W2 plan and decoder engine.</summary>
+    DirectMember = 1,
+
+    /// <summary>Two instance hops are evaluated by the unchanged W6 member-chain plan and decoder engine.</summary>
+    FixedDepthMemberChain = 2,
 }
 
 /// <summary>Classifies the terminal evidence disposition of one complete static-expression evaluation attempt.</summary>
@@ -101,6 +120,10 @@ public sealed class StaticFieldExpressionEvaluationResult :
         ClrmdStaticFieldValueObservation? hostObservation,
         StaticFieldObservation? observation,
         DumpObjectBinding? objectBinding,
+        StaticFieldExpressionSuffixKind suffixKind,
+        DumpQueryPlan? directSuffixPlan,
+        DumpMemberChainPlan? memberChainSuffixPlan,
+        EvaluationResult<DumpQueryValue>? suffixResult,
         string? diagnosticCode,
         string? diagnosticMessage)
     {
@@ -123,11 +146,15 @@ public sealed class StaticFieldExpressionEvaluationResult :
         HostObservation = hostObservation;
         Observation = observation;
         ObjectBinding = objectBinding;
+        SuffixKind = suffixKind;
+        DirectSuffixPlan = directSuffixPlan;
+        MemberChainSuffixPlan = memberChainSuffixPlan;
+        SuffixResult = suffixResult;
         DiagnosticCode = diagnosticCode;
         DiagnosticMessage = diagnosticMessage;
 
         ValidateShape();
-        var writer = new CanonicalReplayEncoding.Writer("static-field-expression-evaluation-result", 1);
+        var writer = new CanonicalReplayEncoding.Writer("static-field-expression-evaluation-result", 2);
         writer.WriteLengthPrefixedBytes(syntax.CanonicalBytes.AsSpan());
         WriteOptionalCanonical(writer, symbolBinding?.CanonicalBytes);
         writer.WriteInt32((int)stage);
@@ -147,6 +174,16 @@ public sealed class StaticFieldExpressionEvaluationResult :
         WriteOptionalCanonical(writer, hostObservation?.CanonicalBytes);
         WriteOptionalCanonical(writer, observation?.CanonicalBytes);
         WriteOptionalCanonical(writer, objectBinding?.CanonicalBytes);
+        writer.WriteInt32((int)suffixKind);
+        WriteOptionalString(writer, directSuffixPlan?.ToCanonicalReplayProjection());
+        WriteOptionalString(writer, memberChainSuffixPlan?.ToCanonicalReplayProjection());
+        WriteOptionalCanonical(
+            writer,
+            suffixResult is null
+                ? null
+                : EvaluationResultReplay.SerializeCanonical(
+                    suffixResult,
+                    static value => value.ToCanonicalReplayProjection()).ToImmutableArray());
         WriteOptionalString(writer, diagnosticCode);
         WriteOptionalString(writer, diagnosticMessage);
         canonicalBytes = writer.ToImmutableArray();
@@ -205,6 +242,21 @@ public sealed class StaticFieldExpressionEvaluationResult :
     /// </summary>
     public DumpObjectBinding? ObjectBinding { get; }
 
+    /// <summary>Gets whether the static terminal had no suffix or fed the existing W2/W6 instance engine.</summary>
+    public StaticFieldExpressionSuffixKind SuffixKind { get; }
+
+    /// <summary>Gets the frozen unchanged W2 direct-member plan when that suffix prepared successfully.</summary>
+    public DumpQueryPlan? DirectSuffixPlan { get; }
+
+    /// <summary>Gets the frozen unchanged W6 member-chain plan when that suffix prepared successfully.</summary>
+    public DumpMemberChainPlan? MemberChainSuffixPlan { get; }
+
+    /// <summary>
+    /// Gets the existing multi-axis W2/W6 suffix result, including a typed preparation failure projected through the
+    /// same result envelope; terminal static fields return null.
+    /// </summary>
+    public EvaluationResult<DumpQueryValue>? SuffixResult { get; }
+
     /// <summary>Gets a stable evaluator-level diagnostic code only for a synthesized cross-layer stop.</summary>
     public string? DiagnosticCode { get; }
 
@@ -261,11 +313,25 @@ public sealed class StaticFieldExpressionEvaluationResult :
         {
             throw new ArgumentException("Product observation and object-binding prerequisites are incomplete.");
         }
+        if (!Enum.IsDefined(SuffixKind) ||
+            SuffixKind == StaticFieldExpressionSuffixKind.None &&
+                (DirectSuffixPlan is not null || MemberChainSuffixPlan is not null || SuffixResult is not null) ||
+            SuffixKind != StaticFieldExpressionSuffixKind.None && SuffixResult is null ||
+            SuffixKind == StaticFieldExpressionSuffixKind.DirectMember && MemberChainSuffixPlan is not null ||
+            SuffixKind == StaticFieldExpressionSuffixKind.FixedDepthMemberChain && DirectSuffixPlan is not null ||
+            (DirectSuffixPlan is not null || MemberChainSuffixPlan is not null) && ObjectBinding is null)
+        {
+            throw new ArgumentException("The selected suffix kind, immutable plan, result, and static receiver disagree.");
+        }
         if (Stage == StaticFieldExpressionEvaluationStage.Complete)
         {
             if (Status != StaticFieldExpressionEvaluationStatus.Exact ||
                 RuntimeIssue is not null || HostObservation?.Status != ClrmdStaticFieldObservationStatus.Exact ||
-                Observation?.HostObservation is null)
+                Observation?.HostObservation is null ||
+                SuffixResult is not null &&
+                    (SuffixResult.Completion != EvaluationCompletionStatus.Completed ||
+                     SuffixResult.Completeness != EvaluationCompleteness.Complete ||
+                     SuffixResult.Evidence != EvaluationEvidenceStatus.Exact))
             {
                 throw new ArgumentException("A complete evaluator result requires one exact fully composed terminal.");
             }
