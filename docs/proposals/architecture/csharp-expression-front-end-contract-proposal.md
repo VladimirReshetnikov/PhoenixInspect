@@ -332,10 +332,11 @@ null-forgiving, checked, cast, or suppression nodes. They may be semantically tr
 admitting them is a product-language decision with identity and diagnostic consequences. They remain unsupported
 until a profile explicitly adds a normalization rule and its tests.
 
-### 8.7 Planned W7 static-field expression shapes
+### 8.7 Implemented W7 static-field expression shapes
 
-The active [Post-W6 Path Forward](../../plans/post-w6-path-forward.md) applies the durable extension rule through a
-planned `StaticFieldExpressionV1` profile. Roslyn still parses the whole expression once. Project code then projects
+The completed [Post-W6 Path Forward](../../plans/post-w6-path-forward.md) applies the durable extension rule through
+the implemented `StaticFieldExpressionV1` profile. Roslyn still parses the whole expression once through the same
+internal complete-expression entry point used by W2/W5/W6. Project code then projects
 bounded identifier/member-access trees that may represent:
 
 ```text
@@ -348,10 +349,11 @@ Namespace.Type.StaticReference.<admitted W2/W6 suffix>
 
 The descriptor does not decide where namespace/type/field/suffix boundaries fall by textual convention. A project-
 owned binder enumerates bounded structural splits and requires exactly one counted-metadata TypeDef/FieldDef result.
-Fully qualified lookup is independent of frame/PDB evidence; simple type and alias spellings require the planned exact
-selected-frame/Portable-PDB import context. Valid trees outside that profile remain unsupported before context,
-metadata, or memory access. This section records the planned application of the front-end contract; it does not claim
-W7 implementation or validation.
+Fully qualified lookup is independent of frame/PDB evidence; simple type and alias spellings require exact selected-
+frame/Portable-PDB import context. Valid trees outside that profile remain unsupported before context, metadata, or
+memory access. Exact implementation source baseline `f99b12ee7` proves that production contains one direct
+`SyntaxFactory.ParseExpression` call, W7 retains the detached descriptor from that parse, and focused W7/parser/
+portfolio tests pass without a W7-specific parser or textual splitter.
 
 ## 9) Identifier and literal projection
 

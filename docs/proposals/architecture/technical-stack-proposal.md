@@ -110,7 +110,7 @@ package is centrally pinned at `5.3.0`, matching the Roslyn train in the reposit
 front end calls `SyntaxFactory.ParseExpression` with explicit C# 14 regular-source options and full-text consumption.
 
 The dependency is contained in `Interpreter.Product.DumpQuery`. Workspaces, Scripting, compilation, semantic models,
-and emission are not part of the active product path. Internal tree visitors immediately project enabled W2/W5/W6
+and emission are not part of the active product path. Internal tree visitors immediately project enabled W2/W5/W6/W7
 shapes into project-owned immutable descriptors; no Roslyn object enters core execution, dump/metadata abstractions,
 public prototype contracts, or canonical artifacts. A package or language-version change requires a three-bucket
 parser/admission corpus diff and a new or explicitly revised front-end profile identity.
@@ -378,10 +378,11 @@ W5 resolves the earlier test-host question: the repository now has one headless 
 expression-to-result facade, without declaring it a stable shipping CLI contract. See the
 completed [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md). W6 reuses that consumer as the implemented
 external boundary for the opt-in member-chain profile recorded in the completed
-[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Planned W7 reuses it through an append-only report mode
+[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Closed W7 reuses it through an append-only report mode
 for fully qualified and selected-frame/PDB-contextual static-field expressions under the
-[`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md); this does not turn the reference consumer into a shipping
-CLI.
+[`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md). The generated conformance and sixteen-dump portfolio
+modes run through fresh hidden processes and preserve earlier report schemas; this does not turn the reference
+consumer into a shipping CLI.
 
 
 ## 13) Prototype implementation snapshot (draft)
@@ -391,7 +392,7 @@ CLI.
 
 Current facts:
 
-- The solution retains ten `src/` projects with active code/contracts plus four test/target projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
+- The solution retains ten `src/` projects with active code/contracts plus seven test/target/evidence projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
 - Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Product.DumpDebugging`, and `Interpreter.Headless.ReferenceConsumer`.
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a

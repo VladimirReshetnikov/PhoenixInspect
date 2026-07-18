@@ -8,12 +8,13 @@
 > counted reference evidence, narrowly certified field-backed terminal properties, one complete Roslyn expression
 > parse with versioned subset admission, deterministic replay, and a twenty-four-incident/four-shape synthetic
 > decision corpus. This remains synthetic evidence rather than a field-readiness claim; W6 selected one concrete
-> context-acquisition category without implementing it. The active
-> [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) now makes W7 a real static-field expression-binding
+> context-acquisition category without implementing it. The completed
+> [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) makes W7 a real static-field expression-binding
 > slice: non-ambiguous fully qualified names work without frame/PDB context, while exact selected-frame/Portable-PDB
 > current-namespace, import, and simple-alias facts may bind `Type.Field`. A reference value may then enter the
-> unchanged W2/W6 suffix evaluator. W7.1 now proves the physical static-slot chain and freezes the sixteen-incident
-> manifest; product syntax/binding/context/value behavior remains W7.2–W7.7 work. Roslyn remains the sole syntax parser.
+> unchanged W2/W6 suffix evaluator. W7.1–W7.7 prove the physical static-slot chain, sole-parser projection, immutable
+> context/symbol/value contracts, selected-frame/PDB/import binding, counted values, suffix composition, and sixteen-
+> incident deterministic portfolio. Roslyn remains the sole syntax parser.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -738,7 +739,7 @@ All evaluation is cancelable and doesn’t block the rest of the UI.
 ## 13) Milestones (Proposed)
 
 The detailed W0–W4 record is in `docs/plans/future-work-planning.md`; completed W5 sequencing is in
-`docs/plans/post-w4-path-forward.md`; completed W6 sequencing is in `docs/plans/post-w5-path-forward.md`; and active
+`docs/plans/post-w4-path-forward.md`; completed W6 sequencing is in `docs/plans/post-w5-path-forward.md`; and completed
 W7 sequencing is in `docs/plans/post-w6-path-forward.md`:
 
 * **W0:** truthful baseline, CI, and deterministic smoke evidence.
@@ -792,16 +793,20 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`:
   and is not implemented by W6. Exact local closure baseline `440053ad1` passes the complete matrix and repository
   guards with zero skips. The owner's W6-only hosted disposition records the unremediable GitHub billing block without
   claiming a hosted pass or weakening the workflow.
-* **W7:** active planned prototype sequence under the
+* **W7:** closed prototype sequence under the
   [Post-W6 Path Forward](../../plans/post-w6-path-forward.md). It admits one opt-in `StaticFieldExpressionV1` profile
   over complete Roslyn trees. The context-independent guarantee uniquely binds an ordinary static field on a fully
   qualified non-generic class; the first debugger-context slice correlates one selected frame with an identity-
   validated Portable PDB and uses current namespace, namespace imports, and simple aliases for `Type.Field`. Counted
   module/type/field/domain/slot/value/target evidence yields direct scalar/string/nullable/object results or an exact
   reference receiver for unchanged W2/W6 suffix evaluation. A separate generated target/PDB and sixteen independent
-  full-dump incidents across four unrelated shapes exercise exact and imperfect context. W7.1 implements the physical
-  static-slot/replay proof, typed dump-free stage seam, and frozen incident/artifact manifest; W7.2–W7.7 still own all
-  product binding/value behavior and the materialized sixteen-dump validation.
+  full-dump incidents across four unrelated shapes exercise exact and imperfect context. W7.1–W7.7 implement the
+  physical static-slot/replay proof, typed dump-free stage seam, sole-parser descriptor, immutable context/symbol/
+  storage/value/provenance contracts, real frame/PDB/import producer, fully qualified/contextual binding, raw value
+  decoding, target validation, suffix composition, and materialized sixteen-dump validation. Exact implementation
+  source baseline `f99b12ee7` passes the complete local headless matrix and repository guards with zero skips. The
+  portfolio uniquely selects `BindingContextPrecision`; its narrow successor action remains documentation only. The
+  W7-specific owner disposition records rejected hosted jobs without claiming execution or weakening the workflow.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

@@ -28,8 +28,8 @@ milestone-selected scope.
 
 This checkpoint does not implement product method evaluation, calls, branches, broader opcode families, generic
 context reconstruction, Portable PDB projection, a second meaningful value domain, or validation beyond the named
-fixture shapes. The active [Post-W6 Path Forward](../../plans/post-w6-path-forward.md) now requires a later W7
-selected-frame/Portable-PDB import projection for static-expression binding; that planned work does not alter W3's
+fixture shapes. The completed [Post-W6 Path Forward](../../plans/post-w6-path-forward.md) later implements W7's
+selected-frame/Portable-PDB import projection for static-expression binding; that work does not alter W3's
 implemented boundary.
 
 You can make this integration feel “debugger-grade” *without* welding your IL interpreter to any single dump/metadata stack — but you’ll want one deliberate layer in between. Otherwise you end up with an interpreter whose “type system” is a Frankenstein of ClrMD objects + metadata tokens + PDB concepts, and it becomes painful to reuse for static analysis or alternate runtimes.
@@ -399,7 +399,7 @@ Not marketing — just architectural fit:
   * the closed method/local/field signature and token projection.
 
 The same library can read Portable PDB metadata, but that becomes project capability only when an admitted symbol
-fixture exercises a project-owned projection. W3 contains no such fixture. Planned W7 supplies the first one: selected
+fixture exercises a project-owned projection. W3 contains no such fixture. W7 supplies the first one: selected
 frame/MethodDef/instruction evidence plus LocalScope/ImportScope projection for current namespace, namespace imports,
 and simple aliases. Missing or mismatched symbol evidence must remain typed, and fully qualified static lookup must not
 depend on it.
@@ -444,11 +444,12 @@ The important part is: **these types don’t mention ClrMD or SRM** and partial 
 
 * **ClrMD plus counted raw reads** is the active dump truth: heap objects, field layout, metadata-root identity, and
   complete captured method bodies. `GetILInfo()` remains a useful library capability, but it is not an input to the
-  active body decoder. Bounded selected-frame correlation is planned for W7 static-expression context; stack-value
+  active body decoder. Bounded selected-frame correlation is implemented for W7 static-expression context; stack-value
   recovery remains later product work. ([GitHub][1])
 * **SRM/PEReader** is the active metadata decoder over exact counted dump metadata and over independently identified
   disk artifacts. W3 uses it for the closed structural method/signature/local/FieldDef projection; the disk PE remains
-  an oracle. Portable PDB projection remains unimplemented at current state and is an explicit W7 requirement.
+  an oracle. W7 implements the first bounded Portable-PDB identity/scope/import projection; broader symbol services
+  remain separately gated.
 * You absolutely want a **binding layer in between** to:
 
   * unify identity,

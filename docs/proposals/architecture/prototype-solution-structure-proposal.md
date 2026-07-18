@@ -8,7 +8,7 @@
 
 The earlier solution contained 42 source projects: 34 were project-file-only placeholders before this pass, including the now-implemented concrete domain. That physical decomposition encoded an unvalidated multi-product architecture and imposed build/dependency surface without behavior.
 
-The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary, W4.7 justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary, and W5.4 justified one external-process composition root/report runner. Three later experimental projects have now been removed, leaving ten source projects and fourteen projects overall. Caveat: the physical topology represents only the named generated fixtures and explicitly admitted input shapes. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
+The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary, W4.7 justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary, and W5.4 justified one external-process composition root/report runner. Three later experimental projects have now been removed. W7 adds one generated target plus two deliberately conflicting evidence fixtures, leaving ten source projects and seventeen projects overall. Caveat: the physical topology represents only the named generated fixtures and explicitly admitted input shapes. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
 
 ## 2. Current source projects
 
@@ -22,13 +22,14 @@ The solution retains ten source projects, each containing contracts or behavior 
 | `Interpreter.Metadata.Abstractions` | Project-owned metadata identities and complete method/field plus contextual direct-MethodDef projection contracts. |
 | `Interpreter.Metadata.SRM` | Active SRM/PEReader artifact adapter and reusable body, body-independent call-signature, local, and field projection over a `MetadataReader`. |
 | `Interpreter.Host.Abstractions` | Typed host/dump evidence contracts. |
-| `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, W3 snapshot-scoped execution resolution/import correlation, and W6 declared-member/reference/target/relative-storage projections through ClrMD. |
-| `Interpreter.Product.DumpQuery` | Sole complete Roslyn expression parse, versioned W2/W5/W6 tree recognition, typed snapshot-root binding, immutable canonical W2/W6 plans, bounded descriptor-only evaluation, closed value projection, and complete-corpus replay. |
-| `Interpreter.Product.DumpDebugging` | W4 standalone target projection and rooted preparation/execution plus canonical W5/W6 expression request/classification, typed method and member-chain preparation, detached dump binding, and strict mode-preserving product evaluation outcome. |
-| `Interpreter.Headless.ReferenceConsumer` | Prototype composition root: read-only dump open/root binding, append-only W5/W6 scenario execution, stable machine/human projection, typed root-selection reporting, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
+| `Interpreter.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, W3 snapshot-scoped execution resolution/import correlation, W6 declared-member/reference/target/relative-storage projections, and W7 selected-frame/PDB/import plus ordinary-static runtime declaration/storage/value/target acquisition through ClrMD. |
+| `Interpreter.Product.DumpQuery` | Sole complete Roslyn expression parse; versioned W2/W5/W6/W7 tree recognition; typed snapshot-root and static-symbol binding; immutable canonical context/symbol/storage/object/provenance and W2/W6 plans; direct static value projection; bounded suffix evaluation; and complete-corpus replay. |
+| `Interpreter.Product.DumpDebugging` | W4 standalone target projection and rooted preparation/execution plus canonical W5/W6/W7 expression request/classification, typed method/member-chain/static-expression preparation, detached dump binding, lazy W7 context acquisition, and strict mode-preserving product evaluation outcomes. |
+| `Interpreter.Headless.ReferenceConsumer` | Prototype composition root: read-only dump open/root binding, append-only W5/W6/W7 scenario execution, stable machine/human projection, typed root/static-selection reporting, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
 
-Tests are separated into a fast semantic/contract suite, a real dump integration suite, and two generated target
-executables: the general dump target and the optimized modeled-incident target. The
+Tests are separated into a fast semantic/contract suite, a real dump integration suite, and five generated target or
+evidence projects: the general dump target, optimized modeled-incident target, W7 application target, identity-
+conflict PDB fixture, and duplicate-type fixture. The
 real-dump suite contains an independently versioned 22-case/20-expression W2 corpus rather than treating one query in the W1
 omnibus test as query-product closure evidence. It also contains a dedicated W3 direct/adjusted getter lane that
 executes only exact counted dump evidence and reopens/rebinds the dump for replay. The W4.1 generated fixture freezes
@@ -59,6 +60,12 @@ depth facts, high-water integrity, event and budget ordering, resolver-free repl
   pipeline object graphs, predeclared root/scenario/outcome/value contracts, and fresh-process portfolio replay. The
   recurring blocker selects fixed-depth member navigation for prototype design. Controlled and designed fixtures both
   contribute zero representative/external-observation rows and establish no readiness rate.
+  W7 tests add one-parser static-tree projection, counted fully qualified/contextual binding, selected-frame and
+  identity-validated Portable-PDB imports/aliases, raw static scalar/string/nullable/reference reads, target
+  assignability validation, exact-null and exhaustive typed non-exact outcomes, unchanged W2/W6 suffix composition,
+  legacy canonical guards, and sixteen independent full dumps over request, batch, coordinator, and workflow shapes.
+  Two fresh hidden consumers produce byte-identical reports; representative counts remain zero and promotion is
+  rejected.
 
 ## 3. Dependency rules
 

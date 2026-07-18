@@ -36,10 +36,11 @@ The completed [`Post-W5 Path Forward`](../plans/post-w5-path-forward.md) and
 [`C# Expression Front-End and Subset-Admission Contract`](architecture/csharp-expression-front-end-contract-proposal.md)
 define W6's implemented pinned Roslyn front end, opt-in member-chain lanes, exact property/storage truth gate,
 independent twenty-four-dump/four-shape synthetic portfolio, and same/fresh/reopen replay obligations.
-The active [`Post-W6 Path Forward`](../plans/post-w6-path-forward.md) plans W7's fully qualified/contextual static-field
-expression profile, selected-frame/Portable-PDB import producer, counted no-fallback static reads, unchanged W2/W6
-suffix evaluator, and sixteen-dump/four-shape synthetic gate. W7.1 now supplies the physical slot/replay proof,
-dump-free typed stage seam, and frozen manifest/artifact inputs; it is not product binding or value evidence.
+The completed [`Post-W6 Path Forward`](../plans/post-w6-path-forward.md) records W7's fully qualified/contextual static-
+field expression profile, selected-frame/Portable-PDB import producer, counted no-fallback static reads, unchanged
+W2/W6 suffix evaluator, and sixteen-dump/four-shape synthetic gate. W7.1–W7.7 supply the physical slot/replay proof,
+dump-free typed stage seam, product parser/binder/context/storage/value path, frozen artifact inputs, generated
+conformance, and meaningful portfolio.
 Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
@@ -606,14 +607,13 @@ Markdown, headless-workflow, and authored-scope vocabulary guards. The owner's e
 of the GitHub billing block is a governance disposition, not hosted execution or pass evidence, and the checked-in
 workflow remains unchanged.
 
-## Planned W7 static-expression and binding-context evidence
+## Closed W7 static-expression and binding-context evidence
 
-W7 first requires a physical truth test against the existing optimized target. It parses
+W7 first passed a physical truth test against the existing optimized target. It parses
 `global::Interpreter.OptimizedContextTestTarget.StaticContextProbe.Root` once with pinned Roslyn, uniquely binds its
 ordinary static field from counted dump metadata, obtains the initialized slot from the pinned runtime, reads the
 pointer through project-owned dump memory, and independently validates the exact target. Convenience value reads and
-heap-type scans are late oracles only. A missing stable slot defers W7 rather than authorizing reconstruction or
-fallback.
+heap-type scans are late oracles only; the pinned runtime supplies the stable slot without reconstruction or fallback.
 
 The parser/binder lane covers fully qualified, dot-qualified, current-namespace, namespace-import, type-alias, and
 namespace-alias spellings; bounded static-field/suffix splits; symbol absence/ambiguity; complex valid-but-unadmitted
@@ -638,5 +638,8 @@ plan, result, and report artifacts. The meaningful lane consists of sixteen inde
 object-graph shapes, with exact fully qualified/contextual answers and explicit context-poison controls. Exact, null,
 absent, partial, unavailable, ambiguous, conflict, invalid, and unsupported cases remain first-stop truthful; two fresh
 reports are byte-identical; representative counts remain zero; and a substantive tie defers the successor. This
-section defines W7.2–W7.7 gates. W7.1's physical, dump-free, and manifest results do not claim that the product path or
-sixteen real dump incidents already exist.
+section records the implemented W7.2–W7.7 gates. Exact implementation source baseline `f99b12ee7` passes unit 507/507,
+complete integration 242/242, Fast 184/184, ordinary dump 29/29, optimized context 1/1, focused W7 98/98,
+`StaticFieldExpressionV1` 1/1, and `W7MeaningfulSyntheticV1` 1/1 with zero skips, plus the repository guards. The
+portfolio selects `BindingContextPrecision`; its next action remains documentation only. The W7-only owner
+disposition records rejected hosted jobs without claiming execution evidence or weakening the workflow.

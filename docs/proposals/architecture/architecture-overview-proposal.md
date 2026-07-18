@@ -22,11 +22,12 @@ checkpoint `90ade6d92` selects one fixed-depth member-chain prototype slice from
 root shapes; it adds no interpreter semantics by itself and makes no field-readiness claim. The completed
 [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) gave W6 an opt-in language profile, counted reference
 evidence, a narrow exact certificate for trivial field-backed terminal data properties, and independent headless
-replay and usefulness gates. The active [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) plans one
+replay and usefulness gates. The completed [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) implements one
 `StaticFieldExpressionV1` profile with a fully qualified metadata-binding floor, a selected-frame/Portable-PDB import-
-context slice for simple type names, counted static value reads, and reuse of unchanged W2/W6 suffix evaluation. W7.1
-now proves the ClrMD 4.0/.NET 10 physical static-slot chain and freezes the four-shape/sixteen-incident manifest;
-immutable product contracts, binding, context, value evaluation, conformance, and closure remain active work.
+context slice for simple type names, counted static value reads, and reuse of unchanged W2/W6 suffix evaluation.
+W7.1–W7.7 prove the ClrMD 4.0/.NET 10 physical static-slot chain, immutable product contracts, fully qualified and
+contextual binding, value/suffix evaluation, generated conformance, and deterministic four-shape/sixteen-incident
+portfolio. Exact implementation source baseline `f99b12ee7` passes the complete local matrix with zero skips.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -246,7 +247,7 @@ Reflection invokes CoreCLR only as the result oracle.
 The dump execution resolver applies the same SRM projection to exact counted metadata bytes, while the MethodDef RVA,
 physical tiny/fat header, code, local-signature token, padding, and declared extra sections come from counted dump
 memory. It re-parses those physical bytes, rejects disagreement, and never substitutes a disk body or signature.
-Planned W7 uses SRM for its first Portable PDB projection: bounded bytes must match the module debug identity, and
+W7 uses SRM for its first Portable PDB projection: bounded bytes must match the module debug identity, and
 MethodDebugInformation/LocalScope/ImportScope rows become immutable current-namespace/import/alias evidence for one
 selected frame. Missing symbol context degrades only dependent simple-name binding; fully qualified lookup remains a
 counted-metadata operation.
@@ -281,7 +282,7 @@ selects the exact outer field once, classifies its decoder and coalescing combin
 an object-specific plan. The evaluator caps string reads and preserves missing or partial evidence instead of treating
 it as null. A selected nullable field may produce exact null and may then be coalesced; unavailable or partial evidence
 never triggers a fallback. W6 implements one exact null-aware two-member shape and one certified data-property
-projection. Planned W7 admits qualified and exact context-bound static-member trees, binds one ordinary static field,
+projection. W7 admits qualified and exact context-bound static-member trees, binds one ordinary static field,
 and either returns its direct value or supplies a validated reference to the unchanged suffix planner. Arrays, other
 operators, deeper traversal, and frame values remain later scenario-driven increments.
 
@@ -635,7 +636,7 @@ a later milestone and are prerequisites for debugger-grade Step Out and async `M
 
 ## 10. Validated input boundary
 
-W1–W7.1's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
+W1–W7's implemented checkpoints are restricted to generated, source-controlled fixture artifacts and explicitly admitted input shapes. Their
 deterministic read, identity, context, provenance, replay, and resource-bound contracts remain active. Earlier
 out-of-scope experiments have been removed. Caveat: completing these milestones establishes no behavior
 for other artifact shapes; W5's generated and meaningful synthetic usefulness portfolios contribute zero
@@ -647,14 +648,14 @@ W6 implementation. W6 closes locally at exact source baseline `440053ad1` with a
 passing and zero skips. The owner's separate W6-only hosted disposition records the unremediable GitHub billing block
 without claiming hosted execution or weakening the workflow.
 
-The active W7 plan admits `StaticFieldExpressionV1`: bounded projection of complete Roslyn member-access trees,
+The completed W7 plan admits `StaticFieldExpressionV1`: bounded projection of complete Roslyn member-access trees,
 counted resolution of one ordinary static field on a non-generic class, direct scalar/string/nullable/reference reads,
 and exact reference validation before optional W2/W6 suffix evaluation. Fully qualified lookup is independent of
 frame/PDB availability. A bounded selected-frame producer validates one Portable PDB and supplies current namespace,
 namespace imports, and simple aliases for contextual `Type.Field` lookup; missing or ambiguous context stays typed. A
-separate generated target/PDB and sixteen-incident/four-shape synthetic portfolio exercise the contract. These are
-W7.2–W7.7 gates, not evidence that product static-expression behavior exists. W7.1 separately proves the physical
-slot/replay chain, typed dump-free stage stops, and frozen artifact/incident inputs.
+separate generated target/PDB and sixteen-incident/four-shape synthetic portfolio exercise the contract. W7.1–W7.7
+prove the physical slot/replay chain, typed dump-free stage stops, immutable identities, product composition, and
+materialized artifact/incident inputs. The reports remain designed evidence with zero representative rows.
 
 ## 11. Physical topology
 
@@ -670,19 +671,21 @@ The prototype retains only projects containing behavior or contracts exercised b
 - `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts, including
   body-independent contextual direct-MethodDef resolution, and the active SRM adapter;
 - `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, exact
-  counted W3 method/field composition into a snapshot-scoped resolver/import descriptor, and W6.3's immutable
+  counted W3 method/field composition into a snapshot-scoped resolver/import descriptor, W6.3's immutable
   declared-target/direct-field/data-property certificate with MethodDef-token physical getter acquisition and no
-  reference or leaf read, without introducing ClrMD into core execution;
+  reference or leaf read, and W7's selected-frame/PDB/import and ordinary-static declaration/storage/value/target
+  acquisition, without introducing ClrMD into core execution;
 - `Interpreter.Product.DumpQuery` — the sole internal Roslyn dependency, one complete-expression parse adapter, and
-  versioned W2/W5/W6 tree recognizers; typed root binding, immutable prepared plans, descriptor-only W2 and W6
-  `Evaluate(plan)` paths, canonical identities, and closed result-value projection remain project-owned;
+  versioned W2/W5/W6/W7 tree recognizers; typed root/static-symbol binding, immutable prepared plans, descriptor-only
+  W2 and W6 `Evaluate(plan)` paths, W7 static value/provenance/suffix composition, canonical identities, and closed
+  result-value projection remain project-owned;
 - `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
   result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
-  dump memory; ClrMD evidence binder; and W5 canonical expression classifier, typed acquisition facade, and strict
-  mode-preserving W2/W4 evaluation union. It depends on the active query, ClrMD, and SRM boundaries to compose the
+  dump memory; ClrMD evidence binder; W5 canonical expression classifier; W7 static-expression facade and lazy
+  context composition; and strict mode-preserving evaluation unions. It depends on the active query, ClrMD, and SRM boundaries to compose the
   admitted dump scenario, while the core execution projects remain backend-independent;
 - `Interpreter.Headless.ReferenceConsumer` — the independently launched prototype composition root, append-only W5/
-  W6 generated scenario consumer, stable machine/human reporter, typed root-selection projection, and usefulness-
+  W6/W7 generated scenario consumer, stable machine/human reporter, typed root/static-selection projection, and usefulness-
   portfolio raw-count/gate runner. It owns no reusable semantics and is not a shipping CLI contract.
 
 Logical seams may be documented without creating assemblies. A new project is justified only when it contains implementation, has an independently useful dependency boundary, and at least one test exercises that boundary. Empty product/model/backend projects are not placeholders.
@@ -699,6 +702,6 @@ No research subsystem enters the active roadmap merely because a proposal exists
 - **Alternative products:** a second product demonstrates reuse without weakening the dump evaluator’s result contract.
 - **Alternative metadata backend:** a corpus records an SRM deficiency and an adapter test demonstrates a better trade-off.
 
-The active W7 sequence, order-of-magnitude LOC scales, and exit tests live in
+The completed W7 sequence, order-of-magnitude LOC scales, and exit tests live in
 `docs/plans/post-w6-path-forward.md`; completed W6 remains in `docs/plans/post-w5-path-forward.md`; and
 `docs/plans/future-work-planning.md` retains the W0–W4 delivery record and research entry gates.

@@ -3,7 +3,7 @@
 > **Lifecycle:** Current · **Roadmap:** Active
 >
 > **Current delivery policy (2026-07).** W0–W6 are the closed dump-evaluator evidence baseline; the completed W6 tests
-> follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Active W7 planning follows the
+> follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Completed W7 delivery follows the
 > [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) and must not be reported as implemented evidence. The
 > repository must distinguish checked-in test code, a locally verified result, a CI-enforced gate, and a research
 > proposal. The broad abstract-analysis, virtual-stepping, dynamic, async, and performance matrices are deferred until
@@ -993,9 +993,9 @@ destinations; one headless workflow; a clean authored-scope excluded-vocabulary 
 explicitly overrode W6's hosted-only block on 2026-07-16 because the GitHub billing condition cannot be remediated in
 this milestone. That disposition is not hosted pass evidence and leaves the workflow unchanged.
 
-### Active W7 static-expression and debugger-context evidence gates
+### Closed W7 static-expression and debugger-context evidence gates
 
-W7.1 passes locally against the existing optimized target. ClrMD 3.1 correlated the exact declaration but returned a
+W7.1–W7.7 pass locally. ClrMD 3.1 correlated the exact declaration but returned a
 zero static slot for the .NET 10 dump, so the dependency pin moved to ClrMD 4.0.732401 and diagnostics client
 0.2.661903. The gate parses the fully qualified expression with pinned Roslyn, correlates exactly one ordinary static
 reference field with counted metadata, obtains a stable nonzero initialized slot, reads the pointer and target method
@@ -1003,7 +1003,7 @@ table through project-owned dump memory, and reproduces them after close/reopen.
 late comparison oracles only. The separate v1 manifest freezes sixteen independent incidents and future target/PDB
 plus companion-artifact inputs across four application shapes. Its capability-injected dump-free stage seam proves
 selected-frame/PDB/import progression, typed stops, no later calls after a stop, and context-independent qualified
-controls. The remaining paragraphs are W7.2–W7.7 obligations.
+controls. The remaining paragraphs record the W7.2–W7.7 evidence now exercised at closure.
 
 Parser/binder contract tests cover fully qualified, current-namespace, namespace-import, type-alias, namespace-alias,
 ambiguous, valid-but-unadmitted, and invalid Roslyn trees. Counting and poison sources prove one parse, bounded prefix/
@@ -1013,7 +1013,7 @@ unsupported tree. Fully qualified binding must produce the same result when ever
 The context lane selects one managed frame, correlates its module/MethodDef/instruction location, validates bounded
 Portable PDB bytes against exact module debug identity, reconstructs nested LocalScope/ImportScope evidence, and emits
 current-namespace/import/alias facts with independent exact/partial/unavailable/conflict/invalid status. Dump-free
-vectors and at least one real dump/PDB case must agree. Missing or competing context makes a dependent simple name
+vectors and real dump/PDB cases agree. Missing or competing context makes a dependent simple name
 unavailable or ambiguous without affecting its fully qualified control.
 
 Storage and product tests cover exact `Int32`, nullable, string, null, and validated object-reference values plus
@@ -1024,11 +1024,15 @@ artifacts remain byte-identical.
 
 The generated integration lane uses hidden target, dump-writer, and consumer processes. Same-process repetition, fresh
 processes, and dump close/reopen reproduce syntax/context/symbol/storage/plan/result artifacts. The meaningful lane
-requires sixteen independently generated full dumps across four unrelated graph shapes, one predeclared question per
+contains sixteen independently generated full dumps across four unrelated graph shapes, one predeclared question per
 dump, the complete typed outcome set, exact answers through fully qualified and admitted contextual spellings on every
 shape, context-poison controls, two fresh byte-identical portfolio reports, zero representative rows, and explicit tie
-deferral. These remain closure obligations; W7.1's physical and manifest counts do not substitute for the complete
-headless matrix.
+deferral. Two fresh reports are byte-identical, and the portfolio selects `BindingContextPrecision` while a
+substantive tie still defers. Exact implementation source baseline `f99b12ee7` passes unit 507/507, complete
+integration 242/242, Fast 184/184, ordinary dump 29/29, optimized context 1/1, focused W7 98/98,
+`StaticFieldExpressionV1` 1/1, and `W7MeaningfulSyntheticV1` 1/1 with zero skips, plus Markdown, headless-workflow,
+and authored-scope vocabulary guards. The W7-only owner disposition records the hosted billing rejection without
+claiming job execution or weakening the workflow.
 
 ## 9) Deferred research suites
 
@@ -1061,9 +1065,11 @@ Record the failing fixture/test, exact command and environment, expected versus 
 ## 11) Selected decision and remaining evidence question
 
 W5.5b selected fixed-depth member navigation, and closed W6 implemented it. W6.6 then used twenty-four predeclared
-designed incidents across four shapes to select one context-acquisition category. The active W7 plan turns that
+designed incidents across four shapes to select one context-acquisition category. Closed W7 turns that
 category into a static-field expression slice with a fully qualified floor and one exact selected-frame/Portable-PDB
-import-context profile, plus its own physical, generated, and meaningful synthetic gates. The remaining external
+import-context profile, plus its own physical, generated, and meaningful synthetic gates. Its portfolio uniquely
+selects `BindingContextPrecision` and the narrow documentation-only action
+`AddOneEvidenceBackedFramePdbImportAliasGenericRule`. The remaining external
 question is deliberately separate: whether later representative observations confirm, reverse, or stop that
 direction. No readiness threshold is inferred from a designed corpus, and broader external-input handling remains
 separately scoped.

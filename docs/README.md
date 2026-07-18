@@ -32,11 +32,11 @@ scope. A whole-file-identified disk PE remains only an independent oracle, never
 W4's closed design contract is
 `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. The completed
 `plans/post-w4-path-forward.md` records W5's expression-to-result path and meaningful synthetic selection, and the
-completed `plans/post-w5-path-forward.md` records W6's Roslyn migration and fixed-depth member-chain slice. The active
-successor is `plans/post-w6-path-forward.md`: bind an ordinary static field from a non-ambiguous fully qualified class
-name or exact selected-frame/Portable-PDB import context, read its value, and optionally feed a reference value into
-the unchanged W2/W6 suffix evaluator. The complete pinned Roslyn expression parser remains the sole syntax front end;
-supported behavior remains a versioned project-owned binder/evaluator subset.
+completed `plans/post-w5-path-forward.md` records W6's Roslyn migration and fixed-depth member-chain slice. The
+completed `plans/post-w6-path-forward.md` records W7: bind an ordinary static field from a non-ambiguous fully
+qualified class name or exact selected-frame/Portable-PDB import context, read its value, and optionally feed a
+reference value into the unchanged W2/W6 suffix evaluator. The complete pinned Roslyn expression parser remains the
+sole syntax front end; supported behavior remains a versioned project-owned binder/evaluator subset.
 
 W6.1–W6.7 are closed at exact locally verified source baseline `440053ad1`. One pinned complete Roslyn parse feeds only
 versioned project-owned admitted shapes; counted metadata and physical getter bodies issue detached declared-member
@@ -50,21 +50,21 @@ representative rows, rejects promotion and enum-order tie selection, and selects
 scenario from a uniquely qualified six-incident/four-shape boundary. The complete local matrix and repository guards
 pass with zero skips. The owner explicitly overrode the W6 hosted-only block on 2026-07-16 because the GitHub billing
 condition cannot be remediated in this milestone; this is not hosted pass evidence. W6's selected context category
-now informs the separately approved W7 static-field-expression plan; it is not retroactive W6 implementation evidence.
+now informs the separately approved and completed W7 static-field-expression plan; it is not retroactive W6
+implementation evidence.
 
-W7.1 is implemented locally; W7.2–W7.7 remain active. The dependency pin now uses ClrMD 4.0's .NET 10 static-base
-support after the prior 3.1 line returned a zero slot for the exact fixture. The unchanged optimized target proves
-counted TypeDef/FieldDef/reference-signature agreement, one stable nonzero slot, exact raw pointer and method-table
-reads, close/reopen/rebind replay, and late high-level/heap oracle agreement. A dump-free capability seam separately
-proves selected-frame/PDB/import short-circuiting and every typed terminal status. The context-independent product floor still
-must bind a non-ambiguous fully qualified class and ordinary static field, and the debugger-context slice must
-reconstruct current-namespace, namespace-import, and simple-alias facts from one selected managed frame and identity-
-validated Portable PDB. Exact null and every non-exact or ambiguous outcome remain distinct; no failure falls back to
-a strong-handle search, heap-type scan, arbitrary address, or repaired target. The source-controlled v1 manifest now
-freezes sixteen independent full-dump incidents across four unrelated shapes plus exact controls and the dedicated
-target/PDB/companion-assembly inputs.
-Roslyn still parses each complete bounded expression once; `StaticFieldExpressionV1` is a new project-owned tree-
-admission/binding profile, not another parser.
+W7.1–W7.7 are complete at exact implementation source baseline `f99b12ee7`. ClrMD 4.0 exposes the .NET 10 static slot;
+counted metadata, raw memory, selected managed frame, mapped-PE debug identity, bounded Portable-PDB artifact,
+LocalScope/ImportScope, contextual names, runtime declaration/storage, direct values, exact object references, and
+unchanged W2/W6 suffix evaluation compose into one no-fallback pipeline. Fully qualified names remain independent of
+frame/PDB capabilities. Exact null and every non-exact or ambiguous outcome remain distinct. Sixteen independent full
+dumps across four unrelated application shapes, an identity-conflict PDB, and a duplicate-type companion assembly
+run through two fresh hidden consumers with byte-identical reports; representative counts remain zero and promotion
+is rejected. The local closure matrix passes unit 507/507, complete integration 242/242, Fast 184/184, ordinary dump
+29/29, optimized context 1/1, focused W7 98/98, static-expression 1/1, and meaningful synthetic 1/1 with zero skips,
+plus all repository guards. The W7 portfolio selects `BindingContextPrecision`; its narrow successor action remains
+documentation only. Roslyn still parses each complete bounded expression once through the sole production parse site;
+`StaticFieldExpressionV1` is a project-owned tree-admission/binding profile, not another parser.
 
 The earlier W4 history remains recorded here. W4.1's fixture gate is implemented at
 pushed checkpoint `82363585b`, and W4.2's provenance-aware execution kernel is implemented at pushed checkpoint
@@ -306,14 +306,14 @@ docs/
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
-| `plans/post-w6-path-forward.md` | Planning | Plan | Current · Active | W7 static-field expression/context sequence: W7.1 physical truth gate and incident manifest implemented; immutable contracts, binding, selected-frame/PDB/import context, evaluation, conformance, and closure remain active. |
+| `plans/post-w6-path-forward.md` | Planning | Plan | Complete · Reference | Closed W7 static-field expression/context sequence: physical truth, immutable contracts, one-parser admission, fully qualified and selected-frame/PDB/import binding, counted values, suffix composition, sixteen-dump portfolio, selected successor category, and milestone-scoped hosted disposition. |
 | `plans/post-w5-path-forward.md` | Planning | Plan | Complete · Reference | Closed W6 opt-in bounded member-chain contract, certified terminal data-property dependency, evidence/result matrix, headless synthetic corpus, selected context-acquisition successor, and milestone-scoped hosted disposition. |
 | `plans/post-w4-path-forward.md` | Planning | Plan | Complete · Reference | Closed W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, milestone-scoped hosted-gate waiver, and evidence-selected W6 decision. |
-| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Read-only dump evaluator direction through closed W6 and active W7: physical static-slot gate complete, expression/context/value pipeline still in implementation. |
+| `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Read-only dump evaluator direction through closed W7, including fully qualified/contextual static expressions, counted static values, unchanged suffix evaluation, and the remaining product/research questions. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
 | `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, and canonical data flow. |
-| `proposals/architecture/csharp-expression-front-end-contract-proposal.md` | Architecture | Contract | Current · Supporting | Normative pinned Roslyn expression parse, stable invalid/unsupported mapping, implemented W2/W5/W6 tree admission, planned W7 static-tree application, project-owned projection, compatibility migration, and complex three-bucket conformance contract. |
+| `proposals/architecture/csharp-expression-front-end-contract-proposal.md` | Architecture | Contract | Current · Supporting | Normative sole pinned Roslyn expression parse, stable invalid/unsupported mapping, implemented W2/W5/W6/W7 tree admission, project-owned projection/binding, compatibility migration, and complex three-bucket conformance contract. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 admitted shape, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
 | `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Reference | Normative closed W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract and executable evidence record. |
@@ -321,13 +321,13 @@ docs/
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft · Research | Candidate abstract domains and analysis behavior for a later research phase. |
-| `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices, including the durable sole-Roslyn-parser boundary and planned W7 consumer reuse. |
+| `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices, including the durable sole-Roslyn-parser boundary and implemented W7 consumer/report reuse. |
 | `proposals/architecture/call-model-and-effects.md` | Architecture | Proposal | Draft · Supporting | Call classification, fallback behavior, and effect lattice contract for later method evaluation. |
 | `proposals/architecture/generic-context-resolver-proposal.md` | Architecture | Proposal | Draft · Research | Generic-context reconstruction strategy for later dump-backed method interpretation. |
 | `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical prototype layout and narrow implemented proof boundary. |
-| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised through closed W6, explicitly excluding planned-but-absent W7 surfaces; unstable. |
+| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised through closed W7, including static syntax/context/symbol/storage/value/provenance and product composition surfaces; unstable. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate execution-state, domain, and provenance semantics. |
-| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W6 and W7.1 physical/manifest gates, plus remaining W7 parser/binder/context/storage and sixteen-dump headless closure. |
+| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W7, including physical, parser/binder/context/storage, generated conformance, sixteen-dump portfolio, replay, and repository closure gates. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft · Research | BCL/IL semantic lifting and projection concepts for later phases. |
 | `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft · Research | Candidate unified registry for later modeled semantics. |
 | `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Current · Supporting | Implemented closed W3 E1/E2 encodings and explicit gates for later opcode expansion. |
@@ -339,7 +339,7 @@ docs/
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Draft · Active | ClrMD + PE/PDB integration architecture and binding-layer model. |
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft · Reference | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Draft · Active | Artifact-resolution design for PE/PDB loading and identity validation. |
-| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through W7.1, plus remaining W7 static-expression/context verification. |
+| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W7 static-expression/context verification and sixteen-dump deterministic replay. |
 | `plans/future-work-planning.md` | Planning | Plan | Current · Supporting | Detailed evidence-led W0–W4 delivery record and research entry gates. |
 | `plans/requirements-traceability-map.md` | Planning | Matrix | Current · Active | Requirements mapped separately to design, implementation, and validation evidence. |
 | `lib/README.md` | Library Notes | Index | Current · Reference | Navigation and policy for active decisions versus preserved source research. |

@@ -4,7 +4,7 @@
 
 This is the authoritative W0–W4 delivery record and research-entry-gate source for the interpreter and dump-time
 evaluation initiative. The completed W5 sequence is the [Post-W4 Path Forward](post-w4-path-forward.md), and the
-completed W6 sequence is the [Post-W5 Path Forward](post-w5-path-forward.md). The active W7 sequence is the
+completed W6 sequence is the [Post-W5 Path Forward](post-w5-path-forward.md). The completed W7 sequence is the
 [Post-W6 Path Forward](post-w6-path-forward.md). All four documents remain evidence-led: each admitted milestone must
 produce a useful executable scenario or remove a concrete obstacle to the next one.
 
@@ -14,7 +14,7 @@ The active product target is a **deterministic evaluator grounded in a read-only
 and derived-query answers; closed W4 adds explicitly counterfactual method evaluation without mutating or claiming
 historical execution of the snapshot. W5's closed expression-to-result composition and usefulness gate live in the
 [Post-W4 Path Forward](post-w4-path-forward.md). The closed opt-in W6 bounded member-chain slice and its local
-validation record live in the [Post-W5 Path Forward](post-w5-path-forward.md). Planned W7 adds one explicit
+validation record live in the [Post-W5 Path Forward](post-w5-path-forward.md). Closed W7 adds one explicit
 `StaticFieldExpressionV1` tree-admission/binding profile: fully qualified ordinary static fields bind from counted
 metadata without frame/PDB context, while a bounded selected-frame/Portable-PDB slice supplies current namespace,
 namespace imports, and simple aliases for `Type.Field`. Roslyn remains the sole complete expression parser, and a

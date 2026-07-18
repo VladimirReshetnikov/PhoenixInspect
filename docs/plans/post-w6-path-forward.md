@@ -1,6 +1,6 @@
 # Post-W6 Path Forward: W7 Static-Field Expressions and Debugger Binding Context
 
-> **Lifecycle:** Current · **Roadmap:** Active
+> **Lifecycle:** Complete · **Roadmap:** Reference
 >
 > **Decision:** implement one opt-in expression-binding profile that resolves an ordinary static field from either a
 > non-ambiguous fully qualified non-generic class name or a simple type name justified by exact selected-frame and
@@ -14,7 +14,8 @@
 > incomplete or ambiguous result when contextual evidence is insufficient.
 >
 > **Evidence boundary:** W7 is a prototype-design milestone grounded in generated and predeclared synthetic evidence.
-> It does not establish field readiness. W6's hosted disposition does not carry forward.
+> It does not establish field readiness. The owner recorded a separate W7-only disposition on 2026-07-17 after the
+> complete local matrix closed; it does not claim hosted execution and does not weaken the workflow.
 
 ## 1) Executive decision
 
@@ -60,8 +61,11 @@ namespace imports, and simple aliases to bind `Type.Field`. Missing or inexact c
 a typed unavailable/ambiguous result; it must not make the evaluator silently choose a different symbol. Arguments,
 locals, `this`, generic substitution, and the rest of C# binding remain later expansions over the same contract.
 
-W7's umbrella implementation scale is `~10K LOC`, split into `~1K LOC` checkpoints and a `~100 LOC` closure record.
-These are logarithmic planning scales and may be revised when implementation evidence changes the work.
+W7's realized umbrella implementation scale is `~10K LOC`. The coarse realized checkpoint scales are W7.0 `~1K`,
+W7.1 `~1K`, W7.2 `~10K`, W7.3 `~1K`, W7.4 `~10K`, W7.5 `~10K`, W7.6 `~1K`, and W7.7 `~100`. These are
+logarithmic scales: they describe the order of magnitude, not an exact line count. The larger W7.2/W7.4/W7.5 bands
+reflect the immutable evidence families, real frame/PDB acquisition, runtime declaration/value mapping, and suffix
+composition that became apparent during implementation.
 
 ## 2) Why this scenario
 
@@ -588,7 +592,7 @@ Before implementation changes target bytes, a source-controlled manifest freezes
 | 5 | Request | Exact null static reference | Fully qualified terminal expression → exact null after parse and binding |
 | 6 | Batch | Exact nullable with no value | Imported simple name → exact `Nullable<Int32>` no-value result |
 | 7 | Coordinator | Selected frame unavailable | Simple name → context unavailable; fully qualified control remains exact |
-| 8 | Workflow | PDB bytes unavailable/partial | Simple name → unavailable/partial context; fully qualified control remains exact |
+| 8 | Workflow | PDB bytes unavailable/partial | Imported `BatchStatics.Root` → unavailable/partial context; fully qualified control remains exact |
 | 9 | Request | PDB identity disagrees with module | Simple name → context conflict; no metadata candidate search |
 | 10 | Batch | Two active imports define the same simple type | Simple name → ambiguous symbol; fully qualified control remains exact |
 | 11 | Coordinator | Duplicate fully qualified type/field in two loaded modules | Fully qualified name → ambiguous symbol; no slot read |
@@ -642,6 +646,10 @@ percentage or production recoverability claim is emitted.
 
 **Scale:** `~1K LOC` documentation.
 
+**Implemented checkpoint:** `d692d9ec4` established the initial roadmap; `40be322ae` incorporated the required
+static-member syntax, fully qualified guarantee, selected-frame/PDB/import binding slice, and maximally inclusive
+closure gates before product implementation.
+
 Publish this plan, link it from active navigation, add traceability requirements, and freeze the exact static-field
 expression profiles, context-independent guarantee, selected-frame/PDB import slice, exclusions, evidence chain,
 portfolio outline, and closure rule before implementation.
@@ -649,7 +657,7 @@ portfolio outline, and closure rule before implementation.
 **Exit gate**
 
 - W6 remains closed and its evidence is not rewritten.
-- Current status surfaces identify W7 as the sole active delivery sequence.
+- At the W7.0 freeze, current status surfaces identify W7 as the sole active delivery sequence.
 - The static-field choice is tied to both the W6 decision, the preexisting optimized-context axis, and the debugger-
   context product requirement.
 - Documents require fully qualified access without context and the bounded selected-frame/PDB/import slice for simple
@@ -660,7 +668,7 @@ portfolio outline, and closure rule before implementation.
 
 **Scale:** `~1K LOC` implementation and tests.
 
-**Current status (2026-07-17):** implemented locally. ClrMD 3.1.455904 correlated the exact module, TypeDef, and
+**Implemented checkpoint (2026-07-17):** ClrMD 3.1.455904 correlated the exact module, TypeDef, and
 FieldDef but returned a zero slot for the .NET 10 fixture. The pin therefore moved to ClrMD 4.0.732401 and diagnostics
 client 0.2.661903, with the offline locator installed through `DataTargetOptions` at construction. The unchanged
 optimized target now proves the full counted metadata → runtime declaration/domain → slot → raw pointer → raw method
@@ -692,6 +700,10 @@ implementation.
 family, canonical encodings, defensive-copy rules, legacy golden tests, XML documentation, and invalid-input invariant
 matrix required by this checkpoint.
 
+**Implemented checkpoints:** `b38c13d9a` through `f6b692899` freeze the immutable syntax, frame/PDB/import, metadata,
+runtime declaration, value, object/provenance, canonical encoding, defensive-copy, and invariant families while
+preserving legacy identities.
+
 Add defensively immutable, content-equal host/product contracts for the projected static-access tree, selected frame,
 PDB/import evidence, symbol binding, storage observation, terminal value/object, and typed root provenance. Freeze
 canonical encodings before composition.
@@ -711,6 +723,10 @@ canonical encodings before composition.
 ### W7.3 — bounded Roslyn projection and fully qualified metadata binder
 
 **Scale:** `~1K LOC` implementation and tests.
+
+**Implemented checkpoints:** `514b72c46`, `2cbc4790d`, `6441c214f`, and `ee0baa0fb` route W7 through the sole complete
+Roslyn parse, project bounded structural candidates, expose one counted metadata catalog, and require one complete
+fully qualified TypeDef/FieldDef result independent of frame/PDB capabilities.
 
 Project the admitted Roslyn tree into bounded type/field/suffix candidates and implement the context-independent
 metadata binder for `global::Namespace.Type.Field` and unique dot-qualified equivalents.
@@ -732,6 +748,11 @@ metadata binder for `global::Namespace.Type.Field` and unique dot-qualified equi
 identity, artifact resolution, Portable-PDB scope/import projection, contextual alias/reference binding, and real-dump
 plus dump-free replay tests.
 
+**Implemented checkpoints:** `077afcaa1` through `70c16b1d0` add current-namespace/import/type-alias/namespace-alias
+expansion, exact selected-frame correlation, mapped-PE debug identity, injected bounded Portable-PDB acquisition,
+LocalScope/ImportScope projection, contextual binding, real-dump composition, and lazy context acquisition that
+fully qualified requests never invoke.
+
 Implement the bounded selected-frame context producer, exact Portable PDB identity/scope/import reader, and the
 version-one current-namespace, namespace-import, and type/namespace-alias name-resolution rules.
 
@@ -749,7 +770,14 @@ version-one current-namespace, namespace-import, and type/namespace-alias name-r
 
 ### W7.5 — counted static storage, value projection, and expression composition
 
-**Scale:** `~1K LOC` implementation and tests.
+**Scale:** `~10K LOC` implementation and tests. The initial `~1K LOC` estimate understated runtime type/declaration
+mapping, nullable layout, assignability, raw value decoding, object validation, product composition, and reuse of the
+existing W2/W6 suffix engines.
+
+**Implemented checkpoints:** `777e85749` through `42cae2577`, followed by `122fafe0c`, implement the bounded runtime
+declaration map, raw ordinary-static storage/value decoders, nullable layout, reference assignability/target
+validation, terminal/object result projection, complete static-expression pipeline, and unchanged W2/W6 suffix
+composition. `f99b12ee7` finally consolidates all profiles behind the sole complete Roslyn parse site.
 
 Implement the fixed `ClrmdDumpSession` storage operation, direct scalar/string/nullable/object results, exact reference
 validation, and composition of a reference-valued static with unchanged W2/W6 suffix planning. Add a versioned
@@ -776,6 +804,12 @@ headless report path without rewriting schema-v1/v2/v3 consumers.
 ### W7.6 — meaningful synthetic portfolio and next decision
 
 **Scale:** `~1K LOC` implementation and tests.
+
+**Implemented checkpoints:** `c94c0a39d`, `7e4c8f0fe`, and `00a9b83f3` materialize the target, identity-conflict PDB,
+duplicate-type assembly, sixteen independent full dumps, two fresh hidden consumers, exact and typed non-exact
+views, context poison controls, deterministic reports, and complete solution configuration coverage. The unique
+threshold-qualified leader is `BindingContextPrecision`; the selected documentation-only action is
+`AddOneEvidenceBackedFramePdbImportAliasGenericRule`. A substantive tie still defers.
 
 Materialize the sixteen predeclared incidents across four unrelated shapes and run two fresh portfolio consumers.
 
@@ -809,9 +843,19 @@ at the exact pushed commit satisfying the required gates.
   disposition.
 - Any selected post-W7 action is documented but not implemented as W7 work.
 
+**Closure record (2026-07-17):** exact implementation source baseline
+`f99b12ee74544194829eb90385c80ecfe80d3ebf` passes locked restore; strict serial Release solution build at zero
+warnings/errors; unit 507/507; complete integration 242/242; Fast 184/184; ordinary CI dump 29/29; optimized context
+1/1; focused W7 98/98; `StaticFieldExpressionV1` 1/1; and `W7MeaningfulSyntheticV1` 1/1, all with zero skips. Markdown
+verification covers 66 files and 106 local destinations; the workflow guard verifies every managed restore/build/test
+invocation is headless; and the authored-scope vocabulary guard passes. Only one production call to
+`SyntaxFactory.ParseExpression` remains. The checked-in four-job workflow is unchanged. GitHub rejected required jobs
+for the already-recorded billing condition; the owner's explicit W7-only override closes that hosted-only condition
+without representing the rejected jobs as execution evidence.
+
 ## 10) Verification matrix
 
-All managed commands remain headless. Exact filters may be refined as tests land, but W7 requires:
+All managed commands remain headless. The exact filters were refined as tests landed; W7 requires:
 
 | Layer | Required proof |
 |---|---|
@@ -830,7 +874,7 @@ Expected command shape:
 
 ```powershell
 .\eng\Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode
-.\eng\Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+.\eng\Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:ContinuousIntegrationBuild=true
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
 .\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=StaticFieldExpressionV1" --verbosity normal
@@ -867,6 +911,10 @@ qualified access and its first selected-frame/PDB/import slice.
 The synthetic decision advances prototype design only. No W8 implementation is pre-approved by this plan, and later
 representative observations may confirm, reverse, or stop the selected direction.
 
+The completed W7 portfolio selected `BindingContextPrecision` as its unique substantive leader. Its permitted next
+action is the narrowly named `AddOneEvidenceBackedFramePdbImportAliasGenericRule`; this is a successor-design input,
+not implementation included in W7 and not a blanket admission of broader C# binding.
+
 ## 12) Completion definition
 
 W7 closes only when all of the following are proven at current state:
@@ -897,7 +945,8 @@ W7 closes only when all of the following are proven at current state:
   disposition; and
 - any post-W7 selection remains documentation, not silently implemented successor work.
 
-Until these conditions hold, W7 remains active. `this`/argument/local values, generic/thread statics, extern aliases,
+These conditions hold under the W7-specific owner disposition recorded above, so W7 is complete for its stated
+synthetic prototype scope. `this`/argument/local values, generic/thread statics, extern aliases,
 bare `using static` members, arbitrary address contexts, deeper navigation, collection indexing, broader calls, and
 other product surfaces remain subsequent work over the W7 context and binding contracts.
 
@@ -913,6 +962,6 @@ Each W7 checkpoint is committed and pushed before the next begins. Commit messag
 - coarse realized LOC scale (`~100`, `~1K`, or `~10K`); and
 - headless validation commands and results.
 
-The active plan, traceability map, product proposal, architecture overview, testing strategy, integration plan, and
+This completed plan, traceability map, product proposal, architecture overview, testing strategy, integration plan, and
 repository navigation are reconciled whenever executable truth changes. Documentation does not claim an implemented
 checkpoint merely because this plan names it.

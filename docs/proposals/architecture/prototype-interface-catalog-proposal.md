@@ -8,7 +8,7 @@
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
 W3 concrete-IL, W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, target-outcome,
-and closed W5/W6 product proofs. It is descriptive, not a promise of compatibility. W7's static-expression,
+and closed W5/W6/W7 product proofs. It is descriptive, not a promise of compatibility. W7's static-expression,
 binding-context, symbol, storage, and value contracts are planned and therefore intentionally absent from this
 implementation inventory.
 Strengthened W3 checkpoint `19c292f9f`
@@ -402,7 +402,7 @@ fragment. W6 checkpoints extend only the explicitly selected language profile an
   classification, acquisition, and preparation failures; failure cases acquire no invented common semantic mode.
 
 The [C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md) governs
-the implemented one-parse boundary, project-owned W2/W5/W6 descriptors, and no-parse preparation/evaluation rule.
+the implemented one-parse boundary, project-owned W2/W5/W6/W7 descriptors, and no-parse preparation/evaluation rule.
 
 `Interpreter.Headless.ReferenceConsumer` remains an internal, independently launched prototype host rather than a
 stable CLI. Schema v1 preserves W5 scenario replay, schema v2 adds generated W6 exact and typed non-exact rows without
@@ -412,11 +412,12 @@ representative/external-observation denominator remains zero.
 
 ## Deliberately absent
 
-The admitted W6 expression surface still does not contain frame/local/argument/static roots or context syntax,
+The admitted expression surface still does not contain `this`/local/argument roots or context syntax,
 member chains deeper than the one-reference/one-terminal profile, collection/indexer/array navigation, arbitrary
 property execution, reflection, construction, implicit loading, conversions, general operators, or any method
 expression except exact `root.GetMarkerSummary()`. Exact-null member results, null-conditional access, and typed
-coalescing exist only inside `FixedDepthMemberChainV1`; complete C# binding/evaluation remains absent. W3's public
+coalescing exist inside `FixedDepthMemberChainV1` and as an admitted suffix after an exact W7 static reference;
+complete C# binding/evaluation remains absent. W3's public
 interpreter activation and W4.2–W4.7's provenance-aware domain/machine, graph, interpreted-call, and pure-model
 extensions remain architecture proofs rather than general query-language features. W4.6 supplies structural selection, modeled-return lineage, frozen-
 capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. W4.8 now supplies
@@ -426,14 +427,40 @@ W4 hosted closure passed in run 29463426083. Speculative
 debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
 worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
 
-The active W7 plan proposes a `StaticFieldExpressionV1` admission/binding contract over complete Roslyn trees, plus a
-selected-frame/Portable-PDB binding context and counted static-storage value observation. Fully qualified lookup must
-work without contextual evidence; exact current-namespace/import/alias context may bind simple type names. W7.1 adds
-no public interface: it proves the counted metadata/static-slot/raw-pointer/raw-header chain, advances the modeled-
-context report append-only to v2 while retaining v1 replay, and freezes the future target/PDB/incident manifest. No W7
-syntax descriptor, context/symbol/value observation, root-source provenance, facade overload, or target project is
-listed here until W7.2 or later lands it. Roslyn remains the sole complete expression parser, and project-owned binder/
-evaluator profiles remain the only route from a valid tree to a plan.
+## Implemented W7 surfaces
+
+The completed W7 plan implements `StaticFieldExpressionV1` over complete Roslyn trees. Roslyn remains the sole
+complete expression parser; `StaticFieldExpressionParser` projects its detached tree into bounded type/field/suffix
+candidates, `StaticFieldFullyQualifiedBinder` and `StaticFieldContextualBinder` require exactly one counted-metadata
+declaration, and `StaticFieldExpressionEvaluator` composes the typed stages. Fully qualified lookup performs no
+selected-frame/PDB acquisition. Contextual lookup may consume exact current-namespace, namespace-import, type-alias,
+or namespace-alias facts and never chooses by enumeration order.
+
+`Interpreter.Product.DumpQuery` now exposes immutable families for:
+
+- parsed static-access descriptors and canonical expression identities;
+- counted module/TypeDef/FieldDef declarations, contextual name expansions, rejected declaration evidence, symbol
+  candidates, and strict binding outcomes;
+- runtime type, field, ancestry, interface-implementation, nullable, method/member-reference, custom-attribute, and
+  assignability identities needed to validate decoders and object targets;
+- static value observations, direct terminal values, exact object identities/bindings, and distinct strong-handle,
+  host-supplied, and static-expression provenance; and
+- `StaticFieldExpressionEvaluationResult`, whose stage/status/suffix axes retain exact, null, absent, partial,
+  unavailable, ambiguous, conflicting, invalid, and unsupported terminal cases without candidate leakage.
+
+`Interpreter.Host.Dump.ClrMD` now exposes `DumpSelectedFrameSelector`/observation identities,
+`DumpPortablePdbArtifactResolutionRequest` and `IDumpPortablePdbArtifactResolver`, immutable Portable-PDB debug/content/
+artifact/scope/import facts, `DumpExpressionBindingContext`, runtime declaration mapping, nullable layout,
+`ClrmdStaticFieldEvaluationRequest`, counted storage/raw-memory/target evidence, exact object/string/value results, and
+the session operations that acquire those facts under fixed bounds. PDB paths remain hints until bounded bytes match
+the module debug identity. High-level runtime value reads and heap enumeration remain late oracles.
+
+The product composition overloads accept the W7 language profile, lazily acquire context only for dependent names,
+map one bound declaration to one ordinary application-domain static slot, decode the admitted direct value shapes,
+validate exact reference targets, and feed only exact non-null objects into the unchanged W2/W6 suffix planners. The
+headless reference consumer adds append-only W7 conformance and sixteen-incident portfolio modes; it remains an
+internal prototype host, not a stable CLI. Every public W7 type/method carries draft XML documentation and contract,
+canonical, invalid-input, replay, and real-dump tests.
 
 ## Change rule
 
