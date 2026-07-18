@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 
 namespace Interpreter.W7TestTarget;
 
@@ -23,7 +24,13 @@ internal static class Program
             return 91;
         }
 
-        return incidentId switch
+        var companion = LoadRequestedCompanion(args);
+        if (companion is null && args.Contains("--load-companion", StringComparer.Ordinal))
+        {
+            return 93;
+        }
+
+        var result = incidentId switch
         {
             "request-qualified-scalar" or
             "request-exact-null-reference" or
@@ -47,6 +54,39 @@ internal static class Program
 
             _ => 92,
         };
+        GC.KeepAlive(companion);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static System.Reflection.Assembly? LoadRequestedCompanion(string[] args)
+    {
+        var optionIndex = Array.IndexOf(args, "--load-companion");
+        if (optionIndex < 0)
+        {
+            return null;
+        }
+
+        if (optionIndex + 1 >= args.Length ||
+            !string.Equals(args[optionIndex + 1], "duplicate-qualified-type", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var path = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..",
+            "..",
+            "..",
+            "..",
+            "Interpreter.W7DuplicateTypeFixture",
+            "bin",
+            "Release",
+            "net10.0",
+            "Interpreter.W7DuplicateTypeFixture.dll"));
+        return File.Exists(path)
+            ? AssemblyLoadContext.Default.LoadFromAssemblyPath(path)
+            : null;
     }
 }
 

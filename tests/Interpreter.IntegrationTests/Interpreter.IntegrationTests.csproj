@@ -32,6 +32,12 @@
     <ProjectReference Include="../Interpreter.W7TestTarget/Interpreter.W7TestTarget.csproj"
                       ReferenceOutputAssembly="false"
                       AdditionalProperties="Configuration=Release" />
+    <ProjectReference Include="../Interpreter.W7PdbConflictFixture/Interpreter.W7PdbConflictFixture.csproj"
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="Configuration=Release" />
+    <ProjectReference Include="../Interpreter.W7DuplicateTypeFixture/Interpreter.W7DuplicateTypeFixture.csproj"
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="Configuration=Release" />
     <ProjectReference Include="../Interpreter.TestTarget/Interpreter.TestTarget.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

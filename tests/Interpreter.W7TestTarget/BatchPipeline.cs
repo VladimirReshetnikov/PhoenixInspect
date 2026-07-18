@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
 using Interpreter.W7TestTarget.Batch;
+using Interpreter.W7TestTarget.BatchShadow;
+using BatchValues = Interpreter.W7TestTarget.Batch.BatchStatics;
 
 namespace Interpreter.W7TestTarget.Batch
 {
@@ -50,26 +52,34 @@ namespace Interpreter.W7TestTarget.BatchContext
         internal static int Run(string incidentId)
         {
             var state = incidentId == "batch-import-ambiguity" ? "ambiguous-import" : "processing";
-            BatchStatics.State = state;
-            BatchStatics.Progress = null;
-            BatchStatics.TotalItems = StaticValues.Counter;
-            BatchStatics.Root = new BatchRoot(
+            BatchValues.State = state;
+            BatchValues.Progress = null;
+            BatchValues.TotalItems = StaticValues.Counter;
+            BatchValues.Root = new BatchRoot(
                 state,
                 [
                     new BatchPartition("primary", CompletedItems: 17, TotalItems: 29),
                     new BatchPartition("secondary", CompletedItems: 11, TotalItems: 31),
                 ]);
-            BatchStatics.InterfaceRoot = BatchStatics.Root;
-            BatchStatics.NumberArray = new[] { 13, 21, 34, 55 };
-            BatchStatics.ObjectArray = new[] { "north", "south", "east", "west" };
+            BatchValues.InterfaceRoot = BatchValues.Root;
+            BatchValues.NumberArray = new[] { 13, 21, 34, 55 };
+            BatchValues.ObjectArray = new[] { "north", "south", "east", "west" };
 
             IncidentPause.WaitForDump(incidentId);
-            GC.KeepAlive(BatchStatics.Root);
-            GC.KeepAlive(BatchStatics.InterfaceRoot);
-            GC.KeepAlive(BatchStatics.NumberArray);
-            GC.KeepAlive(BatchStatics.ObjectArray);
+            GC.KeepAlive(BatchValues.Root);
+            GC.KeepAlive(BatchValues.InterfaceRoot);
+            GC.KeepAlive(BatchValues.NumberArray);
+            GC.KeepAlive(BatchValues.ObjectArray);
             return 0;
         }
+    }
+}
+
+namespace Interpreter.W7TestTarget.BatchShadow
+{
+    internal static class BatchStatics
+    {
+        internal static string State = "shadow";
     }
 }
 
