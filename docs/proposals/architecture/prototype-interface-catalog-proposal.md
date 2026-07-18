@@ -8,9 +8,9 @@
 
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
 W3 concrete-IL, W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, target-outcome,
-and closed W5/W6/W7 product proofs. It is descriptive, not a promise of compatibility. W7's static-expression,
-binding-context, symbol, storage, and value contracts are planned and therefore intentionally absent from this
-implementation inventory.
+and closed W5/W6/W7 product proofs. It is descriptive, not a promise of compatibility. W7's implemented static-
+expression, binding-context, symbol, storage, and value contracts are recorded below. W8's approved V2 contracts are
+not implemented and therefore remain outside this implementation inventory.
 Strengthened W3 checkpoint `19c292f9f`
 passed the required local milestone-selected lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
@@ -410,22 +410,23 @@ changing the W5 path, and schema v3 evaluates twenty-four independent designed i
 Controlled/generated, designed/synthetic, and representative rows remain separate; promotion is rejected and the
 representative/external-observation denominator remains zero.
 
-## Deliberately absent
+## Deliberately absent from the implemented W2/W5/W6/W7 profiles
 
-The admitted expression surface still does not contain `this`/local/argument roots or context syntax,
-member chains deeper than the one-reference/one-terminal profile, collection/indexer/array navigation, arbitrary
-property execution, reflection, construction, implicit loading, conversions, general operators, or any method
-expression except exact `root.GetMarkerSummary()`. Exact-null member results, null-conditional access, and typed
-coalescing exist inside `FixedDepthMemberChainV1` and as an admitted suffix after an exact W7 static reference;
-complete C# binding/evaluation remains absent. W3's public
+The implemented expression profiles do not contain `this`/local/argument roots, member chains deeper than the one-
+reference/one-terminal profile, collection/indexer navigation, arbitrary property execution, reflection, construction,
+implicit loading, conversions, general operators, or any method expression except exact
+`root.GetMarkerSummary()`. Exact-null member results, null-conditional access, and typed coalescing exist inside
+`FixedDepthMemberChainV1` and as an admitted suffix after an exact W7 static reference; broader C# binding/evaluation
+is not implemented. W3's public
 interpreter activation and W4.2–W4.7's provenance-aware domain/machine, graph, interpreted-call, and pure-model
 extensions remain architecture proofs rather than general query-language features. W4.6 supplies structural selection, modeled-return lineage, frozen-
 capability execution, attempt/depth witnesses, and compiler/SRM exact/degraded/fresh conformance. W4.8 now supplies
 the rooted request/plan/result facade and runner; W4.9 supplies the ClrMD exact/degraded field producer, detached dump
 binding, and generated-dump reopen/replay result; W5/W6 expose only their explicitly admitted compositions. Exact
-W4 hosted closure passed in run 29463426083. Speculative
-debugger sessions, generic reconstruction, symbol/debug-map providers, async/dynamic models, abstract-analysis
-worklists, and service locators also remain absent; their research documents do not reserve API or assembly names.
+W4 hosted closure passed in run 29463426083. The active W8 design deliberately expands nested/generic static binding,
+scoped imports, aliases, literals, and evidence-qualified bare roots, but approval does not create an implemented API.
+Broader debugger sessions, async/dynamic models, abstract-analysis worklists, and service locators also remain absent;
+their research documents do not reserve API or assembly names.
 
 ## Implemented W7 surfaces
 
@@ -461,6 +462,19 @@ validate exact reference targets, and feed only exact non-null objects into the 
 headless reference consumer adds append-only W7 conformance and sixteen-incident portfolio modes; it remains an
 internal prototype host, not a stable CLI. Every public W7 type/method carries draft XML documentation and contract,
 canonical, invalid-input, replay, and real-dump tests.
+
+## Approved W8 contract frontier — not implemented
+
+The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves additive
+`StaticFieldExpressionV2` and `BindingContextV2` profiles rather than mutating W7. The planned inventory includes
+structured nested and closed generic type syntax, exact metadata/runtime construction identities, scope-precise import
+and alias facts, extern aliases, lexical-blocker completeness, ordinary stored fields, metadata literals, constructed
+field-signature substitution, and distinct plan/result/provenance encodings. If and only if W8.1 proves exact
+attributable frame locations, the planned inventory also includes separate `FrameValueExpressionV1` root, location,
+source, plan, result, and provenance contracts; it is never a fallback from the static profile. W8.1 must first prove
+the physical compiler, metadata, runtime-argument, definition-kind, storage, frame-value, and frame-generic branch
+dispositions. Until those gates land, no W8 public type, method, profile member, schema row, or validation result belongs
+in this implementation inventory; every W1–W7 contract remains the current executable surface.
 
 ## Change rule
 

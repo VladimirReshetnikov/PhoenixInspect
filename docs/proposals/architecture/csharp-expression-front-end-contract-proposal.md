@@ -1,13 +1,14 @@
 # C# Expression Front-End and Subset-Admission Contract
 
-> **Lifecycle:** Current · **Roadmap:** Supporting · **Milestone:** W6 (closed)
+> **Lifecycle:** Current · **Roadmap:** Supporting · **Milestones:** W6 parser boundary (closed), W7 V1 extension
+> (closed), W8 V2 extension (approved and unimplemented)
 >
 > **Decision:** use the complete Roslyn C# expression parser once per bounded request, then admit only explicitly
 > versioned syntax-tree shapes into project-owned binding and evaluation plans.
 >
 > **Implementation status:** implemented at W6.2 checkpoint `68aaf418f` at `~1K LOC` scale, including compatibility
-> and conformance tests. Closed W6 binding and evaluation consume only project-owned admitted descriptors and frozen
-> plans; Roslyn types remain inside the front-end adapter.
+> and conformance tests. Closed W6 and W7 binding/evaluation consume only project-owned admitted descriptors and frozen
+> plans; Roslyn types remain inside the front-end adapter. The approved W8 admission/binding additions do not yet exist.
 >
 > **Durable architecture rule:** every future product expression uses this same complete parser boundary. Later
 > milestones may add versioned tree admission, binding, or evaluation semantics, but must not grow a second lexer,
@@ -355,6 +356,24 @@ memory access. Exact implementation source baseline `f99b12ee7` proves that prod
 `SyntaxFactory.ParseExpression` call, W7 retains the detached descriptor from that parse, and focused W7/parser/
 portfolio tests pass without a W7-specific parser or textual splitter.
 
+### 8.8 Approved W8 V2 shapes — not implemented
+
+The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) applies the same extension rule to an additive
+`StaticFieldExpressionV2` profile. Its approved projector must preserve bounded `GenericNameSyntax`, nested named-type
+segments, `global::` and exact extern-alias-qualified roots, recursively closed type arguments, an optional admitted
+W2/W6 suffix, and a possible bare field root. It must not decide namespace/type/member partitions or generic
+construction identity while projecting syntax. Those decisions belong to the V2 binder over exact metadata, runtime,
+selected-frame, Portable-PDB, and lexical-completeness evidence.
+
+If W8.1 proves exact attributable frame locations, W8 also adds a separate `FrameValueExpressionV1` projector. That
+profile admits only bounded `ThisExpressionSyntax` or one `IdentifierNameSyntax` root plus an optional unchanged W2/W6
+suffix. Profile selection precedes projection, and a missing, duplicate, partial, or unsupported frame root never falls
+through to static-field binding. If the physical gate does not pass, the profile remains absent and its probe outcome
+becomes an executable typed non-admission.
+
+This section records a design frontier only. Until W8 implementation checkpoints land, these trees remain unsupported
+by every executable profile, and W7's classification, canonical bytes, and one-parse behavior remain unchanged.
+
 ## 9) Identifier and literal projection
 
 ### 9.1 Identifiers
@@ -363,9 +382,11 @@ New-profile semantic comparison uses `SyntaxToken.ValueText`, ordinal and case-s
 bounded request identity. This permits the parser to understand escaped and Unicode identifiers without project code
 recreating C# identifier rules. Whether a particular profile admits those spellings remains explicit.
 
-Only `IdentifierNameSyntax` is admitted in W2/W5/W6 version-one shapes. Generic names, predefined-type keywords,
-qualified aliases, and other name nodes remain valid but unsupported. Decoded identifier values longer than 64 UTF-
-16 code units fail the deterministic identifier bound before recognition.
+Only `IdentifierNameSyntax` is admitted at identifier positions in the closed W2/W5/W6 version-one shapes. W7 adds
+bounded identifier/member-access trees and the `global::` root, but still rejects generic names and non-global alias-
+qualified roots. W8 approves bounded generic names, predefined type nodes inside its closed type-argument grammar, and
+exact extern-alias-qualified roots; that V2 projection is not implemented. Decoded identifier values longer than 64
+UTF-16 code units fail the deterministic identifier bound before recognition.
 
 ### 9.2 Strings
 
@@ -504,9 +525,9 @@ W6.2 then performs one coherent front-end migration:
 
 W6.3 and later checkpoints consume only the project-owned W6 descriptor. They do not know which parser produced it.
 
-## 13) Explicit exclusions
+## 13) Implemented-profile exclusions and W8 boundary
 
-This decision does not admit:
+The complete-parser decision alone admits no product behavior. The closed W2/W5/W6 profiles do not admit:
 
 - general C# name or overload resolution;
 - locals, arguments, frames, statics, namespaces, types, aliases, or `using` directives;
@@ -517,9 +538,16 @@ This decision does not admit:
 - unbounded graph walking; or
 - any evaluation behavior not independently selected by a scenario and frozen in a project-owned plan.
 
-Roslyn can parse these constructs. The product returns `Unsupported` for their valid trees until a later evidence gate
-adds one precise shape, binding rule, value domain, resource contract, identity, diagnostic matrix, and executable
-test portfolio.
+Roslyn can parse these constructs. When the selected executable profile does not admit one, the product returns
+`Unsupported` until a later evidence gate adds a precise shape, binding rule, value domain, resource contract, identity,
+diagnostic matrix, and executable test portfolio.
+
+Closed W7 subsequently admits only its bounded non-generic static-field/member-suffix trees and selected-frame/PDB
+name context. Approved W8 deliberately adds the bounded nested/closed-generic static, scoped import/alias, extern-alias,
+literal, constructed-value, and evidence-qualified bare-root surface defined by the post-W7 plan. Exact W8.1 frame-
+location evidence may additionally admit the separate `FrameValueExpressionV1` root/suffix profile; it never widens or
+acts as fallback for `StaticFieldExpressionV2`. W8 does not make general name/overload resolution or every parseable C#
+expression an implementation claim. Before W8 checkpoints land, the executable boundary remains W7.
 
 ## 14) Completion gate
 
@@ -551,3 +579,4 @@ preparation, package placement only on `Interpreter.Product.DumpQuery`, and no R
 - Microsoft Learn: [`CSharpParseOptions`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.csharp.csharpparseoptions?view=roslyn-dotnet-5.0.0)
 - Microsoft Learn: [configure a C# language version](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version)
 - NuGet: [`Microsoft.CodeAnalysis.CSharp` 5.3.0](https://www.nuget.org/packages/Microsoft.CodeAnalysis.CSharp/5.3.0)
+- Project roadmap: [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md)

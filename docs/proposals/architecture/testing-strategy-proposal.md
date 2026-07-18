@@ -2,12 +2,13 @@
 
 > **Lifecycle:** Current · **Roadmap:** Active
 >
-> **Current delivery policy (2026-07).** W0–W6 are the closed dump-evaluator evidence baseline; the completed W6 tests
-> follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md). Completed W7 delivery follows the
-> [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) and must not be reported as implemented evidence. The
-> repository must distinguish checked-in test code, a locally verified result, a CI-enforced gate, and a research
-> proposal. The broad abstract-analysis, virtual-stepping, dynamic, async, and performance matrices are deferred until
-> their entry gates pass.
+> **Current delivery policy (2026-07).** W0–W7 are the closed dump-evaluator evidence baseline. Completed W6 and W7
+> tests follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) and
+> [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md), respectively. The active
+> [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves W8's broader test obligations, but W8 has no
+> implementation or validation evidence yet. The repository must distinguish checked-in test code, a locally verified
+> result, a CI-enforced gate, and an approved design. The broad abstract-analysis, virtual-stepping, dynamic, async,
+> and performance matrices remain behind their entry gates.
 
 ## Status
 
@@ -195,12 +196,13 @@ out-of-scope experiments have been removed.
 ### Optimized modeled-incident measurement
 
 One generated optimized Release full dump keeps predeclared `this`, argument, local, static, and strong-root probes in
-a versioned canonical v1 report. It records raw member bytes at 5/5, attributable context at 1/5, and product-query
-availability at 1/5. Unavailable cases remain in every denominator; the report contains no percentage. Stack-slot
-observation is deliberately not admitted under the pinned .NET 10 DAC support boundary, static attribution remains
-unavailable, and the exact attributable/queryable case is the strong root. This is W1 generated-context evidence, not
-a representative private-production corpus or a production recoverability rate; representative production measurement
-is not a W1 gate.
+a versioned canonical report. Historical schema v1 recorded raw member bytes at 5/5, attributable context at 1/5, and
+product-query availability at 1/5. W7's current schema v2 records attributable context at 2/5 after the exact static-
+slot correction: the static and strong-root axes are attributable, while product-query availability remains 1/5 at
+the strong root. Unavailable cases remain in every denominator; the report contains no percentage. Stack-slot
+observation remains unadmitted under the pinned .NET 10 DAC support boundary. This is generated-context evidence, not
+a representative private-production corpus or a production recoverability rate; representative measurement remains a
+separate product-readiness question.
 
 ### W0 signal status
 
@@ -215,7 +217,7 @@ is not a W1 gate.
 The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
 `CI-enforced` applies only to the gates that the successful workflow actually executed. The exact W1 closure commit is
 green, but its historical fast totals describe only the milestone-selected set at that commit. The current workflow
-runs every remaining test in each selected category and builds all 14 current projects. Caveat: this is not evidence
+runs every remaining test in each selected category and builds all 17 current projects. Caveat: this is not evidence
 beyond the named fixture shapes. Representative private-production measurement remains a separate product-readiness
 question.
 
@@ -274,7 +276,7 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 | Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
 
 Both W1 and W2 local results are corroborated by their exact-commit hosted closure runs above. Their historical project
-and test counts describe the repositories at those commits. The current workflow builds all 14 projects and runs every
+and test counts describe the repositories at those commits. The current workflow builds all 17 projects and runs every
 remaining test in each selected category. Caveat: those tests establish behavior only for the named fixture shapes.
 
 ### Current local W3 implementation verification — 2026-07-14
@@ -708,7 +710,7 @@ The pipeline targets `net10.0` and should remain small enough to diagnose:
 5. documentation/link and headless-workflow consistency checks with stable signal.
 
 All four current `dotnet test` commands run every remaining test in their selected category. Restore and build cover
-all 14 current projects. Caveat: this validates only the named fixture and input shapes.
+all 17 current projects. Caveat: this validates only the named fixture and input shapes.
 
 The historical W0 run below proves only its original jobs. A new or changed gate becomes `CI-enforced` only after a
 successful hosted run names the exact pushed closure commit; checked-in workflow text or local execution alone is
@@ -716,7 +718,7 @@ insufficient.
 
 Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/hybrid modes, or multiple operating systems until those dimensions have distinct implemented behavior and fixtures. Performance jobs become scheduled or gating only after a representative corpus and baseline exist.
 
-## 8) Exit criteria by active milestone
+## 8) Exit criteria and milestone evidence
 
 ### W0 — truthful baseline and fast feedback
 
@@ -1034,6 +1036,21 @@ integration 242/242, Fast 184/184, ordinary dump 29/29, optimized context 1/1, f
 and authored-scope vocabulary guards. The W7-only owner disposition records the hosted billing rejection without
 claiming job execution or weakening the workflow.
 
+### Approved W8 test frontier — not implemented
+
+The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves an additive
+`StaticFieldExpressionV2` test sequence for nested and closed constructed owners, scope-precise imports and aliases,
+exact extern aliases, ordinary stored fields, metadata literals, and evidence-qualified `using static` bare roots.
+W8.1 must first prove the compiler, metadata, runtime-construction, storage, and optional frame-value facts that later
+contracts consume; display-derived runtime type arguments are insufficient. W8 then requires contract, projection,
+binder, contextual, runtime/value, lexical-completeness, product-composition, and generated-conformance lanes. Its
+meaningful synthetic portfolio contains the fixed thirty-two independent core full dumps across four materially
+distinct application shapes plus one independent incident for every W8.1-admitted thread-relative, context-relative,
+RVA-backed, frame-value, or frame-generic-argument branch. W8.1 must record an admitted or typed non-admitted
+disposition for every branch. The portfolio retains per-row decision facts and tie deferral. Every managed process
+remains headless, every W1–W7 artifact remains golden, and none of these obligations is current implementation or
+validation evidence.
+
 ## 9) Deferred research suites
 
 The following are not active CI commitments:
@@ -1065,11 +1082,11 @@ Record the failing fixture/test, exact command and environment, expected versus 
 ## 11) Selected decision and remaining evidence question
 
 W5.5b selected fixed-depth member navigation, and closed W6 implemented it. W6.6 then used twenty-four predeclared
-designed incidents across four shapes to select one context-acquisition category. Closed W7 turns that
-category into a static-field expression slice with a fully qualified floor and one exact selected-frame/Portable-PDB
-import-context profile, plus its own physical, generated, and meaningful synthetic gates. Its portfolio uniquely
-selects `BindingContextPrecision` and the narrow documentation-only action
-`AddOneEvidenceBackedFramePdbImportAliasGenericRule`. The remaining external
-question is deliberately separate: whether later representative observations confirm, reverse, or stop that
-direction. No readiness threshold is inferred from a designed corpus, and broader external-input handling remains
-separately scoped.
+designed incidents across four shapes to select one context-acquisition category, which closed W7 implemented as a
+static-field expression slice with a fully qualified floor and one exact selected-frame/Portable-PDB import-context
+profile. W7's portfolio uniquely labels `BindingContextPrecision` and names
+`AddOneEvidenceBackedFramePdbImportAliasGenericRule`, but its manifest-assigned failure rows do not prove one exact
+successor rule. The approved, unimplemented W8 design therefore treats that result as direction and defines the broader
+V2 binding/runtime/storage test sequence summarized above. The remaining external question is separate: whether later
+representative observations confirm, reverse, or stop that direction. No readiness threshold is inferred from a
+designed corpus.

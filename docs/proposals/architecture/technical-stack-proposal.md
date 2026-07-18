@@ -118,6 +118,12 @@ parser/admission corpus diff and a new or explicitly revised front-end profile i
 Complete expression parsing does not imply complete binding or evaluation. Valid C# outside an enabled profile is a
 stable `Unsupported` product result.
 
+The active, approved but unimplemented
+[`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) keeps this dependency boundary for W8. It plans detached
+`StaticFieldExpressionV2` generic/nested/type/alias trees and, only if W8.1 proves exact frame locations, a separate
+`FrameValueExpressionV1` root descriptor. Constraint, accessibility, constructed-assignability, storage, and value
+binding remain project-owned; neither Roslyn semantic models nor another parser enter the product path.
+
 ---
 
 ## 4) Metadata and IL decoding stack
@@ -382,7 +388,8 @@ external boundary for the opt-in member-chain profile recorded in the completed
 for fully qualified and selected-frame/PDB-contextual static-field expressions under the
 [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md). The generated conformance and sixteen-dump portfolio
 modes run through fresh hidden processes and preserve earlier report schemas; this does not turn the reference
-consumer into a shipping CLI.
+consumer into a shipping CLI. Active W8 plans further append-only V2 and evidence-admitted-branch modes with thirty-two
+core incidents plus one per admitted branch; none exists until its named checkpoint lands.
 
 
 ## 13) Prototype implementation snapshot (draft)
@@ -492,9 +499,9 @@ Current facts:
   2,698 LOC, bringing full W4 implementation to 41,892 LOC; exact implementation closure passed in run 29463426083,
   and final documentation closure passed in run 29463847230.
 - The first product composition is a deliberately closed root-field dump query. The complete Roslyn expression front
-  end is implemented at W6.2; there is no general C# binder/evaluator, implemented selected-frame/static-expression
-  binder,
-  production object-model breadth, orchestrator, debugger control plane, or analysis engine.
+  end is implemented at W6.2, and W7 implements its bounded selected-frame/PDB/import plus fully qualified
+  `StaticFieldExpressionV1` binder/value path. There is no general C# binder/evaluator, implemented W8 V2 or frame-value
+  branch, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
   and the 22-case/20-expression fresh-session corpus reproduces all result identities plus all 13 prepared-plan

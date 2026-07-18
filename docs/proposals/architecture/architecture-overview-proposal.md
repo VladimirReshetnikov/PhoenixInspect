@@ -2,7 +2,7 @@
 
 **Lifecycle:** Current
 **Roadmap relation:** Supporting
-**Last reset:** 2026-07-16
+**Last reconciled:** 2026-07-17
 
 ## 1. Product and scope lock
 
@@ -28,6 +28,10 @@ context slice for simple type names, counted static value reads, and reuse of un
 W7.1–W7.7 prove the ClrMD 4.0/.NET 10 physical static-slot chain, immutable product contracts, fully qualified and
 contextual binding, value/suffix evaluation, generated conformance, and deterministic four-shape/sixteen-incident
 portfolio. Exact implementation source baseline `f99b12ee7` passes the complete local matrix with zero skips.
+The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) now approves additive
+`StaticFieldExpressionV2`/`BindingContextV2` profiles for nested and closed constructed owners, scope-precise imports
+and aliases, extern aliases, stored fields, metadata literals, and evidence-qualified `using static` bare roots. W8 is
+a design-approved implementation sequence, not current product or validation evidence.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -218,7 +222,7 @@ The W4.2–W4.3 path is kernel evidence only. W4.3 adds no ClrMD producer for st
 model, product facade or result projection, and it consumes no generated dump. W4.4 is preparation evidence only: it
 freezes a call graph but adds no frame transfer, request-depth enforcement, call model, or product/dump execution.
 
-The implemented W1–W5 paths use generated, source-controlled fixtures directly. Caveat: the data flow covers only the
+The implemented W1–W7 paths use generated, source-controlled fixtures directly. Caveat: the data flow covers only the
 explicitly admitted fixture and input shapes.
 
 ## 4. Active components
@@ -230,9 +234,10 @@ The ClrMD adapter owns dump loading, runtime/module discovery, heap layout queri
 Runtime module-instance evidence includes the runtime/app-domain identity, module address, image base and size, and metadata address when present. An on-disk path is only a hint to artifact acquisition and never proves that bytes came from the dump.
 
 The generated optimized Release modeled-incident measurement keeps five predeclared context axes separate from raw
-member-byte discovery. Its v1 report records raw member bytes at 5/5, attributable context at 1/5, and product-query
-availability at 1/5. Only the strong-root case is attributable/queryable; this evidence does not represent
-private-production incident recoverability.
+member-byte discovery. Historical schema v1 recorded raw member bytes at 5/5, attributable context at 1/5, and product-
+query availability at 1/5. W7's current schema v2 records attributable context at 2/5 after the exact static-slot
+correction: the static and strong-root axes are attributable, while only the strong-root query is available. This
+evidence does not represent private-production incident recoverability.
 
 ### 4.2 Artifact and metadata adapter
 
@@ -643,10 +648,10 @@ for other artifact shapes; W5's generated and meaningful synthetic usefulness po
 representative/external-observation rows. The selected fixed-depth member-chain slice now has emitted-shape,
 full-expression-parse, declaration-certificate, immutable-plan, counted-evaluation, and fresh-process headless
 evidence. Its twenty-four-incident/four-shape usefulness gate retains zero representative rows and selects one
-concrete context-acquisition scenario from a uniquely qualified six-incident boundary; that successor is not part of
-W6 implementation. W6 closes locally at exact source baseline `440053ad1` with all aggregate/focused/guard gates
-passing and zero skips. The owner's separate W6-only hosted disposition records the unremediable GitHub billing block
-without claiming hosted execution or weakening the workflow.
+concrete context-acquisition scenario from a uniquely qualified six-incident boundary; that successor was not part of
+W6 implementation and was implemented by W7. W6 closes locally at exact source baseline `440053ad1` with all
+aggregate/focused/guard gates passing and zero skips. The owner's separate W6-only hosted disposition records the
+unremediable GitHub billing block without claiming hosted execution or weakening the workflow.
 
 The completed W7 plan admits `StaticFieldExpressionV1`: bounded projection of complete Roslyn member-access trees,
 counted resolution of one ordinary static field on a non-generic class, direct scalar/string/nullable/reference reads,
@@ -656,6 +661,15 @@ namespace imports, and simple aliases for contextual `Type.Field` lookup; missin
 separate generated target/PDB and sixteen-incident/four-shape synthetic portfolio exercise the contract. W7.1–W7.7
 prove the physical slot/replay chain, typed dump-free stage stops, immutable identities, product composition, and
 materialized artifact/incident inputs. The reports remain designed evidence with zero representative rows.
+
+The approved W8 frontier preserves that fully qualified floor while broadening the explicit and contextual routes to
+nested/constructed owners, exact construction-specific slots, scope-level precedence, TypeSpec aliases, literals,
+constructed field substitution, and bounded bare-field roots. W8.1 first gates exact compiler/runtime/storage facts;
+later checkpoints add only evidence-admitted contracts and a meaningful synthetic portfolio containing the fixed
+thirty-two core independent dumps across four materially distinct shapes plus one independent incident for every
+admitted thread-relative, context-relative, RVA-backed, frame-value, or frame-generic-argument branch. W8.1 records an
+admitted or typed non-admitted disposition for each branch. No W8 surface is implemented yet, and W1–W7 canonical
+artifacts remain the executable baseline.
 
 ## 11. Physical topology
 
@@ -702,6 +716,9 @@ No research subsystem enters the active roadmap merely because a proposal exists
 - **Alternative products:** a second product demonstrates reuse without weakening the dump evaluator’s result contract.
 - **Alternative metadata backend:** a corpus records an SRM deficiency and an adapter test demonstrates a better trade-off.
 
-The completed W7 sequence, order-of-magnitude LOC scales, and exit tests live in
-`docs/plans/post-w6-path-forward.md`; completed W6 remains in `docs/plans/post-w5-path-forward.md`; and
-`docs/plans/future-work-planning.md` retains the W0–W4 delivery record and research entry gates.
+The active W8 sequence, logarithmic LOC bands, and exit tests live in
+[`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md). Completed W7 and W6 remain in
+[`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md) and
+[`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md), respectively;
+[`Future Work Planning`](../../plans/future-work-planning.md) retains the earlier delivery record and research entry
+gates.
