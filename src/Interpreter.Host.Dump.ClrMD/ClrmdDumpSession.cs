@@ -118,6 +118,28 @@ public sealed partial class ClrmdDumpSession : IDisposable
         !_dataTarget.CacheOptions.CacheStackRoots;
 
     /// <summary>
+    /// Gets the immutable catalog projection of the exact module selected by
+    /// <see cref="ClrRuntime.BaseClassLibrary"/>, or null when ClrMD does not expose one.
+    /// </summary>
+    /// <remarks>
+    /// The projection consults neither target paths nor a second runtime-module enumeration. It uses the selected
+    /// ClrMD module's application-domain/module coordinates to recover the corresponding entry from the catalog
+    /// frozen when this session was opened. Product code uses this internal seam to retain the selection operation as
+    /// provenance instead of guessing a core library from an assembly display name.
+    /// </remarks>
+    internal ClrmdModuleInfo? BaseClassLibraryModule
+    {
+        get
+        {
+            ThrowIfDisposed();
+            var module = _runtime.BaseClassLibrary;
+            return module is null
+                ? null
+                : _moduleInfos.GetValueOrDefault((module.AppDomain.Address, module.Address));
+        }
+    }
+
+    /// <summary>
     /// Gets managed module-instance evidence sorted by snapshot-scoped runtime identity.
     /// </summary>
     /// <remarks>The immutable catalog remains available after disposal; it performs no lazy dump reads.</remarks>
