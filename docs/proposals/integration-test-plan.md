@@ -2,7 +2,7 @@
 
 **Lifecycle:** Current
 **Roadmap relation:** Active
-**Last reconciled:** 2026-07-17
+**Last reconciled:** 2026-07-18
 
 ## Purpose
 
@@ -42,8 +42,9 @@ W2/W6 suffix evaluator, and sixteen-dump/four-shape synthetic gate. W7.1–W7.7 
 dump-free typed stage seam, product parser/binder/context/storage/value path, frozen artifact inputs, generated
 conformance, and meaningful portfolio.
 The approved-but-unimplemented [`Post-W7 Path Forward`](../plans/post-w7-path-forward.md) is now the sole active W8
-sequence. It requires physical truth gates before V2 contracts, then generated and fixed thirty-two-core-plus-admitted-
-branch-dump synthetic coverage for nested and closed constructed owners, scoped imports and aliases, exact runtime-construction identity,
+sequence. It requires physical truth gates before V2 contracts, then generated coverage and a synthetic corpus of
+thirty-two fixed core dumps plus one per admitted branch for nested and closed constructed owners, scoped imports and
+aliases, exact runtime-construction identity,
 metadata literals, stored values, and evidence-qualified bare-field lookup. Its separately predeclared thread-relative,
 context-relative, RVA-backed, frame-value, and frame-generic branches must each receive an exact admitted disposition
 or a typed executable non-admission; none may be inferred from W7's portfolio label.

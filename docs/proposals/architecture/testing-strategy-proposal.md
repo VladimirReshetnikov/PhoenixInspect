@@ -1044,7 +1044,7 @@ exact extern aliases, ordinary stored fields, metadata literals, and evidence-qu
 W8.1 must first prove the compiler, metadata, runtime-construction, storage, and optional frame-value facts that later
 contracts consume; display-derived runtime type arguments are insufficient. W8 then requires contract, projection,
 binder, contextual, runtime/value, lexical-completeness, product-composition, and generated-conformance lanes. Its
-meaningful synthetic portfolio contains the fixed thirty-two independent core full dumps across four materially
+meaningful synthetic portfolio contains thirty-two fixed independent core full dumps across four materially
 distinct application shapes plus one independent incident for every W8.1-admitted thread-relative, context-relative,
 RVA-backed, frame-value, or frame-generic-argument branch. W8.1 must record an admitted or typed non-admitted
 disposition for every branch. The portfolio retains per-row decision facts and tie deferral. Every managed process

@@ -390,7 +390,7 @@ unchanged product-query availability at 1/5. This is explicitly generated eviden
 incident corpus, so no readiness rate is claimed. Current in-process caps (8 GiB dump admission, 256 MiB ClrMD dump
 cache, and 512 MiB managed PE admission) remain resource controls. Branches, CFG merge/fixpoint analysis, handler-
 transfer EH, virtual stepping, broad call/model catalogs, open generic execution/context reconstruction beyond W8's
-closed owners and evidence-conditioned branches, allocation, async/dynamic lifting, live
+bounded closed-construction owner grammar and evidence-conditioned branches, allocation, async/dynamic lifting, live
 speculation, no-JIT runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
 
 ## Where to go next

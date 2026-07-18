@@ -1,6 +1,6 @@
 # PE/PDB reader integration proposal
 
-> **Lifecycle:** Current · **Roadmap:** Active · **Last reconciled:** 2026-07-17
+> **Lifecycle:** Current · **Roadmap:** Active · **Last reconciled:** 2026-07-18
 
 ## Decision and W3 implementation alignment (2026-07-14)
 
@@ -22,7 +22,7 @@ For the active dump/query and first interpreter slices, this proposal aligns to 
 
 The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers. Local headless verification at `19c292f9f` passed a zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards. [GitHub Actions run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at the same exact pushed implementation checkpoint. Exact documentation-closure commit `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined milestone-selected scope.
 
-## Current implementation and W8 gate alignment (2026-07-17)
+## Current implementation and W8 gate alignment (2026-07-18)
 
 W4 closes the second meaningful value domain, direct-call/model execution, detached ClrMD binding, and dump-grounded
 product composition in its declared profiles. W7 closes the first Portable-PDB product use: bounded candidate bytes
@@ -47,8 +47,9 @@ branches; address-backed values use counted dump memory, while register-backed v
 context.
 
 The gate is executable and headless: fast compiler/SRM/PDB differentials precede hidden full-dump targets, generated
-V2 conformance, and the fixed thirty-two-core-incident/four-shape synthetic portfolio plus one incident for every
-W8.1-admitted branch. Every repository-invoked managed command runs through `eng/Invoke-HeadlessProcess.ps1`; every
+V2 conformance, and the synthetic portfolio of thirty-two fixed core incidents across four shapes plus one incident
+for every W8.1-admitted branch. Every repository-invoked managed command runs through
+`eng/Invoke-HeadlessProcess.ps1`; every
 target, helper, or consumer child process is configured as hidden and windowless.
 
 ---

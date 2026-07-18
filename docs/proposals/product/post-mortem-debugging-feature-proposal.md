@@ -235,8 +235,10 @@ W8 is the active approved design, not an implemented capability. Its additive `S
 - resolve fully qualified, current/enclosing namespace, namespace-import, type-alias, namespace-alias, TypeSpec-alias,
   exact extern-alias, current/enclosing type, and evidence-qualified `using static` routes under scoped precedence and
   complete lexical-blocker evidence;
-- support ordinary stored static fields and runtime-free metadata literals, including the bounded primitive, enum,
-  decimal, string, null, nullable, array, and constructed-reference value forms admitted by the final V2 contract;
+- support ordinary stored static fields across the bounded fixed-width primitive, native-size, floating-point, enum,
+  string, nullable, array, and constructed-reference forms admitted by the final V2 contract; separately support
+  runtime-free metadata literals only for primitive, enum, string, null, and W8.1-proven encodings such as exact
+  `decimal`;
 - validate substituted generic constraints and inspection accessibility before runtime mapping, substitute owner
   `VAR` parameters through field signatures, and validate constructed base/interface/array assignability before a
   non-null reference becomes a suffix receiver; and
@@ -247,8 +249,9 @@ W8.1 first tests the physical compiler/runtime facts. Thread-relative, context-r
 storage, exact frame values (`this`, parameters, and locals), and declaring/method generic arguments join the public
 profile only when an exact attributable identity/location/argument source exists. Each unavailable branch receives an
 executable typed non-admission instead of a placeholder API or guessed value. The mandatory stored/literal V2 core is
-independent of those branch outcomes. The planned conformance and at-least-thirty-two-incident/four-shape synthetic
-portfolio remain future evidence and contribute no representative observations today.
+independent of those branch outcomes. The planned conformance and synthetic portfolio of thirty-two fixed core
+incidents across four shapes plus one incident for every admitted branch remain future evidence and contribute no
+representative observations today.
 
 **Other later Phase 1 candidates (outside the approved W8 core)**
 
@@ -851,9 +854,9 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`; and the active approve
   exact-reference suffix composition. W8.1 decides thread/context/RVA storage and exact frame-value/generic-context
   branches from physical evidence before public contracts freeze. Later checkpoints require sole-parser projection,
   immutable V2 contracts, metadata/context/runtime binding, lexical completeness, raw value projection, generated
-  conformance, and an at-least-thirty-two-incident/four-shape decision portfolio. None of those W8 checkpoints is
-  implemented or validated yet; the plan's inclusive umbrella scale is `~100K LOC`, generally divided into `~10K LOC`
-  evidence and implementation checkpoints.
+  conformance, and a decision portfolio of thirty-two fixed core incidents across four shapes plus one incident for
+  every admitted branch. None of those W8 checkpoints is implemented or validated yet; the plan's inclusive umbrella
+  scale is `~100K LOC`, generally divided into `~10K LOC` evidence and implementation checkpoints.
 
 Virtual scratch objects, advanced queries, async/dynamic lifting, and virtual stepping remain research rather than implied follow-on milestones.
 

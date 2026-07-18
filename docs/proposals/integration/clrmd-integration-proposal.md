@@ -1,6 +1,6 @@
 # Integration proposal: Dump evaluator ↔ ClrMD ↔ SRM/PE/PDB
 
-> **Lifecycle:** Current · **Roadmap:** Active · **Last reconciled:** 2026-07-17
+> **Lifecycle:** Current · **Roadmap:** Active · **Last reconciled:** 2026-07-18
 
 ## Implemented W3 boundary (2026-07-14)
 
@@ -32,7 +32,7 @@ fixture shapes. The completed [Post-W6 Path Forward](../../plans/post-w6-path-fo
 selected-frame/Portable-PDB import projection for static-expression binding; that work does not alter W3's
 implemented boundary.
 
-## Closed W4/W7 additions and active W8 boundary (2026-07-17)
+## Closed W4/W7 additions and active W8 boundary (2026-07-18)
 
 Later closed milestones extend the host without rewriting the historical W3 checkpoint. W4.2 implements the second
 meaningful, provenance-aware value domain; W4.3–W4.9 carry typed non-exact field evidence through the execution kernel
@@ -57,7 +57,7 @@ an evidence gap in another.
 
 Every repository-invoked W8 managed command runs through the headless wrapper, and every generated target, helper, or
 consumer child process is configured as hidden and windowless. Fast compiler/SRM/PDB differentials precede full-dump
-generated conformance. The decision gate uses the fixed thirty-two core independent dumps over four materially distinct
+generated conformance. The decision gate uses thirty-two fixed core independent dumps over four materially distinct
 application shapes plus one independent incident for every W8.1-admitted branch.
 
 You can make this integration feel “debugger-grade” *without* welding your IL interpreter to any single dump/metadata stack — but you’ll want one deliberate layer in between. Otherwise you end up with an interpreter whose “type system” is a Frankenstein of ClrMD objects + metadata tokens + PDB concepts, and it becomes painful to reuse for static analysis or alternate runtimes.

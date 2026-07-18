@@ -2,7 +2,7 @@
 
 **Lifecycle:** Current
 **Roadmap relation:** Supporting
-**Last reconciled:** 2026-07-17
+**Last reconciled:** 2026-07-18
 
 ## 1. Product and scope lock
 
@@ -665,8 +665,8 @@ materialized artifact/incident inputs. The reports remain designed evidence with
 The approved W8 frontier preserves that fully qualified floor while broadening the explicit and contextual routes to
 nested/constructed owners, exact construction-specific slots, scope-level precedence, TypeSpec aliases, literals,
 constructed field substitution, and bounded bare-field roots. W8.1 first gates exact compiler/runtime/storage facts;
-later checkpoints add only evidence-admitted contracts and a meaningful synthetic portfolio containing the fixed
-thirty-two core independent dumps across four materially distinct shapes plus one independent incident for every
+later checkpoints add only evidence-admitted contracts and a meaningful synthetic portfolio containing thirty-two
+fixed core independent dumps across four materially distinct shapes plus one independent incident for every
 admitted thread-relative, context-relative, RVA-backed, frame-value, or frame-generic-argument branch. W8.1 records an
 admitted or typed non-admitted disposition for each branch. No W8 surface is implemented yet, and W1–W7 canonical
 artifacts remain the executable baseline.

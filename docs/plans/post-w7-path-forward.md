@@ -963,7 +963,7 @@ hidden full-dump targets. No profile falls through to another.
 - Context/symbol/construction/storage/value/suffix outcome axes remain independent.
 - All managed processes are hidden and every managed command uses the headless wrapper.
 
-### W8.9 — at-least-thirty-two-incident meaningful synthetic portfolio and decision
+### W8.9 — thirty-two core incidents plus admitted branches: meaningful synthetic portfolio and decision
 
 **Scale:** `~10K LOC` implementation, tests, dumps, and reports.
 
@@ -1004,7 +1004,7 @@ evidence.
 | Fast | SRM/PDB/compiler differentials, context poisons, runtime/assignability projection seams, literal no-call ordering |
 | Ordinary generated dump | Definition kinds, constructions/slots/literals, explicit/contextual/bare/frame routes, values/suffixes, reopen replay |
 | Optimized context | Existing five-axis report remains stable; only an explicit V2 schema may add new facts |
-| Meaningful synthetic | At least thirty-two independent dumps, four shapes, every admitted branch, corrected decision metrics, zero representative rows |
+| Meaningful synthetic | Fixed thirty-two independent core dumps, four shapes, one independent dump per admitted branch, corrected decision metrics, zero representative rows |
 | Compatibility | All W1–W7 profiles, manifests, reports, canonical bytes, and default routes remain golden |
 | Repository | Markdown, headless workflow, authored vocabulary, one parser, XML docs, strict build, clean tree |
 
@@ -1031,8 +1031,9 @@ completeness; constraints, accessibility, definition-kind lookup, direct/inherit
 constructed assignability are frozen; address-backed values remain raw-memory evidence, register-backed values remain
 raw frozen thread-context evidence, and literals remain exact metadata with proven zero runtime calls; every W8.1 branch
 has its admitted implementation or typed executable non-admission;
-suffix evaluation remains unchanged; all tests are headless; the complete generated and at-least-thirty-two-dump
-synthetic portfolios replay; and the exact pushed closure commit satisfies repository and hosted governance.
+suffix evaluation remains unchanged; all tests are headless; the complete generated corpus and synthetic portfolio of
+thirty-two fixed core incidents plus one incident per admitted branch replay; and the exact pushed closure commit
+satisfies repository and hosted governance.
 
 Completing only the easiest alias or generic spelling does not close W8. Conversely, failure of an evidence-conditioned
 stack/thread/context/RVA probe does not block the mandatory stored/literal V2 core when the repository records the exact
