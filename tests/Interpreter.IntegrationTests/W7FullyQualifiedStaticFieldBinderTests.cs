@@ -77,6 +77,67 @@ public sealed class W7FullyQualifiedStaticFieldBinderTests
         Assert.All(source.ReadCounts, static pair => Assert.Equal(0, pair.Value));
     }
 
+    /// <summary>Proves an exact selected-frame namespace binds a bare type while unavailable PDB remains additive.</summary>
+    [Fact]
+    public void CurrentNamespaceBindsBareTypeWithoutPortablePdb()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        var descriptor = Parse($"{TypeName}.{nameof(W7FullyQualifiedSyntheticTarget.Int32Value)}");
+        var context = CreateContext(
+            source,
+            exactFrame: true,
+            declaringNamespace: NamespaceName);
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Exact, result.Status);
+        Assert.True(result.ConsultedContext.CurrentNamespaceConsulted);
+        Assert.False(result.ConsultedContext.ImportsConsulted);
+        Assert.Equal(
+            StaticFieldNameExpansionKind.CurrentNamespace,
+            Assert.Single(result.Candidates).Origins[0].Kind);
+        Assert.Equal(nameof(W7FullyQualifiedSyntheticTarget.Int32Value), result.SelectedDeclaration!.FieldName);
+        Assert.All(source.ReadCounts, static pair => Assert.Equal(1, pair.Value));
+    }
+
+    /// <summary>Proves unavailable selected-frame evidence stops a bare lookup before any metadata image is read.</summary>
+    [Fact]
+    public void UnavailableFrameStopsBareBindingBeforeMetadataSearch()
+    {
+        using var source = SyntheticMetadataSource.Create();
+        var descriptor = Parse($"{TypeName}.{nameof(W7FullyQualifiedSyntheticTarget.Int32Value)}");
+        var context = CreateContext(source, exactFrame: false, declaringNamespace: NamespaceName);
+
+        var result = StaticFieldContextualBinder.Bind(source, descriptor, context);
+
+        Assert.Equal(StaticFieldBindingStatus.Unavailable, result.Status);
+        Assert.Equal(StaticFieldBindingIssue.ContextUnavailable, result.Issue);
+        Assert.Empty(result.ModuleSearchFacts);
+        Assert.Null(result.SelectedDeclaration);
+        Assert.All(source.ReadCounts, static pair => Assert.Equal(0, pair.Value));
+    }
+
+    /// <summary>Proves literal global qualification bypasses even unavailable selected-frame/PDB evidence.</summary>
+    [Fact]
+    public void GlobalQualificationBypassesUnavailableContextCanonically()
+    {
+        var descriptor = Parse(
+            $"global::{NamespaceName}.{TypeName}.{nameof(W7FullyQualifiedSyntheticTarget.Int32Value)}");
+        using var contextualSource = SyntheticMetadataSource.Create();
+        using var independentSource = SyntheticMetadataSource.Create();
+        var unavailable = CreateContext(
+            contextualSource,
+            exactFrame: false,
+            declaringNamespace: "Ignored.Namespace");
+
+        var contextual = StaticFieldContextualBinder.Bind(contextualSource, descriptor, unavailable);
+        var independent = StaticFieldFullyQualifiedBinder.Bind(independentSource, descriptor);
+
+        Assert.Equal(StaticFieldBindingStatus.Exact, contextual.Status);
+        Assert.Equal(independent.Sha256, contextual.Sha256);
+        Assert.Null(contextual.ConsultedContext.ConsultedFrameEvidence);
+    }
+
     /// <summary>Proves exact absence requires exhaustive search of every physical module.</summary>
     [Fact]
     public void ExactAbsenceSearchesEveryPhysicalModuleAndRetainsNoCandidate()
@@ -218,6 +279,39 @@ public sealed class W7FullyQualifiedStaticFieldBinderTests
         return Assert.IsType<StaticFieldExpressionDescriptor>(syntax.Descriptor);
     }
 
+    private static DumpExpressionBindingContext CreateContext(
+        SyntheticMetadataSource source,
+        bool exactFrame,
+        string declaringNamespace)
+    {
+        var selector = DumpSelectedFrameSelector.Create(source.Snapshot, threadOrdinal: 0, frameOrdinal: 0);
+        var frame = exactFrame
+            ? DumpSelectedFrameObservation.Exact(
+                DumpSelectedFrameIdentity.Create(
+                    selector,
+                    managedThreadId: 17,
+                    runtimeThreadAddress: 0x7100,
+                    stackPointer: 0x7FFF_1000,
+                    source.TargetRuntimeModule,
+                    source.TargetContent,
+                    methodDefinitionToken: 0x06000001,
+                    declaringTypeDefinitionToken: 0x02000001,
+                    declaringNamespace,
+                    DumpInstructionLocation.Create(0x0040_1234, ilOffset: 0)),
+                ImmutableArray<EvaluationDeterministicBound>.Empty)
+            : DumpSelectedFrameObservation.Unavailable(
+                selector,
+                DumpContextEvidenceIssue.FrameUnavailable,
+                ImmutableArray<EvaluationDeterministicBound>.Empty);
+        var pdb = DumpPortablePdbObservation.Unavailable(
+            DumpPortablePdbEvidenceSource.ForSnapshot(source.Snapshot),
+            exactFrame
+                ? DumpContextEvidenceIssue.PortablePdbDebugIdentityUnavailable
+                : DumpContextEvidenceIssue.PrerequisiteUnavailable,
+            ImmutableArray<EvaluationDeterministicBound>.Empty);
+        return DumpExpressionBindingContext.Acquire(source.Snapshot, frame, pdb);
+    }
+
     private sealed class SyntheticMetadataSource : IStaticFieldMetadataBindingSource, IDisposable
     {
         private static readonly ClrmdSnapshotIdentity SharedSnapshot = new(new string('a', 64));
@@ -244,6 +338,22 @@ public sealed class W7FullyQualifiedStaticFieldBinderTests
         public StaticFieldMetadataModuleInput CoreLibraryModule { get; }
 
         internal IReadOnlyDictionary<string, int> ReadCounts => readCounts;
+
+        internal ClrmdRuntimeModuleIdentity TargetRuntimeModule
+        {
+            get
+            {
+                var module = Modules[2].Module;
+                return new ClrmdRuntimeModuleIdentity(
+                    Snapshot,
+                    module.ApplicationDomainAddress,
+                    module.ModuleAddress,
+                    module.ImageBase,
+                    module.ImageSize);
+            }
+        }
+
+        internal ModuleContentIdentity TargetContent => observations[Modules[2].Module.Sha256].ExactContent!;
 
         internal static SyntheticMetadataSource Create(
             bool duplicateTargetModule = false,

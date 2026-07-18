@@ -105,6 +105,107 @@ public static class StaticFieldFullyQualifiedBinder
                 ImmutableArray<EvaluationDeterministicBound>.Empty);
         }
 
+        return BindExpanded(source, descriptor, context, expansions);
+    }
+
+    internal static StaticFieldSymbolBindingOutcome BindContextual(
+        IStaticFieldMetadataBindingSource source,
+        StaticFieldExpressionDescriptor descriptor,
+        DumpExpressionBindingContext acquiredContext)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(acquiredContext);
+        if (acquiredContext.Snapshot != source.Snapshot)
+        {
+            throw new ArgumentException(
+                "The acquired binding context belongs to another dump snapshot.",
+                nameof(acquiredContext));
+        }
+
+        if (descriptor.HasGlobalQualifier)
+        {
+            return Bind(source, descriptor);
+        }
+
+        var bareShapes = descriptor.CandidateShapes
+            .Where(static shape => shape.StaticFieldSegmentIndex == 1)
+            .ToImmutableArray();
+        var exactImports = acquiredContext.PortablePdb.Facts?.Imports ??
+            ImmutableArray<DumpPortablePdbImportFact>.Empty;
+        var relevantImports = exactImports
+            .Where(import => IsRelevantImport(descriptor, import))
+            .ToImmutableArray();
+        var hasQualifiedAlias = relevantImports.Any(static import =>
+            import.Kind == DumpPortablePdbImportKind.NamespaceAlias);
+        if (bareShapes.IsEmpty && !hasQualifiedAlias)
+        {
+            return Bind(source, descriptor);
+        }
+
+        var currentNamespaceConsulted = !bareShapes.IsEmpty;
+        var importsConsulted = acquiredContext.PortablePdb.Status == DumpContextEvidenceStatus.Exact &&
+            (currentNamespaceConsulted || hasQualifiedAlias);
+        if (acquiredContext.SelectedFrame.Status != DumpContextEvidenceStatus.Exact)
+        {
+            var blockedContext = DumpConsultedBindingContextIdentity.FromAcquiredContext(
+                acquiredContext,
+                currentNamespaceConsulted,
+                importsConsulted: !currentNamespaceConsulted,
+                ImmutableArray<DumpPortablePdbImportFact>.Empty);
+            return CreateContextStop(
+                source,
+                descriptor,
+                blockedContext,
+                acquiredContext.SelectedFrame.Status);
+        }
+
+        if (!currentNamespaceConsulted &&
+            acquiredContext.PortablePdb.Status != DumpContextEvidenceStatus.Exact)
+        {
+            var blockedContext = DumpConsultedBindingContextIdentity.FromAcquiredContext(
+                acquiredContext,
+                currentNamespaceConsulted: false,
+                importsConsulted: true,
+                ImmutableArray<DumpPortablePdbImportFact>.Empty);
+            return CreateContextStop(
+                source,
+                descriptor,
+                blockedContext,
+                acquiredContext.PortablePdb.Status);
+        }
+
+        var consultedImports = importsConsulted
+            ? relevantImports
+            : ImmutableArray<DumpPortablePdbImportFact>.Empty;
+        var context = DumpConsultedBindingContextIdentity.FromAcquiredContext(
+            acquiredContext,
+            currentNamespaceConsulted,
+            importsConsulted,
+            consultedImports);
+        var expansions = CreateContextualExpansions(
+            descriptor,
+            acquiredContext.SelectedFrame.Frame!,
+            consultedImports);
+        return BindExpanded(source, descriptor, context, expansions);
+    }
+
+    internal static StaticFieldSymbolBindingOutcome BindExpanded(
+        IStaticFieldMetadataBindingSource source,
+        StaticFieldExpressionDescriptor descriptor,
+        DumpConsultedBindingContextIdentity context,
+        ImmutableArray<StaticFieldNameExpansion> expansions)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(context);
+        if (expansions.IsDefaultOrEmpty)
+        {
+            throw new ArgumentException(
+                "Expanded metadata binding requires an initialized non-empty expansion set.",
+                nameof(expansions));
+        }
+
         var reachedBounds = ImmutableArray.CreateBuilder<EvaluationDeterministicBound>();
         reachedBounds.Add(DeclaredModuleCountBound);
         if (source.Modules.IsDefault || source.Modules.Length > MaximumModuleCount ||
@@ -418,6 +519,137 @@ public static class StaticFieldFullyQualifiedBinder
         }
 
         return builder.ToImmutable();
+    }
+
+    private static bool IsRelevantImport(
+        StaticFieldExpressionDescriptor descriptor,
+        DumpPortablePdbImportFact import)
+    {
+        var segments = descriptor.Segments;
+        return import.Kind switch
+        {
+            DumpPortablePdbImportKind.Namespace =>
+                import.AssemblyReferenceToken is null &&
+                descriptor.CandidateShapes.Any(static shape => shape.StaticFieldSegmentIndex == 1),
+            DumpPortablePdbImportKind.TypeAlias => false,
+            DumpPortablePdbImportKind.NamespaceAlias =>
+                import.AssemblyReferenceToken is null &&
+                descriptor.CandidateShapes.Any(shape =>
+                    shape.StaticFieldSegmentIndex >= 2 &&
+                    string.Equals(
+                        segments[0].DecodedIdentifier,
+                        import.Alias,
+                        StringComparison.Ordinal)),
+            _ => false,
+        };
+    }
+
+    private static ImmutableArray<StaticFieldNameExpansion> CreateContextualExpansions(
+        StaticFieldExpressionDescriptor descriptor,
+        DumpSelectedFrameIdentity frame,
+        ImmutableArray<DumpPortablePdbImportFact> imports)
+    {
+        var segments = descriptor.Segments;
+        var builder = ImmutableArray.CreateBuilder<StaticFieldNameExpansion>();
+        builder.AddRange(CreateExpansions(descriptor));
+        foreach (var shape in descriptor.CandidateShapes)
+        {
+            var prefixLength = shape.StaticFieldSegmentIndex;
+            var fieldName = segments[prefixLength].DecodedIdentifier;
+            if (prefixLength == 1)
+            {
+                var typeName = segments[0].DecodedIdentifier;
+                builder.Add(StaticFieldNameExpansion.Create(
+                    shape,
+                    StaticFieldNameExpansionKind.CurrentNamespace,
+                    frame.DeclaringNamespace,
+                    typeName,
+                    fieldName,
+                    contextFactSha256: frame.Sha256));
+                foreach (var import in imports.Where(static import =>
+                             import.Kind == DumpPortablePdbImportKind.Namespace &&
+                             import.AssemblyReferenceToken is null))
+                {
+                    builder.Add(StaticFieldNameExpansion.Create(
+                        shape,
+                        StaticFieldNameExpansionKind.NamespaceImport,
+                        import.Target!,
+                        typeName,
+                        fieldName,
+                        contextFactSha256: import.Sha256));
+                }
+            }
+
+            foreach (var import in imports.Where(import =>
+                         import.Kind == DumpPortablePdbImportKind.NamespaceAlias &&
+                         import.AssemblyReferenceToken is null &&
+                         prefixLength >= 2 &&
+                         string.Equals(segments[0].DecodedIdentifier, import.Alias, StringComparison.Ordinal)))
+            {
+                var relativeNamespace = prefixLength == 2
+                    ? string.Empty
+                    : string.Join('.', segments
+                        .Skip(1)
+                        .Take(prefixLength - 2)
+                        .Select(static segment => segment.DecodedIdentifier));
+                var namespaceName = relativeNamespace.Length == 0
+                    ? import.Target!
+                    : $"{import.Target}.{relativeNamespace}";
+                builder.Add(StaticFieldNameExpansion.Create(
+                    shape,
+                    StaticFieldNameExpansionKind.NamespaceAlias,
+                    namespaceName,
+                    segments[prefixLength - 1].DecodedIdentifier,
+                    fieldName,
+                    alias: import.Alias,
+                    contextFactSha256: import.Sha256));
+            }
+        }
+
+        return builder.ToImmutable();
+    }
+
+    private static StaticFieldSymbolBindingOutcome CreateContextStop(
+        IStaticFieldMetadataBindingSource source,
+        StaticFieldExpressionDescriptor descriptor,
+        DumpConsultedBindingContextIdentity context,
+        DumpContextEvidenceStatus status)
+    {
+        var expansions = ImmutableArray<StaticFieldNameExpansion>.Empty;
+        var modules = ImmutableArray<StaticFieldModuleSearchFact>.Empty;
+        var candidates = ImmutableArray<StaticFieldSymbolCandidate>.Empty;
+        var bounds = ImmutableArray<EvaluationDeterministicBound>.Empty;
+        return status switch
+        {
+            DumpContextEvidenceStatus.Partial => StaticFieldSymbolBindingOutcome.Partial(
+                descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextPartial,
+                "W7_CONTEXT_PARTIAL", "Required selected-frame or import context was only partially observed.",
+                expansions, modules, candidates, false, false, bounds),
+            DumpContextEvidenceStatus.Unavailable => StaticFieldSymbolBindingOutcome.Unavailable(
+                descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextUnavailable,
+                "W7_CONTEXT_UNAVAILABLE", "Required selected-frame or import context was unavailable.",
+                expansions, modules, candidates, false, false, bounds),
+            DumpContextEvidenceStatus.Ambiguous => StaticFieldSymbolBindingOutcome.ContextAmbiguous(
+                descriptor, source.Snapshot.Sha256, context,
+                "W7_CONTEXT_AMBIGUOUS", "Required selected-frame or import context retained multiple candidates.",
+                expansions, modules, candidates, false, false, bounds),
+            DumpContextEvidenceStatus.Conflict => StaticFieldSymbolBindingOutcome.Conflict(
+                descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextConflict,
+                "W7_CONTEXT_CONFLICT", "Required selected-frame or import context facts disagreed.",
+                expansions, modules, candidates, ImmutableArray<StaticFieldRejectedDeclarationEvidence>.Empty,
+                false, false, bounds),
+            DumpContextEvidenceStatus.Invalid => StaticFieldSymbolBindingOutcome.Invalid(
+                descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextInvalid,
+                "W7_CONTEXT_INVALID", "Required selected-frame or import context was structurally invalid.",
+                expansions, modules, candidates, ImmutableArray<StaticFieldRejectedDeclarationEvidence>.Empty,
+                false, false, bounds),
+            DumpContextEvidenceStatus.Unsupported => StaticFieldSymbolBindingOutcome.Unsupported(
+                descriptor, source.Snapshot.Sha256, context, StaticFieldBindingIssue.ContextUnsupported,
+                "W7_CONTEXT_UNSUPPORTED", "Required selected-frame or import context used an unsupported representation.",
+                expansions, modules, ImmutableArray<StaticFieldRejectedDeclarationEvidence>.Empty,
+                false, false, bounds),
+            _ => throw new ArgumentOutOfRangeException(nameof(status)),
+        };
     }
 
     private static NonExactDisposition? FirstNonExactDisposition(
