@@ -118,11 +118,14 @@ parser/admission corpus diff and a new or explicitly revised front-end profile i
 Complete expression parsing does not imply complete binding or evaluation. Valid C# outside an enabled profile is a
 stable `Unsupported` product result.
 
-The active, approved but unimplemented
-[`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) keeps this dependency boundary for W8. It plans detached
-`StaticFieldExpressionV2` generic/nested/type/alias trees and, only if W8.1 proves exact frame locations, a separate
-`FrameValueExpressionV1` root descriptor. Constraint, accessibility, constructed-assignability, storage, and value
-binding remain project-owned; neither Roslyn semantic models nor another parser enter the product path.
+The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) keeps this dependency boundary for W8. W8.1
+completed its physical-truth fixture and probes at `220be94b4`; the
+[`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md) freezes their consequences. W8.2
+adds detached `StaticFieldExpressionV2` generic/nested/type/alias trees and the mandatory separate
+`FrameValueExpressionV1` root descriptor for exact memory-homed `this`, parameters, and live locals. Register homes and
+selected-frame generic substitution are outside the admitted surface. Constraint, accessibility,
+constructed-assignability, storage, and value binding remain project-owned; neither Roslyn semantic models nor
+another parser enter the product path.
 
 ---
 
@@ -388,8 +391,9 @@ external boundary for the opt-in member-chain profile recorded in the completed
 for fully qualified and selected-frame/PDB-contextual static-field expressions under the
 [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md). The generated conformance and sixteen-dump portfolio
 modes run through fresh hidden processes and preserve earlier report schemas; this does not turn the reference
-consumer into a shipping CLI. Active W8 plans further append-only V2 and evidence-admitted-branch modes with thirty-two
-core incidents plus one per admitted branch; none exists until its named checkpoint lands.
+consumer into a shipping CLI. W8.1 adds three generated evidence targets and physical probes without adding a consumer
+mode. W8.2 onward adds append-only V2 modes and a 35-incident minimum portfolio: thirty-two core incidents plus one
+thread-relative, one RVA-backed, and one exact memory-homed frame-value incident.
 
 
 ## 13) Prototype implementation snapshot (draft)
@@ -399,7 +403,7 @@ core incidents plus one per admitted branch; none exists until its named checkpo
 
 Current facts:
 
-- The solution retains ten `src/` projects with active code/contracts plus seven test/target/evidence projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
+- The solution retains ten `src/` projects with active code/contracts plus ten test/target/evidence projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
 - Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Product.DumpDebugging`, and `Interpreter.Headless.ReferenceConsumer`.
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
@@ -500,8 +504,10 @@ Current facts:
   and final documentation closure passed in run 29463847230.
 - The first product composition is a deliberately closed root-field dump query. The complete Roslyn expression front
   end is implemented at W6.2, and W7 implements its bounded selected-frame/PDB/import plus fully qualified
-  `StaticFieldExpressionV1` binder/value path. There is no general C# binder/evaluator, implemented W8 V2 or frame-value
-  branch, production object-model breadth, orchestrator, debugger control plane, or analysis engine.
+  `StaticFieldExpressionV1` binder/value path. W8.1 adds physical compiler/PDB, runtime-construction, storage,
+  assignability, and exact memory-homed frame-value evidence, but no V2 product binder or frame-value consumer yet.
+  There is no general C# binder/evaluator, production object-model breadth, orchestrator, debugger control plane, or
+  analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose
   operations were reached. Partial primitive wrappers remain explanatory evidence rather than decoded scalar answers,
   and the 22-case/20-expression fresh-session corpus reproduces all result identities plus all 13 prepared-plan

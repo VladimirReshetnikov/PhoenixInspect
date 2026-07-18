@@ -5,8 +5,10 @@
 > **Current delivery policy (2026-07).** W0–W7 are the closed dump-evaluator evidence baseline. Completed W6 and W7
 > tests follow the [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) and
 > [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md), respectively. The active
-> [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves W8's broader test obligations, but W8 has no
-> implementation or validation evidence yet. The repository must distinguish checked-in test code, a locally verified
+> [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) governs W8. W8.1's physical-truth fixture and probes are
+> complete at `220be94b4`; their exact checkpoint ledger and branch dispositions are frozen in the
+> [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is the active contract
+> checkpoint. The repository must distinguish checked-in test code, a locally verified
 > result, a CI-enforced gate, and an approved design. The broad abstract-analysis, virtual-stepping, dynamic, async,
 > and performance matrices remain behind their entry gates.
 
@@ -276,7 +278,7 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 | Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
 
 Both W1 and W2 local results are corroborated by their exact-commit hosted closure runs above. Their historical project
-and test counts describe the repositories at those commits. The current workflow builds all 17 projects and runs every
+and test counts describe the repositories at those commits. The current workflow builds all 20 projects and runs every
 remaining test in each selected category. Caveat: those tests establish behavior only for the named fixture shapes.
 
 ### Current local W3 implementation verification — 2026-07-14
@@ -1036,20 +1038,26 @@ integration 242/242, Fast 184/184, ordinary dump 29/29, optimized context 1/1, f
 and authored-scope vocabulary guards. The W7-only owner disposition records the hosted billing rejection without
 claiming job execution or weakening the workflow.
 
-### Approved W8 test frontier — not implemented
+### Completed W8.1 evidence and active W8.2+ test frontier
 
 The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves an additive
 `StaticFieldExpressionV2` test sequence for nested and closed constructed owners, scope-precise imports and aliases,
 exact extern aliases, ordinary stored fields, metadata literals, and evidence-qualified `using static` bare roots.
-W8.1 must first prove the compiler, metadata, runtime-construction, storage, and optional frame-value facts that later
-contracts consume; display-derived runtime type arguments are insufficient. W8 then requires contract, projection,
-binder, contextual, runtime/value, lexical-completeness, product-composition, and generated-conformance lanes. Its
-meaningful synthetic portfolio contains thirty-two fixed independent core full dumps across four materially
-distinct application shapes plus one independent incident for every W8.1-admitted thread-relative, context-relative,
-RVA-backed, frame-value, or frame-generic-argument branch. W8.1 must record an admitted or typed non-admitted
-disposition for every branch. The portfolio retains per-row decision facts and tie deferral. Every managed process
-remains headless, every W1–W7 artifact remains golden, and none of these obligations is current implementation or
-validation evidence.
+W8.1 has proved the compiler/PDB, candidate-keyed runtime-construction, storage, exact memory-homed frame-value, and
+constructed-assignability facts consumed by later contracts. Its checkpoints passed compiler/PDB 25/25, runtime
+construction 1/1, one selected-frame test across six dumps/profiles, and focused storage/assignability 8/8, with every
+recorded strict build at 0 warnings / 0 errors. It admits constructed ordinary slots, metadata literals, four distinct
+thread-relative slots/values, module-RVA storage, and exact memory-homed `this`/parameter/local values through a
+mandatory separate `FrameValueExpressionV1`. It excludes context-relative identity, register homes, and selected-frame
+generic substitution; those branches have no success rows or corresponding product API. Rank and SZ-versus-MD
+topology remain exact despite one retained runtime-oracle asymmetry.
+
+W8.2 onward requires contract, projection, binder, contextual, runtime/value, lexical-completeness,
+product-composition, and generated-conformance lanes. The meaningful synthetic portfolio contains thirty-two fixed
+independent core full dumps across four materially distinct application shapes, plus thread-relative, RVA-backed, and
+frame-value incidents: 35 independent incidents minimum. The portfolio retains per-row decision facts and tie
+deferral. Every managed process remains headless, every W1–W7 artifact remains golden, and only landed checkpoints may
+be cited as implementation or validation evidence.
 
 ## 9) Deferred research suites
 

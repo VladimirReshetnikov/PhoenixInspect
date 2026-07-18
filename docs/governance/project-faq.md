@@ -13,12 +13,14 @@ by itself. W1–W7 are closed for their named prototype scopes. Most recently, W
 while exact selected-frame/Portable-PDB namespace, import, and simple-alias facts can bind contextual `Type.Field`
 forms. Direct values and exact references can continue through the unchanged W2/W6 suffix evaluator.
 
-W8 is the sole active design/implementation sequence and is not implemented yet. Its approved additive
+W8 is the sole active design/implementation sequence. W8.1's physical-truth fixture and probes are complete at
+`220be94b4`; W8.2 is the active product-contract checkpoint. The additive
 `StaticFieldExpressionV2` profile expands the same pipeline across nested types, closed constructed generic owners,
 scope-precise aliases/imports, constraints, accessibility, constructed assignability, ordinary stored fields,
-metadata literals, and evidence-qualified bare static fields. W8.1 first decides predeclared thread/context/RVA
-storage and exact frame-value/generic-context branches from physical compiler/runtime evidence. A branch without an
-exact attributable source remains typed non-admitted; it is not guessed or represented by a placeholder API.
+metadata literals, and evidence-qualified bare static fields. W8.1 admits constructed ordinary, thread-relative, and
+RVA-backed storage plus exact memory-homed frame values. Context-relative identity, register homes, and selected-frame
+generic substitution are non-admitted and have no corresponding API or success row. The exact checkpoint ledger and
+branch table live in the [`W8.1 Physical-Truth Disposition`](../plans/w8-1-physical-truth-disposition.md).
 
 The committed sequence started with direct snapshot reads and a restricted expression/query front end and now advances
 one evidence-led profile at a time. Virtual stepping, whole-method abstract analysis, async/dynamic lifting, live
@@ -39,8 +41,10 @@ queries; bounded concrete IL and counterfactual method execution; a product faca
 fixed-depth field/data-property navigation; one complete pinned Roslyn parse with versioned profile admission; and
 fully qualified/contextual ordinary static-field reads with direct or suffix results. W7's closure baseline passes its
 complete local headless matrix and repository guards, including sixteen independent full dumps across four application
-shapes. This remains generated and meaningful-synthetic evidence with zero representative observations; it does not
-establish production readiness. The approved W8 plan contributes no source, test, runtime, or validation evidence yet.
+shapes. W8.1 adds three generated targets and executable compiler/PDB, runtime-construction, storage, assignability,
+and selected-frame probes. Its focused gates pass 25/25, 1/1, one test across six dumps/profiles, and 8/8,
+respectively. This remains generated and meaningful-synthetic evidence with zero representative observations; it does
+not establish production readiness. W8.2 product behavior requires its own implementation and validation evidence.
 
 The following W3 checkpoint record is retained as historical evidence for one of those foundations. At that point the
 prototype contained draft public contracts; structural module/type/method/field identities; SRM-derived method
@@ -154,12 +158,13 @@ sequence of spelling-specific parsers:
   lookup, or memory reads. Exact references may use the unchanged W2/W6 suffix evaluator.
 - **Validation:** substituted generic constraints, inspection accessibility, field `VAR` substitution, declaration
   hiding, and constructed base/interface/array assignability are checked before a non-null value is accepted.
-- **Evidence-conditioned branches:** W8.1 tests thread-relative, context-relative, and RVA-backed storage plus exact
-  `this`/parameter/local locations and declaring/method generic arguments. Each branch is admitted only from an exact
-  attributable source; otherwise its executable typed non-admission remains the result.
+- **Physical branch dispositions:** W8.1 admits thread-relative and RVA-backed storage. It admits exact memory-homed
+  `this`/parameter/live-local values through mandatory separate `FrameValueExpressionV1`. Context-relative identity,
+  register homes, and selected-frame generic substitution are non-admitted and remain typed executable results.
 
 The plan is intentionally broad (`~100K LOC` umbrella scale, mostly `~10K LOC` checkpoints), but it is still a bounded
-versioned profile. It does not imply arbitrary C# binding or evaluation, and it is not implementation evidence.
+versioned profile. It does not imply arbitrary C# binding or evaluation. W8.1 is physical implementation evidence;
+later W8 product behavior is evidenced only by its own landed checkpoints.
 
 ## 12) How stable are current decisions?
 
@@ -188,9 +193,10 @@ The walking skeleton and W1–W7 vertical slices are implemented. Progression re
 
 W3 demonstrated this progression at the interpreter/memory seam; W4–W7 subsequently delivered bounded call/model,
 product-composition, member-navigation, sole-parser, and static-context slices without widening their closed profiles.
-W8 now applies the same progression to constructed static owners and complete bounded context rules. Its physical
-TypeSpec/runtime/storage/frame probes precede public contracts; implementation, generated conformance, and the
-meaningful synthetic decision corpus must then agree before closure. Branches, broader opcode and exception-transfer
+W8 now applies the same progression to constructed static owners and complete bounded context rules. Its completed
+physical TypeSpec/runtime/storage/frame probes constrain W8.2 public contracts; implementation, generated conformance,
+and the 35-incident minimum meaningful synthetic decision corpus must then agree before closure. Branches, broader
+opcode and exception-transfer
 behavior, general method/property execution, and research workflows retain their own scenario gates.
 
 ## 15) What are the main technical risks currently anticipated?
@@ -206,8 +212,8 @@ Representative risks include:
 - drift between product expectations, design claims, and executable evidence.
 
 The documentation set is intentionally structured to expose and manage these risks early.
-Caveat: W1–W7 evidence covers only the named generated fixtures and explicitly admitted input shapes. Current test
-claims do not establish behavior for any other artifact shape, and the W8 plan is not test evidence.
+Caveat: W1–W8.1 evidence covers only the named generated fixtures and explicitly admitted input shapes. Current test
+claims do not establish behavior for any other artifact shape, and later W8 plans are not test evidence.
 
 ## 16) How can external consumers evaluate whether this direction is promising?
 
@@ -227,7 +233,7 @@ If these answers become stronger over time, the design is moving in the right di
 Out of scope in the current phase:
 
 - claiming production or general-interpreter completeness from the closed W1–W7 prototype evidence,
-- presenting W8's approved V2 surface or evidence-conditioned branches as already implemented,
+- presenting W8.2+ V2 product behavior as implemented before its checkpoint evidence lands,
 - promising production timelines,
 - polishing runtime tooling UX beyond design-level proposals,
 - publishing final API guarantees before executable evidence stabilizes them,
@@ -248,14 +254,16 @@ Feedback that improves decision quality or traceability is especially valuable.
 
 ## 19) Where should I go next?
 
-1. Read the active, approved-but-unimplemented
-   [Post-W7 W8 plan](../plans/post-w7-path-forward.md) for the current scope, evidence branches, checkpoints, and
-   closure rules.
-2. Read the completed [Post-W6 W7 plan](../plans/post-w6-path-forward.md) for the implemented static-expression
+1. Read the active [Post-W7 W8 plan](../plans/post-w7-path-forward.md) for the current scope, branch consequences,
+   checkpoints, and closure rules.
+2. Read the completed
+   [W8.1 physical-truth disposition](../plans/w8-1-physical-truth-disposition.md) for the exact evidence ledger and
+   frozen W8.2 API consequences.
+3. Read the completed [Post-W6 W7 plan](../plans/post-w6-path-forward.md) for the implemented static-expression
    baseline and its evidence limits.
-3. Read the [product proposal](../proposals/product/post-mortem-debugging-feature-proposal.md) for the user-facing
+4. Read the [product proposal](../proposals/product/post-mortem-debugging-feature-proposal.md) for the user-facing
    capability sequence and research boundary.
-4. Read the [C# expression front-end contract](../proposals/architecture/csharp-expression-front-end-contract-proposal.md)
+5. Read the [C# expression front-end contract](../proposals/architecture/csharp-expression-front-end-contract-proposal.md)
    for the sole-Roslyn-parse and versioned-admission rule.
-5. Return to the [documentation index](../README.md) for architecture, testing, integration, governance, and
+6. Return to the [documentation index](../README.md) for architecture, testing, integration, governance, and
    historical reading paths.

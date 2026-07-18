@@ -1,14 +1,15 @@
 # C# Expression Front-End and Subset-Admission Contract
 
 > **Lifecycle:** Current · **Roadmap:** Supporting · **Milestones:** W6 parser boundary (closed), W7 V1 extension
-> (closed), W8 V2 extension (approved and unimplemented)
+> (closed), W8.1 physical disposition (closed), W8.2 V2 contract projection (active)
 >
 > **Decision:** use the complete Roslyn C# expression parser once per bounded request, then admit only explicitly
 > versioned syntax-tree shapes into project-owned binding and evaluation plans.
 >
 > **Implementation status:** implemented at W6.2 checkpoint `68aaf418f` at `~1K LOC` scale, including compatibility
 > and conformance tests. Closed W6 and W7 binding/evaluation consume only project-owned admitted descriptors and frozen
-> plans; Roslyn types remain inside the front-end adapter. The approved W8 admission/binding additions do not yet exist.
+> plans; Roslyn types remain inside the front-end adapter. W8.1 adds evidence targets and probes, while the W8.2
+> admission/binding product path is the active extension.
 >
 > **Durable architecture rule:** every future product expression uses this same complete parser boundary. Later
 > milestones may add versioned tree admission, binding, or evaluation semantics, but must not grow a second lexer,
@@ -356,7 +357,7 @@ memory access. Exact implementation source baseline `f99b12ee7` proves that prod
 `SyntaxFactory.ParseExpression` call, W7 retains the detached descriptor from that parse, and focused W7/parser/
 portfolio tests pass without a W7-specific parser or textual splitter.
 
-### 8.8 Approved W8 V2 shapes — not implemented
+### 8.8 W8 V2 shapes — W8.1 evidence closed, W8.2 product path active
 
 The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) applies the same extension rule to an additive
 `StaticFieldExpressionV2` profile. Its approved projector must preserve bounded `GenericNameSyntax`, nested named-type
@@ -365,14 +366,15 @@ W2/W6 suffix, and a possible bare field root. It must not decide namespace/type/
 construction identity while projecting syntax. Those decisions belong to the V2 binder over exact metadata, runtime,
 selected-frame, Portable-PDB, and lexical-completeness evidence.
 
-If W8.1 proves exact attributable frame locations, W8 also adds a separate `FrameValueExpressionV1` projector. That
-profile admits only bounded `ThisExpressionSyntax` or one `IdentifierNameSyntax` root plus an optional unchanged W2/W6
-suffix. Profile selection precedes projection, and a missing, duplicate, partial, or unsupported frame root never falls
-through to static-field binding. If the physical gate does not pass, the profile remains absent and its probe outcome
-becomes an executable typed non-admission.
+W8.1 proved exact attributable memory-homed frame locations, so W8.2 must add a separate
+`FrameValueExpressionV1` projector. That profile admits only bounded `ThisExpressionSyntax` or one
+`IdentifierNameSyntax` root plus an optional unchanged W2/W6 suffix. Profile selection precedes projection, and a
+missing, duplicate, partial, register-homed, or unsupported frame root never falls through to static-field binding.
+Selected-frame generic substitution remains non-admitted and creates no syntax or binding API.
 
-This section records a design frontier only. Until W8 implementation checkpoints land, these trees remain unsupported
-by every executable profile, and W7's classification, canonical bytes, and one-parse behavior remain unchanged.
+The physical dispositions are executable evidence, not a V2 product profile. Until the applicable W8.2+ checkpoint
+lands, these trees remain unsupported by the product profiles, and W7's classification, canonical bytes, and
+one-parse behavior remain unchanged.
 
 ## 9) Identifier and literal projection
 
@@ -545,9 +547,11 @@ diagnostic matrix, and executable test portfolio.
 Closed W7 subsequently admits only its bounded non-generic static-field/member-suffix trees and selected-frame/PDB
 name context. Approved W8 deliberately adds the bounded nested/closed-generic static, scoped import/alias, extern-alias,
 literal, constructed-value, and evidence-qualified bare-root surface defined by the post-W7 plan. Exact W8.1 frame-
-location evidence may additionally admit the separate `FrameValueExpressionV1` root/suffix profile; it never widens or
-acts as fallback for `StaticFieldExpressionV2`. W8 does not make general name/overload resolution or every parseable C#
-expression an implementation claim. Before W8 checkpoints land, the executable boundary remains W7.
+location evidence makes the separate `FrameValueExpressionV1` root/suffix profile mandatory; it never widens or acts
+as fallback for `StaticFieldExpressionV2`, and it admits neither register homes nor selected-frame generic
+substitution. W8 does not make general name/overload resolution or every parseable C# expression an implementation
+claim. Before the applicable W8.2+ product checkpoint lands, the product boundary remains W7; W8.1's physical evidence
+remains independently executable.
 
 ## 14) Completion gate
 

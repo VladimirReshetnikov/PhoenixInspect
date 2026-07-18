@@ -41,13 +41,14 @@ field expression profile, selected-frame/Portable-PDB import producer, counted n
 W2/W6 suffix evaluator, and sixteen-dump/four-shape synthetic gate. W7.1–W7.7 supply the physical slot/replay proof,
 dump-free typed stage seam, product parser/binder/context/storage/value path, frozen artifact inputs, generated
 conformance, and meaningful portfolio.
-The approved-but-unimplemented [`Post-W7 Path Forward`](../plans/post-w7-path-forward.md) is now the sole active W8
-sequence. It requires physical truth gates before V2 contracts, then generated coverage and a synthetic corpus of
-thirty-two fixed core dumps plus one per admitted branch for nested and closed constructed owners, scoped imports and
-aliases, exact runtime-construction identity,
-metadata literals, stored values, and evidence-qualified bare-field lookup. Its separately predeclared thread-relative,
-context-relative, RVA-backed, frame-value, and frame-generic branches must each receive an exact admitted disposition
-or a typed executable non-admission; none may be inferred from W7's portfolio label.
+The [`Post-W7 Path Forward`](../plans/post-w7-path-forward.md) is the sole active W8 sequence. W8.1 is implemented and
+locally validated under its [`physical-truth disposition`](../plans/w8-1-physical-truth-disposition.md). It proves exact
+compiler/PDB, construction, storage, literal, frame-root, assignability, and replay facts before V2 contracts.
+Constructed/thread-relative/RVA/literal/exact memory-frame branches are admitted; context-relative storage and
+selected-frame generic arguments are typed non-admitted, and register homes are unproven. W8.2 is active. Later
+generated coverage and a thirty-five-incident minimum remain required for nested and closed constructed owners, scoped
+imports and aliases, exact runtime-construction identity, stored/literal values, evidence-qualified bare fields, and
+the separate admitted frame-value profile.
 Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input
@@ -258,7 +259,7 @@ defined milestone-selected scope.
 | Interpreter result | Metadata-derived activation, frozen typed plan, explicit value domain, persistent memory, and deterministic budget/event policy | Historical replay or product-level expression evaluation |
 | W7 selected-frame import context | Identity-validated bounded Portable PDB bytes, exact active LocalScope/ImportScope chain, and project-owned namespace/import/alias facts | Stack values, exact closed generic runtime arguments, lexical blocker completeness, or broader language binding |
 | W7 static-field result | Counted metadata, one exact non-generic declaration, pinned runtime slot, counted raw value reads, and optional unchanged suffix evaluation | Nested/generic owners, literals, per-construction slot selection, or any W8 branch |
-| W8 truth-gate candidate | Compiler/SRM facts plus real full-dump runtime, slot, thread-context, and replay observations declared by W8.1 | An implemented V2 contract until every mandatory fact and each conditional branch disposition passes |
+| Completed W8.1 physical gate | Compiler/SRM facts plus real full-dump candidate-keyed construction, slot, thread/frame, raw-value, assignability, and replay observations through `220be94b4` | An implemented V2/frame product contract, binder, evaluator, report schema, or portfolio result |
 
 ## CI policy
 
@@ -266,7 +267,7 @@ Every managed restore/build/test step uses `./eng/Invoke-HeadlessProcess.ps1 dot
 workflow `dotnet` launches. The workflow uses the pinned .NET 10 SDK and locked packages, runs repository-owned
 local-Markdown-link and headless-workflow consistency checks, builds Release with warnings as errors, runs the fast suite,
 and then runs the required ordinary-dump and optimized-context Windows lanes. Every current test command runs all
-remaining tests in its selected category, and restore/build cover the complete current 17-project solution. Caveat:
+remaining tests in its selected category, and restore/build cover the complete current 20-project solution. Caveat:
 this establishes behavior only for the named fixture shapes. Third-party actions are pinned to verified release commit
 SHAs. A missing DAC or inability to write/load a required dump is a failing infrastructure signal, not a passing skip.
 
@@ -654,28 +655,29 @@ complete integration 242/242, Fast 184/184, ordinary dump 29/29, optimized conte
 portfolio selects `BindingContextPrecision`; that label alone does not choose a concrete successor rule. The W7-only owner
 disposition records rejected hosted jobs without claiming execution evidence or weakening the workflow. That manifest
 label permits a bounded successor choice but does not identify or prove one particular alias, import, frame, or generic
-rule. The approved W8 plan makes the successor decision; W8 implementation evidence remains absent.
+rule. The W8 plan makes the successor decision, and W8.1 now supplies its pre-contract physical evidence.
 
-## Active W8 physical, generated, and synthetic evidence gates
+## Closed W8.1 physical gate and active W8.2+ evidence gates
 
-W8 begins with an executable truth gate rather than a product API. Compiler-emitted targets, independent SRM/Portable-
-PDB projections, real full dumps, and late runtime/compiler oracles must first establish the physical relation among
+W8.1 began with an executable truth gate rather than a product API. Compiler-emitted targets, independent SRM/Portable-
+PDB projections, real full dumps, and late runtime/compiler oracles establish the physical relation among
 source spelling, Roslyn tree, nested TypeDef arity, GenericParam ownership/order, TypeSpec bytes, exact runtime type
 identity, declaring construction, static storage, and decoded value. Display-name parsing is probe evidence only. A V2
-constructed-owner contract cannot land until the host proves an exact ordered closed-argument source keyed to each
-runtime type candidate and proves distinct slots for simultaneously loaded constructions sharing a TypeDef/FieldDef.
+constructed-owner contract may now consume the proven ordered closed-argument source keyed to each runtime type
+candidate and the distinct slots for simultaneously loaded constructions sharing a TypeDef/FieldDef.
 
-The W8.1 fixture matrix distinguishes facts that must never be collapsed:
+The completed W8.1 fixture matrix distinguishes facts that must never be collapsed:
 
 - class, value-type, and interface definition kinds; top-level and nested owners; direct, inherited, hidden, and
   unsupported neighboring members;
 - exact stored values versus metadata literals, where literal plans perform zero runtime, slot, and memory calls;
-- ordinary application-domain storage versus thread-relative, context-relative, and RVA-backed storage, each with its
-  own address/source evidence and a typed non-admission when the pinned runtime cannot prove it;
-- address-backed values read only from counted dump memory versus register-backed frame values read only from a frozen
-  raw thread context; and
+- ordinary construction storage, admitted thread-relative and RVA-backed storage, and context-relative non-admission,
+  each with its own identity/address/source evidence;
+- address-backed values read only from counted dump memory; register-backed frame values remain unproven and absent
+  from the planned contract; and
 - selected-frame identity/import context, exact live frame-value location, and frame generic construction as three
-  independent branches. Success in one branch supplies no fact for another.
+  independent branches. Exact memory-homed frame roots are admitted; selected-frame generic construction is
+  non-admitted. Success in one branch supplies no fact for another.
 
 After the truth gate, fast generated tests freeze immutable V2 contracts, one-Roslyn-parse projection, namespace/type
 partitioning, nested per-segment arity, TypeSpec decoding and substitution, constraints, accessibility, definition-kind
@@ -690,11 +692,11 @@ same-session, fresh-object, fresh-process, and close/reopen/rebind canonical rep
 command runs through `eng/Invoke-HeadlessProcess.ps1`; every target, helper, or consumer child process spawned by the
 tests is configured as hidden and windowless.
 
-The final meaningful synthetic lane contains the fixed thirty-two independent core full-dump incidents over four
-materially distinct application shapes, plus one independent incident for every W8.1-admitted branch. It includes exact and deliberately
+The final meaningful synthetic lane contains thirty-five minimum independent full-dump incidents over four
+materially distinct application shapes: thirty-two core plus thread-relative, RVA-backed, and frame-value rows. It includes exact and deliberately
 imperfect context, TypeSpec, construction, slot, literal, frame, and suffix cases; validates attributable-stage,
 usefulness, and counterfactual decision facts independently; keeps representative counts at zero; runs each incident
 through its own fresh hidden consumer; and requires two additional fresh portfolio consumers to emit byte-identical
-reports. W8 is not complete until this lane and all W1–W7 compatibility lanes pass with zero skips under the complete
+reports. W8 is not complete until this lane, all W1–W7 compatibility lanes, and the W8.1 physical regressions pass with zero skips under the complete
 headless repository matrix. The required hosted jobs must then pass at the exact pushed W8 closure commit unless the
 owner records a new W8-specific disposition; no earlier milestone disposition is W8 execution evidence.

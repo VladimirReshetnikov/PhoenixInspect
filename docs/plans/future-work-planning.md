@@ -5,8 +5,10 @@
 This is the authoritative W0–W4 delivery record and research-entry-gate source for the interpreter and dump-time
 evaluation initiative. The completed W5 sequence is the [Post-W4 Path Forward](post-w4-path-forward.md), and the
 completed W6 sequence is the [Post-W5 Path Forward](post-w5-path-forward.md). The completed W7 sequence is the
-[Post-W6 Path Forward](post-w6-path-forward.md). The active, approved but unimplemented W8 sequence is the
-[Post-W7 Path Forward](post-w7-path-forward.md). All five documents remain evidence-led: each admitted milestone must
+[Post-W6 Path Forward](post-w6-path-forward.md). The active W8 sequence is the
+[Post-W7 Path Forward](post-w7-path-forward.md); W8.1 is complete under its
+[physical-truth disposition](w8-1-physical-truth-disposition.md), and W8.2 is active. All six documents remain
+evidence-led: each admitted milestone must
 produce a useful executable scenario or remove a concrete obstacle to the next one.
 
 ## 1) Scope lock
@@ -25,8 +27,10 @@ Active W8 defines an additive `StaticFieldExpressionV2` design over the same par
 It adds bounded nested and closed constructed generic owners, exact scoped import/type/namespace/extern aliases,
 current-type and evidence-qualified `using static` bare fields, general TypeSpec construction, constraints,
 accessibility, field-signature substitution, constructed assignability, per-construction runtime slots, and metadata
-literals. W8.1 resolves predeclared thread/context/RVA and exact frame-value branches before contracts. This is roadmap
-intent only until the named W8 truth gates and implementation land.
+literals. W8.1 now supplies exact pre-contract compiler/PDB, constructed-runtime, thread-relative, module-RVA, literal,
+memory-homed frame-root, and assignability evidence. Context-relative storage and selected-frame generic arguments are
+typed non-admitted, and register homes are unproven. W8.2 now owns the first V2/frame product contracts; those contracts
+and all later binding/evaluation behavior remain roadmap intent until their named checkpoints land.
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
 enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a
@@ -846,14 +850,17 @@ optimized Release modeled-incident dump and records, for every predeclared expre
 The historical schema-v1 report retained `this`, argument, local, static, and strong-root axes and recorded raw member
 bytes at 5/5, attributable context at 1/5, and product-query availability at 1/5. W7's current canonical schema-v2 report
 records attributable context at 2/5 because both the static field and strong root are exact at their relevant stages;
-product-query availability remains 1/5 at the strong root. Stack-slot observation for `this`, argument, and local is
-deliberately not admitted under the pinned .NET 10 DAC support boundary. These are raw counts from one generated modeled
-dump, not a representative private-production corpus and not a production recoverability rate.
+product-query availability remains 1/5 at the strong root. That W7 report still does not attribute its `this`, argument,
+or local axes. Separately, W8.1's six dedicated selected-frame profiles prove exact memory-homed `this`, reference/value
+parameter, and active-local roots; register homes and selected-frame generic arguments remain non-admitted. These are
+raw counts and exact branch facts from generated modeled dumps, not a representative private-production corpus or a
+production recoverability rate.
 
 Continue to report raw counts and corpus composition before any aggregate percentage. Do not extrapolate from the
 modeled fixture to production incidents, and do not set a readiness threshold until a representative
-private-production incident corpus exists. Until then, optimized frame-context support remains unavailable outside the
-validated strong-root path even though the measurement machinery itself is implemented and versioned.
+private-production incident corpus exists. Until then, the W7 schema-v2 product route remains available only at its
+validated strong-root path, while W8.1's exact memory-homed frame roots remain pre-contract evidence rather than a
+product route.
 
 ## 8) Documentation policy
 

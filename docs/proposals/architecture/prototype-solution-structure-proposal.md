@@ -8,7 +8,7 @@
 
 The earlier solution contained 42 source projects: 34 were project-file-only placeholders before this pass, including the now-implemented concrete domain. That physical decomposition encoded an unvalidated multi-product architecture and imposed build/dependency surface without behavior.
 
-The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary, W4.7 justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary, and W5.4 justified one external-process composition root/report runner. Three later experimental projects have now been removed. W7 adds one generated target plus two deliberately conflicting evidence fixtures, leaving ten source projects and seventeen projects overall. Caveat: the physical topology represents only the named generated fixtures and explicitly admitted input shapes. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
+The 33 remaining empty placeholders were removed. The one-purpose `Interpreter.Types` and `Interpreter.IL` DTO assemblies were then folded into core contracts. The W2 query slice subsequently justified one behavior-bearing product boundary, W4.7 justified `Interpreter.Product.DumpDebugging` as an independently tested product projection boundary, and W5.4 justified one external-process composition root/report runner. Three later experimental projects have now been removed. W7 adds one generated target plus two deliberately conflicting evidence fixtures. W8.1 adds three generated physical-truth targets, leaving ten source projects and twenty projects overall. Caveat: the physical topology represents only the named generated fixtures and explicitly admitted input shapes. The logical catalog remains in `module-architecture-proposal.md` as historical research, while `architecture-overview-proposal.md` defines the active topology and the rule for future splits.
 
 ## 2. Current source projects
 
@@ -27,9 +27,12 @@ The solution retains ten source projects, each containing contracts or behavior 
 | `Interpreter.Product.DumpDebugging` | W4 standalone target projection and rooted preparation/execution plus canonical W5/W6/W7 expression request/classification, typed method/member-chain/static-expression preparation, detached dump binding, lazy W7 context acquisition, and strict mode-preserving product evaluation outcomes. |
 | `Interpreter.Headless.ReferenceConsumer` | Prototype composition root: read-only dump open/root binding, append-only W5/W6/W7 scenario execution, stable machine/human projection, typed root/static-selection reporting, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
 
-Tests are separated into a fast semantic/contract suite, a real dump integration suite, and five generated target or
+Tests are separated into a fast semantic/contract suite, a real dump integration suite, and eight generated target or
 evidence projects: the general dump target, optimized modeled-incident target, W7 application target, identity-
-conflict PDB fixture, and duplicate-type fixture. The
+conflict PDB fixture, duplicate-type fixture, W8 application target, W8 alias target, and W8 forwarding target. W8.1's
+physical probes cover compiler/PDB 25/25, runtime construction 1/1, one selected-frame test across six dumps/profiles,
+and focused storage/assignability 8/8. Their definitive branch table lives in the
+[`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). The
 real-dump suite contains an independently versioned 22-case/20-expression W2 corpus rather than treating one query in the W1
 omnibus test as query-product closure evidence. It also contains a dedicated W3 direct/adjusted getter lane that
 executes only exact counted dump evidence and reopens/rebinds the dump for replay. The W4.1 generated fixture freezes

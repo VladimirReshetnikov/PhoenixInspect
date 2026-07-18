@@ -9,8 +9,8 @@
 This inventory records the small public contract surface exercised by the current dump-evidence, restricted-query,
 W3 concrete-IL, W4.2–W4.7 dump-free explained-unknown, graph-preparation, interpreted-call, pure-model, target-outcome,
 and closed W5/W6/W7 product proofs. It is descriptive, not a promise of compatibility. W7's implemented static-
-expression, binding-context, symbol, storage, and value contracts are recorded below. W8's approved V2 contracts are
-not implemented and therefore remain outside this implementation inventory.
+expression, binding-context, symbol, storage, and value contracts are recorded below. W8.1's test-only evidence types
+are summarized separately; W8.2 is the active additive V2 contract checkpoint.
 Strengthened W3 checkpoint `19c292f9f`
 passed the required local milestone-selected lanes and all four jobs in [implementation-checkpoint run
 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
@@ -463,18 +463,22 @@ headless reference consumer adds append-only W7 conformance and sixteen-incident
 internal prototype host, not a stable CLI. Every public W7 type/method carries draft XML documentation and contract,
 canonical, invalid-input, replay, and real-dump tests.
 
-## Approved W8 contract frontier — not implemented
+## Completed W8.1 evidence inventory and active W8.2 contract frontier
 
 The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves additive
 `StaticFieldExpressionV2` and `BindingContextV2` profiles rather than mutating W7. The planned inventory includes
 structured nested and closed generic type syntax, exact metadata/runtime construction identities, scope-precise import
 and alias facts, extern aliases, lexical-blocker completeness, ordinary stored fields, metadata literals, constructed
-field-signature substitution, and distinct plan/result/provenance encodings. If and only if W8.1 proves exact
-attributable frame locations, the planned inventory also includes separate `FrameValueExpressionV1` root, location,
-source, plan, result, and provenance contracts; it is never a fallback from the static profile. W8.1 must first prove
-the physical compiler, metadata, runtime-argument, definition-kind, storage, frame-value, and frame-generic branch
-dispositions. Until those gates land, no W8 public type, method, profile member, schema row, or validation result belongs
-in this implementation inventory; every W1–W7 contract remains the current executable surface.
+field-signature substitution, and distinct plan/result/provenance encodings. W8.1's three generated evidence targets
+and integration probes establish the compiler/PDB, candidate-keyed runtime construction, definition-kind, storage,
+assignability, and selected-frame dispositions recorded in the
+[`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md).
+
+W8.2 must expose `ConstructedSlot`, `ThreadRelativeSlot`, `ModuleRva`, and `MetadataLiteral` strategies. It must also
+include separate `FrameValueExpressionV1` root, exact memory location, source, plan, result, and provenance contracts;
+that route is never a fallback from the static profile. It must not expose a context-relative strategy, register-home
+descriptor, or selected-frame generic-substitution contract. W1–W7 contracts remain unchanged while these additive
+W8.2 contracts land.
 
 ## Change rule
 

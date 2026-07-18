@@ -8,8 +8,9 @@
 > fields, metadata literals, and evidence-qualified `using static` bare-field roots. Exact reference values continue
 > through the unchanged W2/W6 suffix evaluators.
 >
-> **Implementation status:** design-approved and not yet implemented. W7 remains complete for its stated scope;
-> nothing in this document is implementation or validation evidence for W8.
+> **Implementation status:** W8.1 is implemented and locally validated through exact source baseline `220be94b4`;
+> its authoritative branch record is the [W8.1 Physical-Truth Disposition](w8-1-physical-truth-disposition.md). W8.2
+> is active. No V2/frame product contract, binder, evaluator, report schema, or portfolio result has landed yet.
 >
 > **Evidence boundary:** W8 is a generated-fixture and meaningful-synthetic prototype milestone. Its planned corpus is
 > not representative observation and cannot establish field readiness. W5, W6, and W7 milestone-specific hosted
@@ -161,8 +162,9 @@ The bounded name-resolution behavior follows the official C# specification for
 [qualified aliases](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/namespaces#148-qualified-alias-member),
 and [`using static`](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/using-directive#the-static-modifier).
 The physical fixture also follows the current C# specification for
-[interface static fields](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/interfaces#1942-interface-fields);
-W8.1 still has to prove the pinned compiler/runtime emission and slot behavior before that product path lands.
+[interface static fields](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/interfaces#1942-interface-fields).
+W8.1 proves the pinned compiler/runtime emission, definition-kind identity, construction mapping, and distinct slot
+behavior; W8.2 consumes those facts without inferring them from source spelling.
 Within the contextual route, W8 follows those rules left-to-right. It documents every intentional debugger-specific
 difference—especially W7 dot-qualified compatibility precedence and inspection accessibility—rather than calling the
 whole debugger profile identical to source C# binding.
@@ -215,10 +217,12 @@ These boundaries are not parser limitations and are not omitted merely to keep W
 
 - literal constants are mandatory and come from exact metadata without runtime construction, slot acquisition, or a
   memory read;
-- W8.1 probes thread-relative, context-relative, and RVA-backed static storage. Any form with an exact attributable
-  owner/thread/domain/address/value source is added to V2 before contract closure; otherwise the executable probe and a
-  typed non-admission record why it cannot be selected. A thread-relative request also requires an exact selected-thread
-  identity and never guesses among threads;
+- thread-relative storage is admitted and requires an exact selected-thread identity in addition to its exact closed
+  owner; the two-worker/two-owner fixture proves four distinct slots and values;
+- named RVA-backed storage is admitted as `ModuleRva`, with exact module-content identity, FieldRVA geometry, counted
+  raw reads, and runtime construction/slot acquisition marked `NotRequired`;
+- context-relative storage is non-admitted with `W8_CONTEXT_IDENTITY_NOT_ATTRIBUTABLE`; the runtime exposes one
+  ordinary static slot but no attributable context identity, so W8 creates no `ContextRelativeSlot` API;
 - static properties, events, operators, and methods require invocation/counterfactual-execution semantics rather than
   a field read;
 - an open generic definition has no unique stored static slot; W8 binds storage only for an exact loaded closed
@@ -228,15 +232,15 @@ These boundaries are not parser limitations and are not omitted merely to keep W
   unsupported;
 - extension-member and overload resolution are not field-name binding; and
 - arbitrary non-nullable value-type payloads beyond the explicitly admitted primitive/enum family lack a stable current
-  product value representation and remain typed unsupported rather than being exposed as untyped bytes; and
-- source local, parameter, or `this` values require an exact name-to-runtime-location bridge that the current context
-  pipeline has not demonstrated.
+  product value representation and remain typed unsupported rather than being exposed as untyped bytes;
+- exact memory-homed `this`, reference/value parameters, and active locals are admitted through a separate
+  `FrameValueExpressionV1` profile with selected frame/thread, scope, type, liveness, address, width, copied bytes, and
+  decoded value; register homes are not proven; and
+- selected-frame declaring-type `VAR` and method `MVAR` arguments are non-admitted. Legacy enumeration is `E_NOTIMPL`,
+  shared-code evidence may retain exact `System.__Canon` rather than the closed argument, and the DBI factory declines
+  the required interface with `E_NOINTERFACE`. No frame-generic placeholder or substitution service is exposed.
 
-W8.1 must probe the storage forms above and the last boundary for `this`, reference/value parameters, locals,
-declaring-type `VAR`, and method `MVAR`. If the pinned runtime and emitted artifacts provide exact attributable locations
-or closed generic arguments, the corresponding bounded support is added to W8 before contract closure. If they do not,
-the probe becomes the executable reason for typed non-admission; no register, spill, heap, name, or uniqueness guess is
-permitted.
+These dispositions are frozen by W8.1. No register, spill, heap, name, context, or uniqueness guess is permitted.
 
 ## 4) Versioned contract
 
@@ -248,21 +252,21 @@ W8 adds, rather than mutates:
 - `BindingContextV2` as a scoped semantic projection over immutable W7 physical facts plus new blocker facts;
 - a structured closed-type syntax and symbol identity;
 - a constructed-owner/runtime-construction identity;
-- V2 declaration, plan, result, and provenance encodings plus conditional frame-root/location/result encodings when
-  W8.1 admits that branch; and
+- V2 declaration, plan, result, and provenance encodings plus separate mandatory
+  `FrameValueExpressionV1` root/location/result encodings; and
 - append-only generated and meaningful-synthetic report schemas.
 
-W8.1 resolves three predeclared evidence branches before public contracts freeze:
+W8.1 resolved the predeclared evidence branches before public contracts freeze:
 
 - exact thread-relative static storage extends `StaticFieldExpressionV2` with a required selected-thread identity;
 - exact RVA-backed storage extends the same profile with a distinct storage descriptor and read geometry; and
 - exact `this`/parameter/local locations admit a separate `FrameValueExpressionV1` profile for `this` or one active
   identifier root followed by an already-admitted W2/W6 suffix. It never falls through to static lookup.
 
-Context-relative storage uses an explicit runtime context/domain identity under the first branch or remains
-non-admitted. Declaring-type or method generic arguments proven by W8.1 may close V2 type syntax without admitting a
-frame-value root. A branch that lacks exact evidence creates no public profile member or placeholder service; its probe,
-typed outcome, and no-call tests remain the contract rationale.
+Context-relative storage remains non-admitted and creates no public strategy. Selected-frame declaring-type and method
+generic arguments also remain non-admitted and cannot close V2 type syntax; fully ground TypeSpecs require neither
+capability. Each non-admitted branch creates no public profile member or placeholder service; its probe, typed outcome,
+and no-call tests remain the contract rationale.
 
 Every W1–W7 public contract, default route, canonical byte sequence, digest, manifest schema, report byte sequence, and
 test remains golden. A caller must select V2 explicitly. V1 failure never falls through to V2, and V2 failure never
@@ -289,8 +293,8 @@ cannot disambiguate an earlier name, and no longest-prefix convention chooses a 
 
 Bare `StaticFieldExpressionV2` roots first apply complete lexical shadowing and current/enclosing constructed-type member
 lookup, then active `using static` imports under the frozen C# precedence rule. They are not reinterpreted as a configured
-W2 root or implicit instance value; an instance member blocks the field-only profile truthfully. If W8.1 admits
-`FrameValueExpressionV1`, its separate projector accepts only `this` or one active identifier root plus the detached
+W2 root or implicit instance value; an instance member blocks the field-only profile truthfully.
+`FrameValueExpressionV1` has a separate projector that accepts only `this` or one active identifier root plus the detached
 W2/W6 suffix; profile selection therefore decides the meaning before any binder call and never falls through to static
 lookup.
 
@@ -300,8 +304,8 @@ lookup.
 derives a consulted semantic view:
 
 - current/enclosing constructed types and their nested-type/member catalogs participate at the exact C# lookup step;
-- selected type/method parameters participate at their exact precedence layer, with closed arguments only when W8.1
-  proved the attributable generic context;
+- selected type/method parameter names participate at their exact precedence layer as blockers, but no selected-frame
+  closed argument is available for `VAR`/`MVAR` substitution;
 - current and enclosing namespaces follow the exact selected declaring namespace and C# namespace lookup order;
 - simple-name lookup evaluates namespace-declaration levels from innermost to outermost and stops at the first level
   that produces a viable alias, declaration, or imported candidate set;
@@ -397,11 +401,11 @@ preserves W7's exact `Int32`, `String`, `Nullable<Int32>`, object, and managed-r
 all CLI fixed-width integral signedness/widths, `Boolean`, `Char`, `Single`, `Double`, target-width native integers,
 enum-underlying values, admitted nullable values, arrays, and constructed references. Out-of-range owner variables, an
 open result, malformed signatures, or incompatible value-shape claims remain distinct invalid/unsupported outcomes.
-`MVAR` is never legal in a FieldDef signature and is `Invalid`
-regardless of W8.1; a proven method generic argument may close only an expression owner/type tree before field binding.
+`MVAR` is never legal in a FieldDef signature and is `Invalid`. Selected-frame method arguments are also non-admitted
+for closing an expression owner/type tree.
 
-Literal projection reads the FieldDef literal flag, exact field signature, and Constant row plus any pinned-compiler
-literal attribute encoding admitted by W8.1. Primitive, enum-underlying, string, null, and exact `decimal` constants
+Literal projection reads the FieldDef literal flag, exact field signature, and Constant row plus the pinned-compiler
+literal attribute encodings proven by W8.1. Primitive, enum-underlying, floating-bit, string, null, and exact `decimal` constants
 produce canonical V2 values with runtime construction and storage marked `NotRequired`; malformed, duplicate,
 type-incompatible, or unknown literal encodings stop before any runtime capability call.
 
@@ -412,10 +416,9 @@ short-circuit from a heap-backed reference.
 
 Portable-PDB `AliasType` targets are required to be fully ground unless the compiler/PDB oracle proves another emitted
 form; W8 does not fabricate a frame-relative alias import. Separately, expression syntax such as
-`GenericSlot<T>.Current` inside a selected generic frame may contain type- or method-parameter references. W8 admits
-those only if W8.1 proves an exact selected-frame closed-argument source and freezes its `VAR`/`MVAR` substitution
-contract. Otherwise they produce the corresponding typed unsupported/unavailable outcome. A fully ground TypeSpec does
-not require that capability.
+`GenericSlot<T>.Current` inside a selected generic frame may contain type- or method-parameter references. W8.1 found
+no exact selected-frame closed-argument source, so those forms produce the corresponding typed unsupported/unavailable
+outcome and no `VAR`/`MVAR` frame-substitution contract exists. A fully ground TypeSpec does not require that capability.
 
 ### 4.6 Constructed runtime identity and storage
 
@@ -448,18 +451,15 @@ slot:
 
 - `ConstructedSlot` requires exact runtime construction/domain and one per-construction slot;
 - `ThreadRelativeSlot` additionally requires the exact selected-thread identity and attributable thread location;
-- `ContextRelativeSlot` requires the exact runtime context/domain identity and attributable context location;
 - `ModuleRva` requires exact module-content identity, FieldRVA row, mapped RVA geometry, and no runtime construction when
   the emitted/runtime layout proves it unnecessary;
 - `MetadataLiteral` requires only the frozen metadata constant and makes runtime/storage/memory calls `NotRequired`; and
-- an admitted `FrameLocation` belongs only to `FrameValueExpressionV1`, distinguishes register from stack/memory homes,
-  and consumes the exact frozen thread-context/register or address descriptor.
+- `FrameLocation` belongs only to `FrameValueExpressionV1` and consumes one exact memory-address descriptor. Register
+  homes are not part of the admitted contract.
 
 For address-backed stored/frame strategies the adapter locates evidence but does not supply the value; the project-owned
-memory reader is the sole product byte source. A register-homed frame value instead comes only from copied raw bytes in
-the exact frozen thread-context/register record and a project-owned decoder, never from a high-level decoded register
-value. Metadata is the sole literal value source. High-level runtime reads and reflection remain late equality oracles
-in tests.
+memory reader is the sole product byte source. Metadata is the sole literal value source. High-level runtime reads and
+reflection remain late equality oracles in tests.
 
 ### 4.7 Evidence-qualified bare members and `using static`
 
@@ -515,13 +515,11 @@ The shared W8 pipeline is:
    `NotRequired` for the frame root;
 9. instantiate the declaring construction's FieldDef signature, decode its literal constant, or retain the frozen frame
    root type/location descriptor;
-10. freeze the required `ConstructedSlot`, `ThreadRelativeSlot`, `ContextRelativeSlot`, `ModuleRva`, `MetadataLiteral`,
-    or `FrameLocation` strategy and acquire only its required runtime/thread/context/module identity;
-11. locate its exact stored/frame address and geometry or exact thread-context/register descriptor when a raw value read
-    is required;
+10. freeze the required `ConstructedSlot`, `ThreadRelativeSlot`, `ModuleRva`, `MetadataLiteral`, or `FrameLocation`
+    strategy and acquire only its required runtime/thread/module identity;
+11. locate its exact stored/frame address and geometry when a raw value read is required;
 12. freeze the complete strategy-tagged plan before obtaining its value;
-13. read/decode dump memory, decode copied raw register-context bytes, or project the frozen exact literal according to
-    that strategy;
+13. read/decode dump memory or project the frozen exact literal according to that strategy;
 14. validate a non-null reference target through constructed assignability when required;
 15. evaluate the unchanged frozen W2/W6 suffix, if any; and
 16. project the selected profile's canonical result and provenance record.
@@ -572,8 +570,8 @@ The fully qualified route's provenance must prove absence of frame/PDB calls, no
 
 ### 6.1 Dedicated emitted fixture
 
-Add `Interpreter.W8TestTarget` and, where exact extern-alias evidence requires a separate assembly,
-`Interpreter.W8AliasTarget`. The target must materialize before each dump:
+W8.1 added `Interpreter.W8TestTarget`, `Interpreter.W8AliasTarget`, `Interpreter.W8ForwarderTarget`, and the named
+FieldRVA companion. The target materializes before each dump:
 
 - at least four closed constructions of the same generic TypeDef;
 - at least two constructions with the same FieldDef but distinct nonzero slots and distinct primitive values;
@@ -598,7 +596,7 @@ never triggers them.
 
 ### 6.2 Compiler/PDB truth
 
-An independent SRM oracle must prove from emitted bytes that:
+The independent SRM/compiler oracle proves from emitted bytes that:
 
 1. the whole-owner constructed alias is encoded as an `AliasType` import whose target token is a TypeSpec;
 2. generic, SZ-array, and multidimensional-array TypeSpec bytes decode to the intended complete trees;
@@ -609,12 +607,12 @@ An independent SRM oracle must prove from emitted bytes that:
 6. method debug identity and active IL/PDB scope are exact; and
 7. poison artifacts produce the intended partial/conflict/invalid physical evidence without changing unrelated facts.
 
-If a planned source spelling does not emit the required fact under the pinned compiler profile, W8 revises the
-contract before product APIs land. Tests do not fabricate a PDB fact and call it compiler evidence.
+The one planned named-local slot-reuse relation is not emitted and remains explicitly unavailable; all other required
+facts above are exact. Tests do not fabricate a PDB fact and call it compiler evidence.
 
-### 6.3 Runtime/static-storage truth
+### 6.3 Completed runtime/static-storage truth
 
-A ClrMD/raw-memory probe must prove:
+The W8.1 ClrMD/raw-memory probes prove:
 
 1. all required closed constructions are present in the reopened dump;
 2. a public runtime API or counted raw-runtime structure yields exact ordered closed arguments keyed to each candidate
@@ -624,22 +622,22 @@ A ClrMD/raw-memory probe must prove:
    values under their separately frozen lookup/storage rules;
 4. every admitted primitive width/signedness, floating representation, target-width native integer, enum underlying
    value, nullable form, string, reference, and exact null has unambiguous target layout and read geometry;
-5. each thread-relative, context-relative, and RVA-backed branch has one exact owner/thread/context/domain/address/value
-   mapping or one reproducible reason it cannot be attributed;
+5. thread-relative storage has exact owner/thread/address/value mappings, RVA-backed storage has exact
+   module/row/address/value mappings, and context-relative storage has the reproducible
+   `W8_CONTEXT_IDENTITY_NOT_ATTRIBUTABLE` non-admission;
 6. nested and recursively substituted generic base/interface declaring constructions correlate with counted metadata;
 7. constructed invariant/variant/interface/base and array-assignability graphs agree with exact runtime identities;
 8. literal evaluation performs no runtime construction, storage, or memory capability call; and
 9. close/reopen/rebind reproduces canonical construction, slot, read, value, and no-call evidence.
 
 Parsing `ClrType.Name`, resolving those display fragments through global `GetTypeByName`, or observing metadata generic
-parameters does not pass this gate. If no exact candidate-keyed source is available, the constructed-owner product
-contract cannot land: W8 records the executable result and revises the roadmap rather than selecting a slot from display
-text. Array rank or SZ topology parsed from a runtime display name is equally insufficient. No product contract for
-constructed storage lands before this gate passes.
+parameters does not pass this gate. The proven candidate-keyed source is the bounded runtime descriptor/available-type/
+PerInstInfo/dictionary path. Array rank and SZ topology also come from that exact structure rather than a display name.
+The gate passed before W8.2 product contracts began.
 
-### 6.4 Stack/generic-context feasibility probe
+### 6.4 Completed stack/generic-context feasibility probe
 
-The selected-frame probe separately asks whether the pinned runtime/artifacts can attribute:
+The selected-frame probe separately resolved whether the pinned runtime/artifacts can attribute:
 
 - `this`;
 - reference and value parameters;
@@ -647,12 +645,12 @@ The selected-frame probe separately asks whether the pinned runtime/artifacts ca
 - declaring-type generic arguments; and
 - generic-method arguments
 
-to exact runtime locations or closed type identities at the selected instruction. GC roots, register/context records,
-PDB slot numbers, runtime names, and method display text are individually insufficient unless an exact join is proved.
-The result selects the corresponding predeclared bounded profile branch or freezes a typed evidence-backed
-non-admission. For an admitted frame-value branch the probe must also prove root type, exact location/read width, liveness
-at the selected instruction, value/reference decoding, generic substitution, and no ambiguity among register, stack,
-and memory homes. The later product path consumes only the frozen location descriptor and never repeats attribution.
+to exact runtime locations or closed type identities at the selected instruction. Exact memory-homed `this`,
+reference/value parameters, and active locals pass with type, width, liveness, copied bytes, and value/reference
+decoding. Register homes remain unproven. Declaring-type and method generic arguments fail exact attribution for the
+reasons frozen in the W8.1 disposition and remain non-admitted. GC roots, context records, PDB slot numbers, hidden
+tokens, runtime names, and method display text are individually insufficient. The later product path consumes only the
+frozen memory-location descriptor and never repeats attribution.
 
 ## 7) Generated conformance
 
@@ -679,12 +677,11 @@ Cover at least:
 - complete/incomplete lexical-blocker certificates and each shadowing symbol kind;
 - non-generic and constructed-TypeSpec `using static`, imported nested-type heads, stored fields, and literal fields;
 - `VAR` substitution at every supported recursive field-signature position; and
-- exact expression-derived frame-substituted `VAR`/`MVAR` forms when W8.1 proves the attributable generic-context
-  source; unresolved/open forms remain unsupported or unavailable, and no test claims a compiler-emitted frame-relative
-  alias unless the oracle observed one; and
-- when W8.1 admits `FrameValueExpressionV1`, exact `this`, reference/value parameter, and live local roots across each
-  proven register/stack/memory home, direct primitive/reference/null results, unchanged suffixes, dead/out-of-scope
-  locations, same-name shadowing, and profile-isolation no-fallback cases; otherwise the probe's non-admission matrix;
+- typed unsupported/unavailable expression-derived frame `VAR`/`MVAR` forms, with no compiler-emitted frame-relative
+  alias claim and no metadata/runtime call after the frozen non-admission; and
+- exact `FrameValueExpressionV1` `this`, reference/value parameter, and live local roots across proven memory homes,
+  direct primitive/reference/null results, unchanged suffixes, dead/out-of-scope locations, same-name shadowing,
+  profile-isolation no-fallback cases, and explicit non-admission of register homes;
 - every added primitive width/signedness, enum underlying type, exact literal encoding, nullable form, constructed
   reference, variance/invariance case, and admitted array-covariance case; and
 - valid-but-unsupported generic method invocation, other invocations, indexers, pointer type shapes, properties, events,
@@ -719,11 +716,11 @@ Every first failure proves that later capabilities were not called.
 ### 8.1 Corpus contract
 
 W8 predeclares the thirty-two independent core full-dump incidents below across request, batch, coordinator, and workflow
-shapes. After physical probing and before W8.2 contracts, W8.1 adds one independent incident for every admitted
-thread-relative, context-relative, RVA-backed, frame-value, or frame-generic-argument branch. Each added row freezes one
-expression, singular expected axes, counterfactual, value, first boundary, shape, and decision facts before its product
-implementation; non-admitted branches add no fictitious success row. The final portfolio therefore contains at least
-thirty-two incidents and retains all four shapes.
+shapes. W8.1 admits three additional success branches: thread-relative storage, RVA-backed storage, and
+`FrameValueExpressionV1`. Each receives one independent incident that freezes one expression, singular expected axes,
+counterfactual, value, first boundary, shape, and decision facts before product implementation. Context-relative
+storage and frame-generic arguments are non-admitted and add no fictitious success row. The final portfolio therefore
+contains at least thirty-five incidents and retains all four shapes.
 Each row owns one dump, expression, explicit profile, target invocation, selected-frame/PDB/artifact inputs, fully
 qualified control where meaningful, expected typed axes, first boundary, usefulness, decision impact, attributable
 stage evidence, and successor category. The four shapes use materially different generic/nested object graphs and
@@ -804,20 +801,26 @@ and remaining typed stops. LOC bands may be revised at any checkpoint.
 
 **Scale:** `~1K LOC` documentation.
 
+**Status:** Complete; the exit statements below record the state at W8.0 closure.
+
 Publish this plan, activate PM-25/PM-26, reconcile navigation and active design surfaces, record W7's decision limits,
 freeze the mandatory V2 core plus the predeclared thread/RVA/frame evidence branches, and predeclare the core corpus
-schema and decision rules. W8.1 selects only among those declared branches and freezes the final scope before contracts.
+schema and decision rules. At W8.0 closure, W8.1 was defined to select only among those declared branches and freeze
+the final scope before contracts.
 
 **Exit gate**
 
 - W7 remains complete and its evidence is not rewritten.
-- W8 is the sole active design/implementation sequence and is clearly unimplemented.
+- At W8.0 closure, W8 was the sole active design/implementation sequence and implementation had not begun.
 - All current documents agree on V2 scope, V1 compatibility, `~100K LOC` umbrella scale, and headless policy.
 - Markdown, headless-workflow, and authored-scope vocabulary guards pass.
 
 ### W8.1 — compiler, runtime, storage, and frame truth gates
 
 **Scale:** `~10K LOC` target, oracle, probes, and tests.
+
+**Status:** Complete at exact source baseline `220be94b4`; see the
+[W8.1 Physical-Truth Disposition](w8-1-physical-truth-disposition.md).
 
 Add the dedicated targets and prove emitted TypeSpec/using-static/extern/scope facts, multiple closed runtime
 constructions, distinct stored static slots/values, literals, definition-kind lookup, nested/base ownership, exact
@@ -831,8 +834,9 @@ before product contracts.
   metadata, TypeSpec bytes, and runtime structures rather than assumed from source spelling.
 - An exact ordered closed-argument source keyed to each runtime type candidate is proven; display-name reconstruction is
   explicitly insufficient.
-- Thread-relative, context-relative, RVA-backed, and frame-value branches receive one exact admitted or typed
-  non-admitted disposition, and the final W8 scope/corpus is frozen before W8.2.
+- Thread-relative, RVA-backed, and exact memory-homed frame-value branches are admitted; context-relative storage,
+  register homes, and selected-frame generic arguments are typed non-admitted. The final W8 scope and thirty-five-row
+  minimum corpus are frozen before W8.2.
 - Negative artifacts are independent and preserve unrelated exact evidence.
 - The stack/generic-context probe either proves an attributable source or records a typed executable non-admission.
 - Every public target/probe type and public method introduced by W8.1 has detailed XML documentation and draft caveats.
@@ -844,8 +848,9 @@ before product contracts.
 
 Freeze additive, defensively immutable, content-equal contracts for structured type syntax, scoped imports, lexical
 blockers, metadata constructions, TypeSpec projection, substitution, member lookup, runtime construction, storage,
-strategy-tagged plan/result/provenance, bounds, and diagnostics. If W8.1 admits `FrameValueExpressionV1`, also freeze its
-detached root syntax, root-attribution/live-location identity, direct value/result, and no-fallback profile boundary.
+strategy-tagged plan/result/provenance, bounds, and diagnostics. Also freeze the mandatory
+`FrameValueExpressionV1` detached root syntax, exact memory-location identity, direct value/result, and no-fallback
+profile boundary.
 
 **Exit gate**
 
@@ -915,8 +920,8 @@ extern-alias/AssemblyRef correlation. Preserve explicit-route laziness.
 Map metadata constructions to exact runtime constructions, carry ordered generic/nested identity through declaration
 and storage, select per-construction slots, project exact literals without runtime calls, implement every admitted
 primitive/enum/nullable decoder, W8.1-selected storage branch, and exact frozen frame-value root; validate constructed
-assignability and preserve raw-memory authority for address-backed values plus raw thread-context authority for
-register-backed values.
+assignability and preserve raw-memory authority for every address-backed value. Register-backed roots remain outside
+the admitted contract.
 
 **Exit gate**
 
@@ -925,8 +930,8 @@ register-backed values.
 - Every primitive width/signedness, enum, literal, string, nullable, null, reference, and recursively substituted field
   shape passes; literal plans prove zero runtime/storage/memory calls.
 - Constructed invariant/variant interface/base and admitted array assignability agree with runtime/compiler oracles.
-- Every W8.1-admitted thread/context/RVA/frame-value/frame-generic branch passes end to end; each non-admitted branch
-  retains its executable stop.
+- Every admitted thread-relative/RVA/frame-value branch passes end to end; context-relative storage, register homes,
+  and selected-frame generic arguments retain their executable stops and expose no placeholder API.
 - High-level runtime/reflection calls remain late oracles only.
 
 ### W8.7 — lexical completeness and `using static` bare roots
@@ -935,8 +940,8 @@ register-backed values.
 
 Project local variables/constants, parameters, type parameters, local functions, current/enclosing members/types, and
 relevant name catalogs; freeze the lexical completeness certificate; implement current-type and directly declared
-accessible using-static field lookup plus typed shadow stops. If the frame-value branch is admitted, bind its `this` or
-identifier to one exact live frozen location and allow a direct root result or unchanged suffix without static fallback.
+accessible using-static field lookup plus typed shadow stops. Bind the admitted frame profile's `this` or identifier to
+one exact live frozen memory location and allow a direct root result or unchanged suffix without static fallback.
 
 **Exit gate**
 
@@ -972,8 +977,8 @@ consumers, validate raw counts/counterfactual decision facts, and select exactly
 
 **Exit gate**
 
-- The thirty-two core dumps plus every W8.1-admitted branch dump execute across four materially distinct shapes with
-  distinct snapshot identities.
+- The thirty-five minimum dumps—thirty-two core plus thread-relative, RVA-backed, and frame-value incidents—execute
+  across four materially distinct shapes with distinct snapshot identities.
 - Both portfolio reports are byte-identical; representative counts remain zero; promotion is rejected.
 - Attributable-stage, usefulness, decision, shape, and boundary counts are independently validated.
 - A substantive tie defers; W8 implements no selected successor action.
@@ -1028,11 +1033,11 @@ W8 is complete only when all mandatory V2 forms share one proven end-to-end pipe
 exact or typed non-exact result; the fully qualified construction route remains independent of frame/PDB evidence;
 TypeSpec aliases and runtime constructed statics carry exact ordered identity; `using static` requires lexical
 completeness; constraints, accessibility, definition-kind lookup, direct/inherited lookup, field substitution, and
-constructed assignability are frozen; address-backed values remain raw-memory evidence, register-backed values remain
-raw frozen thread-context evidence, and literals remain exact metadata with proven zero runtime calls; every W8.1 branch
-has its admitted implementation or typed executable non-admission;
+constructed assignability are frozen; address-backed values remain raw-memory evidence, register homes remain
+non-admitted, and literals remain exact metadata with proven zero runtime calls; every W8.1 branch has its admitted
+implementation or typed executable non-admission;
 suffix evaluation remains unchanged; all tests are headless; the complete generated corpus and synthetic portfolio of
-thirty-two fixed core incidents plus one incident per admitted branch replay; and the exact pushed closure commit
+thirty-five minimum incidents replay; and the exact pushed closure commit
 satisfies repository and hosted governance.
 
 Completing only the easiest alias or generic spelling does not close W8. Conversely, failure of an evidence-conditioned

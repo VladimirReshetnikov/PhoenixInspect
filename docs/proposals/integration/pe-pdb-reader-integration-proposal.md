@@ -22,7 +22,7 @@ For the active dump/query and first interpreter slices, this proposal aligns to 
 
 The comparison material below is historical research. Concrete recommendations and implementation work use SRM while preserving project-owned identities, evidence outcomes, and decision-revisit triggers. Local headless verification at `19c292f9f` passed a zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards. [GitHub Actions run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at the same exact pushed implementation checkpoint. Exact documentation-closure commit `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined milestone-selected scope.
 
-## Current implementation and W8 gate alignment (2026-07-18)
+## Current implementation, completed W8.1 disposition, and active W8.2 alignment (2026-07-18)
 
 W4 closes the second meaningful value domain, direct-call/model execution, detached ClrMD binding, and dump-grounded
 product composition in its declared profiles. W7 closes the first Portable-PDB product use: bounded candidate bytes
@@ -31,24 +31,26 @@ and the active LocalScope/ImportScope chain is projected into project-owned name
 and reads non-generic ordinary static fields, including an equivalent fully qualified route that makes zero frame/PDB
 calls. Windows PDB, SourceLink, decompilation, and broader symbol acquisition remain separate evidence-led decisions.
 
-The approved-but-unimplemented [Post-W7 Path Forward](../../plans/post-w7-path-forward.md) is the sole active W8
-sequence. Its SRM/Portable-PDB work is broader than record decoding: it must preserve lexical scope levels, alias
+The [Post-W7 Path Forward](../../plans/post-w7-path-forward.md) governs W8. W8.1 completed at `220be94b4`; its exact
+checkpoint ledger and branch consequences are frozen in the
+[`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is the active product-contract
+checkpoint. Its SRM/Portable-PDB work is broader than record decoding: it must preserve lexical scope levels, alias
 hiding, first-viable namespace-level stopping, same-level import accumulation, TypeSpec aliases, `using static`, exact
 extern-alias/AssemblyRef identity, nested per-segment generic arity, and complete lexical blocker catalogs. A fully
 qualified nested/constructed route remains independent of every frame and PDB service.
 
-W8.1 blocks V2 contracts until compiler/SRM and real full-dump fixtures prove the relation among emitted TypeDefs,
-GenericParam rows, TypeSpec bytes, field signatures, exact ordered runtime construction arguments, declaring owner,
-per-construction static slot, and decoded value. Display-derived runtime names cannot select a construction. Metadata
-literals form a separate zero-runtime/zero-storage path. Ordinary application-domain storage, thread-relative storage,
-context-relative storage, and RVA-backed storage each receive an exact admitted or typed non-admitted disposition.
-Selected-frame import context, an exact live frame-value location, and frame generic construction remain separate
-branches; address-backed values use counted dump memory, while register-backed values require a frozen raw thread
-context.
+W8.1 proves the relation among emitted TypeDefs, GenericParam rows, TypeSpec bytes, field signatures, exact ordered
+runtime construction arguments, declaring owner, per-construction static slot, and decoded value. Display-derived
+runtime names cannot select a construction. Metadata literals form a separate zero-runtime/zero-storage path.
+Constructed ordinary storage, thread-relative storage, and RVA-backed storage are admitted; context-relative identity
+is non-admitted and creates no strategy or API. Exact memory-homed selected-frame `this`, parameters, and live locals
+are admitted through mandatory separate `FrameValueExpressionV1` contracts. Register homes and selected-frame generic
+substitution are non-admitted.
 
 The gate is executable and headless: fast compiler/SRM/PDB differentials precede hidden full-dump targets, generated
-V2 conformance, and the synthetic portfolio of thirty-two fixed core incidents across four shapes plus one incident
-for every W8.1-admitted branch. Every repository-invoked managed command runs through
+V2 conformance, and the synthetic portfolio of thirty-two fixed core incidents across four shapes plus
+thread-relative, RVA-backed, and frame-value incidents: 35 independent incidents minimum. Every repository-invoked
+managed command runs through
 `eng/Invoke-HeadlessProcess.ps1`; every
 target, helper, or consumer child process is configured as hidden and windowless.
 
@@ -313,8 +315,8 @@ This keeps every “mixed concern” in exactly one place.
 **Produces**
 
 * `RuntimeMethodHandle`, `RuntimeTypeHandle`, `RuntimeModuleHandle`
-* W7 selected-frame/method/instruction correlation and candidate `this`/argument/local location facts. Exact live frame
-  values remain a conditional W8 branch until name/scope/liveness/location/type and address/register source are proven.
+* W7 selected-frame/method/instruction correlation plus W8.1-proved exact memory-homed `this`/argument/local location
+  facts. W8.2 must consume those facts through mandatory separate frame-value contracts; register homes are excluded.
 * Optional “runtime hint set” (IL RVA/size, native code ranges, module path hints).
 
 **Why this matters**
@@ -354,8 +356,8 @@ This is where correctness guardrails live. The interpreter should never execute 
 **Consumes**
 
 * PE/PDB blobs from Layer 2.
-* Exact runtime generic context only after W8.1 proves an ordered candidate-keyed source. W3–W7 provide none; display-
-  derived names remain probe evidence rather than projection input.
+* Exact declaring-type construction from W8.1's ordered candidate-keyed source. W3–W7 provide none; display-derived
+  names remain probe evidence rather than projection input. Selected-frame method-generic substitution is unavailable.
 
 **Produces**
 
@@ -427,13 +429,14 @@ This is the only layer allowed to “speak both languages” (runtime and metada
    profile with deterministic outcome, budget, ordered events, and resulting memory. The host/test composition retains
    the cross-layer correlation provenance and fresh-session replay evidence around that execution.
 
-#### Scenario B: Use a selected dump frame (partly implemented; W8 branches gated)
+#### Scenario B: Use a selected dump frame (W8.1 evidence complete; W8.2 product contracts active)
 
 1. W7 maps one selected `ClrStackFrame` + `ClrMethod` to exact module/MethodDef/instruction evidence and projects the
    identity-validated Portable-PDB import context. It does not seed a value.
-2. W8.1 independently probes exact live `this`, argument, and local locations plus frame-generic construction. Address-
-   backed values require counted dump reads; register-backed values require a frozen raw thread context.
-3. Only a branch with exact name/scope/liveness/location/type and source attribution may produce a detached root. Every
+2. W8.1 proves exact live memory-homed `this`, argument, and local locations. Counted dump reads supply their values.
+   Register homes and frame-generic construction are non-admitted.
+3. `FrameValueExpressionV1` is a mandatory separate route. Only exact name/scope/liveness/location/type and source
+   attribution may produce a detached root. Every
    absent, duplicate, partial, unsupported, or conflicting fact stops before a read and never falls through to static
    binding.
 
@@ -472,8 +475,8 @@ That model prevents silent degradation and keeps interpreter behavior auditable 
 
 The sketches below describe a possible broader artifact/symbol platform. They are not the implemented public API.
 W3/W4 use narrower structural resolution contracts; W7 uses a narrower selected-frame/Portable-PDB import adapter.
-No decompiler or broad acquisition service exists, and W8 generic/frame contracts remain unimplemented until their
-physical gates pass.
+No decompiler or broad acquisition service exists. W8.1 physical dispositions are complete; W8.2's additive
+generic-owner and mandatory memory-homed frame-value contracts are the active implementation boundary.
 
 ### 1) Acquisition & identity
 
@@ -655,11 +658,11 @@ at current state. W7 validates bounded artifact bytes against the module debug i
 scope/import facts for one selected frame. Decompiler, broader acquisition, Windows-PDB, and optional-plugin items
 remain evidence-gated product/research work.
 
-W8 retains SRM/PEReader and the same project-owned boundary. It adds no second metadata stack: compiler/SRM fixtures
-must first prove closed TypeSpec and nested generic construction, literal encodings, constraints, accessibility, and
-extern-alias facts; real dumps must separately prove exact candidate-keyed runtime arguments and per-construction
-storage. Conditional thread/context/RVA/frame branches land only when W8.1 records exact physical evidence, otherwise
-their typed executable non-admissions remain part of the conformance corpus.
+W8 retains SRM/PEReader and the same project-owned boundary. It adds no second metadata stack. W8.1 proves closed
+TypeSpec and nested generic construction, literal encodings, constraints, accessibility, extern-alias facts, exact
+candidate-keyed runtime arguments, and per-construction storage. W8.2 admits constructed, thread-relative, RVA-backed,
+and exact memory-homed frame routes. Context-relative identity, register homes, and selected-frame generic
+substitution remain typed executable non-admissions in the conformance corpus and create no corresponding product API.
 
 If I had to pick a default stack that minimizes impedance mismatch:
 

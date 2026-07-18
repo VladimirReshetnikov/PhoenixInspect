@@ -22,15 +22,22 @@ Core principles:
 ## Current phase
 
 - **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
-- **Delivery status:** W8 is the sole active design/implementation sequence and has not started implementation. The
-  [`Post-W7 Path Forward`](docs/plans/post-w7-path-forward.md) defines an additive `StaticFieldExpressionV2` profile
-  for bounded C# namespace/type/member binding over nested and closed constructed generic owners, exact scoped
-  imports/type/namespace/extern aliases, current-type and evidence-qualified `using static` bare fields, general closed
-  TypeSpecs, constraints/accessibility/constructed assignability, stored values, metadata literals, and distinct
-  per-construction storage. W8.1 also resolves predeclared thread/context/RVA and exact frame-value branches before
-  contracts. Its inclusive umbrella scale is `~100K LOC`,
-  generally split into `~10K LOC` implementation/evidence checkpoints. W7's context-independent fully qualified
-  guarantee, raw-memory authority, result axes, and unchanged W2/W6 suffix semantics remain mandatory controls.
+- **Delivery status:** W8 is the sole active design/implementation sequence. W8.1 is implemented and locally validated
+  through exact compiler/PDB, constructed-runtime, selected-frame, storage, literal, and assignability evidence. Its
+  [`physical-truth disposition`](docs/plans/w8-1-physical-truth-disposition.md) admits constructed, thread-relative,
+  module-RVA, literal, and exact memory-homed frame-value branches; context-relative storage and selected-frame generic
+  arguments remain typed non-admitted. W8.2 is the active checkpoint. The
+  [`Post-W7 Path Forward`](docs/plans/post-w7-path-forward.md) requires additive `StaticFieldExpressionV2`,
+  `BindingContextV2`, and `FrameValueExpressionV1` contracts, but no V2 product binder/evaluator has landed yet. Its
+  inclusive umbrella scale is `~100K LOC`, generally split into `~10K LOC` implementation/evidence checkpoints. W7's
+  context-independent fully qualified guarantee, raw-memory authority, result axes, and unchanged W2/W6 suffix
+  semantics remain mandatory controls.
+- **Most recently completed active checkpoint:** W8.1, through exact source baseline `220be94b4`. Its generated
+  artifacts and real full dumps prove candidate-keyed ordered closed constructions; distinct construction and
+  thread-relative slots; exact metadata literals and named FieldRVA bytes; exact `this`, parameter, and active-local
+  memory homes; and bounded constructed assignability. The minimum W8 meaningful portfolio is now thirty-five
+  independent incidents: thirty-two core plus thread-relative, RVA-backed, and frame-value rows. This is pre-contract
+  physical evidence, not product behavior or representative observation.
 - **Most recently closed delivery target:** W7. Its opt-in `StaticFieldExpressionV1`
   profile uses the sole complete Roslyn parse, counted module metadata, optional selected-frame/identity-validated
   Portable-PDB import context, and raw dump-memory reads. Non-ambiguous fully qualified ordinary static fields bind
@@ -122,8 +129,8 @@ Core principles:
   hosted pass and does not weaken the workflow. W6 is closed; its selected context-acquisition category now informs
   the completed W7 static-field-expression and debugger-context slice without retroactively implementing successor
   work. W6's umbrella scale is `~10K LOC` split into `~1K LOC` evidence checkpoints.
-- **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The query path parses each bounded expression once with the pinned complete Roslyn expression parser, admits only the versioned W2/W5/W6/W7 tree subsets, binds either a typed snapshot root or one exact static declaration, and evaluates immutable plans without reparsing or rebinding. W7 adds counted selected-frame/PDB/import context, fully qualified and contextual static binding, ordinary static scalar/string/nullable/reference storage, target validation, and unchanged W2/W6 suffix reuse. Canonical request, context, symbol, storage, plan, root-selection, and complete-result identities preserve the distinctions needed for deterministic replay. The legacy 22-case W2 corpus, W3/W4 generated-dump lanes, W6 conformance/portfolio lanes, and W7's sixteen-dump/four-shape portfolio all remain passing; CoreCLR and high-level runtime reads remain late oracles, not inputs to interpreter shape, dump evidence, preparation, or execution.
-- **Physical scope:** ten source projects contain active contracts or behavior in a seventeen-project solution.
+- **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The query path parses each bounded expression once with the pinned complete Roslyn expression parser, admits only the versioned W2/W5/W6/W7 tree subsets, binds either a typed snapshot root or one exact static declaration, and evaluates immutable plans without reparsing or rebinding. W7 adds counted selected-frame/PDB/import context, fully qualified and contextual static binding, ordinary static scalar/string/nullable/reference storage, target validation, and unchanged W2/W6 suffix reuse. W8.1 adds pre-contract emitted TypeSpec/import/constraint/literal evidence, candidate-keyed runtime construction identity, exact strategy-specific storage facts, exact memory-homed frame roots, typed context/frame-generic non-admissions, and close/reopen replay. Canonical request, context, symbol, storage, plan, root-selection, and complete-result identities preserve the distinctions needed for deterministic replay. The legacy 22-case W2 corpus, W3/W4 generated-dump lanes, W6 conformance/portfolio lanes, W7's sixteen-dump/four-shape portfolio, and W8.1 physical gates all remain passing; CoreCLR and high-level runtime reads remain late oracles, not inputs to interpreter shape, dump evidence, preparation, or execution.
+- **Physical scope:** ten source projects contain active contracts or behavior in a twenty-project solution.
   `Interpreter.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
   evaluation, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources.
   `Interpreter.Headless.ReferenceConsumer` is the independently launched prototype composition root and report runner;
@@ -375,8 +382,8 @@ milestone-selected scope.
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
-each selected category. No result in W1–W7 establishes behavior for other artifact shapes, and the W8 plan is not
-implementation evidence.
+each selected category. No result through W8.1 establishes behavior for other artifact shapes. W8.1 is physical
+evidence for its named branches, while W8.2–W8.10 plans are not implementation evidence.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes above remain
 evidence for their named commits; they are not claims about the current fixture binary.
@@ -398,7 +405,8 @@ speculation, no-JIT runtime hosting, and additional product surfaces are **resea
 For structured topic lists, document inventory, and recommended reading paths, start here:
 
 - **Repository-wide design and architecture review:** `DESIGN-ARCHITECTURE-REVIEW.md`
-- **Active post-W7 W8 sequence:** `docs/plans/post-w7-path-forward.md`
+- **Active post-W7 W8 sequence (W8.1 complete; W8.2 active):** `docs/plans/post-w7-path-forward.md`
+- **W8.1 physical-truth disposition:** `docs/plans/w8-1-physical-truth-disposition.md`
 - **Completed post-W6 W7 sequence:** `docs/plans/post-w6-path-forward.md`
 - **Completed post-W5 W6 sequence:** `docs/plans/post-w5-path-forward.md`
 - **C# parsing and versioned subset-admission contract:** `docs/proposals/architecture/csharp-expression-front-end-contract-proposal.md`

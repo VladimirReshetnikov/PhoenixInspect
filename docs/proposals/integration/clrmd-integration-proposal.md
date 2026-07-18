@@ -32,7 +32,7 @@ fixture shapes. The completed [Post-W6 Path Forward](../../plans/post-w6-path-fo
 selected-frame/Portable-PDB import projection for static-expression binding; that work does not alter W3's
 implemented boundary.
 
-## Closed W4/W7 additions and active W8 boundary (2026-07-18)
+## Closed W4/W7 additions, completed W8.1 disposition, and active W8.2 boundary (2026-07-18)
 
 Later closed milestones extend the host without rewriting the historical W3 checkpoint. W4.2 implements the second
 meaningful, provenance-aware value domain; W4.3–W4.9 carry typed non-exact field evidence through the execution kernel
@@ -41,24 +41,25 @@ and identity-validated Portable-PDB LocalScope/ImportScope projection, then bind
 `StaticFieldExpressionV1` shapes. A non-ambiguous fully qualified ordinary static field remains independent of frame
 and PDB evidence. These are implemented capabilities, not future services.
 
-The approved-but-unimplemented [Post-W7 Path Forward](../../plans/post-w7-path-forward.md) is the active W8 contract
-sequence. Before any V2 API lands, W8.1 must prove emitted nested/generic metadata and TypeSpecs, an exact ordered
-closed-argument source keyed to each runtime type candidate, distinct per-construction static slots and values, and
-close/reopen replay in real full dumps. Display-derived runtime type names are probe evidence only and cannot select a
-construction. Class, value-type, and interface definition kinds each require a physical disposition.
+The [Post-W7 Path Forward](../../plans/post-w7-path-forward.md) governs W8. W8.1 completed at `220be94b4`; the
+[`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md) freezes the exact checkpoint ledger
+and branch table. The emitted nested/generic metadata and TypeSpecs, candidate-keyed ordered closed arguments,
+distinct per-construction slots/values, and close/reopen replay are proved. Display-derived runtime type names remain
+probe evidence only and cannot select a construction. Class, value-type, and interface definition kinds all have an
+exact disposition. W8.2 is the active product-contract checkpoint.
 
 W8 also keeps value sources separate. A metadata literal performs no runtime, slot, or memory call. An ordinary stored
 static follows exact construction, declaring field, application domain, slot, and counted raw-memory evidence.
-Thread-relative, context-relative, and RVA-backed storage each receives its own W8.1 admitted or typed non-admitted
-disposition. An address-backed frame value may use counted dump memory only after exact name/scope/liveness/location/
-type proof; a register-backed value additionally requires a frozen raw thread-context source. Selected-frame import
-context, frame-value location, and frame generic construction are independent branches, so success in one never fills
-an evidence gap in another.
+Thread-relative and RVA-backed storage are admitted. Context-relative storage is non-admitted because no attributable
+context identity exists; W8 creates no corresponding strategy or API. Exact memory-homed `this`, parameters, and live
+locals are admitted through mandatory separate `FrameValueExpressionV1` contracts after exact
+name/scope/liveness/location/type proof. Register homes are unproved and excluded. Selected-frame generic
+substitution is non-admitted because the available legacy, CDAC, and DAC/DBI routes do not provide exact arguments.
 
 Every repository-invoked W8 managed command runs through the headless wrapper, and every generated target, helper, or
 consumer child process is configured as hidden and windowless. Fast compiler/SRM/PDB differentials precede full-dump
 generated conformance. The decision gate uses thirty-two fixed core independent dumps over four materially distinct
-application shapes plus one independent incident for every W8.1-admitted branch.
+application shapes plus thread-relative, RVA-backed, and frame-value incidents: 35 independent incidents minimum.
 
 You can make this integration feel “debugger-grade” *without* welding your IL interpreter to any single dump/metadata stack — but you’ll want one deliberate layer in between. Otherwise you end up with an interpreter whose “type system” is a Frankenstein of ClrMD objects + metadata tokens + PDB concepts, and it becomes painful to reuse for static analysis or alternate runtimes.
 
@@ -134,7 +135,7 @@ Here’s the layering that scales:
 |  - Frozen method/field projections and W7 static binding      |
 |  - W7 selected-frame/Portable-PDB import context              |
 |  - Exact dump evidence import into persistent memory          |
-|  - W8 constructed-owner and conditional frame gates           |
+|  - W8 constructed-owner and admitted frame/storage contracts  |
 +------------^---------------------------^----------------------+
              |                           |
              |                           |
@@ -154,8 +155,9 @@ Here’s the layering that scales:
 * W4.2 implements the provenance-aware second domain, and W4.9 composes it with the detached dump producer. Neither
   permits a disk artifact to fill a missing dump body or value.
 * W7's product path adds counted ordinary static-field reads plus optional selected-frame/PDB binding context outside
-  the core machine. W8 must add constructed-owner and conditional frame/storage branches through new frozen contracts,
-  never by widening a V1 artifact implicitly.
+  the core machine. W8.2 must add constructed-owner, thread-relative, RVA-backed, and exact memory-homed frame-value
+  routes through new frozen contracts, never by widening a V1 artifact implicitly. Context-relative identity,
+  register homes, and selected-frame generic substitution have no route.
 
 ---
 
@@ -282,8 +284,9 @@ Portable-PDB use; absence remains a typed context outcome and never blocks an eq
 * Portable PDB:
 
   * W7 uses SRM to validate bounded candidate bytes against exact module debug identity and to project the active
-    LocalScope/ImportScope chain for one selected frame. W8 extends only the predeclared scoped import, alias, extern,
-    lexical-catalog, and conditional frame branches that pass their physical gates.
+    LocalScope/ImportScope chain for one selected frame. W8.2 extends the predeclared scoped import, alias, extern, and
+    lexical-catalog routes plus the mandatory exact memory-homed frame-value route. It adds no context-relative,
+    register-home, or selected-frame generic route.
 * Windows PDB:
 
   * Defer backend selection until a Windows-PDB fixture becomes an active requirement; DIA, DiaSymReader, dnlib, and AsmResolver notes remain research inputs rather than dependencies.
@@ -350,9 +353,10 @@ W8 must resolve admitted static-owner tokens under an exact **generic context**:
 * Tokens might resolve to TypeSpec/MethodSpec which embed signatures containing generic variables.
 
 The metadata construction and substitution resolver remains SRM-based. Runtime construction mapping is a separate
-host operation: W8.1 must first identify an exact ordered argument source keyed to the candidate runtime type and must
-reject absent, duplicate, partial, or conflicting constructions without display-name fallback. Method-generic frame
-context remains a conditional W8 branch. Future execution scenarios may separately ask ClrMD for runtime handles to:
+host operation: W8.1 proved an exact ordered argument source keyed to the candidate runtime type, with absent,
+duplicate, partial, or conflicting constructions rejected without display-name fallback. Selected-frame method-generic
+context is non-admitted and supplies no substitution API. Future execution scenarios may separately ask ClrMD for
+runtime handles to:
 
 * allocate objects of a resolved type,
 * compute field offsets or size,
@@ -395,21 +399,21 @@ The interpreter itself just sees an `IHeap` + `IObjectModel`; it doesn’t know 
 
 1. The user selects a thread and frame. W7 already correlates that selection to one managed method/instruction location
    for PDB import binding; it does not recover stack values.
-2. Under W8.1, the ClrMD/raw-context adapter independently attempts to provide:
+2. W8.1 proves that the ClrMD adapter can provide:
 
-   * exact live `this`, argument, or local locations as addresses or frozen register values;
-   * the current `ClrMethod` and exact method-generic construction when available; and
-   * source, width, liveness, location, and thread-context provenance for every retained value.
+   * exact live memory locations for `this`, arguments, and locals; and
+   * source, width, liveness, and location provenance for every retained value.
+   Register homes and selected-frame method-generic construction are non-admitted.
 3. Binding layer:
 
    * maps `ClrMethod` → `MethodId`
    * resolves a dump-backed method body from counted dump metadata/header/code/extra-section reads; incomplete evidence blocks that path rather than silently substituting disk bytes
    * may resolve an independently identified PE through SRM/PEReader for symbols, static-artifact workflows, or comparison, with source provenance kept distinct ([GitHub][2])
    * uses W7's identity-validated Portable-PDB import context independently from any W8 frame-value result
-4. Only an admitted W8 frame-value branch may seed a root:
+4. The mandatory separate W8 `FrameValueExpressionV1` route may seed a root only from admitted evidence:
 
    * address-backed values use counted dump-memory reads;
-   * register-backed values use the frozen raw thread context;
+   * register-backed values are excluded;
    * exact name/scope/liveness/location/type is mandatory, and missing or duplicate evidence stops without static-field
      fallback; and
    * the direct result or unchanged W2/W6 suffix runs only from the frozen root descriptor.
@@ -428,9 +432,9 @@ The interpreter itself just sees an `IHeap` + `IObjectModel`; it doesn’t know 
 
 Arbitrary-object getter execution in Flow B is not a current product capability. Direct calls, deterministic
 unknown-aware propagation, detached dump composition, selected-frame/PDB import context, and certified body-free W6
-property projection are implemented in their closed scopes. Broader arbitrary dispatch/effects and exact frame-value
-or method-generic recovery remain separate gates; W8.1 gives the latter two an admitted or typed non-admitted
-disposition before any product route is added.
+property projection are implemented in their closed scopes. Broader arbitrary dispatch/effects remain separate gates.
+W8.1 admits exact memory-homed frame values and rejects selected-frame generic recovery; W8.2 must reflect both results
+without a fallback route.
 
 ---
 
@@ -491,12 +495,13 @@ The important part is: **these types don’t mention ClrMD or SRM** and partial 
 
 * **ClrMD plus counted raw reads** is the active dump truth: heap objects, field layout, metadata-root identity, complete
   captured method bodies, W7 ordinary static slots, and selected-frame correlation. `GetILInfo()` remains a useful
-  library capability, but it is not an input to the active body decoder. W8.1 now gates exact per-construction runtime
-  identity, additional static storage families, and address/register-backed frame-value recovery separately. ([GitHub][1])
+  library capability, but it is not an input to the active body decoder. W8.1 proves exact per-construction runtime
+  identity, thread-relative and RVA-backed storage, and exact memory-homed frame values; it excludes context-relative
+  identity and register homes. ([GitHub][1])
 * **SRM/PEReader** is the active metadata decoder over exact counted dump metadata and over independently identified
   disk artifacts. W3/W4 use it for closed structural method/signature/local/FieldDef projections; the disk PE remains
   an oracle. W7 implements the first bounded Portable-PDB identity/scope/import projection and static metadata binder.
-  W8 extends generic/nested/TypeSpec/literal/scoped binding only after the physical gates pass.
+  W8.2 extends generic/nested/TypeSpec/literal/scoped binding from the completed physical dispositions.
 * You absolutely want a **binding layer in between** to:
 
   * unify identity,

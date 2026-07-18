@@ -28,10 +28,12 @@ context slice for simple type names, counted static value reads, and reuse of un
 W7.1–W7.7 prove the ClrMD 4.0/.NET 10 physical static-slot chain, immutable product contracts, fully qualified and
 contextual binding, value/suffix evaluation, generated conformance, and deterministic four-shape/sixteen-incident
 portfolio. Exact implementation source baseline `f99b12ee7` passes the complete local matrix with zero skips.
-The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) now approves additive
+The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) now governs additive
 `StaticFieldExpressionV2`/`BindingContextV2` profiles for nested and closed constructed owners, scope-precise imports
-and aliases, extern aliases, stored fields, metadata literals, and evidence-qualified `using static` bare roots. W8 is
-a design-approved implementation sequence, not current product or validation evidence.
+and aliases, extern aliases, stored fields, metadata literals, and evidence-qualified `using static` bare roots. W8.1
+completed its physical-truth fixture and probes at `220be94b4`; its exact results and W8.2 consequences are frozen in
+the [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is active; no W8.2
+product behavior is claimed before its own evidence lands.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -662,14 +664,15 @@ separate generated target/PDB and sixteen-incident/four-shape synthetic portfoli
 prove the physical slot/replay chain, typed dump-free stage stops, immutable identities, product composition, and
 materialized artifact/incident inputs. The reports remain designed evidence with zero representative rows.
 
-The approved W8 frontier preserves that fully qualified floor while broadening the explicit and contextual routes to
+The W8 frontier preserves that fully qualified floor while broadening the explicit and contextual routes to
 nested/constructed owners, exact construction-specific slots, scope-level precedence, TypeSpec aliases, literals,
-constructed field substitution, and bounded bare-field roots. W8.1 first gates exact compiler/runtime/storage facts;
-later checkpoints add only evidence-admitted contracts and a meaningful synthetic portfolio containing thirty-two
-fixed core independent dumps across four materially distinct shapes plus one independent incident for every
-admitted thread-relative, context-relative, RVA-backed, frame-value, or frame-generic-argument branch. W8.1 records an
-admitted or typed non-admitted disposition for each branch. No W8 surface is implemented yet, and W1–W7 canonical
-artifacts remain the executable baseline.
+constructed field substitution, and bounded bare-field roots. W8.1 admits exact candidate-keyed constructed slots,
+metadata literals, thread-relative slots, module-RVA storage, and exact memory-homed selected-frame values. The frame
+route is a mandatory separate `FrameValueExpressionV1`; it does not include register homes. Context-relative identity
+and selected-frame generic substitution are non-admitted and create no product API or success row. W8.2 onward adds
+only those evidence-admitted contracts and a meaningful synthetic portfolio containing thirty-two fixed core
+independent dumps across four materially distinct shapes plus thread-relative, RVA-backed, and frame-value incidents:
+35 independent incidents minimum. W1–W7 canonical artifacts remain unchanged baselines.
 
 ## 11. Physical topology
 
