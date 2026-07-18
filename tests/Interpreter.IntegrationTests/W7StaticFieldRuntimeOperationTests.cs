@@ -2,6 +2,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Interpreter.Host.Abstractions;
 using Interpreter.Host.Dump.ClrMD;
+using Interpreter.Product.DumpQuery;
 using Xunit;
 
 namespace Interpreter.IntegrationTests;
@@ -285,7 +286,7 @@ public sealed class W7StaticFieldRuntimeOperationTests
                 mapped.Status == ClrmdEvidenceStatus.Exact,
                 $"Mapping {runtimeName}.{fieldName} stopped as {mapped.Status}/{mapped.Issue}.");
             var mapping = Assert.IsType<ClrmdStaticRuntimeDeclarationMappingIdentity>(mapped.Value);
-            ClrmdStaticNullableInt32Layout? nullableLayout = null;
+            ClrmdStaticFieldEvaluationRequest request;
             if (decoder == ClrmdStaticExpectedDecoderKind.NullableInt32)
             {
                 var rawLayoutResult = session.MapStaticNullableRuntimeLayout(mapping);
@@ -302,12 +303,22 @@ public sealed class W7StaticFieldRuntimeOperationTests
                     StringComparison.Ordinal));
                 Assert.Equal("System.Boolean", hasValue.ObservedType.FullName);
                 Assert.Equal("System.Int32", valueChild.ObservedType.FullName);
-                nullableLayout = ClrmdStaticNullableInt32Layout.Create(
-                    rawLayout.StorageSize,
-                    hasValue.Offset,
-                    valueChild.Offset);
+                var syntax = StaticFieldExpressionParser.Parse($"global::{runtimeName}.{fieldName}");
+                var descriptor = Assert.IsType<StaticFieldExpressionDescriptor>(syntax.Descriptor);
+                var binding = StaticFieldFullyQualifiedBinder.Bind(session, descriptor);
+                Assert.Equal(StaticFieldBindingStatus.Exact, binding.Status);
+                var semanticLayout = StaticFieldRuntimeComposer.ComposeNullableInt32Layout(
+                    session,
+                    binding,
+                    rawLayout);
+                Assert.Equal(hasValue.Offset, semanticLayout.HasValueRuntimeField.Offset);
+                Assert.Equal(valueChild.Offset, semanticLayout.ValueRuntimeField.Offset);
+                request = StaticFieldObservation.CreatePhysicalRequest(binding, mapping, semanticLayout);
             }
-            var request = ClrmdStaticFieldEvaluationRequest.Create(mapping, nullableLayout);
+            else
+            {
+                request = ClrmdStaticFieldEvaluationRequest.Create(mapping, nullableInt32Layout: null);
+            }
             var observation = session.ReadStaticField(request);
             Assert.True(
                 observation.Status == ClrmdStaticFieldObservationStatus.Exact,

@@ -108,6 +108,26 @@ public static class StaticFieldFullyQualifiedBinder
         return BindExpanded(source, descriptor, context, expansions);
     }
 
+    internal static StaticFieldNullableInt32RuntimeLayoutIdentity ComposeNullableInt32RuntimeLayout(
+        IStaticFieldMetadataBindingSource source,
+        StaticFieldSymbolDeclarationIdentity declaration,
+        ClrmdStaticNullableRuntimeLayoutIdentity runtimeLayout)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(declaration);
+        ArgumentNullException.ThrowIfNull(runtimeLayout);
+        using var universe = MetadataUniverse.Acquire(source);
+        if (universe.ModuleFacts.Any(static fact => fact.Status != StaticFieldModuleSearchStatus.Exact) ||
+            !universe.TryCreateCoreLibrary(out var coreLibrary, out _))
+        {
+            throw new ArgumentException(
+                "Nullable layout composition requires the same complete exact metadata universe used by binding.",
+                nameof(source));
+        }
+
+        return universe.ComposeNullableInt32RuntimeLayout(declaration, runtimeLayout, coreLibrary);
+    }
+
     internal static StaticFieldSymbolBindingOutcome BindContextual(
         IStaticFieldMetadataBindingSource source,
         StaticFieldExpressionDescriptor descriptor,
@@ -1561,6 +1581,82 @@ public static class StaticFieldFullyQualifiedBinder
                 StaticFieldDeclaredValueKind.NullableInt32,
                 nullableType: nullable,
                 systemInt32TypeAncestry: GetCoreAncestry(coreLibrary, "Int32"));
+        }
+
+        internal StaticFieldNullableInt32RuntimeLayoutIdentity ComposeNullableInt32RuntimeLayout(
+            StaticFieldSymbolDeclarationIdentity declaration,
+            ClrmdStaticNullableRuntimeLayoutIdentity runtimeLayout,
+            StaticFieldCoreLibraryIdentity coreLibrary)
+        {
+            if (declaration.DeclaredValueKind != StaticFieldDeclaredValueKind.NullableInt32 ||
+                declaration.NullableType is not { } nullable)
+            {
+                throw new ArgumentException(
+                    "A Nullable<Int32> declaration is required for nullable layout composition.",
+                    nameof(declaration));
+            }
+
+            var nullableType = nullable.TargetTypeAncestry.SubjectType;
+            var module = exactModules.SingleOrDefault(candidate =>
+                candidate.MetadataModule?.Equals(nullableType.MetadataModule) == true);
+            if (module is null)
+            {
+                throw new ArgumentException(
+                    "The exact Nullable TypeDef metadata module is absent from the acquired universe.",
+                    nameof(declaration));
+            }
+
+            var typeHandle = MetadataTokens.TypeDefinitionHandle(
+                nullableType.TypeDefinitionToken & 0x00FF_FFFF);
+            if (!module.GetTypeIdentity(typeHandle).Equals(nullableType))
+            {
+                throw new ArgumentException(
+                    "The acquired metadata no longer reproduces the selected Nullable TypeDef.",
+                    nameof(declaration));
+            }
+
+            var fields = module.Reader.GetTypeDefinition(typeHandle).GetFields().ToArray();
+            var hasValueHandle = fields.Single(handle => string.Equals(
+                module.Reader.GetString(module.Reader.GetFieldDefinition(handle).Name),
+                "hasValue",
+                StringComparison.Ordinal));
+            var valueHandle = fields.Single(handle => string.Equals(
+                module.Reader.GetString(module.Reader.GetFieldDefinition(handle).Name),
+                "value",
+                StringComparison.Ordinal));
+            var hasValueDefinition = CreateNullableChildDefinition(
+                module,
+                nullableType,
+                hasValueHandle,
+                coreLibrary);
+            var valueDefinition = CreateNullableChildDefinition(
+                module,
+                nullableType,
+                valueHandle,
+                coreLibrary);
+            return StaticFieldNullableInt32RuntimeLayoutIdentity.Create(
+                declaration,
+                GetCoreAncestry(coreLibrary, "Boolean"),
+                hasValueDefinition,
+                valueDefinition,
+                runtimeLayout);
+        }
+
+        private StaticFieldDefinitionIdentity CreateNullableChildDefinition(
+            ModuleModel module,
+            StaticFieldTypeDefinitionIdentity nullableType,
+            FieldDefinitionHandle fieldHandle,
+            StaticFieldCoreLibraryIdentity coreLibrary)
+        {
+            var field = module.Reader.GetFieldDefinition(fieldHandle);
+            var fieldToken = MetadataTokens.GetToken(fieldHandle);
+            return StaticFieldDefinitionIdentity.Create(
+                nullableType,
+                fieldToken,
+                module.Reader.GetString(field.Name),
+                (int)field.Attributes,
+                ImmutableArray.CreateRange(module.Reader.GetBlobBytes(field.Signature)),
+                CreateCustomAttributeProjection(module, fieldHandle, fieldToken, coreLibrary));
         }
 
         private StaticFieldTypeAncestryIdentity GetCoreAncestry(

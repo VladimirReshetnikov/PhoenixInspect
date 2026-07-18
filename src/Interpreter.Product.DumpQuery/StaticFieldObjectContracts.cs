@@ -1353,9 +1353,35 @@ public sealed class StaticFieldObservation : IEquatable<StaticFieldObservation>
             runtimeDeclaringType,
             runtimeField,
             mappingCounters);
-        ValidateMatchingDeclarations(declaration, mapping);
-        var physicalLayout = ValidateNullableLayout(declaration, mapping, nullableInt32RuntimeLayout);
-        return ClrmdStaticFieldEvaluationRequest.Create(mapping, physicalLayout);
+        return CreatePhysicalRequest(symbolBinding, mapping, nullableInt32RuntimeLayout);
+    }
+
+    /// <summary>Creates the metadata-blind Host request from exact Product binding and Host runtime mapping.</summary>
+    /// <param name="symbolBinding">The exact exhaustive Product symbol binding.</param>
+    /// <param name="runtimeMapping">The exact Host mapping produced for that selected TypeDef and FieldDef.</param>
+    /// <param name="nullableInt32RuntimeLayout">
+    /// Product's exact semantic child-layout proof, required only for Nullable&lt;Int32&gt;.
+    /// </param>
+    /// <returns>A minimal physical request whose decoder and optional layout remain Product-authorized.</returns>
+    /// <exception cref="ArgumentException">Binding, declaration, runtime mapping, type anchors, or layout disagree.</exception>
+    public static ClrmdStaticFieldEvaluationRequest CreatePhysicalRequest(
+        StaticFieldSymbolBindingOutcome symbolBinding,
+        ClrmdStaticRuntimeDeclarationMappingIdentity runtimeMapping,
+        StaticFieldNullableInt32RuntimeLayoutIdentity? nullableInt32RuntimeLayout = null)
+    {
+        ArgumentNullException.ThrowIfNull(symbolBinding);
+        ArgumentNullException.ThrowIfNull(runtimeMapping);
+        if (symbolBinding.Status != StaticFieldBindingStatus.Exact ||
+            symbolBinding.SelectedDeclaration is not { } declaration)
+        {
+            throw new ArgumentException(
+                "Physical request construction requires one exact exhaustive Product binding.",
+                nameof(symbolBinding));
+        }
+
+        ValidateMatchingDeclarations(declaration, runtimeMapping);
+        var physicalLayout = ValidateNullableLayout(declaration, runtimeMapping, nullableInt32RuntimeLayout);
+        return ClrmdStaticFieldEvaluationRequest.Create(runtimeMapping, physicalLayout);
     }
 
     /// <summary>Composes one exact product symbol declaration with matching physical Host evidence or mapping failure.</summary>

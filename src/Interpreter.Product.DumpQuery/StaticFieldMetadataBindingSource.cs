@@ -139,6 +139,8 @@ internal sealed class ClrmdStaticFieldMetadataBindingSource : IStaticFieldMetada
 {
     private readonly ClrmdDumpSession session;
     private readonly IReadOnlyDictionary<string, ClrmdModuleInfo> modulesByKey;
+    private readonly Dictionary<string, StaticFieldMetadataImageObservation> observationsByKey =
+        new(StringComparer.Ordinal);
 
     internal ClrmdStaticFieldMetadataBindingSource(ClrmdDumpSession session)
     {
@@ -189,6 +191,18 @@ internal sealed class ClrmdStaticFieldMetadataBindingSource : IStaticFieldMetada
     public StaticFieldMetadataImageObservation ReadMetadata(StaticFieldMetadataModuleInput module)
     {
         ArgumentNullException.ThrowIfNull(module);
+        if (observationsByKey.TryGetValue(module.Module.Sha256, out var cached))
+        {
+            return cached;
+        }
+
+        var observation = ReadMetadataCore(module);
+        observationsByKey.Add(module.Module.Sha256, observation);
+        return observation;
+    }
+
+    private StaticFieldMetadataImageObservation ReadMetadataCore(StaticFieldMetadataModuleInput module)
+    {
         if (!modulesByKey.TryGetValue(module.Module.Sha256, out var sourceModule))
         {
             return StaticFieldMetadataImageObservation.Unavailable();
