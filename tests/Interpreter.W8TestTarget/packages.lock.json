@@ -4,6 +4,12 @@
     "net10.0": {
       "interpreter.w8aliastarget": {
         "type": "Project"
+      },
+      "interpreter.w8forwardertarget": {
+        "type": "Project",
+        "dependencies": {
+          "Interpreter.W8AliasTarget": "[1.0.0, )"
+        }
       }
     }
   }

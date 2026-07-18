@@ -41,6 +41,9 @@
     <ProjectReference Include="../Interpreter.W8AliasTarget/Interpreter.W8AliasTarget.csproj"
                       ReferenceOutputAssembly="false"
                       AdditionalProperties="Configuration=Release" />
+    <ProjectReference Include="../Interpreter.W8ForwarderTarget/Interpreter.W8ForwarderTarget.csproj"
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="Configuration=Release" />
     <ProjectReference Include="../Interpreter.W8TestTarget/Interpreter.W8TestTarget.csproj"
                       ReferenceOutputAssembly="false"
                       AdditionalProperties="Configuration=Release" />

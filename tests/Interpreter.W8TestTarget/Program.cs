@@ -1,9 +1,18 @@
 extern alias requestlib;
 
 using System.Runtime.CompilerServices;
+using ExternalTypeAlias = requestlib::Interpreter.W8AliasTarget.ExternalRequestContext;
+using ForwardedTypeAlias = Interpreter.W8AliasTarget.ForwardedRequestContext;
+using IntMatrixSlot = Interpreter.W8TestTarget.GenericSlot<int[,]>;
 using ExternalRequestSlot = requestlib::Interpreter.W8AliasTarget.ExternalSlot<requestlib::Interpreter.W8AliasTarget.ExternalRequestContext>;
+using LocalTypeAlias = Interpreter.W8TestTarget.RequestContext;
+using NamedRvaStorage = Interpreter.W8NamedRvaTarget.NamedRvaStorage;
+using RequestMatrixAlias = Interpreter.W8TestTarget.RequestContext[,];
+using RequestMatrixSlot = Interpreter.W8TestTarget.GenericSlot<Interpreter.W8TestTarget.RequestContext[,]>;
 using RequestSlot = Interpreter.W8TestTarget.GenericSlot<Interpreter.W8TestTarget.RequestContext>;
+using RequestVectorAlias = Interpreter.W8TestTarget.RequestContext[];
 using RequestVectorSlot = Interpreter.W8TestTarget.GenericSlot<Interpreter.W8TestTarget.RequestContext[]>;
+using static Interpreter.W8TestTarget.NonGenericImports;
 using static Interpreter.W8TestTarget.StaticImports<Interpreter.W8TestTarget.RequestContext>;
 
 namespace Interpreter.W8TestTarget;
@@ -57,38 +66,85 @@ public static class W8TruthGate
         GenericSlot<ValueContext>.Current = new ValueContext(0x33037A02);
         GenericSlot<RequestContext[]>.Sentinel = 0x44047A01;
         GenericSlot<RequestContext[]>.Current = [request];
+        RequestMatrixSlot.Sentinel = 0x44047A02;
+        RequestMatrixAlias requestMatrix = new RequestContext[1, 2];
+        requestMatrix[0, 0] = request;
+        RequestMatrixSlot.Current = requestMatrix;
+        IntMatrixSlot.Sentinel = 0x44047A03;
+        IntMatrixSlot.Current = new[,] { { 17, 29 }, { 41, 53 } };
 
         GenericStructSlot<CoordinatorContext>.Sentinel = 0x55057A01;
         GenericStructSlot<CoordinatorContext>.Current = coordinator;
         IGenericInterfaceSlot<WorkflowContext>.Sentinel = 0x66067A01;
         IGenericInterfaceSlot<WorkflowContext>.Current = workflow;
+        IGenericInterfaceSlot<RequestContext>.Sentinel = 0x66067A02;
+        IGenericInterfaceSlot<RequestContext>.Current = request;
 
         Outer<RequestContext>.Middle.Inner<BatchContext>.OuterValue = request;
         Outer<RequestContext>.Middle.Inner<BatchContext>.InnerValue = batch;
         Outer<RequestContext>.Middle.Inner<BatchContext>.Count = 0x77077A01;
         DerivedSlot<RequestContext>.Value = [new List<RequestContext> { request }];
+        ClassLookupDerived<RequestContext>.InheritedValue = [request];
+        ClassLookupDerived<RequestContext>.DirectSentinel = 0x77077A02;
+        IInterfaceLookupBase<RequestContext[]>.BaseSentinel = 0x77077A03;
+        IInterfaceLookupDerived<RequestContext>.DirectSentinel = 0x77077A04;
 
         ConstructibleSlot<ConstructibleContext>.Sentinel = unchecked((int)0x88087A01);
         UnmanagedSlot<ValueContext>.Sentinel = unchecked((int)0x99097A01);
         DependentSlot<object, RequestContext>.Sentinel = unchecked((int)0xAA0A7A01);
         StaticImports<RequestContext>.ImportedSentinel = unchecked((int)0xBB0B7A01);
+        NonGenericImportedSentinel = unchecked((int)0xBB0B7A02);
+        NonGenericOuter.Nested.Sentinel = unchecked((int)0xBB0B7A03);
+        ReferenceConstructorConstraintSlot<ConstructibleContext>.Sentinel = unchecked((int)0xBB0B7A04);
+        NullableReferenceConstraintSlot<string?>.Sentinel = unchecked((int)0xBB0B7A05);
+        NonNullConstraintSlot<string>.Sentinel = unchecked((int)0xBB0B7A06);
+        ValueConstraintSlot<ValueContext>.Sentinel = unchecked((int)0xBB0B7A07);
+        EnumConstraintSlot<MarkerKind>.Sentinel = unchecked((int)0xBB0B7A08);
+        DelegateConstraintSlot<Action>.Sentinel = unchecked((int)0xBB0B7A09);
+        CompositeConstraintSlot<MemoryStream>.Sentinel = unchecked((int)0xBB0B7A0A);
 
         ExternalRequestSlot.Sentinel = unchecked((int)0xCC0C7A01);
-        ExternalRequestSlot.Current = new requestlib::Interpreter.W8AliasTarget.ExternalRequestContext("external-67");
+        ExternalTypeAlias external = new("external-67");
+        ForwardedTypeAlias forwarded = new("forwarded-71");
+        ExternalRequestSlot.Current = external;
         requestlib::Interpreter.W8AliasTarget.IExternalInterfaceSlot<
             requestlib::Interpreter.W8AliasTarget.ExternalRequestContext>.Sentinel = unchecked((int)0xDD0D7A01);
+        requestlib::Interpreter.W8AliasTarget.FriendVisibleOwner.Sentinel = unchecked((int)0xDD0D7A02);
+        var nonFriendAccessibility = Interpreter.W8ForwarderTarget.NonFriendAccessibilityOwner.ReadAllForFixture();
+
+        LocalTypeAlias localTypeAlias = request;
+        RequestVectorAlias requestVectorAlias = [request];
+        var namedRvaSentinel = NamedRvaStorage.NamedSentinel;
+        var namedRvaWideSentinel = NamedRvaStorage.NamedWideSentinel;
 
         var retainedRva = PrimitiveStorage.RvaBytes.Length;
         var importedNested = new ImportedNested("imported-nested");
+        GC.KeepAlive(localTypeAlias);
+        GC.KeepAlive(requestVectorAlias);
+        GC.KeepAlive(forwarded);
+        GC.KeepAlive(nonFriendAccessibility);
         return profile switch
         {
-            "generic-frame" => W8FrameProbe.Run<RequestContext, BatchContext>(
+            "generic-frame" => new GenericFrameOwner<RequestContext>(request).Run(
+                profile,
+                batch,
+                request,
+                new ValueContext(0x1D017A01),
+                PrimitiveStorage.Int32),
+            "method-generic-frame" => W8FrameProbe.Run<RequestContext, BatchContext>(
                 profile,
                 request,
                 PrimitiveStorage.Int32,
                 importedNested,
                 retainedRva),
             "shadow-frame" => ScopeEvidence.OuterScopeProbe.Run(profile, request, batch, importedNested, retainedRva),
+            "lexical-frame" => LexicalEvidence.LexicalCatalogProbe.Run(profile, request, PrimitiveStorage.Int32),
+            "optimized-frame" => OptimizedFrameProfile.Run(profile, request, PrimitiveStorage.Int32),
+            "thread-relative" => ThreadRelativeProfile.Run(profile),
+            "context-relative" => ContextRelativeProfile.Run(profile),
+            "query-frame" => QueryRangeProfile.Run(profile, request),
+            "ambiguity-frame" => W8AmbiguityEvidence.CrossAssemblyAmbiguityProfile.Run(profile),
+            "rva-frame" => NamedRvaProfile.Run(profile, namedRvaSentinel, namedRvaWideSentinel),
             _ => 92,
         };
     }

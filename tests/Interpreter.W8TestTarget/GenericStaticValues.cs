@@ -66,6 +66,62 @@ public enum MarkerKind : short
     Workflow = 0x272,
 }
 
+/// <summary>Supplies a signed eight-bit enum representation for exact decoder evidence.</summary>
+/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+public enum SignedByteMarker : sbyte
+{
+    /// <summary>The retained negative marker.</summary>
+    Retained = -0x35,
+}
+
+/// <summary>Supplies an unsigned eight-bit enum representation for exact decoder evidence.</summary>
+/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+public enum UnsignedByteMarker : byte
+{
+    /// <summary>The retained high-bit marker.</summary>
+    Retained = 0xD3,
+}
+
+/// <summary>Supplies an unsigned sixteen-bit enum representation for exact decoder evidence.</summary>
+/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+public enum UnsignedInt16Marker : ushort
+{
+    /// <summary>The retained high-bit marker.</summary>
+    Retained = 0xD3E5,
+}
+
+/// <summary>Supplies a signed thirty-two-bit enum representation for exact decoder evidence.</summary>
+/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+public enum SignedInt32Marker : int
+{
+    /// <summary>The retained negative marker.</summary>
+    Retained = unchecked((int)0xD3E5A719),
+}
+
+/// <summary>Supplies an unsigned thirty-two-bit enum representation for exact decoder evidence.</summary>
+/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+public enum UnsignedInt32Marker : uint
+{
+    /// <summary>The retained high-bit marker.</summary>
+    Retained = 0xD3E5A719U,
+}
+
+/// <summary>Supplies a signed sixty-four-bit enum representation for exact decoder evidence.</summary>
+/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+public enum SignedInt64Marker : long
+{
+    /// <summary>The retained negative marker.</summary>
+    Retained = unchecked((long)0xD3E5A7192B4C6D8EUL),
+}
+
+/// <summary>Supplies an unsigned sixty-four-bit enum representation for exact decoder evidence.</summary>
+/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+public enum UnsignedInt64Marker : ulong
+{
+    /// <summary>The retained high-bit marker.</summary>
+    Retained = 0xD3E5A7192B4C6D8EUL,
+}
+
 /// <summary>Supplies one generic class definition with construction-specific static storage.</summary>
 /// <typeparam name="T">The exact closed argument distinguishing one runtime construction.</typeparam>
 /// <remarks>The members are W8 physical evidence and do not constitute a stable API.</remarks>
@@ -83,6 +139,15 @@ public static class GenericSlot<T>
 
     /// <summary>Provides a runtime-free literal whose declaration belongs to the generic definition.</summary>
     public const int Literal = 0x18B17A5;
+}
+
+/// <summary>Supplies one context-relative static field for the W8 physical branch probe.</summary>
+/// <remarks>The member is draft runtime evidence and does not constitute a stable storage API.</remarks>
+public static class ContextRelativeStorage
+{
+    /// <summary>Stores the value associated with the active runtime context.</summary>
+    [ContextStatic]
+    public static int ContextSentinel;
 }
 
 /// <summary>Supplies one generic value-type definition with construction-specific static storage.</summary>
@@ -242,6 +307,27 @@ public static class PrimitiveStorage
     /// <summary>Stores an enum-underlying value.</summary>
     public static MarkerKind Enum = MarkerKind.Workflow;
 
+    /// <summary>Stores an enum with a signed eight-bit representation.</summary>
+    public static SignedByteMarker SignedByteEnum = SignedByteMarker.Retained;
+
+    /// <summary>Stores an enum with an unsigned eight-bit representation.</summary>
+    public static UnsignedByteMarker UnsignedByteEnum = UnsignedByteMarker.Retained;
+
+    /// <summary>Stores an enum with an unsigned sixteen-bit representation.</summary>
+    public static UnsignedInt16Marker UnsignedInt16Enum = UnsignedInt16Marker.Retained;
+
+    /// <summary>Stores an enum with a signed thirty-two-bit representation.</summary>
+    public static SignedInt32Marker SignedInt32Enum = SignedInt32Marker.Retained;
+
+    /// <summary>Stores an enum with an unsigned thirty-two-bit representation.</summary>
+    public static UnsignedInt32Marker UnsignedInt32Enum = UnsignedInt32Marker.Retained;
+
+    /// <summary>Stores an enum with a signed sixty-four-bit representation.</summary>
+    public static SignedInt64Marker SignedInt64Enum = SignedInt64Marker.Retained;
+
+    /// <summary>Stores an enum with an unsigned sixty-four-bit representation.</summary>
+    public static UnsignedInt64Marker UnsignedInt64Enum = UnsignedInt64Marker.Retained;
+
     /// <summary>Stores an exact nullable value.</summary>
     public static int? Nullable = 0x17283940;
 
@@ -263,8 +349,26 @@ public static class PrimitiveStorage
     /// <summary>Provides a Boolean metadata literal.</summary>
     public const bool BooleanLiteral = true;
 
+    /// <summary>Provides a signed eight-bit metadata literal.</summary>
+    public const sbyte Int8Literal = -0x35;
+
+    /// <summary>Provides an unsigned eight-bit metadata literal.</summary>
+    public const byte UInt8Literal = 0xD3;
+
+    /// <summary>Provides a signed sixteen-bit metadata literal.</summary>
+    public const short Int16Literal = -0x3527;
+
+    /// <summary>Provides an unsigned sixteen-bit metadata literal.</summary>
+    public const ushort UInt16Literal = 0xD3E5;
+
     /// <summary>Provides a signed 32-bit metadata literal.</summary>
     public const int Int32Literal = unchecked((int)0x81234567);
+
+    /// <summary>Provides an unsigned thirty-two-bit metadata literal.</summary>
+    public const uint UInt32Literal = 0xD3E5A719U;
+
+    /// <summary>Provides a signed sixty-four-bit metadata literal.</summary>
+    public const long Int64Literal = unchecked((long)0xD3E5A7192B4C6D8EUL);
 
     /// <summary>Provides an unsigned 64-bit metadata literal.</summary>
     public const ulong UInt64Literal = 0xE123456789ABCDEF;
@@ -272,17 +376,44 @@ public static class PrimitiveStorage
     /// <summary>Provides a character metadata literal.</summary>
     public const char CharacterLiteral = '\u03A9';
 
+    /// <summary>Provides a single-precision metadata literal with an exact binary representation.</summary>
+    public const float SingleLiteral = -19.625F;
+
     /// <summary>Provides a floating-point metadata literal.</summary>
     public const double DoubleLiteral = -17.125D;
 
     /// <summary>Provides an enum metadata literal.</summary>
     public const MarkerKind EnumLiteral = MarkerKind.Request;
 
+    /// <summary>Provides a signed eight-bit enum metadata literal.</summary>
+    public const SignedByteMarker SignedByteEnumLiteral = SignedByteMarker.Retained;
+
+    /// <summary>Provides an unsigned eight-bit enum metadata literal.</summary>
+    public const UnsignedByteMarker UnsignedByteEnumLiteral = UnsignedByteMarker.Retained;
+
+    /// <summary>Provides an unsigned sixteen-bit enum metadata literal.</summary>
+    public const UnsignedInt16Marker UnsignedInt16EnumLiteral = UnsignedInt16Marker.Retained;
+
+    /// <summary>Provides a signed thirty-two-bit enum metadata literal.</summary>
+    public const SignedInt32Marker SignedInt32EnumLiteral = SignedInt32Marker.Retained;
+
+    /// <summary>Provides an unsigned thirty-two-bit enum metadata literal.</summary>
+    public const UnsignedInt32Marker UnsignedInt32EnumLiteral = UnsignedInt32Marker.Retained;
+
+    /// <summary>Provides a signed sixty-four-bit enum metadata literal.</summary>
+    public const SignedInt64Marker SignedInt64EnumLiteral = SignedInt64Marker.Retained;
+
+    /// <summary>Provides an unsigned sixty-four-bit enum metadata literal.</summary>
+    public const UnsignedInt64Marker UnsignedInt64EnumLiteral = UnsignedInt64Marker.Retained;
+
     /// <summary>Provides a non-null string metadata literal.</summary>
     public const string StringLiteral = "w8-literal";
 
     /// <summary>Provides an exact null metadata literal.</summary>
     public const string? NullLiteral = null;
+
+    /// <summary>Provides a null object-reference metadata literal.</summary>
+    public const object? ObjectNullLiteral = null;
 
     /// <summary>Provides the pinned compiler's decimal-constant attribute encoding.</summary>
     public const decimal DecimalLiteral = 9876.5432M;

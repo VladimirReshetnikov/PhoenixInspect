@@ -6,16 +6,26 @@
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="Interpreter.W8NamedRvaTarget">
+      <HintPath>NamedRvaFixture/Interpreter.W8NamedRvaTarget.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
     <ProjectReference Include="../Interpreter.W8AliasTarget/Interpreter.W8AliasTarget.csproj">
-      <Aliases>requestlib</Aliases>
+      <Aliases>global,requestlib</Aliases>
     </ProjectReference>
+    <ProjectReference Include="../Interpreter.W8ForwarderTarget/Interpreter.W8ForwarderTarget.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="NamedRvaFixture/Interpreter.W8NamedRvaTarget.il"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Update="NamedRvaFixture/Interpreter.W8NamedRvaTarget.xml"
+          CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../TestInfrastructure/HeadlessTestProcess.cs"
              Link="TestInfrastructure/HeadlessTestProcess.cs" />
   </ItemGroup>

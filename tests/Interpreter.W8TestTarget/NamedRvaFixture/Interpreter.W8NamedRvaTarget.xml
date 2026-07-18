@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<doc>
+  <assembly>
+    <name>Interpreter.W8NamedRvaTarget</name>
+  </assembly>
+  <members>
+    <member name="T:Interpreter.W8NamedRvaTarget.NamedRvaStorage">
+      <summary>Supplies deterministic, explicitly named fields backed directly by PE section data.</summary>
+      <remarks>This public draft fixture exists only for physical metadata and raw-memory comparison.</remarks>
+    </member>
+    <member name="F:Interpreter.W8NamedRvaTarget.NamedRvaStorage.NamedSentinel">
+      <summary>Stores the exact four-byte little-endian fixture value at its declared relative virtual address.</summary>
+    </member>
+    <member name="F:Interpreter.W8NamedRvaTarget.NamedRvaStorage.NamedWideSentinel">
+      <summary>Stores the exact eight-byte little-endian fixture value at its declared relative virtual address.</summary>
+    </member>
+  </members>
+</doc>
