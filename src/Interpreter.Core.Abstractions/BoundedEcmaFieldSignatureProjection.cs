@@ -39,7 +39,7 @@ internal static class BoundedEcmaFieldSignatureProjection
                 return false;
             }
             offset++;
-            if (!TryReadTypeDefOrRefToken(signature, ref offset, allowTypeSpecification: false, out var modifierToken))
+            if (!TryReadTypeDefOrRefToken(signature, ref offset, allowTypeSpecification: true, out var modifierToken))
             {
                 return false;
             }
@@ -66,7 +66,7 @@ internal static class BoundedEcmaFieldSignatureProjection
         }
 
         if (offset < signature.Length && signature[offset++] == 0x12 &&
-            TryReadTypeDefOrRefToken(signature, ref offset, allowTypeSpecification: true, out var classToken) &&
+            TryReadTypeDefOrRefToken(signature, ref offset, allowTypeSpecification: false, out var classToken) &&
             offset == signature.Length)
         {
             projection = new BoundedEcmaFieldSignature(BoundedEcmaFieldSignatureKind.ClassType, classToken, modifiers);
@@ -77,7 +77,7 @@ internal static class BoundedEcmaFieldSignatureProjection
         if (offset + 2 <= signature.Length &&
             signature[offset++] == 0x15 &&
             signature[offset++] == 0x11 &&
-            TryReadTypeDefOrRefToken(signature, ref offset, allowTypeSpecification: true, out var genericDefinitionToken) &&
+            TryReadTypeDefOrRefToken(signature, ref offset, allowTypeSpecification: false, out var genericDefinitionToken) &&
             offset + 2 == signature.Length &&
             signature[offset++] == 0x01 &&
             signature[offset++] == 0x08)

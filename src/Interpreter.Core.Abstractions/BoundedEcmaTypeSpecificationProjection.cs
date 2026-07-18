@@ -16,8 +16,9 @@ internal readonly record struct BoundedEcmaTypeSpecification(
 /// The caller owns the public operation caps and checks the byte length before any copy. This shared reader covers the
 /// complete encoded type grammar needed inside generic arguments, including arrays, custom modifiers, pointers,
 /// function pointers, byrefs in method-signature positions, nested generic instances, VAR/MVAR, and primitive types.
-/// It retains the bounded ordered TypeDef/TypeRef/TypeSpec token stream for later owner-table correlation, but
-/// deliberately performs no metadata resolution.
+/// Named CLASS/VALUETYPE nodes and GENERICINST heads admit only TypeDef/TypeRef coded indices. TypeSpec coded indices
+/// are retained only in custom-modifier slots, where the runtime grammar permits them. The higher W8 metadata resolver
+/// owns TypeSpec indirection resolution and cycle detection; this byte-only reader deliberately performs neither.
 /// </remarks>
 internal static class BoundedEcmaTypeSpecificationProjection
 {
@@ -71,7 +72,7 @@ internal static class BoundedEcmaTypeSpecificationProjection
         var reader = new Reader(signature, maximumDepth, maximumAggregateGenericArgumentCount);
         if (!reader.TryReadByte(out var genericInstance) || genericInstance != ElementTypeGenericInstance ||
             !reader.TryReadByte(out var classKind) || classKind != ElementTypeClass ||
-            !reader.TryReadTypeDefOrRefToken(out var genericHeadToken) ||
+            !reader.TryReadTypeDefOrRefToken(allowTypeSpecification: false, out var genericHeadToken) ||
             !reader.TryReadCompressedUInt32(out var argumentCount) || argumentCount == 0 ||
             argumentCount > (uint)maximumAggregateGenericArgumentCount)
         {
@@ -180,7 +181,7 @@ internal static class BoundedEcmaTypeSpecificationProjection
                     return allowByReference;
                 case ElementTypeClass:
                 case ElementTypeValueType:
-                    return TryReadTypeDefOrRefToken(out _);
+                    return TryReadTypeDefOrRefToken(allowTypeSpecification: false, out _);
                 case ElementTypeVar:
                 case ElementTypeMVar:
                     return TryReadCompressedUInt32(out _);
@@ -250,7 +251,7 @@ internal static class BoundedEcmaTypeSpecificationProjection
             if (depth > maximumDepth ||
                 !TryReadByte(out var classKind) ||
                 classKind is not (ElementTypeClass or ElementTypeValueType) ||
-                !TryReadTypeDefOrRefToken(out _) ||
+                !TryReadTypeDefOrRefToken(allowTypeSpecification: false, out _) ||
                 !TryReadCompressedUInt32(out var argumentCount) || argumentCount == 0 ||
                 argumentCount > (uint)(maximumAggregateGenericArgumentCount - AggregateGenericArgumentCount))
             {
@@ -361,10 +362,9 @@ internal static class BoundedEcmaTypeSpecificationProjection
         }
 
         private bool TryReadCustomModifierTypeToken() =>
-            TryReadTypeDefOrRefToken(out var token) &&
-            (token >>> 24) is 0x01 or 0x02;
+            TryReadTypeDefOrRefToken(allowTypeSpecification: true, out _);
 
-        internal bool TryReadTypeDefOrRefToken(out int token)
+        internal bool TryReadTypeDefOrRefToken(bool allowTypeSpecification, out int token)
         {
             token = 0;
             if (!TryReadCompressedUInt32(out var codedIndex))
@@ -380,7 +380,7 @@ internal static class BoundedEcmaTypeSpecificationProjection
             {
                 0 => 0x02,
                 1 => 0x01,
-                2 => 0x1B,
+                2 when allowTypeSpecification => 0x1B,
                 _ => -1,
             };
             if (table < 0)

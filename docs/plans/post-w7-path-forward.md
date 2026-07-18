@@ -347,6 +347,12 @@ segment-local groups and one canonical flattened order, requires TypeSpec and ru
 and substitutes a declaring field's `VAR` index only through that declaring type's proven flattened order. It does not
 assume that source-local arity equals metadata name arity.
 
+W7's canonical TypeDef identity remains byte-for-byte unchanged and continues to describe the pinned compiler mapping it
+already validates. W8 adds a raw TypeDef-row/enclosing-chain identity that does not impose that mapping, followed by a
+separate compiler-arity certificate. A readable row from another producer whose flattened parameters cannot be assigned
+to unique source segments remains exact physical metadata with a non-exact mapping disposition; it cannot drive argument
+slicing, substitution, or closed construction until a corresponding mapping rule is admitted.
+
 Base construction is recursive rather than a TypeDef-only ancestry walk. A fixture such as
 `Derived<T> : Mid<List<T>>`, `Mid<U> : Base<U[]>` must map `Derived<int>` to the exact declaring
 `Base<List<int>[]>` construction before substituting the selected field's signature. Each hop retains the original base
@@ -383,13 +389,14 @@ qualified-inspection bypass separately.
 
 A TypeSpec is decoded into an immutable bounded construction tree:
 
-- every fully ground root admitted by the V2 grammar is decoded, including `CLASS`, `VALUETYPE`, `GENERICINST CLASS`,
-  `GENERICINST VALUETYPE`, `SZARRAY`, and bounded `ARRAY`; named leaves resolve by exact
-  TypeDef/TypeRef/TypeSpec identity, and definition flags retain whether a named head is a class, value type, or
-  interface;
-- the generic head resolves through every ECMA-permitted TypeDefOrRef encoding to one exact generic TypeDef; any
-  physically permitted TypeSpec indirection is followed with the same depth/token/visited-set bounds, while a forbidden
-  head tag, cycle, or non-definition terminal is `Invalid` rather than guessed;
+- every fully ground TypeSpec root admitted by the V2 grammar is decoded, including `GENERICINST CLASS`,
+  `GENERICINST VALUETYPE`, `SZARRAY`, and bounded `ARRAY`; direct `CLASS TypeDefOrRef` and
+  `VALUETYPE TypeDefOrRef` nodes remain valid recursively inside another type but are `Invalid` as redundant TypeSpec
+  roots under the current-.NET metadata rules because the direct TypeDef/TypeRef token is the physical representation;
+- named `CLASS`/`VALUETYPE` nodes and `GENERICINST` heads resolve only TypeDef/TypeRef coded indices to one exact
+  TypeDef; a TypeSpec tag in one of those positions is `Invalid`. TypeSpec indirection is followed only in positions
+  where the current runtime permits it, including custom modifiers, with the same depth/token/visited-set bounds;
+  a forbidden tag, cycle, or non-definition terminal is `Invalid` rather than guessed;
 - ordered arguments retain their complete structural and resolved identities;
 - nested constructed types retain declaring construction and per-segment arity;
 - array/nullable/reference topology is explicit;
