@@ -4,13 +4,29 @@ using Interpreter.Core.Abstractions;
 
 namespace Interpreter.Host.Dump.ClrMD;
 
+/// <summary>Identifies which closed physical shape a detached ClrMD runtime-type identity represents.</summary>
+/// <remarks>
+/// A TypeDef-backed identity carries physical module and metadata coordinates. An array identity instead carries the
+/// raw method table and recursively exact runtime topology because ClrMD can report an array method table without a
+/// truthful TypeDef owned by that array.
+/// </remarks>
+public enum ClrmdStaticRuntimeTypeIdentityKind
+{
+    /// <summary>The runtime type is correlated with one non-nil TypeDef in one physical runtime module.</summary>
+    TypeDefinition = 1,
+
+    /// <summary>The runtime type is a TypeDef-less CLR array with exact component, base, and interface observations.</summary>
+    Array = 2,
+}
+
 /// <summary>
 /// Freezes one detached ClrMD runtime-type projection used to correlate counted metadata with runtime static fields.
 /// </summary>
 /// <remarks>
-/// This draft W7 identity records physical runtime coordinates and exact metadata content without retaining a live
-/// ClrMD object. The optional method table is evidence reported by the runtime adapter; absence does not invent a
-/// method table or weaken the module, TypeDef, and name identity that remain mandatory.
+/// This draft W7 identity records either physical TypeDef coordinates or a TypeDef-less array topology without
+/// retaining a live ClrMD object. A TypeDef method table remains optional evidence. An array method table is required,
+/// and its recursively bounded component, base, and interface graph prevents callers from fabricating module or
+/// TypeDef content for a runtime shape that does not own such metadata.
 /// </remarks>
 public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRuntimeTypeIdentity>
 {
@@ -18,9 +34,21 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
     public const int MaximumRuntimeNameCharacters = 2_048;
 
     /// <summary>
-    /// Gets the maximum exact, non-nested constructed generic arguments retained by this closed W7 projection.
+    /// Gets the maximum exact constructed generic arguments retained by one TypeDef-backed graph node.
     /// </summary>
-    public const int MaximumGenericArgumentCount = 1;
+    public const int MaximumGenericArgumentCount = 64;
+
+    /// <summary>Gets the maximum number of identities on any retained runtime-type graph path, including its root.</summary>
+    public const int MaximumRuntimeTypeGraphDepth = 8;
+
+    /// <summary>Gets the maximum traversed identity occurrences retained by one runtime-type graph.</summary>
+    public const int MaximumRuntimeTypeGraphNodeCount = 256;
+
+    /// <summary>Gets the maximum exact runtime-reported interfaces retained by one array identity.</summary>
+    public const int MaximumRuntimeInterfaceTypeCount = 64;
+
+    /// <summary>Gets the maximum CLR array rank retained by this closed projection.</summary>
+    public const int MaximumArrayRank = 32;
 
     /// <summary>Gets the canonical bound name shared by runtime type and field names.</summary>
     public const string RuntimeNameCharacterBoundName = "static-field.runtime-mapping.name-characters";
@@ -28,8 +56,23 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
     /// <summary>Gets the canonical bound name for exact constructed generic arguments.</summary>
     public const string GenericArgumentCountBoundName = "static-field.runtime-mapping.generic-arguments";
 
+    /// <summary>Gets the canonical bound name for recursively retained runtime-type graph depth.</summary>
+    public const string RuntimeTypeGraphDepthBoundName = "static-field.runtime-mapping.type-graph-depth";
+
+    /// <summary>Gets the canonical bound name for traversed runtime-type graph nodes.</summary>
+    public const string RuntimeTypeGraphNodeCountBoundName = "static-field.runtime-mapping.type-graph-nodes";
+
+    /// <summary>Gets the canonical bound name for an array's exact runtime-reported interface set.</summary>
+    public const string RuntimeInterfaceTypeCountBoundName = "static-field.runtime-mapping.array-interface-types";
+
+    /// <summary>Gets the canonical bound name for a retained CLR array rank.</summary>
+    public const string ArrayRankBoundName = "static-field.runtime-mapping.array-rank";
+
     private readonly ImmutableArray<byte> canonicalBytes;
     private readonly ImmutableArray<ClrmdStaticRuntimeTypeIdentity> genericArguments;
+    private readonly ImmutableArray<ClrmdStaticRuntimeTypeIdentity> interfaceTypes;
+    private readonly ClrmdStaticRuntimeTypeIdentity? componentType;
+    private readonly ClrmdStaticRuntimeTypeIdentity? baseType;
 
     private ClrmdStaticRuntimeTypeIdentity(
         ClrmdSnapshotIdentity snapshot,
@@ -45,6 +88,7 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
         bool isInterface,
         ImmutableArray<ClrmdStaticRuntimeTypeIdentity> genericArguments)
     {
+        Kind = ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition;
         Snapshot = snapshot;
         PointerWidth = pointerWidth;
         RuntimeModule = runtimeModule;
@@ -54,11 +98,12 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
         MethodTable = methodTable;
         IsValueType = isValueType;
         IsPrimitive = isPrimitive;
-        IsArray = isArray;
         IsInterface = isInterface;
         this.genericArguments = genericArguments;
+        interfaceTypes = ImmutableArray<ClrmdStaticRuntimeTypeIdentity>.Empty;
 
-        var writer = new CanonicalReplayEncoding.Writer("clrmd-static-runtime-type-identity", 2);
+        var writer = new CanonicalReplayEncoding.Writer("clrmd-static-runtime-type-identity", 3);
+        writer.WriteInt32((int)ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition);
         ClrmdStaticRuntimeMappingCanonical.WriteSnapshot(writer, snapshot);
         writer.WriteInt32(pointerWidth);
         ClrmdStaticRuntimeMappingCanonical.WriteRuntimeModule(writer, runtimeModule);
@@ -76,6 +121,10 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
         writer.WriteBoolean(isPrimitive);
         writer.WriteBoolean(isArray);
         writer.WriteBoolean(isInterface);
+        writer.WriteString(RuntimeTypeGraphDepthBoundName);
+        writer.WriteInt32(MaximumRuntimeTypeGraphDepth);
+        writer.WriteString(RuntimeTypeGraphNodeCountBoundName);
+        writer.WriteInt32(MaximumRuntimeTypeGraphNodeCount);
         writer.WriteString(GenericArgumentCountBoundName);
         writer.WriteInt32(MaximumGenericArgumentCount);
         writer.WriteInt32(genericArguments.Length);
@@ -88,20 +137,82 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
+    private ClrmdStaticRuntimeTypeIdentity(
+        ClrmdSnapshotIdentity snapshot,
+        int pointerWidth,
+        string fullName,
+        ulong methodTable,
+        int rank,
+        bool isSzArray,
+        ClrmdStaticRuntimeTypeIdentity componentType,
+        ClrmdStaticRuntimeTypeIdentity baseType,
+        ImmutableArray<ClrmdStaticRuntimeTypeIdentity> interfaceTypes)
+    {
+        Kind = ClrmdStaticRuntimeTypeIdentityKind.Array;
+        Snapshot = snapshot;
+        PointerWidth = pointerWidth;
+        FullName = fullName;
+        MethodTable = methodTable;
+        ArrayRank = rank;
+        IsSzArray = isSzArray;
+        this.componentType = componentType;
+        this.baseType = baseType;
+        this.interfaceTypes = interfaceTypes;
+        genericArguments = ImmutableArray<ClrmdStaticRuntimeTypeIdentity>.Empty;
+
+        var writer = new CanonicalReplayEncoding.Writer("clrmd-static-runtime-type-identity", 3);
+        writer.WriteInt32((int)ClrmdStaticRuntimeTypeIdentityKind.Array);
+        ClrmdStaticRuntimeMappingCanonical.WriteSnapshot(writer, snapshot);
+        writer.WriteInt32(pointerWidth);
+        writer.WriteString(RuntimeNameCharacterBoundName);
+        writer.WriteInt32(MaximumRuntimeNameCharacters);
+        writer.WriteString(fullName);
+        writer.WriteUInt64(methodTable);
+        writer.WriteString(RuntimeTypeGraphDepthBoundName);
+        writer.WriteInt32(MaximumRuntimeTypeGraphDepth);
+        writer.WriteString(RuntimeTypeGraphNodeCountBoundName);
+        writer.WriteInt32(MaximumRuntimeTypeGraphNodeCount);
+        writer.WriteString(ArrayRankBoundName);
+        writer.WriteInt32(MaximumArrayRank);
+        writer.WriteInt32(rank);
+        writer.WriteBoolean(isSzArray);
+        writer.WriteLengthPrefixedBytes(componentType.CanonicalBytes.AsSpan());
+        writer.WriteLengthPrefixedBytes(baseType.CanonicalBytes.AsSpan());
+        writer.WriteString(RuntimeInterfaceTypeCountBoundName);
+        writer.WriteInt32(MaximumRuntimeInterfaceTypeCount);
+        writer.WriteInt32(interfaceTypes.Length);
+        foreach (var interfaceType in interfaceTypes)
+        {
+            writer.WriteLengthPrefixedBytes(interfaceType.CanonicalBytes.AsSpan());
+        }
+
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets the closed physical shape represented by this detached runtime identity.</summary>
+    public ClrmdStaticRuntimeTypeIdentityKind Kind { get; }
+
     /// <summary>Gets the immutable dump snapshot containing the runtime type.</summary>
     public ClrmdSnapshotIdentity Snapshot { get; }
 
     /// <summary>Gets the exact target pointer width, in bytes.</summary>
     public int PointerWidth { get; }
 
-    /// <summary>Gets the physical runtime module that supplied the type.</summary>
-    public ClrmdRuntimeModuleIdentity RuntimeModule { get; }
+    /// <summary>
+    /// Gets the physical runtime module that supplied a <see cref="ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition"/>
+    /// identity, or <see langword="null"/> for a TypeDef-less <see cref="ClrmdStaticRuntimeTypeIdentityKind.Array"/>.
+    /// </summary>
+    public ClrmdRuntimeModuleIdentity? RuntimeModule { get; }
 
-    /// <summary>Gets the complete counted metadata-content identity containing the TypeDef.</summary>
-    public ModuleContentIdentity ModuleContent { get; }
+    /// <summary>
+    /// Gets the complete counted metadata-content identity containing the TypeDef, or <see langword="null"/> for an
+    /// array identity.
+    /// </summary>
+    public ModuleContentIdentity? ModuleContent { get; }
 
-    /// <summary>Gets the non-nil TypeDef token correlated with the runtime type.</summary>
-    public int TypeDefinitionToken { get; }
+    /// <summary>Gets the non-nil correlated TypeDef token, or <see langword="null"/> for an array identity.</summary>
+    public int? TypeDefinitionToken { get; }
 
     /// <summary>Gets the exact ordinal full name reported for the runtime type.</summary>
     public string FullName { get; }
@@ -115,11 +226,38 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
     /// <summary>Gets whether ClrMD classified the runtime type as a primitive.</summary>
     public bool IsPrimitive { get; }
 
-    /// <summary>Gets whether ClrMD classified the runtime type as an array.</summary>
-    public bool IsArray { get; }
+    /// <summary>Gets whether this identity represents a TypeDef-less CLR array.</summary>
+    public bool IsArray => Kind == ClrmdStaticRuntimeTypeIdentityKind.Array;
 
     /// <summary>Gets whether ClrMD classified the runtime type as an interface.</summary>
     public bool IsInterface { get; }
+
+    /// <summary>Gets the exact CLR array rank, or <see langword="null"/> for a TypeDef-backed identity.</summary>
+    public int? ArrayRank { get; }
+
+    /// <summary>
+    /// Gets whether the array is the rank-one zero-based vector shape, or <see langword="null"/> for a TypeDef-backed
+    /// identity. <see langword="false"/> retains a multidimensional CLR array shape, including a rank-one MD array.
+    /// </summary>
+    public bool? IsSzArray { get; }
+
+    /// <summary>
+    /// Gets the recursively exact runtime-reported component type, or <see langword="null"/> for a TypeDef-backed
+    /// identity.
+    /// </summary>
+    public ClrmdStaticRuntimeTypeIdentity? ComponentType => componentType;
+
+    /// <summary>
+    /// Gets the exact runtime-reported array base type, or <see langword="null"/> for a TypeDef-backed identity.
+    /// </summary>
+    public ClrmdStaticRuntimeTypeIdentity? BaseType => baseType;
+
+    /// <summary>
+    /// Gets a defensive copy of the array's bounded, ordinal-canonical, distinct runtime-reported interface set.
+    /// TypeDef-backed identities expose an empty set.
+    /// </summary>
+    public ImmutableArray<ClrmdStaticRuntimeTypeIdentity> InterfaceTypes =>
+        CanonicalReplayEncoding.Copy(interfaceTypes);
 
     /// <summary>Gets a defensive copy of the exact bounded constructed generic runtime type arguments.</summary>
     public ImmutableArray<ClrmdStaticRuntimeTypeIdentity> GenericArguments =>
@@ -129,9 +267,25 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
     public static EvaluationDeterministicBound DeclaredRuntimeNameCharacterBound =>
         new(RuntimeNameCharacterBoundName, MaximumRuntimeNameCharacters);
 
-    /// <summary>Gets the fixed canonical constructed-generic-argument bound applied before canonical encoding.</summary>
+    /// <summary>Gets the fixed canonical per-TypeDef constructed-generic-argument bound.</summary>
     public static EvaluationDeterministicBound DeclaredGenericArgumentCountBound =>
         new(GenericArgumentCountBoundName, MaximumGenericArgumentCount);
+
+    /// <summary>Gets the fixed canonical recursive runtime-type graph-depth bound.</summary>
+    public static EvaluationDeterministicBound DeclaredRuntimeTypeGraphDepthBound =>
+        new(RuntimeTypeGraphDepthBoundName, MaximumRuntimeTypeGraphDepth);
+
+    /// <summary>Gets the fixed canonical traversed runtime-type graph-node bound.</summary>
+    public static EvaluationDeterministicBound DeclaredRuntimeTypeGraphNodeCountBound =>
+        new(RuntimeTypeGraphNodeCountBoundName, MaximumRuntimeTypeGraphNodeCount);
+
+    /// <summary>Gets the fixed canonical array interface-count bound.</summary>
+    public static EvaluationDeterministicBound DeclaredRuntimeInterfaceTypeCountBound =>
+        new(RuntimeInterfaceTypeCountBoundName, MaximumRuntimeInterfaceTypeCount);
+
+    /// <summary>Gets the fixed canonical CLR array-rank bound.</summary>
+    public static EvaluationDeterministicBound DeclaredArrayRankBound =>
+        new(ArrayRankBoundName, MaximumArrayRank);
 
     /// <summary>Gets a defensive copy of the versioned canonical runtime-type bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
@@ -139,7 +293,7 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one immutable runtime-type identity from detached ClrMD and counted-metadata facts.</summary>
+    /// <summary>Creates one immutable TypeDef-backed runtime-type identity from detached ClrMD and metadata facts.</summary>
     /// <param name="snapshot">The immutable dump identity in which the runtime type was observed.</param>
     /// <param name="pointerWidth">The target pointer width; exactly four or eight bytes.</param>
     /// <param name="runtimeModule">The snapshot-scoped physical runtime module containing the type.</param>
@@ -149,10 +303,13 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
     /// <param name="methodTable">An optional nonzero method table that fits the target pointer width.</param>
     /// <param name="isValueType">Exact ClrMD value-type classification.</param>
     /// <param name="isPrimitive">Exact ClrMD primitive classification.</param>
-    /// <param name="isArray">Exact ClrMD array classification.</param>
+    /// <param name="isArray">
+    /// Exact ClrMD array classification. This legacy parameter must be <see langword="false"/>; callers observing an
+    /// array must use <see cref="CreateArray"/> rather than fabricate TypeDef coordinates.
+    /// </param>
     /// <param name="isInterface">Exact ClrMD interface classification.</param>
     /// <param name="genericArguments">
-    /// Initialized exact constructed generic arguments; this closed projection admits at most one.
+    /// Initialized exact ordered constructed generic arguments, recursively governed by the graph depth and node caps.
     /// </param>
     /// <returns>A detached, immutable, content-equal runtime-type identity suitable for canonical replay.</returns>
     /// <exception cref="ArgumentException">
@@ -206,42 +363,57 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
                 nameof(methodTable));
         }
 
-        if (isPrimitive && (!isValueType || isArray || isInterface) ||
-            isArray && (isValueType || isPrimitive || isInterface) ||
-            isInterface && (isValueType || isPrimitive || isArray))
+        if (isArray)
         {
             throw new ArgumentException(
-                "ClrMD primitive, array, interface, and value-type classifications are internally contradictory.");
+                "A TypeDef-backed runtime identity cannot represent an array; use CreateArray instead.",
+                nameof(isArray));
+        }
+
+        if (isPrimitive && (!isValueType || isInterface) ||
+            isInterface && (isValueType || isPrimitive))
+        {
+            throw new ArgumentException(
+                "ClrMD primitive, interface, and value-type classifications are internally contradictory.");
         }
 
         if (genericArguments.IsDefault || genericArguments.Length > MaximumGenericArgumentCount)
         {
             throw new ArgumentException(
-                $"An initialized generic-argument array of at most {MaximumGenericArgumentCount} item is required.",
+                $"An initialized generic-argument array of at most {MaximumGenericArgumentCount} items is required.",
                 nameof(genericArguments));
         }
 
-        if ((isPrimitive || isArray || isInterface) && !genericArguments.IsEmpty)
+        if (isPrimitive && !genericArguments.IsEmpty)
         {
             throw new ArgumentException(
-                "Primitive, array, and interface projections cannot carry constructed generic arguments.",
+                "A primitive projection cannot carry constructed generic arguments.",
                 nameof(genericArguments));
         }
 
         var normalizedGenericArguments = ImmutableArray.CreateBuilder<ClrmdStaticRuntimeTypeIdentity>(
             genericArguments.Length);
+        var activePath = new HashSet<ClrmdStaticRuntimeTypeIdentity>(ReferenceEqualityComparer.Instance);
+        var retainedNodeCount = 1;
         foreach (var genericArgument in genericArguments)
         {
             if (genericArgument is null ||
                 genericArgument.Snapshot != snapshot ||
-                genericArgument.PointerWidth != pointerWidth ||
-                !genericArgument.GenericArguments.IsEmpty)
+                genericArgument.PointerWidth != pointerWidth)
             {
                 throw new ArgumentException(
-                    "Every generic argument must be a non-nested exact runtime type in the same snapshot and target architecture.",
+                    "Every generic argument must be an exact bounded runtime type in the same snapshot and target architecture.",
                     nameof(genericArguments));
             }
 
+            ValidateTypeGraph(
+                genericArgument,
+                snapshot,
+                pointerWidth,
+                depth: 2,
+                nameof(genericArguments),
+                activePath,
+                ref retainedNodeCount);
             normalizedGenericArguments.Add(genericArgument);
         }
 
@@ -258,6 +430,418 @@ public sealed class ClrmdStaticRuntimeTypeIdentity : IEquatable<ClrmdStaticRunti
             isArray,
             isInterface,
             normalizedGenericArguments.MoveToImmutable());
+    }
+
+    /// <summary>
+    /// Creates one TypeDef-less CLR array identity from exact detached ClrMD method-table and topology observations.
+    /// </summary>
+    /// <param name="snapshot">The immutable dump identity in which the array method table was observed.</param>
+    /// <param name="pointerWidth">The target pointer width; exactly four or eight bytes.</param>
+    /// <param name="fullName">The exact non-empty ordinal array name reported by ClrMD.</param>
+    /// <param name="methodTable">The required nonzero array method table, fitting the target pointer width.</param>
+    /// <param name="rank">The exact positive CLR array rank, capped by <see cref="MaximumArrayRank"/>.</param>
+    /// <param name="isSzArray">
+    /// <see langword="true"/> for the rank-one zero-based vector shape; <see langword="false"/> for an MD shape.
+    /// </param>
+    /// <param name="componentType">The recursively exact runtime-reported component type.</param>
+    /// <param name="baseType">
+    /// The exact TypeDef-backed runtime-reported <c>System.Array</c> base identity. Its physical module and metadata
+    /// content are retained so Product can correlate the observation with its independently selected core library.
+    /// </param>
+    /// <param name="interfaceTypes">
+    /// An initialized bounded set of exact TypeDef-backed interface identities. Input order is not significant;
+    /// identities are stored in ordinal canonical-byte order and duplicates are rejected.
+    /// </param>
+    /// <returns>An immutable, content-equal array identity with no fabricated TypeDef or module coordinates.</returns>
+    /// <exception cref="ArgumentException">
+    /// Snapshot, name, topology, base, interface, architecture, or recursive graph evidence is absent, contradictory,
+    /// cyclic, duplicated, or belongs to another snapshot.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Pointer width, method table, rank, graph depth/node count, or interface count exceeds its closed bound.
+    /// </exception>
+    public static ClrmdStaticRuntimeTypeIdentity CreateArray(
+        ClrmdSnapshotIdentity snapshot,
+        int pointerWidth,
+        string fullName,
+        ulong methodTable,
+        int rank,
+        bool isSzArray,
+        ClrmdStaticRuntimeTypeIdentity componentType,
+        ClrmdStaticRuntimeTypeIdentity baseType,
+        ImmutableArray<ClrmdStaticRuntimeTypeIdentity> interfaceTypes)
+    {
+        if (string.IsNullOrWhiteSpace(snapshot.Sha256))
+        {
+            throw new ArgumentException("A complete dump snapshot identity is required.", nameof(snapshot));
+        }
+
+        CanonicalReplayEncoding.ValidatePointerWidth(pointerWidth);
+        ArgumentNullException.ThrowIfNull(fullName);
+        if (fullName.Length > MaximumRuntimeNameCharacters)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(fullName),
+                $"A runtime type name cannot exceed {MaximumRuntimeNameCharacters} characters.");
+        }
+
+        ClrmdStaticRuntimeMappingCanonical.ValidateDecodedName(fullName, nameof(fullName));
+        CanonicalReplayEncoding.ValidatePointerValue(methodTable, pointerWidth, allowZero: false, nameof(methodTable));
+        if (rank is <= 0 or > MaximumArrayRank)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(rank),
+                $"An array rank must be from one through {MaximumArrayRank}.");
+        }
+
+        if (isSzArray && rank != 1)
+        {
+            throw new ArgumentException("Only a rank-one array can have the SZ-array shape.", nameof(isSzArray));
+        }
+
+        ArgumentNullException.ThrowIfNull(componentType);
+        ArgumentNullException.ThrowIfNull(baseType);
+        ValidateArrayBaseType(baseType, nameof(baseType));
+        if (interfaceTypes.IsDefault)
+        {
+            throw new ArgumentException("An initialized exact interface set is required.", nameof(interfaceTypes));
+        }
+
+        if (interfaceTypes.Length > MaximumRuntimeInterfaceTypeCount)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(interfaceTypes),
+                $"An array cannot retain more than {MaximumRuntimeInterfaceTypeCount} runtime interfaces.");
+        }
+
+        var normalizedInterfaces = interfaceTypes.ToArray();
+        foreach (var interfaceType in normalizedInterfaces)
+        {
+            if (interfaceType is null)
+            {
+                throw new ArgumentException("An array interface identity cannot be null.", nameof(interfaceTypes));
+            }
+
+            ValidateArrayInterfaceType(interfaceType, nameof(interfaceTypes));
+        }
+
+        Array.Sort(normalizedInterfaces, RuntimeTypeCanonicalComparer.Instance);
+        for (var index = 1; index < normalizedInterfaces.Length; index++)
+        {
+            if (normalizedInterfaces[index - 1].Equals(normalizedInterfaces[index]))
+            {
+                throw new ArgumentException(
+                    "The runtime-reported array interface set cannot contain duplicate identities.",
+                    nameof(interfaceTypes));
+            }
+        }
+
+        var activePath = new HashSet<ClrmdStaticRuntimeTypeIdentity>(ReferenceEqualityComparer.Instance);
+        var retainedNodeCount = 1;
+        ValidateTypeGraph(
+            componentType,
+            snapshot,
+            pointerWidth,
+            depth: 2,
+            nameof(componentType),
+            activePath,
+            ref retainedNodeCount);
+        ValidateTypeGraph(
+            baseType,
+            snapshot,
+            pointerWidth,
+            depth: 2,
+            nameof(baseType),
+            activePath,
+            ref retainedNodeCount);
+        foreach (var interfaceType in normalizedInterfaces)
+        {
+            ValidateTypeGraph(
+                interfaceType,
+                snapshot,
+                pointerWidth,
+                depth: 2,
+                nameof(interfaceTypes),
+                activePath,
+                ref retainedNodeCount);
+        }
+
+        return new ClrmdStaticRuntimeTypeIdentity(
+            snapshot,
+            pointerWidth,
+            fullName,
+            methodTable,
+            rank,
+            isSzArray,
+            componentType,
+            baseType,
+            ImmutableArray.Create(normalizedInterfaces));
+    }
+
+    private static void ValidateTypeGraph(
+        ClrmdStaticRuntimeTypeIdentity identity,
+        ClrmdSnapshotIdentity expectedSnapshot,
+        int expectedPointerWidth,
+        int depth,
+        string parameterName,
+        HashSet<ClrmdStaticRuntimeTypeIdentity> activePath,
+        ref int retainedNodeCount)
+    {
+        if (depth > MaximumRuntimeTypeGraphDepth)
+        {
+            throw new ArgumentOutOfRangeException(
+                parameterName,
+                $"A runtime-type graph path cannot exceed {MaximumRuntimeTypeGraphDepth} identities.");
+        }
+
+        retainedNodeCount++;
+        if (retainedNodeCount > MaximumRuntimeTypeGraphNodeCount)
+        {
+            throw new ArgumentOutOfRangeException(
+                parameterName,
+                $"A runtime-type graph cannot retain more than {MaximumRuntimeTypeGraphNodeCount} traversed identities.");
+        }
+
+        if (identity.Snapshot != expectedSnapshot || identity.PointerWidth != expectedPointerWidth)
+        {
+            throw new ArgumentException(
+                "Every retained runtime type must belong to the same snapshot and target architecture.",
+                parameterName);
+        }
+
+        ValidateCommonGraphNode(identity, parameterName);
+        if (!activePath.Add(identity))
+        {
+            throw new ArgumentException("A runtime-type graph cannot contain a cycle.", parameterName);
+        }
+
+        try
+        {
+            switch (identity.Kind)
+            {
+                case ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition:
+                    ValidateTypeDefinitionGraphNode(identity, parameterName);
+                    foreach (var genericArgument in identity.genericArguments)
+                    {
+                        ValidateTypeGraph(
+                            genericArgument,
+                            expectedSnapshot,
+                            expectedPointerWidth,
+                            depth + 1,
+                            parameterName,
+                            activePath,
+                            ref retainedNodeCount);
+                    }
+                    break;
+
+                case ClrmdStaticRuntimeTypeIdentityKind.Array:
+                    ValidateArrayGraphNode(identity, parameterName);
+                    ValidateTypeGraph(
+                        identity.componentType!,
+                        expectedSnapshot,
+                        expectedPointerWidth,
+                        depth + 1,
+                        parameterName,
+                        activePath,
+                        ref retainedNodeCount);
+                    ValidateTypeGraph(
+                        identity.baseType!,
+                        expectedSnapshot,
+                        expectedPointerWidth,
+                        depth + 1,
+                        parameterName,
+                        activePath,
+                        ref retainedNodeCount);
+                    foreach (var interfaceType in identity.interfaceTypes)
+                    {
+                        ValidateTypeGraph(
+                            interfaceType,
+                            expectedSnapshot,
+                            expectedPointerWidth,
+                            depth + 1,
+                            parameterName,
+                            activePath,
+                            ref retainedNodeCount);
+                    }
+                    break;
+
+                default:
+                    throw new ArgumentException("The runtime-type identity kind is outside the closed set.", parameterName);
+            }
+        }
+        finally
+        {
+            activePath.Remove(identity);
+        }
+    }
+
+    private static void ValidateCommonGraphNode(ClrmdStaticRuntimeTypeIdentity identity, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(identity.Snapshot.Sha256))
+        {
+            throw new ArgumentException("A complete dump snapshot identity is required.", parameterName);
+        }
+
+        CanonicalReplayEncoding.ValidatePointerWidth(identity.PointerWidth);
+        if (identity.FullName is null || identity.FullName.Length > MaximumRuntimeNameCharacters)
+        {
+            throw new ArgumentException("A bounded runtime type name is required.", parameterName);
+        }
+
+        ClrmdStaticRuntimeMappingCanonical.ValidateDecodedName(identity.FullName, parameterName);
+        if (identity.MethodTable.HasValue)
+        {
+            CanonicalReplayEncoding.ValidatePointerValue(
+                identity.MethodTable.Value,
+                identity.PointerWidth,
+                allowZero: false,
+                parameterName);
+        }
+    }
+
+    private static void ValidateTypeDefinitionGraphNode(
+        ClrmdStaticRuntimeTypeIdentity identity,
+        string parameterName)
+    {
+        if (!identity.RuntimeModule.HasValue ||
+            identity.ModuleContent is null ||
+            !identity.TypeDefinitionToken.HasValue ||
+            identity.ArrayRank.HasValue ||
+            identity.IsSzArray.HasValue ||
+            identity.componentType is not null ||
+            identity.baseType is not null ||
+            identity.interfaceTypes.IsDefault ||
+            !identity.interfaceTypes.IsEmpty ||
+            identity.genericArguments.IsDefault ||
+            identity.genericArguments.Length > MaximumGenericArgumentCount)
+        {
+            throw new ArgumentException("A TypeDef-backed runtime identity has contradictory variant content.", parameterName);
+        }
+
+        ClrmdStaticRuntimeMappingCanonical.ValidateRuntimeModule(
+            identity.RuntimeModule.Value,
+            identity.PointerWidth,
+            parameterName);
+        if (identity.RuntimeModule.Value.Snapshot != identity.Snapshot)
+        {
+            throw new ArgumentException("A runtime module belongs to a different dump snapshot.", parameterName);
+        }
+
+        CanonicalReplayEncoding.ValidateMetadataToken(identity.TypeDefinitionToken.Value, 0x02, parameterName);
+        if (identity.IsPrimitive && (!identity.IsValueType || identity.IsInterface) ||
+            identity.IsInterface && (identity.IsValueType || identity.IsPrimitive) ||
+            identity.IsPrimitive && !identity.genericArguments.IsEmpty)
+        {
+            throw new ArgumentException("A TypeDef-backed runtime identity has contradictory classifications.", parameterName);
+        }
+
+        if (identity.genericArguments.Any(static genericArgument => genericArgument is null))
+        {
+            throw new ArgumentException("A TypeDef generic argument cannot be null.", parameterName);
+        }
+    }
+
+    private static void ValidateArrayGraphNode(ClrmdStaticRuntimeTypeIdentity identity, string parameterName)
+    {
+        if (identity.RuntimeModule.HasValue ||
+            identity.ModuleContent is not null ||
+            identity.TypeDefinitionToken.HasValue ||
+            !identity.MethodTable.HasValue ||
+            identity.IsValueType ||
+            identity.IsPrimitive ||
+            identity.IsInterface ||
+            !identity.ArrayRank.HasValue ||
+            !identity.IsSzArray.HasValue ||
+            identity.componentType is null ||
+            identity.baseType is null ||
+            identity.genericArguments.IsDefault ||
+            !identity.genericArguments.IsEmpty ||
+            identity.interfaceTypes.IsDefault ||
+            identity.interfaceTypes.Length > MaximumRuntimeInterfaceTypeCount)
+        {
+            throw new ArgumentException("An array runtime identity has contradictory variant content.", parameterName);
+        }
+
+        if (identity.ArrayRank.Value is <= 0 or > MaximumArrayRank ||
+            identity.IsSzArray.Value && identity.ArrayRank.Value != 1)
+        {
+            throw new ArgumentException("An array runtime identity has contradictory rank or shape content.", parameterName);
+        }
+
+        ValidateArrayBaseType(identity.baseType, parameterName);
+        ClrmdStaticRuntimeTypeIdentity? previous = null;
+        foreach (var interfaceType in identity.interfaceTypes)
+        {
+            if (interfaceType is null)
+            {
+                throw new ArgumentException("An array interface identity cannot be null.", parameterName);
+            }
+
+            ValidateArrayInterfaceType(interfaceType, parameterName);
+            if (previous is not null && RuntimeTypeCanonicalComparer.Instance.Compare(previous, interfaceType) >= 0)
+            {
+                throw new ArgumentException(
+                    "An array interface set must remain in strictly increasing canonical order.",
+                    parameterName);
+            }
+
+            previous = interfaceType;
+        }
+    }
+
+    private static void ValidateArrayBaseType(ClrmdStaticRuntimeTypeIdentity baseType, string parameterName)
+    {
+        if (baseType.Kind != ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition ||
+            baseType.IsValueType ||
+            baseType.IsPrimitive ||
+            baseType.IsInterface ||
+            !string.Equals(baseType.FullName, "System.Array", StringComparison.Ordinal) ||
+            !baseType.genericArguments.IsEmpty)
+        {
+            throw new ArgumentException(
+                "An array base observation must be an exact non-generic System.Array TypeDef identity.",
+                parameterName);
+        }
+    }
+
+    private static void ValidateArrayInterfaceType(
+        ClrmdStaticRuntimeTypeIdentity interfaceType,
+        string parameterName)
+    {
+        if (interfaceType.Kind != ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition ||
+            !interfaceType.IsInterface ||
+            interfaceType.IsValueType ||
+            interfaceType.IsPrimitive)
+        {
+            throw new ArgumentException(
+                "Every array interface observation must be an exact TypeDef-backed interface identity.",
+                parameterName);
+        }
+    }
+
+    private sealed class RuntimeTypeCanonicalComparer : IComparer<ClrmdStaticRuntimeTypeIdentity>
+    {
+        internal static RuntimeTypeCanonicalComparer Instance { get; } = new();
+
+        public int Compare(ClrmdStaticRuntimeTypeIdentity? left, ClrmdStaticRuntimeTypeIdentity? right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return 0;
+            }
+
+            if (left is null)
+            {
+                return -1;
+            }
+
+            if (right is null)
+            {
+                return 1;
+            }
+
+            return left.canonicalBytes.AsSpan().SequenceCompareTo(right.canonicalBytes.AsSpan());
+        }
     }
 
     /// <summary>Determines whether another runtime type has the same complete canonical identity.</summary>
@@ -289,8 +873,8 @@ public enum ClrmdStaticExpectedDecoderKind
     /// <summary>Product expects the exact <see cref="string"/> decoder.</summary>
     String = 3,
 
-    /// <summary>Product expects one exact non-generic concrete managed-reference decoder.</summary>
-    ConcreteReference = 4,
+    /// <summary>Product expects the managed-reference slot decoder; assignability remains separate Product work.</summary>
+    ManagedReference = 4,
 }
 
 /// <summary>Freezes one runtime static field and its exact declaring-type and resolved-type projections.</summary>
@@ -405,6 +989,13 @@ public sealed class ClrmdStaticRuntimeFieldIdentity : IEquatable<ClrmdStaticRunt
         ClrmdStaticRuntimeTypeIdentity observedFieldType)
     {
         ArgumentNullException.ThrowIfNull(declaringType);
+        if (declaringType.Kind != ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition)
+        {
+            throw new ArgumentException(
+                "A runtime static field owner must be a TypeDef-backed runtime identity.",
+                nameof(declaringType));
+        }
+
         CanonicalReplayEncoding.ValidateMetadataToken(fieldDefToken, 0x04, nameof(fieldDefToken));
         ArgumentNullException.ThrowIfNull(name);
         if (name.Length > ClrmdStaticRuntimeTypeIdentity.MaximumRuntimeNameCharacters)
@@ -470,7 +1061,7 @@ public sealed class ClrmdStaticRuntimeFieldIdentity : IEquatable<ClrmdStaticRunt
         ClrmdStaticExpectedDecoderKind.Int32 => 1,
         ClrmdStaticExpectedDecoderKind.NullableInt32 => 2,
         ClrmdStaticExpectedDecoderKind.String => 3,
-        ClrmdStaticExpectedDecoderKind.ConcreteReference => 4,
+        ClrmdStaticExpectedDecoderKind.ManagedReference => 4,
         _ => throw new ArgumentOutOfRangeException(nameof(value)),
     };
 }
@@ -730,6 +1321,13 @@ public sealed class ClrmdStaticRuntimeDeclarationMappingIdentity :
         ArgumentNullException.ThrowIfNull(declaringType);
         ArgumentNullException.ThrowIfNull(field);
         ArgumentNullException.ThrowIfNull(counters);
+        if (declaringType.Kind != ClrmdStaticRuntimeTypeIdentityKind.TypeDefinition)
+        {
+            throw new ArgumentException(
+                "A runtime declaration mapping owner must be a TypeDef-backed runtime identity.",
+                nameof(declaringType));
+        }
+
         if (!field.DeclaringType.Equals(declaringType))
         {
             throw new ArgumentException(
