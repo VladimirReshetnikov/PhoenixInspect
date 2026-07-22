@@ -113,21 +113,35 @@ Physical identity does not contain an optional W7 candidate, caller-selected sem
 or compiler mapping status. Those facts belong to separate certificates so two callers cannot produce different
 physical identities for the same TypeDef row.
 
-## 6. Compiler-style nested arity mapping
+## 6. Physical arity, CLS spelling, and Roslyn projection
 
-The mapping certificate derives four separate values:
+The mapping layer derives four separate values:
 
 - total physical arity from the exact TypeDef GenericParam owner set;
 - parent total arity from the exact NestedClass relation;
 - the non-negative parent-relative delta when one exists; and
-- the canonical backtick suffix parsed from the current metadata name.
+- the terminal backtick suffix, if one can be inferred from the current metadata name.
 
-A top-level mapping is exact when the canonical suffix equals total arity. A nested mapping is exact when the suffix
-equals `child total - parent total` and positional redeclaration is coherent. A nested segment under a generic parent
-may introduce zero parameters and omit a suffix. Parameter names are not used to match redeclared positions.
+Those values feed four dispositions rather than one overloaded status:
 
-Malformed suffixes, leading-zero suffixes, suffix/delta disagreement, or `child total < parent total` do not erase the
-physical TypeDef. They produce a typed unavailable compiler mapping.
+1. **CLS arity spelling** is canonical only when a positive introduced arity has an equal terminal ASCII-decimal
+   suffix with no leading zero, while zero introduced arity has no suffix.
+2. **Roslyn metadata-name projection** follows the compiler import rule. When introduced arity is positive, Roslyn
+   examines the final backtick, requires a nonempty prefix and a 1–5 digit positive suffix no greater than 32767, and
+   removes that suffix only when it equals introduced arity. Otherwise Roslyn retains the complete raw name and marks
+   it unmangled. An earlier backtick in the retained prefix does not prevent inference of the final suffix.
+3. **C# source-name addressability** records whether the projected simple name can be represented by the admitted
+   source syntax. A retained raw name containing a backtick is ordinarily not addressable, while a generic physical
+   type named plain `G` can remain addressable as Roslyn name `G`, arity 1, and unmangled even though its CLS spelling
+   is noncanonical.
+4. **Evaluator admission** applies operation bounds after the physical and name-projection facts are complete.
+
+A top-level introduced arity equals total arity. A nested introduced arity is `child total - parent total` when that
+delta is nonnegative. A nested segment under a generic parent may introduce zero parameters and omit a suffix.
+Parameter names are not used to match redeclared positions.
+
+Malformed suffixes, leading-zero suffixes, suffix/delta disagreement, or `child total < parent total` never erase the
+physical TypeDef. They affect only the applicable CLS, Roslyn, source-addressability, or admission disposition.
 
 ## 7. Compatibility and consumer cutover
 
@@ -174,6 +188,8 @@ examples:
 - missing, duplicate, gapped, foreign-source, wrong-table, and out-of-range evidence;
 - malformed and trailing MethodDef signature bytes and receiver disagreement;
 - module pseudo-type violations, nesting cycles, arity underflow, and name-suffix disagreement;
+- canonical ``G`1``, plain generic `G`, mismatched ``G`2``, ``G`0``, ``G`01``, empty-prefix, non-ASCII digit,
+  trailing-backtick, 32767/32768 boundary, and multiple-backtick Roslyn projection cases;
 - exact-cap and cap-plus-one boundaries, including physical RID/end sentinels;
 - canonical replay, mutation attempts, equality/hash, reflection issuer scans, and emitted XML documentation; and
 - frozen W1–W7 canonical artifact and complete zero-skip headless regression lanes.
@@ -197,7 +213,8 @@ The authority cutover is complete only when:
 1. every exact TypeDef, GenericParam row, GenericParam owner, and generic MethodDef declaration is catalog-issued;
 2. all table joins prove identical source lineage and expose no prefix after a non-exact or invalid result;
 3. unsorted coherent GenericParam layouts and reordered member-pointer layouts work without heuristics;
-4. total, introduced, name-spelled, and signature arities cannot be conflated;
+4. total, introduced, name-spelled, signature, CLS, Roslyn-projection, source-addressability, and admission facts cannot
+   be conflated;
 5. W7 objects are compatibility candidates only;
 6. downstream substitution, constraint, construction, classification, and binding code has no caller-authored bypass;
 7. assembly-wide reflection tests reject public exact-row issuers outside the owning catalogs;
