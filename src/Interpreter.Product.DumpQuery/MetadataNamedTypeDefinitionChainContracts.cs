@@ -279,7 +279,7 @@ public sealed class MetadataNamedTypeDefinitionChainIdentity :
         for (var index = 0; index < segments.Length; index++)
         {
             var segment = segments[index];
-            var expectedParent = index == 0 ? null : segments[index - 1].TypeDefinitionToken;
+            var expectedParent = index == 0 ? (int?)null : segments[index - 1].TypeDefinitionToken;
             if (!segment.SourceEnds.Equals(sourceEnds) ||
                 segment.NestingDepth != index ||
                 segment.EnclosingTypeDefinitionToken != expectedParent)
@@ -598,7 +598,7 @@ public sealed class MetadataNamedTypeDefinitionChainCatalogIdentity :
             {
                 var node = reversedNodes[index];
                 var expectedParentToken = index == 0
-                    ? null
+                    ? (int?)null
                     : reversedNodes[index - 1].TypeDefinition.TypeDefinitionToken;
                 if (node.NestingDepth != index || node.EnclosingTypeDefinitionToken != expectedParentToken)
                 {

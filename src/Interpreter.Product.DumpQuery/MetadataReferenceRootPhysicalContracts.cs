@@ -1097,7 +1097,7 @@ public sealed class MetadataExportedTypeRowObservationIdentity :
             implementationMetadataToken);
     }
 
-    /// <summary>Tests whether this physical row agrees with one W7 top-level forwarder candidate.</summary>
+    /// <summary>Tests whether this physical draft observation agrees with one W7 top-level forwarder candidate.</summary>
     /// <param name="candidate">The W7 forwarder candidate to compare.</param>
     /// <returns><see langword="true"/> only when every physical row field and source assembly agree.</returns>
     public bool MatchesCandidate(StaticFieldExportedTypeForwarderIdentity candidate)
