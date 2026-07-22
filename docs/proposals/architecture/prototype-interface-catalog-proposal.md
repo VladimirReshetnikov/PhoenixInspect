@@ -471,24 +471,36 @@ provide immutable common expression identities, detached frame-value syntax, one
 grammar, its Product event adapter, and a selected-method lexical contract envelope. That lexical surface validates
 caller-supplied physical rows and source ends; it is not yet produced by one host-owned ClrMD acquisition authority.
 
-Metadata checkpoint `5fd87a3e5` adds the following public draft proof inventory in
-`Interpreter.Product.DumpQuery`:
+The completed [metadata-authority cutover](../../plans/w8-2-metadata-authority-cutover.md) replaced the earlier
+caller-authored proof inventory. Through `d4d5f745c` the public draft surface in `Interpreter.Product.DumpQuery` is:
 
 - `MetadataSourceEndIdentity` and `MetadataSignatureTokenResolutionCatalog` freeze exact table ends, physical token
   order, same-module resolution, and prefix-free incomplete/invalid/bound outcomes;
-- `MetadataTypeSignatureDecoder`, `MetadataTypeSpecificationIdentity`, and
-  `MetadataTypeSpecificationGraphIdentity` reconstruct resolved immutable trees from shared-Core events and validate
-  TypeSpec row traversal, custom-modifier references, missing rows, duplicate keys, and cycles;
-- `MetadataRawTypeDefinitionIdentity`, `MetadataTypeDefinitionIdentity`, `MetadataTypeUseResult`, construction and
-  substitution identities separate raw rows, provisional classification, exact use, open use, and invalid evidence;
+- complete physical table catalogs for TypeDef, NestedClass, FieldPtr/MethodPtr, GenericParam, MethodDef,
+  GenericParamConstraint, TypeRef, ModuleRef, TypeSpec, AssemblyRef, File, and ExportedType rows issue guarded rows
+  only after whole-table coverage, order, range, and source-correlation proofs;
+- `MetadataDefinitionAuthorityCatalogIdentity` joins those tables into the sole TypeDef and MethodDef authority, and
+  `MetadataCompilerNameMappingCatalogIdentity` derives CLS spelling, Roslyn projection, C# addressability, and
+  evaluator admission as four independent dispositions;
+- `MetadataW7TypeDefinitionCompatibilityCatalogIdentity` and the definition-compatibility portfolio retain W7 rows as
+  comparison candidates only, and `MetadataNamedTypeDefinitionChain*` derive outer-to-inner named chains;
+- `MetadataTypeReferenceResolutionPortfolioIdentity`, `MetadataAncestryAuthorityPortfolioIdentity`, and
+  `MetadataConstraintTargetResolutionPortfolioIdentity` resolve cross-module TypeRef targets, select the physical core
+  roles, derive immediate-base edges, classify TypeDef semantics from exact immediate base-role edges alone, walk
+  bounded ancestry, and join constraint targets;
+- `MetadataTypeSignatureDecoder`, `MetadataTypeSpecificationIdentity`, `MetadataTypeSpecificationGraphIdentity`,
+  `MetadataTypeUseResult`, the closed-type and construction-segment identities, and the interface-edge aggregates
+  carry authority classification rows rather than caller-created definitions; and
 - `MetadataFieldSignatureDecodeOutcome` exposes an exact FieldSig identity only when the FieldDef, declaring TypeDef,
-  source ends, original bytes, complete projected root, and Core certificate all agree;
-- `MetadataGenericMethodDeclarationCertificateIdentity`, `MetadataGenericParameterTableCatalogIdentity`,
-  `MetadataGenericParameterOwnerSetIdentity`, and `MetadataGenericParameterBindingLedgerIdentity` retain exact-zero
-  arity, physical row order, coded-owner order, complete owner positions, and row-addressed bindings; and
-- base/interface/constraint edge identities and complete table aggregates, delegate ancestry, definition-kind
-  classification, and Nullable recognition preserve the physical heads and construction topology used by later
-  binder rules.
+  source ends, original bytes, complete projected root, and Core certificate all agree, and field substitution
+  consumes the authority-owned GenericParam binding ledger plus a compatible W7 certificate.
+
+The pre-authority identities that let a caller assert these facts — raw and classified TypeDef identities, W7
+promotion, caller-created generic owner, row, declaration, owner-set, and binding-ledger types, the W7-backed generic
+method certificate, the caller-composed base edge, and the legacy delegate-ancestry proof — are deleted. An
+assembly-wide reflection guard proves no public metadata-identity factory outside the explicit W7 compatibility
+surface accepts a W7 TypeDef candidate. `StaticFieldV2ExpressionParser` and `FrameValueV1ExpressionParser` complete
+the syntax side by projecting the single pinned Roslyn parse into the frozen detached descriptors.
 
 Direct `CLASS` and `VALUETYPE` TypeSpec roots are accepted by the shared Type grammar and pass through ordinary
 role/construction classification. No separate root-shape rule marks them invalid. W8.1's three generated evidence
