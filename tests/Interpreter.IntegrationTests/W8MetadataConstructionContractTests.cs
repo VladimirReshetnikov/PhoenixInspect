@@ -1540,6 +1540,9 @@ public sealed class W8MetadataConstructionContractTests
                 "MetadataTypeSubstitutionRequest.Root",
                 "MetadataTypeSubstitutionResult.ClosedType",
                 "MetadataTypeSubstitutionResult.Root",
+                "StaticFieldV2ClosedConstructionOutcome.FlattenedArguments",
+                "StaticFieldV2ClosedConstructionOutcome.OwnerConstruction",
+                "StaticFieldV2ConstraintCheckIdentity.Argument",
             },
             guardedProperties.Select(static property =>
                 $"{property.DeclaringType!.Name}.{property.Name}").ToArray());
