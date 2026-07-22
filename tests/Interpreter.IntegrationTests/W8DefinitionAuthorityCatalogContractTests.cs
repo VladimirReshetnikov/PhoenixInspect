@@ -348,6 +348,9 @@ public sealed class W8DefinitionAuthorityCatalogContractTests
             authority);
     }
 
+    internal static MetadataDefinitionAuthorityCatalogIdentity BuildCompatibilityAuthority(bool usePointers) =>
+        BuildScenario(usePointers).Authority;
+
     private static ImmutableArray<MetadataTypeDefinitionRowObservationIdentity> TypeDefinitionRows(
         StaticFieldMetadataModuleIdentity module,
         ModuleMutation mutation)

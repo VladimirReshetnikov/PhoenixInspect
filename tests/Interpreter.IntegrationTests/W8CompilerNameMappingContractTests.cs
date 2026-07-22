@@ -392,19 +392,27 @@ public sealed class W8CompilerNameMappingContractTests
         }
     }
 
-    private static Scenario BuildScenario(
+    internal static Scenario BuildScenario(
         bool usePointers,
         bool omitGenericParameterRows = false,
         bool invalidModuleName = false,
-        StaticFieldMetadataModuleIdentity? module = null)
+        StaticFieldMetadataModuleIdentity? module = null,
+        bool? useFieldPointers = null,
+        bool? useMethodPointers = null)
     {
         module ??= CreateMetadataModule();
+        var fieldPointersPresent = useFieldPointers ?? usePointers;
+        var methodPointersPresent = useMethodPointers ?? usePointers;
         var genericParameterRows = GenericParameterRows(module);
-        var sourceEnds = CreateSourceEnds(module, usePointers, genericParameterRows.Length);
+        var sourceEnds = CreateSourceEnds(
+            module,
+            fieldPointersPresent,
+            methodPointersPresent,
+            genericParameterRows.Length);
         var memberPointers = MetadataMemberPointerTableCatalogIdentity.Create(
             sourceEnds,
-            usePointers ? PointerRows(module, MetadataMemberPointerTableKind.Field, [2, 1]) : default,
-            usePointers ? PointerRows(module, MetadataMemberPointerTableKind.Method, [2, 1]) : default);
+            fieldPointersPresent ? PointerRows(module, MetadataMemberPointerTableKind.Field, [2, 1]) : default,
+            methodPointersPresent ? PointerRows(module, MetadataMemberPointerTableKind.Method, [2, 1]) : default);
         var typeDefinitions = MetadataTypeDefinitionTableCatalogIdentity.Create(
             sourceEnds,
             TypeDefinitionRows(module, invalidModuleName),
@@ -533,7 +541,8 @@ public sealed class W8CompilerNameMappingContractTests
 
     private static MetadataSourceEndIdentity CreateSourceEnds(
         StaticFieldMetadataModuleIdentity module,
-        bool usePointers,
+        bool useFieldPointers,
+        bool useMethodPointers,
         int genericParameterRowCount) =>
         MetadataSourceEndIdentity.Create(
             sourceModule: module,
@@ -562,11 +571,11 @@ public sealed class W8CompilerNameMappingContractTests
                 nestedClassRowCount: 3,
                 genericParameterRowCount: genericParameterRowCount,
                 genericParameterConstraintRowCount: 0,
-                fieldPointerRowCount: usePointers ? 2 : 0,
-                methodPointerRowCount: usePointers ? 2 : 0,
+                fieldPointerRowCount: useFieldPointers ? 2 : 0,
+                methodPointerRowCount: useMethodPointers ? 2 : 0,
                 parameterPointerRowCount: 0));
 
-    private static StaticFieldMetadataModuleIdentity CreateMetadataModule(
+    internal static StaticFieldMetadataModuleIdentity CreateMetadataModule(
         ulong moduleAddress = 0xA000,
         char digestCharacter = 'a')
     {
@@ -661,7 +670,7 @@ public sealed class W8CompilerNameMappingContractTests
         TypeAttributes Attributes,
         int TotalGenericArity);
 
-    private sealed record Scenario(
+    internal sealed record Scenario(
         MetadataSourceEndIdentity SourceEnds,
         MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority);
 }
