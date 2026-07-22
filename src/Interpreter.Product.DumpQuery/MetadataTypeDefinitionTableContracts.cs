@@ -167,7 +167,7 @@ public sealed class MetadataTypeDefinitionRowObservationIdentity :
     /// <param name="fieldListRowId">The physical FieldList starting row identifier.</param>
     /// <param name="methodListRowId">The physical MethodList starting row identifier.</param>
     /// <param name="namespaceName">The exact decoded namespace string, including empty.</param>
-    /// <param name="typeName">The exact decoded metadata name.</param>
+    /// <param name="typeName">The exact decoded metadata name, including an empty obfuscator-produced name.</param>
     /// <param name="typeAttributes">The exact raw TypeAttributes bits.</param>
     /// <param name="extendsMetadataToken">The decoded Extends token, or null for nil.</param>
     /// <returns>
@@ -195,7 +195,8 @@ public sealed class MetadataTypeDefinitionRowObservationIdentity :
         ExpressionV2ContractEncoding.RequireText(
             typeName,
             nameof(typeName),
-            StaticFieldMetadataTextLimits.MaximumTextLength);
+            StaticFieldMetadataTextLimits.MaximumTextLength,
+            allowEmpty: true);
         if (extendsMetadataToken.HasValue &&
             !CanonicalReplayEncoding.IsMetadataTokenForTable(extendsMetadataToken.Value, 0x01) &&
             !CanonicalReplayEncoding.IsMetadataTokenForTable(extendsMetadataToken.Value, 0x02) &&

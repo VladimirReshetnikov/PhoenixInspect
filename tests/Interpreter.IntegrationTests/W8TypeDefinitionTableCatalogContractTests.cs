@@ -32,7 +32,7 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
             methodDefinitionRows: 5);
         var observations = ImmutableArray.Create(
             Row(module, 1, fieldStart: 0, methodStart: 0, "Synthetic", "ZeroPrefix", extendsToken: null),
-            Row(module, 2, fieldStart: 1, methodStart: 1, "Synthetic", "EmptyFields", 0x02000001),
+            Row(module, 2, fieldStart: 1, methodStart: 1, "Synthetic", "", 0x02000001),
             Row(module, 3, fieldStart: 1, methodStart: 3, "Synthetic", "OwnsFirst", 0x01000002),
             Row(module, 4, fieldStart: 5, methodStart: 3, "Synthetic", "OwnsSecond", 0x1B000003),
             Row(module, 5, fieldStart: 8, methodStart: 6, "", "TerminalEmpty", extendsToken: null));
