@@ -1060,6 +1060,8 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
     private readonly ImmutableArray<MetadataGenericParameterAuthorityOwnerGroupIdentity> groups;
     private readonly ImmutableArray<MetadataGenericParameterAuthorityOwnerGroupIdentity> typeGroups;
     private readonly ImmutableArray<MetadataGenericParameterAuthorityOwnerGroupIdentity> methodGroups;
+    private readonly ImmutableDictionary<int, MetadataGenericParameterTableRowIdentity> parametersByToken;
+    private readonly ImmutableDictionary<int, MetadataGenericParameterAuthorityOwnerGroupIdentity> parameterOwnersByToken;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataGenericParameterAuthorityCatalogIdentity(
@@ -1076,6 +1078,26 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
         this.groups = ExpressionV2ContractEncoding.Copy(groups);
         this.typeGroups = ExpressionV2ContractEncoding.Copy(typeGroups);
         this.methodGroups = ExpressionV2ContractEncoding.Copy(methodGroups);
+
+        var parameterBuilder = ImmutableDictionary.CreateBuilder<int, MetadataGenericParameterTableRowIdentity>();
+        var parameterOwnerBuilder =
+            ImmutableDictionary.CreateBuilder<int, MetadataGenericParameterAuthorityOwnerGroupIdentity>();
+        foreach (var group in groups)
+        {
+            foreach (var parameter in group.ExactParameters)
+            {
+                parameterBuilder.Add(parameter.GenericParameterToken, parameter);
+                parameterOwnerBuilder.Add(parameter.GenericParameterToken, group);
+            }
+        }
+        parametersByToken = parameterBuilder.ToImmutable();
+        parameterOwnersByToken = parameterOwnerBuilder.ToImmutable();
+        if (resultKind == MetadataGenericParameterProofResultKind.Exact &&
+            parametersByToken.Count != definitionAuthority.SourceEnds.GenericParameterRowCount)
+        {
+            throw new InvalidOperationException(
+                "Exact GenericParam authority must retain one catalog-issued row for every physical GenericParam RID.");
+        }
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32((int)resultKind);
@@ -1246,6 +1268,36 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
         return methodGroups[rowId - 1];
     }
 
+    /// <summary>Finds one exact authority-issued GenericParam row by its physical metadata token.</summary>
+    /// <param name="genericParameterToken">
+    /// The non-nil GenericParam token within this catalog's exact source end.
+    /// </param>
+    /// <returns>
+    /// The exact authority-owned draft row, or null when the retained definition-authority prerequisite is not exact.
+    /// </returns>
+    /// <remarks>
+    /// This guarded draft lookup rejects the wrong metadata table and out-of-source-range tokens before consulting
+    /// derived state. A returned row therefore cannot be supplied independently of this catalog's exact authority.
+    /// </remarks>
+    public MetadataGenericParameterTableRowIdentity? FindGenericParameter(int genericParameterToken)
+    {
+        if (!CanonicalReplayEncoding.IsMetadataTokenForTable(genericParameterToken, 0x2A))
+        {
+            throw new ArgumentOutOfRangeException(nameof(genericParameterToken));
+        }
+
+        var rowId = CanonicalReplayEncoding.MetadataTokenRowId(genericParameterToken);
+        if (rowId <= 0 || rowId > SourceEnds.GenericParameterRowCount)
+        {
+            throw new ArgumentOutOfRangeException(nameof(genericParameterToken));
+        }
+
+        return ResultKind == MetadataGenericParameterProofResultKind.Exact &&
+               parametersByToken.TryGetValue(genericParameterToken, out var parameter)
+            ? parameter
+            : null;
+    }
+
     /// <summary>Tests canonical equality between two authority-owned GenericParam draft catalogs.</summary>
     /// <param name="other">The other complete draft catalog.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
@@ -1263,6 +1315,22 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
 
     internal static bool OwnsOwnerGroupMintCapability(object? capability) =>
         ReferenceEquals(capability, OwnerGroupMintCapability);
+
+    internal MetadataGenericParameterAuthorityOwnerGroupIdentity? ExactOwnerGroupOrDefault(
+        int genericParameterToken)
+    {
+        if (ResultKind != MetadataGenericParameterProofResultKind.Exact ||
+            !CanonicalReplayEncoding.IsMetadataTokenForTable(genericParameterToken, 0x2A))
+        {
+            return null;
+        }
+
+        var rowId = CanonicalReplayEncoding.MetadataTokenRowId(genericParameterToken);
+        return rowId > 0 && rowId <= SourceEnds.GenericParameterRowCount &&
+               parameterOwnersByToken.TryGetValue(genericParameterToken, out var owner)
+            ? owner
+            : null;
+    }
 
     private static long TypeOrMethodDefinitionCodedIndex(
         MetadataGenericParameterAuthorityOwnerGroupIdentity group)
