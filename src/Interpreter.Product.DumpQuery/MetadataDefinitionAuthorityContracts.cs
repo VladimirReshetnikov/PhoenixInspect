@@ -403,7 +403,7 @@ public sealed class MetadataDefinitionAuthorityCatalogIdentity :
             writer,
             methodDefinitions,
             static row => row.CanonicalBytes);
-        WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         ExpressionV2ContractEncoding.WriteOptionalInt32(writer, relatedMetadataToken);
         canonicalBytes = writer.ToImmutableArray();
@@ -856,18 +856,6 @@ public sealed class MetadataDefinitionAuthorityCatalogIdentity :
             null,
             observedCount,
             relatedMetadataToken);
-
-    private static void WriteOptionalBound(
-        CanonicalReplayEncoding.Writer writer,
-        EvaluationDeterministicBound? bound)
-    {
-        writer.WriteBoolean(bound is not null);
-        if (bound is not null)
-        {
-            writer.WriteString(bound.Name);
-            writer.WriteInt64(bound.Value);
-        }
-    }
 
     private readonly record struct PendingType(
         MetadataTypeDefinitionTableRowIdentity TableRow,

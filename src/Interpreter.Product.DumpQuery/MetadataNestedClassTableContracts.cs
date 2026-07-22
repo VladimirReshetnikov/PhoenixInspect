@@ -316,7 +316,7 @@ public sealed class MetadataNestedClassTableCatalogIdentity :
             writer,
             relations,
             static relation => relation.CanonicalBytes);
-        WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -681,18 +681,6 @@ public sealed class MetadataNestedClassTableCatalogIdentity :
         }
 
         return depths;
-    }
-
-    private static void WriteOptionalBound(
-        CanonicalReplayEncoding.Writer writer,
-        EvaluationDeterministicBound? bound)
-    {
-        writer.WriteBoolean(bound is not null);
-        if (bound is not null)
-        {
-            writer.WriteString(bound.Name);
-            writer.WriteInt64(bound.Value);
-        }
     }
 
     private static MetadataNestedClassTableCatalogIdentity NonExact(

@@ -408,7 +408,7 @@ public sealed class MetadataGenericParameterPhysicalTableCatalogIdentity :
         writer.WriteInt32((int)orderProfile);
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, rows, static row => row.CanonicalBytes);
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, owners, static owner => owner.CanonicalBytes);
-        WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -708,18 +708,6 @@ public sealed class MetadataGenericParameterPhysicalTableCatalogIdentity :
 
     internal static bool OwnsRowMintCapability(object? capability) =>
         ReferenceEquals(capability, RowMintCapability);
-
-    private static void WriteOptionalBound(
-        CanonicalReplayEncoding.Writer writer,
-        EvaluationDeterministicBound? bound)
-    {
-        writer.WriteBoolean(bound is not null);
-        if (bound is not null)
-        {
-            writer.WriteString(bound.Name);
-            writer.WriteInt64(bound.Value);
-        }
-    }
 
     private static MetadataGenericParameterPhysicalTableCatalogIdentity ExactEmpty(
         MetadataSourceEndIdentity sourceEnds) =>

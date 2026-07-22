@@ -3922,7 +3922,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, rows, static row => row.CanonicalBytes);
         writer.WriteInt32((int)resultKind);
         writer.WriteInt32((int)issue);
-        WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         WriteInt32Array(writer, duplicateRowTokens);
         WriteInt32Array(writer, duplicateSemanticRowTokens);
@@ -4106,18 +4106,6 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
         return duplicates.ToImmutableArray();
     }
 
-    private static void WriteOptionalBound(
-        CanonicalReplayEncoding.Writer writer,
-        EvaluationDeterministicBound? bound)
-    {
-        writer.WriteBoolean(bound is not null);
-        if (bound is not null)
-        {
-            writer.WriteString(bound.Name);
-            writer.WriteInt64(bound.Value);
-        }
-    }
-
     private static void WriteInt32Array(CanonicalReplayEncoding.Writer writer, ImmutableArray<int> values)
     {
         writer.WriteInt32(values.Length);
@@ -4175,7 +4163,7 @@ public sealed class MetadataGenericParameterConstraintSetIdentity :
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, rows, static row => row.CanonicalBytes);
         writer.WriteInt32((int)resultKind);
         writer.WriteInt32((int)issue);
-        WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         WriteInt32Array(writer, duplicateRowTokens);
         WriteInt32Array(writer, duplicateSemanticRowTokens);
@@ -4409,18 +4397,6 @@ public sealed class MetadataGenericParameterConstraintSetIdentity :
             }
         }
         return duplicates.ToImmutableArray();
-    }
-
-    private static void WriteOptionalBound(
-        CanonicalReplayEncoding.Writer writer,
-        EvaluationDeterministicBound? bound)
-    {
-        writer.WriteBoolean(bound is not null);
-        if (bound is not null)
-        {
-            writer.WriteString(bound.Name);
-            writer.WriteInt64(bound.Value);
-        }
     }
 
     private static void WriteInt32Array(CanonicalReplayEncoding.Writer writer, ImmutableArray<int> values)
