@@ -2161,7 +2161,9 @@ public static class StaticFieldFullyQualifiedBinder
                 exportedTypeRowCount: Reader.GetTableRowCount(TableIndex.ExportedType),
                 nestedClassRowCount: Reader.GetTableRowCount(TableIndex.NestedClass),
                 genericParameterRowCount: Reader.GetTableRowCount(TableIndex.GenericParam),
-                genericParameterConstraintRowCount: Reader.GetTableRowCount(TableIndex.GenericParamConstraint));
+                genericParameterConstraintRowCount: Reader.GetTableRowCount(TableIndex.GenericParamConstraint),
+                fieldPointerRowCount: Reader.GetTableRowCount(TableIndex.FieldPtr),
+                methodPointerRowCount: Reader.GetTableRowCount(TableIndex.MethodPtr));
 
         internal IEnumerable<(TypeDefinitionHandle TypeHandle, FieldDefinitionHandle FieldHandle)> FindFields(
             string namespaceName,

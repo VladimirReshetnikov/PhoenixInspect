@@ -1809,7 +1809,7 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
 public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-source-end-identity";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 3;
     private const int MaximumMetadataRowId = 0x00FF_FFFF;
     private readonly ImmutableArray<byte> canonicalBytes;
 
@@ -1820,7 +1820,10 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
         int typeReferenceRowEnd,
         int typeSpecificationRowEnd,
         int fieldDefinitionRowEnd,
+        int fieldPointerRowEnd,
         int methodDefinitionRowEnd,
+        int methodPointerRowEnd,
+        int nestedClassRowEnd,
         int genericParameterRowEnd,
         int interfaceImplementationRowEnd,
         int genericParameterConstraintRowEnd)
@@ -1831,7 +1834,10 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
         TypeReferenceRowCount = typeReferenceRowEnd;
         TypeSpecificationRowCount = typeSpecificationRowEnd;
         FieldDefinitionRowCount = fieldDefinitionRowEnd;
+        FieldPointerRowCount = fieldPointerRowEnd;
         MethodDefinitionRowCount = methodDefinitionRowEnd;
+        MethodPointerRowCount = methodPointerRowEnd;
+        NestedClassRowCount = nestedClassRowEnd;
         GenericParameterRowCount = genericParameterRowEnd;
         InterfaceImplementationRowCount = interfaceImplementationRowEnd;
         GenericParameterConstraintRowCount = genericParameterConstraintRowEnd;
@@ -1843,7 +1849,10 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
         writer.WriteInt32(typeReferenceRowEnd);
         writer.WriteInt32(typeSpecificationRowEnd);
         writer.WriteInt32(fieldDefinitionRowEnd);
+        writer.WriteInt32(fieldPointerRowEnd);
         writer.WriteInt32(methodDefinitionRowEnd);
+        writer.WriteInt32(methodPointerRowEnd);
+        writer.WriteInt32(nestedClassRowEnd);
         writer.WriteInt32(genericParameterRowEnd);
         writer.WriteInt32(interfaceImplementationRowEnd);
         writer.WriteInt32(genericParameterConstraintRowEnd);
@@ -1863,8 +1872,14 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
     public int TypeSpecificationRowCount { get; }
     /// <summary>Gets the exact FieldDef table row end, or zero for an empty table.</summary>
     public int FieldDefinitionRowCount { get; }
+    /// <summary>Gets the exact FieldPtr table row end, or zero when direct FieldDef list pointers are used.</summary>
+    public int FieldPointerRowCount { get; }
     /// <summary>Gets the exact MethodDef table row end, or zero for an empty table.</summary>
     public int MethodDefinitionRowCount { get; }
+    /// <summary>Gets the exact MethodPtr table row end, or zero when direct MethodDef list pointers are used.</summary>
+    public int MethodPointerRowCount { get; }
+    /// <summary>Gets the exact NestedClass table row end, or zero for an empty table.</summary>
+    public int NestedClassRowCount { get; }
     /// <summary>Gets the exact GenericParam table row end, or zero for an empty table.</summary>
     public int GenericParameterRowCount { get; }
     /// <summary>Gets the exact InterfaceImpl table row end, or zero for an empty table.</summary>
@@ -1896,7 +1911,10 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
             sourceModuleFact.TypeReferenceRowCount is not { } typeReferenceRowEnd ||
             sourceModuleFact.TypeSpecificationRowCount is not { } typeSpecificationRowEnd ||
             sourceModuleFact.FieldDefinitionRowCount is not { } fieldDefinitionRowEnd ||
+            sourceModuleFact.FieldPointerRowCount is not { } fieldPointerRowEnd ||
             sourceModuleFact.MethodDefinitionRowCount is not { } methodDefinitionRowEnd ||
+            sourceModuleFact.MethodPointerRowCount is not { } methodPointerRowEnd ||
+            sourceModuleFact.NestedClassRowCount is not { } nestedClassRowEnd ||
             sourceModuleFact.GenericParameterRowCount is not { } genericParameterRowEnd ||
             sourceModuleFact.InterfaceImplementationRowCount is not { } interfaceImplementationRowEnd ||
             sourceModuleFact.GenericParameterConstraintRowCount is not { } genericParameterConstraintRowEnd)
@@ -1912,7 +1930,10 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
             typeReferenceRowEnd,
             typeSpecificationRowEnd,
             fieldDefinitionRowEnd,
+            fieldPointerRowEnd,
             methodDefinitionRowEnd,
+            methodPointerRowEnd,
+            nestedClassRowEnd,
             genericParameterRowEnd,
             interfaceImplementationRowEnd,
             genericParameterConstraintRowEnd,
@@ -1931,7 +1952,10 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
             typeReferenceRowEnd,
             typeSpecificationRowEnd,
             fieldDefinitionRowEnd,
+            fieldPointerRowEnd,
             methodDefinitionRowEnd,
+            methodPointerRowEnd,
+            nestedClassRowEnd,
             genericParameterRowEnd,
             interfaceImplementationRowEnd,
             genericParameterConstraintRowEnd);
@@ -1962,17 +1986,29 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
         };
     }
 
-    internal bool ContainsTypeDefinitionToken(int token) =>
-        CanonicalReplayEncoding.IsMetadataTokenForTable(token, 0x02) &&
-        CanonicalReplayEncoding.MetadataTokenRowId(token) <= TypeDefinitionRowCount;
+    internal bool ContainsTypeDefinitionToken(int token)
+    {
+        var rowId = CanonicalReplayEncoding.MetadataTokenRowId(token);
+        return CanonicalReplayEncoding.IsMetadataTokenForTable(token, 0x02) &&
+               rowId > 0 &&
+               rowId <= TypeDefinitionRowCount;
+    }
 
-    internal bool ContainsMethodDefinitionToken(int token) =>
-        CanonicalReplayEncoding.IsMetadataTokenForTable(token, 0x06) &&
-        CanonicalReplayEncoding.MetadataTokenRowId(token) <= MethodDefinitionRowCount;
+    internal bool ContainsMethodDefinitionToken(int token)
+    {
+        var rowId = CanonicalReplayEncoding.MetadataTokenRowId(token);
+        return CanonicalReplayEncoding.IsMetadataTokenForTable(token, 0x06) &&
+               rowId > 0 &&
+               rowId <= MethodDefinitionRowCount;
+    }
 
-    internal bool ContainsGenericParameterToken(int token) =>
-        CanonicalReplayEncoding.IsMetadataTokenForTable(token, 0x2A) &&
-        CanonicalReplayEncoding.MetadataTokenRowId(token) <= GenericParameterRowCount;
+    internal bool ContainsGenericParameterToken(int token)
+    {
+        var rowId = CanonicalReplayEncoding.MetadataTokenRowId(token);
+        return CanonicalReplayEncoding.IsMetadataTokenForTable(token, 0x2A) &&
+               rowId > 0 &&
+               rowId <= GenericParameterRowCount;
+    }
 }
 
 /// <summary>Resolves one source-module TypeDefOrRef token occurrence for deterministic signature decoding.</summary>

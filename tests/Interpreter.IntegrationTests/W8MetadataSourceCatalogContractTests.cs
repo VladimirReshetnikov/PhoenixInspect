@@ -29,7 +29,10 @@ public sealed class W8MetadataSourceCatalogContractTests
             methodDefinitionRows: 29,
             genericParameterRows: 31,
             interfaceImplementationRows: 37,
-            genericParameterConstraintRows: 41);
+            genericParameterConstraintRows: 41,
+            nestedClassRows: 43,
+            fieldPointerRows: 47,
+            methodPointerRows: 53);
 
         var sourceEnds = MetadataSourceEndIdentity.Create(module, fact);
 
@@ -40,7 +43,10 @@ public sealed class W8MetadataSourceCatalogContractTests
         Assert.Equal(17, sourceEnds.TypeReferenceRowCount);
         Assert.Equal(19, sourceEnds.TypeSpecificationRowCount);
         Assert.Equal(23, sourceEnds.FieldDefinitionRowCount);
+        Assert.Equal(47, sourceEnds.FieldPointerRowCount);
         Assert.Equal(29, sourceEnds.MethodDefinitionRowCount);
+        Assert.Equal(53, sourceEnds.MethodPointerRowCount);
+        Assert.Equal(43, sourceEnds.NestedClassRowCount);
         Assert.Equal(31, sourceEnds.GenericParameterRowCount);
         Assert.Equal(37, sourceEnds.InterfaceImplementationRowCount);
         Assert.Equal(41, sourceEnds.GenericParameterConstraintRowCount);
@@ -196,6 +202,12 @@ public sealed class W8MetadataSourceCatalogContractTests
         Assert.Contains(
             FrameValueV1Limits.AllDeclaredBounds,
             static bound => bound.Name == ExpressionV2ContractLimits.GenericParameterConstraintRowCountBoundName);
+        Assert.Contains(
+            StaticFieldV2Limits.AllDeclaredBounds,
+            static bound => bound.Name == ExpressionV2ContractLimits.NestedClassRowCountBoundName);
+        Assert.Contains(
+            FrameValueV1Limits.AllDeclaredBounds,
+            static bound => bound.Name == ExpressionV2ContractLimits.NestedClassRowCountBoundName);
     }
 
     /// <summary>Proves new draft source-catalog types document public static and instance methods in emitted XML.</summary>
@@ -250,7 +262,10 @@ public sealed class W8MetadataSourceCatalogContractTests
         int methodDefinitionRows = 16,
         int genericParameterRows = 16,
         int interfaceImplementationRows = 16,
-        int genericParameterConstraintRows = 16) =>
+        int genericParameterConstraintRows = 16,
+        int nestedClassRows = 16,
+        int fieldPointerRows = 0,
+        int methodPointerRows = 0) =>
         MetadataSourceEndIdentity.Create(
             module,
             CreateExactFact(
@@ -262,7 +277,10 @@ public sealed class W8MetadataSourceCatalogContractTests
                 methodDefinitionRows,
                 genericParameterRows,
                 interfaceImplementationRows,
-                genericParameterConstraintRows));
+                genericParameterConstraintRows,
+                nestedClassRows,
+                fieldPointerRows,
+                methodPointerRows));
 
     private static StaticFieldModuleSearchFact CreateExactFact(
         StaticFieldMetadataModuleIdentity module,
@@ -273,7 +291,10 @@ public sealed class W8MetadataSourceCatalogContractTests
         int methodDefinitionRows = 16,
         int genericParameterRows = 16,
         int interfaceImplementationRows = 16,
-        int genericParameterConstraintRows = 16) =>
+        int genericParameterConstraintRows = 16,
+        int nestedClassRows = 16,
+        int fieldPointerRows = 0,
+        int methodPointerRows = 0) =>
         StaticFieldModuleSearchFact.Exact(
             module.Module,
             module.ModuleContent,
@@ -284,9 +305,12 @@ public sealed class W8MetadataSourceCatalogContractTests
             typeReferenceRowCount: typeReferenceRows,
             typeSpecificationRowCount: typeSpecificationRows,
             methodDefinitionRowCount: methodDefinitionRows,
+            nestedClassRowCount: nestedClassRows,
             interfaceImplementationRowCount: interfaceImplementationRows,
             genericParameterRowCount: genericParameterRows,
-            genericParameterConstraintRowCount: genericParameterConstraintRows);
+            genericParameterConstraintRowCount: genericParameterConstraintRows,
+            fieldPointerRowCount: fieldPointerRows,
+            methodPointerRowCount: methodPointerRows);
 
     private static StaticFieldMetadataModuleIdentity CreateMetadataModule(
         ulong moduleAddress = 0x2000,

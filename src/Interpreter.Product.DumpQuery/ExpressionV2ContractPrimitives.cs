@@ -83,6 +83,9 @@ public static class ExpressionV2ContractLimits
     /// <summary>Gets the maximum TypeDef-row count examined in one metadata table.</summary>
     public const int MaximumTypeDefinitionRowCount = 65_536;
 
+    /// <summary>Gets the maximum NestedClass-row count examined in one complete metadata table.</summary>
+    public const int MaximumNestedClassRowCount = 65_536;
+
     /// <summary>Gets the maximum Field-row count examined in one metadata table.</summary>
     public const int MaximumFieldDefinitionRowCount = 65_536;
 
@@ -201,6 +204,7 @@ public static class ExpressionV2ContractLimits
     internal const string ConstructedAncestryDepthBoundName = "expression-v2.metadata.ancestry-depth";
     internal const string ModuleCountBoundName = "expression-v2.metadata.modules";
     internal const string TypeDefinitionRowCountBoundName = "expression-v2.metadata.typedef-rows";
+    internal const string NestedClassRowCountBoundName = "expression-v2.metadata.nestedclass-rows";
     internal const string FieldDefinitionRowCountBoundName = "expression-v2.metadata.field-rows";
     internal const string InterfaceImplementationRowCountBoundName = "expression-v2.metadata.interfaceimpl-rows";
     internal const string GenericParameterRowCountBoundName = "expression-v2.metadata.genericparam-rows";
@@ -273,6 +277,7 @@ public static class ExpressionV2ContractLimits
             new EvaluationDeterministicBound(NameCandidateOccurrenceCountBoundName, MaximumNameCandidateOccurrenceCount),
             new EvaluationDeterministicBound(NamespaceLevelCountBoundName, MaximumNamespaceLevelCount),
             new EvaluationDeterministicBound(NestedTypeDefinitionDepthBoundName, MaximumNestedTypeDefinitionDepth),
+            new EvaluationDeterministicBound(NestedClassRowCountBoundName, MaximumNestedClassRowCount),
             new EvaluationDeterministicBound(ParameterCountBoundName, MaximumParameterCount),
             new EvaluationDeterministicBound(PortableExecutableSectionCountBoundName, MaximumPortableExecutableSectionCount),
             new EvaluationDeterministicBound(RuntimeConstructionCountBoundName, MaximumRuntimeConstructionCount),
@@ -369,6 +374,9 @@ public static class StaticFieldV2Limits
 
     /// <summary>Gets the maximum TypeDef-row count examined in one metadata table.</summary>
     public const int MaximumTypeDefinitionRowCount = ExpressionV2ContractLimits.MaximumTypeDefinitionRowCount;
+
+    /// <summary>Gets the maximum NestedClass-row count examined in one complete metadata table.</summary>
+    public const int MaximumNestedClassRowCount = ExpressionV2ContractLimits.MaximumNestedClassRowCount;
 
     /// <summary>Gets the maximum Field-row count examined in one metadata table.</summary>
     public const int MaximumFieldDefinitionRowCount = ExpressionV2ContractLimits.MaximumFieldDefinitionRowCount;
@@ -507,6 +515,9 @@ public static class FrameValueV1Limits
     public const int MaximumSignatureTokenResolutionCount =
         ExpressionV2ContractLimits.MaximumSignatureTokenResolutionCount;
 
+    /// <summary>Gets the maximum TypeDef-row count examined for metadata type context.</summary>
+    public const int MaximumTypeDefinitionRowCount = ExpressionV2ContractLimits.MaximumTypeDefinitionRowCount;
+
     /// <summary>Gets the maximum InterfaceImpl-row count examined for metadata type relations.</summary>
     public const int MaximumInterfaceImplementationRowCount =
         ExpressionV2ContractLimits.MaximumInterfaceImplementationRowCount;
@@ -514,6 +525,9 @@ public static class FrameValueV1Limits
     /// <summary>Gets the maximum GenericParam-row count examined for metadata type context.</summary>
     public const int MaximumGenericParameterRowCount =
         ExpressionV2ContractLimits.MaximumGenericParameterRowCount;
+
+    /// <summary>Gets the maximum NestedClass-row count examined for metadata type context.</summary>
+    public const int MaximumNestedClassRowCount = ExpressionV2ContractLimits.MaximumNestedClassRowCount;
 
     /// <summary>Gets the maximum GenericParamConstraint-row count examined for metadata type context.</summary>
     public const int MaximumGenericParameterConstraintRowCount =
@@ -588,7 +602,9 @@ public static class FrameValueV1Limits
                     ExpressionV2ContractLimits.RawTypeSignatureNodeCountBoundName or
                     ExpressionV2ContractLimits.SignatureTokenResolutionCountBoundName or
                     ExpressionV2ContractLimits.TypeSpecificationRowTraversalCountBoundName or
+                    ExpressionV2ContractLimits.TypeDefinitionRowCountBoundName or
                     ExpressionV2ContractLimits.InterfaceImplementationRowCountBoundName or
+                    ExpressionV2ContractLimits.NestedClassRowCountBoundName or
                     ExpressionV2ContractLimits.GenericParameterConstraintRowCountBoundName or
                     ExpressionV2ContractLimits.GenericParameterRowCountBoundName or
                     ExpressionV2ContractLimits.ArrayRankBoundName or
