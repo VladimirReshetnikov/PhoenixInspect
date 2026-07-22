@@ -300,7 +300,7 @@ public sealed class MetadataMemberPointerTableCatalogIdentity :
         writer.WriteLengthPrefixedBytes(sourceEnds.CanonicalBytes.AsSpan());
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, fieldRows, static row => row.CanonicalBytes);
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, methodRows, static row => row.CanonicalBytes);
-        MetadataGenericParameterOwnerDeclarationIdentity.WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());

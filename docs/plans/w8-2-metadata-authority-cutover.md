@@ -133,12 +133,18 @@ Those values feed four dispositions rather than one overloaded status:
 3. **C# source-name addressability** records whether the projected simple name can be represented by the admitted
    source syntax. A retained raw name containing a backtick is ordinarily not addressable, while a generic physical
    type named plain `G` can remain addressable as Roslyn name `G`, arity 1, and unmangled even though its CLS spelling
-   is noncanonical.
+   is noncanonical. Reserved keywords use a verbatim `@` spelling, contextual keywords remain directly spellable, and
+   metadata names containing Unicode format characters that Roslyn drops while parsing are not exactly addressable.
 4. **Evaluator admission** applies operation bounds after the physical and name-projection facts are complete.
 
 A top-level introduced arity equals total arity. A nested introduced arity is `child total - parent total` when that
 delta is nonnegative. A nested segment under a generic parent may introduce zero parameters and omit a suffix.
 Parameter names are not used to match redeclared positions.
+
+The complete mapping catalog is the sole issuer of mapping identities. It consumes one definition-authority outcome,
+selects each TypeDef and its immediate parent from that authority, and emits one RID-ordered mapping outcome per TypeDef.
+A non-exact or invalid authority exposes no mapping prefix. A completely projected catalog remains exact when an
+individual nested row has a non-exact arity mapping, because the row-level stop is itself the complete derived result.
 
 Malformed suffixes, leading-zero suffixes, suffix/delta disagreement, or `child total < parent total` never erase the
 physical TypeDef. They affect only the applicable CLS, Roslyn, source-addressability, or admission disposition.
@@ -206,8 +212,8 @@ examples:
 | `2ba2db3dd` | Exact Param and ParamPtr source ends join the MethodDef catalog to the complete metadata source identity. |
 | `3de41dce4` | The definition-authority join issues TypeDef and MethodDef authority rows, and independent compiler-name facts cover CLS spelling, Roslyn projection, C# spelling, and evaluator admission. |
 
-Authority-binding for compiler-name mappings, legacy W8 issuer removal, and downstream-consumer migration remain active
-until their own pushed checkpoints and verification records land.
+Legacy W8 issuer removal and downstream-consumer migration remain active until their own pushed checkpoints and
+verification records land.
 
 ## 11. Exit gate
 

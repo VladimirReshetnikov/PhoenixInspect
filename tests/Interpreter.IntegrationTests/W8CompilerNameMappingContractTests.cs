@@ -2,168 +2,115 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
+using Interpreter.Core.Abstractions;
 using Interpreter.Product.DumpQuery;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace Interpreter.IntegrationTests;
 
-/// <summary>Exercises non-conflated draft compiler-name facts with a broad synthetic metadata-name matrix.</summary>
+/// <summary>Exercises definition-authority-bound draft compiler-name mapping with synthetic metadata modules.</summary>
 public sealed class W8CompilerNameMappingContractTests
 {
+    private const string SnapshotDigest =
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    private const int ModuleTypeRid = 1;
+    private const int OuterTypeRid = 2;
+    private const int EqualTypeRid = 3;
+    private const int DeltaTypeRid = 4;
+    private const int UnderflowTypeRid = 5;
+    private const int WideTypeRid = 6;
+    private const int WiderTypeRid = 7;
+    private const int DroppedNonJoinerTypeRid = 8;
+    private const int DroppedJoinerTypeRid = 9;
+    private const int KeywordTypeRid = 10;
+    private const int EarlierBacktickTypeRid = 11;
+    private const int PlainGenericTypeRid = 12;
+    private const int MismatchedSuffixTypeRid = 13;
+
+    private static readonly ImmutableArray<TypeShape> TypeShapes =
+    [
+        new(ModuleTypeRid, string.Empty, "<Module>", TypeAttributes.NotPublic, 0),
+        new(OuterTypeRid, "Synthetic.Mapping", "Outer`2", TypeAttributes.Public, 2),
+        new(EqualTypeRid, string.Empty, "Equal", TypeAttributes.NestedPublic, 2),
+        new(DeltaTypeRid, string.Empty, "Delta`1", TypeAttributes.NestedPublic, 3),
+        new(UnderflowTypeRid, string.Empty, "Underflow`1", TypeAttributes.NestedPublic, 1),
+        new(WideTypeRid, "Synthetic.Mapping", "WideA`64", TypeAttributes.Public, 64),
+        new(WiderTypeRid, "Synthetic.Mapping", "WideB`65", TypeAttributes.Public, 65),
+        new(DroppedNonJoinerTypeRid, "Synthetic.Mapping", "A\u200C", TypeAttributes.Public, 0),
+        new(DroppedJoinerTypeRid, "Synthetic.Mapping", "A\u200D", TypeAttributes.Public, 0),
+        new(KeywordTypeRid, "Synthetic.Mapping", "class", TypeAttributes.Public, 0),
+        new(EarlierBacktickTypeRid, "Synthetic.Mapping", "G`1`2", TypeAttributes.Public, 2),
+        new(PlainGenericTypeRid, "Synthetic.Mapping", "PlainGeneric", TypeAttributes.Public, 1),
+        new(MismatchedSuffixTypeRid, "Synthetic.Mapping", "Mismatch`2", TypeAttributes.Public, 1),
+    ];
+
     /// <summary>
-    /// Proves strict CLS spelling, Roslyn suffix removal, C# addressability, and evaluator admission remain independent
-    /// across valid, unusual, and malformed synthetic metadata names.
+    /// Proves one exact direct or pointer authority produces RID-ordered mappings tied to the exact subject and parent
+    /// rows while keeping compiler spelling, source addressability, and evaluator admission independent.
     /// </summary>
-    [Fact]
+    /// <param name="usePointers">Whether TypeDef ownership uses complete reordered FieldPtr and MethodPtr rows.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     [Trait("Category", "Fast")]
-    public void Complete_projection_matrix_keeps_four_dispositions_independent()
+    public void Exact_catalog_binds_every_mapping_to_its_physical_definition_authority(bool usePointers)
     {
-        var cases = new[]
+        var scenario = BuildScenario(usePointers);
+        var catalog = MetadataCompilerNameMappingCatalogIdentity.Create(scenario.DefinitionAuthority);
+
+        Assert.Equal(MetadataDefinitionAuthorityResultKind.Exact, scenario.DefinitionAuthority.ResultKind);
+        Assert.Equal(MetadataCompilerNameMappingCatalogResultKind.Exact, catalog.ResultKind);
+        Assert.Equal(MetadataCompilerNameMappingCatalogIssue.None, catalog.Issue);
+        Assert.Same(scenario.DefinitionAuthority, catalog.DefinitionAuthority);
+        Assert.Equal(TypeShapes.Length, catalog.Mappings.Length);
+        Assert.Equal(
+            Enumerable.Range(1, TypeShapes.Length).Select(TypeToken),
+            catalog.Mappings.Select(static mapping => mapping.TypeDefinition.TypeDefinitionToken));
+
+        for (var index = 0; index < catalog.Mappings.Length; index++)
         {
-            Case("canonical-one", "G`1", 1, true, "G", true, true, false, "G", true),
-            Case("plain-generic", "G", 1, false, "G", false, true, false, "G", true),
-            Case("suffix-mismatch", "G`2", 1, false, "G`2", false, false, false, null, true),
-            Case("zero-suffix", "G`0", 1, false, "G`0", false, false, false, null, true),
-            Case("leading-zero", "G`01", 1, false, "G`01", false, false, false, null, true),
-            Case("empty-prefix", "`1", 1, false, "`1", false, false, false, null, true),
-            Case("non-ascii-digit", "G`١", 1, false, "G`١", false, false, false, null, true),
-            Case("plus-sign", "G`+1", 1, false, "G`+1", false, false, false, null, true),
-            Case("minus-sign", "G`-1", 1, false, "G`-1", false, false, false, null, true),
-            Case("leading-space", "G` 1", 1, false, "G` 1", false, false, false, null, true),
-            Case("trailing-space", "G`1 ", 1, false, "G`1 ", false, false, false, null, true),
-            Case("trailing-backtick", "G`", 1, false, "G`", false, false, false, null, true),
-            Case("five-digit-maximum", "G`32767", 32_767, true, "G", true, true, false, "G", false),
-            Case("roslyn-overflow", "G`32768", 32_768, false, "G`32768", false, false, false, null, false),
-            Case("six-digits", "G`000001", 1, false, "G`000001", false, false, false, null, true),
-            Case("mixed-suffix", "G`1x", 1, false, "G`1x", false, false, false, null, true),
-            Case("earlier-backtick", "G`1`2", 2, false, "G`1", true, false, false, null, true),
-            Case("plain-nongeneric", "Plain", 0, true, "Plain", false, true, false, "Plain", true),
-            Case("empty-name", "", 0, true, "", false, false, false, null, true),
-            Case("unexpected-nongeneric-suffix", "Odd`1", 0, false, "Odd`1", false, false, false, null, true),
-            Case("reserved-keyword", "class", 0, true, "class", false, true, true, "@class", true),
-            Case("contextual-record", "record", 0, true, "record", false, true, false, "record", true),
-            Case("contextual-await", "await", 0, true, "await", false, true, false, "await", true),
-            Case("greek-letter", "Δ", 0, true, "Δ", false, true, false, "Δ", true),
-            Case("combining-mark", "A\u0301", 0, true, "A\u0301", false, true, false, "A\u0301", true),
-            Case("dropped-zero-width-non-joiner", "A\u200C", 0, true, "A\u200C", false, false, false, null, true),
-            Case("dropped-zero-width-joiner", "A\u200D", 0, true, "A\u200D", false, false, false, null, true),
-            Case("underscore", "_", 0, true, "_", false, true, false, "_", true),
-            Case("generated-angle-name", "<Generated>", 0, true, "<Generated>", false, false, false, null, true),
-            Case("supplementary-symbol", "😀", 0, true, "😀", false, false, false, null, true),
-            Case("qualified-text", "A.B", 0, true, "A.B", false, false, false, null, true),
-            Case("embedded-space", "A B", 0, true, "A B", false, false, false, null, true),
-        };
-
-        foreach (var item in cases)
-        {
-            var mapping = MetadataCompilerNameMappingIdentity.Derive(
-                item.RawMetadataName,
-                item.TotalGenericArity);
-
-            Assert.Equal(MetadataCompilerNameMappingResultKind.Exact, mapping.ResultKind);
-            Assert.Equal(MetadataCompilerNameMappingIssue.None, mapping.Issue);
-            Assert.Equal(item.TotalGenericArity, mapping.IntroducedGenericArity);
-            Assert.Equal(item.RawMetadataName, mapping.Input.RawMetadataName);
-            Assert.Equal(item.TotalGenericArity, mapping.Input.TotalGenericArity);
-            Assert.Null(mapping.Input.EnclosingTotalGenericArity);
-            Assert.False(mapping.Input.IsNested);
-
-            var cls = Assert.IsType<MetadataClsAritySpellingIdentity>(mapping.ClsAritySpelling);
-            Assert.Equal(
-                item.ClsCanonical
-                    ? MetadataClsAritySpellingStatus.Canonical
-                    : MetadataClsAritySpellingStatus.NonCanonical,
-                cls.Status);
-            Assert.Equal(item.ClsCanonical, cls.IsCanonical);
-            Assert.Equal(item.TotalGenericArity, cls.IntroducedGenericArity);
-
-            var projection = Assert.IsType<MetadataRoslynNameProjectionIdentity>(mapping.RoslynProjection);
-            Assert.Equal(item.ProjectedSimpleName, projection.ProjectedSimpleName);
-            Assert.Equal(item.RemovedSuffix, projection.WasTerminalAritySuffixRemoved);
-            Assert.Equal(
-                item.RemovedSuffix
-                    ? MetadataRoslynNameProjectionStatus.TerminalAritySuffixRemoved
-                    : MetadataRoslynNameProjectionStatus.RawMetadataNameRetained,
-                projection.Status);
-
-            var addressability = Assert.IsType<MetadataCSharpSimpleNameAddressabilityIdentity>(
-                mapping.CSharpAddressability);
-            Assert.Equal(item.Addressable, addressability.IsAddressable);
-            Assert.Equal(
-                item.Addressable
-                    ? MetadataCSharpSimpleNameAddressabilityStatus.Addressable
-                    : MetadataCSharpSimpleNameAddressabilityStatus.NotAddressable,
-                addressability.Status);
-            Assert.True(
-                item.RequiresVerbatimEscape == addressability.RequiresVerbatimEscape,
-                $"Case '{item.Label}' expected RequiresVerbatimEscape={item.RequiresVerbatimEscape} " +
-                $"but observed {addressability.RequiresVerbatimEscape}.");
-            Assert.Equal(item.SourceSpelling, addressability.SourceSpelling);
-
-            var admission = Assert.IsType<MetadataEvaluatorGenericArityAdmissionIdentity>(
-                mapping.EvaluatorAdmission);
-            Assert.Equal(item.Admitted, admission.IsAdmitted);
-            Assert.Equal(item.TotalGenericArity, admission.ObservedTotalGenericArity);
-            Assert.Equal(64, admission.MaximumAdmittedTotalGenericArity);
+            var mapping = catalog.Mappings[index];
+            Assert.Same(scenario.DefinitionAuthority.TypeDefinitions[index], mapping.TypeDefinition);
+            Assert.Same(mapping.TypeDefinition, mapping.Input.TypeDefinition);
+            Assert.Same(mapping.EnclosingTypeDefinition, mapping.Input.EnclosingTypeDefinition);
+            Assert.Same(mapping, catalog.CompleteMappingOrDefault(TypeToken(index + 1)));
         }
+        Assert.Null(catalog.CompleteMappingOrDefault(MethodToken(1)));
+        Assert.Null(catalog.CompleteMappingOrDefault(TypeToken(TypeShapes.Length + 1)));
 
-        Assert.True(SyntaxFacts.IsValidIdentifier("class"));
-        Assert.NotEqual(SyntaxKind.None, SyntaxFacts.GetKeywordKind("class"));
-        Assert.True(SyntaxFacts.IsValidIdentifier("record"));
-        Assert.NotEqual(SyntaxKind.None, SyntaxFacts.GetContextualKeywordKind("record"));
-        Assert.True(SyntaxFacts.IsValidIdentifier("await"));
-        Assert.NotEqual(SyntaxKind.None, SyntaxFacts.GetContextualKeywordKind("await"));
-        Assert.True(SyntaxFacts.IsValidIdentifier("A\u200C"));
-        Assert.True(SyntaxFacts.IsValidIdentifier("A\u200D"));
-    }
+        var module = Mapping(catalog, ModuleTypeRid);
+        Assert.Null(module.EnclosingTypeDefinition);
+        Assert.Null(module.Input.EnclosingTotalGenericArity);
+        Assert.Equal(0, module.IntroducedGenericArity);
+        Assert.False(module.CSharpAddressability!.IsAddressable);
 
-    /// <summary>
-    /// Proves top-level, equal-arity nested, introducing nested, and underflowing nested segments preserve physical
-    /// input while distinguishing exact projections from a non-exact mapping stop.
-    /// </summary>
-    [Fact]
-    [Trait("Category", "Fast")]
-    public void Nested_arity_chain_derives_delta_and_erases_no_physical_input_on_underflow()
-    {
-        var outer = MetadataCompilerNameMappingIdentity.Derive("Outer`2", 2);
-        var inner = MetadataCompilerNameMappingIdentity.Derive("Inner", 2, enclosingTotalGenericArity: 2);
-        var leaf = MetadataCompilerNameMappingIdentity.Derive("Leaf`1", 3, enclosingTotalGenericArity: 2);
-        var zeroWithSuffix = MetadataCompilerNameMappingIdentity.Derive(
-            "Unexpected`1",
-            3,
-            enclosingTotalGenericArity: 3);
-        var underflow = MetadataCompilerNameMappingIdentity.Derive(
-            "Broken`1",
-            1,
-            enclosingTotalGenericArity: 2);
-
+        var outer = Mapping(catalog, OuterTypeRid);
         Assert.Equal(2, outer.IntroducedGenericArity);
         Assert.Equal("Outer", outer.RoslynProjection!.ProjectedSimpleName);
         Assert.True(outer.ClsAritySpelling!.IsCanonical);
+        Assert.Null(outer.EnclosingTypeDefinition);
 
-        Assert.Equal(0, inner.IntroducedGenericArity);
-        Assert.True(inner.Input.IsNested);
-        Assert.Equal(2, inner.Input.EnclosingTotalGenericArity);
-        Assert.Equal("Inner", inner.RoslynProjection!.ProjectedSimpleName);
-        Assert.False(inner.RoslynProjection.WasTerminalAritySuffixRemoved);
-        Assert.True(inner.ClsAritySpelling!.IsCanonical);
+        var equal = Mapping(catalog, EqualTypeRid);
+        Assert.Same(scenario.DefinitionAuthority.TypeDefinitions[OuterTypeRid - 1], equal.EnclosingTypeDefinition);
+        Assert.Equal(2, equal.Input.TotalGenericArity);
+        Assert.Equal(2, equal.Input.EnclosingTotalGenericArity);
+        Assert.Equal(0, equal.IntroducedGenericArity);
+        Assert.Equal("Equal", equal.RoslynProjection!.ProjectedSimpleName);
+        Assert.True(equal.ClsAritySpelling!.IsCanonical);
 
-        Assert.Equal(1, leaf.IntroducedGenericArity);
-        Assert.Equal(3, leaf.Input.TotalGenericArity);
-        Assert.Equal("Leaf", leaf.RoslynProjection!.ProjectedSimpleName);
-        Assert.True(leaf.RoslynProjection.WasTerminalAritySuffixRemoved);
-        Assert.True(leaf.ClsAritySpelling!.IsCanonical);
+        var delta = Mapping(catalog, DeltaTypeRid);
+        Assert.Same(equal.EnclosingTypeDefinition, delta.EnclosingTypeDefinition);
+        Assert.Equal(3, delta.Input.TotalGenericArity);
+        Assert.Equal(2, delta.Input.EnclosingTotalGenericArity);
+        Assert.Equal(1, delta.IntroducedGenericArity);
+        Assert.Equal("Delta", delta.RoslynProjection!.ProjectedSimpleName);
+        Assert.True(delta.RoslynProjection.WasTerminalAritySuffixRemoved);
 
-        Assert.Equal(0, zeroWithSuffix.IntroducedGenericArity);
-        Assert.False(zeroWithSuffix.ClsAritySpelling!.IsCanonical);
-        Assert.Equal("Unexpected`1", zeroWithSuffix.RoslynProjection!.ProjectedSimpleName);
-        Assert.False(zeroWithSuffix.RoslynProjection.WasTerminalAritySuffixRemoved);
-        Assert.False(zeroWithSuffix.CSharpAddressability!.IsAddressable);
-
+        var underflow = Mapping(catalog, UnderflowTypeRid);
         Assert.Equal(MetadataCompilerNameMappingResultKind.NonExact, underflow.ResultKind);
         Assert.Equal(MetadataCompilerNameMappingIssue.NestedTotalArityUnderflow, underflow.Issue);
-        Assert.Equal("Broken`1", underflow.Input.RawMetadataName);
+        Assert.Same(delta.EnclosingTypeDefinition, underflow.EnclosingTypeDefinition);
         Assert.Equal(1, underflow.Input.TotalGenericArity);
         Assert.Equal(2, underflow.Input.EnclosingTotalGenericArity);
         Assert.Null(underflow.IntroducedGenericArity);
@@ -171,108 +118,235 @@ public sealed class W8CompilerNameMappingContractTests
         Assert.Null(underflow.RoslynProjection);
         Assert.Null(underflow.CSharpAddressability);
         Assert.Null(underflow.EvaluatorAdmission);
-    }
 
-    /// <summary>
-    /// Proves the evaluator's arity ceiling is applied after complete physical, CLS, Roslyn, and source-name facts.
-    /// </summary>
-    [Fact]
-    [Trait("Category", "Fast")]
-    public void Arity_sixty_five_remains_an_exact_mapping_but_is_not_evaluator_admitted()
-    {
-        var atLimit = MetadataCompilerNameMappingIdentity.Derive("Wide`64", 64);
-        var overLimit = MetadataCompilerNameMappingIdentity.Derive("Wider`65", 65);
+        var wide = Mapping(catalog, WideTypeRid);
+        Assert.Equal(MetadataCompilerNameMappingResultKind.Exact, wide.ResultKind);
+        Assert.Equal(64, wide.Input.TypeDefinition.GenericParameters.Length);
+        Assert.True(wide.EvaluatorAdmission!.IsAdmitted);
+        Assert.Equal("WideA", wide.RoslynProjection!.ProjectedSimpleName);
 
-        Assert.Equal(MetadataCompilerNameMappingResultKind.Exact, atLimit.ResultKind);
-        Assert.True(atLimit.ClsAritySpelling!.IsCanonical);
-        Assert.Equal("Wide", atLimit.RoslynProjection!.ProjectedSimpleName);
-        Assert.True(atLimit.CSharpAddressability!.IsAddressable);
-        Assert.True(atLimit.EvaluatorAdmission!.IsAdmitted);
+        var wider = Mapping(catalog, WiderTypeRid);
+        Assert.Equal(MetadataCompilerNameMappingResultKind.Exact, wider.ResultKind);
+        Assert.Equal(65, wider.Input.TypeDefinition.GenericParameters.Length);
+        Assert.Equal(65, wider.IntroducedGenericArity);
+        Assert.Equal(MetadataEvaluatorGenericArityAdmissionStatus.TotalArityLimitExceeded,
+            wider.EvaluatorAdmission!.Status);
+        Assert.False(wider.EvaluatorAdmission.IsAdmitted);
+        Assert.Equal(64, wider.EvaluatorAdmission.MaximumAdmittedTotalGenericArity);
+        Assert.Equal("WideB", wider.RoslynProjection!.ProjectedSimpleName);
 
-        Assert.Equal(MetadataCompilerNameMappingResultKind.Exact, overLimit.ResultKind);
-        Assert.Equal(MetadataCompilerNameMappingIssue.None, overLimit.Issue);
-        Assert.Equal(65, overLimit.IntroducedGenericArity);
-        Assert.True(overLimit.ClsAritySpelling!.IsCanonical);
-        Assert.Equal(65, overLimit.ClsAritySpelling.ParsedTerminalArity);
-        Assert.Equal("Wider", overLimit.RoslynProjection!.ProjectedSimpleName);
-        Assert.True(overLimit.RoslynProjection.WasTerminalAritySuffixRemoved);
-        Assert.True(overLimit.CSharpAddressability!.IsAddressable);
+        Assert.Equal(wide.Input.CanonicalBytes.Length, wider.Input.CanonicalBytes.Length);
+        Assert.Equal(wide.CanonicalBytes.Length, wider.CanonicalBytes.Length);
+        Assert.True(wider.TypeDefinition.CanonicalBytes.Length > wide.TypeDefinition.CanonicalBytes.Length);
+        Assert.True(wide.Input.CanonicalBytes.Length < wide.TypeDefinition.CanonicalBytes.Length);
+        Assert.True(wider.CanonicalBytes.Length < wider.TypeDefinition.CanonicalBytes.Length);
+        Assert.Equal(-1, wide.Input.CanonicalBytes.AsSpan().IndexOf(wide.TypeDefinition.CanonicalBytes.AsSpan()));
+        Assert.Equal(-1, wider.CanonicalBytes.AsSpan().IndexOf(wider.TypeDefinition.CanonicalBytes.AsSpan()));
+
+        Assert.False(Mapping(catalog, DroppedNonJoinerTypeRid).CSharpAddressability!.IsAddressable);
+        Assert.False(Mapping(catalog, DroppedJoinerTypeRid).CSharpAddressability!.IsAddressable);
+        Assert.True(SyntaxFacts.IsValidIdentifier("A\u200C"));
+        Assert.True(SyntaxFacts.IsValidIdentifier("A\u200D"));
+
+        var keyword = Mapping(catalog, KeywordTypeRid).CSharpAddressability!;
+        Assert.True(keyword.IsAddressable);
+        Assert.True(keyword.RequiresVerbatimEscape);
+        Assert.Equal("@class", keyword.SourceSpelling);
+
+        var earlierBacktick = Mapping(catalog, EarlierBacktickTypeRid);
+        Assert.Equal("G`1", earlierBacktick.RoslynProjection!.ProjectedSimpleName);
+        Assert.True(earlierBacktick.RoslynProjection.WasTerminalAritySuffixRemoved);
+        Assert.False(earlierBacktick.ClsAritySpelling!.IsCanonical);
+        Assert.False(earlierBacktick.CSharpAddressability!.IsAddressable);
+
+        var plainGeneric = Mapping(catalog, PlainGenericTypeRid);
+        Assert.Equal(1, plainGeneric.IntroducedGenericArity);
+        Assert.False(plainGeneric.ClsAritySpelling!.IsCanonical);
+        Assert.False(plainGeneric.RoslynProjection!.WasTerminalAritySuffixRemoved);
+        Assert.True(plainGeneric.CSharpAddressability!.IsAddressable);
+
+        var mismatched = Mapping(catalog, MismatchedSuffixTypeRid);
+        Assert.Equal(1, mismatched.IntroducedGenericArity);
+        Assert.False(mismatched.ClsAritySpelling!.IsCanonical);
+        Assert.Equal(2, mismatched.ClsAritySpelling.ParsedTerminalArity);
+        Assert.Equal("Mismatch`2", mismatched.RoslynProjection!.ProjectedSimpleName);
+        Assert.False(mismatched.CSharpAddressability!.IsAddressable);
+
         Assert.Equal(
-            MetadataEvaluatorGenericArityAdmissionStatus.TotalArityLimitExceeded,
-            overLimit.EvaluatorAdmission!.Status);
-        Assert.False(overLimit.EvaluatorAdmission.IsAdmitted);
-        Assert.Equal(64, overLimit.EvaluatorAdmission.MaximumAdmittedTotalGenericArity);
+            usePointers ? FieldToken(2) : FieldToken(1),
+            scenario.DefinitionAuthority.TypeDefinitions[ModuleTypeRid - 1].FieldDefinitionTokens.Single());
+        Assert.Equal(
+            usePointers ? MethodToken(2) : MethodToken(1),
+            scenario.DefinitionAuthority.TypeDefinitions[ModuleTypeRid - 1].MethodDefinitionTokens.Single());
     }
 
     /// <summary>
-    /// Proves canonical replay, defensive byte access, equality, and private mint capabilities for every draft fact.
+    /// Proves non-exact and invalid definition authority propagate without a mapping prefix and replay canonically.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Mapping_replays_canonically_and_rejects_direct_fact_minting()
+    public void Prerequisite_stops_are_prefix_free_and_replay_for_both_result_families()
     {
-        var first = MetadataCompilerNameMappingIdentity.Derive(
-            "Nested`2",
-            5,
-            enclosingTotalGenericArity: 3);
-        var replay = MetadataCompilerNameMappingIdentity.Derive(
-            "Nested`2",
-            5,
-            enclosingTotalGenericArity: 3);
-        var changed = MetadataCompilerNameMappingIdentity.Derive(
-            "Nested`2",
-            6,
-            enclosingTotalGenericArity: 3);
+        var nonExactAuthority = BuildScenario(usePointers: false, omitGenericParameterRows: true).DefinitionAuthority;
+        var nonExactReplayAuthority =
+            BuildScenario(usePointers: false, omitGenericParameterRows: true).DefinitionAuthority;
+        var nonExact = MetadataCompilerNameMappingCatalogIdentity.Create(nonExactAuthority);
+        var nonExactReplay = MetadataCompilerNameMappingCatalogIdentity.Create(nonExactReplayAuthority);
 
-        Assert.Equal(first, replay);
-        Assert.Equal(first.GetHashCode(), replay.GetHashCode());
-        Assert.Equal(first.Sha256, replay.Sha256);
-        Assert.True(first.CanonicalBytes.AsSpan().SequenceEqual(replay.CanonicalBytes.AsSpan()));
-        Assert.NotEqual(first, changed);
-        Assert.NotEqual(first.Sha256, changed.Sha256);
-        Assert.Equal(first.Input, replay.Input);
-        Assert.Equal(first.ClsAritySpelling, replay.ClsAritySpelling);
-        Assert.Equal(first.RoslynProjection, replay.RoslynProjection);
-        Assert.Equal(first.CSharpAddressability, replay.CSharpAddressability);
-        Assert.Equal(first.EvaluatorAdmission, replay.EvaluatorAdmission);
+        Assert.Equal(MetadataDefinitionAuthorityResultKind.NonExact, nonExactAuthority.ResultKind);
+        Assert.Equal(MetadataCompilerNameMappingCatalogResultKind.NonExact, nonExact.ResultKind);
+        Assert.Equal(MetadataCompilerNameMappingCatalogIssue.DefinitionAuthorityNonExact, nonExact.Issue);
+        Assert.Empty(nonExact.Mappings);
+        Assert.Null(nonExact.CompleteMappingOrDefault(TypeToken(OuterTypeRid)));
+        AssertCanonicalReplay(nonExact, nonExactReplay);
 
-        var beforeMutation = first.CanonicalBytes;
-        var exposed = first.CanonicalBytes;
-        var mutableArray = ImmutableCollectionsMarshal.AsArray(exposed)!;
-        mutableArray[0] ^= 0x5A;
-        Assert.True(beforeMutation.AsSpan().SequenceEqual(first.CanonicalBytes.AsSpan()));
+        var invalidAuthority = BuildScenario(usePointers: true, invalidModuleName: true).DefinitionAuthority;
+        var invalidReplayAuthority = BuildScenario(usePointers: true, invalidModuleName: true).DefinitionAuthority;
+        var invalid = MetadataCompilerNameMappingCatalogIdentity.Create(invalidAuthority);
+        var invalidReplay = MetadataCompilerNameMappingCatalogIdentity.Create(invalidReplayAuthority);
 
+        Assert.Equal(MetadataDefinitionAuthorityResultKind.Invalid, invalidAuthority.ResultKind);
+        Assert.Equal(MetadataDefinitionAuthorityIssue.ModuleTypeNameMismatch, invalidAuthority.Issue);
+        Assert.Equal(MetadataCompilerNameMappingCatalogResultKind.Invalid, invalid.ResultKind);
+        Assert.Equal(MetadataCompilerNameMappingCatalogIssue.DefinitionAuthorityInvalid, invalid.Issue);
+        Assert.Empty(invalid.Mappings);
+        Assert.Null(invalid.CompleteMappingOrDefault(TypeToken(OuterTypeRid)));
+        AssertCanonicalReplay(invalid, invalidReplay);
+        Assert.NotEqual(nonExact, invalid);
+        Assert.NotEqual(nonExact.Sha256, invalid.Sha256);
+        Assert.Equal("ce8ace4b80b7242db50ae7a3b0b5f0b30d6d56d9c85a2228a8583d264462026b", nonExact.Sha256);
+        Assert.Equal("2740c9935109730809ec75ea8e16d390a7c973162725a7b0d5336ae1b286a3b3", invalid.Sha256);
+    }
+
+    /// <summary>Proves equal name facts from different physical metadata sources remain distinct authority mappings.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Equal_name_and_arity_facts_do_not_erase_source_lineage()
+    {
+        var first = MetadataCompilerNameMappingCatalogIdentity.Create(
+            BuildScenario(
+                usePointers: false,
+                module: CreateMetadataModule(moduleAddress: 0xA000, digestCharacter: 'a')).DefinitionAuthority);
+        var second = MetadataCompilerNameMappingCatalogIdentity.Create(
+            BuildScenario(
+                usePointers: false,
+                module: CreateMetadataModule(moduleAddress: 0xB000, digestCharacter: 'b')).DefinitionAuthority);
+        var firstOuter = Mapping(first, OuterTypeRid);
+        var secondOuter = Mapping(second, OuterTypeRid);
+
+        Assert.Equal(firstOuter.Input.RawMetadataName, secondOuter.Input.RawMetadataName);
+        Assert.Equal(firstOuter.Input.TotalGenericArity, secondOuter.Input.TotalGenericArity);
+        Assert.Equal(
+            firstOuter.RoslynProjection!.ProjectedSimpleName,
+            secondOuter.RoslynProjection!.ProjectedSimpleName);
+        Assert.NotEqual(firstOuter.TypeDefinition.SourceEnds, secondOuter.TypeDefinition.SourceEnds);
+        Assert.NotEqual(firstOuter.Input, secondOuter.Input);
+        Assert.NotEqual(firstOuter, secondOuter);
+        Assert.NotEqual(firstOuter.Sha256, secondOuter.Sha256);
+        Assert.NotEqual(first, second);
+    }
+
+    /// <summary>
+    /// Proves exact catalog replay, defensive copies, guarded mapping issuance, and removal of scalar identity issuers.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Exact_catalog_is_immutable_replayable_and_the_only_mapping_issuer()
+    {
+        var first = MetadataCompilerNameMappingCatalogIdentity.Create(
+            BuildScenario(usePointers: true).DefinitionAuthority);
+        var replay = MetadataCompilerNameMappingCatalogIdentity.Create(
+            BuildScenario(usePointers: true).DefinitionAuthority);
+        var direct = MetadataCompilerNameMappingCatalogIdentity.Create(
+            BuildScenario(usePointers: false).DefinitionAuthority);
+        var originalBytes = first.CanonicalBytes;
+        var originalSha = first.Sha256;
+
+        var returnedMappings = first.Mappings;
+        ImmutableCollectionsMarshal.AsArray(returnedMappings)![0] = returnedMappings[^1];
+        var returnedBytes = first.CanonicalBytes;
+        ImmutableCollectionsMarshal.AsArray(returnedBytes)![0] ^= 0x5A;
+
+        AssertCanonicalReplay(first, replay);
+        Assert.Equal(originalSha, first.Sha256);
+        Assert.Equal("294dd7041bcdf16a691909e10f932394ab330bf31de479f26d756173cb0243e4", originalSha);
+        Assert.True(originalBytes.AsSpan().SequenceEqual(first.CanonicalBytes.AsSpan()));
+        Assert.Equal(TypeToken(ModuleTypeRid), first.Mappings[0].TypeDefinition.TypeDefinitionToken);
+        Assert.NotEqual(first, direct);
+
+        var delta = Mapping(first, DeltaTypeRid);
+        Assert.Throws<ArgumentException>(() => MetadataCompilerNameMappingIdentity.Create(
+            new object(),
+            delta.TypeDefinition,
+            delta.EnclosingTypeDefinition));
         Assert.Throws<ArgumentException>(() => MetadataCompilerNameMappingInputIdentity.Create(
             new object(),
-            "G`1",
-            1,
-            null));
+            delta.TypeDefinition,
+            delta.EnclosingTypeDefinition));
         Assert.Throws<ArgumentException>(() => MetadataClsAritySpellingIdentity.Create(
             new object(),
-            first.Input,
-            2));
+            delta.Input,
+            1));
         Assert.Throws<ArgumentException>(() => MetadataRoslynNameProjectionIdentity.Create(
             new object(),
-            first.Input,
-            2));
+            delta.Input,
+            1));
         Assert.Throws<ArgumentException>(() => MetadataCSharpSimpleNameAddressabilityIdentity.Create(
             new object(),
-            first.RoslynProjection!));
+            delta.RoslynProjection!));
         Assert.Throws<ArgumentException>(() => MetadataEvaluatorGenericArityAdmissionIdentity.Create(
             new object(),
-            first.Input));
+            delta.Input));
+        Assert.False(MetadataCompilerNameMappingCatalogIdentity.OwnsMappingMintCapability(new object()));
 
-        Assert.Throws<ArgumentException>(() => MetadataCompilerNameMappingIdentity.Derive("Nul\0Name", 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => MetadataCompilerNameMappingIdentity.Derive("G", -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => MetadataCompilerNameMappingIdentity.Derive("G", 0, -1));
+        var mappingIssuers = typeof(MetadataCompilerNameMappingIdentity).GetMethods(
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+            .Where(static method => !method.IsSpecialName)
+            .ToArray();
+        Assert.DoesNotContain(mappingIssuers, static method => method.Name == "Derive");
+        Assert.DoesNotContain(mappingIssuers, static method => method.GetParameters().Any(parameter =>
+            parameter.ParameterType == typeof(string) ||
+            parameter.ParameterType == typeof(int) ||
+            parameter.ParameterType == typeof(int?)));
+        Assert.Empty(typeof(MetadataCompilerNameMappingIdentity).GetConstructors(
+            BindingFlags.Public | BindingFlags.Instance));
+        Assert.Empty(typeof(MetadataCompilerNameMappingCatalogIdentity).GetConstructors(
+            BindingFlags.Public | BindingFlags.Instance));
+        Assert.Equal(
+            ["Create"],
+            typeof(MetadataCompilerNameMappingCatalogIdentity)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Select(static method => method.Name)
+                .ToArray());
     }
 
-    /// <summary>Proves every public draft type and method has emitted XML and no public issuer is exposed.</summary>
+    /// <summary>Proves the retained pure Roslyn terminal-arity rule at malformed and numeric boundary spellings.</summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Compiler_name_mapping_public_surface_has_draft_XML_and_no_public_issuer()
+    public void Pure_terminal_arity_rule_matches_the_pinned_Roslyn_boundaries()
     {
-        var assembly = typeof(MetadataCompilerNameMappingIdentity).Assembly;
+        AssertTerminalArity("G`1", expectedPrefix: "G", expectedArity: 1);
+        AssertTerminalArity("G`1`2", expectedPrefix: "G`1", expectedArity: 2);
+        AssertTerminalArity("G`32767", expectedPrefix: "G", expectedArity: 32_767);
+
+        AssertNoTerminalArity("G");
+        AssertNoTerminalArity("`1");
+        AssertNoTerminalArity("G`");
+        AssertNoTerminalArity("G`0");
+        AssertNoTerminalArity("G`01");
+        AssertNoTerminalArity("G`+1");
+        AssertNoTerminalArity("G`-1");
+        AssertNoTerminalArity("G`١");
+        AssertNoTerminalArity("G`32768");
+        AssertNoTerminalArity("G`999999");
+    }
+
+    /// <summary>Proves every public mapping-catalog draft type and method has emitted XML documentation.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Compiler_name_mapping_public_surface_has_draft_XML()
+    {
+        var assembly = typeof(MetadataCompilerNameMappingCatalogIdentity).Assembly;
         var documentation = XDocument.Load(Path.ChangeExtension(assembly.Location, ".xml"));
         var members = documentation.Descendants("member").ToArray();
         var publicTypes = new[]
@@ -283,12 +357,15 @@ public sealed class W8CompilerNameMappingContractTests
             typeof(MetadataRoslynNameProjectionStatus),
             typeof(MetadataCSharpSimpleNameAddressabilityStatus),
             typeof(MetadataEvaluatorGenericArityAdmissionStatus),
+            typeof(MetadataCompilerNameMappingCatalogResultKind),
+            typeof(MetadataCompilerNameMappingCatalogIssue),
             typeof(MetadataCompilerNameMappingInputIdentity),
             typeof(MetadataClsAritySpellingIdentity),
             typeof(MetadataRoslynNameProjectionIdentity),
             typeof(MetadataCSharpSimpleNameAddressabilityIdentity),
             typeof(MetadataEvaluatorGenericArityAdmissionIdentity),
             typeof(MetadataCompilerNameMappingIdentity),
+            typeof(MetadataCompilerNameMappingCatalogIdentity),
         };
 
         foreach (var type in publicTypes)
@@ -312,42 +389,279 @@ public sealed class W8CompilerNameMappingContractTests
             }
 
             Assert.Empty(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
-            Assert.Empty(type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
         }
     }
 
-    private static ProjectionCase Case(
-        string label,
-        string rawMetadataName,
-        int totalGenericArity,
-        bool clsCanonical,
-        string projectedSimpleName,
-        bool removedSuffix,
-        bool addressable,
-        bool requiresVerbatimEscape,
-        string? sourceSpelling,
-        bool admitted) =>
-        new(
-            label,
-            rawMetadataName,
-            totalGenericArity,
-            clsCanonical,
-            projectedSimpleName,
-            removedSuffix,
-            addressable,
-            requiresVerbatimEscape,
-            sourceSpelling,
-            admitted);
+    private static Scenario BuildScenario(
+        bool usePointers,
+        bool omitGenericParameterRows = false,
+        bool invalidModuleName = false,
+        StaticFieldMetadataModuleIdentity? module = null)
+    {
+        module ??= CreateMetadataModule();
+        var genericParameterRows = GenericParameterRows(module);
+        var sourceEnds = CreateSourceEnds(module, usePointers, genericParameterRows.Length);
+        var memberPointers = MetadataMemberPointerTableCatalogIdentity.Create(
+            sourceEnds,
+            usePointers ? PointerRows(module, MetadataMemberPointerTableKind.Field, [2, 1]) : default,
+            usePointers ? PointerRows(module, MetadataMemberPointerTableKind.Method, [2, 1]) : default);
+        var typeDefinitions = MetadataTypeDefinitionTableCatalogIdentity.Create(
+            sourceEnds,
+            TypeDefinitionRows(module, invalidModuleName),
+            memberPointers);
+        var nestedClasses = MetadataNestedClassTableCatalogIdentity.Create(
+            sourceEnds,
+            typeDefinitions,
+            NestedRows(module));
+        var genericParameters = MetadataGenericParameterPhysicalTableCatalogIdentity.Create(
+            sourceEnds,
+            omitGenericParameterRows ? default : genericParameterRows);
+        var methodDefinitions = MetadataMethodDefinitionTableCatalogIdentity.Create(
+            typeDefinitions,
+            MethodDefinitionRows(module));
+        var definitionAuthority = MetadataDefinitionAuthorityCatalogIdentity.Create(
+            typeDefinitions,
+            nestedClasses,
+            genericParameters,
+            methodDefinitions);
+        return new Scenario(sourceEnds, definitionAuthority);
+    }
 
-    private sealed record ProjectionCase(
-        string Label,
-        string RawMetadataName,
-        int TotalGenericArity,
-        bool ClsCanonical,
-        string ProjectedSimpleName,
-        bool RemovedSuffix,
-        bool Addressable,
-        bool RequiresVerbatimEscape,
-        string? SourceSpelling,
-        bool Admitted);
+    private static ImmutableArray<MetadataTypeDefinitionRowObservationIdentity> TypeDefinitionRows(
+        StaticFieldMetadataModuleIdentity module,
+        bool invalidModuleName)
+    {
+        var rows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionRowObservationIdentity>(TypeShapes.Length);
+        foreach (var shape in TypeShapes)
+        {
+            var listStart = shape.RowId switch
+            {
+                ModuleTypeRid => 1,
+                OuterTypeRid => 2,
+                _ => 3,
+            };
+            rows.Add(MetadataTypeDefinitionRowObservationIdentity.Create(
+                metadataModule: module,
+                typeDefinitionToken: TypeToken(shape.RowId),
+                fieldListRowId: listStart,
+                methodListRowId: listStart,
+                namespaceName: shape.NamespaceName,
+                typeName: invalidModuleName && shape.RowId == ModuleTypeRid ? "NotModule" : shape.TypeName,
+                typeAttributes: (int)shape.Attributes,
+                extendsMetadataToken: null));
+        }
+        return rows.ToImmutable();
+    }
+
+    private static ImmutableArray<MetadataNestedClassRowObservationIdentity> NestedRows(
+        StaticFieldMetadataModuleIdentity module) =>
+    [
+        NestedRow(module, physicalRowId: 1, EqualTypeRid, OuterTypeRid),
+        NestedRow(module, physicalRowId: 2, DeltaTypeRid, OuterTypeRid),
+        NestedRow(module, physicalRowId: 3, UnderflowTypeRid, OuterTypeRid),
+    ];
+
+    private static MetadataNestedClassRowObservationIdentity NestedRow(
+        StaticFieldMetadataModuleIdentity module,
+        int physicalRowId,
+        int nestedTypeRowId,
+        int enclosingTypeRowId) =>
+        MetadataNestedClassRowObservationIdentity.Create(
+            metadataModule: module,
+            nestedClassRowToken: 0x29000000 | physicalRowId,
+            nestedTypeDefinitionToken: TypeToken(nestedTypeRowId),
+            enclosingTypeDefinitionToken: TypeToken(enclosingTypeRowId));
+
+    private static ImmutableArray<MetadataGenericParameterRowObservationIdentity> GenericParameterRows(
+        StaticFieldMetadataModuleIdentity module)
+    {
+        var rows = ImmutableArray.CreateBuilder<MetadataGenericParameterRowObservationIdentity>();
+        foreach (var shape in TypeShapes)
+        {
+            for (var number = 0; number < shape.TotalGenericArity; number++)
+            {
+                rows.Add(MetadataGenericParameterRowObservationIdentity.Create(
+                    metadataModule: module,
+                    genericParameterToken: 0x2A000000 | checked(rows.Count + 1),
+                    number: number,
+                    flags: 0,
+                    ownerMetadataToken: TypeToken(shape.RowId),
+                    name: $"T{shape.RowId}_{number}"));
+            }
+        }
+        return rows.ToImmutable();
+    }
+
+    private static ImmutableArray<MetadataMethodDefinitionRowObservationIdentity> MethodDefinitionRows(
+        StaticFieldMetadataModuleIdentity module) =>
+    [
+        MethodRow(module, 1),
+        MethodRow(module, 2),
+    ];
+
+    private static MetadataMethodDefinitionRowObservationIdentity MethodRow(
+        StaticFieldMetadataModuleIdentity module,
+        int rowId) =>
+        MetadataMethodDefinitionRowObservationIdentity.Create(
+            metadataModule: module,
+            methodDefinitionToken: MethodToken(rowId),
+            relativeVirtualAddress: 0x2000 + rowId * 0x20,
+            implementationAttributes: (int)MethodImplAttributes.NoInlining,
+            attributes: (int)(MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.Static),
+            name: $"MappingMethod{rowId}",
+            signaturePrefixBytes: [0x00, 0x00, 0x01],
+            signatureByteCount: 3,
+            parameterListRowId: 1);
+
+    private static ImmutableArray<MetadataMemberPointerRowObservationIdentity> PointerRows(
+        StaticFieldMetadataModuleIdentity module,
+        MetadataMemberPointerTableKind tableKind,
+        ImmutableArray<int> targetRowIds)
+    {
+        var pointerTable = tableKind == MetadataMemberPointerTableKind.Field ? 0x03 : 0x05;
+        var definitionTable = tableKind == MetadataMemberPointerTableKind.Field ? 0x04 : 0x06;
+        var rows = ImmutableArray.CreateBuilder<MetadataMemberPointerRowObservationIdentity>(targetRowIds.Length);
+        for (var index = 0; index < targetRowIds.Length; index++)
+        {
+            rows.Add(MetadataMemberPointerRowObservationIdentity.Create(
+                metadataModule: module,
+                pointerMetadataToken: pointerTable << 24 | checked(index + 1),
+                targetDefinitionMetadataToken: definitionTable << 24 | targetRowIds[index]));
+        }
+        return rows.MoveToImmutable();
+    }
+
+    private static MetadataSourceEndIdentity CreateSourceEnds(
+        StaticFieldMetadataModuleIdentity module,
+        bool usePointers,
+        int genericParameterRowCount) =>
+        MetadataSourceEndIdentity.Create(
+            sourceModule: module,
+            sourceModuleFact: StaticFieldModuleSearchFact.Exact(
+                module: module.Module,
+                moduleContent: module.ModuleContent,
+                typeDefinitionsExamined: TypeShapes.Length,
+                fieldDefinitionsExamined: 2,
+                typeDefinitionRowCount: TypeShapes.Length,
+                fieldDefinitionRowCount: 2,
+                typeReferenceRowCount: 0,
+                typeSpecificationRowCount: 0,
+                assemblyReferenceRowCount: 0,
+                methodDefinitionRowCount: 2,
+                parameterDefinitionRowCount: 0,
+                propertyDefinitionRowCount: 0,
+                eventDefinitionRowCount: 0,
+                moduleDefinitionRowCount: 1,
+                assemblyDefinitionRowCount: 1,
+                interfaceImplementationRowCount: 0,
+                memberReferenceRowCount: 0,
+                customAttributeRowCount: 0,
+                moduleReferenceRowCount: 0,
+                fileRowCount: 0,
+                exportedTypeRowCount: 0,
+                nestedClassRowCount: 3,
+                genericParameterRowCount: genericParameterRowCount,
+                genericParameterConstraintRowCount: 0,
+                fieldPointerRowCount: usePointers ? 2 : 0,
+                methodPointerRowCount: usePointers ? 2 : 0,
+                parameterPointerRowCount: 0));
+
+    private static StaticFieldMetadataModuleIdentity CreateMetadataModule(
+        ulong moduleAddress = 0xA000,
+        char digestCharacter = 'a')
+    {
+        var module = StaticFieldModuleInstanceIdentity.Create(
+            SnapshotDigest,
+            sizeof(ulong),
+            applicationDomainAddress: 0x1000,
+            moduleAddress: moduleAddress,
+            imageBase: 0x400000 + moduleAddress,
+            imageSize: 0x20000);
+        var content = ModuleContentIdentity.FromDigest(
+            mvid: Guid.Parse("11223344-5566-7788-99aa-bbccddeeff00"),
+            metadataLength: 32_768,
+            metadataSha256: new string(digestCharacter, 64));
+        var moduleDefinition = StaticFieldModuleDefinitionIdentity.Create(
+            generation: 0,
+            name: $"compiler-name-mapping-{moduleAddress:x}.dll",
+            mvid: content.Mvid,
+            encId: Guid.Empty,
+            encBaseId: Guid.Empty);
+        var assemblyDefinition = StaticFieldAssemblyDefinitionIdentity.Create(
+            name: "Synthetic.CompilerNameMapping",
+            majorVersion: 1,
+            minorVersion: 0,
+            buildNumber: 0,
+            revisionNumber: 0,
+            culture: string.Empty,
+            flags: 0,
+            hashAlgorithm: 0x8004,
+            publicKey: ImmutableArray<byte>.Empty);
+        var assembly = StaticFieldContainingAssemblyIdentity.Create(
+            module,
+            content,
+            moduleDefinition,
+            assemblyDefinition);
+        return StaticFieldMetadataModuleIdentity.ForManifestModule(
+            module,
+            content,
+            moduleDefinition,
+            assembly);
+    }
+
+    private static MetadataCompilerNameMappingIdentity Mapping(
+        MetadataCompilerNameMappingCatalogIdentity catalog,
+        int typeDefinitionRowId) =>
+        Assert.IsType<MetadataCompilerNameMappingIdentity>(
+            catalog.CompleteMappingOrDefault(TypeToken(typeDefinitionRowId)));
+
+    private static void AssertCanonicalReplay(
+        MetadataCompilerNameMappingCatalogIdentity first,
+        MetadataCompilerNameMappingCatalogIdentity replay)
+    {
+        Assert.Equal(first, replay);
+        Assert.Equal(first.GetHashCode(), replay.GetHashCode());
+        Assert.Equal(first.Sha256, replay.Sha256);
+        Assert.True(first.CanonicalBytes.AsSpan().SequenceEqual(replay.CanonicalBytes.AsSpan()));
+    }
+
+    private static void AssertTerminalArity(
+        string rawMetadataName,
+        string expectedPrefix,
+        int expectedArity)
+    {
+        Assert.True(MetadataCompilerNameMappingRules.TryParseTerminalArity(
+            rawMetadataName,
+            out var prefix,
+            out var arity));
+        Assert.Equal(expectedPrefix, prefix);
+        Assert.Equal(expectedArity, arity);
+    }
+
+    private static void AssertNoTerminalArity(string rawMetadataName)
+    {
+        Assert.False(MetadataCompilerNameMappingRules.TryParseTerminalArity(
+            rawMetadataName,
+            out var prefix,
+            out var arity));
+        Assert.Equal(string.Empty, prefix);
+        Assert.Equal(0, arity);
+    }
+
+    private static int TypeToken(int rowId) => 0x02000000 | rowId;
+
+    private static int FieldToken(int rowId) => 0x04000000 | rowId;
+
+    private static int MethodToken(int rowId) => 0x06000000 | rowId;
+
+    private readonly record struct TypeShape(
+        int RowId,
+        string NamespaceName,
+        string TypeName,
+        TypeAttributes Attributes,
+        int TotalGenericArity);
+
+    private sealed record Scenario(
+        MetadataSourceEndIdentity SourceEnds,
+        MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority);
 }

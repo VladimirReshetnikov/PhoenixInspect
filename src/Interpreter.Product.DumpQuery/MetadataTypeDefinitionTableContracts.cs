@@ -439,7 +439,7 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
         writer.WriteLengthPrefixedBytes(sourceEnds.CanonicalBytes.AsSpan());
         writer.WriteLengthPrefixedBytes(memberPointerCatalog.CanonicalBytes.AsSpan());
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, rows, static row => row.CanonicalBytes);
-        MetadataGenericParameterOwnerDeclarationIdentity.WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());

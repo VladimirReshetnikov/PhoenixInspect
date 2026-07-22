@@ -201,7 +201,7 @@ public sealed class MetadataGenericParameterOwnerDeclarationIdentity :
         {
             writer.WriteLengthPrefixedBytes(methodSignatureCertificate.CanonicalBytes.AsSpan());
         }
-        WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -355,17 +355,6 @@ public sealed class MetadataGenericParameterOwnerDeclarationIdentity :
         MetadataGenericParameterProofIssue issue) =>
         new(MetadataGenericParameterProofResultKind.Invalid, issue, sourceEnds, owner, null, null, null, 0);
 
-    internal static void WriteOptionalBound(
-        CanonicalReplayEncoding.Writer writer,
-        EvaluationDeterministicBound? bound)
-    {
-        writer.WriteBoolean(bound is not null);
-        if (bound is not null)
-        {
-            writer.WriteString(bound.Name);
-            writer.WriteInt64(bound.Value);
-        }
-    }
 }
 
 /// <summary>Freezes complete module-wide GenericParam table acquisition in exact physical RID order.</summary>
@@ -401,7 +390,7 @@ public sealed class MetadataGenericParameterTableCatalogIdentity :
         writer.WriteInt32((int)issue);
         writer.WriteLengthPrefixedBytes(sourceEnds.CanonicalBytes.AsSpan());
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, rows, static row => row.CanonicalBytes);
-        MetadataGenericParameterOwnerDeclarationIdentity.WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -601,7 +590,7 @@ public sealed class MetadataGenericParameterOwnerSetIdentity :
         writer.WriteLengthPrefixedBytes(declaration.CanonicalBytes.AsSpan());
         writer.WriteLengthPrefixedBytes(tableCatalog.CanonicalBytes.AsSpan());
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, parameters, static parameter => parameter.CanonicalBytes);
-        MetadataGenericParameterOwnerDeclarationIdentity.WriteOptionalBound(writer, reachedBound);
+        ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());

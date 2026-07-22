@@ -80,47 +80,56 @@ public enum MetadataEvaluatorGenericArityAdmissionStatus
     TotalArityLimitExceeded = 2,
 }
 
-/// <summary>Freezes the physical input to one draft compiler-name mapping derivation.</summary>
+/// <summary>Freezes the authority-issued physical input to one draft compiler-name mapping derivation.</summary>
 /// <remarks>
-/// The input retains a decoded raw metadata name, total TypeDef arity, and an optional enclosing total arity. It is
-/// minted only by the internal derivation path so the later definition-authority join can become its production
-/// issuer. It accepts no legacy W7 definition object and makes no semantic-name claim by itself.
+/// The input retains the exact TypeDef authority row and its optional immediate enclosing authority row. Its decoded
+/// name and physical arities are derived views of those rows rather than independently supplied claims. It accepts no
+/// legacy W7 definition object and makes no semantic-name claim by itself.
 /// </remarks>
 public sealed class MetadataCompilerNameMappingInputIdentity :
     IEquatable<MetadataCompilerNameMappingInputIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-compiler-name-mapping-input";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataCompilerNameMappingInputIdentity(
-        string rawMetadataName,
-        int totalGenericArity,
-        int? enclosingTotalGenericArity)
+        MetadataTypeDefinitionAuthorityIdentity typeDefinition,
+        MetadataTypeDefinitionAuthorityIdentity? enclosingTypeDefinition)
     {
-        RawMetadataName = rawMetadataName;
-        TotalGenericArity = totalGenericArity;
-        EnclosingTotalGenericArity = enclosingTotalGenericArity;
+        TypeDefinition = typeDefinition;
+        EnclosingTypeDefinition = enclosingTypeDefinition;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteString(rawMetadataName);
-        writer.WriteInt32(totalGenericArity);
-        ExpressionV2ContractEncoding.WriteOptionalInt32(writer, enclosingTotalGenericArity);
+        writer.WriteInt32(typeDefinition.TypeDefinitionToken);
+        writer.WriteString(typeDefinition.Sha256);
+        writer.WriteBoolean(enclosingTypeDefinition is not null);
+        if (enclosingTypeDefinition is not null)
+        {
+            writer.WriteInt32(enclosingTypeDefinition.TypeDefinitionToken);
+            writer.WriteString(enclosingTypeDefinition.Sha256);
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
+    /// <summary>Gets the exact authority-issued TypeDef row classified by this draft input.</summary>
+    public MetadataTypeDefinitionAuthorityIdentity TypeDefinition { get; }
+
+    /// <summary>Gets the exact immediate enclosing authority row, or null for a top-level draft TypeDef.</summary>
+    public MetadataTypeDefinitionAuthorityIdentity? EnclosingTypeDefinition { get; }
+
     /// <summary>Gets the exact decoded metadata name before any compiler-style interpretation.</summary>
-    public string RawMetadataName { get; }
+    public string RawMetadataName => TypeDefinition.TypeName;
 
     /// <summary>Gets the complete physical GenericParam count owned by this TypeDef.</summary>
-    public int TotalGenericArity { get; }
+    public int TotalGenericArity => TypeDefinition.TotalGenericArity;
 
     /// <summary>Gets the enclosing TypeDef's complete physical arity, or null for a top-level TypeDef.</summary>
-    public int? EnclosingTotalGenericArity { get; }
+    public int? EnclosingTotalGenericArity => EnclosingTypeDefinition?.TotalGenericArity;
 
     /// <summary>Gets whether this draft input represents a nested TypeDef segment.</summary>
-    public bool IsNested => EnclosingTotalGenericArity.HasValue;
+    public bool IsNested => TypeDefinition.IsNested;
 
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
@@ -145,9 +154,8 @@ public sealed class MetadataCompilerNameMappingInputIdentity :
 
     internal static MetadataCompilerNameMappingInputIdentity Create(
         object mintCapability,
-        string rawMetadataName,
-        int totalGenericArity,
-        int? enclosingTotalGenericArity)
+        MetadataTypeDefinitionAuthorityIdentity typeDefinition,
+        MetadataTypeDefinitionAuthorityIdentity? enclosingTypeDefinition)
     {
         if (!MetadataCompilerNameMappingIdentity.OwnsInputMintCapability(mintCapability))
         {
@@ -156,24 +164,26 @@ public sealed class MetadataCompilerNameMappingInputIdentity :
                 nameof(mintCapability));
         }
 
-        ExpressionV2ContractEncoding.RequireText(
-            rawMetadataName,
-            nameof(rawMetadataName),
-            StaticFieldMetadataTextLimits.MaximumTextLength,
-            allowEmpty: true);
-        if (totalGenericArity < 0)
+        ArgumentNullException.ThrowIfNull(typeDefinition);
+        if (typeDefinition.IsNested != (enclosingTypeDefinition is not null))
         {
-            throw new ArgumentOutOfRangeException(nameof(totalGenericArity));
+            throw new ArgumentException(
+                "A mapping input must retain an enclosing authority row exactly when its TypeDef is nested.",
+                nameof(enclosingTypeDefinition));
         }
-        if (enclosingTotalGenericArity is < 0)
+        if (enclosingTypeDefinition is not null &&
+            (!typeDefinition.SourceEnds.Equals(enclosingTypeDefinition.SourceEnds) ||
+             typeDefinition.EnclosingTypeDefinitionToken != enclosingTypeDefinition.TypeDefinitionToken ||
+             typeDefinition.NestingDepth != enclosingTypeDefinition.NestingDepth + 1))
         {
-            throw new ArgumentOutOfRangeException(nameof(enclosingTotalGenericArity));
+            throw new ArgumentException(
+                "The enclosing authority row must be the immediate same-source parent of the mapped TypeDef.",
+                nameof(enclosingTypeDefinition));
         }
 
         return new MetadataCompilerNameMappingInputIdentity(
-            rawMetadataName,
-            totalGenericArity,
-            enclosingTotalGenericArity);
+            typeDefinition,
+            enclosingTypeDefinition);
     }
 }
 
@@ -185,7 +195,7 @@ public sealed class MetadataCompilerNameMappingInputIdentity :
 public sealed class MetadataClsAritySpellingIdentity : IEquatable<MetadataClsAritySpellingIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-cls-arity-spelling";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataClsAritySpellingIdentity(
@@ -289,7 +299,7 @@ public sealed class MetadataClsAritySpellingIdentity : IEquatable<MetadataClsAri
 public sealed class MetadataRoslynNameProjectionIdentity : IEquatable<MetadataRoslynNameProjectionIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-roslyn-name-projection";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataRoslynNameProjectionIdentity(
@@ -394,7 +404,7 @@ public sealed class MetadataCSharpSimpleNameAddressabilityIdentity :
     IEquatable<MetadataCSharpSimpleNameAddressabilityIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-csharp-simple-name-addressability";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataCSharpSimpleNameAddressabilityIdentity(
@@ -496,7 +506,7 @@ public sealed class MetadataEvaluatorGenericArityAdmissionIdentity :
     IEquatable<MetadataEvaluatorGenericArityAdmissionIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-evaluator-generic-arity-admission";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataEvaluatorGenericArityAdmissionIdentity(
@@ -570,16 +580,16 @@ public sealed class MetadataEvaluatorGenericArityAdmissionIdentity :
     }
 }
 
-/// <summary>Freezes all non-conflated compiler-name facts derived from one physical draft input.</summary>
+/// <summary>Freezes all non-conflated compiler-name facts derived from one authority-issued draft TypeDef.</summary>
 /// <remarks>
 /// Exact outcomes retain separate CLS, Roslyn, C# source-name, and evaluator-admission facts. Nested arity underflow
-/// retains the physical input alone and exposes no semantic projection prefix. The internal derivation is intended to
-/// become an implementation detail of the complete definition-authority catalog.
+/// retains the authority-bound physical input alone and exposes no semantic projection prefix. Only a complete
+/// <see cref="MetadataCompilerNameMappingCatalogIdentity"/> can mint this certificate.
 /// </remarks>
 public sealed class MetadataCompilerNameMappingIdentity : IEquatable<MetadataCompilerNameMappingIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-compiler-name-mapping";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private static readonly object InputMintCapability = new();
     private static readonly object FactMintCapability = new();
     private readonly ImmutableArray<byte> canonicalBytes;
@@ -625,6 +635,12 @@ public sealed class MetadataCompilerNameMappingIdentity : IEquatable<MetadataCom
     /// <summary>Gets the unchanged physical input retained by every draft outcome.</summary>
     public MetadataCompilerNameMappingInputIdentity Input { get; }
 
+    /// <summary>Gets the exact authority-issued TypeDef row classified by this draft mapping.</summary>
+    public MetadataTypeDefinitionAuthorityIdentity TypeDefinition => Input.TypeDefinition;
+
+    /// <summary>Gets the exact immediate enclosing authority row, or null for a top-level draft TypeDef.</summary>
+    public MetadataTypeDefinitionAuthorityIdentity? EnclosingTypeDefinition => Input.EnclosingTypeDefinition;
+
     /// <summary>Gets the derived parent-relative arity, or null when nested physical arities underflow.</summary>
     public int? IntroducedGenericArity { get; }
 
@@ -661,18 +677,24 @@ public sealed class MetadataCompilerNameMappingIdentity : IEquatable<MetadataCom
     /// <returns>A deterministic hash code for canonical draft content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
-    internal static MetadataCompilerNameMappingIdentity Derive(
-        string rawMetadataName,
-        int totalGenericArity,
-        int? enclosingTotalGenericArity = null)
+    internal static MetadataCompilerNameMappingIdentity Create(
+        object mintCapability,
+        MetadataTypeDefinitionAuthorityIdentity typeDefinition,
+        MetadataTypeDefinitionAuthorityIdentity? enclosingTypeDefinition)
     {
+        if (!MetadataCompilerNameMappingCatalogIdentity.OwnsMappingMintCapability(mintCapability))
+        {
+            throw new ArgumentException(
+                "A compiler-name mapping requires the complete mapping catalog's private mint capability.",
+                nameof(mintCapability));
+        }
+
         var input = MetadataCompilerNameMappingInputIdentity.Create(
             InputMintCapability,
-            rawMetadataName,
-            totalGenericArity,
-            enclosingTotalGenericArity);
-        if (enclosingTotalGenericArity.HasValue &&
-            totalGenericArity < enclosingTotalGenericArity.Value)
+            typeDefinition,
+            enclosingTypeDefinition);
+        if (input.EnclosingTotalGenericArity.HasValue &&
+            input.TotalGenericArity < input.EnclosingTotalGenericArity.Value)
         {
             return new MetadataCompilerNameMappingIdentity(
                 MetadataCompilerNameMappingResultKind.NonExact,
@@ -685,9 +707,9 @@ public sealed class MetadataCompilerNameMappingIdentity : IEquatable<MetadataCom
                 evaluatorAdmission: null);
         }
 
-        var introducedGenericArity = enclosingTotalGenericArity.HasValue
-            ? totalGenericArity - enclosingTotalGenericArity.Value
-            : totalGenericArity;
+        var introducedGenericArity = input.EnclosingTotalGenericArity.HasValue
+            ? input.TotalGenericArity - input.EnclosingTotalGenericArity.Value
+            : input.TotalGenericArity;
         var clsAritySpelling = MetadataClsAritySpellingIdentity.Create(
             FactMintCapability,
             input,

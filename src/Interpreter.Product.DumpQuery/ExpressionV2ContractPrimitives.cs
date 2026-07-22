@@ -1763,6 +1763,18 @@ internal static class ExpressionV2ContractEncoding
 {
     internal static ImmutableArray<T> Copy<T>(ImmutableArray<T> value) => CanonicalReplayEncoding.Copy(value);
 
+    internal static void WriteOptionalBound(
+        CanonicalReplayEncoding.Writer writer,
+        EvaluationDeterministicBound? bound)
+    {
+        writer.WriteBoolean(bound is not null);
+        if (bound is not null)
+        {
+            writer.WriteString(bound.Name);
+            writer.WriteInt64(bound.Value);
+        }
+    }
+
     internal static ImmutableArray<T> CopyRequired<T>(
         ImmutableArray<T> value,
         string parameterName,
