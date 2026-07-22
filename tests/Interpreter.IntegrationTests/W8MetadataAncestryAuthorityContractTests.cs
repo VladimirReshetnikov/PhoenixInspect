@@ -400,7 +400,7 @@ public sealed class W8MetadataAncestryAuthorityContractTests
         return new RoleWorld(core.Module, app.Module, world.Resolution, world.Ancestry);
     }
 
-    private static AncestryModule BuildCoreModule(
+    internal static AncestryModule BuildCoreModule(
         string assemblyName = "Synthetic.Core",
         ulong moduleAddress = 0xCC00,
         char digest = '3') =>
@@ -417,7 +417,7 @@ public sealed class W8MetadataAncestryAuthorityContractTests
                 new TypeRow("Synthetic.Core", "Anchor", PublicClassAttributes, 0x0200_0002),
             ]);
 
-    private static AncestryWorld BuildAncestryWorld(params AncestryModule[] modules)
+    internal static AncestryWorld BuildAncestryWorld(params AncestryModule[] modules)
     {
         var compatibilityPortfolio = MetadataDefinitionCompatibilityPortfolioIdentity.Create(
             [.. modules.Select(static module => module.Compatibility)]);
@@ -435,7 +435,7 @@ public sealed class W8MetadataAncestryAuthorityContractTests
         return new AncestryWorld(resolution, MetadataAncestryAuthorityPortfolioIdentity.Create(resolution));
     }
 
-    private static AncestryModule BuildCustomModule(
+    internal static AncestryModule BuildCustomModule(
         string assemblyName,
         ulong moduleAddress,
         char digestCharacter,
@@ -445,16 +445,53 @@ public sealed class W8MetadataAncestryAuthorityContractTests
         Func<StaticFieldMetadataModuleIdentity,
             ImmutableArray<MetadataAssemblyReferenceRowObservationIdentity>>? assemblyReferences = null,
         Func<StaticFieldMetadataModuleIdentity,
+            ImmutableArray<MetadataTypeSpecificationRowObservationIdentity>>? typeSpecifications = null) =>
+        BuildCustomModule(
+            W8CompilerNameMappingContractTests.CreateMetadataModule(moduleAddress, digestCharacter, assemblyName),
+            namedTypes,
+            typeReferences,
+            assemblyReferences,
+            typeSpecifications);
+
+    internal static AncestryModule BuildCustomModule(
+        StaticFieldMetadataModuleIdentity module,
+        ImmutableArray<TypeRow> namedTypes,
+        Func<StaticFieldMetadataModuleIdentity,
+            ImmutableArray<MetadataTypeReferenceRowObservationIdentity>>? typeReferences = null,
+        Func<StaticFieldMetadataModuleIdentity,
+            ImmutableArray<MetadataAssemblyReferenceRowObservationIdentity>>? assemblyReferences = null,
+        Func<StaticFieldMetadataModuleIdentity,
             ImmutableArray<MetadataTypeSpecificationRowObservationIdentity>>? typeSpecifications = null)
     {
-        var module = W8CompilerNameMappingContractTests.CreateMetadataModule(
-            moduleAddress,
-            digestCharacter,
-            assemblyName);
         var typeReferenceRows = typeReferences?.Invoke(module) ?? [];
         var assemblyReferenceRows = assemblyReferences?.Invoke(module) ?? [];
         var typeSpecificationRows = typeSpecifications?.Invoke(module) ?? [];
         var totalTypeCount = namedTypes.Length + 1;
+        var genericParameterRows = ImmutableArray.CreateBuilder<MetadataGenericParameterRowObservationIdentity>();
+        var nestedClassRows = ImmutableArray.CreateBuilder<MetadataNestedClassRowObservationIdentity>();
+        for (var index = 0; index < namedTypes.Length; index++)
+        {
+            var row = namedTypes[index];
+            var ownerToken = 0x0200_0002 + index;
+            for (var number = 0; number < row.GenericArity; number++)
+            {
+                genericParameterRows.Add(MetadataGenericParameterRowObservationIdentity.Create(
+                    module,
+                    0x2A00_0000 | checked(genericParameterRows.Count + 1),
+                    number,
+                    flags: 0,
+                    ownerMetadataToken: ownerToken,
+                    name: $"T{ownerToken & 0x00FF_FFFF}_{number}"));
+            }
+            if (row.EnclosingTypeRowId is { } enclosingRowId)
+            {
+                nestedClassRows.Add(MetadataNestedClassRowObservationIdentity.Create(
+                    module,
+                    0x2900_0000 | checked(nestedClassRows.Count + 1),
+                    nestedTypeDefinitionToken: ownerToken,
+                    enclosingTypeDefinitionToken: 0x0200_0000 | enclosingRowId));
+            }
+        }
         var sourceEnds = MetadataSourceEndIdentity.Create(
             module,
             StaticFieldModuleSearchFact.Exact(
@@ -466,7 +503,9 @@ public sealed class W8MetadataAncestryAuthorityContractTests
                 fieldDefinitionRowCount: 0,
                 typeReferenceRowCount: typeReferenceRows.Length,
                 typeSpecificationRowCount: typeSpecificationRows.Length,
-                assemblyReferenceRowCount: assemblyReferenceRows.Length));
+                assemblyReferenceRowCount: assemblyReferenceRows.Length,
+                nestedClassRowCount: nestedClassRows.Count,
+                genericParameterRowCount: genericParameterRows.Count));
         var typeRows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionRowObservationIdentity>(totalTypeCount);
         typeRows.Add(MetadataTypeDefinitionRowObservationIdentity.Create(
             module,
@@ -498,8 +537,10 @@ public sealed class W8MetadataAncestryAuthorityContractTests
         var nestedClasses = MetadataNestedClassTableCatalogIdentity.Create(
             sourceEnds,
             typeDefinitions,
-            ImmutableArray<MetadataNestedClassRowObservationIdentity>.Empty);
-        var genericParameters = MetadataGenericParameterPhysicalTableCatalogIdentity.Create(sourceEnds, default);
+            nestedClassRows.ToImmutable());
+        var genericParameters = MetadataGenericParameterPhysicalTableCatalogIdentity.Create(
+            sourceEnds,
+            genericParameterRows.Count == 0 ? default : genericParameterRows.ToImmutable());
         var methods = MetadataMethodDefinitionTableCatalogIdentity.Create(typeDefinitions, default);
         var authority = MetadataDefinitionAuthorityCatalogIdentity.Create(
             typeDefinitions,
@@ -550,7 +591,7 @@ public sealed class W8MetadataAncestryAuthorityContractTests
         return builder.MoveToImmutable();
     }
 
-    private static MetadataTypeReferenceRowObservationIdentity TypeReferenceRow(
+    internal static MetadataTypeReferenceRowObservationIdentity TypeReferenceRow(
         StaticFieldMetadataModuleIdentity module,
         int rowId,
         string namespaceName,
@@ -563,15 +604,16 @@ public sealed class W8MetadataAncestryAuthorityContractTests
             typeName,
             resolutionScope);
 
-    private static MetadataAssemblyReferenceRowObservationIdentity AssemblyReferenceRow(
+    internal static MetadataAssemblyReferenceRowObservationIdentity AssemblyReferenceRow(
         StaticFieldMetadataModuleIdentity module,
         int rowId,
-        string assemblyName) =>
+        string assemblyName,
+        int majorVersion = 1) =>
         MetadataAssemblyReferenceRowObservationIdentity.Create(
             module,
             0x2300_0000 | rowId,
             assemblyName,
-            majorVersion: 1,
+            majorVersion,
             minorVersion: 0,
             buildNumber: 0,
             revisionNumber: 0,
@@ -637,19 +679,21 @@ public sealed class W8MetadataAncestryAuthorityContractTests
         }
     }
 
-    private sealed record TypeRow(
+    internal sealed record TypeRow(
         string NamespaceName,
         string TypeName,
         int TypeAttributes,
-        int? ExtendsMetadataToken);
+        int? ExtendsMetadataToken,
+        int GenericArity = 0,
+        int? EnclosingTypeRowId = null);
 
-    private sealed record AncestryModule(
+    internal sealed record AncestryModule(
         StaticFieldMetadataModuleIdentity Module,
         MetadataW7TypeDefinitionCompatibilityCatalogIdentity Compatibility,
         MetadataNamedTypeDefinitionChainCatalogIdentity ChainCatalog,
         MetadataModuleReferenceTableSetIdentity Tables);
 
-    private sealed record AncestryWorld(
+    internal sealed record AncestryWorld(
         MetadataTypeReferenceResolutionPortfolioIdentity Resolution,
         MetadataAncestryAuthorityPortfolioIdentity Ancestry);
 

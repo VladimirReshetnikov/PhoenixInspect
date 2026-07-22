@@ -239,7 +239,7 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
             methodVariable.Specification,
             methodVariable.Graph,
             foreignCatalog.Rows[5]));
-        Assert.Equal("0e54d4ed02a35c8370c8d4e491385487539a980cbfc35ffbbf706cd9c354131c", methodUse.Sha256);
+        Assert.Equal("ac044646b4895bdd3d1e2b86efecbdb9056ac27e6200ff31154ee87b8332acd8", methodUse.Sha256);
     }
 
     /// <summary>Proves consumer projections propagate physical stops and reject foreign authority selections.</summary>

@@ -7,53 +7,33 @@ using Xunit;
 
 namespace Interpreter.IntegrationTests;
 
-/// <summary>Exercises exact W8 TypeDef classification and metadata-preserving Nullable construction.</summary>
+/// <summary>Exercises authority-classified TypeDef consumption and metadata-preserving Nullable construction.</summary>
 /// <remarks>
-/// These headless tests use one detached synthetic core-library graph and do not present the draft contracts as a
-/// final compatibility surface.
+/// These headless tests consume semantic-classification rows issued only by the ancestry authority portfolio and do
+/// not present the draft contracts as a final compatibility surface.
 /// </remarks>
 public sealed class W8MetadataClassificationAndNullableContractTests
 {
-    private const string SnapshotDigest =
-        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-
-    /// <summary>Proves each exact semantic kind has the required physical flags and ancestry evidence.</summary>
+    /// <summary>Proves each exact semantic role has the required physical base-edge evidence before consumption.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Exact_classification_requires_role_specific_physical_proof()
     {
         var fixture = ClassificationFixture.Create();
 
+        Assert.Equal(MetadataTypeDefinitionSemanticRole.Interface, fixture.InterfaceDefinition.Role);
+        Assert.Equal(MetadataTypeDefinitionSemanticRole.Class, fixture.ReferenceClassDefinition.Role);
+        Assert.Equal(MetadataTypeDefinitionSemanticRole.ValueType, fixture.Int32Definition.Role);
+        Assert.Equal(MetadataTypeDefinitionSemanticRole.Enum, fixture.EnumDefinition.Role);
+        Assert.Equal(MetadataTypeDefinitionSemanticRole.Delegate, fixture.DelegateDefinition.Role);
         Assert.Equal(
-            MetadataTypeDefinitionClassificationStatus.Exact,
-            fixture.InterfaceDefinition.ClassificationStatus);
+            MetadataImmediateBaseEdgeKind.TypeReference,
+            fixture.DelegateDefinition.BaseEdge.Kind);
         Assert.Equal(
-            MetadataTypeDefinitionClassificationStatus.Exact,
-            fixture.ReferenceClassDefinition.ClassificationStatus);
-        Assert.Equal(
-            MetadataTypeDefinitionClassificationStatus.Exact,
-            fixture.Int32Definition.ClassificationStatus);
-        Assert.Equal(
-            MetadataTypeDefinitionClassificationStatus.Exact,
-            fixture.EnumDefinition.ClassificationStatus);
-        Assert.Equal(
-            MetadataTypeDefinitionClassificationStatus.Exact,
-            fixture.DelegateDefinition.ClassificationStatus);
-        Assert.Equal(fixture.DelegateProof, fixture.DelegateDefinition.DelegateAncestry);
-        Assert.Equal(
-            fixture.MulticastDelegateType,
-            fixture.DelegateDefinition.DelegateAncestry!.SystemMulticastDelegateType);
-        Assert.Equal(fixture.DelegateType, fixture.DelegateDefinition.DelegateAncestry.SystemDelegateType);
+            fixture.CoreRoles.SystemMulticastDelegate,
+            fixture.DelegateDefinition.BaseEdge.TargetTypeDefinition);
+        Assert.Equal(fixture.CoreModule, fixture.DelegateDefinition.BaseEdge.TargetModule);
 
-        var provisionalDelegate = MetadataTypeDefinitionIdentity.FromPinnedW7(
-            fixture.DeclaredDelegateType,
-            MetadataTypeDefinitionKind.Delegate,
-            ImmutableArray<MetadataGenericParameterIdentity>.Empty,
-            fixture.DelegateAncestry);
-        Assert.Equal(
-            MetadataTypeDefinitionClassificationStatus.Provisional,
-            provisionalDelegate.ClassificationStatus);
-        Assert.Null(provisionalDelegate.DelegateAncestry);
         var exactDelegateNode = MetadataTypeSignatureNode.Named(
             MetadataNamedSignatureHeadKind.Class,
             MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.DelegateDefinition),
@@ -61,68 +41,67 @@ public sealed class W8MetadataClassificationAndNullableContractTests
         Assert.Equal(
             MetadataTypeConstructionResultKind.Exact,
             MetadataTypeConstructionResult.Classify(exactDelegateNode).Kind);
-        var provisionalDelegateNode = MetadataTypeSignatureNode.Named(
+
+        Assert.Null(fixture.UnresolvedOuterDefinition.Role);
+        Assert.Equal(
+            MetadataSemanticClassificationIssue.BaseReferenceUnresolved,
+            fixture.UnresolvedOuterDefinition.Issue);
+        var unresolvedNode = MetadataTypeSignatureNode.Named(
             MetadataNamedSignatureHeadKind.Class,
-            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(provisionalDelegate),
-            [provisionalDelegate]);
+            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.UnresolvedOuterDefinition),
+            [fixture.UnresolvedOuterDefinition]);
         Assert.Equal(
             MetadataTypeConstructionResultKind.NonExact,
-            MetadataTypeConstructionResult.Classify(provisionalDelegateNode).Kind);
+            MetadataTypeConstructionResult.Classify(unresolvedNode).Kind);
 
-        var invalidInterface = MetadataRawTypeDefinitionIdentity.Create(
-            fixture.Module,
-            0x02000020,
-            fieldListRowId: 1,
-            fieldListEndExclusiveRowId: 1,
-            methodListRowId: 1,
-            methodListEndExclusiveRowId: 1,
-            "Synthetic",
-            "IBroken",
-            (int)(TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract),
-            genericParameterCount: 0,
-            extendsMetadataToken: fixture.ObjectType.TypeDefinitionToken);
-        Assert.Throws<ArgumentException>(() => MetadataTypeDefinitionIdentity.Create(
-            invalidInterface,
-            MetadataTypeDefinitionKind.Interface,
-            ImmutableArray<MetadataGenericParameterIdentity>.Empty));
+        Assert.Null(fixture.BrokenInterfaceDefinition.Role);
+        Assert.Equal(
+            MetadataSemanticClassificationIssue.InterfaceExtendsInvalid,
+            fixture.BrokenInterfaceDefinition.Issue);
 
-        var wrongDelegateAncestry = StaticFieldTypeAncestryIdentity.Create(
-            fixture.ReferenceClassType,
-            [StaticFieldTypeAncestryEdge.Create(fixture.ReferenceClassType, fixture.ObjectType)],
-            fixture.CoreLibrary);
-        Assert.Throws<ArgumentException>(() => MetadataDelegateTypeAncestryIdentity.Create(
-            wrongDelegateAncestry,
-            fixture.MulticastDelegateType,
-            fixture.DelegateType));
+        Assert.Throws<ArgumentException>(() => MetadataTypeSignatureNode.Named(
+            MetadataNamedSignatureHeadKind.ValueType,
+            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.ReferenceClassDefinition),
+            [fixture.ReferenceClassDefinition]));
+        Assert.Throws<ArgumentException>(() => MetadataTypeSignatureNode.Named(
+            MetadataNamedSignatureHeadKind.Class,
+            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.Int32Definition),
+            [fixture.Int32Definition]));
 
-        var originalDigest = fixture.DelegateProof.Sha256;
-        var exposedBytes = fixture.DelegateProof.CanonicalBytes;
+        Assert.Equal(MetadataTypeDefinitionSemanticRole.ModulePseudoType, fixture.ModulePseudoDefinition.Role);
+        Assert.Throws<ArgumentException>(() => MetadataTypeSignatureNode.Named(
+            MetadataNamedSignatureHeadKind.Class,
+            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.ModulePseudoDefinition),
+            [fixture.ModulePseudoDefinition]));
+
+        var originalDigest = fixture.DelegateDefinition.Sha256;
+        var exposedBytes = fixture.DelegateDefinition.CanonicalBytes;
         ImmutableCollectionsMarshal.AsArray(exposedBytes)![0] ^= 0x7F;
-        Assert.Equal(originalDigest, fixture.DelegateProof.Sha256);
-        Assert.NotEqual(exposedBytes, fixture.DelegateProof.CanonicalBytes);
+        Assert.Equal(originalDigest, fixture.DelegateDefinition.Sha256);
+        Assert.NotEqual(exposedBytes, fixture.DelegateDefinition.CanonicalBytes);
     }
 
-    /// <summary>Proves a provisional definition anywhere in a ground named topology yields typed NonExact evidence.</summary>
+    /// <summary>Proves an unclassified row anywhere in a ground named topology yields typed NonExact evidence.</summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Provisional_nested_and_generic_heads_never_yield_exact_construction()
+    public void Unclassified_nested_and_generic_heads_never_yield_exact_construction()
     {
         var fixture = ClassificationFixture.Create();
         var nested = MetadataTypeSignatureNode.Named(
             MetadataNamedSignatureHeadKind.Class,
             MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.InnerDefinition),
-            [fixture.OuterDefinition, fixture.InnerDefinition]);
-        Assert.True(nested.ContainsProvisionalTypeDefinitionClassification);
+            [fixture.UnresolvedOuterDefinition, fixture.InnerDefinition]);
+        Assert.True(nested.ContainsUnclassifiedTypeDefinition);
 
         var nestedResult = MetadataTypeConstructionResult.Classify(nested);
         Assert.Equal(MetadataTypeConstructionResultKind.NonExact, nestedResult.Kind);
         Assert.Null(nestedResult.ClosedType);
         Assert.Null(nestedResult.ReachedBound);
-        var provisionalSegment = MetadataTypeConstructionSegment.Create(
-            fixture.OuterDefinition,
+        var unclassifiedSegment = MetadataTypeConstructionSegment.Create(
+            fixture.UnresolvedOuterDefinition,
             flattenedArgumentOffset: 0,
             ImmutableArray<MetadataClosedTypeIdentity>.Empty);
-        Assert.Throws<ArgumentException>(() => MetadataClosedTypeIdentity.Named([provisionalSegment]));
+        Assert.Throws<ArgumentException>(() => MetadataClosedTypeIdentity.Named([unclassifiedSegment]));
 
         var genericHead = MetadataTypeSignatureNode.Named(
             MetadataNamedSignatureHeadKind.Class,
@@ -164,14 +143,12 @@ public sealed class W8MetadataClassificationAndNullableContractTests
         var closed = Assert.IsType<MetadataClosedTypeIdentity>(result.ClosedType);
         Assert.Equal(MetadataTypeConstructionResultKind.Exact, result.Kind);
         Assert.Equal(MetadataClosedTypeKind.Nullable, closed.Kind);
-        Assert.Equal(fixture.NullableDefinition, closed.FinalDefinition);
-        Assert.Equal(
-            MetadataTypeDefinitionClassificationStatus.Exact,
-            closed.FinalDefinition!.ClassificationStatus);
-        Assert.Equal(fixture.Module, closed.FinalDefinition.RawDefinition.MetadataModule);
+        Assert.Equal(fixture.NullableDefinition, closed.FinalClassification);
+        Assert.Equal(MetadataTypeDefinitionSemanticRole.ValueType, closed.FinalClassification!.Role);
+        Assert.Equal(fixture.CoreModule, closed.FinalClassification.SourceModule);
 
         var segment = Assert.Single(closed.ConstructionSegments);
-        Assert.Equal(fixture.NullableDefinition, segment.Definition);
+        Assert.Equal(fixture.NullableDefinition, segment.Classification);
         Assert.Equal(0, segment.FlattenedArgumentOffset);
         var flattenedArgument = Assert.Single(closed.FlattenedArguments);
         Assert.Equal(flattenedArgument, Assert.Single(segment.LocalArguments));
@@ -193,294 +170,146 @@ public sealed class W8MetadataClassificationAndNullableContractTests
     {
         private ClassificationFixture()
         {
-            Module = CreateMetadataModule();
-            ObjectType = CreatePinnedType(
-                0x02000001,
-                "System",
-                "Object",
-                TypeAttributes.Public | TypeAttributes.Class,
-                extendsMetadataToken: null);
-            var valueType = CreatePinnedType(
-                0x02000002,
-                "System",
-                "ValueType",
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract,
-                ObjectType.TypeDefinitionToken);
-            var enumType = CreatePinnedType(
-                0x02000003,
-                "System",
-                "Enum",
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract,
-                valueType.TypeDefinitionToken);
-            var selection = StaticFieldCoreLibrarySelectionIdentity.Create(
-                StaticFieldCoreLibrarySelectionProvenance.ClrMdRuntimeBaseClassLibrary,
-                runtimeOrdinal: 0,
-                Module);
-            CoreLibrary = StaticFieldCoreLibraryIdentity.Create(
-                selection,
-                Module,
-                ObjectType,
-                valueType,
-                enumType,
-                StaticFieldTypeAncestryEdge.Create(valueType, ObjectType),
-                StaticFieldTypeAncestryEdge.Create(enumType, valueType));
-
-            DelegateType = CreatePinnedType(
-                0x02000004,
-                "System",
-                "Delegate",
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract,
-                ObjectType.TypeDefinitionToken);
-            MulticastDelegateType = CreatePinnedType(
-                0x02000005,
-                "System",
-                "MulticastDelegate",
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract,
-                DelegateType.TypeDefinitionToken);
-            DeclaredDelegateType = CreatePinnedType(
-                0x02000006,
-                "Synthetic",
-                "Calculation",
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed,
-                MulticastDelegateType.TypeDefinitionToken);
-            DelegateAncestry = StaticFieldTypeAncestryIdentity.Create(
-                DeclaredDelegateType,
+            var core = W8MetadataAncestryAuthorityContractTests.BuildCustomModule(
+                "Synthetic.Core",
+                0x9000,
+                'e',
                 [
-                    StaticFieldTypeAncestryEdge.Create(DeclaredDelegateType, MulticastDelegateType),
-                    StaticFieldTypeAncestryEdge.Create(MulticastDelegateType, DelegateType),
-                    StaticFieldTypeAncestryEdge.Create(DelegateType, ObjectType),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "System", "Object", (int)(TypeAttributes.Public | TypeAttributes.Class), null),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "System",
+                        "ValueType",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract),
+                        0x02000002),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "System",
+                        "Enum",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract),
+                        0x02000003),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "System",
+                        "Delegate",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract),
+                        0x02000002),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "System",
+                        "MulticastDelegate",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract),
+                        0x02000005),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "System",
+                        "Int32",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed),
+                        0x02000003),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "System",
+                        "Nullable`1",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed),
+                        0x02000003,
+                        GenericArity: 1),
+                ]);
+            var app = W8MetadataAncestryAuthorityContractTests.BuildCustomModule(
+                "Synthetic.ClassificationApp",
+                0x9100,
+                'f',
+                [
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "Synthetic",
+                        "Calculation",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed),
+                        0x01000003),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "Synthetic",
+                        "ReferenceNode",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class),
+                        0x01000001),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "Synthetic",
+                        "Mode",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed),
+                        0x01000002),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "Synthetic",
+                        "IProject",
+                        (int)(TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract),
+                        null),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "Synthetic",
+                        "IBroken",
+                        (int)(TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract),
+                        0x01000001),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "Synthetic",
+                        "UnresolvedOuter",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class),
+                        0x01000004),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        string.Empty,
+                        "Inner",
+                        (int)(TypeAttributes.NestedPublic | TypeAttributes.Class),
+                        0x01000001,
+                        EnclosingTypeRowId: 7),
+                    new W8MetadataAncestryAuthorityContractTests.TypeRow(
+                        "Synthetic",
+                        "Envelope`1",
+                        (int)(TypeAttributes.Public | TypeAttributes.Class),
+                        0x01000004,
+                        GenericArity: 1),
                 ],
-                CoreLibrary);
-            DelegateProof = MetadataDelegateTypeAncestryIdentity.Create(
-                DelegateAncestry,
-                MulticastDelegateType,
-                DelegateType);
-            DelegateDefinition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                DeclaredDelegateType,
-                MetadataTypeDefinitionKind.Delegate,
-                ImmutableArray<MetadataGenericParameterIdentity>.Empty,
-                DelegateAncestry,
-                DelegateProof);
-
-            ReferenceClassType = CreatePinnedType(
-                0x02000007,
-                "Synthetic",
-                "ReferenceNode",
-                TypeAttributes.Public | TypeAttributes.Class,
-                ObjectType.TypeDefinitionToken);
-            var classAncestry = StaticFieldTypeAncestryIdentity.Create(
-                ReferenceClassType,
-                [StaticFieldTypeAncestryEdge.Create(ReferenceClassType, ObjectType)],
-                CoreLibrary);
-            ReferenceClassDefinition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                ReferenceClassType,
-                MetadataTypeDefinitionKind.Class,
-                ImmutableArray<MetadataGenericParameterIdentity>.Empty,
-                classAncestry);
-
-            var int32Type = CreatePinnedType(
-                0x02000008,
-                "System",
-                "Int32",
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed,
-                valueType.TypeDefinitionToken);
-            var int32Ancestry = StaticFieldTypeAncestryIdentity.Create(
-                int32Type,
-                [StaticFieldTypeAncestryEdge.Create(int32Type, valueType)],
-                CoreLibrary);
-            Int32Definition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                int32Type,
-                MetadataTypeDefinitionKind.ValueType,
-                ImmutableArray<MetadataGenericParameterIdentity>.Empty,
-                int32Ancestry);
-
-            var concreteEnumType = CreatePinnedType(
-                0x02000009,
-                "Synthetic",
-                "Mode",
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed,
-                enumType.TypeDefinitionToken);
-            var concreteEnumAncestry = StaticFieldTypeAncestryIdentity.Create(
-                concreteEnumType,
-                [StaticFieldTypeAncestryEdge.Create(concreteEnumType, enumType)],
-                CoreLibrary);
-            EnumDefinition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                concreteEnumType,
-                MetadataTypeDefinitionKind.Enum,
-                ImmutableArray<MetadataGenericParameterIdentity>.Empty,
-                concreteEnumAncestry);
-
-            var nullableType = CreatePinnedType(
-                0x0200000A,
-                "System",
-                "Nullable`1",
-                TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed,
-                valueType.TypeDefinitionToken,
-                genericParameterCount: 1,
-                introducedGenericArity: 1);
-            var nullableRaw = MetadataRawTypeDefinitionIdentity.FromPinnedW7(nullableType);
-            var nullableAncestry = StaticFieldTypeAncestryIdentity.Create(
-                nullableType,
-                [StaticFieldTypeAncestryEdge.Create(nullableType, valueType)],
-                CoreLibrary);
-            NullableDefinition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                nullableType,
-                MetadataTypeDefinitionKind.ValueType,
-                CreateTypeParameters(nullableRaw, rowStart: 1),
-                nullableAncestry);
-
-            var interfaceType = CreatePinnedType(
-                0x0200000B,
-                "Synthetic",
-                "IProject",
-                TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract,
-                extendsMetadataToken: null);
-            InterfaceDefinition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                interfaceType,
-                MetadataTypeDefinitionKind.Interface,
-                ImmutableArray<MetadataGenericParameterIdentity>.Empty);
-
-            var outerType = CreatePinnedType(
-                0x0200000C,
-                "Synthetic",
-                "Outer",
-                TypeAttributes.Public | TypeAttributes.Class,
-                ObjectType.TypeDefinitionToken);
-            OuterDefinition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                outerType,
-                MetadataTypeDefinitionKind.Class,
-                ImmutableArray<MetadataGenericParameterIdentity>.Empty);
-            var innerType = CreatePinnedType(
-                0x0200000D,
-                string.Empty,
-                "Inner",
-                TypeAttributes.NestedPublic | TypeAttributes.Class,
-                ObjectType.TypeDefinitionToken,
-                enclosingType: outerType);
-            var innerAncestry = StaticFieldTypeAncestryIdentity.Create(
-                innerType,
-                [StaticFieldTypeAncestryEdge.Create(innerType, ObjectType)],
-                CoreLibrary);
-            InnerDefinition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                innerType,
-                MetadataTypeDefinitionKind.Class,
-                ImmutableArray<MetadataGenericParameterIdentity>.Empty,
-                innerAncestry);
-
-            var genericType = CreatePinnedType(
-                0x0200000E,
-                "Synthetic",
-                "Envelope`1",
-                TypeAttributes.Public | TypeAttributes.Class,
-                ObjectType.TypeDefinitionToken,
-                genericParameterCount: 1,
-                introducedGenericArity: 1);
-            var genericRaw = MetadataRawTypeDefinitionIdentity.FromPinnedW7(genericType);
-            GenericDefinition = MetadataTypeDefinitionIdentity.FromPinnedW7(
-                genericType,
-                MetadataTypeDefinitionKind.Class,
-                CreateTypeParameters(genericRaw, rowStart: 2));
+                typeReferences: static module =>
+                [
+                    W8MetadataAncestryAuthorityContractTests.TypeReferenceRow(
+                        module, 1, "System", "Object", 0x23000001),
+                    W8MetadataAncestryAuthorityContractTests.TypeReferenceRow(
+                        module, 2, "System", "Enum", 0x23000001),
+                    W8MetadataAncestryAuthorityContractTests.TypeReferenceRow(
+                        module, 3, "System", "MulticastDelegate", 0x23000001),
+                    W8MetadataAncestryAuthorityContractTests.TypeReferenceRow(
+                        module, 4, "System", "Missing", 0x23000001),
+                ],
+                assemblyReferences: static module =>
+                    [W8MetadataAncestryAuthorityContractTests.AssemblyReferenceRow(module, 1, "Synthetic.Core")]);
+            var world = W8MetadataAncestryAuthorityContractTests.BuildAncestryWorld(core, app);
+            Assert.Equal(MetadataAncestryAuthorityPortfolioResultKind.Exact, world.Ancestry.ResultKind);
+            CoreModule = core.Module;
+            AppModule = app.Module;
+            CoreRoles = Assert.IsType<MetadataCoreRoleSelectionIdentity>(world.Ancestry.CoreRoles);
+            Int32Definition = Classification(world, CoreModule, 0x02000007);
+            NullableDefinition = Classification(world, CoreModule, 0x02000008);
+            ModulePseudoDefinition = Classification(world, AppModule, 0x02000001);
+            DelegateDefinition = Classification(world, AppModule, 0x02000002);
+            ReferenceClassDefinition = Classification(world, AppModule, 0x02000003);
+            EnumDefinition = Classification(world, AppModule, 0x02000004);
+            InterfaceDefinition = Classification(world, AppModule, 0x02000005);
+            BrokenInterfaceDefinition = Classification(world, AppModule, 0x02000006);
+            UnresolvedOuterDefinition = Classification(world, AppModule, 0x02000007);
+            InnerDefinition = Classification(world, AppModule, 0x02000008);
+            GenericDefinition = Classification(world, AppModule, 0x02000009);
         }
 
-        internal StaticFieldMetadataModuleIdentity Module { get; }
-        internal StaticFieldCoreLibraryIdentity CoreLibrary { get; }
-        internal StaticFieldTypeDefinitionIdentity ObjectType { get; }
-        internal StaticFieldTypeDefinitionIdentity DelegateType { get; }
-        internal StaticFieldTypeDefinitionIdentity MulticastDelegateType { get; }
-        internal StaticFieldTypeDefinitionIdentity DeclaredDelegateType { get; }
-        internal StaticFieldTypeAncestryIdentity DelegateAncestry { get; }
-        internal MetadataDelegateTypeAncestryIdentity DelegateProof { get; }
-        internal MetadataTypeDefinitionIdentity InterfaceDefinition { get; }
-        internal StaticFieldTypeDefinitionIdentity ReferenceClassType { get; }
-        internal MetadataTypeDefinitionIdentity ReferenceClassDefinition { get; }
-        internal MetadataTypeDefinitionIdentity Int32Definition { get; }
-        internal MetadataTypeDefinitionIdentity EnumDefinition { get; }
-        internal MetadataTypeDefinitionIdentity DelegateDefinition { get; }
-        internal MetadataTypeDefinitionIdentity NullableDefinition { get; }
-        internal MetadataTypeDefinitionIdentity OuterDefinition { get; }
-        internal MetadataTypeDefinitionIdentity InnerDefinition { get; }
-        internal MetadataTypeDefinitionIdentity GenericDefinition { get; }
+        internal StaticFieldMetadataModuleIdentity CoreModule { get; }
+        internal StaticFieldMetadataModuleIdentity AppModule { get; }
+        internal MetadataCoreRoleSelectionIdentity CoreRoles { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity Int32Definition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity NullableDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity ModulePseudoDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity DelegateDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity ReferenceClassDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity EnumDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity InterfaceDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity BrokenInterfaceDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity UnresolvedOuterDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity InnerDefinition { get; }
+        internal MetadataTypeDefinitionSemanticClassificationIdentity GenericDefinition { get; }
 
         internal static ClassificationFixture Create() => new();
 
-        private StaticFieldTypeDefinitionIdentity CreatePinnedType(
-            int token,
-            string namespaceName,
-            string name,
-            TypeAttributes attributes,
-            int? extendsMetadataToken,
-            int genericParameterCount = 0,
-            int introducedGenericArity = 0,
-            StaticFieldTypeDefinitionIdentity? enclosingType = null) =>
-            StaticFieldTypeDefinitionIdentity.Create(
-                Module,
-                token,
-                fieldListRowId: 1,
-                fieldListEndExclusiveRowId: 1,
-                methodListRowId: 1,
-                methodListEndExclusiveRowId: 1,
-                namespaceName,
-                name,
-                (int)attributes,
-                genericParameterCount,
-                introducedGenericArity,
-                extendsMetadataToken,
-                enclosingType);
-
-        private static ImmutableArray<MetadataGenericParameterIdentity> CreateTypeParameters(
-            MetadataRawTypeDefinitionIdentity raw,
-            int rowStart)
-        {
-            var owner = MetadataGenericParameterOwnerIdentity.ForTypeDefinition(raw);
-            return Enumerable.Range(0, raw.GenericParameterCount)
-                .Select(position => MetadataGenericParameterIdentity.Create(
-                    0x2A000000 | checked(rowStart + position),
-                    owner,
-                    position,
-                    $"T{position}",
-                    attributes: 0))
-                .ToImmutableArray();
-        }
-
-        private static StaticFieldMetadataModuleIdentity CreateMetadataModule()
-        {
-            var module = StaticFieldModuleInstanceIdentity.Create(
-                SnapshotDigest,
-                sizeof(ulong),
-                applicationDomainAddress: 0x1000,
-                moduleAddress: 0x2000,
-                imageBase: 0x402000,
-                imageSize: 0x18000);
-            var content = ModuleContentIdentity.FromDigest(
-                Guid.Parse("00112233-4455-6677-8899-aabbccddeeff"),
-                metadataLength: 24_576,
-                new string('b', 64));
-            var moduleDefinition = StaticFieldModuleDefinitionIdentity.Create(
-                generation: 0,
-                "classification-fixture.dll",
-                content.Mvid,
-                Guid.Empty,
-                Guid.Empty);
-            var assemblyDefinition = StaticFieldAssemblyDefinitionIdentity.Create(
-                "System.Private.CoreLib",
-                8,
-                0,
-                0,
-                0,
-                string.Empty,
-                flags: 0,
-                hashAlgorithm: 0x8004,
-                ImmutableArray<byte>.Empty);
-            var assembly = StaticFieldContainingAssemblyIdentity.Create(
-                module,
-                content,
-                moduleDefinition,
-                assemblyDefinition);
-            return StaticFieldMetadataModuleIdentity.ForManifestModule(
-                module,
-                content,
-                moduleDefinition,
-                assembly);
-        }
+        private static MetadataTypeDefinitionSemanticClassificationIdentity Classification(
+            W8MetadataAncestryAuthorityContractTests.AncestryWorld world,
+            StaticFieldMetadataModuleIdentity module,
+            int typeDefinitionToken) =>
+            Assert.IsType<MetadataTypeDefinitionSemanticClassificationIdentity>(
+                world.Ancestry.ExactClassificationOrDefault(module, typeDefinitionToken));
     }
 }

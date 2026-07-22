@@ -3,42 +3,6 @@ using Interpreter.Core.Abstractions;
 
 namespace Interpreter.Product.DumpQuery;
 
-/// <summary>Classifies the metadata semantics of one exact TypeDef.</summary>
-/// <remarks>This draft classification is additive evidence and is not a compatibility commitment.</remarks>
-public enum MetadataTypeDefinitionKind
-{
-    /// <summary>A reference class other than a delegate.</summary>
-    Class = 1,
-    /// <summary>A non-enum value type.</summary>
-    ValueType = 2,
-    /// <summary>An interface.</summary>
-    Interface = 3,
-    /// <summary>An enum definition.</summary>
-    Enum = 4,
-    /// <summary>A delegate definition.</summary>
-    Delegate = 5,
-}
-
-/// <summary>Classifies whether one draft TypeDef semantic kind has complete physical proof.</summary>
-/// <remarks>Provisional rows remain readable without upgrading caller assertions into exact classification.</remarks>
-public enum MetadataTypeDefinitionClassificationStatus
-{
-    /// <summary>The kind is derived from exact flags or an exact ancestry proof.</summary>
-    Exact = 1,
-    /// <summary>The non-interface kind is a provisional prototype attribution.</summary>
-    Provisional = 2,
-}
-
-/// <summary>Classifies the pinned compiler mapping from flattened GenericParam positions to nested source segments.</summary>
-/// <remarks>A non-exact draft mapping preserves readable metadata but cannot drive closed argument slicing.</remarks>
-public enum MetadataNestedGenericMappingStatus
-{
-    /// <summary>Every flattened position belongs to its unique cumulative introduced-arity range.</summary>
-    ExactPinnedCompiler = 1,
-    /// <summary>At least one retained source-segment attribution differs from the pinned compiler pattern.</summary>
-    NonExact = 2,
-}
-
 /// <summary>Identifies each primitive type represented directly by one CLI signature element.</summary>
 /// <remarks>The draft catalog intentionally excludes topology represented by another contract node.</remarks>
 public enum MetadataPrimitiveTypeKind
@@ -306,870 +270,6 @@ public enum MetadataTypeSubstitutionResultKind
     Invalid = 4,
     /// <summary>The valid substituted topology lacks exact classification or exceeded a construction bound.</summary>
     NonExact = 5,
-}
-
-/// <summary>Classifies one exact GenericParam-row binding observation.</summary>
-/// <remarks>The draft ledger distinguishes a proven closed argument from a declared row whose binding is unavailable.</remarks>
-public enum MetadataTypeArgumentBindingKind
-{
-    /// <summary>The exact GenericParam row maps to one exact closed argument.</summary>
-    Exact = 1,
-    /// <summary>The exact declared GenericParam row has no observed closed binding.</summary>
-    Unavailable = 2,
-}
-
-/// <summary>Freezes one additive raw W8 TypeDef row and its exact raw enclosing-TypeDef chain.</summary>
-/// <remarks>
-/// This sealed draft identity deliberately does not impose the pinned compiler's backtick/arity relation. Readable
-/// rows outside that pattern remain exact physical metadata and receive a separate mapping disposition later.
-/// </remarks>
-public sealed class MetadataRawTypeDefinitionIdentity : IEquatable<MetadataRawTypeDefinitionIdentity>
-{
-    private const string CanonicalDomain = "metadata-v2-raw-type-definition-identity";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<byte> canonicalBytes;
-
-    private MetadataRawTypeDefinitionIdentity(
-        StaticFieldMetadataModuleIdentity metadataModule,
-        int typeDefinitionToken,
-        int fieldListRowId,
-        int fieldListEndExclusiveRowId,
-        int methodListRowId,
-        int methodListEndExclusiveRowId,
-        string namespaceName,
-        string typeName,
-        int typeAttributes,
-        int genericParameterCount,
-        int? extendsMetadataToken,
-        MetadataRawTypeDefinitionIdentity? enclosingType)
-    {
-        MetadataModule = metadataModule;
-        TypeDefinitionToken = typeDefinitionToken;
-        FieldListRowId = fieldListRowId;
-        FieldListEndExclusiveRowId = fieldListEndExclusiveRowId;
-        MethodListRowId = methodListRowId;
-        MethodListEndExclusiveRowId = methodListEndExclusiveRowId;
-        NamespaceName = namespaceName;
-        TypeName = typeName;
-        TypeAttributes = typeAttributes;
-        GenericParameterCount = genericParameterCount;
-        ExtendsMetadataToken = extendsMetadataToken;
-        EnclosingType = enclosingType;
-        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteLengthPrefixedBytes(metadataModule.CanonicalBytes.AsSpan());
-        writer.WriteInt32(typeDefinitionToken);
-        writer.WriteInt32(fieldListRowId);
-        writer.WriteInt32(fieldListEndExclusiveRowId);
-        writer.WriteInt32(methodListRowId);
-        writer.WriteInt32(methodListEndExclusiveRowId);
-        writer.WriteString(namespaceName);
-        writer.WriteString(typeName);
-        writer.WriteInt32(typeAttributes);
-        writer.WriteInt32(genericParameterCount);
-        ExpressionV2ContractEncoding.WriteOptionalInt32(writer, extendsMetadataToken);
-        writer.WriteBoolean(enclosingType is not null);
-        if (enclosingType is not null)
-        {
-            writer.WriteLengthPrefixedBytes(enclosingType.CanonicalBytes.AsSpan());
-        }
-        canonicalBytes = writer.ToImmutableArray();
-        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
-    }
-
-    /// <summary>Gets the exact metadata module containing the raw TypeDef row.</summary>
-    public StaticFieldMetadataModuleIdentity MetadataModule { get; }
-    /// <summary>Gets the exact non-nil TypeDef token.</summary>
-    public int TypeDefinitionToken { get; }
-    /// <summary>Gets the raw TypeDef.FieldList starting row ID.</summary>
-    public int FieldListRowId { get; }
-    /// <summary>Gets the next TypeDef.FieldList or table-end row ID, exclusive.</summary>
-    public int FieldListEndExclusiveRowId { get; }
-    /// <summary>Gets the raw TypeDef.MethodList starting row ID.</summary>
-    public int MethodListRowId { get; }
-    /// <summary>Gets the next TypeDef.MethodList or table-end row ID, exclusive.</summary>
-    public int MethodListEndExclusiveRowId { get; }
-    /// <summary>Gets the exact decoded namespace, including empty.</summary>
-    public string NamespaceName { get; }
-    /// <summary>Gets the exact decoded metadata name without imposing compiler arity spelling.</summary>
-    public string TypeName { get; }
-    /// <summary>Gets the exact raw TypeAttributes bits.</summary>
-    public int TypeAttributes { get; }
-    /// <summary>Gets the exact GenericParam-row count owned by this raw TypeDef.</summary>
-    public int GenericParameterCount { get; }
-    /// <summary>Gets the decoded TypeDef, TypeRef, or TypeSpec Extends token, or null for nil.</summary>
-    public int? ExtendsMetadataToken { get; }
-    /// <summary>Gets the exact raw enclosing TypeDef chain, or null for a top-level row.</summary>
-    public MetadataRawTypeDefinitionIdentity? EnclosingType { get; }
-    /// <summary>Gets the exact count of retained enclosing raw TypeDefs.</summary>
-    public int EnclosingTypeDepth => EnclosingType is null ? 0 : checked(EnclosingType.EnclosingTypeDepth + 1);
-    /// <summary>Gets whether raw class-semantics bits encode interface.</summary>
-    public bool IsInterface =>
-        ((System.Reflection.TypeAttributes)TypeAttributes & System.Reflection.TypeAttributes.ClassSemanticsMask) ==
-        System.Reflection.TypeAttributes.Interface;
-    /// <summary>Gets the ordinal metadata full name.</summary>
-    public string FullName => NamespaceName.Length == 0 ? TypeName : $"{NamespaceName}.{TypeName}";
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
-    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
-    public string Sha256 { get; }
-
-    /// <summary>Creates one exact additive raw-TypeDef draft identity.</summary>
-    /// <param name="metadataModule">The exact source metadata module.</param>
-    /// <param name="typeDefinitionToken">The exact non-nil TypeDef token.</param>
-    /// <param name="fieldListRowId">The raw FieldList starting row ID.</param>
-    /// <param name="fieldListEndExclusiveRowId">The next FieldList or table-end row ID.</param>
-    /// <param name="methodListRowId">The raw MethodList starting row ID.</param>
-    /// <param name="methodListEndExclusiveRowId">The next MethodList or table-end row ID.</param>
-    /// <param name="namespaceName">The exact decoded namespace, including empty.</param>
-    /// <param name="typeName">The exact decoded metadata name.</param>
-    /// <param name="typeAttributes">The exact raw TypeAttributes bits.</param>
-    /// <param name="genericParameterCount">The exact owned GenericParam-row count.</param>
-    /// <param name="extendsMetadataToken">The decoded Extends token, or null for nil.</param>
-    /// <param name="enclosingType">The exact raw enclosing TypeDef identity, or null.</param>
-    /// <returns>A sealed immutable raw draft identity without compiler-arity assumptions.</returns>
-    public static MetadataRawTypeDefinitionIdentity Create(
-        StaticFieldMetadataModuleIdentity metadataModule,
-        int typeDefinitionToken,
-        int fieldListRowId,
-        int fieldListEndExclusiveRowId,
-        int methodListRowId,
-        int methodListEndExclusiveRowId,
-        string namespaceName,
-        string typeName,
-        int typeAttributes,
-        int genericParameterCount,
-        int? extendsMetadataToken,
-        MetadataRawTypeDefinitionIdentity? enclosingType = null)
-    {
-        ArgumentNullException.ThrowIfNull(metadataModule);
-        CanonicalReplayEncoding.ValidateMetadataToken(typeDefinitionToken, 0x02, nameof(typeDefinitionToken));
-        ValidateOwnerRange(fieldListRowId, fieldListEndExclusiveRowId, nameof(fieldListRowId));
-        ValidateOwnerRange(methodListRowId, methodListEndExclusiveRowId, nameof(methodListRowId));
-        ExpressionV2ContractEncoding.RequireText(
-            namespaceName,
-            nameof(namespaceName),
-            StaticFieldMetadataTextLimits.MaximumTextLength,
-            allowEmpty: true);
-        ExpressionV2ContractEncoding.RequireText(
-            typeName,
-            nameof(typeName),
-            StaticFieldMetadataTextLimits.MaximumTextLength);
-        if (genericParameterCount < 0 || genericParameterCount > 0x00FF_FFFF)
-        {
-            throw new ArgumentOutOfRangeException(nameof(genericParameterCount));
-        }
-        if (extendsMetadataToken.HasValue &&
-            !CanonicalReplayEncoding.IsMetadataTokenForTable(extendsMetadataToken.Value, 0x01) &&
-            !CanonicalReplayEncoding.IsMetadataTokenForTable(extendsMetadataToken.Value, 0x02) &&
-            !CanonicalReplayEncoding.IsMetadataTokenForTable(extendsMetadataToken.Value, 0x1B))
-        {
-            throw new ArgumentOutOfRangeException(nameof(extendsMetadataToken));
-        }
-        if (enclosingType is not null)
-        {
-            if (!enclosingType.MetadataModule.Equals(metadataModule) ||
-                enclosingType.EnclosingTypeDepth >= StaticFieldV2Limits.MaximumNestedTypeDefinitionDepth)
-            {
-                throw new ArgumentException("The raw enclosing chain must be distinct, same-module, and within its depth bound.", nameof(enclosingType));
-            }
-            for (var current = enclosingType; current is not null; current = current.EnclosingType)
-            {
-                if (current.TypeDefinitionToken == typeDefinitionToken)
-                {
-                    throw new ArgumentException("The raw enclosing chain cannot repeat the subject TypeDef row.", nameof(enclosingType));
-                }
-            }
-        }
-        return new MetadataRawTypeDefinitionIdentity(
-            metadataModule,
-            typeDefinitionToken,
-            fieldListRowId,
-            fieldListEndExclusiveRowId,
-            methodListRowId,
-            methodListEndExclusiveRowId,
-            namespaceName,
-            typeName,
-            typeAttributes,
-            genericParameterCount,
-            extendsMetadataToken,
-            enclosingType);
-    }
-
-    /// <summary>Projects one narrowed W7 TypeDef fact into the additive raw W8 draft identity.</summary>
-    /// <param name="definition">The exact W7 TypeDef and enclosing chain.</param>
-    /// <returns>A sealed immutable raw draft identity with identical physical row fields.</returns>
-    public static MetadataRawTypeDefinitionIdentity FromPinnedW7(StaticFieldTypeDefinitionIdentity definition)
-    {
-        ArgumentNullException.ThrowIfNull(definition);
-        return Create(
-            definition.MetadataModule,
-            definition.TypeDefinitionToken,
-            definition.FieldListRowId,
-            definition.FieldListEndExclusiveRowId,
-            definition.MethodListRowId,
-            definition.MethodListEndExclusiveRowId,
-            definition.NamespaceName,
-            definition.TypeName,
-            definition.TypeAttributes,
-            definition.GenericParameterCount,
-            definition.ExtendsMetadataToken,
-            definition.EnclosingType is null ? null : FromPinnedW7(definition.EnclosingType));
-    }
-
-    /// <summary>Tests whether this raw draft identity has every physical field of one W7 TypeDef fact.</summary>
-    /// <param name="definition">The narrowed W7 fact to compare.</param>
-    /// <returns><see langword="true"/> only when the complete raw row and enclosing chain match.</returns>
-    public bool MatchesPinnedW7(StaticFieldTypeDefinitionIdentity definition)
-    {
-        ArgumentNullException.ThrowIfNull(definition);
-        return Equals(FromPinnedW7(definition));
-    }
-
-    /// <summary>Tests canonical equality between two raw draft TypeDef identities.</summary>
-    /// <param name="other">The other raw draft identity.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
-    public bool Equals(MetadataRawTypeDefinitionIdentity? other) =>
-        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
-    /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
-    public override bool Equals(object? obj) => Equals(obj as MetadataRawTypeDefinitionIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
-    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
-
-    private static void ValidateOwnerRange(int start, int endExclusive, string parameterName)
-    {
-        if (start <= 0 || endExclusive < start || endExclusive > 0x0100_0000)
-        {
-            throw new ArgumentOutOfRangeException(parameterName);
-        }
-    }
-}
-
-/// <summary>Freezes the exact TypeDef-or-MethodDef owner alternative of one GenericParam row.</summary>
-/// <remarks>The sealed draft union retains the complete physical owner row and source metadata module.</remarks>
-public sealed class MetadataGenericParameterOwnerIdentity : IEquatable<MetadataGenericParameterOwnerIdentity>
-{
-    private const string CanonicalDomain = "metadata-v2-generic-parameter-owner-identity";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<byte> canonicalBytes;
-
-    private MetadataGenericParameterOwnerIdentity(
-        MetadataGenericParameterOwnerKind kind,
-        MetadataRawTypeDefinitionIdentity? typeDefinition,
-        StaticFieldMethodDefinitionIdentity? methodDefinition)
-    {
-        Kind = kind;
-        TypeDefinition = typeDefinition;
-        MethodDefinition = methodDefinition;
-        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteInt32((int)kind);
-        WriteOptional(writer, typeDefinition?.CanonicalBytes);
-        WriteOptional(writer, methodDefinition?.CanonicalBytes);
-        canonicalBytes = writer.ToImmutableArray();
-        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
-    }
-
-    /// <summary>Gets the exact closed owner alternative.</summary>
-    public MetadataGenericParameterOwnerKind Kind { get; }
-    /// <summary>Gets the exact TypeDef owner only for a TypeDef-owned row.</summary>
-    public MetadataRawTypeDefinitionIdentity? TypeDefinition { get; }
-    /// <summary>Gets the exact MethodDef owner only for a MethodDef-owned row.</summary>
-    public StaticFieldMethodDefinitionIdentity? MethodDefinition { get; }
-    /// <summary>Gets the exact source metadata module containing the owner and GenericParam rows.</summary>
-    public StaticFieldMetadataModuleIdentity MetadataModule => Kind switch
-    {
-        MetadataGenericParameterOwnerKind.TypeDefinition => TypeDefinition!.MetadataModule,
-        MetadataGenericParameterOwnerKind.MethodDefinition => MethodDefinition!.DeclaringType.MetadataModule,
-        _ => throw new InvalidOperationException("The owner kind is outside the closed draft union."),
-    };
-    /// <summary>Gets the exact TypeDef or MethodDef owner metadata token.</summary>
-    public int OwnerMetadataToken => Kind switch
-    {
-        MetadataGenericParameterOwnerKind.TypeDefinition => TypeDefinition!.TypeDefinitionToken,
-        MetadataGenericParameterOwnerKind.MethodDefinition => MethodDefinition!.MethodDefinitionToken,
-        _ => throw new InvalidOperationException("The owner kind is outside the closed draft union."),
-    };
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
-    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
-    public string Sha256 { get; }
-
-    /// <summary>Creates one exact TypeDef-owner draft identity.</summary>
-    /// <param name="typeDefinition">The complete physical TypeDef owner row.</param>
-    /// <returns>A sealed immutable draft owner identity.</returns>
-    public static MetadataGenericParameterOwnerIdentity ForTypeDefinition(
-        MetadataRawTypeDefinitionIdentity typeDefinition)
-    {
-        ArgumentNullException.ThrowIfNull(typeDefinition);
-        return new MetadataGenericParameterOwnerIdentity(
-            MetadataGenericParameterOwnerKind.TypeDefinition,
-            typeDefinition,
-            null);
-    }
-
-    /// <summary>Creates one exact MethodDef-owner draft identity.</summary>
-    /// <param name="methodDefinition">The complete physical MethodDef row and declaring TypeDef relation.</param>
-    /// <returns>A sealed immutable draft owner identity.</returns>
-    public static MetadataGenericParameterOwnerIdentity ForMethodDefinition(
-        StaticFieldMethodDefinitionIdentity methodDefinition)
-    {
-        ArgumentNullException.ThrowIfNull(methodDefinition);
-        return new MetadataGenericParameterOwnerIdentity(
-            MetadataGenericParameterOwnerKind.MethodDefinition,
-            null,
-            methodDefinition);
-    }
-
-    /// <summary>Tests canonical equality between two draft GenericParam owner identities.</summary>
-    /// <param name="other">The other draft owner.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
-    public bool Equals(MetadataGenericParameterOwnerIdentity? other) =>
-        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
-    /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
-    public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterOwnerIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
-    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
-
-    private static void WriteOptional(CanonicalReplayEncoding.Writer writer, ImmutableArray<byte>? bytes)
-    {
-        writer.WriteBoolean(bytes.HasValue);
-        if (bytes.HasValue)
-        {
-            writer.WriteLengthPrefixedBytes(bytes.Value.AsSpan());
-        }
-    }
-}
-
-/// <summary>Freezes one exact GenericParam row without binding an argument.</summary>
-/// <remarks>This sealed draft identity preserves row token, exact owner alternative, raw number, name, and flags.</remarks>
-public sealed class MetadataGenericParameterIdentity : IEquatable<MetadataGenericParameterIdentity>
-{
-    private const string CanonicalDomain = "metadata-v2-generic-parameter-identity";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<byte> canonicalBytes;
-
-    private MetadataGenericParameterIdentity(
-        int genericParameterToken,
-        MetadataGenericParameterOwnerIdentity owner,
-        int position,
-        string name,
-        int attributes)
-    {
-        GenericParameterToken = genericParameterToken;
-        Owner = owner;
-        Position = position;
-        Name = name;
-        Attributes = attributes;
-        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteInt32(genericParameterToken);
-        writer.WriteLengthPrefixedBytes(owner.CanonicalBytes.AsSpan());
-        writer.WriteInt32(position);
-        writer.WriteString(name);
-        writer.WriteInt32(attributes);
-        canonicalBytes = writer.ToImmutableArray();
-        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
-    }
-
-    /// <summary>Gets the exact non-nil GenericParam token.</summary>
-    public int GenericParameterToken { get; }
-    /// <summary>Gets the exact TypeDef-or-MethodDef owner row identity.</summary>
-    public MetadataGenericParameterOwnerIdentity Owner { get; }
-    /// <summary>Gets the exact decoded TypeDef or MethodDef owner token.</summary>
-    public int OwnerMetadataToken => Owner.OwnerMetadataToken;
-    /// <summary>Gets the zero-based flattened GenericParam number.</summary>
-    public int Position { get; }
-    /// <summary>Gets the exact decoded metadata name.</summary>
-    public string Name { get; }
-    /// <summary>Gets the exact GenericParameterAttributes bits.</summary>
-    public int Attributes { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
-    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
-    public string Sha256 { get; }
-
-    /// <summary>Creates one validated GenericParam-row draft identity.</summary>
-    /// <param name="genericParameterToken">The exact non-nil GenericParam token.</param>
-    /// <param name="owner">The exact TypeDef-or-MethodDef owner row identity.</param>
-    /// <param name="position">The zero-based flattened position.</param>
-    /// <param name="name">The exact decoded non-empty metadata name.</param>
-    /// <param name="attributes">The exact admitted GenericParameterAttributes bits.</param>
-    /// <returns>A sealed immutable draft row identity.</returns>
-    public static MetadataGenericParameterIdentity Create(
-        int genericParameterToken,
-        MetadataGenericParameterOwnerIdentity owner,
-        int position,
-        string name,
-        int attributes)
-    {
-        CanonicalReplayEncoding.ValidateMetadataToken(genericParameterToken, 0x2A, nameof(genericParameterToken));
-        ArgumentNullException.ThrowIfNull(owner);
-        if (position < 0 || position > ushort.MaxValue)
-        {
-            throw new ArgumentOutOfRangeException(nameof(position));
-        }
-        ExpressionV2ContractEncoding.RequireText(name, nameof(name), StaticFieldMetadataTextLimits.MaximumTextLength);
-        if (attributes < 0 || (attributes & ~0x3F) != 0)
-        {
-            throw new ArgumentException("The GenericParam attributes contain bits outside the admitted CLI set.", nameof(attributes));
-        }
-        return new MetadataGenericParameterIdentity(
-            genericParameterToken,
-            owner,
-            position,
-            name,
-            attributes);
-    }
-
-    /// <summary>Tests canonical equality between two draft GenericParam identities.</summary>
-    /// <param name="other">The other draft identity.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
-    public bool Equals(MetadataGenericParameterIdentity? other) =>
-        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
-    /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
-    public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
-    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
-}
-
-/// <summary>Proves that one exact reference-class ancestry has the canonical delegate base chain.</summary>
-/// <remarks>
-/// This sealed draft proof supplements the broader W7 reference-class ancestry without changing that established
-/// contract. It retains the exact runtime-selected core-library <c>System.MulticastDelegate</c> and
-/// <c>System.Delegate</c> TypeDefs and proves the subject derives directly through both roles to System.Object.
-/// </remarks>
-public sealed class MetadataDelegateTypeAncestryIdentity : IEquatable<MetadataDelegateTypeAncestryIdentity>
-{
-    private const string CanonicalDomain = "metadata-v2-delegate-type-ancestry-identity";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<byte> canonicalBytes;
-
-    private MetadataDelegateTypeAncestryIdentity(
-        StaticFieldTypeAncestryIdentity ancestry,
-        StaticFieldTypeDefinitionIdentity systemMulticastDelegateType,
-        StaticFieldTypeDefinitionIdentity systemDelegateType)
-    {
-        Ancestry = ancestry;
-        SystemMulticastDelegateType = systemMulticastDelegateType;
-        SystemDelegateType = systemDelegateType;
-        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteLengthPrefixedBytes(ancestry.CanonicalBytes.AsSpan());
-        writer.WriteLengthPrefixedBytes(systemMulticastDelegateType.CanonicalBytes.AsSpan());
-        writer.WriteLengthPrefixedBytes(systemDelegateType.CanonicalBytes.AsSpan());
-        canonicalBytes = writer.ToImmutableArray();
-        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
-    }
-
-    /// <summary>Gets the complete exact subject-to-System.Object reference-class ancestry.</summary>
-    public StaticFieldTypeAncestryIdentity Ancestry { get; }
-
-    /// <summary>Gets the exact runtime-selected core-library System.MulticastDelegate TypeDef.</summary>
-    public StaticFieldTypeDefinitionIdentity SystemMulticastDelegateType { get; }
-
-    /// <summary>Gets the exact runtime-selected core-library System.Delegate TypeDef.</summary>
-    public StaticFieldTypeDefinitionIdentity SystemDelegateType { get; }
-
-    /// <summary>Gets the exact delegate TypeDef classified by this proof.</summary>
-    public StaticFieldTypeDefinitionIdentity SubjectType => Ancestry.SubjectType;
-
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
-    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
-    public string Sha256 { get; }
-
-    /// <summary>Creates one exact immutable delegate-ancestry proof.</summary>
-    /// <param name="ancestry">The complete exact subject-to-System.Object reference-class ancestry.</param>
-    /// <param name="systemMulticastDelegateType">
-    /// The exact runtime-selected core-library System.MulticastDelegate TypeDef.
-    /// </param>
-    /// <param name="systemDelegateType">The exact runtime-selected core-library System.Delegate TypeDef.</param>
-    /// <returns>A sealed draft proof of the canonical delegate base chain.</returns>
-    public static MetadataDelegateTypeAncestryIdentity Create(
-        StaticFieldTypeAncestryIdentity ancestry,
-        StaticFieldTypeDefinitionIdentity systemMulticastDelegateType,
-        StaticFieldTypeDefinitionIdentity systemDelegateType)
-    {
-        ArgumentNullException.ThrowIfNull(ancestry);
-        ArgumentNullException.ThrowIfNull(systemMulticastDelegateType);
-        ArgumentNullException.ThrowIfNull(systemDelegateType);
-        if (ancestry.Classification != StaticFieldTypeClassification.ReferenceClass ||
-            ancestry.CoreLibrary is not { } coreLibrary)
-        {
-            throw new ArgumentException(
-                "A delegate proof requires one exact reference-class ancestry with a core-library terminal.",
-                nameof(ancestry));
-        }
-        ValidateCoreLibraryRole(systemMulticastDelegateType, "MulticastDelegate", coreLibrary);
-        ValidateCoreLibraryRole(systemDelegateType, "Delegate", coreLibrary);
-        var edges = ancestry.Edges;
-        if (edges.Length != 3 ||
-            !edges[0].SourceType.Equals(ancestry.SubjectType) ||
-            !edges[0].ResolvedBaseType.Equals(systemMulticastDelegateType) ||
-            !edges[1].SourceType.Equals(systemMulticastDelegateType) ||
-            !edges[1].ResolvedBaseType.Equals(systemDelegateType) ||
-            !edges[2].SourceType.Equals(systemDelegateType) ||
-            !edges[2].ResolvedBaseType.Equals(coreLibrary.SystemObjectType))
-        {
-            throw new ArgumentException(
-                "A delegate proof must retain the exact subject, MulticastDelegate, Delegate, and Object chain.",
-                nameof(ancestry));
-        }
-        return new MetadataDelegateTypeAncestryIdentity(
-            ancestry,
-            systemMulticastDelegateType,
-            systemDelegateType);
-    }
-
-    /// <summary>Tests canonical equality between two immutable delegate-ancestry proofs.</summary>
-    /// <param name="other">The other draft proof.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
-    public bool Equals(MetadataDelegateTypeAncestryIdentity? other) =>
-        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
-    /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
-    public override bool Equals(object? obj) => Equals(obj as MetadataDelegateTypeAncestryIdentity);
-
-    /// <summary>Computes a hash code from immutable canonical draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
-    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
-
-    private static void ValidateCoreLibraryRole(
-        StaticFieldTypeDefinitionIdentity type,
-        string expectedName,
-        StaticFieldCoreLibraryIdentity coreLibrary)
-    {
-        var attributes = (System.Reflection.TypeAttributes)type.TypeAttributes;
-        if (!type.MetadataModule.Equals(coreLibrary.MetadataModule) ||
-            !type.IsTopLevel ||
-            type.GenericArity != 0 ||
-            type.IsInterface ||
-            !string.Equals(type.NamespaceName, "System", StringComparison.Ordinal) ||
-            !string.Equals(type.TypeName, expectedName, StringComparison.Ordinal) ||
-            (attributes & System.Reflection.TypeAttributes.VisibilityMask) !=
-                System.Reflection.TypeAttributes.Public ||
-            (attributes & System.Reflection.TypeAttributes.Abstract) == 0 ||
-            (attributes & System.Reflection.TypeAttributes.Sealed) != 0)
-        {
-            throw new ArgumentException(
-                $"The {expectedName} role must be its exact public abstract core-library TypeDef.",
-                nameof(type));
-        }
-    }
-}
-
-/// <summary>Augments one exact W7 TypeDef identity with W8 definition kind and flattened GenericParam rows.</summary>
-/// <remarks>The sealed draft wrapper validates every parameter against the complete physical enclosing-type chain.</remarks>
-public sealed class MetadataTypeDefinitionIdentity : IEquatable<MetadataTypeDefinitionIdentity>
-{
-    private const string CanonicalDomain = "metadata-v2-type-definition-identity";
-    private const int CanonicalSchemaVersion = 3;
-    private readonly ImmutableArray<MetadataGenericParameterIdentity> genericParameters;
-    private readonly ImmutableArray<int> genericParameterSegmentIndices;
-    private readonly ImmutableArray<byte> canonicalBytes;
-
-    private MetadataTypeDefinitionIdentity(
-        MetadataRawTypeDefinitionIdentity rawDefinition,
-        StaticFieldTypeDefinitionIdentity? pinnedDefinition,
-        MetadataTypeDefinitionKind kind,
-        MetadataTypeDefinitionClassificationStatus classificationStatus,
-        StaticFieldTypeAncestryIdentity? ancestry,
-        MetadataDelegateTypeAncestryIdentity? delegateAncestry,
-        MetadataNestedGenericMappingStatus genericMappingStatus,
-        ImmutableArray<MetadataGenericParameterIdentity> genericParameters,
-        ImmutableArray<int> genericParameterSegmentIndices)
-    {
-        RawDefinition = rawDefinition;
-        PinnedDefinition = pinnedDefinition;
-        Kind = kind;
-        ClassificationStatus = classificationStatus;
-        Ancestry = ancestry;
-        DelegateAncestry = delegateAncestry;
-        GenericMappingStatus = genericMappingStatus;
-        this.genericParameters = genericParameters;
-        this.genericParameterSegmentIndices = genericParameterSegmentIndices;
-        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteLengthPrefixedBytes(rawDefinition.CanonicalBytes.AsSpan());
-        writer.WriteBoolean(pinnedDefinition is not null);
-        if (pinnedDefinition is not null)
-        {
-            writer.WriteLengthPrefixedBytes(pinnedDefinition.CanonicalBytes.AsSpan());
-        }
-        writer.WriteInt32((int)kind);
-        writer.WriteInt32((int)classificationStatus);
-        writer.WriteBoolean(ancestry is not null);
-        if (ancestry is not null)
-        {
-            writer.WriteLengthPrefixedBytes(ancestry.CanonicalBytes.AsSpan());
-        }
-        writer.WriteBoolean(delegateAncestry is not null);
-        if (delegateAncestry is not null)
-        {
-            writer.WriteLengthPrefixedBytes(delegateAncestry.CanonicalBytes.AsSpan());
-        }
-        writer.WriteInt32((int)genericMappingStatus);
-        ExpressionV2ContractEncoding.WriteCanonicalArray(writer, genericParameters, static value => value.CanonicalBytes);
-        WriteInt32Array(writer, genericParameterSegmentIndices);
-        canonicalBytes = writer.ToImmutableArray();
-        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
-    }
-
-    /// <summary>Gets the exact additive raw W8 TypeDef row and enclosing chain.</summary>
-    public MetadataRawTypeDefinitionIdentity RawDefinition { get; }
-    /// <summary>Gets the exact additive physical row; retained as a draft naming bridge for W8 callers.</summary>
-    public MetadataRawTypeDefinitionIdentity PhysicalDefinition => RawDefinition;
-    /// <summary>Gets the narrowed W7 mapping fact only when the pinned compiler relation was proven.</summary>
-    public StaticFieldTypeDefinitionIdentity? PinnedDefinition { get; }
-    /// <summary>Gets the attributed semantic kind together with <see cref="ClassificationStatus"/>.</summary>
-    public MetadataTypeDefinitionKind Kind { get; }
-    /// <summary>Gets whether the semantic kind has exact physical proof.</summary>
-    public MetadataTypeDefinitionClassificationStatus ClassificationStatus { get; }
-    /// <summary>Gets the exact W7 ancestry proof when one was supplied for semantic classification.</summary>
-    public StaticFieldTypeAncestryIdentity? Ancestry { get; }
-    /// <summary>Gets the exact canonical delegate-base proof only for an exactly classified delegate.</summary>
-    public MetadataDelegateTypeAncestryIdentity? DelegateAncestry { get; }
-    /// <summary>Gets whether a pinned compiler mapping can partition flattened arguments.</summary>
-    public MetadataNestedGenericMappingStatus GenericMappingStatus { get; }
-    /// <summary>Gets every exact raw GenericParam row in flattened-number order.</summary>
-    public ImmutableArray<MetadataGenericParameterIdentity> GenericParameters =>
-        ExpressionV2ContractEncoding.Copy(genericParameters);
-    /// <summary>Gets derived per-position segment indices only for an exact pinned compiler mapping.</summary>
-    public ImmutableArray<int> GenericParameterSegmentIndices =>
-        ExpressionV2ContractEncoding.Copy(genericParameterSegmentIndices);
-    /// <summary>Gets the exact TypeDef metadata token.</summary>
-    public int TypeDefinitionToken => RawDefinition.TypeDefinitionToken;
-    /// <summary>Gets the exact total owned GenericParam-row count.</summary>
-    public int FlattenedArity => genericParameters.Length;
-    /// <summary>Gets the final segment's introduced arity only for an exact pinned compiler mapping.</summary>
-    public int? IntroducedArity => PinnedDefinition?.IntroducedGenericArity;
-    /// <summary>Gets the zero-based final raw named-segment index.</summary>
-    public int SegmentIndex => RawDefinition.EnclosingTypeDepth;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
-    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
-    public string Sha256 { get; }
-
-    /// <summary>Creates a readable raw-TypeDef draft identity with a typed non-exact compiler mapping.</summary>
-    /// <param name="rawDefinition">The exact additive raw TypeDef row and enclosing chain.</param>
-    /// <param name="kind">The attributed kind checked against exact flags and any supplied ancestry.</param>
-    /// <param name="genericParameters">Every exact raw GenericParam row in flattened-number order.</param>
-    /// <param name="ancestry">An optional exact W7 ancestry proof matching the raw row.</param>
-    /// <param name="delegateAncestry">An optional canonical delegate-base proof matching <paramref name="ancestry"/>.</param>
-    /// <returns>A sealed immutable draft definition whose argument slicing remains non-admitted.</returns>
-    public static MetadataTypeDefinitionIdentity Create(
-        MetadataRawTypeDefinitionIdentity rawDefinition,
-        MetadataTypeDefinitionKind kind,
-        ImmutableArray<MetadataGenericParameterIdentity> genericParameters,
-        StaticFieldTypeAncestryIdentity? ancestry = null,
-        MetadataDelegateTypeAncestryIdentity? delegateAncestry = null) =>
-        CreateCore(rawDefinition, pinnedDefinition: null, kind, genericParameters, ancestry, delegateAncestry);
-
-    /// <summary>Creates a draft TypeDef identity with an exact pinned compiler arity mapping.</summary>
-    /// <param name="pinnedDefinition">The narrowed exact W7 TypeDef fact.</param>
-    /// <param name="kind">The interface kind or a non-interface attribution checked against optional ancestry.</param>
-    /// <param name="genericParameters">Every exact GenericParam row owned by the projected raw TypeDef.</param>
-    /// <param name="ancestry">An optional exact W7 ancestry proof for semantic classification.</param>
-    /// <param name="delegateAncestry">An optional canonical delegate-base proof matching <paramref name="ancestry"/>.</param>
-    /// <returns>A sealed immutable draft identity able to partition nested flattened arguments.</returns>
-    public static MetadataTypeDefinitionIdentity FromPinnedW7(
-        StaticFieldTypeDefinitionIdentity pinnedDefinition,
-        MetadataTypeDefinitionKind kind,
-        ImmutableArray<MetadataGenericParameterIdentity> genericParameters,
-        StaticFieldTypeAncestryIdentity? ancestry = null,
-        MetadataDelegateTypeAncestryIdentity? delegateAncestry = null)
-    {
-        ArgumentNullException.ThrowIfNull(pinnedDefinition);
-        return CreateCore(
-            MetadataRawTypeDefinitionIdentity.FromPinnedW7(pinnedDefinition),
-            pinnedDefinition,
-            kind,
-            genericParameters,
-            ancestry,
-            delegateAncestry);
-    }
-
-    /// <summary>Tests canonical equality between two draft TypeDef identities.</summary>
-    /// <param name="other">The other draft identity.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
-    public bool Equals(MetadataTypeDefinitionIdentity? other) =>
-        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
-    /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
-    public override bool Equals(object? obj) => Equals(obj as MetadataTypeDefinitionIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
-    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
-
-    private static MetadataTypeDefinitionIdentity CreateCore(
-        MetadataRawTypeDefinitionIdentity rawDefinition,
-        StaticFieldTypeDefinitionIdentity? pinnedDefinition,
-        MetadataTypeDefinitionKind kind,
-        ImmutableArray<MetadataGenericParameterIdentity> genericParameters,
-        StaticFieldTypeAncestryIdentity? ancestry,
-        MetadataDelegateTypeAncestryIdentity? delegateAncestry)
-    {
-        ArgumentNullException.ThrowIfNull(rawDefinition);
-        ExpressionV2ContractEncoding.RequireDefined(kind, nameof(kind));
-        var copied = ExpressionV2ContractEncoding.CopyRequired(
-            genericParameters,
-            nameof(genericParameters),
-            StaticFieldV2Limits.MaximumGenericParameterCount);
-        if (copied.Length != rawDefinition.GenericParameterCount)
-        {
-            throw new ArgumentException("GenericParam rows must exhaust the exact raw TypeDef-owned count.", nameof(genericParameters));
-        }
-        for (var position = 0; position < copied.Length; position++)
-        {
-            if (copied[position].Position != position ||
-                copied[position].Owner.Kind != MetadataGenericParameterOwnerKind.TypeDefinition ||
-                !copied[position].Owner.TypeDefinition!.Equals(rawDefinition))
-            {
-                throw new ArgumentException("GenericParam owner and number must match the exact raw TypeDef row.", nameof(genericParameters));
-            }
-        }
-        if (pinnedDefinition is not null && !rawDefinition.MatchesPinnedW7(pinnedDefinition))
-        {
-            throw new ArgumentException("The pinned mapping fact must match every raw TypeDef field.", nameof(pinnedDefinition));
-        }
-        var classificationStatus = ValidateClassification(rawDefinition, kind, ancestry, delegateAncestry);
-        var segmentIndices = pinnedDefinition is null
-            ? ImmutableArray<int>.Empty
-            : DerivePinnedSegmentIndices(pinnedDefinition, copied.Length);
-        return new MetadataTypeDefinitionIdentity(
-            rawDefinition,
-            pinnedDefinition,
-            kind,
-            classificationStatus,
-            ancestry,
-            delegateAncestry,
-            pinnedDefinition is null
-                ? MetadataNestedGenericMappingStatus.NonExact
-                : MetadataNestedGenericMappingStatus.ExactPinnedCompiler,
-            copied,
-            segmentIndices);
-    }
-
-    private static MetadataTypeDefinitionClassificationStatus ValidateClassification(
-        MetadataRawTypeDefinitionIdentity rawDefinition,
-        MetadataTypeDefinitionKind kind,
-        StaticFieldTypeAncestryIdentity? ancestry,
-        MetadataDelegateTypeAncestryIdentity? delegateAncestry)
-    {
-        if (rawDefinition.IsInterface)
-        {
-            if (rawDefinition.ExtendsMetadataToken is not null ||
-                kind != MetadataTypeDefinitionKind.Interface ||
-                delegateAncestry is not null ||
-                ancestry is not null &&
-                (!rawDefinition.MatchesPinnedW7(ancestry.SubjectType) ||
-                 ancestry.Classification != StaticFieldTypeClassification.Interface))
-            {
-                throw new ArgumentException(
-                    "Interface flags require a nil Extends column and any ancestry must prove that exact interface.",
-                    nameof(kind));
-            }
-            return MetadataTypeDefinitionClassificationStatus.Exact;
-        }
-        if (kind == MetadataTypeDefinitionKind.Interface)
-        {
-            throw new ArgumentException("Non-interface flags cannot carry the interface kind.", nameof(kind));
-        }
-        if (ancestry is null)
-        {
-            if (delegateAncestry is not null)
-            {
-                throw new ArgumentException(
-                    "A delegate-base proof requires the same complete reference-class ancestry.",
-                    nameof(delegateAncestry));
-            }
-            return MetadataTypeDefinitionClassificationStatus.Provisional;
-        }
-        if (!rawDefinition.MatchesPinnedW7(ancestry.SubjectType))
-        {
-            throw new ArgumentException("The ancestry proof must classify the exact raw TypeDef row.", nameof(ancestry));
-        }
-        if (kind == MetadataTypeDefinitionKind.Delegate)
-        {
-            if (ancestry.Classification != StaticFieldTypeClassification.ReferenceClass)
-            {
-                throw new ArgumentException(
-                    "A delegate attribution contradicts non-reference ancestry.",
-                    nameof(kind));
-            }
-            if (delegateAncestry is null)
-            {
-                return MetadataTypeDefinitionClassificationStatus.Provisional;
-            }
-            if (!delegateAncestry.Ancestry.Equals(ancestry) ||
-                !rawDefinition.MatchesPinnedW7(delegateAncestry.SubjectType))
-            {
-                throw new ArgumentException(
-                    "The delegate-base proof must classify the same exact raw TypeDef and ancestry.",
-                    nameof(delegateAncestry));
-            }
-            return MetadataTypeDefinitionClassificationStatus.Exact;
-        }
-        if (delegateAncestry is not null)
-        {
-            throw new ArgumentException(
-                "A delegate-base proof is valid only with the delegate kind.",
-                nameof(delegateAncestry));
-        }
-        var expectedKind = ancestry.Classification switch
-        {
-            StaticFieldTypeClassification.ReferenceClass => MetadataTypeDefinitionKind.Class,
-            StaticFieldTypeClassification.ValueType => MetadataTypeDefinitionKind.ValueType,
-            StaticFieldTypeClassification.Enum => MetadataTypeDefinitionKind.Enum,
-            _ => throw new ArgumentException("The ancestry classification contradicts non-interface flags.", nameof(ancestry)),
-        };
-        if (kind != expectedKind)
-        {
-            throw new ArgumentException("The attributed kind must equal exact ancestry classification.", nameof(kind));
-        }
-        return MetadataTypeDefinitionClassificationStatus.Exact;
-    }
-
-    private static ImmutableArray<int> DerivePinnedSegmentIndices(
-        StaticFieldTypeDefinitionIdentity finalDefinition,
-        int parameterCount)
-    {
-        var stack = new Stack<StaticFieldTypeDefinitionIdentity>();
-        for (var current = finalDefinition; current is not null; current = current.EnclosingType)
-        {
-            stack.Push(current);
-        }
-        var chain = stack.ToArray();
-        var builder = ImmutableArray.CreateBuilder<int>(parameterCount);
-        for (var position = 0; position < parameterCount; position++)
-        {
-            var segment = 0;
-            while (position >= chain[segment].GenericParameterCount)
-            {
-                segment++;
-            }
-            builder.Add(segment);
-        }
-        return builder.ToImmutable();
-    }
-
-    private static void WriteInt32Array(CanonicalReplayEncoding.Writer writer, ImmutableArray<int> values)
-    {
-        writer.WriteInt32(values.Length);
-        foreach (var value in values)
-        {
-            writer.WriteInt32(value);
-        }
-    }
 }
 
 /// <summary>Freezes a lightweight source-module/TypeSpec-token row reference.</summary>
@@ -1657,32 +757,33 @@ public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatur
 
 /// <summary>Freezes one exact physical TypeDefOrRef target without erasing its source row form.</summary>
 /// <remarks>
-/// The sealed draft union reuses the complete W7 TypeRef resolution. Only its TypeSpec alternative carries a signature
+/// The sealed draft union carries authority-issued semantic-classification rows for its named alternatives and the
+/// complete authority TypeRef resolution for a reference target. Only its TypeSpec alternative carries a signature
 /// blob, so a direct TypeDef or TypeRef can never acquire invented TypeSpec bytes.
 /// </remarks>
 public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataTypeDefOrRefTargetIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-typedef-or-ref-target-identity";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataTypeDefOrRefTargetIdentity(
         MetadataTypeDefOrRefTargetKind kind,
-        MetadataTypeDefinitionIdentity? directDefinition,
-        StaticFieldTypeReferenceResolutionIdentity? typeReferenceResolution,
-        MetadataTypeDefinitionIdentity? resolvedReferenceDefinition,
+        MetadataTypeDefinitionSemanticClassificationIdentity? directClassification,
+        MetadataTypeReferenceResolutionIdentity? referenceResolution,
+        MetadataTypeDefinitionSemanticClassificationIdentity? resolvedReferenceClassification,
         MetadataTypeSpecificationRowIdentity? typeSpecification)
     {
         Kind = kind;
-        DirectDefinition = directDefinition;
-        TypeReferenceResolution = typeReferenceResolution;
-        ResolvedReferenceDefinition = resolvedReferenceDefinition;
+        DirectClassification = directClassification;
+        ReferenceResolution = referenceResolution;
+        ResolvedReferenceClassification = resolvedReferenceClassification;
         TypeSpecification = typeSpecification;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32((int)kind);
-        WriteOptional(writer, directDefinition?.CanonicalBytes);
-        WriteOptional(writer, typeReferenceResolution?.CanonicalBytes);
-        WriteOptional(writer, resolvedReferenceDefinition?.CanonicalBytes);
+        WriteOptional(writer, directClassification?.CanonicalBytes);
+        WriteOptional(writer, referenceResolution?.CanonicalBytes);
+        WriteOptional(writer, resolvedReferenceClassification?.CanonicalBytes);
         WriteOptional(writer, typeSpecification?.CanonicalBytes);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -1690,35 +791,35 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
 
     /// <summary>Gets the exact closed target alternative.</summary>
     public MetadataTypeDefOrRefTargetKind Kind { get; }
-    /// <summary>Gets the exact direct TypeDef only for a TypeDef target.</summary>
-    public MetadataTypeDefinitionIdentity? DirectDefinition { get; }
-    /// <summary>Gets the complete exact W7 TypeRef resolution only for a TypeRef target.</summary>
-    public StaticFieldTypeReferenceResolutionIdentity? TypeReferenceResolution { get; }
-    /// <summary>Gets the W8-classified target TypeDef only for a TypeRef target.</summary>
-    public MetadataTypeDefinitionIdentity? ResolvedReferenceDefinition { get; }
+    /// <summary>Gets the authority-issued semantic classification only for a direct TypeDef target.</summary>
+    public MetadataTypeDefinitionSemanticClassificationIdentity? DirectClassification { get; }
+    /// <summary>Gets the complete authority TypeRef resolution row only for a TypeRef target.</summary>
+    public MetadataTypeReferenceResolutionIdentity? ReferenceResolution { get; }
+    /// <summary>Gets the authority-issued classification of the resolved target only for a TypeRef target.</summary>
+    public MetadataTypeDefinitionSemanticClassificationIdentity? ResolvedReferenceClassification { get; }
     /// <summary>Gets the exact TypeSpec row and bytes only for a TypeSpec target.</summary>
     public MetadataTypeSpecificationRowIdentity? TypeSpecification { get; }
     /// <summary>Gets the source metadata module containing the decoded TypeDefOrRef token.</summary>
     public StaticFieldMetadataModuleIdentity SourceMetadataModule => Kind switch
     {
-        MetadataTypeDefOrRefTargetKind.TypeDefinition => DirectDefinition!.PhysicalDefinition.MetadataModule,
-        MetadataTypeDefOrRefTargetKind.TypeReference => TypeReferenceResolution!.SourceModule,
+        MetadataTypeDefOrRefTargetKind.TypeDefinition => DirectClassification!.SourceModule,
+        MetadataTypeDefOrRefTargetKind.TypeReference => ReferenceResolution!.ReferenceRow.Observation.SourceModule,
         MetadataTypeDefOrRefTargetKind.TypeSpecification => TypeSpecification!.Reference.MetadataModule,
         _ => throw new InvalidOperationException("The target kind is outside the closed draft union."),
     };
     /// <summary>Gets the exact decoded TypeDef, TypeRef, or TypeSpec source token.</summary>
     public int SourceMetadataToken => Kind switch
     {
-        MetadataTypeDefOrRefTargetKind.TypeDefinition => DirectDefinition!.TypeDefinitionToken,
-        MetadataTypeDefOrRefTargetKind.TypeReference => TypeReferenceResolution!.ReferencedType.TypeReferenceToken,
+        MetadataTypeDefOrRefTargetKind.TypeDefinition => DirectClassification!.TypeDefinition.TypeDefinitionToken,
+        MetadataTypeDefOrRefTargetKind.TypeReference => ReferenceResolution!.TypeReferenceToken,
         MetadataTypeDefOrRefTargetKind.TypeSpecification => TypeSpecification!.Reference.TypeSpecificationToken,
         _ => throw new InvalidOperationException("The target kind is outside the closed draft union."),
     };
-    /// <summary>Gets the exact resolved named TypeDef when the target has one, otherwise null.</summary>
-    public MetadataTypeDefinitionIdentity? ResolvedDefinition => Kind switch
+    /// <summary>Gets the authority-issued classification of the named target when the target has one, otherwise null.</summary>
+    public MetadataTypeDefinitionSemanticClassificationIdentity? ResolvedClassification => Kind switch
     {
-        MetadataTypeDefOrRefTargetKind.TypeDefinition => DirectDefinition,
-        MetadataTypeDefOrRefTargetKind.TypeReference => ResolvedReferenceDefinition,
+        MetadataTypeDefOrRefTargetKind.TypeDefinition => DirectClassification,
+        MetadataTypeDefOrRefTargetKind.TypeReference => ResolvedReferenceClassification,
         MetadataTypeDefOrRefTargetKind.TypeSpecification => null,
         _ => null,
     };
@@ -1727,39 +828,46 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates a direct-TypeDef draft target in the definition's exact source module.</summary>
-    /// <param name="definition">The exact W8-classified TypeDef.</param>
+    /// <summary>Creates a direct-TypeDef draft target in the classification's exact source module.</summary>
+    /// <param name="classification">The authority-issued semantic classification of the exact TypeDef row.</param>
     /// <returns>A sealed immutable draft target carrying no signature blob.</returns>
-    public static MetadataTypeDefOrRefTargetIdentity FromTypeDefinition(MetadataTypeDefinitionIdentity definition)
+    public static MetadataTypeDefOrRefTargetIdentity FromTypeDefinition(
+        MetadataTypeDefinitionSemanticClassificationIdentity classification)
     {
-        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(classification);
         return new MetadataTypeDefOrRefTargetIdentity(
             MetadataTypeDefOrRefTargetKind.TypeDefinition,
-            definition,
+            classification,
             null,
             null,
             null);
     }
 
-    /// <summary>Creates a TypeRef draft target from one complete detached resolution.</summary>
-    /// <param name="resolution">The exact W7 TypeRef row, source module, scope route, and target TypeDef.</param>
-    /// <param name="resolvedDefinition">The W8 classification of the same exact resolved TypeDef.</param>
+    /// <summary>Creates a TypeRef draft target from one complete authority resolution row.</summary>
+    /// <param name="resolution">The exact resolved authority TypeRef row, target module, and target TypeDef.</param>
+    /// <param name="resolvedClassification">The authority-issued classification of the same exact resolved TypeDef.</param>
     /// <returns>A sealed immutable draft target carrying no signature blob.</returns>
     public static MetadataTypeDefOrRefTargetIdentity FromTypeReference(
-        StaticFieldTypeReferenceResolutionIdentity resolution,
-        MetadataTypeDefinitionIdentity resolvedDefinition)
+        MetadataTypeReferenceResolutionIdentity resolution,
+        MetadataTypeDefinitionSemanticClassificationIdentity resolvedClassification)
     {
         ArgumentNullException.ThrowIfNull(resolution);
-        ArgumentNullException.ThrowIfNull(resolvedDefinition);
-        if (!resolvedDefinition.RawDefinition.MatchesPinnedW7(resolution.ResolvedTargetType))
+        ArgumentNullException.ThrowIfNull(resolvedClassification);
+        if (resolution.Disposition != MetadataTypeReferenceResolutionDispositionKind.Resolved ||
+            resolution.TargetTypeDefinition is not { } targetTypeDefinition ||
+            resolution.TargetModule is not { } targetModule ||
+            !resolvedClassification.TypeDefinition.Equals(targetTypeDefinition) ||
+            !resolvedClassification.SourceModule.Equals(targetModule))
         {
-            throw new ArgumentException("The W8 target definition must classify the exact TypeRef resolution target.", nameof(resolvedDefinition));
+            throw new ArgumentException(
+                "The classification must be the authority row of the exact resolved TypeRef target.",
+                nameof(resolvedClassification));
         }
         return new MetadataTypeDefOrRefTargetIdentity(
             MetadataTypeDefOrRefTargetKind.TypeReference,
             null,
             resolution,
-            resolvedDefinition,
+            resolvedClassification,
             null);
     }
 
@@ -2032,14 +1140,14 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
 public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataSignatureTokenResolutionEntry>
 {
     private const string CanonicalDomain = "metadata-v2-signature-token-resolution-entry";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain;
+    private const int CanonicalSchemaVersion = 2;
+    private readonly ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataSignatureTokenResolutionEntry(
         int sourceMetadataToken,
         MetadataTypeDefOrRefTargetIdentity? namedTarget,
-        ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain,
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain,
         MetadataTypeSpecificationRowReferenceIdentity? typeSpecificationReference)
     {
         SourceMetadataToken = sourceMetadataToken;
@@ -2067,8 +1175,8 @@ public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataS
     public int SourceMetadataToken { get; }
     /// <summary>Gets a complete direct TypeDef-or-TypeRef target only for a named occurrence.</summary>
     public MetadataTypeDefOrRefTargetIdentity? NamedTarget { get; }
-    /// <summary>Gets the exact outer-to-inner W8 definition chain only for a named occurrence.</summary>
-    public ImmutableArray<MetadataTypeDefinitionIdentity> DefinitionChain =>
+    /// <summary>Gets the exact outer-to-inner authority classification chain only for a named occurrence.</summary>
+    public ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> DefinitionChain =>
         ExpressionV2ContractEncoding.Copy(definitionChain);
     /// <summary>Gets a lightweight TypeSpec row reference only for a TypeSpec occurrence.</summary>
     public MetadataTypeSpecificationRowReferenceIdentity? TypeSpecificationReference { get; }
@@ -2079,11 +1187,11 @@ public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataS
 
     /// <summary>Creates one complete named TypeDef-or-TypeRef token-resolution draft entry.</summary>
     /// <param name="target">The exact direct target in the decoder's source module.</param>
-    /// <param name="definitionChain">The complete resolved outer-to-inner definition chain.</param>
+    /// <param name="definitionChain">The complete resolved outer-to-inner authority classification chain.</param>
     /// <returns>A sealed immutable draft token-resolution entry.</returns>
     public static MetadataSignatureTokenResolutionEntry Named(
         MetadataTypeDefOrRefTargetIdentity target,
-        ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain)
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain)
     {
         ArgumentNullException.ThrowIfNull(target);
         if (target.Kind == MetadataTypeDefOrRefTargetKind.TypeSpecification)
@@ -2094,7 +1202,7 @@ public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataS
             definitionChain,
             nameof(definitionChain),
             StaticFieldV2Limits.MaximumNestedTypeDefinitionDepth + 1);
-        if (copied.IsEmpty || target.ResolvedDefinition is null || !target.ResolvedDefinition.Equals(copied[^1]))
+        if (copied.IsEmpty || target.ResolvedClassification is null || !target.ResolvedClassification.Equals(copied[^1]))
         {
             throw new ArgumentException("The named definition chain must end at the exact resolved target.", nameof(definitionChain));
         }
@@ -2115,7 +1223,7 @@ public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataS
         return new MetadataSignatureTokenResolutionEntry(
             reference.TypeSpecificationToken,
             null,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             reference);
     }
 
@@ -2277,8 +1385,8 @@ public sealed class MetadataSignatureTokenResolutionCatalog : IEquatable<Metadat
 public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignatureNode>
 {
     private const string CanonicalDomain = "metadata-v2-type-signature-node";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<MetadataTypeDefinitionIdentity> namedDefinitionChain;
+    private const int CanonicalSchemaVersion = 2;
+    private readonly ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> namedDefinitionChain;
     private readonly ImmutableArray<int> arraySizes;
     private readonly ImmutableArray<int> arrayLowerBounds;
     private readonly ImmutableArray<byte> opaqueSignatureBytes;
@@ -2291,7 +1399,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
         MetadataNamedSignatureHeadKind? namedHeadKind,
         MetadataTypeDefOrRefTargetIdentity? namedTarget,
         MetadataTypeSpecificationRowReferenceIdentity? modifierTypeSpecificationReference,
-        ImmutableArray<MetadataTypeDefinitionIdentity> namedDefinitionChain,
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> namedDefinitionChain,
         int? variableIndex,
         int? indirectTypeSpecificationToken,
         int? arrayRank,
@@ -2343,7 +1451,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
         ExpressionV2ContractEncoding.WriteCanonicalArray(
             writer,
             namedDefinitionChain,
-            static definition => definition.CanonicalBytes);
+            static classification => classification.CanonicalBytes);
         ExpressionV2ContractEncoding.WriteOptionalInt32(writer, variableIndex);
         ExpressionV2ContractEncoding.WriteOptionalInt32(writer, indirectTypeSpecificationToken);
         ExpressionV2ContractEncoding.WriteOptionalInt32(writer, arrayRank);
@@ -2371,11 +1479,11 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     public MetadataTypeDefOrRefTargetIdentity? NamedTarget { get; }
     /// <summary>Gets a lightweight TypeSpec row reference only for a custom-modifier occurrence.</summary>
     public MetadataTypeSpecificationRowReferenceIdentity? ModifierTypeSpecificationReference { get; }
-    /// <summary>Gets a defensive copy of the exact outer-to-inner resolved TypeDef chain for a named form.</summary>
-    public ImmutableArray<MetadataTypeDefinitionIdentity> NamedDefinitionChain =>
+    /// <summary>Gets a defensive copy of the exact outer-to-inner resolved classification chain for a named form.</summary>
+    public ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> NamedDefinitionChain =>
         ExpressionV2ContractEncoding.Copy(namedDefinitionChain);
-    /// <summary>Gets the final resolved TypeDef for a named form, otherwise null.</summary>
-    public MetadataTypeDefinitionIdentity? NamedDefinition =>
+    /// <summary>Gets the final resolved authority classification for a named form, otherwise null.</summary>
+    public MetadataTypeDefinitionSemanticClassificationIdentity? NamedClassification =>
         namedDefinitionChain.IsEmpty ? null : namedDefinitionChain[^1];
     /// <summary>Gets the zero-based VAR or MVAR index only for a variable node.</summary>
     public int? VariableIndex { get; }
@@ -2422,18 +1530,20 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
         ContainsKind(MetadataTypeSignatureNodeKind.TypeSpecificationIndirection);
     /// <summary>Gets whether this subtree contains an uninstantiated generic named definition.</summary>
     public bool ContainsOpenDefinition =>
-        Kind == MetadataTypeSignatureNodeKind.Named && NamedDefinition!.FlattenedArity > 0 ||
+        Kind == MetadataTypeSignatureNodeKind.Named && NamedClassification!.TypeDefinition.TotalGenericArity > 0 ||
         children.Any(static child => child.ContainsOpenDefinition);
-    /// <summary>Gets whether a named subtree lacks the pinned compiler argument-slicing relation.</summary>
+    /// <summary>Gets whether a named draft chain cannot partition its flattened arguments across nested names.</summary>
+    /// <remarks>
+    /// The partition is derived only from the authority-carried flattened arities: a chain whose inner definition
+    /// declares fewer physical GenericParam rows than its enclosing definition has no exact nested slicing.
+    /// </remarks>
     public bool ContainsNonExactGenericMapping =>
-        NamedDefinition is not null &&
-            NamedDefinition.GenericMappingStatus == MetadataNestedGenericMappingStatus.NonExact ||
+        !HasMonotonicChainArity(namedDefinitionChain) ||
         children.Any(static child => child.ContainsNonExactGenericMapping);
-    /// <summary>Gets whether any retained named-definition head has only provisional semantic classification.</summary>
-    public bool ContainsProvisionalTypeDefinitionClassification =>
-        namedDefinitionChain.Any(static definition =>
-            definition.ClassificationStatus == MetadataTypeDefinitionClassificationStatus.Provisional) ||
-        children.Any(static child => child.ContainsProvisionalTypeDefinitionClassification);
+    /// <summary>Gets whether any retained named-chain classification carries a typed issue instead of a role.</summary>
+    public bool ContainsUnclassifiedTypeDefinition =>
+        namedDefinitionChain.Any(static classification => classification.Role is null) ||
+        children.Any(static child => child.ContainsUnclassifiedTypeDefinition);
     /// <summary>Gets whether this subtree contains topology outside the admitted closed draft grammar.</summary>
     public bool ContainsUnsupportedClosedShape =>
         Kind is MetadataTypeSignatureNodeKind.RequiredModifier or
@@ -2464,7 +1574,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             kind,
             null,
             null,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             null,
             null,
             null,
@@ -2478,12 +1588,12 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <summary>Creates one resolved direct-TypeDef-or-TypeRef named draft node.</summary>
     /// <param name="headKind">The exact raw CLASS or VALUETYPE element code.</param>
     /// <param name="target">The exact direct target; TypeSpec is rejected to avoid recursive self-containment.</param>
-    /// <param name="definitionChain">Every exact resolved TypeDef from outermost through the target definition.</param>
+    /// <param name="definitionChain">Every authority classification from outermost through the target definition.</param>
     /// <returns>A sealed immutable draft node that remains open when the final definition has nonzero arity.</returns>
     internal static MetadataTypeSignatureNode Named(
         MetadataNamedSignatureHeadKind headKind,
         MetadataTypeDefOrRefTargetIdentity target,
-        ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain)
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain)
     {
         ExpressionV2ContractEncoding.RequireDefined(headKind, nameof(headKind));
         ArgumentNullException.ThrowIfNull(target);
@@ -2492,15 +1602,19 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             throw new ArgumentException("A named signature leaf cannot recursively embed a TypeSpec identity.", nameof(target));
         }
         var copiedChain = ValidateDefinitionChain(target, definitionChain);
-        var finalDefinition = copiedChain[^1];
-        if (finalDefinition.ClassificationStatus == MetadataTypeDefinitionClassificationStatus.Exact)
+        var finalClassification = copiedChain[^1];
+        if (finalClassification.Role is { } role)
         {
-            var expectedHead = finalDefinition.Kind is MetadataTypeDefinitionKind.ValueType or MetadataTypeDefinitionKind.Enum
+            if (role == MetadataTypeDefinitionSemanticRole.ModulePseudoType)
+            {
+                throw new ArgumentException("The module pseudo-type is invalid in a named signature position.", nameof(definitionChain));
+            }
+            var expectedHead = role is MetadataTypeDefinitionSemanticRole.ValueType or MetadataTypeDefinitionSemanticRole.Enum
                 ? MetadataNamedSignatureHeadKind.ValueType
                 : MetadataNamedSignatureHeadKind.Class;
             if (headKind != expectedHead)
             {
-                throw new ArgumentException("The raw CLASS/VALUETYPE head contradicts exact TypeDef classification.", nameof(headKind));
+                throw new ArgumentException("The raw CLASS/VALUETYPE head contradicts the exact authority semantic role.", nameof(headKind));
             }
         }
         return CreateCore(
@@ -2550,7 +1664,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
         ImmutableArray<MetadataTypeSignatureNode> arguments)
     {
         ArgumentNullException.ThrowIfNull(namedHead);
-        if (namedHead.Kind != MetadataTypeSignatureNodeKind.Named || namedHead.NamedDefinition is null)
+        if (namedHead.Kind != MetadataTypeSignatureNodeKind.Named || namedHead.NamedClassification is null)
         {
             throw new ArgumentException("A generic-instantiation head must be one resolved named leaf.", nameof(namedHead));
         }
@@ -2558,7 +1672,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             arguments,
             nameof(arguments),
             StaticFieldV2Limits.MaximumTypeSpecificationArgumentCount);
-        if (copied.IsEmpty || copied.Length != namedHead.NamedDefinition.FlattenedArity)
+        if (copied.IsEmpty || copied.Length != namedHead.NamedClassification.TypeDefinition.TotalGenericArity)
         {
             throw new ArgumentException(
                 "The generic-instantiation argument count must equal exact flattened TypeDef arity.",
@@ -2675,7 +1789,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             null,
             null,
             null,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             null,
             null,
             null,
@@ -2704,7 +1818,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             null,
             null,
             null,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             null,
             typeSpecificationToken,
             null,
@@ -2772,7 +1886,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             null,
             null,
             null,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             null,
             null,
             null,
@@ -2793,7 +1907,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             null,
             null,
             null,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             index,
             null,
             null,
@@ -2817,7 +1931,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             null,
             null,
             null,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             null,
             null,
             arrayRank,
@@ -2844,7 +1958,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             null,
             null,
             modifierType,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             null,
             null,
             null,
@@ -2867,7 +1981,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             null,
             null,
             null,
-            ImmutableArray<MetadataTypeDefinitionIdentity>.Empty,
+            ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity>.Empty,
             null,
             null,
             null,
@@ -2884,7 +1998,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
         MetadataPrimitiveTypeKind? primitiveKind,
         MetadataNamedSignatureHeadKind? namedHeadKind,
         MetadataTypeDefOrRefTargetIdentity? namedTarget,
-        ImmutableArray<MetadataTypeDefinitionIdentity> namedDefinitionChain,
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> namedDefinitionChain,
         int? variableIndex,
         int? indirectTypeSpecificationToken,
         int? arrayRank,
@@ -2935,49 +2049,58 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             functionPointerRequiredParameterCount);
     }
 
-    private static ImmutableArray<MetadataTypeDefinitionIdentity> ValidateDefinitionChain(
+    private static ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> ValidateDefinitionChain(
         MetadataTypeDefOrRefTargetIdentity target,
-        ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain)
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain)
     {
         var copied = ExpressionV2ContractEncoding.CopyRequired(
             definitionChain,
             nameof(definitionChain),
             StaticFieldV2Limits.MaximumNestedTypeDefinitionDepth + 1);
-        if (copied.IsEmpty || target.ResolvedDefinition is null ||
-            !target.ResolvedDefinition.Equals(copied[^1]))
+        if (copied.IsEmpty || target.ResolvedClassification is null ||
+            !target.ResolvedClassification.Equals(copied[^1]))
         {
             throw new ArgumentException("The definition chain must end at the exact named target.", nameof(definitionChain));
         }
-        var cumulativeArity = 0;
         for (var index = 0; index < copied.Length; index++)
         {
-            var definition = copied[index];
-            if (definition.SegmentIndex != index)
+            var classification = copied[index];
+            var row = classification.TypeDefinition;
+            if (row.NestingDepth != index ||
+                !classification.SourceModule.Equals(copied[^1].SourceModule))
             {
                 throw new ArgumentException("Named definition segments must be complete and outer-to-inner.", nameof(definitionChain));
             }
             if (index == 0)
             {
-                if (definition.PhysicalDefinition.EnclosingType is not null)
+                if (row.EnclosingTypeDefinitionToken is not null)
                 {
                     throw new ArgumentException("The first named definition segment must be top-level.", nameof(definitionChain));
                 }
             }
-            else if (definition.PhysicalDefinition.EnclosingType is null ||
-                     !definition.PhysicalDefinition.EnclosingType.Equals(copied[index - 1].PhysicalDefinition))
+            else if (row.EnclosingTypeDefinitionToken !=
+                     copied[index - 1].TypeDefinition.TypeDefinitionToken)
             {
                 throw new ArgumentException("Each nested definition must name the preceding exact enclosing TypeDef.", nameof(definitionChain));
             }
-            if (definition.GenericMappingStatus == MetadataNestedGenericMappingStatus.ExactPinnedCompiler)
-            {
-                cumulativeArity = checked(cumulativeArity + definition.IntroducedArity!.Value);
-                if (definition.FlattenedArity != cumulativeArity)
-                {
-                    throw new ArgumentException("Pinned named segments must have cumulative flattened arity.", nameof(definitionChain));
-                }
-            }
         }
         return copied;
+    }
+
+    private static bool HasMonotonicChainArity(
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> chain)
+    {
+        var enclosingArity = 0;
+        foreach (var classification in chain)
+        {
+            var totalArity = classification.TypeDefinition.TotalGenericArity;
+            if (totalArity < enclosingArity)
+            {
+                return false;
+            }
+            enclosingArity = totalArity;
+        }
+        return true;
     }
 
     private static void ValidateArrayShape(
@@ -3678,87 +2801,25 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
     }
 }
 
-/// <summary>Freezes one exact TypeDef Extends column and its complete TypeDefOrRef target.</summary>
-/// <remarks>The sealed draft edge retains the owner TypeDef row independently from any target TypeSpec row.</remarks>
-public sealed class MetadataBaseTypeEdgeIdentity : IEquatable<MetadataBaseTypeEdgeIdentity>
-{
-    private const string CanonicalDomain = "metadata-v2-base-type-edge-identity";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<byte> canonicalBytes;
-
-    private MetadataBaseTypeEdgeIdentity(
-        MetadataTypeDefinitionIdentity ownerType,
-        MetadataTypeDefOrRefTargetIdentity target)
-    {
-        OwnerType = ownerType;
-        Target = target;
-        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteLengthPrefixedBytes(ownerType.CanonicalBytes.AsSpan());
-        writer.WriteLengthPrefixedBytes(target.CanonicalBytes.AsSpan());
-        canonicalBytes = writer.ToImmutableArray();
-        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
-    }
-
-    /// <summary>Gets the exact owner TypeDef whose Extends column stores the target token.</summary>
-    public MetadataTypeDefinitionIdentity OwnerType { get; }
-    /// <summary>Gets the exact decoded TypeDefOrRef target.</summary>
-    public MetadataTypeDefOrRefTargetIdentity Target { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
-    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
-    public string Sha256 { get; }
-
-    /// <summary>Creates one exact TypeDef-Extends draft edge.</summary>
-    /// <param name="ownerType">The exact owner TypeDef row and W8 classification.</param>
-    /// <param name="target">The exact TypeDef, TypeRef resolution, or TypeSpec target.</param>
-    /// <returns>A sealed immutable draft edge preserving owner and target rows.</returns>
-    public static MetadataBaseTypeEdgeIdentity Create(
-        MetadataTypeDefinitionIdentity ownerType,
-        MetadataTypeDefOrRefTargetIdentity target)
-    {
-        ArgumentNullException.ThrowIfNull(ownerType);
-        ArgumentNullException.ThrowIfNull(target);
-        if (!ownerType.PhysicalDefinition.MetadataModule.Equals(target.SourceMetadataModule) ||
-            ownerType.PhysicalDefinition.ExtendsMetadataToken != target.SourceMetadataToken)
-        {
-            throw new ArgumentException("The Extends owner module/token must exactly match the decoded target.", nameof(target));
-        }
-        return new MetadataBaseTypeEdgeIdentity(ownerType, target);
-    }
-
-    /// <summary>Tests canonical equality between two draft base edges.</summary>
-    /// <param name="other">The other draft edge.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
-    public bool Equals(MetadataBaseTypeEdgeIdentity? other) =>
-        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
-    /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
-    public override bool Equals(object? obj) => Equals(obj as MetadataBaseTypeEdgeIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
-    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
-}
-
 /// <summary>Freezes one exact InterfaceImpl row and its complete TypeDefOrRef interface target.</summary>
 /// <remarks>The sealed draft edge retains its InterfaceImpl row token instead of substituting a target TypeSpec token.</remarks>
 public sealed class MetadataInterfaceImplementationEdgeIdentity : IEquatable<MetadataInterfaceImplementationEdgeIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-interface-implementation-edge-identity";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataInterfaceImplementationEdgeIdentity(
         int interfaceImplementationToken,
-        MetadataTypeDefinitionIdentity ownerType,
+        MetadataTypeDefinitionSemanticClassificationIdentity ownerClassification,
         MetadataTypeDefOrRefTargetIdentity target)
     {
         InterfaceImplementationToken = interfaceImplementationToken;
-        OwnerType = ownerType;
+        OwnerClassification = ownerClassification;
         Target = target;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32(interfaceImplementationToken);
-        writer.WriteLengthPrefixedBytes(ownerType.CanonicalBytes.AsSpan());
+        writer.WriteLengthPrefixedBytes(ownerClassification.CanonicalBytes.AsSpan());
         writer.WriteLengthPrefixedBytes(target.CanonicalBytes.AsSpan());
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -3766,8 +2827,8 @@ public sealed class MetadataInterfaceImplementationEdgeIdentity : IEquatable<Met
 
     /// <summary>Gets the exact non-nil InterfaceImpl row token.</summary>
     public int InterfaceImplementationToken { get; }
-    /// <summary>Gets the exact Class-column owner TypeDef.</summary>
-    public MetadataTypeDefinitionIdentity OwnerType { get; }
+    /// <summary>Gets the authority-issued classification of the exact Class-column owner TypeDef.</summary>
+    public MetadataTypeDefinitionSemanticClassificationIdentity OwnerClassification { get; }
     /// <summary>Gets the exact Interface-column TypeDefOrRef target.</summary>
     public MetadataTypeDefOrRefTargetIdentity Target { get; }
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
@@ -3777,25 +2838,25 @@ public sealed class MetadataInterfaceImplementationEdgeIdentity : IEquatable<Met
 
     /// <summary>Creates one exact InterfaceImpl-row draft edge.</summary>
     /// <param name="interfaceImplementationToken">The exact non-nil InterfaceImpl token.</param>
-    /// <param name="ownerType">The exact Class-column owner TypeDef.</param>
+    /// <param name="ownerClassification">The authority-issued Class-column owner classification.</param>
     /// <param name="target">The exact Interface-column TypeDefOrRef target.</param>
     /// <returns>A sealed immutable draft edge preserving owner and target row identities.</returns>
     public static MetadataInterfaceImplementationEdgeIdentity Create(
         int interfaceImplementationToken,
-        MetadataTypeDefinitionIdentity ownerType,
+        MetadataTypeDefinitionSemanticClassificationIdentity ownerClassification,
         MetadataTypeDefOrRefTargetIdentity target)
     {
         CanonicalReplayEncoding.ValidateMetadataToken(
             interfaceImplementationToken,
             0x09,
             nameof(interfaceImplementationToken));
-        ArgumentNullException.ThrowIfNull(ownerType);
+        ArgumentNullException.ThrowIfNull(ownerClassification);
         ArgumentNullException.ThrowIfNull(target);
-        if (!ownerType.PhysicalDefinition.MetadataModule.Equals(target.SourceMetadataModule))
+        if (!ownerClassification.SourceModule.Equals(target.SourceMetadataModule))
         {
             throw new ArgumentException("The InterfaceImpl target token must originate in the owner row's module.", nameof(target));
         }
-        return new MetadataInterfaceImplementationEdgeIdentity(interfaceImplementationToken, ownerType, target);
+        return new MetadataInterfaceImplementationEdgeIdentity(interfaceImplementationToken, ownerClassification, target);
     }
 
     /// <summary>Tests canonical equality between two draft InterfaceImpl edges.</summary>
@@ -3879,14 +2940,14 @@ public sealed class MetadataGenericParameterConstraintEdgeIdentity : IEquatable<
 
 /// <summary>Freezes a complete InterfaceImpl table and one exact TypeDef-owner projection.</summary>
 /// <remarks>
-/// This sealed draft aggregate validates the complete physical table before selecting rows for <see cref="OwnerType"/>.
-/// A bounded or incomplete source retains no table prefix or selected row. Other owners may occur only in the explicit
-/// complete-table evidence and can never leak into <see cref="Rows"/>.
+/// This sealed draft aggregate validates the complete physical table before selecting rows for
+/// <see cref="OwnerClassification"/>. A bounded or incomplete source retains no table prefix or selected row. Other
+/// owners may occur only in the explicit complete-table evidence and can never leak into <see cref="Rows"/>.
 /// </remarks>
 public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<MetadataInterfaceImplementationSetIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-interface-implementation-set-identity";
-    private const int CanonicalSchemaVersion = 2;
+    private const int CanonicalSchemaVersion = 3;
     private readonly ImmutableArray<MetadataInterfaceImplementationEdgeIdentity> completeTableRows;
     private readonly ImmutableArray<MetadataInterfaceImplementationEdgeIdentity> rows;
     private readonly ImmutableArray<int> duplicateRowTokens;
@@ -3895,7 +2956,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
 
     private MetadataInterfaceImplementationSetIdentity(
         MetadataSourceEndIdentity sourceEnds,
-        MetadataTypeDefinitionIdentity ownerType,
+        MetadataTypeDefinitionSemanticClassificationIdentity ownerClassification,
         ImmutableArray<MetadataInterfaceImplementationEdgeIdentity> completeTableRows,
         ImmutableArray<MetadataInterfaceImplementationEdgeIdentity> rows,
         MetadataEdgeAggregateResultKind resultKind,
@@ -3906,7 +2967,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
         ImmutableArray<int> duplicateSemanticRowTokens)
     {
         SourceEnds = sourceEnds;
-        OwnerType = ownerType;
+        OwnerClassification = ownerClassification;
         this.completeTableRows = completeTableRows;
         this.rows = rows;
         ResultKind = resultKind;
@@ -3917,7 +2978,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
         this.duplicateSemanticRowTokens = duplicateSemanticRowTokens;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteLengthPrefixedBytes(sourceEnds.CanonicalBytes.AsSpan());
-        writer.WriteLengthPrefixedBytes(ownerType.CanonicalBytes.AsSpan());
+        writer.WriteLengthPrefixedBytes(ownerClassification.CanonicalBytes.AsSpan());
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, completeTableRows, static row => row.CanonicalBytes);
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, rows, static row => row.CanonicalBytes);
         writer.WriteInt32((int)resultKind);
@@ -3932,8 +2993,8 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
 
     /// <summary>Gets the exact metadata-table source ends consulted before any row array.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
-    /// <summary>Gets the exact selected TypeDef owner whose InterfaceImpl rows are projected.</summary>
-    public MetadataTypeDefinitionIdentity OwnerType { get; }
+    /// <summary>Gets the authority-issued classification of the selected TypeDef owner whose rows are projected.</summary>
+    public MetadataTypeDefinitionSemanticClassificationIdentity OwnerClassification { get; }
     /// <summary>Gets a defensive copy of the complete physical InterfaceImpl table only for exact or invalid input.</summary>
     public ImmutableArray<MetadataInterfaceImplementationEdgeIdentity> CompleteTableRows =>
         ExpressionV2ContractEncoding.Copy(completeTableRows);
@@ -3960,23 +3021,23 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
 
     /// <summary>Validates a complete InterfaceImpl table and projects exactly one owner.</summary>
     /// <param name="sourceEnds">Exact unsaturated metadata table source ends for the source module.</param>
-    /// <param name="ownerType">The exact TypeDef owner to project after complete-table validation.</param>
+    /// <param name="ownerClassification">The authority-issued owner classification to project after validation.</param>
     /// <param name="allRows">Every physical InterfaceImpl row in RID order, or no prefix after a source stop.</param>
     /// <returns>An immutable exact, factless non-exact, or typed invalid draft aggregate.</returns>
     public static MetadataInterfaceImplementationSetIdentity Create(
         MetadataSourceEndIdentity sourceEnds,
-        MetadataTypeDefinitionIdentity ownerType,
+        MetadataTypeDefinitionSemanticClassificationIdentity ownerClassification,
         ImmutableArray<MetadataInterfaceImplementationEdgeIdentity> allRows)
     {
         ArgumentNullException.ThrowIfNull(sourceEnds);
-        ArgumentNullException.ThrowIfNull(ownerType);
-        if (!ownerType.PhysicalDefinition.MetadataModule.Equals(sourceEnds.SourceModule))
+        ArgumentNullException.ThrowIfNull(ownerClassification);
+        if (!ownerClassification.SourceModule.Equals(sourceEnds.SourceModule))
         {
-            throw new ArgumentException("The selected InterfaceImpl owner must belong to the exact source module.", nameof(ownerType));
+            throw new ArgumentException("The selected InterfaceImpl owner must belong to the exact source module.", nameof(ownerClassification));
         }
-        if (!sourceEnds.ContainsTypeDefinitionToken(ownerType.TypeDefinitionToken))
+        if (!sourceEnds.ContainsTypeDefinitionToken(ownerClassification.TypeDefinition.TypeDefinitionToken))
         {
-            throw new ArgumentException("The selected InterfaceImpl owner must lie within the exact TypeDef source end.", nameof(ownerType));
+            throw new ArgumentException("The selected InterfaceImpl owner must lie within the exact TypeDef source end.", nameof(ownerClassification));
         }
 
         var sourceCount = sourceEnds.InterfaceImplementationRowCount;
@@ -3987,7 +3048,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
                 StaticFieldV2Limits.MaximumInterfaceImplementationRowCount);
             return new MetadataInterfaceImplementationSetIdentity(
                 sourceEnds,
-                ownerType,
+                ownerClassification,
                 ImmutableArray<MetadataInterfaceImplementationEdgeIdentity>.Empty,
                 ImmutableArray<MetadataInterfaceImplementationEdgeIdentity>.Empty,
                 MetadataEdgeAggregateResultKind.NonExact,
@@ -4001,7 +3062,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
         {
             return new MetadataInterfaceImplementationSetIdentity(
                 sourceEnds,
-                ownerType,
+                ownerClassification,
                 ImmutableArray<MetadataInterfaceImplementationEdgeIdentity>.Empty,
                 ImmutableArray<MetadataInterfaceImplementationEdgeIdentity>.Empty,
                 MetadataEdgeAggregateResultKind.NonExact,
@@ -4015,7 +3076,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
         {
             return new MetadataInterfaceImplementationSetIdentity(
                 sourceEnds,
-                ownerType,
+                ownerClassification,
                 ImmutableArray<MetadataInterfaceImplementationEdgeIdentity>.Empty,
                 ImmutableArray<MetadataInterfaceImplementationEdgeIdentity>.Empty,
                 MetadataEdgeAggregateResultKind.Invalid,
@@ -4041,14 +3102,14 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
             .Any(static invalid => invalid);
         var ownerOrderInvalid = copied
             .Zip(copied.Skip(1), static (left, right) =>
-                CanonicalReplayEncoding.MetadataTokenRowId(left.OwnerType.TypeDefinitionToken) >
-                CanonicalReplayEncoding.MetadataTokenRowId(right.OwnerType.TypeDefinitionToken))
+                CanonicalReplayEncoding.MetadataTokenRowId(left.OwnerClassification.TypeDefinition.TypeDefinitionToken) >
+                CanonicalReplayEncoding.MetadataTokenRowId(right.OwnerClassification.TypeDefinition.TypeDefinitionToken))
             .Any(static invalid => invalid);
         var moduleMismatch = copied.Any(row =>
-            !row.OwnerType.PhysicalDefinition.MetadataModule.Equals(sourceEnds.SourceModule) ||
+            !row.OwnerClassification.SourceModule.Equals(sourceEnds.SourceModule) ||
             !row.Target.SourceMetadataModule.Equals(sourceEnds.SourceModule));
         var sourceTokenOutOfRange = copied.Any(row =>
-            !sourceEnds.ContainsTypeDefinitionToken(row.OwnerType.TypeDefinitionToken) ||
+            !sourceEnds.ContainsTypeDefinitionToken(row.OwnerClassification.TypeDefinition.TypeDefinitionToken) ||
             !sourceEnds.ContainsTypeDefOrRefToken(row.Target.SourceMetadataToken));
         var duplicateSemanticTokens = FindDuplicateInterfaceSemanticRows(copied);
         var issue = !duplicateTokens.IsEmpty || physicalOrderInvalid || ownerOrderInvalid
@@ -4062,11 +3123,11 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
                         : MetadataEdgeAggregateIssue.None;
         var exact = issue == MetadataEdgeAggregateIssue.None;
         var selected = exact
-            ? copied.Where(row => row.OwnerType.Equals(ownerType)).ToImmutableArray()
+            ? copied.Where(row => row.OwnerClassification.Equals(ownerClassification)).ToImmutableArray()
             : ImmutableArray<MetadataInterfaceImplementationEdgeIdentity>.Empty;
         return new MetadataInterfaceImplementationSetIdentity(
             sourceEnds,
-            ownerType,
+            ownerClassification,
             copied,
             selected,
             exact ? MetadataEdgeAggregateResultKind.Exact : MetadataEdgeAggregateResultKind.Invalid,
@@ -4097,7 +3158,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
         var duplicates = new SortedSet<int>();
         foreach (var row in values)
         {
-            var key = string.Concat(row.OwnerType.Sha256, ":", row.Target.Sha256);
+            var key = string.Concat(row.OwnerClassification.Sha256, ":", row.Target.Sha256);
             if (!seen.Add(key))
             {
                 duplicates.Add(row.InterfaceImplementationToken);
@@ -4337,20 +3398,20 @@ public sealed class MetadataGenericParameterConstraintSetIdentity :
 public sealed class MetadataTypeConstructionSegment : IEquatable<MetadataTypeConstructionSegment>
 {
     private const string CanonicalDomain = "metadata-v2-type-construction-segment";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<MetadataClosedTypeIdentity> localArguments;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataTypeConstructionSegment(
-        MetadataTypeDefinitionIdentity definition,
+        MetadataTypeDefinitionSemanticClassificationIdentity classification,
         int flattenedArgumentOffset,
         ImmutableArray<MetadataClosedTypeIdentity> localArguments)
     {
-        Definition = definition;
+        Classification = classification;
         FlattenedArgumentOffset = flattenedArgumentOffset;
         this.localArguments = localArguments;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteLengthPrefixedBytes(definition.CanonicalBytes.AsSpan());
+        writer.WriteLengthPrefixedBytes(classification.CanonicalBytes.AsSpan());
         writer.WriteInt32(flattenedArgumentOffset);
         ExpressionV2ContractEncoding.WriteCanonicalArray(
             writer,
@@ -4360,8 +3421,8 @@ public sealed class MetadataTypeConstructionSegment : IEquatable<MetadataTypeCon
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact TypeDef represented by this named segment.</summary>
-    public MetadataTypeDefinitionIdentity Definition { get; }
+    /// <summary>Gets the authority-issued classification of the exact TypeDef represented by this named segment.</summary>
+    public MetadataTypeDefinitionSemanticClassificationIdentity Classification { get; }
     /// <summary>Gets the exact offset of this segment's arguments in the flattened vector.</summary>
     public int FlattenedArgumentOffset { get; }
     /// <summary>Gets a defensive copy of exact segment-local closed arguments.</summary>
@@ -4377,16 +3438,16 @@ public sealed class MetadataTypeConstructionSegment : IEquatable<MetadataTypeCon
     public string Sha256 { get; }
 
     /// <summary>Creates one overflow-checked nested construction draft segment.</summary>
-    /// <param name="definition">The exact W8 TypeDef for this source segment.</param>
+    /// <param name="classification">The authority-issued classification of the exact TypeDef for this segment.</param>
     /// <param name="flattenedArgumentOffset">The non-negative start in the complete flattened vector.</param>
     /// <param name="localArguments">Exactly the arguments introduced by this metadata name.</param>
     /// <returns>A sealed immutable draft segment.</returns>
     public static MetadataTypeConstructionSegment Create(
-        MetadataTypeDefinitionIdentity definition,
+        MetadataTypeDefinitionSemanticClassificationIdentity classification,
         int flattenedArgumentOffset,
         ImmutableArray<MetadataClosedTypeIdentity> localArguments)
     {
-        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(classification);
         var copied = ExpressionV2ContractEncoding.CopyRequired(
             localArguments,
             nameof(localArguments),
@@ -4402,14 +3463,13 @@ public sealed class MetadataTypeConstructionSegment : IEquatable<MetadataTypeCon
                 "The flattened argument interval exceeds Int32 range.");
         }
         var endExclusive = flattenedArgumentOffset + copied.Length;
-        if (definition.GenericMappingStatus != MetadataNestedGenericMappingStatus.ExactPinnedCompiler ||
-            copied.Length != definition.IntroducedArity || endExclusive != definition.FlattenedArity)
+        if (endExclusive != classification.TypeDefinition.TotalGenericArity)
         {
             throw new ArgumentException(
-                "The segment-local argument interval must equal the definition's exact introduced/cumulative arity.",
+                "The segment-local argument interval must end at the authority row's exact flattened arity.",
                 nameof(localArguments));
         }
-        return new MetadataTypeConstructionSegment(definition, flattenedArgumentOffset, copied);
+        return new MetadataTypeConstructionSegment(classification, flattenedArgumentOffset, copied);
     }
 
     /// <summary>Tests canonical equality between two draft construction segments.</summary>
@@ -4435,7 +3495,7 @@ public sealed class MetadataTypeConstructionSegment : IEquatable<MetadataTypeCon
 public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-closed-type-identity";
-    private const int CanonicalSchemaVersion = 2;
+    private const int CanonicalSchemaVersion = 3;
     private readonly ImmutableArray<MetadataTypeConstructionSegment> constructionSegments;
     private readonly ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments;
     private readonly ImmutableArray<int> arraySizes;
@@ -4512,23 +3572,24 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
     public int TopologyDepth { get; }
     /// <summary>Gets the exact cumulative closed-topology node count.</summary>
     public int TopologyNodeCount { get; }
-    /// <summary>Gets the final named TypeDef, or null for non-named topology.</summary>
-    public MetadataTypeDefinitionIdentity? FinalDefinition =>
-        constructionSegments.IsEmpty ? null : constructionSegments[^1].Definition;
+    /// <summary>Gets the final named authority classification, or null for non-named topology.</summary>
+    public MetadataTypeDefinitionSemanticClassificationIdentity? FinalClassification =>
+        constructionSegments.IsEmpty ? null : constructionSegments[^1].Classification;
     /// <summary>Gets whether this closed topology has reference-type semantics.</summary>
     public bool IsReferenceType => Kind switch
     {
         MetadataClosedTypeKind.SzArray or MetadataClosedTypeKind.MultidimensionalArray => true,
         MetadataClosedTypeKind.Primitive => PrimitiveKind is MetadataPrimitiveTypeKind.String or MetadataPrimitiveTypeKind.Object,
-        MetadataClosedTypeKind.Named => FinalDefinition!.Kind is MetadataTypeDefinitionKind.Class or
-            MetadataTypeDefinitionKind.Interface or MetadataTypeDefinitionKind.Delegate,
+        MetadataClosedTypeKind.Named => FinalClassification!.Role is MetadataTypeDefinitionSemanticRole.Class or
+            MetadataTypeDefinitionSemanticRole.Interface or MetadataTypeDefinitionSemanticRole.Delegate,
         _ => false,
     };
     /// <summary>Gets whether this closed topology has non-nullable value-type semantics.</summary>
     public bool IsNonNullableValueType => Kind switch
     {
         MetadataClosedTypeKind.Primitive => PrimitiveKind is not (MetadataPrimitiveTypeKind.String or MetadataPrimitiveTypeKind.Object),
-        MetadataClosedTypeKind.Named => FinalDefinition!.Kind is MetadataTypeDefinitionKind.ValueType or MetadataTypeDefinitionKind.Enum,
+        MetadataClosedTypeKind.Named => FinalClassification!.Role is MetadataTypeDefinitionSemanticRole.ValueType or
+            MetadataTypeDefinitionSemanticRole.Enum,
         _ => false,
     };
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
@@ -4570,38 +3631,40 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
         for (var index = 0; index < copied.Length; index++)
         {
             var segment = copied[index];
-            if (segment.Definition.ClassificationStatus != MetadataTypeDefinitionClassificationStatus.Exact)
+            if (segment.Classification.Role is not { } role ||
+                role == MetadataTypeDefinitionSemanticRole.ModulePseudoType)
             {
                 throw new ArgumentException(
-                    "Every named construction segment requires exact TypeDef classification.",
+                    "Every named construction segment requires one exact non-module semantic role.",
                     nameof(segments));
             }
-            if (segment.Definition.SegmentIndex != index ||
+            if (segment.Classification.TypeDefinition.NestingDepth != index ||
                 segment.FlattenedArgumentOffset != flattened.Count)
             {
                 throw new ArgumentException("Named segments and flattened offsets must be complete and contiguous.", nameof(segments));
             }
             if (index == 0)
             {
-                if (segment.Definition.PhysicalDefinition.EnclosingType is not null)
+                if (segment.Classification.TypeDefinition.EnclosingTypeDefinitionToken is not null)
                 {
                     throw new ArgumentException("The first named construction segment must be top-level.", nameof(segments));
                 }
             }
-            else if (segment.Definition.PhysicalDefinition.EnclosingType is null ||
-                     !segment.Definition.PhysicalDefinition.EnclosingType.Equals(copied[index - 1].Definition.PhysicalDefinition))
+            else if (segment.Classification.TypeDefinition.EnclosingTypeDefinitionToken !=
+                         copied[index - 1].Classification.TypeDefinition.TypeDefinitionToken ||
+                     !segment.Classification.SourceModule.Equals(copied[index - 1].Classification.SourceModule))
             {
                 throw new ArgumentException("Each nested segment must name the preceding exact enclosing TypeDef.", nameof(segments));
             }
             flattened.AddRange(segment.LocalArguments);
         }
-        if (flattened.Count != copied[^1].Definition.FlattenedArity)
+        if (flattened.Count != copied[^1].Classification.TypeDefinition.TotalGenericArity)
         {
             throw new ArgumentException("Segment-local groups must exhaust the final flattened arity.", nameof(segments));
         }
         var flattenedArguments = flattened.ToImmutable();
         if (IsExactNullableDefinition(
-                copied.Select(static segment => segment.Definition).ToImmutableArray(),
+                copied.Select(static segment => segment.Classification).ToImmutableArray(),
                 flattenedArguments))
         {
             return Nullable(copied, flattenedArguments[0]);
@@ -4618,6 +3681,11 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
     }
 
     /// <summary>Creates one nullable closed draft identity over its exact metadata head and value-type argument.</summary>
+    /// <remarks>
+    /// The draft Nullable head is proven only by the authority classification: its ValueType role is derived by the
+    /// ancestry portfolio exclusively from the exact immediate System.ValueType base edge, so the exact
+    /// System/Nullable`1/arity-one spelling plus that role remains authority-proven without a separate corelib proof.
+    /// </remarks>
     /// <param name="segments">The exact System.Nullable`1 construction segment.</param>
     /// <param name="elementType">The exact non-nullable value-type element.</param>
     /// <returns>A sealed immutable draft closed identity.</returns>
@@ -4631,7 +3699,7 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
             nameof(segments),
             maximumCount: 1);
         if (copiedSegments.Length != 1 ||
-            copiedSegments[0].Definition.ClassificationStatus != MetadataTypeDefinitionClassificationStatus.Exact ||
+            copiedSegments[0].Classification.Role is null ||
             copiedSegments[0].LocalArguments.Length != 1 ||
             !copiedSegments[0].LocalArguments[0].Equals(elementType))
         {
@@ -4639,9 +3707,7 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
                 "Nullable requires one exact metadata construction segment containing its element argument.",
                 nameof(segments));
         }
-        if (!elementType.IsNonNullableValueType ||
-            elementType.Kind == MetadataClosedTypeKind.Named &&
-            elementType.FinalDefinition!.ClassificationStatus != MetadataTypeDefinitionClassificationStatus.Exact)
+        if (!elementType.IsNonNullableValueType)
         {
             throw new ArgumentException("Nullable requires one exact non-nullable value-type element.", nameof(elementType));
         }
@@ -4738,7 +3804,7 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
     }
 
     internal static MetadataClosedTypeIdentity ConstructNamed(
-        ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain,
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain,
         ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments)
     {
         var segments = CreateSegments(definitionChain, flattenedArguments);
@@ -4800,47 +3866,44 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
     }
 
     private static ImmutableArray<MetadataTypeConstructionSegment> CreateSegments(
-        ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain,
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain,
         ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments)
     {
         if (definitionChain.IsDefaultOrEmpty ||
             flattenedArguments.IsDefault ||
-            flattenedArguments.Length != definitionChain[^1].FlattenedArity)
+            flattenedArguments.Length != definitionChain[^1].TypeDefinition.TotalGenericArity)
         {
             throw new ArgumentException("A complete definition chain and exact flattened argument vector are required.");
         }
         var builder = ImmutableArray.CreateBuilder<MetadataTypeConstructionSegment>(definitionChain.Length);
         var offset = 0;
-        foreach (var definition in definitionChain)
+        foreach (var classification in definitionChain)
         {
-            if (definition.IntroducedArity is not { } localCount)
+            var localCount = classification.TypeDefinition.TotalGenericArity - offset;
+            if (localCount < 0)
             {
                 throw new ArgumentException("A non-exact nested mapping cannot partition flattened arguments.", nameof(definitionChain));
             }
             var local = flattenedArguments.Slice(offset, localCount);
-            builder.Add(MetadataTypeConstructionSegment.Create(definition, offset, local));
+            builder.Add(MetadataTypeConstructionSegment.Create(classification, offset, local));
             offset = checked(offset + localCount);
         }
         return builder.ToImmutable();
     }
 
     private static bool IsExactNullableDefinition(
-        ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain,
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain,
         ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments)
     {
         if (definitionChain.Length != 1 || flattenedArguments.Length != 1)
         {
             return false;
         }
-        var definition = definitionChain[0];
-        return definition.ClassificationStatus == MetadataTypeDefinitionClassificationStatus.Exact &&
-               definition.Kind == MetadataTypeDefinitionKind.ValueType &&
-               definition.GenericMappingStatus == MetadataNestedGenericMappingStatus.ExactPinnedCompiler &&
-               definition.IntroducedArity == 1 &&
-               string.Equals(definition.RawDefinition.NamespaceName, "System", StringComparison.Ordinal) &&
-               string.Equals(definition.RawDefinition.TypeName, "Nullable`1", StringComparison.Ordinal) &&
-               definition.Ancestry?.CoreLibrary is { } coreLibrary &&
-               definition.RawDefinition.MetadataModule.Equals(coreLibrary.MetadataModule);
+        var classification = definitionChain[0];
+        return classification.Role == MetadataTypeDefinitionSemanticRole.ValueType &&
+               classification.TypeDefinition.TotalGenericArity == 1 &&
+               string.Equals(classification.TypeDefinition.NamespaceName, "System", StringComparison.Ordinal) &&
+               string.Equals(classification.TypeDefinition.TypeName, "Nullable`1", StringComparison.Ordinal);
     }
 
     private static void ValidateArrayShape(
@@ -4950,7 +4013,7 @@ public sealed class MetadataTypeConstructionResult : IEquatable<MetadataTypeCons
         {
             return new MetadataTypeConstructionResult(MetadataTypeConstructionResultKind.Open, root, null, null);
         }
-        if (root.ContainsProvisionalTypeDefinitionClassification)
+        if (root.ContainsUnclassifiedTypeDefinition)
         {
             return new MetadataTypeConstructionResult(MetadataTypeConstructionResultKind.NonExact, root, null, null);
         }
@@ -4991,87 +4054,6 @@ public sealed class MetadataTypeConstructionResult : IEquatable<MetadataTypeCons
 
     internal static MetadataTypeConstructionResult Invalid(MetadataTypeSignatureNode root) =>
         new(MetadataTypeConstructionResultKind.Invalid, root, null, null);
-}
-
-/// <summary>Freezes one exact GenericParam-row binding or explicit unavailable observation.</summary>
-/// <remarks>
-/// The sealed draft binding keeps row owner/module/number evidence inseparable from any closed argument. Only an
-/// internal source-derived producer can assert an exact argument mapping; public callers can retain unavailability.
-/// </remarks>
-public sealed class MetadataTypeArgumentBindingIdentity : IEquatable<MetadataTypeArgumentBindingIdentity>
-{
-    private const string CanonicalDomain = "metadata-v2-type-argument-binding-identity";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<byte> canonicalBytes;
-
-    private MetadataTypeArgumentBindingIdentity(
-        MetadataTypeArgumentBindingKind kind,
-        MetadataGenericParameterIdentity parameter,
-        MetadataClosedTypeIdentity? argument)
-    {
-        Kind = kind;
-        Parameter = parameter;
-        Argument = argument;
-        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteInt32((int)kind);
-        writer.WriteLengthPrefixedBytes(parameter.CanonicalBytes.AsSpan());
-        writer.WriteBoolean(argument is not null);
-        if (argument is not null)
-        {
-            writer.WriteLengthPrefixedBytes(argument.CanonicalBytes.AsSpan());
-        }
-        canonicalBytes = writer.ToImmutableArray();
-        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
-    }
-
-    /// <summary>Gets the exact binding observation kind.</summary>
-    public MetadataTypeArgumentBindingKind Kind { get; }
-    /// <summary>Gets the exact declared GenericParam row and owner identity.</summary>
-    public MetadataGenericParameterIdentity Parameter { get; }
-    /// <summary>Gets the exact closed argument only for an exact binding.</summary>
-    public MetadataClosedTypeIdentity? Argument { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
-    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
-    public string Sha256 { get; }
-
-    /// <summary>Creates one exact GenericParam-row-to-source-derived-closed-argument draft binding.</summary>
-    /// <param name="parameter">The exact declared GenericParam row.</param>
-    /// <param name="argument">
-    /// The exact closed argument obtained from a source-derived metadata construction result. This draft factory does
-    /// not establish an acquisition source and callers must not synthesize the argument identity.
-    /// </param>
-    /// <returns>A sealed immutable exact draft binding retaining the supplied source-derived argument.</returns>
-    internal static MetadataTypeArgumentBindingIdentity Exact(
-        MetadataGenericParameterIdentity parameter,
-        MetadataClosedTypeIdentity argument)
-    {
-        ArgumentNullException.ThrowIfNull(parameter);
-        ArgumentNullException.ThrowIfNull(argument);
-        return new MetadataTypeArgumentBindingIdentity(MetadataTypeArgumentBindingKind.Exact, parameter, argument);
-    }
-
-    /// <summary>Creates one declared GenericParam row whose closed binding is unavailable.</summary>
-    /// <param name="parameter">The exact declared GenericParam row.</param>
-    /// <returns>A sealed immutable open draft binding observation.</returns>
-    public static MetadataTypeArgumentBindingIdentity Unavailable(MetadataGenericParameterIdentity parameter)
-    {
-        ArgumentNullException.ThrowIfNull(parameter);
-        return new MetadataTypeArgumentBindingIdentity(MetadataTypeArgumentBindingKind.Unavailable, parameter, null);
-    }
-
-    /// <summary>Tests canonical equality between two row-addressed draft bindings.</summary>
-    /// <param name="other">The other draft binding.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
-    public bool Equals(MetadataTypeArgumentBindingIdentity? other) =>
-        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
-    /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
-    public override bool Equals(object? obj) => Equals(obj as MetadataTypeArgumentBindingIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
-    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one exact FieldSig source and its declaring-TypeDef binding proof for recursive substitution.</summary>
@@ -5617,11 +4599,11 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
                 {
                     return SubstitutionEvaluation.Unsupported(tree);
                 }
-                if (node.NamedDefinition!.FlattenedArity != 0)
+                if (node.NamedClassification!.TypeDefinition.TotalGenericArity != 0)
                 {
                     return SubstitutionEvaluation.Open(tree);
                 }
-                if (node.ContainsProvisionalTypeDefinitionClassification)
+                if (node.ContainsUnclassifiedTypeDefinition)
                 {
                     return SubstitutionEvaluation.NonExact(tree, bound: null);
                 }
@@ -5635,8 +4617,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
                         childDisposition,
                         childBound);
                 }
-                if (node.NamedDefinitionChain.Any(static definition =>
-                        definition.ClassificationStatus == MetadataTypeDefinitionClassificationStatus.Provisional))
+                if (node.NamedDefinitionChain.Any(static classification => classification.Role is null))
                 {
                     return WithOuterDisposition(
                         MetadataTypeSubstitutionResultKind.NonExact,

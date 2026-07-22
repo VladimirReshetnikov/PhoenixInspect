@@ -485,19 +485,6 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
         Assert.NotNull(catalog.ExactRowOrDefault(0x02000001));
     }
 
-    /// <summary>Records the public legacy TypeDef factories as the next migration boundary, not catalog evidence.</summary>
-    [Fact]
-    [Trait("Category", "Fast")]
-    public void Legacy_TypeDef_factories_remain_an_explicit_followup_boundary()
-    {
-        Assert.NotNull(typeof(MetadataRawTypeDefinitionIdentity).GetMethod(
-            "Create",
-            BindingFlags.Public | BindingFlags.Static));
-        Assert.NotNull(typeof(MetadataTypeDefinitionIdentity).GetMethod(
-            "Create",
-            BindingFlags.Public | BindingFlags.Static));
-    }
-
     /// <summary>Proves every new public draft type and method has emitted XML and an intentionally narrow issuer surface.</summary>
     [Fact]
     [Trait("Category", "Fast")]
