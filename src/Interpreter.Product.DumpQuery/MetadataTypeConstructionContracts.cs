@@ -5166,28 +5166,31 @@ public sealed class MetadataTypeArgumentBindingIdentity : IEquatable<MetadataTyp
 /// <summary>Freezes one exact FieldSig source and its declaring-TypeDef binding proof for recursive substitution.</summary>
 /// <remarks>
 /// The sealed draft request derives its root only from <see cref="MetadataFieldSignatureIdentity"/> and retains the
-/// complete <see cref="MetadataGenericParameterBindingLedgerIdentity"/>. It has no raw-tree, raw-array, method-ledger,
-/// or frame-discovery input.
+/// complete <see cref="MetadataGenericParameterAuthorityBindingLedgerIdentity"/> plus one compatible guarded W7
+/// bridge certificate. It has no raw-tree, raw-array, method-ledger, or frame-discovery input.
 /// </remarks>
 public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSubstitutionRequest>
 {
     private const string CanonicalDomain = "metadata-v2-type-substitution-request";
-    private const int CanonicalSchemaVersion = 3;
-    private readonly ImmutableArray<MetadataTypeArgumentBindingIdentity> exactOwnerBindings;
+    private const int CanonicalSchemaVersion = 4;
+    private readonly ImmutableArray<MetadataGenericParameterAuthorityBindingIdentity> exactOwnerBindings;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataTypeSubstitutionRequest(
         MetadataFieldSignatureIdentity fieldSignature,
-        MetadataGenericParameterBindingLedgerIdentity declaringTypeBindings)
+        MetadataW7TypeDefinitionCompatibilityCertificateIdentity declaringTypeCompatibility,
+        MetadataGenericParameterAuthorityBindingLedgerIdentity declaringTypeBindings)
     {
         FieldSignature = fieldSignature;
+        DeclaringTypeCompatibility = declaringTypeCompatibility;
         DeclaringTypeBindings = declaringTypeBindings;
         exactOwnerBindings = declaringTypeBindings.ResultKind == MetadataGenericParameterProofResultKind.Exact
             ? declaringTypeBindings.Bindings
-            : ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty;
+            : ImmutableArray<MetadataGenericParameterAuthorityBindingIdentity>.Empty;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32((int)MetadataTypeSubstitutionContextKind.FieldDefinition);
         writer.WriteLengthPrefixedBytes(fieldSignature.CanonicalBytes.AsSpan());
+        writer.WriteLengthPrefixedBytes(declaringTypeCompatibility.CanonicalBytes.AsSpan());
         writer.WriteLengthPrefixedBytes(declaringTypeBindings.CanonicalBytes.AsSpan());
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -5197,18 +5200,20 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
     public MetadataTypeSubstitutionContextKind ContextKind => MetadataTypeSubstitutionContextKind.FieldDefinition;
     /// <summary>Gets the exact FieldDef, source ends, FieldSig bytes, certificate, and projected root.</summary>
     public MetadataFieldSignatureIdentity FieldSignature { get; }
+    /// <summary>Gets the compatible guarded W7 candidate-to-authority bridge for the declaring TypeDef.</summary>
+    public MetadataW7TypeDefinitionCompatibilityCertificateIdentity DeclaringTypeCompatibility { get; }
     /// <summary>Gets the complete declaring-TypeDef GenericParam binding proof, including exact zero arity.</summary>
-    public MetadataGenericParameterBindingLedgerIdentity DeclaringTypeBindings { get; }
+    public MetadataGenericParameterAuthorityBindingLedgerIdentity DeclaringTypeBindings { get; }
     /// <summary>Gets the source-derived complete FieldSig root.</summary>
     public MetadataTypeSignatureNode Root => FieldSignature.Root;
     /// <summary>Gets whether the complete declaring-TypeDef binding proof is exact, non-exact, or invalid.</summary>
     public MetadataGenericParameterProofResultKind BindingProofResultKind => DeclaringTypeBindings.ResultKind;
     /// <summary>Gets the typed declaring-TypeDef binding-proof issue, or none.</summary>
     public MetadataGenericParameterProofIssue BindingProofIssue => DeclaringTypeBindings.Issue;
-    /// <summary>Gets a propagated declaration or table bound when the binding proof stopped at cap plus one.</summary>
-    public EvaluationDeterministicBound? ReachedBound => DeclaringTypeBindings.ParameterSet.ReachedBound;
+    /// <summary>Gets the evaluator arity bound when the authority binding proof stopped at cap plus one.</summary>
+    public EvaluationDeterministicBound? ReachedBound => DeclaringTypeBindings.ReachedBound;
     /// <summary>Gets the binding proof's cap-plus-one or incomplete observation count, otherwise zero.</summary>
-    public int BindingProofObservedCount => DeclaringTypeBindings.ParameterSet.ObservedCount;
+    public int BindingProofObservedCount => DeclaringTypeBindings.ObservedCount;
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
@@ -5216,9 +5221,12 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
 
     /// <summary>Creates one source-anchored FieldDef recursive-substitution draft request.</summary>
     /// <param name="fieldSignature">The exact FieldDef-owned, fully consumed FieldSig identity supplying the root.</param>
+    /// <param name="declaringTypeCompatibility">
+    /// One compatible guarded bridge from the FieldSig's W7 declaring TypeDef to the ledger's authority TypeDef.
+    /// </param>
     /// <param name="declaringTypeBindings">
-    /// The complete GenericParam binding proof for that exact declaring TypeDef. An initialized exact empty ledger is
-    /// required for a non-generic declaring type; absence never denotes zero arity.
+    /// The authority-owned GenericParam binding proof for that exact declaring TypeDef. An initialized exact empty
+    /// ledger is required for a non-generic declaring type; absence never denotes zero arity.
     /// </param>
     /// <returns>
     /// A sealed immutable draft request. A matching non-exact or invalid proof is retained so execution can stop
@@ -5226,29 +5234,59 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
     /// </returns>
     public static MetadataTypeSubstitutionRequest ForFieldDefinition(
         MetadataFieldSignatureIdentity fieldSignature,
-        MetadataGenericParameterBindingLedgerIdentity declaringTypeBindings)
+        MetadataW7TypeDefinitionCompatibilityCertificateIdentity declaringTypeCompatibility,
+        MetadataGenericParameterAuthorityBindingLedgerIdentity declaringTypeBindings)
     {
         ArgumentNullException.ThrowIfNull(fieldSignature);
+        ArgumentNullException.ThrowIfNull(declaringTypeCompatibility);
         ArgumentNullException.ThrowIfNull(declaringTypeBindings);
-        var parameterSet = declaringTypeBindings.ParameterSet;
-        var declaration = parameterSet.Declaration;
-        var owner = declaration.Owner;
-        if (!declaration.SourceEnds.Equals(fieldSignature.SourceEnds) ||
-            !parameterSet.TableCatalog.SourceEnds.Equals(fieldSignature.SourceEnds))
+        if (!declaringTypeCompatibility.IsCompatible ||
+            declaringTypeCompatibility.Candidate is not { } candidate ||
+            !candidate.Equals(fieldSignature.FieldDefinition.DeclaringType))
+        {
+            throw new ArgumentException(
+                "FieldSig substitution requires a compatible certificate for its exact W7 declaring TypeDef.",
+                nameof(declaringTypeCompatibility));
+        }
+
+        var ownerGroup = declaringTypeBindings.OwnerGroup;
+        if (ownerGroup.OwnerKind != MetadataGenericParameterOwnerKind.TypeDefinition ||
+            ownerGroup.TypeDefinition is not { } ownerTypeDefinition)
+        {
+            throw new ArgumentException(
+                "The authority binding ledger must name one TypeDef owner group.",
+                nameof(declaringTypeBindings));
+        }
+        var certificateAuthority = declaringTypeCompatibility.AuthorityTypeDefinition;
+        var catalogAuthority = declaringTypeBindings.DefinitionAuthority.ExactTypeDefinitionOrDefault(
+            certificateAuthority.TypeDefinitionToken);
+        if (catalogAuthority is null ||
+            !catalogAuthority.Equals(certificateAuthority) ||
+            !ownerTypeDefinition.Equals(certificateAuthority))
+        {
+            throw new ArgumentException(
+                "The compatibility certificate and binding ledger must name the same authority-issued TypeDef.",
+                nameof(declaringTypeBindings));
+        }
+        if (!fieldSignature.SourceEnds.Equals(declaringTypeBindings.DefinitionAuthority.SourceEnds) ||
+            !fieldSignature.SourceEnds.Equals(ownerGroup.SourceEnds) ||
+            !fieldSignature.SourceEnds.Equals(certificateAuthority.SourceEnds))
         {
             throw new ArgumentException(
                 "The declaring-TypeDef binding proof must use the FieldSig's exact metadata source ends.",
                 nameof(declaringTypeBindings));
         }
-        if (owner.Kind != MetadataGenericParameterOwnerKind.TypeDefinition ||
-            owner.TypeDefinition is null ||
-            !owner.TypeDefinition.MatchesPinnedW7(fieldSignature.FieldDefinition.DeclaringType))
+        if (!declaringTypeCompatibility.FieldDefinitionTokens.Contains(
+                fieldSignature.FieldDefinition.FieldDefinitionToken))
         {
             throw new ArgumentException(
-                "The binding proof must name the exact FieldDef declaring TypeDef.",
-                nameof(declaringTypeBindings));
+                "The FieldDef token must belong to the certificate's authority-issued declaring TypeDef.",
+                nameof(fieldSignature));
         }
-        return new MetadataTypeSubstitutionRequest(fieldSignature, declaringTypeBindings);
+        return new MetadataTypeSubstitutionRequest(
+            fieldSignature,
+            declaringTypeCompatibility,
+            declaringTypeBindings);
     }
 
     /// <summary>Tests canonical equality between two row-addressed draft substitution requests.</summary>
@@ -5264,9 +5302,9 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
     /// <returns>A deterministic hash code for canonical draft content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
-    internal MetadataTypeArgumentBindingIdentity? FindOwner(int index) =>
+    internal MetadataGenericParameterAuthorityBindingIdentity? FindOwner(int index) =>
         BindingProofResultKind == MetadataGenericParameterProofResultKind.Exact &&
-        index >= 0 && index < exactOwnerBindings.Length && exactOwnerBindings[index].Parameter.Position == index
+        index >= 0 && index < exactOwnerBindings.Length && exactOwnerBindings[index].Parameter.Number == index
             ? exactOwnerBindings[index]
             : null;
 }
@@ -5279,13 +5317,13 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
 public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSubstitutedTypeNodeIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-substituted-type-node-identity";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<MetadataSubstitutedTypeNodeIdentity> children;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataSubstitutedTypeNodeIdentity(
         MetadataTypeSignatureNode sourceNode,
-        MetadataTypeArgumentBindingIdentity? appliedBinding,
+        MetadataGenericParameterAuthorityBindingIdentity? appliedBinding,
         MetadataClosedTypeIdentity? replacement,
         ImmutableArray<MetadataSubstitutedTypeNodeIdentity> children)
     {
@@ -5313,7 +5351,7 @@ public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSub
     /// <summary>Gets the exact original pre-substitution syntax node at this position.</summary>
     public MetadataTypeSignatureNode SourceNode { get; }
     /// <summary>Gets the exact row-addressed binding applied at a VAR or MVAR leaf, otherwise null.</summary>
-    public MetadataTypeArgumentBindingIdentity? AppliedBinding { get; }
+    public MetadataGenericParameterAuthorityBindingIdentity? AppliedBinding { get; }
     /// <summary>Gets the exact closed replacement only when <see cref="AppliedBinding"/> is exact.</summary>
     public MetadataClosedTypeIdentity? Replacement { get; }
     /// <summary>Gets a defensive copy of all recursively substituted children in source order.</summary>
@@ -5339,7 +5377,7 @@ public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSub
 
     internal static MetadataSubstitutedTypeNodeIdentity Create(
         MetadataTypeSignatureNode sourceNode,
-        MetadataTypeArgumentBindingIdentity? appliedBinding,
+        MetadataGenericParameterAuthorityBindingIdentity? appliedBinding,
         MetadataClosedTypeIdentity? replacement,
         ImmutableArray<MetadataSubstitutedTypeNodeIdentity> children)
     {
@@ -5366,13 +5404,13 @@ public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSub
                 ? MetadataGenericParameterOwnerKind.TypeDefinition
                 : MetadataGenericParameterOwnerKind.MethodDefinition;
             if (appliedBinding.Parameter.Owner.Kind != expectedOwnerKind ||
-                appliedBinding.Parameter.Position != sourceNode.VariableIndex)
+                appliedBinding.Parameter.Number != sourceNode.VariableIndex)
             {
                 throw new ArgumentException("The applied GenericParam row must exactly address the source variable.", nameof(appliedBinding));
             }
         }
         if ((replacement is not null) !=
-            (appliedBinding?.Kind == MetadataTypeArgumentBindingKind.Exact) ||
+            (appliedBinding?.Kind == MetadataGenericParameterAuthorityBindingKind.Exact) ||
             replacement is not null && !replacement.Equals(appliedBinding!.Argument))
         {
             throw new ArgumentException("A replacement must exactly equal the argument in an exact applied binding.", nameof(replacement));
@@ -5390,7 +5428,7 @@ public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSub
 public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubstitutionResult>
 {
     private const string CanonicalDomain = "metadata-v2-type-substitution-result";
-    private const int CanonicalSchemaVersion = 3;
+    private const int CanonicalSchemaVersion = 4;
     private readonly ImmutableArray<int> unresolvedOwnerVariableIndices;
     private readonly ImmutableArray<int> unresolvedMethodVariableIndices;
     private readonly ImmutableArray<int> undeclaredOwnerVariableIndices;
@@ -5498,10 +5536,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
         var undeclaredMethod = new SortedSet<int>();
 
         SubstitutionEvaluation evaluation;
-        var declaration = request.DeclaringTypeBindings.ParameterSet.Declaration;
-        var exactDeclaredArity = declaration.ResultKind == MetadataGenericParameterProofResultKind.Exact
-            ? declaration.DeclaredArity
-            : null;
+        var exactDeclaredArity = request.DeclaringTypeBindings.OwnerGroup.DeclaredArity;
         var fieldContextInvalid = CollectFieldContextInvalidity(
             root,
             exactDeclaredArity,
@@ -5729,7 +5764,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
 
     private static SubstitutionEvaluation EvaluateVariable(
         MetadataTypeSignatureNode node,
-        MetadataTypeArgumentBindingIdentity? binding,
+        MetadataGenericParameterAuthorityBindingIdentity? binding,
         SortedSet<int> unresolved,
         SortedSet<int> undeclared)
     {
@@ -5744,7 +5779,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
                     null,
                     ImmutableArray<MetadataSubstitutedTypeNodeIdentity>.Empty));
         }
-        if (binding.Kind == MetadataTypeArgumentBindingKind.Unavailable)
+        if (binding.Kind == MetadataGenericParameterAuthorityBindingKind.Unavailable)
         {
             unresolved.Add(index);
             return SubstitutionEvaluation.Open(

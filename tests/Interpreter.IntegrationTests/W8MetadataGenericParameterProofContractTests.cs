@@ -648,31 +648,6 @@ public sealed class W8MetadataGenericParameterProofContractTests
         Assert.Equal("e07ac71ae7681dcc35c97a25a88a2a44fd7cb356e1ebe39b603de43062ca524f", boundLedger.Sha256);
     }
 
-    /// <summary>
-    /// Records the remaining public construction consumer that requires the legacy ledger until its parameter and
-    /// implementation can move together to the authority-owned draft family.
-    /// </summary>
-    [Fact]
-    [Trait("Category", "Fast")]
-    public void Field_substitution_request_exposes_the_remaining_legacy_ledger_migration_boundary()
-    {
-        var factory = Assert.Single(typeof(MetadataTypeSubstitutionRequest)
-            .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly),
-            static method => method.Name == nameof(MetadataTypeSubstitutionRequest.ForFieldDefinition));
-        Assert.Equal(typeof(MetadataGenericParameterBindingLedgerIdentity), factory.GetParameters()[1].ParameterType);
-        Assert.Equal(
-            typeof(MetadataGenericParameterBindingLedgerIdentity),
-            typeof(MetadataTypeSubstitutionRequest)
-                .GetProperty(nameof(MetadataTypeSubstitutionRequest.DeclaringTypeBindings))!.PropertyType);
-        Assert.NotEqual(
-            typeof(MetadataGenericParameterAuthorityBindingLedgerIdentity),
-            factory.GetParameters()[1].ParameterType);
-        Assert.Contains(
-            typeof(MetadataGenericParameterOwnerDeclarationIdentity)
-                .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly),
-            static method => method.Name == nameof(MetadataGenericParameterOwnerDeclarationIdentity.FromTypeDefinition));
-    }
-
     /// <summary>Proves the new sealed draft surface documents public static and instance methods and has no source-less factories.</summary>
     [Fact]
     [Trait("Category", "Fast")]
