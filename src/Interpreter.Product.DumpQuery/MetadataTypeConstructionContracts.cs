@@ -281,24 +281,15 @@ public enum MetadataTypeConstructionResultKind
     NonExact = 5,
 }
 
-/// <summary>Identifies the metadata operation supplying explicit generic substitutions.</summary>
-/// <remarks>No draft context derives owner or method arguments from a selected frame.</remarks>
+/// <summary>Identifies the exact metadata source supplying an admitted generic substitution.</summary>
+/// <remarks>
+/// The current draft admits only a source-anchored FieldDef signature. Other metadata uses require their own exact
+/// physical-row and complete-catalog identities before they can extend this closed set.
+/// </remarks>
 public enum MetadataTypeSubstitutionContextKind
 {
-    /// <summary>A TypeSpec use with explicitly proven owner and method arguments.</summary>
-    TypeSpecification = 1,
-    /// <summary>A FieldDef signature with owner arguments only.</summary>
-    FieldDefinition = 2,
-    /// <summary>A TypeDef Extends edge with owner arguments only.</summary>
-    BaseType = 3,
-    /// <summary>An InterfaceImpl edge with owner arguments only.</summary>
-    InterfaceImplementation = 4,
-    /// <summary>A GenericParamConstraint edge with owner arguments only.</summary>
-    GenericConstraint = 5,
-    /// <summary>A method-owned signature with explicit owner and method arguments.</summary>
-    MethodSignature = 6,
-    /// <summary>An expression-owner construction with owner arguments only.</summary>
-    ExpressionOwner = 7,
+    /// <summary>An exact FieldDef signature with one proven declaring-TypeDef binding ledger.</summary>
+    FieldDefinition = 1,
 }
 
 /// <summary>Classifies the complete result of an explicit recursive substitution.</summary>
@@ -2413,7 +2404,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <summary>Creates one primitive draft signature node.</summary>
     /// <param name="kind">The exact primitive kind.</param>
     /// <returns>A sealed immutable draft node.</returns>
-    public static MetadataTypeSignatureNode Primitive(MetadataPrimitiveTypeKind kind)
+    internal static MetadataTypeSignatureNode Primitive(MetadataPrimitiveTypeKind kind)
     {
         ExpressionV2ContractEncoding.RequireDefined(kind, nameof(kind));
         return CreateCore(
@@ -2437,7 +2428,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <param name="target">The exact direct target; TypeSpec is rejected to avoid recursive self-containment.</param>
     /// <param name="definitionChain">Every exact resolved TypeDef from outermost through the target definition.</param>
     /// <returns>A sealed immutable draft node that remains open when the final definition has nonzero arity.</returns>
-    public static MetadataTypeSignatureNode Named(
+    internal static MetadataTypeSignatureNode Named(
         MetadataNamedSignatureHeadKind headKind,
         MetadataTypeDefOrRefTargetIdentity target,
         ImmutableArray<MetadataTypeDefinitionIdentity> definitionChain)
@@ -2479,30 +2470,30 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <summary>Creates one owner-VAR draft signature node.</summary>
     /// <param name="index">The zero-based owner generic-parameter index.</param>
     /// <returns>A sealed immutable draft node.</returns>
-    public static MetadataTypeSignatureNode OwnerTypeParameter(int index) =>
+    internal static MetadataTypeSignatureNode OwnerTypeParameter(int index) =>
         Variable(MetadataTypeSignatureNodeKind.OwnerTypeParameter, index);
 
     /// <summary>Creates one method-MVAR draft signature node.</summary>
     /// <param name="index">The zero-based method generic-parameter index.</param>
     /// <returns>A sealed immutable draft node whose later use remains context-checked.</returns>
-    public static MetadataTypeSignatureNode MethodTypeParameter(int index) =>
+    internal static MetadataTypeSignatureNode MethodTypeParameter(int index) =>
         Variable(MetadataTypeSignatureNodeKind.MethodTypeParameter, index);
 
     /// <summary>Creates one physical VOID draft signature node for role-aware use and <c>void*</c>.</summary>
     /// <returns>A sealed immutable draft node retained outside closed evaluation.</returns>
-    public static MetadataTypeSignatureNode Void() =>
+    internal static MetadataTypeSignatureNode Void() =>
         CreateLeaf(MetadataTypeSignatureNodeKind.Void);
 
     /// <summary>Creates one physical TYPEDBYREF draft signature node for role-aware use.</summary>
     /// <returns>A sealed immutable draft node retained outside closed evaluation.</returns>
-    public static MetadataTypeSignatureNode TypedByReference() =>
+    internal static MetadataTypeSignatureNode TypedByReference() =>
         CreateLeaf(MetadataTypeSignatureNodeKind.TypedByReference);
 
     /// <summary>Creates one generic-instantiation draft node with exact flattened arguments.</summary>
     /// <param name="namedHead">A resolved named leaf whose final TypeDef owns the flattened arity.</param>
     /// <param name="arguments">The exact ordered pre-substitution arguments.</param>
     /// <returns>A sealed immutable draft node retaining the complete nested definition chain.</returns>
-    public static MetadataTypeSignatureNode GenericInstantiation(
+    internal static MetadataTypeSignatureNode GenericInstantiation(
         MetadataTypeSignatureNode namedHead,
         ImmutableArray<MetadataTypeSignatureNode> arguments)
     {
@@ -2540,7 +2531,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <summary>Creates one SZARRAY draft signature node.</summary>
     /// <param name="element">The complete pre-substitution element node.</param>
     /// <returns>A sealed immutable draft node distinct from every ARRAY node.</returns>
-    public static MetadataTypeSignatureNode SzArray(MetadataTypeSignatureNode element) =>
+    internal static MetadataTypeSignatureNode SzArray(MetadataTypeSignatureNode element) =>
         Unary(MetadataTypeSignatureNodeKind.SzArray, element, 1,
             ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
 
@@ -2550,7 +2541,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <param name="sizes">The ordered non-negative sizes for the encoded leading dimensions.</param>
     /// <param name="lowerBounds">The ordered signed lower bounds for the encoded leading dimensions.</param>
     /// <returns>A sealed immutable draft ARRAY node preserving rank, sizes, and lower bounds.</returns>
-    public static MetadataTypeSignatureNode MultidimensionalArray(
+    internal static MetadataTypeSignatureNode MultidimensionalArray(
         MetadataTypeSignatureNode element,
         int rank,
         ImmutableArray<int> sizes,
@@ -2569,7 +2560,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <param name="modifierType">The exact direct TypeDef-or-TypeRef modifier target.</param>
     /// <param name="unmodifiedType">The complete retained underlying type.</param>
     /// <returns>A sealed immutable draft node retained as typed non-admitted evidence.</returns>
-    public static MetadataTypeSignatureNode RequiredModifier(
+    internal static MetadataTypeSignatureNode RequiredModifier(
         MetadataTypeDefOrRefTargetIdentity modifierType,
         MetadataTypeSignatureNode unmodifiedType) =>
         Modifier(MetadataTypeSignatureNodeKind.RequiredModifier, modifierType, unmodifiedType);
@@ -2578,7 +2569,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <param name="modifierType">The source-module/TypeSpec-token graph edge.</param>
     /// <param name="unmodifiedType">The complete retained underlying type.</param>
     /// <returns>A sealed immutable draft node whose TypeSpec decode belongs to a separate graph ledger.</returns>
-    public static MetadataTypeSignatureNode RequiredModifier(
+    internal static MetadataTypeSignatureNode RequiredModifier(
         MetadataTypeSpecificationRowReferenceIdentity modifierType,
         MetadataTypeSignatureNode unmodifiedType) =>
         Modifier(MetadataTypeSignatureNodeKind.RequiredModifier, modifierType, unmodifiedType);
@@ -2587,7 +2578,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <param name="modifierType">The exact direct TypeDef-or-TypeRef modifier target.</param>
     /// <param name="unmodifiedType">The complete retained underlying type.</param>
     /// <returns>A sealed immutable draft node retained as typed non-admitted evidence.</returns>
-    public static MetadataTypeSignatureNode OptionalModifier(
+    internal static MetadataTypeSignatureNode OptionalModifier(
         MetadataTypeDefOrRefTargetIdentity modifierType,
         MetadataTypeSignatureNode unmodifiedType) =>
         Modifier(MetadataTypeSignatureNodeKind.OptionalModifier, modifierType, unmodifiedType);
@@ -2596,7 +2587,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <param name="modifierType">The source-module/TypeSpec-token graph edge.</param>
     /// <param name="unmodifiedType">The complete retained underlying type.</param>
     /// <returns>A sealed immutable draft node whose TypeSpec decode belongs to a separate graph ledger.</returns>
-    public static MetadataTypeSignatureNode OptionalModifier(
+    internal static MetadataTypeSignatureNode OptionalModifier(
         MetadataTypeSpecificationRowReferenceIdentity modifierType,
         MetadataTypeSignatureNode unmodifiedType) =>
         Modifier(MetadataTypeSignatureNodeKind.OptionalModifier, modifierType, unmodifiedType);
@@ -2604,14 +2595,14 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <summary>Creates one pointer draft node retained outside closed construction.</summary>
     /// <param name="element">The complete pointed-to type.</param>
     /// <returns>A sealed immutable draft typed non-admission.</returns>
-    public static MetadataTypeSignatureNode Pointer(MetadataTypeSignatureNode element) =>
+    internal static MetadataTypeSignatureNode Pointer(MetadataTypeSignatureNode element) =>
         Unary(MetadataTypeSignatureNodeKind.Pointer, element, null,
             ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
 
     /// <summary>Creates one managed-by-reference draft node retained outside closed construction.</summary>
     /// <param name="element">The complete referenced type.</param>
     /// <returns>A sealed immutable draft typed non-admission.</returns>
-    public static MetadataTypeSignatureNode ByReference(MetadataTypeSignatureNode element) =>
+    internal static MetadataTypeSignatureNode ByReference(MetadataTypeSignatureNode element) =>
         Unary(MetadataTypeSignatureNodeKind.ByReference, element, null,
             ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
 
@@ -2650,7 +2641,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     /// <summary>Creates one non-recursive TypeSpec indirection draft node retained outside closed construction.</summary>
     /// <param name="typeSpecificationToken">The exact non-nil referenced TypeSpec token.</param>
     /// <returns>A sealed immutable draft typed non-admission; the containing TypeSpec rejects a direct self-cycle.</returns>
-    public static MetadataTypeSignatureNode TypeSpecificationIndirection(int typeSpecificationToken)
+    internal static MetadataTypeSignatureNode TypeSpecificationIndirection(int typeSpecificationToken)
     {
         CanonicalReplayEncoding.ValidateMetadataToken(
             typeSpecificationToken,
@@ -4609,7 +4600,7 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
     /// <summary>Creates one primitive closed draft identity.</summary>
     /// <param name="kind">The exact primitive kind.</param>
     /// <returns>A sealed immutable draft closed identity.</returns>
-    public static MetadataClosedTypeIdentity Primitive(MetadataPrimitiveTypeKind kind)
+    internal static MetadataClosedTypeIdentity Primitive(MetadataPrimitiveTypeKind kind)
     {
         ExpressionV2ContractEncoding.RequireDefined(kind, nameof(kind));
         return CreateCore(
@@ -4626,7 +4617,7 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
     /// <summary>Creates one top-level or nested named closed draft construction.</summary>
     /// <param name="segments">Every outer-to-inner named segment with exact local argument slices.</param>
     /// <returns>A sealed immutable draft closed identity.</returns>
-    public static MetadataClosedTypeIdentity Named(ImmutableArray<MetadataTypeConstructionSegment> segments)
+    internal static MetadataClosedTypeIdentity Named(ImmutableArray<MetadataTypeConstructionSegment> segments)
     {
         var copied = ExpressionV2ContractEncoding.CopyRequired(
             segments,
@@ -4729,7 +4720,7 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
     /// <summary>Creates one SZARRAY closed draft identity.</summary>
     /// <param name="elementType">The exact closed element type.</param>
     /// <returns>A sealed immutable draft identity distinct from rank-one ARRAY.</returns>
-    public static MetadataClosedTypeIdentity SzArray(MetadataClosedTypeIdentity elementType)
+    internal static MetadataClosedTypeIdentity SzArray(MetadataClosedTypeIdentity elementType)
     {
         ArgumentNullException.ThrowIfNull(elementType);
         return CreateCore(
@@ -4749,7 +4740,7 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
     /// <param name="sizes">The ordered non-negative sizes for encoded leading dimensions.</param>
     /// <param name="lowerBounds">The ordered signed lower bounds for encoded leading dimensions.</param>
     /// <returns>A sealed immutable draft identity preserving rank and both ordered shape vectors.</returns>
-    public static MetadataClosedTypeIdentity MultidimensionalArray(
+    internal static MetadataClosedTypeIdentity MultidimensionalArray(
         MetadataClosedTypeIdentity elementType,
         int rank,
         ImmutableArray<int> sizes,
@@ -5005,7 +4996,7 @@ public sealed class MetadataTypeConstructionResult : IEquatable<MetadataTypeCons
     /// <summary>Classifies one complete signature under the draft closed-construction grammar.</summary>
     /// <param name="root">The complete bounded pre-substitution signature tree.</param>
     /// <returns>A sealed immutable typed draft result with an exact closed identity only when derivable.</returns>
-    public static MetadataTypeConstructionResult Classify(MetadataTypeSignatureNode root)
+    internal static MetadataTypeConstructionResult Classify(MetadataTypeSignatureNode root)
     {
         ArgumentNullException.ThrowIfNull(root);
         if (root.ContainsInvalidTypeSpecificationHead)
@@ -5064,7 +5055,10 @@ public sealed class MetadataTypeConstructionResult : IEquatable<MetadataTypeCons
 }
 
 /// <summary>Freezes one exact GenericParam-row binding or explicit unavailable observation.</summary>
-/// <remarks>The sealed draft binding keeps row owner/module/number evidence inseparable from any closed argument.</remarks>
+/// <remarks>
+/// The sealed draft binding keeps row owner/module/number evidence inseparable from any closed argument. Only an
+/// internal source-derived producer can assert an exact argument mapping; public callers can retain unavailability.
+/// </remarks>
 public sealed class MetadataTypeArgumentBindingIdentity : IEquatable<MetadataTypeArgumentBindingIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-type-argument-binding-identity";
@@ -5102,11 +5096,14 @@ public sealed class MetadataTypeArgumentBindingIdentity : IEquatable<MetadataTyp
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one exact GenericParam-row-to-closed-argument draft binding.</summary>
+    /// <summary>Creates one exact GenericParam-row-to-source-derived-closed-argument draft binding.</summary>
     /// <param name="parameter">The exact declared GenericParam row.</param>
-    /// <param name="argument">The exact closed argument bound to that row.</param>
-    /// <returns>A sealed immutable exact draft binding.</returns>
-    public static MetadataTypeArgumentBindingIdentity Exact(
+    /// <param name="argument">
+    /// The exact closed argument obtained from a source-derived metadata construction result. This draft factory does
+    /// not establish an acquisition source and callers must not synthesize the argument identity.
+    /// </param>
+    /// <returns>A sealed immutable exact draft binding retaining the supplied source-derived argument.</returns>
+    internal static MetadataTypeArgumentBindingIdentity Exact(
         MetadataGenericParameterIdentity parameter,
         MetadataClosedTypeIdentity argument)
     {
@@ -5138,147 +5135,92 @@ public sealed class MetadataTypeArgumentBindingIdentity : IEquatable<MetadataTyp
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes complete row-addressed binding ledgers supplied to one recursive metadata substitution.</summary>
-/// <remarks>The sealed draft request has no frame-discovery API and preserves owner VAR and method MVAR rows separately.</remarks>
+/// <summary>Freezes one exact FieldSig source and its declaring-TypeDef binding proof for recursive substitution.</summary>
+/// <remarks>
+/// The sealed draft request derives its root only from <see cref="MetadataFieldSignatureIdentity"/> and retains the
+/// complete <see cref="MetadataGenericParameterBindingLedgerIdentity"/>. It has no raw-tree, raw-array, method-ledger,
+/// or frame-discovery input.
+/// </remarks>
 public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSubstitutionRequest>
 {
     private const string CanonicalDomain = "metadata-v2-type-substitution-request";
-    private const int CanonicalSchemaVersion = 2;
-    private readonly ImmutableArray<MetadataTypeArgumentBindingIdentity> ownerBindings;
-    private readonly ImmutableArray<MetadataTypeArgumentBindingIdentity> methodBindings;
+    private const int CanonicalSchemaVersion = 3;
+    private readonly ImmutableArray<MetadataTypeArgumentBindingIdentity> exactOwnerBindings;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataTypeSubstitutionRequest(
-        MetadataTypeSubstitutionContextKind contextKind,
-        MetadataGenericParameterIdentity? constraintOwner,
-        ImmutableArray<MetadataTypeArgumentBindingIdentity> ownerBindings,
-        ImmutableArray<MetadataTypeArgumentBindingIdentity> methodBindings,
-        EvaluationDeterministicBound? reachedBound)
+        MetadataFieldSignatureIdentity fieldSignature,
+        MetadataGenericParameterBindingLedgerIdentity declaringTypeBindings)
     {
-        ContextKind = contextKind;
-        ConstraintOwner = constraintOwner;
-        this.ownerBindings = ownerBindings;
-        this.methodBindings = methodBindings;
-        ReachedBound = reachedBound;
+        FieldSignature = fieldSignature;
+        DeclaringTypeBindings = declaringTypeBindings;
+        exactOwnerBindings = declaringTypeBindings.ResultKind == MetadataGenericParameterProofResultKind.Exact
+            ? declaringTypeBindings.Bindings
+            : ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteInt32((int)contextKind);
-        writer.WriteBoolean(constraintOwner is not null);
-        if (constraintOwner is not null)
-        {
-            writer.WriteLengthPrefixedBytes(constraintOwner.CanonicalBytes.AsSpan());
-        }
-        ExpressionV2ContractEncoding.WriteCanonicalArray(writer, ownerBindings, static value => value.CanonicalBytes);
-        ExpressionV2ContractEncoding.WriteCanonicalArray(writer, methodBindings, static value => value.CanonicalBytes);
-        writer.WriteBoolean(reachedBound is not null);
-        if (reachedBound is not null)
-        {
-            writer.WriteString(reachedBound.Name);
-            writer.WriteInt64(reachedBound.Value);
-        }
+        writer.WriteInt32((int)MetadataTypeSubstitutionContextKind.FieldDefinition);
+        writer.WriteLengthPrefixedBytes(fieldSignature.CanonicalBytes.AsSpan());
+        writer.WriteLengthPrefixedBytes(declaringTypeBindings.CanonicalBytes.AsSpan());
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata operation supplying the binding ledgers.</summary>
-    public MetadataTypeSubstitutionContextKind ContextKind { get; }
-    /// <summary>Gets the exact constraint-owner row only for a GenericParamConstraint context.</summary>
-    public MetadataGenericParameterIdentity? ConstraintOwner { get; }
-    /// <summary>Gets a defensive complete ordered owner-VAR row-binding ledger.</summary>
-    public ImmutableArray<MetadataTypeArgumentBindingIdentity> OwnerBindings =>
-        ExpressionV2ContractEncoding.Copy(ownerBindings);
-    /// <summary>Gets a defensive complete ordered method-MVAR row-binding ledger.</summary>
-    public ImmutableArray<MetadataTypeArgumentBindingIdentity> MethodBindings =>
-        ExpressionV2ContractEncoding.Copy(methodBindings);
-    /// <summary>Gets the generic-parameter collection bound when cap-plus-one prevented a usable ledger.</summary>
-    public EvaluationDeterministicBound? ReachedBound { get; }
-    /// <summary>Gets whether this exact context can validly contain method MVAR nodes.</summary>
-    public bool AllowsMethodTypeParameters => ContextKind is
-        MetadataTypeSubstitutionContextKind.TypeSpecification or
-        MetadataTypeSubstitutionContextKind.MethodSignature ||
-        ContextKind == MetadataTypeSubstitutionContextKind.GenericConstraint &&
-        ConstraintOwner?.Owner.Kind == MetadataGenericParameterOwnerKind.MethodDefinition;
+    /// <summary>Gets the only currently admitted source-anchored substitution context.</summary>
+    public MetadataTypeSubstitutionContextKind ContextKind => MetadataTypeSubstitutionContextKind.FieldDefinition;
+    /// <summary>Gets the exact FieldDef, source ends, FieldSig bytes, certificate, and projected root.</summary>
+    public MetadataFieldSignatureIdentity FieldSignature { get; }
+    /// <summary>Gets the complete declaring-TypeDef GenericParam binding proof, including exact zero arity.</summary>
+    public MetadataGenericParameterBindingLedgerIdentity DeclaringTypeBindings { get; }
+    /// <summary>Gets the source-derived complete FieldSig root.</summary>
+    public MetadataTypeSignatureNode Root => FieldSignature.Root;
+    /// <summary>Gets whether the complete declaring-TypeDef binding proof is exact, non-exact, or invalid.</summary>
+    public MetadataGenericParameterProofResultKind BindingProofResultKind => DeclaringTypeBindings.ResultKind;
+    /// <summary>Gets the typed declaring-TypeDef binding-proof issue, or none.</summary>
+    public MetadataGenericParameterProofIssue BindingProofIssue => DeclaringTypeBindings.Issue;
+    /// <summary>Gets a propagated declaration or table bound when the binding proof stopped at cap plus one.</summary>
+    public EvaluationDeterministicBound? ReachedBound => DeclaringTypeBindings.ParameterSet.ReachedBound;
+    /// <summary>Gets the binding proof's cap-plus-one or incomplete observation count, otherwise zero.</summary>
+    public int BindingProofObservedCount => DeclaringTypeBindings.ParameterSet.ObservedCount;
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete row-addressed recursive-substitution draft request.</summary>
-    /// <param name="contextKind">The exact metadata operation supplying the ledgers.</param>
-    /// <param name="ownerBindings">All declared owner GenericParam rows in number order.</param>
-    /// <param name="methodBindings">All declared method GenericParam rows in number order.</param>
-    /// <param name="constraintOwner">The exact constrained GenericParam row only for a constraint context.</param>
-    /// <returns>A sealed immutable draft request; cap-plus-one is retained as non-exact with no usable prefix.</returns>
-    public static MetadataTypeSubstitutionRequest Create(
-        MetadataTypeSubstitutionContextKind contextKind,
-        ImmutableArray<MetadataTypeArgumentBindingIdentity> ownerBindings,
-        ImmutableArray<MetadataTypeArgumentBindingIdentity> methodBindings,
-        MetadataGenericParameterIdentity? constraintOwner = null)
+    /// <summary>Creates one source-anchored FieldDef recursive-substitution draft request.</summary>
+    /// <param name="fieldSignature">The exact FieldDef-owned, fully consumed FieldSig identity supplying the root.</param>
+    /// <param name="declaringTypeBindings">
+    /// The complete GenericParam binding proof for that exact declaring TypeDef. An initialized exact empty ledger is
+    /// required for a non-generic declaring type; absence never denotes zero arity.
+    /// </param>
+    /// <returns>
+    /// A sealed immutable draft request. A matching non-exact or invalid proof is retained so execution can stop
+    /// before applying any binding; mismatched source ends or owner rows cannot form a request.
+    /// </returns>
+    public static MetadataTypeSubstitutionRequest ForFieldDefinition(
+        MetadataFieldSignatureIdentity fieldSignature,
+        MetadataGenericParameterBindingLedgerIdentity declaringTypeBindings)
     {
-        ExpressionV2ContractEncoding.RequireDefined(contextKind, nameof(contextKind));
-        var copiedOwner = ExpressionV2ContractEncoding.CopyRequired(
-            ownerBindings,
-            nameof(ownerBindings),
-            StaticFieldV2Limits.MaximumGenericParameterCount + 1);
-        var copiedMethod = ExpressionV2ContractEncoding.CopyRequired(
-            methodBindings,
-            nameof(methodBindings),
-            StaticFieldV2Limits.MaximumGenericParameterCount + 1);
-        if ((contextKind == MetadataTypeSubstitutionContextKind.GenericConstraint) != (constraintOwner is not null))
+        ArgumentNullException.ThrowIfNull(fieldSignature);
+        ArgumentNullException.ThrowIfNull(declaringTypeBindings);
+        var parameterSet = declaringTypeBindings.ParameterSet;
+        var declaration = parameterSet.Declaration;
+        var owner = declaration.Owner;
+        if (!declaration.SourceEnds.Equals(fieldSignature.SourceEnds) ||
+            !parameterSet.TableCatalog.SourceEnds.Equals(fieldSignature.SourceEnds))
         {
-            throw new ArgumentException("Only a generic-constraint context requires one exact owner row.", nameof(constraintOwner));
+            throw new ArgumentException(
+                "The declaring-TypeDef binding proof must use the FieldSig's exact metadata source ends.",
+                nameof(declaringTypeBindings));
         }
-        ValidateLedger(copiedOwner, MetadataGenericParameterOwnerKind.TypeDefinition, nameof(ownerBindings));
-        ValidateLedger(copiedMethod, MetadataGenericParameterOwnerKind.MethodDefinition, nameof(methodBindings));
-        var methodAllowed = contextKind is MetadataTypeSubstitutionContextKind.TypeSpecification or
-            MetadataTypeSubstitutionContextKind.MethodSignature ||
-            contextKind == MetadataTypeSubstitutionContextKind.GenericConstraint &&
-            constraintOwner!.Owner.Kind == MetadataGenericParameterOwnerKind.MethodDefinition;
-        if (!methodAllowed && !copiedMethod.IsEmpty)
+        if (owner.Kind != MetadataGenericParameterOwnerKind.TypeDefinition ||
+            owner.TypeDefinition is null ||
+            !owner.TypeDefinition.MatchesPinnedW7(fieldSignature.FieldDefinition.DeclaringType))
         {
-            throw new ArgumentException("This metadata operation cannot supply a method-MVAR ledger.", nameof(methodBindings));
+            throw new ArgumentException(
+                "The binding proof must name the exact FieldDef declaring TypeDef.",
+                nameof(declaringTypeBindings));
         }
-        var capPlusOne = copiedOwner.Length > StaticFieldV2Limits.MaximumGenericParameterCount ||
-                         copiedMethod.Length > StaticFieldV2Limits.MaximumGenericParameterCount;
-        if (constraintOwner is not null)
-        {
-            if (constraintOwner.Owner.Kind == MetadataGenericParameterOwnerKind.TypeDefinition &&
-                !copiedOwner.IsEmpty && !copiedOwner[0].Parameter.Owner.Equals(constraintOwner.Owner))
-            {
-                throw new ArgumentException("A type-owned constraint must use the exact constrained TypeDef ledger.", nameof(ownerBindings));
-            }
-            if (constraintOwner.Owner.Kind == MetadataGenericParameterOwnerKind.MethodDefinition)
-            {
-                if (!copiedMethod.IsEmpty && !copiedMethod[0].Parameter.Owner.Equals(constraintOwner.Owner))
-                {
-                    throw new ArgumentException("A method-owned constraint must use the exact constrained MethodDef ledger.", nameof(methodBindings));
-                }
-                if (!copiedOwner.IsEmpty &&
-                    !copiedOwner[0].Parameter.Owner.TypeDefinition!.MatchesPinnedW7(
-                        constraintOwner.Owner.MethodDefinition!.DeclaringType))
-                {
-                    throw new ArgumentException("A method-owned constraint's owner ledger must name its exact declaring TypeDef.", nameof(ownerBindings));
-                }
-            }
-            var constrainedLedger = constraintOwner.Owner.Kind == MetadataGenericParameterOwnerKind.TypeDefinition
-                ? copiedOwner
-                : copiedMethod;
-            if (!capPlusOne &&
-                (constraintOwner.Position >= constrainedLedger.Length ||
-                 !constrainedLedger[constraintOwner.Position].Parameter.Equals(constraintOwner)))
-            {
-                throw new ArgumentException("A within-cap constraint request must include its exact owner GenericParam row.", nameof(constraintOwner));
-            }
-        }
-        return new MetadataTypeSubstitutionRequest(
-            contextKind,
-            constraintOwner,
-            copiedOwner,
-            copiedMethod,
-            capPlusOne
-                ? new EvaluationDeterministicBound(
-                    ExpressionV2ContractLimits.GenericParameterCountBoundName,
-                    StaticFieldV2Limits.MaximumGenericParameterCount)
-                : null);
+        return new MetadataTypeSubstitutionRequest(fieldSignature, declaringTypeBindings);
     }
 
     /// <summary>Tests canonical equality between two row-addressed draft substitution requests.</summary>
@@ -5295,47 +5237,10 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal MetadataTypeArgumentBindingIdentity? FindOwner(int index) =>
-        reachedBoundIsAbsent() && index >= 0 && index < ownerBindings.Length && ownerBindings[index].Parameter.Position == index
-            ? ownerBindings[index]
+        BindingProofResultKind == MetadataGenericParameterProofResultKind.Exact &&
+        index >= 0 && index < exactOwnerBindings.Length && exactOwnerBindings[index].Parameter.Position == index
+            ? exactOwnerBindings[index]
             : null;
-
-    internal MetadataTypeArgumentBindingIdentity? FindMethod(int index) =>
-        reachedBoundIsAbsent() && index >= 0 && index < methodBindings.Length && methodBindings[index].Parameter.Position == index
-            ? methodBindings[index]
-            : null;
-
-    private bool reachedBoundIsAbsent() => ReachedBound is null;
-
-    private static void ValidateLedger(
-        ImmutableArray<MetadataTypeArgumentBindingIdentity> ledger,
-        MetadataGenericParameterOwnerKind expectedOwnerKind,
-        string parameterName)
-    {
-        MetadataGenericParameterOwnerIdentity? owner = null;
-        for (var index = 0; index < ledger.Length; index++)
-        {
-            var parameter = ledger[index].Parameter;
-            if (parameter.Owner.Kind != expectedOwnerKind || parameter.Position != index ||
-                owner is not null && !owner.Equals(parameter.Owner))
-            {
-                throw new ArgumentException("A binding ledger must be contiguous, ordered, and owned by one exact row.", parameterName);
-            }
-            owner ??= parameter.Owner;
-        }
-        if (owner?.Kind == MetadataGenericParameterOwnerKind.TypeDefinition)
-        {
-            var declaredCount = owner.TypeDefinition!.GenericParameterCount;
-            var requiredCount = declaredCount <= StaticFieldV2Limits.MaximumGenericParameterCount
-                ? declaredCount
-                : StaticFieldV2Limits.MaximumGenericParameterCount + 1;
-            if (ledger.Length != requiredCount)
-            {
-                throw new ArgumentException(
-                    "A TypeDef ledger must be complete within cap or retain exactly the cap-plus-one observation.",
-                    parameterName);
-            }
-        }
-    }
 }
 
 /// <summary>Freezes one node in the complete recursively substituted signature tree.</summary>
@@ -5448,15 +5353,16 @@ public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSub
     }
 }
 
-/// <summary>Freezes one complete typed result of recursive VAR/MVAR substitution.</summary>
+/// <summary>Freezes one complete typed result of source-anchored FieldSig owner-VAR substitution.</summary>
 /// <remarks>
-/// The sealed draft result retains the original tree, exact binding ledger, recursively substituted tree, distinct
-/// unavailable and undeclared indices, and an exact closed identity only when every recursive node is admitted.
+/// The sealed draft result retains the exact FieldSig request, recursively substituted tree, distinct unavailable and
+/// undeclared indices, and an exact closed identity only when the complete declaring-TypeDef proof and every recursive
+/// node are admitted. A non-exact or invalid proof applies no binding prefix.
 /// </remarks>
 public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubstitutionResult>
 {
     private const string CanonicalDomain = "metadata-v2-type-substitution-result";
-    private const int CanonicalSchemaVersion = 2;
+    private const int CanonicalSchemaVersion = 3;
     private readonly ImmutableArray<int> unresolvedOwnerVariableIndices;
     private readonly ImmutableArray<int> unresolvedMethodVariableIndices;
     private readonly ImmutableArray<int> undeclaredOwnerVariableIndices;
@@ -5465,7 +5371,6 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
 
     private MetadataTypeSubstitutionResult(
         MetadataTypeSubstitutionResultKind kind,
-        MetadataTypeSignatureNode root,
         MetadataTypeSubstitutionRequest request,
         MetadataSubstitutedTypeNodeIdentity substitutedTree,
         ImmutableArray<int> unresolvedOwnerVariableIndices,
@@ -5476,7 +5381,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
         EvaluationDeterministicBound? reachedBound)
     {
         Kind = kind;
-        Root = root;
+        Root = request.Root;
         Request = request;
         SubstitutedTree = substitutedTree;
         this.unresolvedOwnerVariableIndices = unresolvedOwnerVariableIndices;
@@ -5487,7 +5392,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
         ReachedBound = reachedBound;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32((int)kind);
-        writer.WriteLengthPrefixedBytes(root.CanonicalBytes.AsSpan());
+        writer.WriteLengthPrefixedBytes(Root.CanonicalBytes.AsSpan());
         writer.WriteLengthPrefixedBytes(request.CanonicalBytes.AsSpan());
         writer.WriteLengthPrefixedBytes(substitutedTree.CanonicalBytes.AsSpan());
         WriteInt32Array(writer, unresolvedOwnerVariableIndices);
@@ -5515,6 +5420,14 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
     public MetadataTypeSignatureNode Root { get; }
     /// <summary>Gets the explicit immutable draft row-addressed substitution request.</summary>
     public MetadataTypeSubstitutionRequest Request { get; }
+    /// <summary>Gets whether the complete declaring-TypeDef binding proof is exact, non-exact, or invalid.</summary>
+    public MetadataGenericParameterProofResultKind BindingProofResultKind => Request.BindingProofResultKind;
+    /// <summary>Gets the typed declaring-TypeDef binding-proof issue, or none.</summary>
+    public MetadataGenericParameterProofIssue BindingProofIssue => Request.BindingProofIssue;
+    /// <summary>Gets the binding proof's reached bound even when FieldSig invalidity determines the result kind.</summary>
+    public EvaluationDeterministicBound? BindingProofReachedBound => Request.ReachedBound;
+    /// <summary>Gets the binding proof's cap-plus-one or incomplete observation count, otherwise zero.</summary>
+    public int BindingProofObservedCount => Request.BindingProofObservedCount;
     /// <summary>Gets the complete recursively substituted tree, including every applied row binding.</summary>
     public MetadataSubstitutedTypeNodeIdentity SubstitutedTree { get; }
     /// <summary>Gets a defensive sorted set of owner-VAR indices whose declared bindings were unavailable.</summary>
@@ -5538,27 +5451,47 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Recursively substitutes exact row-addressed owner VAR and method MVAR bindings.</summary>
-    /// <param name="root">The complete bounded pre-substitution signature tree.</param>
-    /// <param name="request">The complete explicit GenericParam-row binding ledgers.</param>
-    /// <returns>A sealed immutable typed draft result without inferred or positional-only arguments.</returns>
-    public static MetadataTypeSubstitutionResult Substitute(
-        MetadataTypeSignatureNode root,
-        MetadataTypeSubstitutionRequest request)
+    /// <summary>Recursively substitutes the exact row-addressed owner VAR bindings in one exact FieldSig request.</summary>
+    /// <param name="request">
+    /// The source-anchored FieldSig and complete declaring-TypeDef binding proof, including an explicit exact empty
+    /// ledger for a non-generic owner.
+    /// </param>
+    /// <returns>
+    /// A sealed immutable typed draft result. Non-exact or invalid binding proofs stop before any binding is applied
+    /// and cannot produce a closed result.
+    /// </returns>
+    public static MetadataTypeSubstitutionResult Substitute(MetadataTypeSubstitutionRequest request)
     {
-        ArgumentNullException.ThrowIfNull(root);
         ArgumentNullException.ThrowIfNull(request);
+        var root = request.Root;
         var unresolvedOwner = new SortedSet<int>();
         var unresolvedMethod = new SortedSet<int>();
         var undeclaredOwner = new SortedSet<int>();
         var undeclaredMethod = new SortedSet<int>();
 
         SubstitutionEvaluation evaluation;
-        if (request.ReachedBound is not null)
+        var declaration = request.DeclaringTypeBindings.ParameterSet.Declaration;
+        var exactDeclaredArity = declaration.ResultKind == MetadataGenericParameterProofResultKind.Exact
+            ? declaration.DeclaredArity
+            : null;
+        var fieldContextInvalid = CollectFieldContextInvalidity(
+            root,
+            exactDeclaredArity,
+            undeclaredOwner,
+            undeclaredMethod);
+        if (fieldContextInvalid)
+        {
+            evaluation = SubstitutionEvaluation.Invalid(CloneWithoutBindings(root));
+        }
+        else if (request.BindingProofResultKind == MetadataGenericParameterProofResultKind.NonExact)
         {
             evaluation = SubstitutionEvaluation.NonExact(
                 CloneWithoutBindings(root),
                 request.ReachedBound);
+        }
+        else if (request.BindingProofResultKind == MetadataGenericParameterProofResultKind.Invalid)
+        {
+            evaluation = SubstitutionEvaluation.Invalid(CloneWithoutBindings(root));
         }
         else
         {
@@ -5593,7 +5526,6 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
         }
         return new MetadataTypeSubstitutionResult(
             evaluation.Kind,
-            root,
             request,
             evaluation.Tree,
             unresolvedOwnerIndices,
@@ -5616,6 +5548,41 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
     /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
     /// <returns>A deterministic hash code for canonical draft content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
+
+    private static bool CollectFieldContextInvalidity(
+        MetadataTypeSignatureNode node,
+        int? exactDeclaredArity,
+        SortedSet<int> undeclaredOwner,
+        SortedSet<int> undeclaredMethod)
+    {
+        var invalid = node.Kind == MetadataTypeSignatureNodeKind.TypeSpecificationIndirection;
+        if (node.Kind == MetadataTypeSignatureNodeKind.MethodTypeParameter &&
+            node.VariableIndex is { } methodIndex)
+        {
+            undeclaredMethod.Add(methodIndex);
+            invalid = true;
+        }
+        else if (node.Kind == MetadataTypeSignatureNodeKind.OwnerTypeParameter &&
+                 exactDeclaredArity is { } declaredArity &&
+                 node.VariableIndex is { } ownerIndex &&
+                 ownerIndex >= declaredArity)
+        {
+            undeclaredOwner.Add(ownerIndex);
+            invalid = true;
+        }
+        foreach (var child in node.Children)
+        {
+            if (CollectFieldContextInvalidity(
+                    child,
+                    exactDeclaredArity,
+                    undeclaredOwner,
+                    undeclaredMethod))
+            {
+                invalid = true;
+            }
+        }
+        return invalid;
+    }
 
     private static SubstitutionEvaluation Evaluate(
         MetadataTypeSignatureNode node,
@@ -5651,16 +5618,8 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
                     unresolvedOwner,
                     undeclaredOwner);
             case MetadataTypeSignatureNodeKind.MethodTypeParameter:
-                if (!request.AllowsMethodTypeParameters)
-                {
-                    undeclaredMethod.Add(node.VariableIndex!.Value);
-                    return SubstitutionEvaluation.Invalid(tree);
-                }
-                return EvaluateVariable(
-                    node,
-                    request.FindMethod(node.VariableIndex!.Value),
-                    unresolvedMethod,
-                    undeclaredMethod);
+                undeclaredMethod.Add(node.VariableIndex!.Value);
+                return SubstitutionEvaluation.Invalid(tree);
             case MetadataTypeSignatureNodeKind.TypeSpecificationIndirection:
                 return SubstitutionEvaluation.Invalid(tree);
             case MetadataTypeSignatureNodeKind.RequiredModifier:

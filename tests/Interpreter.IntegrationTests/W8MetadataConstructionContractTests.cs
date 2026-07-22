@@ -60,21 +60,6 @@ public sealed class W8MetadataConstructionContractTests
         Assert.Equal(0, construction.ClosedType.ConstructionSegments[0].FlattenedArgumentOffset);
         Assert.Equal(1, construction.ClosedType.ConstructionSegments[1].FlattenedArgumentOffset);
 
-        var bindings = parameters
-            .Select((parameter, index) => MetadataTypeArgumentBindingIdentity.Exact(
-                parameter,
-                MetadataClosedTypeIdentity.Primitive(
-                    index == 16 ? MetadataPrimitiveTypeKind.String : MetadataPrimitiveTypeKind.Int32)))
-            .ToImmutableArray();
-        var indexSixteen = MetadataTypeSubstitutionResult.Substitute(
-            MetadataTypeSignatureNode.OwnerTypeParameter(16),
-            MetadataTypeSubstitutionRequest.Create(
-                MetadataTypeSubstitutionContextKind.ExpressionOwner,
-                bindings,
-                ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty));
-        Assert.Equal(MetadataTypeSubstitutionResultKind.Exact, indexSixteen.Kind);
-        Assert.Equal(MetadataPrimitiveTypeKind.String, indexSixteen.ClosedType!.PrimitiveKind);
-        Assert.Equal(16, indexSixteen.SubstitutedTree.AppliedBinding!.Parameter.Position);
     }
 
     /// <summary>Proves physical TypeDefOrRef edges retain their exact table-specific owners and targets.</summary>
@@ -703,30 +688,6 @@ public sealed class W8MetadataConstructionContractTests
         Assert.Equal("W8_SIGNATURE_FNPTR_SENTINEL_INVALID", sentinel.InvalidCode);
         Assert.Null(sentinel.Root);
 
-        var ownerBindings = fixture.Pair.GenericParameters
-            .Select(parameter => MetadataTypeArgumentBindingIdentity.Exact(
-                parameter,
-                MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int32)))
-            .ToImmutableArray();
-        var openRequest = MetadataTypeSubstitutionRequest.Create(
-            MetadataTypeSubstitutionContextKind.TypeSpecification,
-            ownerBindings,
-            [MetadataTypeArgumentBindingIdentity.Unavailable(fixture.MethodParameter)]);
-        var openNested = MetadataTypeSubstitutionResult.Substitute(functionPointer, openRequest);
-        Assert.Equal(MetadataTypeSubstitutionResultKind.Unsupported, openNested.Kind);
-        Assert.Equal([0], openNested.UnresolvedMethodVariableIndices.ToArray());
-        Assert.Equal(MetadataTypeArgumentBindingKind.Unavailable,
-            openNested.SubstitutedTree.Children[2].AppliedBinding!.Kind);
-
-        var absentMethod = MetadataTypeSubstitutionResult.Substitute(
-            functionPointer,
-            MetadataTypeSubstitutionRequest.Create(
-                MetadataTypeSubstitutionContextKind.TypeSpecification,
-                ownerBindings,
-                ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty));
-        Assert.Equal(MetadataTypeSubstitutionResultKind.Invalid, absentMethod.Kind);
-        Assert.Equal([0], absentMethod.UndeclaredMethodVariableIndices.ToArray());
-        Assert.Null(absentMethod.ClosedType);
     }
 
     /// <summary>Proves modifier edges reject cycles while equal blobs at distinct physical TypeSpec rows remain valid.</summary>
@@ -1042,111 +1003,463 @@ public sealed class W8MetadataConstructionContractTests
         AssertFieldStopHasNoProjection(over);
     }
 
-    /// <summary>Proves substitution uses exact GenericParam rows and deterministic whole-tree precedence.</summary>
+    /// <summary>Proves a complex decoded FieldSig substitutes only through its exact declaring-TypeDef proof.</summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Substitution_is_row_addressed_recursive_and_bound_typed()
+    public void Field_substitution_is_source_anchored_recursive_canonical_and_immutable()
     {
         var fixture = new SyntheticMetadataFixture();
-        var nestedHead = MetadataTypeSignatureNode.Named(
-            MetadataNamedSignatureHeadKind.Class,
-            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.Inner),
-            [fixture.Outer, fixture.Inner]);
-        var nested = MetadataTypeSignatureNode.GenericInstantiation(
-            nestedHead,
-            [MetadataTypeSignatureNode.OwnerTypeParameter(0), MetadataTypeSignatureNode.OwnerTypeParameter(1)]);
-        var nestedBindings = ImmutableArray.Create(
-            MetadataTypeArgumentBindingIdentity.Exact(
-                fixture.Inner.GenericParameters[0],
-                MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int32)),
-            MetadataTypeArgumentBindingIdentity.Exact(
-                fixture.Inner.GenericParameters[1],
-                MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.String)));
-        var exact = MetadataTypeSubstitutionResult.Substitute(
-            nested,
-            MetadataTypeSubstitutionRequest.Create(
-                MetadataTypeSubstitutionContextKind.ExpressionOwner,
-                nestedBindings,
-                ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty));
-        Assert.Equal(MetadataTypeSubstitutionResultKind.Exact, exact.Kind);
-        Assert.Equal(2, exact.ClosedType!.ConstructionSegments.Length);
-        Assert.Equal(2, exact.SubstitutedTree.Children.Length);
-        Assert.All(exact.SubstitutedTree.Children, static child => Assert.NotNull(child.Replacement));
-
-        var unavailableBindings = ImmutableArray.Create(
-            MetadataTypeArgumentBindingIdentity.Unavailable(fixture.Inner.GenericParameters[0]),
-            nestedBindings[1]);
-        var open = MetadataTypeSubstitutionResult.Substitute(
-            MetadataTypeSignatureNode.SzArray(MetadataTypeSignatureNode.OwnerTypeParameter(0)),
-            MetadataTypeSubstitutionRequest.Create(
-                MetadataTypeSubstitutionContextKind.ExpressionOwner,
-                unavailableBindings,
-                ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty));
-        Assert.Equal(MetadataTypeSubstitutionResultKind.Open, open.Kind);
-        Assert.Equal([0], open.UnresolvedOwnerVariableIndices.ToArray());
-
-        var modifier = MetadataTypeSignatureNode.RequiredModifier(
-            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.BaseType),
-            MetadataTypeSignatureNode.Pointer(MetadataTypeSignatureNode.OwnerTypeParameter(63)));
-        var nestedInvalid = MetadataTypeSubstitutionResult.Substitute(
-            modifier,
-            MetadataTypeSubstitutionRequest.Create(
-                MetadataTypeSubstitutionContextKind.FieldDefinition,
-                nestedBindings,
-                ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty));
-        Assert.Equal(MetadataTypeSubstitutionResultKind.Invalid, nestedInvalid.Kind);
-        Assert.Equal([63], nestedInvalid.UndeclaredOwnerVariableIndices.ToArray());
-        Assert.Equal(MetadataTypeSignatureNodeKind.Pointer, nestedInvalid.SubstitutedTree.Children[0].SourceNode.Kind);
-
-        var methodConstraint = MetadataTypeSubstitutionResult.Substitute(
-            MetadataTypeSignatureNode.MethodTypeParameter(0),
-            MetadataTypeSubstitutionRequest.Create(
-                MetadataTypeSubstitutionContextKind.GenericConstraint,
-                ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty,
-                [MetadataTypeArgumentBindingIdentity.Exact(
-                    fixture.MethodParameter,
-                    MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.String))],
-                fixture.MethodParameter));
-        Assert.Equal(MetadataTypeSubstitutionResultKind.Exact, methodConstraint.Kind);
-        Assert.Equal(MetadataPrimitiveTypeKind.String, methodConstraint.ClosedType!.PrimitiveKind);
-
-        var pairBindings = fixture.Pair.GenericParameters.Select(parameter =>
-            MetadataTypeArgumentBindingIdentity.Exact(
-                parameter,
-                MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int32))).ToImmutableArray();
-        var typeConstraint = MetadataTypeSubstitutionResult.Substitute(
-            MetadataTypeSignatureNode.MethodTypeParameter(0),
-            MetadataTypeSubstitutionRequest.Create(
-                MetadataTypeSubstitutionContextKind.GenericConstraint,
-                pairBindings,
-                ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty,
-                fixture.Pair.GenericParameters[0]));
-        Assert.Equal(MetadataTypeSubstitutionResultKind.Invalid, typeConstraint.Kind);
-
-        var rawLarge = CreateRawType(
+        var sourceEnds = CreateAggregateSourceEnds(
             fixture.Module,
-            0x02000021,
-            "Synthetic",
-            "LedgerOwner",
-            genericParameterCount: StaticFieldV2Limits.MaximumGenericParameterCount + 1);
-        var largeParameters = CreateTypeParameters(
-            rawLarge,
-            StaticFieldV2Limits.MaximumGenericParameterCount + 1,
-            genericParameterRowStart: 100);
-        var largeBindings = largeParameters.Select(parameter => MetadataTypeArgumentBindingIdentity.Exact(
-            parameter,
-            MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int32))).ToImmutableArray();
-        var boundRequest = MetadataTypeSubstitutionRequest.Create(
-            MetadataTypeSubstitutionContextKind.ExpressionOwner,
-            largeBindings,
+            interfaceImplementationRowCount: 0,
+            genericParameterConstraintRowCount: 0);
+        ImmutableArray<byte> signature =
+        [
+            0x06,
+            0x15,
+            0x12,
+            .. EncodeTypeDefOrRef(fixture.Pair.TypeDefinitionToken),
+            0x02,
+            0x13,
+            0x00,
+            0x14,
+            0x15,
+            0x12,
+            .. EncodeTypeDefOrRef(fixture.Pair.TypeDefinitionToken),
+            0x02,
+            0x1D,
+            0x13,
+            0x01,
+            0x0E,
+            0x02,
+            0x00,
+            0x00,
+        ];
+        var fieldSignature = DecodeFieldSignature(
+            fixture,
+            sourceEnds,
+            CreateFieldDefinition(fixture, rowId: 20, signature),
+            MetadataSignatureTokenResolutionEntry.Named(
+                MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.Pair),
+                [fixture.Pair]));
+        var ownerSet = CreateOwnerSet(fixture, sourceEnds, fixture.FieldOwnerPinned);
+        var int32 = SourceDerivedPrimitive(fixture, rowId: 500, elementType: 0x08);
+        var text = SourceDerivedPrimitive(fixture, rowId: 499, elementType: 0x0E);
+        var first = MetadataTypeArgumentBindingIdentity.Exact(ownerSet.Parameters[0], int32);
+        var second = MetadataTypeArgumentBindingIdentity.Exact(ownerSet.Parameters[1], text);
+        var forwardLedger = MetadataGenericParameterBindingLedgerIdentity.Create(ownerSet, [first, second]);
+        var reversedLedger = MetadataGenericParameterBindingLedgerIdentity.Create(ownerSet, [second, first]);
+        Assert.Equal(forwardLedger, reversedLedger);
+
+        var request = MetadataTypeSubstitutionRequest.ForFieldDefinition(fieldSignature, reversedLedger);
+        var equivalentRequest = MetadataTypeSubstitutionRequest.ForFieldDefinition(fieldSignature, forwardLedger);
+        var exact = MetadataTypeSubstitutionResult.Substitute(request);
+
+        Assert.Equal(equivalentRequest, request);
+        Assert.Equal(request.Sha256, equivalentRequest.Sha256);
+        Assert.Equal(MetadataTypeSubstitutionContextKind.FieldDefinition, request.ContextKind);
+        Assert.Equal(fieldSignature, request.FieldSignature);
+        Assert.Equal(fieldSignature.Root, request.Root);
+        Assert.Equal(reversedLedger, request.DeclaringTypeBindings);
+        Assert.Equal(MetadataGenericParameterProofResultKind.Exact, request.BindingProofResultKind);
+        Assert.Equal(MetadataGenericParameterProofIssue.None, request.BindingProofIssue);
+        Assert.Null(request.ReachedBound);
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Exact, exact.Kind);
+        Assert.Equal(request.Root, exact.Root);
+        Assert.Equal(MetadataClosedTypeKind.Named, exact.ClosedType!.Kind);
+        Assert.Equal(2, exact.ClosedType.FlattenedArguments.Length);
+        Assert.Equal(MetadataPrimitiveTypeKind.Int32, exact.ClosedType.FlattenedArguments[0].PrimitiveKind);
+        Assert.Equal(MetadataClosedTypeKind.MultidimensionalArray, exact.ClosedType.FlattenedArguments[1].Kind);
+        Assert.Equal(2, exact.ClosedType.FlattenedArguments[1].ArrayRank);
+        Assert.Equal(2, exact.SubstitutedTree.Children.Length);
+        Assert.Equal(first, exact.SubstitutedTree.Children[0].AppliedBinding);
+        var nestedVariable = exact.SubstitutedTree.Children[1].Children[0].Children[0].Children[0];
+        Assert.Equal(second, nestedVariable.AppliedBinding);
+        Assert.Equal(text, nestedVariable.Replacement);
+
+        var unavailableLedger = MetadataGenericParameterBindingLedgerIdentity.Create(
+            ownerSet,
+            [first, MetadataTypeArgumentBindingIdentity.Unavailable(ownerSet.Parameters[1])]);
+        var open = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(fieldSignature, unavailableLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Open, open.Kind);
+        Assert.Equal([1], open.UnresolvedOwnerVariableIndices.ToArray());
+        Assert.Null(open.ClosedType);
+
+        var returnedCanonical = request.CanonicalBytes;
+        ImmutableCollectionsMarshal.AsArray(returnedCanonical)![0] ^= 0x7F;
+        Assert.Equal(equivalentRequest.CanonicalBytes.ToArray(), request.CanonicalBytes.ToArray());
+        var returnedBindings = request.DeclaringTypeBindings.Bindings;
+        ImmutableCollectionsMarshal.AsArray(returnedBindings)![0] = second;
+        Assert.Equal(first, request.DeclaringTypeBindings.Bindings[0]);
+
+        var secondFieldSignature = DecodeFieldSignature(
+            fixture,
+            sourceEnds,
+            CreateFieldDefinition(fixture, rowId: 21, signature),
+            MetadataSignatureTokenResolutionEntry.Named(
+                MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.Pair),
+                [fixture.Pair]));
+        var secondRequest = MetadataTypeSubstitutionRequest.ForFieldDefinition(secondFieldSignature, forwardLedger);
+        Assert.NotEqual(request, secondRequest);
+        Assert.NotEqual(request.Sha256, secondRequest.Sha256);
+    }
+
+    /// <summary>Proves FieldSig requests reject differing source ends and a different declaring TypeDef proof.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Field_substitution_requires_exact_source_ends_and_declaring_owner()
+    {
+        var fixture = new SyntheticMetadataFixture();
+        var sourceEnds = CreateAggregateSourceEnds(fixture.Module, 0, 0);
+        var fieldSignature = DecodeFieldSignature(
+            fixture,
+            sourceEnds,
+            CreateFieldDefinition(fixture, rowId: 22, [0x06, 0x13, 0x00]));
+        var ownerSet = CreateOwnerSet(fixture, sourceEnds, fixture.FieldOwnerPinned);
+        var int32 = SourceDerivedPrimitive(fixture, rowId: 498, elementType: 0x08);
+        var text = SourceDerivedPrimitive(fixture, rowId: 497, elementType: 0x0E);
+        var matchingLedger = MetadataGenericParameterBindingLedgerIdentity.Create(
+            ownerSet,
+            [
+                MetadataTypeArgumentBindingIdentity.Exact(ownerSet.Parameters[0], int32),
+                MetadataTypeArgumentBindingIdentity.Exact(ownerSet.Parameters[1], text),
+            ]);
+        Assert.NotNull(MetadataTypeSubstitutionRequest.ForFieldDefinition(fieldSignature, matchingLedger));
+
+        var differingSourceEnds = CreateAggregateSourceEnds(fixture.Module, 1, 0);
+        var differingSet = CreateOwnerSet(fixture, differingSourceEnds, fixture.FieldOwnerPinned);
+        var differingLedger = MetadataGenericParameterBindingLedgerIdentity.Create(
+            differingSet,
+            [
+                MetadataTypeArgumentBindingIdentity.Exact(differingSet.Parameters[0], int32),
+                MetadataTypeArgumentBindingIdentity.Exact(differingSet.Parameters[1], text),
+            ]);
+        Assert.Throws<ArgumentException>(() =>
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(fieldSignature, differingLedger));
+
+        var otherOwnerSet = CreateOwnerSet(fixture, sourceEnds, fixture.PairPinned);
+        var otherOwnerLedger = MetadataGenericParameterBindingLedgerIdentity.Create(
+            otherOwnerSet,
+            [
+                MetadataTypeArgumentBindingIdentity.Exact(otherOwnerSet.Parameters[0], int32),
+                MetadataTypeArgumentBindingIdentity.Exact(otherOwnerSet.Parameters[1], text),
+            ]);
+        Assert.Throws<ArgumentException>(() =>
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(fieldSignature, otherOwnerLedger));
+    }
+
+    /// <summary>Proves exact-empty owner proof is distinct from missing, incomplete, invalid, and bounded proof.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Field_substitution_exact_zero_and_prefix_free_proof_stops_are_distinct()
+    {
+        var fixture = new SyntheticMetadataFixture();
+        var sourceEnds = CreateAggregateSourceEnds(fixture.Module, 0, 0);
+        var zeroField = DecodeFieldSignature(
+            fixture,
+            sourceEnds,
+            CreateFieldDefinition(
+                fixture,
+                rowId: 301,
+                [0x06, 0x08],
+                fixture.ZeroFieldOwnerPinned));
+        var zeroSet = CreateOwnerSet(fixture, sourceEnds, fixture.ZeroFieldOwnerPinned);
+        Assert.Equal(MetadataGenericParameterProofResultKind.Exact, zeroSet.ResultKind);
+        Assert.Empty(zeroSet.Parameters);
+        var exactEmpty = MetadataGenericParameterBindingLedgerIdentity.Create(
+            zeroSet,
             ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty);
-        var bound = MetadataTypeSubstitutionResult.Substitute(
-            MetadataTypeSignatureNode.OwnerTypeParameter(0),
-            boundRequest);
-        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, bound.Kind);
-        Assert.Equal(ExpressionV2ContractLimits.GenericParameterCountBoundName, bound.ReachedBound!.Name);
-        Assert.Null(bound.SubstitutedTree.AppliedBinding);
-        Assert.Null(bound.ClosedType);
+        var zeroResult = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(zeroField, exactEmpty));
+        Assert.Equal(MetadataGenericParameterProofResultKind.Exact, exactEmpty.ResultKind);
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Exact, zeroResult.Kind);
+        Assert.Equal(MetadataPrimitiveTypeKind.Int32, zeroResult.ClosedType!.PrimitiveKind);
+
+        var missingZero = MetadataGenericParameterBindingLedgerIdentity.Create(
+            zeroSet,
+            default);
+        var missingZeroResult = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(zeroField, missingZero));
+        Assert.Equal(MetadataGenericParameterProofResultKind.NonExact, missingZero.ResultKind);
+        Assert.Equal(MetadataGenericParameterProofIssue.BindingIncomplete, missingZeroResult.BindingProofIssue);
+        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, missingZeroResult.Kind);
+        Assert.Null(missingZeroResult.ClosedType);
+        AssertNoAppliedBindings(missingZeroResult.SubstitutedTree);
+
+        var genericField = DecodeFieldSignature(
+            fixture,
+            sourceEnds,
+            CreateFieldDefinition(fixture, rowId: 23, [0x06, 0x13, 0x00]));
+        var ownerSet = CreateOwnerSet(fixture, sourceEnds, fixture.FieldOwnerPinned);
+        var int32 = SourceDerivedPrimitive(fixture, rowId: 496, elementType: 0x08);
+        var first = MetadataTypeArgumentBindingIdentity.Exact(ownerSet.Parameters[0], int32);
+        var incomplete = MetadataGenericParameterBindingLedgerIdentity.Create(ownerSet, [first]);
+        var incompleteResult = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(genericField, incomplete));
+        Assert.Equal(MetadataGenericParameterProofIssue.BindingIncomplete, incompleteResult.BindingProofIssue);
+        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, incompleteResult.Kind);
+        Assert.Null(incompleteResult.ClosedType);
+        AssertNoAppliedBindings(incompleteResult.SubstitutedTree);
+
+        var duplicate = MetadataGenericParameterBindingLedgerIdentity.Create(ownerSet, [first, first]);
+        var invalidResult = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(genericField, duplicate));
+        Assert.Equal(MetadataGenericParameterProofResultKind.Invalid, invalidResult.BindingProofResultKind);
+        Assert.Equal(MetadataGenericParameterProofIssue.DuplicateBinding, invalidResult.BindingProofIssue);
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Invalid, invalidResult.Kind);
+        Assert.Null(invalidResult.ClosedType);
+        AssertNoAppliedBindings(invalidResult.SubstitutedTree);
+
+        var largeField = DecodeFieldSignature(
+            fixture,
+            sourceEnds,
+            CreateFieldDefinition(
+                fixture,
+                rowId: 321,
+                [0x06, 0x08],
+                fixture.LargeFieldOwnerPinned));
+        var largeSet = CreateOwnerSet(fixture, sourceEnds, fixture.LargeFieldOwnerPinned);
+        var largeLedger = MetadataGenericParameterBindingLedgerIdentity.Create(
+            largeSet,
+            ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty);
+        var boundedResult = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(largeField, largeLedger));
+        Assert.Equal(MetadataGenericParameterProofIssue.OwnerArityBoundReached, boundedResult.BindingProofIssue);
+        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, boundedResult.Kind);
+        Assert.Equal(ExpressionV2ContractLimits.GenericParameterCountBoundName, boundedResult.ReachedBound!.Name);
+        Assert.Equal(StaticFieldV2Limits.MaximumGenericParameterCount, boundedResult.ReachedBound.Value);
+        Assert.Null(boundedResult.ClosedType);
+        AssertNoAppliedBindings(boundedResult.SubstitutedTree);
+    }
+
+    /// <summary>
+    /// Proves FieldSig-invalid nodes outrank binding-proof stops while TypeSpec custom modifiers keep their normal
+    /// proof-dependent disposition.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Field_context_invalidity_precedes_binding_proof_stops_and_retains_all_indices()
+    {
+        var fixture = new SyntheticMetadataFixture();
+        var sourceEnds = CreateAggregateSourceEnds(fixture.Module, 0, 0);
+        var ownerSet = CreateOwnerSet(fixture, sourceEnds, fixture.FieldOwnerPinned);
+        var int32 = SourceDerivedPrimitive(fixture, rowId: 495, elementType: 0x08);
+        var text = SourceDerivedPrimitive(fixture, rowId: 494, elementType: 0x0E);
+        var first = MetadataTypeArgumentBindingIdentity.Exact(ownerSet.Parameters[0], int32);
+        var second = MetadataTypeArgumentBindingIdentity.Exact(ownerSet.Parameters[1], text);
+        var exactLedger = MetadataGenericParameterBindingLedgerIdentity.Create(ownerSet, [first, second]);
+        var incompleteLedger = MetadataGenericParameterBindingLedgerIdentity.Create(ownerSet, [first]);
+        var invalidLedger = MetadataGenericParameterBindingLedgerIdentity.Create(ownerSet, [first, first]);
+        Assert.Equal(MetadataGenericParameterProofIssue.None, exactLedger.Issue);
+        Assert.Equal(MetadataGenericParameterProofIssue.BindingIncomplete, incompleteLedger.Issue);
+        Assert.Equal(MetadataGenericParameterProofIssue.DuplicateBinding, invalidLedger.Issue);
+
+        var inRange = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                DecodeFieldSignature(
+                    fixture,
+                    sourceEnds,
+                    CreateFieldDefinition(fixture, rowId: 24, [0x06, 0x13, 0x00])),
+                incompleteLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, inRange.Kind);
+        Assert.Empty(inRange.UndeclaredOwnerVariableIndices);
+        Assert.Empty(inRange.UndeclaredMethodVariableIndices);
+        AssertNoAppliedBindings(inRange.SubstitutedTree);
+
+        var outOfRange = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                DecodeFieldSignature(
+                    fixture,
+                    sourceEnds,
+                    CreateFieldDefinition(fixture, rowId: 25, [0x06, 0x13, 0x02])),
+                incompleteLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Invalid, outOfRange.Kind);
+        Assert.Equal(MetadataGenericParameterProofIssue.BindingIncomplete, outOfRange.BindingProofIssue);
+        Assert.Equal([2], outOfRange.UndeclaredOwnerVariableIndices.ToArray());
+        Assert.Empty(outOfRange.UndeclaredMethodVariableIndices);
+        AssertNoAppliedBindings(outOfRange.SubstitutedTree);
+
+        var methodVariable = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                DecodeFieldSignature(
+                    fixture,
+                    sourceEnds,
+                    CreateFieldDefinition(fixture, rowId: 26, [0x06, 0x1E, 0x00])),
+                incompleteLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Invalid, methodVariable.Kind);
+        Assert.Equal([0], methodVariable.UndeclaredMethodVariableIndices.ToArray());
+        AssertNoAppliedBindings(methodVariable.SubstitutedTree);
+
+        var typeSpecificationReference = MetadataTypeSpecificationRowReferenceIdentity.Create(
+            fixture.Module,
+            0x1B000001);
+        var typeSpecificationEntry = MetadataSignatureTokenResolutionEntry.TypeSpecification(
+            typeSpecificationReference);
+        var modifierField = DecodeFieldSignature(
+            fixture,
+            sourceEnds,
+            CreateFieldDefinition(
+                fixture,
+                rowId: 27,
+                [
+                    0x06,
+                    0x1F,
+                    .. EncodeTypeDefOrRef(typeSpecificationReference.TypeSpecificationToken),
+                    0x08,
+                ]),
+            typeSpecificationEntry);
+        var incompleteModifier = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                modifierField,
+                incompleteLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, incompleteModifier.Kind);
+        Assert.Equal(MetadataGenericParameterProofIssue.BindingIncomplete, incompleteModifier.BindingProofIssue);
+        Assert.Null(incompleteModifier.ReachedBound);
+        AssertNoAppliedBindings(incompleteModifier.SubstitutedTree);
+
+        var exactModifier = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(modifierField, exactLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Unsupported, exactModifier.Kind);
+        Assert.Equal(MetadataGenericParameterProofResultKind.Exact, exactModifier.BindingProofResultKind);
+        Assert.Null(exactModifier.ClosedType);
+        Assert.Null(exactModifier.ReachedBound);
+        AssertNoAppliedBindings(exactModifier.SubstitutedTree);
+
+        var directTypeSpecificationHead = MetadataFieldSignatureDecodeOutcome.Decode(
+            CreateFieldDefinition(
+                fixture,
+                rowId: 29,
+                [
+                    0x06,
+                    0x12,
+                    .. EncodeTypeDefOrRef(typeSpecificationReference.TypeSpecificationToken),
+                ]),
+            sourceEnds,
+            MetadataSignatureTokenResolutionCatalog.Create(sourceEnds, [typeSpecificationEntry]));
+        Assert.Equal(MetadataSignatureDecodeResultKind.Invalid, directTypeSpecificationHead.Kind);
+        Assert.Equal("W8_SIGNATURE_TYPESPEC_HEAD_INVALID", directTypeSpecificationHead.InvalidCode);
+        Assert.Null(directTypeSpecificationHead.Identity);
+        Assert.Equal(MetadataGenericParameterProofResultKind.NonExact, incompleteLedger.ResultKind);
+
+        var mixed = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                DecodeFieldSignature(
+                    fixture,
+                    sourceEnds,
+                    CreateFieldDefinition(
+                        fixture,
+                        rowId: 28,
+                        [
+                            0x06,
+                            0x20,
+                            .. EncodeTypeDefOrRef(typeSpecificationReference.TypeSpecificationToken),
+                            0x15,
+                            0x12,
+                            .. EncodeTypeDefOrRef(fixture.Pair.TypeDefinitionToken),
+                            0x02,
+                            0x1E,
+                            0x00,
+                            0x15,
+                            0x12,
+                            .. EncodeTypeDefOrRef(fixture.Pair.TypeDefinitionToken),
+                            0x02,
+                            0x13,
+                            0x02,
+                            0x1E,
+                            0x03,
+                        ]),
+                    typeSpecificationEntry,
+                    MetadataSignatureTokenResolutionEntry.Named(
+                        MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.Pair),
+                        [fixture.Pair])),
+                invalidLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Invalid, mixed.Kind);
+        Assert.Equal(MetadataGenericParameterProofIssue.DuplicateBinding, mixed.BindingProofIssue);
+        Assert.Equal([2], mixed.UndeclaredOwnerVariableIndices.ToArray());
+        Assert.Equal([0, 3], mixed.UndeclaredMethodVariableIndices.ToArray());
+        AssertNoAppliedBindings(mixed.SubstitutedTree);
+
+        var largeSet = CreateOwnerSet(fixture, sourceEnds, fixture.LargeFieldOwnerPinned);
+        var arityBoundLedger = MetadataGenericParameterBindingLedgerIdentity.Create(
+            largeSet,
+            ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty);
+        Assert.Equal(MetadataGenericParameterProofIssue.OwnerArityBoundReached, arityBoundLedger.Issue);
+
+        var boundedInRange = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                DecodeFieldSignature(
+                    fixture,
+                    sourceEnds,
+                    CreateFieldDefinition(
+                        fixture,
+                        rowId: 322,
+                        [0x06, 0x13, 0x00],
+                        fixture.LargeFieldOwnerPinned)),
+                arityBoundLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, boundedInRange.Kind);
+        Assert.Empty(boundedInRange.UndeclaredOwnerVariableIndices);
+        AssertNoAppliedBindings(boundedInRange.SubstitutedTree);
+
+        var boundedUnknownRange = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                DecodeFieldSignature(
+                    fixture,
+                    sourceEnds,
+                    CreateFieldDefinition(
+                        fixture,
+                        rowId: 323,
+                        [0x06, 0x13, .. EncodeCompressedUnsigned(65)],
+                        fixture.LargeFieldOwnerPinned)),
+                arityBoundLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, boundedUnknownRange.Kind);
+        Assert.Empty(boundedUnknownRange.UndeclaredOwnerVariableIndices);
+        AssertNoAppliedBindings(boundedUnknownRange.SubstitutedTree);
+
+        var boundedMethodVariable = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                DecodeFieldSignature(
+                    fixture,
+                    sourceEnds,
+                    CreateFieldDefinition(
+                        fixture,
+                        rowId: 324,
+                        [0x06, 0x1E, 0x00],
+                        fixture.LargeFieldOwnerPinned)),
+                arityBoundLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.Invalid, boundedMethodVariable.Kind);
+        Assert.Equal([0], boundedMethodVariable.UndeclaredMethodVariableIndices.ToArray());
+        Assert.Equal(
+            ExpressionV2ContractLimits.GenericParameterCountBoundName,
+            boundedMethodVariable.BindingProofReachedBound!.Name);
+        Assert.Equal(
+            StaticFieldV2Limits.MaximumGenericParameterCount + 1,
+            boundedMethodVariable.BindingProofObservedCount);
+        Assert.Null(boundedMethodVariable.ReachedBound);
+        AssertNoAppliedBindings(boundedMethodVariable.SubstitutedTree);
+
+        var boundedModifier = MetadataTypeSubstitutionResult.Substitute(
+            MetadataTypeSubstitutionRequest.ForFieldDefinition(
+                DecodeFieldSignature(
+                    fixture,
+                    sourceEnds,
+                    CreateFieldDefinition(
+                        fixture,
+                        rowId: 325,
+                        [
+                            0x06,
+                            0x20,
+                            .. EncodeTypeDefOrRef(typeSpecificationReference.TypeSpecificationToken),
+                            0x08,
+                        ],
+                        fixture.LargeFieldOwnerPinned),
+                    typeSpecificationEntry),
+                arityBoundLedger));
+        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, boundedModifier.Kind);
+        Assert.Equal(MetadataGenericParameterProofIssue.OwnerArityBoundReached, boundedModifier.BindingProofIssue);
+        Assert.Equal(boundedModifier.BindingProofReachedBound, boundedModifier.ReachedBound);
+        Assert.NotNull(boundedModifier.ReachedBound);
+        AssertNoAppliedBindings(boundedModifier.SubstitutedTree);
     }
 
     /// <summary>Proves Nullable is derived only from a decoded generic value-type head with exact core-library proof.</summary>
@@ -1215,6 +1528,7 @@ public sealed class W8MetadataConstructionContractTests
     public void Canonical_artifacts_are_defensive_and_certificate_issuance_is_decoder_only()
     {
         var fixture = new SyntheticMetadataFixture();
+        var assembly = typeof(MetadataTypeSignatureNode).Assembly;
         var outcome = Decode(fixture, 1, [0x08]);
         var before = outcome.CanonicalBytes.ToArray();
         var exposed = outcome.CanonicalBytes;
@@ -1236,6 +1550,93 @@ public sealed class W8MetadataConstructionContractTests
         Assert.True(typeof(MetadataTypeSpecificationGraphIdentity).IsSealed);
         Assert.True(typeof(MetadataTypeSubstitutionResult).IsSealed);
         Assert.True(typeof(MetadataSubstitutedTypeNodeIdentity).IsSealed);
+
+        Assert.Equal(
+            [MetadataTypeSubstitutionContextKind.FieldDefinition],
+            Enum.GetValues<MetadataTypeSubstitutionContextKind>());
+        var requestFactory = Assert.Single(typeof(MetadataTypeSubstitutionRequest).GetMethods(
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Equal(nameof(MetadataTypeSubstitutionRequest.ForFieldDefinition), requestFactory.Name);
+        Assert.Equal(
+            [typeof(MetadataFieldSignatureIdentity), typeof(MetadataGenericParameterBindingLedgerIdentity)],
+            requestFactory.GetParameters().Select(static parameter => parameter.ParameterType).ToArray());
+        var executor = Assert.Single(typeof(MetadataTypeSubstitutionResult).GetMethods(
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Equal(nameof(MetadataTypeSubstitutionResult.Substitute), executor.Name);
+        Assert.Equal(
+            [typeof(MetadataTypeSubstitutionRequest)],
+            executor.GetParameters().Select(static parameter => parameter.ParameterType).ToArray());
+        Assert.Empty(typeof(MetadataTypeSignatureNode).GetMethods(
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Empty(typeof(MetadataTypeConstructionResult).GetMethods(
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Empty(typeof(MetadataClosedTypeIdentity).GetMethods(
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+
+        var guardedTypes = new HashSet<Type>
+        {
+            typeof(MetadataTypeSignatureNode),
+            typeof(MetadataTypeConstructionResult),
+            typeof(MetadataClosedTypeIdentity),
+        };
+        Assert.All(
+            guardedTypes,
+            static type => Assert.Empty(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)));
+        var assemblyPublicIssuers = assembly.GetExportedTypes()
+            .SelectMany(static type => type.GetMethods(
+                BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly))
+            .Where(method => guardedTypes.Contains(method.ReturnType))
+            .Select(static method => $"{method.DeclaringType!.Name}.{method.Name}")
+            .OrderBy(static name => name, StringComparer.Ordinal)
+            .ToArray();
+        Assert.Empty(assemblyPublicIssuers);
+
+        var guardedProperties = assembly.GetExportedTypes()
+            .SelectMany(static type => type.GetProperties(
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            .Where(property => ContainsGuardedType(property.PropertyType, guardedTypes))
+            .OrderBy(static property => property.DeclaringType!.Name, StringComparer.Ordinal)
+            .ThenBy(static property => property.Name, StringComparer.Ordinal)
+            .ToArray();
+        Assert.All(guardedProperties, static property => Assert.Null(property.SetMethod));
+        Assert.Equal(
+            new[]
+            {
+                "MetadataClosedTypeIdentity.ElementType",
+                "MetadataClosedTypeIdentity.FlattenedArguments",
+                "MetadataFieldSignatureDecodeOutcome.Root",
+                "MetadataFieldSignatureIdentity.Root",
+                "MetadataSignatureDecodeOutcome.Root",
+                "MetadataSubstitutedTypeNodeIdentity.Replacement",
+                "MetadataSubstitutedTypeNodeIdentity.SourceNode",
+                "MetadataTypeArgumentBindingIdentity.Argument",
+                "MetadataTypeConstructionResult.ClosedType",
+                "MetadataTypeConstructionResult.Root",
+                "MetadataTypeConstructionSegment.LocalArguments",
+                "MetadataTypeSignatureNode.Children",
+                "MetadataTypeSpecificationIdentity.Construction",
+                "MetadataTypeSpecificationIdentity.Root",
+                "MetadataTypeSubstitutionRequest.Root",
+                "MetadataTypeSubstitutionResult.ClosedType",
+                "MetadataTypeSubstitutionResult.Root",
+            },
+            guardedProperties.Select(static property =>
+                $"{property.DeclaringType!.Name}.{property.Name}").ToArray());
+
+        Assert.Null(typeof(MetadataTypeArgumentBindingIdentity).GetMethod(
+            nameof(MetadataTypeArgumentBindingIdentity.Exact),
+            BindingFlags.Public | BindingFlags.Static));
+        Assert.NotNull(typeof(MetadataTypeArgumentBindingIdentity).GetMethod(
+            nameof(MetadataTypeArgumentBindingIdentity.Exact),
+            BindingFlags.NonPublic | BindingFlags.Static));
+        var publicBindingFactory = Assert.Single(typeof(MetadataTypeArgumentBindingIdentity).GetMethods(
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Equal(nameof(MetadataTypeArgumentBindingIdentity.Unavailable), publicBindingFactory.Name);
+
+        static bool ContainsGuardedType(Type candidate, HashSet<Type> guarded) =>
+            guarded.Contains(candidate) ||
+            candidate.IsGenericType && candidate.GetGenericArguments().Any(argument =>
+                ContainsGuardedType(argument, guarded));
     }
 
     /// <summary>Proves every public metadata-construction checkpoint type is sealed where applicable and draft-documented.</summary>
@@ -1313,6 +1714,57 @@ public sealed class W8MetadataConstructionContractTests
                 ImmutableArray<StaticFieldCustomAttributeRowIdentity>.Empty));
     }
 
+    private static MetadataFieldSignatureIdentity DecodeFieldSignature(
+        SyntheticMetadataFixture fixture,
+        MetadataSourceEndIdentity sourceEnds,
+        StaticFieldDefinitionIdentity fieldDefinition,
+        params MetadataSignatureTokenResolutionEntry[] entries)
+    {
+        var tokenCatalog = MetadataSignatureTokenResolutionCatalog.Create(
+            sourceEnds,
+            entries.ToImmutableArray());
+        var outcome = MetadataFieldSignatureDecodeOutcome.Decode(
+            fieldDefinition,
+            sourceEnds,
+            tokenCatalog);
+        Assert.Equal(MetadataSignatureDecodeResultKind.Exact, outcome.Kind);
+        return Assert.IsType<MetadataFieldSignatureIdentity>(outcome.Identity);
+    }
+
+    private static MetadataGenericParameterOwnerSetIdentity CreateOwnerSet(
+        SyntheticMetadataFixture fixture,
+        MetadataSourceEndIdentity sourceEnds,
+        StaticFieldTypeDefinitionIdentity owner)
+    {
+        var declaration = MetadataGenericParameterOwnerDeclarationIdentity.FromTypeDefinition(
+            sourceEnds,
+            MetadataRawTypeDefinitionIdentity.FromPinnedW7(owner));
+        return MetadataGenericParameterOwnerSetIdentity.Create(
+            declaration,
+            CreateGenericParameterCatalog(fixture, sourceEnds));
+    }
+
+    private static MetadataClosedTypeIdentity SourceDerivedPrimitive(
+        SyntheticMetadataFixture fixture,
+        int rowId,
+        byte elementType)
+    {
+        var specification = MetadataTypeSpecificationIdentity.FromDecodeOutcome(
+            Decode(fixture, rowId, [elementType]));
+        Assert.Equal(MetadataTypeConstructionResultKind.Exact, specification.Construction.Kind);
+        return Assert.IsType<MetadataClosedTypeIdentity>(specification.Construction.ClosedType);
+    }
+
+    private static void AssertNoAppliedBindings(MetadataSubstitutedTypeNodeIdentity node)
+    {
+        Assert.Null(node.AppliedBinding);
+        Assert.Null(node.Replacement);
+        foreach (var child in node.Children)
+        {
+            AssertNoAppliedBindings(child);
+        }
+    }
+
     private static ImmutableArray<byte> CreateFieldModifierChain(int modifierToken, int modifierCount)
     {
         var encodedToken = EncodeTypeDefOrRef(modifierToken);
@@ -1380,7 +1832,7 @@ public sealed class W8MetadataConstructionContractTests
         int genericParameterConstraintRowCount)
     {
         const int supportingTableRowCount = 512;
-        const int genericParameterRowCount = 8;
+        const int genericParameterRowCount = 9;
         var fact = StaticFieldModuleSearchFact.Exact(
             module.Module,
             module.ModuleContent,
@@ -1732,20 +2184,49 @@ public sealed class W8MetadataConstructionContractTests
                 Module,
                 0x0200000E,
                 "Synthetic",
-                "FieldOwner`1",
+                "FieldOwner`2",
                 (int)(TypeAttributes.Public | TypeAttributes.Class),
-                genericParameterCount: 1,
-                introducedGenericArity: 1,
+                genericParameterCount: 2,
+                introducedGenericArity: 2,
                 extendsMetadataToken: objectType.TypeDefinitionToken,
                 fieldListRowId: 1,
                 fieldListEndExclusiveRowId: 301);
-            var fieldOwnerParameter = MetadataGenericParameterIdentity.Create(
+            var fieldOwner = MetadataGenericParameterOwnerIdentity.ForTypeDefinition(
+                MetadataRawTypeDefinitionIdentity.FromPinnedW7(FieldOwnerPinned));
+            var fieldOwnerFirstParameter = MetadataGenericParameterIdentity.Create(
                 0x2A000008,
-                MetadataGenericParameterOwnerIdentity.ForTypeDefinition(
-                    MetadataRawTypeDefinitionIdentity.FromPinnedW7(FieldOwnerPinned)),
+                fieldOwner,
                 position: 0,
-                "TFieldOwner",
+                "TKey",
                 attributes: 0);
+            var fieldOwnerSecondParameter = MetadataGenericParameterIdentity.Create(
+                0x2A000009,
+                fieldOwner,
+                position: 1,
+                "TValue",
+                attributes: 0);
+            ZeroFieldOwnerPinned = CreatePinnedType(
+                Module,
+                0x0200000F,
+                "Synthetic",
+                "ZeroFieldOwner",
+                (int)(TypeAttributes.Public | TypeAttributes.Class),
+                genericParameterCount: 0,
+                introducedGenericArity: 0,
+                extendsMetadataToken: objectType.TypeDefinitionToken,
+                fieldListRowId: 301,
+                fieldListEndExclusiveRowId: 321);
+            LargeFieldOwnerPinned = CreatePinnedType(
+                Module,
+                0x02000010,
+                "Synthetic",
+                "LargeFieldOwner`65",
+                (int)(TypeAttributes.Public | TypeAttributes.Class),
+                genericParameterCount: StaticFieldV2Limits.MaximumGenericParameterCount + 1,
+                introducedGenericArity: StaticFieldV2Limits.MaximumGenericParameterCount + 1,
+                extendsMetadataToken: objectType.TypeDefinitionToken,
+                fieldListRowId: 321,
+                fieldListEndExclusiveRowId: 341);
             GenericParameterRows =
             [
                 MethodParameter,
@@ -1755,7 +2236,8 @@ public sealed class W8MetadataConstructionContractTests
                 Outer.GenericParameters[0],
                 Inner.GenericParameters[0],
                 Inner.GenericParameters[1],
-                fieldOwnerParameter,
+                fieldOwnerFirstParameter,
+                fieldOwnerSecondParameter,
             ];
 
             MetadataTypeDefinitionIdentity CreateInterface(int token, string name)
@@ -1793,6 +2275,8 @@ public sealed class W8MetadataConstructionContractTests
         internal MetadataGenericParameterIdentity MethodParameter { get; }
         internal ImmutableArray<MetadataGenericParameterIdentity> GenericParameterRows { get; }
         internal StaticFieldTypeDefinitionIdentity FieldOwnerPinned { get; }
+        internal StaticFieldTypeDefinitionIdentity ZeroFieldOwnerPinned { get; }
+        internal StaticFieldTypeDefinitionIdentity LargeFieldOwnerPinned { get; }
 
         internal static StaticFieldMetadataModuleIdentity CreateMetadataModule(
             ulong moduleAddress = 0x2000,

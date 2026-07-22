@@ -137,15 +137,6 @@ public sealed class W8MetadataClassificationAndNullableContractTests
         Assert.Null(genericResult.ClosedType);
         Assert.Null(genericResult.ReachedBound);
 
-        var request = MetadataTypeSubstitutionRequest.Create(
-            MetadataTypeSubstitutionContextKind.TypeSpecification,
-            ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty,
-            ImmutableArray<MetadataTypeArgumentBindingIdentity>.Empty);
-        var substitution = MetadataTypeSubstitutionResult.Substitute(array, request);
-        Assert.Equal(MetadataTypeSubstitutionResultKind.NonExact, substitution.Kind);
-        Assert.Null(substitution.ClosedType);
-        Assert.Null(substitution.ReachedBound);
-
         var exactNamedHead = MetadataTypeSignatureNode.Named(
             MetadataNamedSignatureHeadKind.Class,
             MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.ReferenceClassDefinition),
