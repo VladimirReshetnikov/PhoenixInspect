@@ -32,7 +32,9 @@ public sealed class W8MetadataSourceCatalogContractTests
             genericParameterConstraintRows: 41,
             nestedClassRows: 43,
             fieldPointerRows: 47,
-            methodPointerRows: 53);
+            methodPointerRows: 53,
+            parameterDefinitionRows: 59,
+            parameterPointerRows: 61);
 
         var sourceEnds = MetadataSourceEndIdentity.Create(module, fact);
 
@@ -46,6 +48,8 @@ public sealed class W8MetadataSourceCatalogContractTests
         Assert.Equal(47, sourceEnds.FieldPointerRowCount);
         Assert.Equal(29, sourceEnds.MethodDefinitionRowCount);
         Assert.Equal(53, sourceEnds.MethodPointerRowCount);
+        Assert.Equal(59, sourceEnds.ParameterDefinitionRowCount);
+        Assert.Equal(61, sourceEnds.ParameterPointerRowCount);
         Assert.Equal(43, sourceEnds.NestedClassRowCount);
         Assert.Equal(31, sourceEnds.GenericParameterRowCount);
         Assert.Equal(37, sourceEnds.InterfaceImplementationRowCount);
@@ -265,7 +269,9 @@ public sealed class W8MetadataSourceCatalogContractTests
         int genericParameterConstraintRows = 16,
         int nestedClassRows = 16,
         int fieldPointerRows = 0,
-        int methodPointerRows = 0) =>
+        int methodPointerRows = 0,
+        int parameterDefinitionRows = 0,
+        int parameterPointerRows = 0) =>
         MetadataSourceEndIdentity.Create(
             module,
             CreateExactFact(
@@ -280,7 +286,9 @@ public sealed class W8MetadataSourceCatalogContractTests
                 genericParameterConstraintRows,
                 nestedClassRows,
                 fieldPointerRows,
-                methodPointerRows));
+                methodPointerRows,
+                parameterDefinitionRows,
+                parameterPointerRows));
 
     private static StaticFieldModuleSearchFact CreateExactFact(
         StaticFieldMetadataModuleIdentity module,
@@ -294,7 +302,9 @@ public sealed class W8MetadataSourceCatalogContractTests
         int genericParameterConstraintRows = 16,
         int nestedClassRows = 16,
         int fieldPointerRows = 0,
-        int methodPointerRows = 0) =>
+        int methodPointerRows = 0,
+        int parameterDefinitionRows = 0,
+        int parameterPointerRows = 0) =>
         StaticFieldModuleSearchFact.Exact(
             module.Module,
             module.ModuleContent,
@@ -310,7 +320,9 @@ public sealed class W8MetadataSourceCatalogContractTests
             genericParameterRowCount: genericParameterRows,
             genericParameterConstraintRowCount: genericParameterConstraintRows,
             fieldPointerRowCount: fieldPointerRows,
-            methodPointerRowCount: methodPointerRows);
+            methodPointerRowCount: methodPointerRows,
+            parameterDefinitionRowCount: parameterDefinitionRows,
+            parameterPointerRowCount: parameterPointerRows);
 
     private static StaticFieldMetadataModuleIdentity CreateMetadataModule(
         ulong moduleAddress = 0x2000,

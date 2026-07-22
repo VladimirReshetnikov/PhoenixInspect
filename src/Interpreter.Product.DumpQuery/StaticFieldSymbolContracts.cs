@@ -5771,7 +5771,7 @@ public sealed class StaticFieldNameExpansion : IEquatable<StaticFieldNameExpansi
 public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSearchFact>
 {
     private const string CanonicalDomain = "static-field-module-search-fact";
-    private const int CanonicalSchemaVersion = 3;
+    private const int CanonicalSchemaVersion = 4;
     private readonly ImmutableArray<ModuleContentIdentity> moduleContents;
     private readonly ImmutableArray<byte> canonicalBytes;
 
@@ -5803,7 +5803,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         int? genericParameterRowCount,
         int? genericParameterConstraintRowCount,
         int? fieldPointerRowCount,
-        int? methodPointerRowCount)
+        int? methodPointerRowCount,
+        int? parameterPointerRowCount)
     {
         Module = module;
         Status = status;
@@ -5833,6 +5834,7 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         GenericParameterConstraintRowCount = genericParameterConstraintRowCount;
         FieldPointerRowCount = fieldPointerRowCount;
         MethodPointerRowCount = methodPointerRowCount;
+        ParameterPointerRowCount = parameterPointerRowCount;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteLengthPrefixedBytes(module.CanonicalBytes.AsSpan());
@@ -5868,6 +5870,7 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         StaticFieldSymbolContractEncoding.WriteOptionalInt32(writer, genericParameterConstraintRowCount);
         StaticFieldSymbolContractEncoding.WriteOptionalInt32(writer, fieldPointerRowCount);
         StaticFieldSymbolContractEncoding.WriteOptionalInt32(writer, methodPointerRowCount);
+        StaticFieldSymbolContractEncoding.WriteOptionalInt32(writer, parameterPointerRowCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -5920,6 +5923,9 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
 
     /// <summary>Gets the complete MethodPtr table row count only for exact metadata.</summary>
     public int? MethodPointerRowCount { get; }
+
+    /// <summary>Gets the complete ParamPtr table row count only for exact metadata.</summary>
+    public int? ParameterPointerRowCount { get; }
 
     /// <summary>Gets the complete Param table row count only for exact metadata.</summary>
     public int? ParameterDefinitionRowCount { get; }
@@ -5999,6 +6005,7 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
     /// <param name="genericParameterConstraintRowCount">The complete GenericParamConstraint table row count.</param>
     /// <param name="fieldPointerRowCount">The complete FieldPtr table row count.</param>
     /// <param name="methodPointerRowCount">The complete MethodPtr table row count.</param>
+    /// <param name="parameterPointerRowCount">The complete ParamPtr table row count.</param>
     /// <returns>An exact fact with no issue and complete content identity.</returns>
     public static StaticFieldModuleSearchFact Exact(
         StaticFieldModuleInstanceIdentity module,
@@ -6026,7 +6033,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         int genericParameterRowCount = 0,
         int genericParameterConstraintRowCount = 0,
         int fieldPointerRowCount = 0,
-        int methodPointerRowCount = 0) =>
+        int methodPointerRowCount = 0,
+        int parameterPointerRowCount = 0) =>
         Create(module, StaticFieldModuleSearchStatus.Exact, StaticFieldModuleSearchIssue.None,
             ImmutableArray.Create(moduleContent),
             typeDefinitionsExamined, fieldDefinitionsExamined,
@@ -6051,7 +6059,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
             genericParameterRowCount,
             genericParameterConstraintRowCount,
             fieldPointerRowCount,
-            methodPointerRowCount);
+            methodPointerRowCount,
+            parameterPointerRowCount);
 
     /// <summary>Creates a partial per-module search fact without a complete metadata-content payload.</summary>
     /// <param name="module">The physical module instance attempted.</param>
@@ -6155,7 +6164,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         int? genericParameterRowCount = null,
         int? genericParameterConstraintRowCount = null,
         int? fieldPointerRowCount = null,
-        int? methodPointerRowCount = null)
+        int? methodPointerRowCount = null,
+        int? parameterPointerRowCount = null)
     {
         ArgumentNullException.ThrowIfNull(module);
         ValidateRowCount(typeDefinitionsExamined, nameof(typeDefinitionsExamined));
@@ -6182,6 +6192,7 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         ValidateOptionalCount(genericParameterConstraintRowCount, nameof(genericParameterConstraintRowCount));
         ValidateOptionalCount(fieldPointerRowCount, nameof(fieldPointerRowCount));
         ValidateOptionalCount(methodPointerRowCount, nameof(methodPointerRowCount));
+        ValidateOptionalCount(parameterPointerRowCount, nameof(parameterPointerRowCount));
         var validIssue = status switch
         {
             StaticFieldModuleSearchStatus.Exact => issue == StaticFieldModuleSearchIssue.None,
@@ -6236,6 +6247,7 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
               genericParameterConstraintRowCount.HasValue &&
               fieldPointerRowCount.HasValue &&
               methodPointerRowCount.HasValue &&
+              parameterPointerRowCount.HasValue &&
               typeDefinitionsExamined == typeDefinitionRowCount.Value &&
               fieldDefinitionsExamined == fieldDefinitionRowCount.Value
             : !typeDefinitionRowCount.HasValue &&
@@ -6259,7 +6271,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
               !genericParameterRowCount.HasValue &&
               !genericParameterConstraintRowCount.HasValue &&
               !fieldPointerRowCount.HasValue &&
-              !methodPointerRowCount.HasValue;
+              !methodPointerRowCount.HasValue &&
+              !parameterPointerRowCount.HasValue;
         if (!rowCountsAreValid)
         {
             throw new ArgumentException(
@@ -6294,7 +6307,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
             genericParameterRowCount,
             genericParameterConstraintRowCount,
             fieldPointerRowCount,
-            methodPointerRowCount);
+            methodPointerRowCount,
+            parameterPointerRowCount);
     }
 
     private static void ValidateOptionalCount(int? count, string parameterName)

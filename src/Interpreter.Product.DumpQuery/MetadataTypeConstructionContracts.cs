@@ -1809,7 +1809,7 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
 public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-source-end-identity";
-    private const int CanonicalSchemaVersion = 3;
+    private const int CanonicalSchemaVersion = 4;
     private const int MaximumMetadataRowId = 0x00FF_FFFF;
     private readonly ImmutableArray<byte> canonicalBytes;
 
@@ -1823,6 +1823,8 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
         int fieldPointerRowEnd,
         int methodDefinitionRowEnd,
         int methodPointerRowEnd,
+        int parameterDefinitionRowEnd,
+        int parameterPointerRowEnd,
         int nestedClassRowEnd,
         int genericParameterRowEnd,
         int interfaceImplementationRowEnd,
@@ -1837,6 +1839,8 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
         FieldPointerRowCount = fieldPointerRowEnd;
         MethodDefinitionRowCount = methodDefinitionRowEnd;
         MethodPointerRowCount = methodPointerRowEnd;
+        ParameterDefinitionRowCount = parameterDefinitionRowEnd;
+        ParameterPointerRowCount = parameterPointerRowEnd;
         NestedClassRowCount = nestedClassRowEnd;
         GenericParameterRowCount = genericParameterRowEnd;
         InterfaceImplementationRowCount = interfaceImplementationRowEnd;
@@ -1852,6 +1856,8 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
         writer.WriteInt32(fieldPointerRowEnd);
         writer.WriteInt32(methodDefinitionRowEnd);
         writer.WriteInt32(methodPointerRowEnd);
+        writer.WriteInt32(parameterDefinitionRowEnd);
+        writer.WriteInt32(parameterPointerRowEnd);
         writer.WriteInt32(nestedClassRowEnd);
         writer.WriteInt32(genericParameterRowEnd);
         writer.WriteInt32(interfaceImplementationRowEnd);
@@ -1878,6 +1884,10 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
     public int MethodDefinitionRowCount { get; }
     /// <summary>Gets the exact MethodPtr table row end, or zero when direct MethodDef list pointers are used.</summary>
     public int MethodPointerRowCount { get; }
+    /// <summary>Gets the exact Param table row end, or zero for an empty table.</summary>
+    public int ParameterDefinitionRowCount { get; }
+    /// <summary>Gets the exact ParamPtr table row end, or zero when direct Param list pointers are used.</summary>
+    public int ParameterPointerRowCount { get; }
     /// <summary>Gets the exact NestedClass table row end, or zero for an empty table.</summary>
     public int NestedClassRowCount { get; }
     /// <summary>Gets the exact GenericParam table row end, or zero for an empty table.</summary>
@@ -1914,6 +1924,8 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
             sourceModuleFact.FieldPointerRowCount is not { } fieldPointerRowEnd ||
             sourceModuleFact.MethodDefinitionRowCount is not { } methodDefinitionRowEnd ||
             sourceModuleFact.MethodPointerRowCount is not { } methodPointerRowEnd ||
+            sourceModuleFact.ParameterDefinitionRowCount is not { } parameterDefinitionRowEnd ||
+            sourceModuleFact.ParameterPointerRowCount is not { } parameterPointerRowEnd ||
             sourceModuleFact.NestedClassRowCount is not { } nestedClassRowEnd ||
             sourceModuleFact.GenericParameterRowCount is not { } genericParameterRowEnd ||
             sourceModuleFact.InterfaceImplementationRowCount is not { } interfaceImplementationRowEnd ||
@@ -1933,6 +1945,8 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
             fieldPointerRowEnd,
             methodDefinitionRowEnd,
             methodPointerRowEnd,
+            parameterDefinitionRowEnd,
+            parameterPointerRowEnd,
             nestedClassRowEnd,
             genericParameterRowEnd,
             interfaceImplementationRowEnd,
@@ -1955,6 +1969,8 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
             fieldPointerRowEnd,
             methodDefinitionRowEnd,
             methodPointerRowEnd,
+            parameterDefinitionRowEnd,
+            parameterPointerRowEnd,
             nestedClassRowEnd,
             genericParameterRowEnd,
             interfaceImplementationRowEnd,

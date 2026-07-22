@@ -84,9 +84,9 @@ public enum MetadataMethodDefinitionTableIssue
 /// <remarks>
 /// This sealed draft observation retains every physical MethodDef table column after heap decoding plus a bounded
 /// signature prefix and optional exact blob source end. ParamList is checked only against the physical simple-index
-/// domain because current source ends do not yet cover Param or ParamPtr; their ordering and ownership semantics remain
-/// deliberately unasserted. The observation carries no caller-authored declaring TypeDef; ownership is derived only
-/// from the complete pointer-aware TypeDef catalog.
+/// domain in this checkpoint. Complete source ends now cover Param and ParamPtr, but their ordering and ownership
+/// semantics require a dedicated pointer catalog and remain deliberately unasserted here. The observation carries no
+/// caller-authored declaring TypeDef; ownership is derived only from the complete pointer-aware TypeDef catalog.
 /// </remarks>
 public sealed class MetadataMethodDefinitionRowObservationIdentity :
     IEquatable<MetadataMethodDefinitionRowObservationIdentity>
@@ -173,7 +173,7 @@ public sealed class MetadataMethodDefinitionRowObservationIdentity :
     public bool SignatureSourceEndObserved => SignatureByteCount.HasValue;
 
     /// <summary>Gets the raw physical draft MethodDef.ParamList starting row identifier.</summary>
-    /// <remarks>Current draft source ends cannot yet prove Param or ParamPtr ordering semantics for this value.</remarks>
+    /// <remarks>This draft catalog does not yet consume the complete ParamPtr rows needed to prove list ownership.</remarks>
     public int ParameterListRowId { get; }
 
     /// <summary>Gets a defensive copy of the versioned canonical draft observation bytes.</summary>
@@ -201,8 +201,8 @@ public sealed class MetadataMethodDefinitionRowObservationIdentity :
     /// The exact complete signature length, or null when acquisition stopped before observing the source end.
     /// </param>
     /// <param name="parameterListRowId">
-    /// The raw ParamList start. Only its physical simple-index width is checked in this draft because Param and
-    /// ParamPtr source ends are not yet available.
+    /// The raw ParamList start. Only its physical simple-index width is checked in this draft because the dedicated
+    /// ParamPtr catalog is not yet an input.
     /// </param>
     /// <returns>A sealed immutable physical draft row with no caller-authored declaring type.</returns>
     public static MetadataMethodDefinitionRowObservationIdentity Create(
