@@ -248,18 +248,18 @@ examples:
 | `aa6cbde7c` | The complete GenericParamConstraint table resolves Owner through GenericParam authority while retaining unresolved physical targets. |
 | `008a76c0a` | Field substitution requires a compatible W7 candidate certificate and the authority-owned GenericParam binding ledger for the declaring TypeDef. |
 | `cdd1b3ec3` | Exact per-module compatibility catalogs normalize into one bounded, deterministic, same-snapshot portfolio without changing row outcomes. |
+| `eb36593f0` | Constraint edges, sets, and type-use results consume catalog-issued physical constraint evidence, and the public constraint-edge issuer is removed. |
+| `415b7355a` | Complete physical TypeRef, ModuleRef, TypeSpec, AssemblyRef, File, and ExportedType tables and authority-derived named-TypeDef chains issue guarded reference rows, coded-index range proofs, and one normalized multi-module chain portfolio. |
 
-The next implementation pair proceeds in parallel because its source scopes are disjoint:
+The constraint-owner consumer cutover has landed. Constraint targets remain explicitly unresolved physical
+TypeDefOrRef tokens: the complete reference tables above provide the exact TypeRef, resolution-scope, and forwarder
+row evidence that the target join consumes, but no TypeRef-to-TypeDef target resolution is claimed yet.
 
-- **Constraint-owner consumer cutover (`~1K LOC`).** Constraint edges, sets, and type-use results must derive their
-  GenericParam owner, binding, declaration, and source evidence from the complete physical constraint catalog. The
-  constraint target remains an explicitly unresolved physical TypeDefOrRef token only until the TypeDef-or-Ref
-  authority slice can resolve it; that target join is part of the following cluster, not an indefinite compatibility
-  boundary.
-- **Multi-module ancestry and semantic roles (`~10K LOC`).** Authority-issued immediate-base edges, bounded ancestry,
-  exact runtime core-role selection, and TypeDef semantic classification build on the landed portfolio. This slice
-  covers cross-module ancestry now, including the role definitions themselves and invalid indirect role derivation;
-  it is not deferred to the later binder.
+The next implementation slice is **multi-module ancestry and semantic roles (`~10K LOC`)**. Authority-issued
+immediate-base edges, TypeRef target resolution through the landed reference and chain catalogs, bounded ancestry,
+exact runtime core-role selection, and TypeDef semantic classification build on the landed compatibility and chain
+portfolios. This slice covers cross-module ancestry now, including the role definitions themselves and invalid
+indirect role derivation; it is not deferred to the later binder.
 
 Legacy W8 issuer removal and every remaining downstream-consumer migration remain active until their own pushed
 checkpoints and verification records land.

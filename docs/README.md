@@ -50,10 +50,12 @@ Checkpoint `5fd87a3e5` also lands exact metadata source ends and token catalogs,
 complete TypeSpec graph, exact FieldSig identity, GenericParam declaration/catalog/owner-set/binding ledgers,
 interface/constraint edge aggregates, provisional construction classification, and Nullable construction
 preservation. The active [metadata-authority cutover](plans/w8-2-metadata-authority-cutover.md) now records the
-non-circular replacement: pushed checkpoints through `5c90f1b4b` derive FieldDef anchors, complete TypeDef member
-ownership, NestedClass parents, and FieldPtr/MethodPtr mappings from physical tables. GenericParam, MethodDef, final
-definition authority, public-issuer removal, and downstream migration remain active. These proof objects are not yet
-mandatory inputs to downstream consumers. A host-owned lexical
+non-circular replacement: landed checkpoints through `415b7355a` derive FieldDef anchors, complete TypeDef member
+ownership, NestedClass parents, FieldPtr/MethodPtr mappings, GenericParam and MethodDef catalogs, definition
+authority, compiler-name mappings, W7 compatibility certificates and portfolios, constraint authority and its
+consumer cutover, complete physical reference tables, and authority-derived named-TypeDef chain portfolios from
+physical tables. Multi-module ancestry and semantic roles, public-issuer removal, and the remaining downstream
+migration stay active. These proof objects are not yet mandatory inputs to every downstream consumer. A host-owned lexical
 producer, the remaining `StaticFieldExpressionV2`/`BindingContextV2` families, and the product
 binder/runtime/evaluator remain active work. The umbrella scale remains `~100K LOC`, split primarily into `~10K LOC`
 checkpoints, and the meaningful portfolio minimum is now thirty-five independent incidents.
