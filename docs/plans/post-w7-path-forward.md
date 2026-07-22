@@ -861,8 +861,10 @@ before product contracts.
 
 **Scale:** `~10K LOC` implementation and tests.
 
-**Status:** Active. Immutable expression/frame foundations, shared Core signature grammar, Product event projection,
-caller-supplied lexical evidence, and the source-anchored metadata proof families through `5fd87a3e5` have landed.
+**Status:** Complete for its authority-cutover scope at `d4d5f745c`; see the
+[W8.2 Metadata Authority Cutover](w8-2-metadata-authority-cutover.md) ledger. Immutable expression/frame foundations,
+shared Core signature grammar, Product event projection, caller-supplied lexical evidence, and the source-anchored
+metadata proof families through `5fd87a3e5` landed first.
 The metadata layer retains exact source ends, prefix-free token and graph stops, raw versus role-classified TypeDefs,
 TypeSpec graphs, FieldSig certificates, GenericParam owner/table/binding proofs, complete interface/constraint table
 aggregates, provisional construction classification, and exact Nullable topology. Tests cover complex nested
@@ -885,7 +887,12 @@ profile boundary.
 
 ### W8.3 — sole-Roslyn-parse W8 projection
 
-**Scale:** `~10K LOC` implementation and tests.
+**Scale:** `~10K LOC` implementation and tests; realized as `~2K LOC` because the detached syntax contracts had
+already landed in W8.2 and only the two projectors remained.
+
+**Status:** Complete at `8bb74c866`. `StaticFieldV2ExpressionParser` and `FrameValueV1ExpressionParser` project the
+single pinned parse into the frozen detached descriptors, stop at the first reached boundary, and keep the two
+profiles isolated.
 
 Project generic, nested, alias-qualified, and bare-root Roslyn trees into detached V2 syntax/type candidates without
 semantic binding, reparsing, or Roslyn leakage. For an admitted frame-value branch, the same parse site projects only a
