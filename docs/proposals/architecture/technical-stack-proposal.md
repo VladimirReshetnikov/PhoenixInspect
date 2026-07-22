@@ -125,7 +125,8 @@ adds detached `StaticFieldExpressionV2` generic/nested/type/alias trees and the 
 `FrameValueExpressionV1` root descriptor for exact memory-homed `this`, parameters, and live locals. Register homes and
 selected-frame generic substitution are outside the admitted surface. Constraint, accessibility,
 constructed-assignability, storage, and value binding remain project-owned; neither Roslyn semantic models nor
-another parser enter the product path.
+another parser enter the product path. Checkpoint `5fd87a3e5` adds source-anchored metadata proof contracts, but those
+proofs are not yet required inputs to the future V2 syntax/binder/runtime pipeline.
 
 ---
 
@@ -149,6 +150,19 @@ Disk-backed differential tests use it over a content-identified PE; the dump res
 metadata bytes and separately revalidates the counted physical method body. The earlier source-scan-only AsmResolver
 choice is superseded. Backend-neutral projected contracts remain a goal; an alternative adapter is justified only by
 a recorded fixture/corpus gap.
+
+W8.2 uses one bounded ECMA signature grammar in `Interpreter.Core.Abstractions` for TypeSpec, FieldSig,
+MethodDefSig, and LocalVarSig positions. It emits structural parent-indexed events, exact full-consumption
+certificates, and typed invalid/bound outcomes without resolving metadata tokens. `Interpreter.Product.DumpQuery`
+owns the event adapter and exact token-resolution catalog. It reconstructs immutable TypeSpec/FieldSig trees only
+after exact source-end and token-domain checks, and retains no usable tree on incomplete, invalid, or cap-plus-one
+paths. Direct `CLASS` and `VALUETYPE` TypeSpec roots are ordinary Type-grammar roots; later role/construction
+classification decides exact, open, non-exact, or invalid use.
+
+The same Product metadata layer now models raw versus role-classified TypeDefs, TypeSpec graph traversal,
+GenericParam declaration/table/selected-owner/binding proofs, interface and constraint table aggregates, provisional
+construction classification, exact FieldSig anchors, and Nullable construction preservation. These contracts are
+detached proof artifacts. A host-owned metadata producer and mandatory downstream proof consumption have not landed.
 
 ### Debug-map and source fallback stack
 
@@ -506,8 +520,9 @@ Current facts:
   end is implemented at W6.2, and W7 implements its bounded selected-frame/PDB/import plus fully qualified
   `StaticFieldExpressionV1` binder/value path. W8.1 adds physical compiler/PDB, runtime-construction, storage,
   assignability, and exact memory-homed frame-value evidence. W8.2 now adds immutable expression/frame syntax,
-  bounded signature, and caller-supplied selected-method lexical contracts, but no V2 product binder, host-owned
-  lexical producer, or frame-value consumer yet.
+  caller-supplied selected-method lexical contracts, one shared bounded signature grammar, and source-anchored Product
+  metadata proofs through `5fd87a3e5`. No V2 product binder, host-owned lexical/metadata producer, runtime/storage
+  mapper, or frame-value consumer has landed, and the proof objects are not yet mandatory consumer inputs.
   There is no general C# binder/evaluator, production object-model breadth, orchestrator, debugger control plane, or
   analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose

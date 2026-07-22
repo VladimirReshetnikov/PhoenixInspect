@@ -45,8 +45,11 @@ The [`Post-W7 Path Forward`](../plans/post-w7-path-forward.md) is the sole activ
 locally validated under its [`physical-truth disposition`](../plans/w8-1-physical-truth-disposition.md). It proves exact
 compiler/PDB, construction, storage, literal, frame-root, assignability, and replay facts before V2 contracts.
 Constructed/thread-relative/RVA/literal/exact memory-frame branches are admitted; context-relative storage and
-selected-frame generic arguments are typed non-admitted, and register homes are unproven. W8.2 is active. Later
-generated coverage and a thirty-five-incident minimum remain required for nested and closed constructed owners, scoped
+selected-frame generic arguments are typed non-admitted, and register homes are unproven. W8.2 is active. Its landed
+proof contracts through `5fd87a3e5` cover shared-grammar TypeSpec/FieldSig projection, exact source ends/token
+catalogs, TypeSpec graphs, FieldSig anchors, GenericParam ownership/bindings, edge aggregates, provisional
+classification, and Nullable topology. These objects are not yet mandatory consumer inputs. Later generated coverage
+and a thirty-five-incident minimum remain required for nested and closed constructed owners, scoped
 imports and aliases, exact runtime-construction identity, stored/literal values, evidence-qualified bare fields, and
 the separate admitted frame-value profile.
 Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
@@ -259,7 +262,7 @@ defined milestone-selected scope.
 | Interpreter result | Metadata-derived activation, frozen typed plan, explicit value domain, persistent memory, and deterministic budget/event policy | Historical replay or product-level expression evaluation |
 | W7 selected-frame import context | Identity-validated bounded Portable PDB bytes, exact active LocalScope/ImportScope chain, and project-owned namespace/import/alias facts | Stack values, exact closed generic runtime arguments, lexical blocker completeness, or broader language binding |
 | W7 static-field result | Counted metadata, one exact non-generic declaration, pinned runtime slot, counted raw value reads, and optional unchanged suffix evaluation | Nested/generic owners, literals, per-construction slot selection, or any W8 branch |
-| Active W8.2 contract gate | W8.1 compiler/SRM and real full-dump facts plus immutable expression/frame syntax contracts, a bounded ECMA signature projection, and a selected-method lexical envelope built from caller-supplied physical rows | A host-owned lexical producer, complete V2 contract surface, binder, evaluator, report schema, or portfolio result |
+| Active W8.2 contract gate | W8.1 physical facts plus immutable expression/frame syntax, caller-supplied lexical evidence, one shared bounded Core signature grammar and Product event adapter, exact source ends/token catalogs, TypeSpec/FieldSig/GenericParam/edge proof artifacts, provisional type classification, and Nullable topology | Mandatory downstream proof consumption, a host-owned lexical/metadata producer, complete V2 contract surface, binder, runtime/storage mapper, evaluator, report schema, or portfolio result |
 
 ## CI policy
 
@@ -679,10 +682,19 @@ The completed W8.1 fixture matrix distinguishes facts that must never be collaps
   independent branches. Exact memory-homed frame roots are admitted; selected-frame generic construction is
   non-admitted. Success in one branch supplies no fact for another.
 
-After the truth gate, fast generated tests freeze immutable V2 contracts, one-Roslyn-parse projection, namespace/type
-partitioning, nested per-segment arity, TypeSpec decoding and substitution, constraints, accessibility, definition-kind
-member lookup, scoped alias/import precedence, lexical blocker completeness, constructed assignability, canonical
-identities, bounds, and typed first stops. Poison/count doubles prove that unsupported syntax makes no metadata,
+The landed W8.2 fast proof layer freezes immutable expression/frame foundations, caller-supplied lexical evidence,
+and source-anchored metadata objects. Its shared Core grammar and Product event adapter cover complete TypeSpec and
+FieldSig trees, direct named roots, nested generics, arrays, modifiers, function pointers, exact source/token ends,
+TypeSpec graph cycles and omissions, FieldSig anchors, GenericParam table/owner/binding completeness, edge aggregates,
+raw/provisional/exact type classification, and Nullable topology. Exact-cap, cap-plus-one, malformed, incomplete,
+duplicate, crossed-owner, defensive-copy, canonical-equality, and public-draft-XML cases expose no usable prefix on a
+stop. Verification at `5fd87a3e5` passed strict Release with zero warnings/errors, unit 519/519, integration 344/344,
+and focused metadata construction 18/18.
+
+Remaining fast generated tests must freeze mandatory proof consumption, one-Roslyn-parse V2 projection,
+namespace/type partitioning, nested per-segment arity, constraints, accessibility, definition-kind member lookup,
+scoped alias/import precedence, lexical blocker completeness, constructed assignability, canonical product
+identities, bounds, and typed first stops. Poison/count doubles must prove that unsupported syntax makes no metadata,
 context, runtime, storage, or memory calls; fully qualified controls make no frame/PDB calls; and literal plans make no
 runtime/storage/memory calls.
 

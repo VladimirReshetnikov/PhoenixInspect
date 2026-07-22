@@ -44,10 +44,14 @@ The active [`Post-W7 Path Forward`](plans/post-w7-path-forward.md) defines W8 as
 storage, literal, frame-root, and assignability evidence before product contracts. Constructed, thread-relative,
 module-RVA, literal, and exact memory-homed frame-value branches are admitted. Context-relative storage and
 selected-frame generic arguments remain typed non-admitted, and register homes are unproven. W8.2 is active. Its
-immutable expression-contract foundation, detached `FrameValueExpressionV1` syntax, shared bounded ECMA signature
-projection, and caller-supplied selected-method lexical evidence envelope have landed. A host-owned lexical producer,
-the remaining `StaticFieldExpressionV2`/`BindingContextV2` families, and the product binder/evaluator remain active
-work. The umbrella scale remains `~100K LOC`, split primarily into `~10K LOC`
+immutable expression-contract foundation, detached `FrameValueExpressionV1` syntax, one shared bounded Core ECMA
+signature grammar, Product event adapter, and caller-supplied selected-method lexical evidence envelope have landed.
+Checkpoint `5fd87a3e5` also lands exact metadata source ends and token catalogs, raw and role-classified TypeDefs, the
+complete TypeSpec graph, exact FieldSig identity, GenericParam declaration/catalog/owner-set/binding ledgers,
+interface/constraint edge aggregates, provisional construction classification, and Nullable construction
+preservation. These proof objects are not yet mandatory inputs to downstream consumers. A host-owned lexical
+producer, the remaining `StaticFieldExpressionV2`/`BindingContextV2` families, and the product
+binder/runtime/evaluator remain active work. The umbrella scale remains `~100K LOC`, split primarily into `~10K LOC`
 checkpoints, and the meaningful portfolio minimum is now thirty-five independent incidents.
 
 W6.1–W6.7 are closed at exact locally verified source baseline `440053ad1`. One pinned complete Roslyn parse feeds only
@@ -283,8 +287,9 @@ W1 is complete for its revised milestone-selected dump-evidence scope: real read
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
 each selected category. No result through W8.1 establishes behavior for other artifact shapes. W8.1 is current
-physical evidence for its named branches. Only the landed W8.2 contract families described above are current
-implementation evidence; unlanded W8.2 work and W8.3–W8.10 behavior remain plans.
+physical evidence for its named branches. Only the landed W8.2 contract and metadata-proof families described above
+are current implementation evidence. They do not yet govern downstream acquisition, binding, runtime/storage, or
+evaluation. Unlanded W8.2 work and W8.3–W8.10 behavior remain plans.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes remain
 evidence for their named commits rather than claims about the current fixture binary.
@@ -330,7 +335,7 @@ docs/
 | `proposals/product/post-mortem-debugging-feature-proposal.md` | Product | Proposal | Draft · Active | Read-only dump evaluator direction through closed W7, completed W8.1 physical evidence, and the W8.2+ nested/constructed static, scoped-context, stored/literal, and admitted frame-value product path. |
 | `proposals/product/virtual-step-debugging-feature-proposal.md` | Product | Proposal | Draft · Research | Counterfactual virtual-stepping concept; not on the active roadmap. |
 | `proposals/product/other-potential-applications.md` | Product | Strategy Note | Draft · Research | Speculative applications and reuse hypotheses; not delivery commitments. |
-| `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, canonical data flow, closed W1–W7 evidence, completed W8.1 physical gates, and active W8.2 contract frontier. |
+| `proposals/architecture/architecture-overview-proposal.md` | Architecture | Proposal | Current · Supporting | Top-level component map, runtime boundaries, canonical data flow, closed W1–W7 evidence, completed W8.1 physical gates, and the active W8.2 contract/proof frontier. |
 | `proposals/architecture/csharp-expression-front-end-contract-proposal.md` | Architecture | Contract | Current · Supporting | Normative sole pinned Roslyn expression parse, stable invalid/unsupported mapping, implemented W2/W5/W6/W7 admission, completed W8.1 evidence dispositions, and unimplemented W8.2 V2/frame projection boundary. |
 | `proposals/architecture/restricted-dump-query-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W2 v1 admitted shape, typed root binding, immutable-plan, value-domain, diagnostics, provenance, and all-scenario replay contract. |
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
@@ -339,13 +344,13 @@ docs/
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft · Research | Candidate abstract domains and analysis behavior for a later research phase. |
-| `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices, including the durable sole-Roslyn-parser boundary, implemented W7 consumer/report reuse, W8.1 evidence projects, landed W8.2 expression/frame/signature/lexical contracts, and the missing host producer/binder/evaluator. |
+| `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices, including the durable sole-Roslyn-parser boundary, implemented W7 consumer/report reuse, W8.1 evidence projects, landed W8.2 expression/frame/lexical and metadata-proof contracts, and the missing host producer/binder/runtime/evaluator. |
 | `proposals/architecture/call-model-and-effects.md` | Architecture | Proposal | Draft · Supporting | Call classification, fallback behavior, and effect lattice contract for later method evaluation. |
 | `proposals/architecture/generic-context-resolver-proposal.md` | Architecture | Proposal | Draft · Research | Generic-context reconstruction strategy for later dump-backed method interpretation. |
 | `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical prototype layout and narrow implemented proof boundary. |
-| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised through closed W7 and completed W8.1, plus the first immutable W8.2 expression/frame/signature/lexical contract families; the lexical surface is a caller-supplied envelope rather than a host producer; unstable. |
+| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised through closed W7 and completed W8.1, plus immutable W8.2 expression/frame/lexical and source-anchored metadata-proof families; consumers and host production remain incomplete; unstable. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate execution-state, domain, and provenance semantics. |
-| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W7 and completed W8.1 physical gates, plus remaining W8 contract/generated/headless/replay obligations and a thirty-five-incident portfolio minimum. |
+| `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W7, completed W8.1 physical gates, and landed W8.2 detached proof tests, plus remaining consumer/generated/headless/replay obligations and a thirty-five-incident portfolio minimum. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft · Research | BCL/IL semantic lifting and projection concepts for later phases. |
 | `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft · Research | Candidate unified registry for later modeled semantics. |
 | `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Current · Supporting | Implemented closed W3 E1/E2 encodings and explicit gates for later opcode expansion. |
@@ -356,10 +361,10 @@ docs/
 | `proposals/architecture/dynamic-calls-proposal.md` | Architecture | Proposal | Draft · Research | Dynamic call-site lifting research. |
 | `proposals/integration/clrmd-integration-proposal.md` | Integration | Proposal | Current · Active | ClrMD + PE/PDB binding architecture through W7 and completed W8.1 exact-construction, strategy-specific storage, memory-homed frame-root, and typed non-admission evidence. |
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft · Reference | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
-| `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Current · Active | Artifact-resolution design through W7 plus completed W8.1 TypeSpec/runtime-construction/literal/storage/frame evidence and remaining W8.2 scoped binding. |
-| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W7 and completed W8.1, plus remaining W8 generated/product replay and thirty-five-incident portfolio obligations. |
+| `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Current · Active | Artifact-resolution design through W7, completed W8.1 physical evidence, landed W8.2 detached metadata proofs, and remaining host production/scoped binding. |
+| `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W7, completed W8.1, and landed W8.2 metadata proofs, plus remaining consumer/product replay and thirty-five-incident portfolio obligations. |
 | `plans/future-work-planning.md` | Planning | Plan | Current · Supporting | Detailed evidence-led W0–W4 delivery record and research entry gates. |
-| `plans/requirements-traceability-map.md` | Planning | Matrix | Current · Active | Requirements mapped separately to design, implementation, and validation evidence. |
+| `plans/requirements-traceability-map.md` | Planning | Matrix | Current · Active | Requirements mapped separately to design, implementation, and validation evidence, including the W8.2 proof-versus-consumer boundary. |
 | `lib/README.md` | Library Notes | Index | Current · Reference | Navigation and policy for active decisions versus preserved source research. |
 | `lib/clrmd/usage-notes.md` | Library Notes | Note | Historical · Reference | Preserved ClrMD source research; active behavior is established by adapter code and executable fixtures. |
 | `lib/clrmd/intro-tutorial.md` | Library Notes | Tutorial | Historical · Reference | Contributor introduction to ClrMD dump/runtime/heap/stack inspection workflows. |

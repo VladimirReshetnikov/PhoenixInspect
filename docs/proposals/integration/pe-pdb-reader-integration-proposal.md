@@ -1,6 +1,6 @@
 # PE/PDB reader integration proposal
 
-> **Lifecycle:** Current · **Roadmap:** Active · **Last reconciled:** 2026-07-18
+> **Lifecycle:** Current · **Roadmap:** Active · **Last reconciled:** 2026-07-21
 
 ## Decision and W3 implementation alignment (2026-07-14)
 
@@ -46,6 +46,15 @@ Constructed ordinary storage, thread-relative storage, and RVA-backed storage ar
 is non-admitted and creates no strategy or API. Exact memory-homed selected-frame `this`, parameters, and live locals
 are admitted through mandatory separate `FrameValueExpressionV1` contracts. Register homes and selected-frame generic
 substitution are non-admitted.
+
+W8.2 metadata checkpoint `5fd87a3e5` converts part of that physical vocabulary into detached Product proofs. Exact
+metadata table ends govern bounded token catalogs, raw/classified TypeDefs, TypeSpec graphs, FieldSig certificates,
+GenericParam declarations/tables/owner sets/binding ledgers, and complete interface/constraint edge aggregates. One
+bounded grammar in Core emits structural signature events; the Product adapter resolves their tokens and constructs
+an exact tree only after full source consumption. Direct `CLASS` and `VALUETYPE` TypeSpec roots are valid Type-grammar
+inputs and proceed to role/construction classification. This layer consumes caller-provided rows/catalogs; it is not
+an SRM/PEReader or Portable-PDB acquisition implementation, and its proof objects are not yet mandatory inputs to the
+V2 binder or runtime/storage path.
 
 The gate is executable and headless: fast compiler/SRM/PDB differentials precede hidden full-dump targets, generated
 V2 conformance, and the synthetic portfolio of thirty-two fixed core incidents across four shapes plus
@@ -660,8 +669,10 @@ remain evidence-gated product/research work.
 
 W8 retains SRM/PEReader and the same project-owned boundary. It adds no second metadata stack. W8.1 proves closed
 TypeSpec and nested generic construction, literal encodings, constraints, accessibility, extern-alias facts, exact
-candidate-keyed runtime arguments, and per-construction storage. W8.2 admits constructed, thread-relative, RVA-backed,
-and exact memory-homed frame routes. Context-relative identity, register homes, and selected-frame generic
+candidate-keyed runtime arguments, and per-construction storage. W8.2 has landed detached source-end, signature,
+TypeSpec, FieldSig, GenericParam, edge-aggregate, classification, and Nullable proof contracts. The future Product
+pipeline is still required to consume those proofs and implement the admitted constructed, thread-relative,
+RVA-backed, and exact memory-homed frame routes. Context-relative identity, register homes, and selected-frame generic
 substitution remain typed executable non-admissions in the conformance corpus and create no corresponding product API.
 
 If I had to pick a default stack that minimizes impedance mismatch:

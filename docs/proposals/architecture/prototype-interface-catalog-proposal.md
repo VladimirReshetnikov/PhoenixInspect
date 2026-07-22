@@ -467,23 +467,43 @@ canonical, invalid-input, replay, and real-dump tests.
 
 The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves additive
 `StaticFieldExpressionV2` and `BindingContextV2` profiles rather than mutating W7. The first W8.2 checkpoints now
-provide immutable common expression identities, detached frame-value syntax, a shared bounded ECMA signature
-projection, and a selected-method lexical contract envelope. That lexical surface validates caller-supplied physical
-rows and source ends; it is not yet produced by one host-owned ClrMD acquisition authority. The remaining planned
-inventory includes
-structured nested and closed generic type syntax, exact metadata/runtime construction identities, scope-precise import
-and alias facts, extern aliases, lexical-blocker completeness, ordinary stored fields, metadata literals, constructed
-field-signature substitution, and distinct plan/result/provenance encodings. W8.1's three generated evidence targets
-and integration probes establish the compiler/PDB, candidate-keyed runtime construction, definition-kind, storage,
-assignability, and selected-frame dispositions recorded in the
+provide immutable common expression identities, detached frame-value syntax, one shared bounded Core ECMA signature
+grammar, its Product event adapter, and a selected-method lexical contract envelope. That lexical surface validates
+caller-supplied physical rows and source ends; it is not yet produced by one host-owned ClrMD acquisition authority.
+
+Metadata checkpoint `5fd87a3e5` adds the following public draft proof inventory in
+`Interpreter.Product.DumpQuery`:
+
+- `MetadataSourceEndIdentity` and `MetadataSignatureTokenResolutionCatalog` freeze exact table ends, physical token
+  order, same-module resolution, and prefix-free incomplete/invalid/bound outcomes;
+- `MetadataTypeSignatureDecoder`, `MetadataTypeSpecificationIdentity`, and
+  `MetadataTypeSpecificationGraphIdentity` reconstruct resolved immutable trees from shared-Core events and validate
+  TypeSpec row traversal, custom-modifier references, missing rows, duplicate keys, and cycles;
+- `MetadataRawTypeDefinitionIdentity`, `MetadataTypeDefinitionIdentity`, `MetadataTypeUseResult`, construction and
+  substitution identities separate raw rows, provisional classification, exact use, open use, and invalid evidence;
+- `MetadataFieldSignatureDecodeOutcome` exposes an exact FieldSig identity only when the FieldDef, declaring TypeDef,
+  source ends, original bytes, complete projected root, and Core certificate all agree;
+- `MetadataGenericMethodDeclarationCertificateIdentity`, `MetadataGenericParameterTableCatalogIdentity`,
+  `MetadataGenericParameterOwnerSetIdentity`, and `MetadataGenericParameterBindingLedgerIdentity` retain exact-zero
+  arity, physical row order, coded-owner order, complete owner positions, and row-addressed bindings; and
+- base/interface/constraint edge identities and complete table aggregates, delegate ancestry, definition-kind
+  classification, and Nullable recognition preserve the physical heads and construction topology used by later
+  binder rules.
+
+Direct `CLASS` and `VALUETYPE` TypeSpec roots are accepted by the shared Type grammar and pass through ordinary
+role/construction classification. No separate root-shape rule marks them invalid. W8.1's three generated evidence
+targets and integration probes establish the compiler/PDB, candidate-keyed runtime construction, definition-kind,
+storage, assignability, and selected-frame dispositions recorded in the
 [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md).
 
 Remaining W8.2 work must expose `ConstructedSlot`, `ThreadRelativeSlot`, `ModuleRva`, and `MetadataLiteral` strategies.
 It must also complete the separate `FrameValueExpressionV1` exact memory location, source, plan, result, and provenance
 contracts;
 that route is never a fallback from the static profile. It must not expose a context-relative strategy, register-home
-descriptor, or selected-frame generic-substitution contract. W1–W7 contracts remain unchanged while these additive
-W8.2 contracts land.
+descriptor, or selected-frame generic-substitution contract. The current proof objects are not yet mandatory inputs
+to substitution, member/context binding, runtime construction, storage, or value consumers. A host-owned metadata/
+lexical producer, V2 binder, runtime/storage mapper, evaluator, reports, and portfolio remain unimplemented. W1–W7
+contracts remain unchanged while these additive W8.2 contracts land.
 
 ## Change rule
 

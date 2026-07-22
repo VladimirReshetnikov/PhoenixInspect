@@ -10,9 +10,14 @@
 >
 > **Implementation status:** W8.1 is implemented and locally validated through exact source baseline `220be94b4`;
 > its authoritative branch record is the [W8.1 Physical-Truth Disposition](w8-1-physical-truth-disposition.md). W8.2
-> is active. The immutable expression-contract foundation, detached frame-value syntax contract, shared bounded ECMA
-> signature projection, and caller-supplied selected-method lexical evidence envelope have landed. A host-owned
-> lexical producer, the remaining V2 contract families, binder, evaluator, report schema, and portfolio result remain.
+> is active. The immutable expression-contract foundation, detached frame-value syntax contract, one shared bounded
+> Core ECMA signature grammar, its Product event adapter, and the caller-supplied selected-method lexical evidence
+> envelope have landed. Checkpoint `5fd87a3e5` adds exact metadata source ends and token catalogs, raw and
+> role-classified TypeDefs, a complete TypeSpec graph, exact FieldSig identity, GenericParam
+> declaration/catalog/owner-set/binding ledgers, interface/constraint edge aggregates, provisional construction
+> classification, and Nullable construction preservation. These proof objects are not yet mandatory consumer inputs.
+> A host-owned lexical producer, downstream authority integration, the remaining V2 contract families, binder,
+> runtime/storage mapping, evaluator, report schema, and portfolio result remain.
 >
 > **Evidence boundary:** W8 is a generated-fixture and meaningful-synthetic prototype milestone. Its planned corpus is
 > not representative observation and cannot establish field readiness. W5, W6, and W7 milestone-specific hosted
@@ -88,8 +93,9 @@ W7 already retains most of the evidence that a V2 binder needs:
   is not an exact V2 selection source;
 - the product metadata model retains nested TypeDef chains, TypeRef resolution, base/interface ancestry, TypeSpec
   bytes, FieldDef signatures, and counted table sizes;
-- `BoundedEcmaTypeSpecificationProjection` validates one bounded root `GENERICINST CLASS` shape and contributes
-  reusable signature-walking machinery, but does not yet cover V2's full constructed-owner grammar; and
+- one shared bounded Core grammar validates TypeSpec, FieldSig, MethodDefSig, and LocalVarSig positions and emits
+  parent-indexed events; the Product adapter reconstructs resolved immutable TypeSpec and FieldSig trees, while the
+  downstream binder does not yet require those proof identities; and
 - the W7 storage/value pipeline already handles ordinary static `Int32`, `String`, `Nullable<Int32>`, exact null, and
   validated object/reference values.
 
@@ -391,10 +397,10 @@ qualified-inspection bypass separately.
 
 A TypeSpec is decoded into an immutable bounded construction tree:
 
-- every fully ground TypeSpec root admitted by the V2 grammar is decoded, including `GENERICINST CLASS`,
-  `GENERICINST VALUETYPE`, `SZARRAY`, and bounded `ARRAY`; direct `CLASS TypeDefOrRef` and
-  `VALUETYPE TypeDefOrRef` nodes remain valid recursively inside another type but are `Invalid` as redundant TypeSpec
-  roots under the current-.NET metadata rules because the direct TypeDef/TypeRef token is the physical representation;
+- every complete TypeSpec root admitted by the shared ECMA Type grammar is decoded, including direct
+  `CLASS TypeDefOrRef`, direct `VALUETYPE TypeDefOrRef`, `GENERICINST CLASS`, `GENERICINST VALUETYPE`, `SZARRAY`,
+  and bounded `ARRAY`; direct named roots follow the same role/construction classification as any other exact tree,
+  so their physical proof may yield exact, open, non-exact, or invalid use without a root-shape-only rejection;
 - named `CLASS`/`VALUETYPE` nodes and `GENERICINST` heads resolve only TypeDef/TypeRef coded indices to one exact
   TypeDef; a TypeSpec tag in one of those positions is `Invalid`. TypeSpec indirection is followed only in positions
   where the current runtime permits it, including custom modifiers, with the same depth/token/visited-set bounds;
@@ -854,6 +860,16 @@ before product contracts.
 ### W8.2 — immutable V2 and evidence-admitted branch contracts
 
 **Scale:** `~10K LOC` implementation and tests.
+
+**Status:** Active. Immutable expression/frame foundations, shared Core signature grammar, Product event projection,
+caller-supplied lexical evidence, and the source-anchored metadata proof families through `5fd87a3e5` have landed.
+The metadata layer retains exact source ends, prefix-free token and graph stops, raw versus role-classified TypeDefs,
+TypeSpec graphs, FieldSig certificates, GenericParam owner/table/binding proofs, complete interface/constraint table
+aggregates, provisional construction classification, and exact Nullable topology. Tests cover complex nested
+generics, arrays, modifiers, function pointers, duplicate blobs, cycles, crossed owners, exact-cap/cap-plus-one,
+direct named TypeSpec roots, incomplete sources, immutability, and public draft XML. The proof objects are not yet
+required by substitution/member/context/runtime consumers, and no host producer, V2 binder, runtime/storage mapper,
+or evaluator is implied by this status.
 
 Freeze additive, defensively immutable, content-equal contracts for structured type syntax, scoped imports, lexical
 blockers, metadata constructions, TypeSpec projection, substitution, member lookup, runtime construction, storage,

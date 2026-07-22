@@ -2,7 +2,7 @@
 
 **Lifecycle:** Current
 **Roadmap relation:** Supporting
-**Last reconciled:** 2026-07-18
+**Last reconciled:** 2026-07-21
 
 ## 1. Product and scope lock
 
@@ -32,8 +32,13 @@ The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) now gov
 `StaticFieldExpressionV2`/`BindingContextV2` profiles for nested and closed constructed owners, scope-precise imports
 and aliases, extern aliases, stored fields, metadata literals, and evidence-qualified `using static` bare roots. W8.1
 completed its physical-truth fixture and probes at `220be94b4`; its exact results and W8.2 consequences are frozen in
-the [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is active; no W8.2
-product behavior is claimed before its own evidence lands.
+the [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is active. Immutable
+expression/frame and caller-supplied lexical contracts have landed alongside one shared bounded Core ECMA signature
+grammar. Metadata checkpoint `5fd87a3e5` adds the Product event adapter, exact source ends/token catalogs, raw and
+role-classified TypeDefs, complete TypeSpec graphs, exact FieldSig identity, GenericParam
+declaration/catalog/owner-set/binding ledgers, complete interface/constraint edge aggregates, provisional
+construction classification, and Nullable construction preservation. These are detached proof contracts, not V2
+binder, runtime/storage, evaluator, report, or portfolio behavior.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
@@ -672,7 +677,12 @@ route is a mandatory separate `FrameValueExpressionV1`; it does not include regi
 and selected-frame generic substitution are non-admitted and create no product API or success row. W8.2 onward adds
 only those evidence-admitted contracts and a meaningful synthetic portfolio containing thirty-two fixed core
 independent dumps across four materially distinct shapes plus thread-relative, RVA-backed, and frame-value incidents:
-35 independent incidents minimum. W1–W7 canonical artifacts remain unchanged baselines.
+35 independent incidents minimum. The current W8.2 proof layer anchors derived metadata to exact table ends and one
+shared grammar, rejects retained prefixes, and separates raw rows, provisional classification, exact use, open use,
+and invalid evidence. Direct `CLASS` and `VALUETYPE` TypeSpec roots are ordinary shared-grammar Type roots; later
+role/construction classification, not a root-only rule, determines whether a use is exact, open, non-exact, or
+invalid. Downstream proof consumption and all product behavior remain active work. W1–W7 canonical artifacts remain
+unchanged baselines.
 
 ## 11. Physical topology
 
@@ -698,7 +708,10 @@ The prototype retains only projects containing behavior or contracts exercised b
   versioned W2/W5/W6/W7 tree recognizers; typed root/static-symbol binding, immutable prepared plans, descriptor-only
   W2 and W6 `Evaluate(plan)` paths, W7 static value/provenance/suffix composition, canonical identities, and closed
   result-value projection remain project-owned. W8.2 adds immutable common expression and detached static/frame
-  syntax contracts, but no V2 binder or evaluator yet;
+  syntax contracts plus source-end/token catalogs, the shared-grammar Product event adapter, TypeDef/type-use and
+  TypeSpec graph identities, FieldSig certificates, GenericParam owner/table/binding ledgers, edge aggregates,
+  provisional construction classification, and Nullable preservation. These proof objects are not yet mandatory
+  inputs to downstream Product consumers; no V2 binder, runtime/storage mapper, or evaluator has landed;
 - `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
   result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
   dump memory; ClrMD evidence binder; W5 canonical expression classifier; W7 static-expression facade and lazy

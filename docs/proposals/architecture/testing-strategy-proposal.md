@@ -8,7 +8,9 @@
 > [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) governs W8. W8.1's physical-truth fixture and probes are
 > complete at `220be94b4`; their exact checkpoint ledger and branch dispositions are frozen in the
 > [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is the active contract
-> checkpoint. The repository must distinguish checked-in test code, a locally verified
+> checkpoint. Metadata proof checkpoint `5fd87a3e5` is landed and locally verified, while mandatory downstream
+> consumption, host production, binding, runtime/storage, and evaluation remain active work. The repository must
+> distinguish checked-in test code, a locally verified
 > result, a CI-enforced gate, and an approved design. The broad abstract-analysis, virtual-stepping, dynamic, async,
 > and performance matrices remain behind their entry gates.
 
@@ -1052,7 +1054,17 @@ mandatory separate `FrameValueExpressionV1`. It excludes context-relative identi
 generic substitution; those branches have no success rows or corresponding product API. Rank and SZ-versus-MD
 topology remain exact despite one retained runtime-oracle asymmetry.
 
-W8.2 onward requires contract, projection, binder, contextual, runtime/value, lexical-completeness,
+The landed W8.2 contract tests now cover immutable expression/frame foundations, caller-supplied lexical evidence,
+and source-anchored metadata proofs. The metadata cases exercise one shared Core TypeSpec/FieldSig grammar and Product
+event adapter; exact source ends and token catalogs; complex nested generic, array, custom-modifier, and function-
+pointer trees; direct named TypeSpec roots; missing rows, duplicate blobs, cycles, crossed owners, incomplete sources,
+exact-cap and cap-plus-one stops; raw/provisional/exact type classification; FieldSig anchors; complete GenericParam
+tables, selected owner sets, exact-zero arity, row-addressed bindings; edge aggregates; Nullable topology; defensive
+copies; and public draft XML. Verification recorded at `5fd87a3e5` passed the strict Release solution build with zero
+warnings/errors, unit 519/519, integration 344/344, and focused metadata construction 18/18. This validates detached
+proof construction only; it does not validate a host producer or any V2 binder/runtime/evaluator consumer.
+
+The remaining W8.2 work and W8.3 onward require projection, binder, contextual, runtime/value, lexical-completeness,
 product-composition, and generated-conformance lanes. The meaningful synthetic portfolio contains thirty-two fixed
 independent core full dumps across four materially distinct application shapes, plus thread-relative, RVA-backed, and
 frame-value incidents: 35 independent incidents minimum. The portfolio retains per-row decision facts and tie
