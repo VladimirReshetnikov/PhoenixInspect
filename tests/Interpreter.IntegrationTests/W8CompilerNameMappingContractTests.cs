@@ -398,7 +398,13 @@ public sealed class W8CompilerNameMappingContractTests
         bool invalidModuleName = false,
         StaticFieldMetadataModuleIdentity? module = null,
         bool? useFieldPointers = null,
-        bool? useMethodPointers = null)
+        bool? useMethodPointers = null,
+        int typeReferenceRowCount = 0,
+        int typeSpecificationRowCount = 0,
+        int assemblyReferenceRowCount = 0,
+        int moduleReferenceRowCount = 0,
+        int fileRowCount = 0,
+        int exportedTypeRowCount = 0)
     {
         module ??= CreateMetadataModule();
         var fieldPointersPresent = useFieldPointers ?? usePointers;
@@ -408,7 +414,13 @@ public sealed class W8CompilerNameMappingContractTests
             module,
             fieldPointersPresent,
             methodPointersPresent,
-            genericParameterRows.Length);
+            genericParameterRows.Length,
+            typeReferenceRowCount,
+            typeSpecificationRowCount,
+            assemblyReferenceRowCount,
+            moduleReferenceRowCount,
+            fileRowCount,
+            exportedTypeRowCount);
         var memberPointers = MetadataMemberPointerTableCatalogIdentity.Create(
             sourceEnds,
             fieldPointersPresent ? PointerRows(module, MetadataMemberPointerTableKind.Field, [2, 1]) : default,
@@ -543,7 +555,13 @@ public sealed class W8CompilerNameMappingContractTests
         StaticFieldMetadataModuleIdentity module,
         bool useFieldPointers,
         bool useMethodPointers,
-        int genericParameterRowCount) =>
+        int genericParameterRowCount,
+        int typeReferenceRowCount = 0,
+        int typeSpecificationRowCount = 0,
+        int assemblyReferenceRowCount = 0,
+        int moduleReferenceRowCount = 0,
+        int fileRowCount = 0,
+        int exportedTypeRowCount = 0) =>
         MetadataSourceEndIdentity.Create(
             sourceModule: module,
             sourceModuleFact: StaticFieldModuleSearchFact.Exact(
@@ -553,9 +571,9 @@ public sealed class W8CompilerNameMappingContractTests
                 fieldDefinitionsExamined: 2,
                 typeDefinitionRowCount: TypeShapes.Length,
                 fieldDefinitionRowCount: 2,
-                typeReferenceRowCount: 0,
-                typeSpecificationRowCount: 0,
-                assemblyReferenceRowCount: 0,
+                typeReferenceRowCount: typeReferenceRowCount,
+                typeSpecificationRowCount: typeSpecificationRowCount,
+                assemblyReferenceRowCount: assemblyReferenceRowCount,
                 methodDefinitionRowCount: 2,
                 parameterDefinitionRowCount: 0,
                 propertyDefinitionRowCount: 0,
@@ -565,9 +583,9 @@ public sealed class W8CompilerNameMappingContractTests
                 interfaceImplementationRowCount: 0,
                 memberReferenceRowCount: 0,
                 customAttributeRowCount: 0,
-                moduleReferenceRowCount: 0,
-                fileRowCount: 0,
-                exportedTypeRowCount: 0,
+                moduleReferenceRowCount: moduleReferenceRowCount,
+                fileRowCount: fileRowCount,
+                exportedTypeRowCount: exportedTypeRowCount,
                 nestedClassRowCount: 3,
                 genericParameterRowCount: genericParameterRowCount,
                 genericParameterConstraintRowCount: 0,
@@ -577,7 +595,8 @@ public sealed class W8CompilerNameMappingContractTests
 
     internal static StaticFieldMetadataModuleIdentity CreateMetadataModule(
         ulong moduleAddress = 0xA000,
-        char digestCharacter = 'a')
+        char digestCharacter = 'a',
+        string assemblyName = "Synthetic.CompilerNameMapping")
     {
         var module = StaticFieldModuleInstanceIdentity.Create(
             SnapshotDigest,
@@ -597,7 +616,7 @@ public sealed class W8CompilerNameMappingContractTests
             encId: Guid.Empty,
             encBaseId: Guid.Empty);
         var assemblyDefinition = StaticFieldAssemblyDefinitionIdentity.Create(
-            name: "Synthetic.CompilerNameMapping",
+            name: assemblyName,
             majorVersion: 1,
             minorVersion: 0,
             buildNumber: 0,
