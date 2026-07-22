@@ -32,13 +32,17 @@ The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) now gov
 `StaticFieldExpressionV2`/`BindingContextV2` profiles for nested and closed constructed owners, scope-precise imports
 and aliases, extern aliases, stored fields, metadata literals, and evidence-qualified `using static` bare roots. W8.1
 completed its physical-truth fixture and probes at `220be94b4`; its exact results and W8.2 consequences are frozen in
-the [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is active. Immutable
-expression/frame and caller-supplied lexical contracts have landed alongside one shared bounded Core ECMA signature
-grammar. Metadata checkpoint `5fd87a3e5` adds the Product event adapter, exact source ends/token catalogs, raw and
-role-classified TypeDefs, complete TypeSpec graphs, exact FieldSig identity, GenericParam
-declaration/catalog/owner-set/binding ledgers, complete interface/constraint edge aggregates, provisional
-construction classification, and Nullable construction preservation. These are detached proof contracts, not V2
-binder, runtime/storage, evaluator, report, or portfolio behavior.
+the [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is complete for its
+authority-cutover scope at `d4d5f745c` and W8.3 at `8bb74c866`. Immutable expression/frame and caller-supplied lexical
+contracts landed alongside one shared bounded Core ECMA signature grammar and the Product event adapter. The metadata
+layer is now a non-circular authority: complete physical tables, definition authority, compiler-name mappings, W7
+compatibility certificates and portfolios, reference tables, named-TypeDef chains, multi-module TypeRef resolution,
+core-role selection, immediate-base edges, semantic classification, bounded ancestry, and constraint-target joins are
+all catalog-issued from physical rows, every caller-authored issuer is deleted, and an assembly-wide reflection guard
+enforces the boundary. W8.3 adds the two production projectors that turn the single pinned Roslyn parse into the
+frozen detached V2 and frame-value descriptors. These remain detached authority and syntax contracts, not V2 binder,
+runtime/storage, evaluator, report, or portfolio behavior, and no host-owned producer materializes them from a real
+dump yet.
 Exact W4.2 implementation commit `e89e43498` closes the dump-free explained-unknown arithmetic kernel; exact W4.3
 implementation commit `7479b1ad4` closes the dump-free structured field-continuation seam, not the counterfactual
 product. W4.4 checkpoints `2e596c117`/`742ef2c4f` close body-independent direct-MethodDef resolution and complete
