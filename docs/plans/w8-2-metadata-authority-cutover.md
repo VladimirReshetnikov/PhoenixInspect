@@ -196,9 +196,13 @@ its inputs exist:
 3. **TypeDef-or-Ref, token resolution, and signature trees (`~10K LOC`).** Derive every outer-to-inner TypeDef chain by
    following authority parent tokens. Named signature nodes retain authority rows, authority-bound mappings, and
    separate semantic certificates rather than one final caller-created TypeDef object.
-4. **Ancestry, interfaces, construction, and classification (`~10K LOC`).** Retype base/interface edges, construction
-   segments, closed types, type-use results, semantic classification, and Nullable interpretation around the same
-   authority chain and constructed argument vector.
+4. **Ancestry, interfaces, construction, and classification (`~10K LOC`).** First normalize exact per-module authority
+   and compatibility catalogs into one bounded same-snapshot portfolio, because ordinary application ancestry crosses
+   into the runtime core library. Then retype base/interface edges, construction segments, closed types, type-use
+   results, semantic classification, and Nullable interpretation around the same authority chain and constructed
+   argument vector. Classify the selected `System.ValueType`, `System.Enum`, `System.Delegate`, and
+   `System.MulticastDelegate` role definitions themselves as classes; derive value-type, enum, or delegate semantics
+   only from an exact immediate base-role edge.
 5. **Issuer deletion and producer integration (`~10K LOC`).** Delete raw TypeDef promotion, caller-created generic
    owner/row/declaration factories, the W7-backed method certificate, final TypeDef factories, and every remaining W8
    compatibility facade. Then connect the metadata producer directly to the complete catalogs and rerun the complete
@@ -239,6 +243,9 @@ examples:
 | `3de41dce4` | The definition-authority join issues TypeDef and MethodDef authority rows, and independent compiler-name facts cover CLS spelling, Roslyn projection, C# spelling, and evaluator admission. |
 | `122b78cfe` | Compiler-name mappings are issued only from complete definition authority and retain fixed-size TypeDef and parent references. |
 | `0bba62c67` | Optional deterministic bounds use one shared canonical encoder across authority, table, and construction contracts. |
+| `c808f1fea` | Complete RID-ordered certificates compare W7 TypeDef candidates with authority rows and resolved member ownership. |
+| `64bae81d7` | GenericParam owner groups and binding ledgers are issued from definition authority with separate 64/65 admission. |
+| `aa6cbde7c` | The complete GenericParamConstraint table resolves Owner through GenericParam authority while retaining unresolved physical targets. |
 
 Legacy W8 issuer removal and downstream-consumer migration remain active until their own pushed checkpoints and
 verification records land.
