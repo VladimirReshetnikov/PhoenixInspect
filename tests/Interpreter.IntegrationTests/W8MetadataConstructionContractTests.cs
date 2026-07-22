@@ -1606,6 +1606,7 @@ public sealed class W8MetadataConstructionContractTests
                 "MetadataClosedTypeIdentity.FlattenedArguments",
                 "MetadataFieldSignatureDecodeOutcome.Root",
                 "MetadataFieldSignatureIdentity.Root",
+                "MetadataGenericParameterAuthorityBindingIdentity.Argument",
                 "MetadataSignatureDecodeOutcome.Root",
                 "MetadataSubstitutedTypeNodeIdentity.Replacement",
                 "MetadataSubstitutedTypeNodeIdentity.SourceNode",
