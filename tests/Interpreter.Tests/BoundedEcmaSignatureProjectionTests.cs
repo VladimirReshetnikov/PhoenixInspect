@@ -302,6 +302,326 @@ public sealed class BoundedEcmaSignatureProjectionTests
             out _));
     }
 
+    /// <summary>
+    /// Proves TypeSpec and FieldSig use the same recursive grammar while the optional node stream retains enough
+    /// parent, token, header, arity, and shape data to reconstruct a detached tree.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Typed_decoder_projects_complex_type_specification_and_field_trees()
+    {
+        byte[] typeSpecification =
+        [
+            0x15, 0x12, 0x04, 0x02,
+            0x1D, 0x08,
+            0x1B, 0x09, 0x02,
+            0x0F, 0x01,
+            0x10, 0x12, 0x05,
+            0x16,
+        ];
+        var sink = new RecordingNodeSink();
+
+        var typeOutcome = DecodeTyped(
+            typeSpecification,
+            BoundedEcmaSignatureForm.TypeSpecification,
+            sink);
+
+        Assert.Equal(BoundedEcmaSignatureDecodeKind.Exact, typeOutcome.Kind);
+        Assert.Equal(BoundedEcmaSignatureFailureKind.None, typeOutcome.Failure);
+        Assert.Equal(BoundedEcmaSignatureBoundKind.None, typeOutcome.ReachedBound);
+        Assert.Equal(typeSpecification.Length, typeOutcome.Counters.ConsumedByteCount);
+        Assert.Equal(8, typeOutcome.Counters.AggregateTypeCount);
+        Assert.Equal(2, typeOutcome.Counters.AggregateGenericArgumentCount);
+        Assert.Equal(4, typeOutcome.Counters.MaximumObservedDepth);
+        Assert.Equal(sink.Nodes.Count, typeOutcome.Counters.ProjectedNodeCount);
+        Assert.Equal(BoundedEcmaSignatureForm.TypeSpecification, typeOutcome.Certificate!.Value.Form);
+        Assert.Equal(-1, typeOutcome.Certificate.Value.Header);
+
+        var root = Assert.Single(sink.Nodes, node => node.ParentNodeOrdinal == -1);
+        Assert.Equal(BoundedEcmaSignatureNodeKind.GenericInstantiation, root.Kind);
+        var head = Assert.Single(sink.Nodes, node =>
+            node.ParentNodeOrdinal == root.NodeOrdinal &&
+            node.Kind == BoundedEcmaSignatureNodeKind.Class);
+        Assert.Equal(0x02000001, head.MetadataToken);
+        Assert.Equal(2, head.Count);
+        var functionPointer = Assert.Single(sink.Nodes, node =>
+            node.ParentNodeOrdinal == root.NodeOrdinal &&
+            node.Kind == BoundedEcmaSignatureNodeKind.FunctionPointer);
+        Assert.Equal(0x09, functionPointer.Header);
+        Assert.Equal(0, functionPointer.Index);
+        Assert.Equal(2, functionPointer.Count);
+        Assert.Contains(sink.Nodes, node =>
+            node.ParentNodeOrdinal == functionPointer.NodeOrdinal &&
+            node.Kind == BoundedEcmaSignatureNodeKind.ByReference);
+
+        byte[] fieldSignature =
+        [
+            0x06,
+            0x20, 0x06,
+            0x15, 0x11, 0x04, 0x01,
+            0x14, 0x13, 0x00, 0x02, 0x01, 0x03, 0x01, 0x7F,
+        ];
+        sink = new RecordingNodeSink();
+
+        var fieldOutcome = DecodeTyped(fieldSignature, BoundedEcmaSignatureForm.Field, sink);
+
+        Assert.Equal(BoundedEcmaSignatureDecodeKind.Exact, fieldOutcome.Kind);
+        Assert.Equal(0x06, fieldOutcome.Certificate!.Value.Header);
+        Assert.Equal(1, fieldOutcome.Counters.AggregateGenericArgumentCount);
+        var modifier = Assert.Single(sink.Nodes, node =>
+            node.Kind == BoundedEcmaSignatureNodeKind.OptionalModifier);
+        Assert.Equal(0x1B000001, modifier.MetadataToken);
+        var arrayShape = Assert.Single(sink.Nodes, node =>
+            node.Kind == BoundedEcmaSignatureNodeKind.ArrayShape);
+        Assert.Equal(2, arrayShape.Count);
+        Assert.Contains(sink.Nodes, node =>
+            node.ParentNodeOrdinal == arrayShape.NodeOrdinal &&
+            node.Kind == BoundedEcmaSignatureNodeKind.ArraySize &&
+            node.Index == 0 &&
+            node.Value == 3);
+        Assert.Contains(sink.Nodes, node =>
+            node.ParentNodeOrdinal == arrayShape.NodeOrdinal &&
+            node.Kind == BoundedEcmaSignatureNodeKind.ArrayLowerBound &&
+            node.Index == 0 &&
+            node.Value == -1);
+    }
+
+    /// <summary>
+    /// Proves plain Type positions reject return/parameter-only markers, while return, parameter, pointer-target, and
+    /// local positions admit only their explicitly assigned alternatives.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Context_specific_type_grammar_rejects_nested_special_markers()
+    {
+        foreach (var signature in new[]
+                 {
+                     new byte[] { 0x01 },
+                     new byte[] { 0x10, 0x08 },
+                     new byte[] { 0x16 },
+                     new byte[] { 0x1D, 0x01 },
+                     new byte[] { 0x1D, 0x10, 0x08 },
+                     new byte[] { 0x15, 0x12, 0x04, 0x01, 0x16 },
+                     new byte[] { 0x0F, 0x10, 0x08 },
+                     new byte[] { 0x0F, 0x16 },
+                 })
+        {
+            AssertTypedInvalid(
+                signature,
+                BoundedEcmaSignatureForm.TypeSpecification,
+                BoundedEcmaSignatureFailureKind.InvalidTypePlacement);
+        }
+
+        Assert.Equal(
+            BoundedEcmaSignatureDecodeKind.Exact,
+            DecodeTyped([0x0F, 0x01], BoundedEcmaSignatureForm.TypeSpecification).Kind);
+        Assert.Equal(
+            BoundedEcmaSignatureDecodeKind.Exact,
+            DecodeTyped([0x00, 0x02, 0x01, 0x16, 0x10, 0x08], BoundedEcmaSignatureForm.MethodDefinition).Kind);
+        Assert.Equal(
+            BoundedEcmaSignatureDecodeKind.Exact,
+            DecodeTyped([0x07, 0x02, 0x16, 0x10, 0x08], BoundedEcmaSignatureForm.LocalVariables).Kind);
+
+        foreach (var signature in new[]
+                 {
+                     new byte[] { 0x06, 0x01 },
+                     new byte[] { 0x06, 0x10, 0x08 },
+                     new byte[] { 0x06, 0x16 },
+                     new byte[] { 0x06, 0x1D, 0x16 },
+                 })
+        {
+            AssertTypedInvalid(
+                signature,
+                BoundedEcmaSignatureForm.Field,
+                BoundedEcmaSignatureFailureKind.InvalidTypePlacement);
+        }
+
+        AssertTypedInvalid(
+            [0x00, 0x01, 0x01, 0x01],
+            BoundedEcmaSignatureForm.MethodDefinition,
+            BoundedEcmaSignatureFailureKind.InvalidTypePlacement);
+        AssertTypedInvalid(
+            [0x00, 0x01, 0x01, 0x1D, 0x16],
+            BoundedEcmaSignatureForm.MethodDefinition,
+            BoundedEcmaSignatureFailureKind.InvalidTypePlacement);
+        AssertTypedInvalid(
+            [0x07, 0x01, 0x1D, 0x10, 0x08],
+            BoundedEcmaSignatureForm.LocalVariables,
+            BoundedEcmaSignatureFailureKind.InvalidTypePlacement);
+    }
+
+    /// <summary>
+    /// Proves nested function pointers admit every supported convention and reject generic non-default headers,
+    /// receiver-bit contradictions, reserved bits, and sentinels with a stable typed reason.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Typed_function_pointer_grammar_covers_conventions_and_header_failures()
+    {
+        foreach (var convention in new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x09 })
+        {
+            var outcome = DecodeTyped(
+                [0x1B, convention, 0x01, 0x01, 0x08],
+                BoundedEcmaSignatureForm.TypeSpecification);
+            Assert.Equal(BoundedEcmaSignatureDecodeKind.Exact, outcome.Kind);
+        }
+
+        var genericManaged = DecodeTyped(
+            [0x1B, 0x10, 0x02, 0x01, 0x1E, 0x00, 0x13, 0x01],
+            BoundedEcmaSignatureForm.TypeSpecification);
+        Assert.Equal(BoundedEcmaSignatureDecodeKind.Exact, genericManaged.Kind);
+
+        foreach (var signature in new[]
+                 {
+                     new byte[] { 0x1B, 0x11, 0x01, 0x00, 0x01 },
+                     new byte[] { 0x1B, 0x15, 0x01, 0x00, 0x01 },
+                     new byte[] { 0x1B, 0x19, 0x01, 0x00, 0x01 },
+                 })
+        {
+            AssertTypedInvalid(
+                signature,
+                BoundedEcmaSignatureForm.TypeSpecification,
+                BoundedEcmaSignatureFailureKind.InvalidGenericHeader);
+        }
+
+        AssertTypedInvalid(
+            [0x1B, 0x40, 0x00, 0x01],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            BoundedEcmaSignatureFailureKind.InvalidReceiverFlags);
+        AssertTypedInvalid(
+            [0x1B, 0x80, 0x00, 0x01],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            BoundedEcmaSignatureFailureKind.InvalidHeader);
+        AssertTypedInvalid(
+            [0x1B, 0x05, 0x02, 0x01, 0x08, 0x41, 0x09],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            BoundedEcmaSignatureFailureKind.SentinelNotPermitted);
+        AssertTypedInvalid(
+            [0x1B, 0x00, 0x01, 0x41, 0x08],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            BoundedEcmaSignatureFailureKind.SentinelNotPermitted);
+        AssertTypedInvalid(
+            [0x1B, 0x00, 0x00, 0x01, 0x41],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            BoundedEcmaSignatureFailureKind.SentinelNotPermitted);
+    }
+
+    /// <summary>
+    /// Proves typed outcomes distinguish grammar failures from every parser-owned cap and retain cap-plus-one
+    /// counters without exposing an exact certificate.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Typed_outcomes_distinguish_invalid_input_from_parser_bounds()
+    {
+        var invalid = BoundedEcmaSignatureProjection.Decode(
+            [0x06, 0x08, 0x00],
+            BoundedEcmaSignatureForm.Field,
+            BoundedEcmaSignatureLimits.Create(3, 1, 1));
+        Assert.Equal(BoundedEcmaSignatureDecodeKind.Invalid, invalid.Kind);
+        Assert.Equal(BoundedEcmaSignatureFailureKind.TrailingData, invalid.Failure);
+        Assert.Null(invalid.Certificate);
+
+        var byteBound = BoundedEcmaSignatureProjection.Decode(
+            [0x06, 0x08],
+            BoundedEcmaSignatureForm.Field,
+            BoundedEcmaSignatureLimits.Create(1, 1, 1));
+        AssertBound(byteBound, BoundedEcmaSignatureBoundKind.ByteCount);
+        Assert.Equal(2, byteBound.Counters.InputByteCount);
+        Assert.Equal(0, byteBound.Counters.ConsumedByteCount);
+
+        var depthBound = BoundedEcmaSignatureProjection.Decode(
+            [0x0F, 0x0F, 0x08],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            BoundedEcmaSignatureLimits.Create(3, 2, 3));
+        AssertBound(depthBound, BoundedEcmaSignatureBoundKind.RecursiveDepth);
+        Assert.Equal(3, depthBound.Counters.MaximumObservedDepth);
+
+        var typeBound = BoundedEcmaSignatureProjection.Decode(
+            [0x0F, 0x0F, 0x08],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            BoundedEcmaSignatureLimits.Create(3, 3, 2));
+        AssertBound(typeBound, BoundedEcmaSignatureBoundKind.AggregateTypeCount);
+        Assert.Equal(3, typeBound.Counters.AggregateTypeCount);
+
+        var genericBound = BoundedEcmaSignatureProjection.Decode(
+            [0x15, 0x12, 0x04, 0x02, 0x08, 0x09],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            new BoundedEcmaSignatureLimits(6, 2, 3, 1));
+        AssertBound(genericBound, BoundedEcmaSignatureBoundKind.AggregateGenericArgumentCount);
+        Assert.Equal(2, genericBound.Counters.AggregateGenericArgumentCount);
+
+        var methodArityBound = BoundedEcmaSignatureProjection.Decode(
+            [0x10, 0x02, 0x00, 0x01],
+            BoundedEcmaSignatureForm.MethodDefinition,
+            new BoundedEcmaSignatureLimits(4, 1, 4, 4, 1, 4, 4));
+        AssertBound(methodArityBound, BoundedEcmaSignatureBoundKind.GenericParameterCount);
+        Assert.Equal(2, methodArityBound.Counters.MaximumDeclaredGenericParameterCount);
+
+        var parameterBound = BoundedEcmaSignatureProjection.Decode(
+            [0x00, 0x02, 0x01, 0x08, 0x09],
+            BoundedEcmaSignatureForm.MethodDefinition,
+            new BoundedEcmaSignatureLimits(5, 1, 4, 4, 4, 1, 4));
+        AssertBound(parameterBound, BoundedEcmaSignatureBoundKind.ParameterCount);
+        Assert.Equal(2, parameterBound.Counters.MaximumDeclaredParameterCount);
+
+        var localBound = BoundedEcmaSignatureProjection.Decode(
+            [0x07, 0x02, 0x08, 0x09],
+            BoundedEcmaSignatureForm.LocalVariables,
+            new BoundedEcmaSignatureLimits(4, 1, 4, 4, 4, 4, 1));
+        AssertBound(localBound, BoundedEcmaSignatureBoundKind.LocalSlotCount);
+        Assert.Equal(2, localBound.Counters.MaximumDeclaredLocalSlotCount);
+
+        var arrayRankBound = BoundedEcmaSignatureProjection.Decode(
+            [0x14, 0x08, 0x02, 0x00, 0x00],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            new BoundedEcmaSignatureLimits(5, 2, 2, 2, 2, 2, 2, 1));
+        AssertBound(arrayRankBound, BoundedEcmaSignatureBoundKind.ArrayRank);
+        Assert.Equal(2, arrayRankBound.Counters.MaximumDeclaredArrayRank);
+
+        var exactArrayRankEdge = BoundedEcmaSignatureProjection.Decode(
+            [0x14, 0x08, 0x01, 0x00, 0x00],
+            BoundedEcmaSignatureForm.TypeSpecification,
+            new BoundedEcmaSignatureLimits(5, 2, 2, 2, 2, 2, 2, 1));
+        Assert.Equal(BoundedEcmaSignatureDecodeKind.Exact, exactArrayRankEdge.Kind);
+        Assert.Equal(1, exactArrayRankEdge.Counters.MaximumDeclaredArrayRank);
+    }
+
+    /// <summary>
+    /// Proves the sink-free path retains the established allocation-free behavior on the exact 65,536-local edge,
+    /// so the host can validate a large signature without materializing a tree.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Sink_free_decoder_allocates_no_managed_objects_at_large_local_edge()
+    {
+        var signature = new byte[65_541];
+        signature[0] = 0x07;
+        signature[1] = 0xC0;
+        signature[2] = 0x01;
+        signature[3] = 0x00;
+        signature[4] = 0x00;
+        signature.AsSpan(5).Fill(0x08);
+        var limits = new BoundedEcmaSignatureLimits(signature.Length, 1, 65_536, 65_536);
+
+        Assert.True(BoundedEcmaSignatureProjection.Decode(
+            signature,
+            BoundedEcmaSignatureForm.LocalVariables,
+            limits).IsExact);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        var outcome = BoundedEcmaSignatureProjection.Decode(
+            signature,
+            BoundedEcmaSignatureForm.LocalVariables,
+            limits);
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(0, allocated);
+        Assert.Equal(BoundedEcmaSignatureDecodeKind.Exact, outcome.Kind);
+        Assert.Equal(65_536, outcome.Certificate!.Value.LocalSlotCount);
+        Assert.Equal(65_536, outcome.Counters.AggregateTypeCount);
+    }
+
     private static BoundedEcmaMethodSignature DecodeMethod(params byte[] signature)
     {
         Assert.True(
@@ -347,4 +667,47 @@ public sealed class BoundedEcmaSignatureProjectionTests
                 DefaultMaximumAggregateTypeCount,
                 out _),
             $"Expected local signature {Convert.ToHexString(signature)} to be rejected.");
+
+    private static BoundedEcmaSignatureDecodeOutcome DecodeTyped(
+        byte[] signature,
+        BoundedEcmaSignatureForm form,
+        IBoundedEcmaSignatureNodeSink? nodeSink = null) =>
+        BoundedEcmaSignatureProjection.Decode(
+            signature,
+            form,
+            new BoundedEcmaSignatureLimits(
+                DefaultMaximumSignatureLength,
+                DefaultMaximumDepth,
+                DefaultMaximumAggregateTypeCount,
+                DefaultMaximumAggregateTypeCount),
+            nodeSink);
+
+    private static void AssertTypedInvalid(
+        byte[] signature,
+        BoundedEcmaSignatureForm form,
+        BoundedEcmaSignatureFailureKind expectedFailure)
+    {
+        var outcome = DecodeTyped(signature, form);
+        Assert.Equal(BoundedEcmaSignatureDecodeKind.Invalid, outcome.Kind);
+        Assert.Equal(expectedFailure, outcome.Failure);
+        Assert.Equal(BoundedEcmaSignatureBoundKind.None, outcome.ReachedBound);
+        Assert.Null(outcome.Certificate);
+    }
+
+    private static void AssertBound(
+        BoundedEcmaSignatureDecodeOutcome outcome,
+        BoundedEcmaSignatureBoundKind expectedBound)
+    {
+        Assert.Equal(BoundedEcmaSignatureDecodeKind.BoundReached, outcome.Kind);
+        Assert.Equal(BoundedEcmaSignatureFailureKind.None, outcome.Failure);
+        Assert.Equal(expectedBound, outcome.ReachedBound);
+        Assert.Null(outcome.Certificate);
+    }
+
+    private sealed class RecordingNodeSink : IBoundedEcmaSignatureNodeSink
+    {
+        internal List<BoundedEcmaSignatureNodeEvent> Nodes { get; } = [];
+
+        public void Add(in BoundedEcmaSignatureNodeEvent node) => Nodes.Add(node);
+    }
 }
