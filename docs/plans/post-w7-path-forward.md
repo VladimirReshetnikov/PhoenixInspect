@@ -931,6 +931,13 @@ name interpretation, and no runtime construction: it acquires counted rows and h
 
 **Scale:** `~10K LOC` implementation and tests.
 
+**Status:** Complete at `6eb01b53e` for its definition-side scope. The FieldDef authority catalog, the exhaustive
+explicit-route type-name binder, the closed-construction binder with three-valued constraint dispositions, and
+definition-side member lookup with hiding and accessibility have landed. Substitution of a selected field's signature
+onto its declaring construction, and the contextual routes, remain with W8.5 and the runtime slice. Interface
+constraints, substituted constraint TypeSpecs, property and event tables, interface ancestry, and physical
+friend-assembly attributes are recorded as declared coverage boundaries rather than silent gaps.
+
 Implement exhaustive namespace/top-level/nested partitions, per-segment arity, TypeDef/TypeRef resolution, closed
 generic construction and constraints, recursive constructed-base/interface substitution, definition-kind-specific
 member lookup, hiding, declared-owner selection, literals, accessibility, and field-signature substitution.
