@@ -259,7 +259,7 @@ defined milestone-selected scope.
 | Interpreter result | Metadata-derived activation, frozen typed plan, explicit value domain, persistent memory, and deterministic budget/event policy | Historical replay or product-level expression evaluation |
 | W7 selected-frame import context | Identity-validated bounded Portable PDB bytes, exact active LocalScope/ImportScope chain, and project-owned namespace/import/alias facts | Stack values, exact closed generic runtime arguments, lexical blocker completeness, or broader language binding |
 | W7 static-field result | Counted metadata, one exact non-generic declaration, pinned runtime slot, counted raw value reads, and optional unchanged suffix evaluation | Nested/generic owners, literals, per-construction slot selection, or any W8 branch |
-| Completed W8.1 physical gate | Compiler/SRM facts plus real full-dump candidate-keyed construction, slot, thread/frame, raw-value, assignability, and replay observations through `220be94b4` | An implemented V2/frame product contract, binder, evaluator, report schema, or portfolio result |
+| Active W8.2 contract gate | W8.1 compiler/SRM and real full-dump facts plus immutable expression/frame syntax contracts, a bounded ECMA signature projection, and a selected-method lexical envelope built from caller-supplied physical rows | A host-owned lexical producer, complete V2 contract surface, binder, evaluator, report schema, or portfolio result |
 
 ## CI policy
 

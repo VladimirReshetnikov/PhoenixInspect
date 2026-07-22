@@ -29,8 +29,10 @@ current-type and evidence-qualified `using static` bare fields, general TypeSpec
 accessibility, field-signature substitution, constructed assignability, per-construction runtime slots, and metadata
 literals. W8.1 now supplies exact pre-contract compiler/PDB, constructed-runtime, thread-relative, module-RVA, literal,
 memory-homed frame-root, and assignability evidence. Context-relative storage and selected-frame generic arguments are
-typed non-admitted, and register homes are unproven. W8.2 now owns the first V2/frame product contracts; those contracts
-and all later binding/evaluation behavior remain roadmap intent until their named checkpoints land.
+typed non-admitted, and register homes are unproven. W8.2 owns the V2/frame product contracts. Its immutable common
+expression foundation, detached frame-value syntax, shared bounded signature projection, and caller-supplied
+selected-method lexical envelope have landed; remaining contract families and all binding/evaluation behavior remain
+roadmap intent until their named checkpoints land.
 
 The current proof generates and opens dumps read-only, finds a strongly GCHandle-rooted object through bounded dump
 enumeration, validates the handle slot and object-header method table through counted raw-memory reads, and reads a

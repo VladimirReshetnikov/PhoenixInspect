@@ -466,7 +466,11 @@ canonical, invalid-input, replay, and real-dump tests.
 ## Completed W8.1 evidence inventory and active W8.2 contract frontier
 
 The active [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) approves additive
-`StaticFieldExpressionV2` and `BindingContextV2` profiles rather than mutating W7. The planned inventory includes
+`StaticFieldExpressionV2` and `BindingContextV2` profiles rather than mutating W7. The first W8.2 checkpoints now
+provide immutable common expression identities, detached frame-value syntax, a shared bounded ECMA signature
+projection, and a selected-method lexical contract envelope. That lexical surface validates caller-supplied physical
+rows and source ends; it is not yet produced by one host-owned ClrMD acquisition authority. The remaining planned
+inventory includes
 structured nested and closed generic type syntax, exact metadata/runtime construction identities, scope-precise import
 and alias facts, extern aliases, lexical-blocker completeness, ordinary stored fields, metadata literals, constructed
 field-signature substitution, and distinct plan/result/provenance encodings. W8.1's three generated evidence targets
@@ -474,8 +478,9 @@ and integration probes establish the compiler/PDB, candidate-keyed runtime const
 assignability, and selected-frame dispositions recorded in the
 [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md).
 
-W8.2 must expose `ConstructedSlot`, `ThreadRelativeSlot`, `ModuleRva`, and `MetadataLiteral` strategies. It must also
-include separate `FrameValueExpressionV1` root, exact memory location, source, plan, result, and provenance contracts;
+Remaining W8.2 work must expose `ConstructedSlot`, `ThreadRelativeSlot`, `ModuleRva`, and `MetadataLiteral` strategies.
+It must also complete the separate `FrameValueExpressionV1` exact memory location, source, plan, result, and provenance
+contracts;
 that route is never a fallback from the static profile. It must not expose a context-relative strategy, register-home
 descriptor, or selected-frame generic-substitution contract. W1–W7 contracts remain unchanged while these additive
 W8.2 contracts land.

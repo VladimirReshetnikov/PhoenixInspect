@@ -10,7 +10,9 @@
 >
 > **Implementation status:** W8.1 is implemented and locally validated through exact source baseline `220be94b4`;
 > its authoritative branch record is the [W8.1 Physical-Truth Disposition](w8-1-physical-truth-disposition.md). W8.2
-> is active. No V2/frame product contract, binder, evaluator, report schema, or portfolio result has landed yet.
+> is active. The immutable expression-contract foundation, detached frame-value syntax contract, shared bounded ECMA
+> signature projection, and caller-supplied selected-method lexical evidence envelope have landed. A host-owned
+> lexical producer, the remaining V2 contract families, binder, evaluator, report schema, and portfolio result remain.
 >
 > **Evidence boundary:** W8 is a generated-fixture and meaningful-synthetic prototype milestone. Its planned corpus is
 > not representative observation and cannot establish field readiness. W5, W6, and W7 milestone-specific hosted

@@ -681,7 +681,8 @@ The prototype retains only projects containing behavior or contracts exercised b
 - `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body/call-target shapes,
   domain/memory contracts, optional value-precision and field-approximation capabilities, canonical structured field
   evidence, exact-only-by-default unknown policy, precision events, complete direct-call/model graph preparation,
-  frozen pure-model capability binding, deterministic model attempts, and the interpreter kernel;
+  frozen pure-model capability binding, deterministic model attempts, the shared bounded ECMA signature projection,
+  and the interpreter kernel;
 - `Interpreter.Domain.Concrete` — concrete validation semantics and persistent memory plus W4.2–W4.3's
   provenance-aware value/domain and canonical input, binary, field, call, interpreted-return, and modeled-return
   lineage graph;
@@ -691,11 +692,13 @@ The prototype retains only projects containing behavior or contracts exercised b
   counted W3 method/field composition into a snapshot-scoped resolver/import descriptor, W6.3's immutable
   declared-target/direct-field/data-property certificate with MethodDef-token physical getter acquisition and no
   reference or leaf read, and W7's selected-frame/PDB/import and ordinary-static declaration/storage/value/target
-  acquisition, without introducing ClrMD into core execution;
+  acquisition. W8.2 adds a selected-method lexical envelope over caller-supplied complete physical catalogs, not yet
+  a host-owned producer, without introducing ClrMD into core execution;
 - `Interpreter.Product.DumpQuery` — the sole internal Roslyn dependency, one complete-expression parse adapter, and
   versioned W2/W5/W6/W7 tree recognizers; typed root/static-symbol binding, immutable prepared plans, descriptor-only
   W2 and W6 `Evaluate(plan)` paths, W7 static value/provenance/suffix composition, canonical identities, and closed
-  result-value projection remain project-owned;
+  result-value projection remain project-owned. W8.2 adds immutable common expression and detached static/frame
+  syntax contracts, but no V2 binder or evaluator yet;
 - `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
   result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
   dump memory; ClrMD evidence binder; W5 canonical expression classifier; W7 static-expression facade and lazy

@@ -28,7 +28,10 @@ Core principles:
   module-RVA, literal, and exact memory-homed frame-value branches; context-relative storage and selected-frame generic
   arguments remain typed non-admitted. W8.2 is the active checkpoint. The
   [`Post-W7 Path Forward`](docs/plans/post-w7-path-forward.md) requires additive `StaticFieldExpressionV2`,
-  `BindingContextV2`, and `FrameValueExpressionV1` contracts, but no V2 product binder/evaluator has landed yet. Its
+  `BindingContextV2`, and `FrameValueExpressionV1` contracts. W8.2 has landed the immutable expression-contract
+  foundation, the detached frame-value syntax contract, a shared bounded ECMA signature projection, and a
+  selected-method lexical evidence envelope. The lexical envelope is still constructed from caller-supplied physical
+  rows; a host-owned ClrMD producer and the V2 product binder/evaluator have not landed. Its
   inclusive umbrella scale is `~100K LOC`, generally split into `~10K LOC` implementation/evidence checkpoints. W7's
   context-independent fully qualified guarantee, raw-memory authority, result axes, and unchanged W2/W6 suffix
   semantics remain mandatory controls.
@@ -383,7 +386,8 @@ milestone-selected scope.
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
 each selected category. No result through W8.1 establishes behavior for other artifact shapes. W8.1 is physical
-evidence for its named branches, while W8.2–W8.10 plans are not implementation evidence.
+evidence for its named branches. Only the W8.2 contract families identified above are implementation evidence;
+unlanded W8.2 work and W8.3–W8.10 remain plans rather than behavior evidence.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes above remain
 evidence for their named commits; they are not claims about the current fixture binary.

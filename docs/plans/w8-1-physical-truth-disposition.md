@@ -177,5 +177,7 @@ and .NET 10 runtime/DAC surface. It establishes architectural feasibility and ex
 artifact coverage, production recoverability, product readiness, or hosted closure. Representative observation counts
 remain zero.
 
-W8.2 is next. It must implement the immutable contract families dictated by section 9, preserve every W1–W7 canonical
+W8.2 is active and partially landed. Its immutable common expression identities, detached frame-value syntax, shared
+bounded signature projection, and caller-supplied selected-method lexical envelope are implemented. The remaining
+contract families and host-owned lexical producer must still satisfy section 9, preserve every W1–W7 canonical
 artifact, and leave the two non-admitted families absent rather than postponing them behind dormant API shapes.

@@ -505,7 +505,9 @@ Current facts:
 - The first product composition is a deliberately closed root-field dump query. The complete Roslyn expression front
   end is implemented at W6.2, and W7 implements its bounded selected-frame/PDB/import plus fully qualified
   `StaticFieldExpressionV1` binder/value path. W8.1 adds physical compiler/PDB, runtime-construction, storage,
-  assignability, and exact memory-homed frame-value evidence, but no V2 product binder or frame-value consumer yet.
+  assignability, and exact memory-homed frame-value evidence. W8.2 now adds immutable expression/frame syntax,
+  bounded signature, and caller-supplied selected-method lexical contracts, but no V2 product binder, host-owned
+  lexical producer, or frame-value consumer yet.
   There is no general C# binder/evaluator, production object-model breadth, orchestrator, debugger control plane, or
   analysis engine.
 - Dump-query results retain explicit source/snapshot/module/fallback context and only the deterministic bounds whose

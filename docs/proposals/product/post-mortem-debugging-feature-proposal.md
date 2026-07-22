@@ -13,8 +13,10 @@
 > `StaticFieldExpressionV2` W8 design for nested and closed constructed generic owners, scope-precise context,
 > constraints, accessibility, assignability, stored values, metadata literals, and evidence-conditioned storage/frame
 > branches. W8.1 is implemented and locally validated under its
-> [`physical-truth disposition`](../../plans/w8-1-physical-truth-disposition.md); W8.2 is active. No V2/frame product
-> contract, binder, or evaluator exists yet. Roslyn remains the sole syntax parser.
+> [`physical-truth disposition`](../../plans/w8-1-physical-truth-disposition.md); W8.2 is active. Its immutable common
+> expression contracts, detached frame-value syntax, bounded signature projection, and caller-supplied selected-method
+> lexical evidence envelope now exist. The host-owned lexical producer, remaining V2 contract families, binder, and
+> evaluator do not. Roslyn remains the sole syntax parser.
 > Branches, handler transfer, virtual scratch objects, async/dynamic lifting, and advanced query workflows remain
 > research backlog rather than inherited commitments.
 
@@ -859,8 +861,9 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`; the active W8 sequence
   validation, field-signature substitution, constructed assignability, distinct per-construction slots, and unchanged
   exact-reference suffix composition. W8.1 is implemented through `220be94b4`: exact construction/thread/RVA/literal/
   memory-frame branches are admitted, while context-relative storage, register homes, and selected-frame generic
-  arguments are non-admitted. W8.2 is active. Later checkpoints require sole-parser projection, immutable V2/frame
-  contracts, metadata/context/runtime binding, lexical completeness, raw value projection, generated conformance, and
+  arguments are non-admitted. W8.2 is active. Later checkpoints require sole-parser projection, the remaining
+  immutable V2/frame contract families, metadata/context/runtime binding, lexical completeness, raw value projection,
+  generated conformance, and
   a decision portfolio of thirty-five minimum incidents across four shapes. The plan's inclusive umbrella scale is
   `~100K LOC`, generally divided into `~10K LOC` evidence and implementation checkpoints.
 

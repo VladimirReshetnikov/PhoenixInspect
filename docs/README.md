@@ -43,9 +43,11 @@ The active [`Post-W7 Path Forward`](plans/post-w7-path-forward.md) defines W8 as
 [`physical-truth disposition`](plans/w8-1-physical-truth-disposition.md) freezes exact compiler/PDB, constructed-runtime,
 storage, literal, frame-root, and assignability evidence before product contracts. Constructed, thread-relative,
 module-RVA, literal, and exact memory-homed frame-value branches are admitted. Context-relative storage and
-selected-frame generic arguments remain typed non-admitted, and register homes are unproven. W8.2 is active and must
-now freeze additive `StaticFieldExpressionV2`, `BindingContextV2`, and `FrameValueExpressionV1` contracts; no V2
-product binder/evaluator has landed yet. The umbrella scale remains `~100K LOC`, split primarily into `~10K LOC`
+selected-frame generic arguments remain typed non-admitted, and register homes are unproven. W8.2 is active. Its
+immutable expression-contract foundation, detached `FrameValueExpressionV1` syntax, shared bounded ECMA signature
+projection, and caller-supplied selected-method lexical evidence envelope have landed. A host-owned lexical producer,
+the remaining `StaticFieldExpressionV2`/`BindingContextV2` families, and the product binder/evaluator remain active
+work. The umbrella scale remains `~100K LOC`, split primarily into `~10K LOC`
 checkpoints, and the meaningful portfolio minimum is now thirty-five independent incidents.
 
 W6.1–W6.7 are closed at exact locally verified source baseline `440053ad1`. One pinned complete Roslyn parse feeds only
@@ -281,7 +283,8 @@ W1 is complete for its revised milestone-selected dump-evidence scope: real read
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in
 each selected category. No result through W8.1 establishes behavior for other artifact shapes. W8.1 is current
-physical evidence for its named branches; planned W8.2–W8.10 behavior is not current evidence.
+physical evidence for its named branches. Only the landed W8.2 contract families described above are current
+implementation evidence; unlanded W8.2 work and W8.3–W8.10 behavior remain plans.
 The terminology cleanup renamed a fixture-only environment canary and therefore intentionally re-froze the current
 TestTarget PE and its four derived canonical graph identities in the executable tests. Historical hashes remain
 evidence for their named commits rather than claims about the current fixture binary.
@@ -336,11 +339,11 @@ docs/
 | `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft · Research | Candidate abstract domains and analysis behavior for a later research phase. |
-| `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices, including the durable sole-Roslyn-parser boundary, implemented W7 consumer/report reuse, W8.1 evidence projects, and planned detached W8.2 contracts. |
+| `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices, including the durable sole-Roslyn-parser boundary, implemented W7 consumer/report reuse, W8.1 evidence projects, landed W8.2 expression/frame/signature/lexical contracts, and the missing host producer/binder/evaluator. |
 | `proposals/architecture/call-model-and-effects.md` | Architecture | Proposal | Draft · Supporting | Call classification, fallback behavior, and effect lattice contract for later method evaluation. |
 | `proposals/architecture/generic-context-resolver-proposal.md` | Architecture | Proposal | Draft · Research | Generic-context reconstruction strategy for later dump-backed method interpretation. |
 | `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical prototype layout and narrow implemented proof boundary. |
-| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised through closed W7 plus W8.1 evidence-only target/probe surfaces; V2/frame product contracts remain absent until W8.2; unstable. |
+| `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised through closed W7 and completed W8.1, plus the first immutable W8.2 expression/frame/signature/lexical contract families; the lexical surface is a caller-supplied envelope rather than a host producer; unstable. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate execution-state, domain, and provenance semantics. |
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W7 and completed W8.1 physical gates, plus remaining W8 contract/generated/headless/replay obligations and a thirty-five-incident portfolio minimum. |
 | `proposals/architecture/semantic-modeling-proposal.md` | Architecture | Proposal | Draft · Research | BCL/IL semantic lifting and projection concepts for later phases. |
