@@ -905,6 +905,28 @@ bounded `ThisExpressionSyntax` or `IdentifierNameSyntax` root and an already-adm
 - Invalid/unsupported inputs make zero metadata/context/runtime/memory calls.
 - W2/W5/W6/W7 classification and replay remain unchanged.
 
+### W8.3b — host-owned metadata producer
+
+**Scale:** `~10K LOC` implementation and tests.
+
+**Status:** Added by plan revision after W8.3. The W8.2 authority families are complete but every catalog is currently
+materialized from synthetic rows in tests. Nothing downstream can run against a real artifact until one host-owned
+producer reads a loaded module's physical tables and issues the same catalogs.
+
+Implement the producer that reads exact physical rows through the existing SRM/PE and ClrMD seams and materializes
+the complete-table catalogs, definition authority, compiler-name mappings, reference tables, chain, resolution,
+ancestry, and constraint portfolios for every loaded module in one snapshot. The producer performs no binding, no
+name interpretation, and no runtime construction: it acquires counted rows and hands them to the existing guarded
+`Create` entry points, so a producer defect appears as a typed catalog stop rather than a fabricated identity.
+
+**Exit gate**
+
+- A generated full dump materializes an exact portfolio over its real modules, including the runtime core library.
+- Every acquisition bound, partial read, and malformed row surfaces as the already-declared typed stop with no
+  fabricated row and no partial prefix.
+- Producer output replays byte-identically across close/reopen/rebind and fresh product objects.
+- Synthetic and produced catalogs are interchangeable at every downstream consumer.
+
 ### W8.4 — metadata namespace/type/member construction binder
 
 **Scale:** `~10K LOC` implementation and tests.
