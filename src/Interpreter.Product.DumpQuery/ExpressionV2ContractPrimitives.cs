@@ -89,6 +89,15 @@ public static class ExpressionV2ContractLimits
     /// <summary>Gets the maximum Field-row count examined in one metadata table.</summary>
     public const int MaximumFieldDefinitionRowCount = 65_536;
 
+    /// <summary>Gets the maximum MethodDef-row count examined in one complete metadata table.</summary>
+    public const int MaximumMethodDefinitionRowCount = 65_536;
+
+    /// <summary>Gets the maximum FieldPtr-row count examined in one complete metadata table.</summary>
+    public const int MaximumFieldPointerRowCount = 65_536;
+
+    /// <summary>Gets the maximum MethodPtr-row count examined in one complete metadata table.</summary>
+    public const int MaximumMethodPointerRowCount = 65_536;
+
     /// <summary>Gets the maximum InterfaceImpl-row count examined in one metadata table.</summary>
     public const int MaximumInterfaceImplementationRowCount = 4_096;
 
@@ -206,6 +215,9 @@ public static class ExpressionV2ContractLimits
     internal const string TypeDefinitionRowCountBoundName = "expression-v2.metadata.typedef-rows";
     internal const string NestedClassRowCountBoundName = "expression-v2.metadata.nestedclass-rows";
     internal const string FieldDefinitionRowCountBoundName = "expression-v2.metadata.field-rows";
+    internal const string MethodDefinitionRowCountBoundName = "expression-v2.metadata.methoddef-rows";
+    internal const string FieldPointerRowCountBoundName = "expression-v2.metadata.fieldptr-rows";
+    internal const string MethodPointerRowCountBoundName = "expression-v2.metadata.methodptr-rows";
     internal const string InterfaceImplementationRowCountBoundName = "expression-v2.metadata.interfaceimpl-rows";
     internal const string GenericParameterRowCountBoundName = "expression-v2.metadata.genericparam-rows";
     internal const string GenericParameterConstraintRowCountBoundName =
@@ -261,6 +273,7 @@ public static class ExpressionV2ContractLimits
             new EvaluationDeterministicBound(LocalConstantCountBoundName, MaximumLocalConstantCount),
             new EvaluationDeterministicBound(LocalCountBoundName, MaximumLocalCount),
             new EvaluationDeterministicBound(FieldDefinitionRowCountBoundName, MaximumFieldDefinitionRowCount),
+            new EvaluationDeterministicBound(FieldPointerRowCountBoundName, MaximumFieldPointerRowCount),
             new EvaluationDeterministicBound(FieldCountPerConstructionBoundName, MaximumFieldCountPerConstruction),
             new EvaluationDeterministicBound(FrameCountPerThreadBoundName, MaximumFrameCountPerThread),
             new EvaluationDeterministicBound(FrameStringCharacterCountBoundName, MaximumFrameStringCharacterCount),
@@ -274,6 +287,8 @@ public static class ExpressionV2ContractLimits
                 MaximumGenericParameterConstraintRowCount),
             new EvaluationDeterministicBound(GenericParameterRowCountBoundName, MaximumGenericParameterRowCount),
             new EvaluationDeterministicBound(ModuleCountBoundName, MaximumModuleCount),
+            new EvaluationDeterministicBound(MethodDefinitionRowCountBoundName, MaximumMethodDefinitionRowCount),
+            new EvaluationDeterministicBound(MethodPointerRowCountBoundName, MaximumMethodPointerRowCount),
             new EvaluationDeterministicBound(NameCandidateOccurrenceCountBoundName, MaximumNameCandidateOccurrenceCount),
             new EvaluationDeterministicBound(NamespaceLevelCountBoundName, MaximumNamespaceLevelCount),
             new EvaluationDeterministicBound(NestedTypeDefinitionDepthBoundName, MaximumNestedTypeDefinitionDepth),
@@ -380,6 +395,15 @@ public static class StaticFieldV2Limits
 
     /// <summary>Gets the maximum Field-row count examined in one metadata table.</summary>
     public const int MaximumFieldDefinitionRowCount = ExpressionV2ContractLimits.MaximumFieldDefinitionRowCount;
+
+    /// <summary>Gets the maximum MethodDef-row count examined in one complete metadata table.</summary>
+    public const int MaximumMethodDefinitionRowCount = ExpressionV2ContractLimits.MaximumMethodDefinitionRowCount;
+
+    /// <summary>Gets the maximum FieldPtr-row count examined in one complete metadata table.</summary>
+    public const int MaximumFieldPointerRowCount = ExpressionV2ContractLimits.MaximumFieldPointerRowCount;
+
+    /// <summary>Gets the maximum MethodPtr-row count examined in one complete metadata table.</summary>
+    public const int MaximumMethodPointerRowCount = ExpressionV2ContractLimits.MaximumMethodPointerRowCount;
 
     /// <summary>Gets the maximum InterfaceImpl-row count examined in one metadata table.</summary>
     public const int MaximumInterfaceImplementationRowCount =
@@ -518,6 +542,18 @@ public static class FrameValueV1Limits
     /// <summary>Gets the maximum TypeDef-row count examined for metadata type context.</summary>
     public const int MaximumTypeDefinitionRowCount = ExpressionV2ContractLimits.MaximumTypeDefinitionRowCount;
 
+    /// <summary>Gets the maximum FieldDef-row count examined for metadata type context.</summary>
+    public const int MaximumFieldDefinitionRowCount = ExpressionV2ContractLimits.MaximumFieldDefinitionRowCount;
+
+    /// <summary>Gets the maximum MethodDef-row count examined for metadata type context.</summary>
+    public const int MaximumMethodDefinitionRowCount = ExpressionV2ContractLimits.MaximumMethodDefinitionRowCount;
+
+    /// <summary>Gets the maximum FieldPtr-row count examined for metadata type context.</summary>
+    public const int MaximumFieldPointerRowCount = ExpressionV2ContractLimits.MaximumFieldPointerRowCount;
+
+    /// <summary>Gets the maximum MethodPtr-row count examined for metadata type context.</summary>
+    public const int MaximumMethodPointerRowCount = ExpressionV2ContractLimits.MaximumMethodPointerRowCount;
+
     /// <summary>Gets the maximum InterfaceImpl-row count examined for metadata type relations.</summary>
     public const int MaximumInterfaceImplementationRowCount =
         ExpressionV2ContractLimits.MaximumInterfaceImplementationRowCount;
@@ -603,6 +639,10 @@ public static class FrameValueV1Limits
                     ExpressionV2ContractLimits.SignatureTokenResolutionCountBoundName or
                     ExpressionV2ContractLimits.TypeSpecificationRowTraversalCountBoundName or
                     ExpressionV2ContractLimits.TypeDefinitionRowCountBoundName or
+                    ExpressionV2ContractLimits.FieldDefinitionRowCountBoundName or
+                    ExpressionV2ContractLimits.FieldPointerRowCountBoundName or
+                    ExpressionV2ContractLimits.MethodDefinitionRowCountBoundName or
+                    ExpressionV2ContractLimits.MethodPointerRowCountBoundName or
                     ExpressionV2ContractLimits.InterfaceImplementationRowCountBoundName or
                     ExpressionV2ContractLimits.NestedClassRowCountBoundName or
                     ExpressionV2ContractLimits.GenericParameterConstraintRowCountBoundName or

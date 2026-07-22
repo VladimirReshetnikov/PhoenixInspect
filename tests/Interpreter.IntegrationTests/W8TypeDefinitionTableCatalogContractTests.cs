@@ -220,12 +220,38 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
             StaticFieldV2Limits.MaximumTypeDefinitionRowCount + 1);
         Assert.Equal(ExpressionV2ContractLimits.TypeDefinitionRowCountBoundName, over.ReachedBound!.Name);
         Assert.Equal(StaticFieldV2Limits.MaximumTypeDefinitionRowCount, over.ReachedBound.Value);
+
+        var overFields = MetadataTypeDefinitionTableCatalogIdentity.Create(
+            CreateSourceEnds(
+                module,
+                typeDefinitionRows: 1,
+                fieldDefinitionRows: StaticFieldV2Limits.MaximumFieldDefinitionRowCount + 1),
+            default);
+        AssertNonExact(
+            overFields,
+            MetadataTypeDefinitionTableIssue.FieldDefinitionRowBoundReached,
+            StaticFieldV2Limits.MaximumFieldDefinitionRowCount + 1);
+        Assert.Equal(ExpressionV2ContractLimits.FieldDefinitionRowCountBoundName, overFields.ReachedBound!.Name);
+        Assert.Equal(StaticFieldV2Limits.MaximumFieldDefinitionRowCount, overFields.ReachedBound.Value);
+
+        var overMethods = MetadataTypeDefinitionTableCatalogIdentity.Create(
+            CreateSourceEnds(
+                module,
+                typeDefinitionRows: 1,
+                methodDefinitionRows: StaticFieldV2Limits.MaximumMethodDefinitionRowCount + 1),
+            default);
+        AssertNonExact(
+            overMethods,
+            MetadataTypeDefinitionTableIssue.MethodDefinitionRowBoundReached,
+            StaticFieldV2Limits.MaximumMethodDefinitionRowCount + 1);
+        Assert.Equal(ExpressionV2ContractLimits.MethodDefinitionRowCountBoundName, overMethods.ReachedBound!.Name);
+        Assert.Equal(StaticFieldV2Limits.MaximumMethodDefinitionRowCount, overMethods.ReachedBound.Value);
     }
 
-    /// <summary>Proves pointer-table domains stop without rows while the direct table domain remains exact.</summary>
+    /// <summary>Proves the two-argument factory remains direct-only and never invents pointer identity mappings.</summary>
     [Fact]
     [Trait("Category", "Fast")]
-    public void Member_pointer_tables_require_the_immediately_following_catalog_checkpoint()
+    public void Two_argument_factory_is_exact_only_for_direct_member_list_domains()
     {
         var module = CreateMetadataModule();
         var observations = ImmutableArray.Create(
@@ -241,7 +267,7 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
             observations);
         Assert.Equal(MetadataTypeDefinitionTableResultKind.Exact, direct.ResultKind);
 
-        foreach (var (fieldPointerCount, methodPointerCount) in new[] { (3, 0), (0, 3), (2, 3) })
+        foreach (var (fieldPointerCount, methodPointerCount) in new[] { (4, 0), (0, 4), (4, 4) })
         {
             var sourceEnds = CreateSourceEnds(
                 module,
@@ -256,8 +282,8 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
             Assert.Equal(methodPointerCount, sourceEnds.MethodPointerRowCount);
             AssertNonExact(
                 result,
-                MetadataTypeDefinitionTableIssue.MemberPointerTableCatalogRequired,
-                fieldPointerCount + methodPointerCount);
+                MetadataTypeDefinitionTableIssue.MemberPointerCatalogNonExact,
+                observedCount: 0);
             Assert.Null(result.ReachedBound);
         }
     }
@@ -390,6 +416,8 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
                 typeof(int),
                 typeof(int),
                 typeof(int),
+                typeof(ImmutableArray<int>),
+                typeof(ImmutableArray<int>),
             ],
             guardedFactory.GetParameters().Select(static parameter => parameter.ParameterType).ToArray());
         Assert.Throws<ArgumentException>(() => MetadataTypeDefinitionTableRowIdentity.Create(
@@ -399,7 +427,9 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
             fieldListRowId: 99,
             fieldListEndExclusiveRowId: 1,
             methodListRowId: 99,
-            methodListEndExclusiveRowId: 1));
+            methodListEndExclusiveRowId: 1,
+            fieldDefinitionTokens: ImmutableArray<int>.Empty,
+            methodDefinitionTokens: ImmutableArray<int>.Empty));
         Assert.False(MetadataTypeDefinitionTableCatalogIdentity.OwnsRowMintCapability(new object()));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => Row(module, 1, -1, 0));
@@ -512,12 +542,10 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
                 .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
                 .Select(static method => method.Name)
                 .ToArray());
-        Assert.Equal(
-            ["Create"],
-            typeof(MetadataTypeDefinitionTableCatalogIdentity)
-                .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                .Select(static method => method.Name)
-                .ToArray());
+        var catalogFactories = typeof(MetadataTypeDefinitionTableCatalogIdentity)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+        Assert.Equal(2, catalogFactories.Length);
+        Assert.All(catalogFactories, static method => Assert.Equal("Create", method.Name));
     }
 
     private static void AssertIssue(
@@ -538,7 +566,9 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
         Assert.Equal(issue, result.Issue);
         Assert.Empty(result.Rows);
         Assert.Equal(observedCount, result.ObservedCount);
-        if (issue != MetadataTypeDefinitionTableIssue.TableRowBoundReached)
+        if (issue is not MetadataTypeDefinitionTableIssue.TableRowBoundReached and
+            not MetadataTypeDefinitionTableIssue.FieldDefinitionRowBoundReached and
+            not MetadataTypeDefinitionTableIssue.MethodDefinitionRowBoundReached)
         {
             Assert.Null(result.ReachedBound);
         }

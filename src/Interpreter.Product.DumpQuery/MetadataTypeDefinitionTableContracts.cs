@@ -54,7 +54,7 @@ public enum MetadataTypeDefinitionTableIssue
     /// <summary>Physical TypeDef order made FieldList starts decrease.</summary>
     FieldListOrderInvalid = 8,
 
-    /// <summary>The complete Field table could not be owned from RID one under the physical null-run rules.</summary>
+    /// <summary>The complete active field-list domain could not be owned from RID one.</summary>
     FieldListCoverageInvalid = 9,
 
     /// <summary>A physical MethodList start lay outside the exact MethodDef table's start-or-end domain.</summary>
@@ -63,14 +63,26 @@ public enum MetadataTypeDefinitionTableIssue
     /// <summary>Physical TypeDef order made MethodList starts decrease.</summary>
     MethodListOrderInvalid = 11,
 
-    /// <summary>The complete MethodDef table could not be owned from RID one under the physical null-run rules.</summary>
+    /// <summary>The complete active method-list domain could not be owned from RID one.</summary>
     MethodListCoverageInvalid = 12,
 
     /// <summary>The TypeDef source end omitted the required module pseudo-type row.</summary>
     RequiredModuleTypeDefinitionMissing = 13,
 
-    /// <summary>FieldPtr or MethodPtr rows require the immediately following pointer-row catalog checkpoint.</summary>
-    MemberPointerTableCatalogRequired = 14,
+    /// <summary>The required member-pointer catalog was incomplete or crossed an admitted row bound.</summary>
+    MemberPointerCatalogNonExact = 14,
+
+    /// <summary>The supplied member-pointer catalog retained contradictory complete-table evidence.</summary>
+    MemberPointerCatalogInvalid = 15,
+
+    /// <summary>The supplied exact member-pointer catalog belonged to different metadata source ends.</summary>
+    MemberPointerCatalogSourceMismatch = 16,
+
+    /// <summary>The exact direct FieldDef source end crossed the admitted complete row count.</summary>
+    FieldDefinitionRowBoundReached = 17,
+
+    /// <summary>The exact direct MethodDef source end crossed the admitted complete row count.</summary>
+    MethodDefinitionRowBoundReached = 18,
 }
 
 /// <summary>Freezes only the physical columns observed from one TypeDef row.</summary>
@@ -235,7 +247,7 @@ public sealed class MetadataTypeDefinitionRowObservationIdentity :
 public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<MetadataTypeDefinitionTableRowIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-typedef-table-row";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataTypeDefinitionTableRowIdentity(
@@ -244,7 +256,9 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
         int fieldListRowId,
         int fieldListEndExclusiveRowId,
         int methodListRowId,
-        int methodListEndExclusiveRowId)
+        int methodListEndExclusiveRowId,
+        ImmutableArray<int> fieldDefinitionTokens,
+        ImmutableArray<int> methodDefinitionTokens)
     {
         SourceEnds = sourceEnds;
         Observation = observation;
@@ -252,6 +266,8 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
         FieldListEndExclusiveRowId = fieldListEndExclusiveRowId;
         MethodListRowId = methodListRowId;
         MethodListEndExclusiveRowId = methodListEndExclusiveRowId;
+        this.fieldDefinitionTokens = ExpressionV2ContractEncoding.Copy(fieldDefinitionTokens);
+        this.methodDefinitionTokens = ExpressionV2ContractEncoding.Copy(methodDefinitionTokens);
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteLengthPrefixedBytes(sourceEnds.CanonicalBytes.AsSpan());
@@ -260,6 +276,16 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
         writer.WriteInt32(fieldListEndExclusiveRowId);
         writer.WriteInt32(methodListRowId);
         writer.WriteInt32(methodListEndExclusiveRowId);
+        writer.WriteInt32(fieldDefinitionTokens.Length);
+        foreach (var token in fieldDefinitionTokens)
+        {
+            writer.WriteInt32(token);
+        }
+        writer.WriteInt32(methodDefinitionTokens.Length);
+        foreach (var token in methodDefinitionTokens)
+        {
+            writer.WriteInt32(token);
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -270,20 +296,37 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
     /// <summary>Gets the unchanged physical-column-only TypeDef row observation.</summary>
     public MetadataTypeDefinitionRowObservationIdentity Observation { get; }
 
-    /// <summary>Gets the next physical FieldList run start, or exact Field-table end plus one at a null or absent successor.</summary>
+    /// <summary>
+    /// Gets the immediately following physical FieldList start, or the active domain end plus one when that successor
+    /// is null or absent.
+    /// </summary>
     public int FieldListEndExclusiveRowId { get; }
 
-    /// <summary>Gets the next physical MethodList run start, or exact MethodDef-table end plus one at a null or absent successor.</summary>
+    /// <summary>
+    /// Gets the immediately following physical MethodList start, or the active domain end plus one when that successor
+    /// is null or absent.
+    /// </summary>
     public int MethodListEndExclusiveRowId { get; }
 
     /// <summary>Gets the exact TypeDef token forwarded from the physical observation.</summary>
     public int TypeDefinitionToken => Observation.TypeDefinitionToken;
 
-    /// <summary>Gets the complete-table-derived effective FieldList start, including an empty leading or trailing null-row interval.</summary>
+    /// <summary>Gets the complete-table-derived effective FieldList start in the direct or FieldPtr domain.</summary>
     public int FieldListRowId { get; }
 
-    /// <summary>Gets the complete-table-derived effective MethodList start, including an empty leading or trailing null-row interval.</summary>
+    /// <summary>Gets the complete-table-derived effective MethodList start in the direct or MethodPtr domain.</summary>
     public int MethodListRowId { get; }
+
+    private readonly ImmutableArray<int> fieldDefinitionTokens;
+    private readonly ImmutableArray<int> methodDefinitionTokens;
+
+    /// <summary>Gets the exact FieldDef tokens owned by this TypeDef in active-list order.</summary>
+    public ImmutableArray<int> FieldDefinitionTokens =>
+        ExpressionV2ContractEncoding.Copy(fieldDefinitionTokens);
+
+    /// <summary>Gets the exact MethodDef tokens owned by this TypeDef in active-list order.</summary>
+    public ImmutableArray<int> MethodDefinitionTokens =>
+        ExpressionV2ContractEncoding.Copy(methodDefinitionTokens);
 
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
@@ -313,7 +356,9 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
         int fieldListRowId,
         int fieldListEndExclusiveRowId,
         int methodListRowId,
-        int methodListEndExclusiveRowId)
+        int methodListEndExclusiveRowId,
+        ImmutableArray<int> fieldDefinitionTokens,
+        ImmutableArray<int> methodDefinitionTokens)
     {
         if (!MetadataTypeDefinitionTableCatalogIdentity.OwnsRowMintCapability(mintCapability))
         {
@@ -332,6 +377,14 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
         {
             throw new ArgumentOutOfRangeException(nameof(methodListRowId));
         }
+        if (fieldDefinitionTokens.IsDefault)
+        {
+            throw new ArgumentException("Resolved FieldDef tokens must be initialized.", nameof(fieldDefinitionTokens));
+        }
+        if (methodDefinitionTokens.IsDefault)
+        {
+            throw new ArgumentException("Resolved MethodDef tokens must be initialized.", nameof(methodDefinitionTokens));
+        }
 
         return new MetadataTypeDefinitionTableRowIdentity(
             sourceEnds,
@@ -339,7 +392,9 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
             fieldListRowId,
             fieldListEndExclusiveRowId,
             methodListRowId,
-            methodListEndExclusiveRowId);
+            methodListEndExclusiveRowId,
+            fieldDefinitionTokens,
+            methodDefinitionTokens);
     }
 }
 
@@ -348,14 +403,14 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
 /// This sealed draft catalog requires exact physical RID coverage. Incomplete and bounded acquisition retains no row
 /// prefix; contradictory evidence retains no derived row facts. The exact result is the sole issuer of derived list
 /// ends in this contract family. It is a complete-table foundation for later TypeDef authority, not the final global
-/// TypeDef identity or a replacement for the legacy construction contracts in this checkpoint. A detected FieldPtr
-/// or MethodPtr table produces a prefix-free non-exact result until the immediately following W8.2b pointer catalog.
+/// TypeDef identity or a replacement for the legacy construction contracts in this checkpoint. Exact pointer-domain
+/// results require the matching complete member-pointer catalog and expose resolved definition tokens per owner.
 /// </remarks>
 public sealed class MetadataTypeDefinitionTableCatalogIdentity :
     IEquatable<MetadataTypeDefinitionTableCatalogIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-typedef-table-catalog";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private static readonly object RowMintCapability = new();
     private readonly ImmutableArray<MetadataTypeDefinitionTableRowIdentity> rows;
     private readonly ImmutableArray<byte> canonicalBytes;
@@ -364,6 +419,7 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
         MetadataTypeDefinitionTableResultKind resultKind,
         MetadataTypeDefinitionTableIssue issue,
         MetadataSourceEndIdentity sourceEnds,
+        MetadataMemberPointerTableCatalogIdentity memberPointerCatalog,
         ImmutableArray<MetadataTypeDefinitionTableRowIdentity> rows,
         EvaluationDeterministicBound? reachedBound,
         int observedCount)
@@ -371,6 +427,7 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
         ResultKind = resultKind;
         Issue = issue;
         SourceEnds = sourceEnds;
+        MemberPointerCatalog = memberPointerCatalog;
         this.rows = rows;
         ReachedBound = reachedBound;
         ObservedCount = observedCount;
@@ -379,6 +436,7 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
         writer.WriteInt32((int)resultKind);
         writer.WriteInt32((int)issue);
         writer.WriteLengthPrefixedBytes(sourceEnds.CanonicalBytes.AsSpan());
+        writer.WriteLengthPrefixedBytes(memberPointerCatalog.CanonicalBytes.AsSpan());
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, rows, static row => row.CanonicalBytes);
         MetadataGenericParameterOwnerDeclarationIdentity.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
@@ -395,11 +453,14 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
     /// <summary>Gets the exact source ends against which complete physical coverage was checked.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
+    /// <summary>Gets the complete member-pointer draft proof used to resolve active list-domain rows.</summary>
+    public MetadataMemberPointerTableCatalogIdentity MemberPointerCatalog { get; }
+
     /// <summary>Gets a defensive copy of exact derived rows, or an initialized empty array for every other result.</summary>
     public ImmutableArray<MetadataTypeDefinitionTableRowIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
 
-    /// <summary>Gets the TypeDef row-count bound only after a cap-plus-one table observation.</summary>
+    /// <summary>Gets the TypeDef, FieldDef, or MethodDef row-count bound after a cap-plus-one observation.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>
@@ -413,24 +474,73 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete source-anchored TypeDef-table draft proof.</summary>
+    /// <summary>Creates one complete direct-domain TypeDef-table draft proof.</summary>
     /// <param name="sourceEnds">The exact table ends for the source metadata module.</param>
     /// <param name="observations">
     /// Every physical TypeDef row in RID order; a default array denotes unavailable complete acquisition.
     /// </param>
     /// <returns>
-    /// An exact catalog with derived intervals, a prefix-free non-exact stop, or a factless invalid draft result.
+    /// An exact direct-domain catalog, or a prefix-free typed result when either pointer table is present.
     /// </returns>
     public static MetadataTypeDefinitionTableCatalogIdentity Create(
         MetadataSourceEndIdentity sourceEnds,
         ImmutableArray<MetadataTypeDefinitionRowObservationIdentity> observations)
     {
         ArgumentNullException.ThrowIfNull(sourceEnds);
+        var directPointerCatalog = MetadataMemberPointerTableCatalogIdentity.Create(sourceEnds, default, default);
+        return Create(sourceEnds, observations, directPointerCatalog);
+    }
+
+    /// <summary>Creates one complete source-anchored TypeDef-table draft proof in direct or pointer list domains.</summary>
+    /// <param name="sourceEnds">The exact table ends for the source metadata module.</param>
+    /// <param name="observations">
+    /// Every physical TypeDef row in RID order; a default array denotes unavailable complete acquisition.
+    /// </param>
+    /// <param name="memberPointerCatalog">
+    /// The exact complete member-pointer catalog for the same source ends, including exact direct domains.
+    /// </param>
+    /// <returns>
+    /// An exact catalog with derived ownership, a prefix-free non-exact stop, or a factless invalid draft result.
+    /// </returns>
+    public static MetadataTypeDefinitionTableCatalogIdentity Create(
+        MetadataSourceEndIdentity sourceEnds,
+        ImmutableArray<MetadataTypeDefinitionRowObservationIdentity> observations,
+        MetadataMemberPointerTableCatalogIdentity memberPointerCatalog)
+    {
+        ArgumentNullException.ThrowIfNull(sourceEnds);
+        ArgumentNullException.ThrowIfNull(memberPointerCatalog);
+        if (!sourceEnds.Equals(memberPointerCatalog.SourceEnds))
+        {
+            return Invalid(
+                sourceEnds,
+                memberPointerCatalog,
+                MetadataTypeDefinitionTableIssue.MemberPointerCatalogSourceMismatch,
+                memberPointerCatalog.ObservedCount);
+        }
+        if (memberPointerCatalog.ResultKind == MetadataMemberPointerTableResultKind.NonExact)
+        {
+            return NonExact(
+                sourceEnds,
+                memberPointerCatalog,
+                MetadataTypeDefinitionTableIssue.MemberPointerCatalogNonExact,
+                memberPointerCatalog.ReachedBound,
+                memberPointerCatalog.ObservedCount);
+        }
+        if (memberPointerCatalog.ResultKind == MetadataMemberPointerTableResultKind.Invalid)
+        {
+            return Invalid(
+                sourceEnds,
+                memberPointerCatalog,
+                MetadataTypeDefinitionTableIssue.MemberPointerCatalogInvalid,
+                memberPointerCatalog.ObservedCount);
+        }
+
         var sourceCount = sourceEnds.TypeDefinitionRowCount;
         if (sourceCount == 0)
         {
             return Invalid(
                 sourceEnds,
+                memberPointerCatalog,
                 MetadataTypeDefinitionTableIssue.RequiredModuleTypeDefinitionMissing,
                 observations.IsDefault ? 0 : observations.Length);
         }
@@ -438,25 +548,40 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
         {
             return NonExact(
                 sourceEnds,
+                memberPointerCatalog,
                 MetadataTypeDefinitionTableIssue.TableRowBoundReached,
                 new EvaluationDeterministicBound(
                     ExpressionV2ContractLimits.TypeDefinitionRowCountBoundName,
                     StaticFieldV2Limits.MaximumTypeDefinitionRowCount),
                 StaticFieldV2Limits.MaximumTypeDefinitionRowCount + 1);
         }
-        if (sourceEnds.FieldPointerRowCount > 0 || sourceEnds.MethodPointerRowCount > 0)
+        if (sourceEnds.FieldDefinitionRowCount > StaticFieldV2Limits.MaximumFieldDefinitionRowCount)
         {
             return NonExact(
                 sourceEnds,
-                MetadataTypeDefinitionTableIssue.MemberPointerTableCatalogRequired,
-                null,
-                checked(sourceEnds.FieldPointerRowCount + sourceEnds.MethodPointerRowCount));
+                memberPointerCatalog,
+                MetadataTypeDefinitionTableIssue.FieldDefinitionRowBoundReached,
+                new EvaluationDeterministicBound(
+                    ExpressionV2ContractLimits.FieldDefinitionRowCountBoundName,
+                    StaticFieldV2Limits.MaximumFieldDefinitionRowCount),
+                StaticFieldV2Limits.MaximumFieldDefinitionRowCount + 1);
         }
-
+        if (sourceEnds.MethodDefinitionRowCount > StaticFieldV2Limits.MaximumMethodDefinitionRowCount)
+        {
+            return NonExact(
+                sourceEnds,
+                memberPointerCatalog,
+                MetadataTypeDefinitionTableIssue.MethodDefinitionRowBoundReached,
+                new EvaluationDeterministicBound(
+                    ExpressionV2ContractLimits.MethodDefinitionRowCountBoundName,
+                    StaticFieldV2Limits.MaximumMethodDefinitionRowCount),
+                StaticFieldV2Limits.MaximumMethodDefinitionRowCount + 1);
+        }
         if (observations.IsDefault || observations.Length < sourceCount)
         {
             return NonExact(
                 sourceEnds,
+                memberPointerCatalog,
                 MetadataTypeDefinitionTableIssue.TableIncomplete,
                 null,
                 observations.IsDefault ? 0 : observations.Length);
@@ -466,6 +591,7 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
         {
             return Invalid(
                 sourceEnds,
+                memberPointerCatalog,
                 MetadataTypeDefinitionTableIssue.TableRowCountConflict,
                 observations.Length);
         }
@@ -476,49 +602,69 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
             var row = copied[index];
             if (row is null || row.TypeDefinitionToken != (0x0200_0000 | checked(index + 1)))
             {
-                return Invalid(sourceEnds, MetadataTypeDefinitionTableIssue.PhysicalOrderInvalid, copied.Length);
+                return Invalid(
+                    sourceEnds,
+                    memberPointerCatalog,
+                    MetadataTypeDefinitionTableIssue.PhysicalOrderInvalid,
+                    copied.Length);
             }
             if (!row.MetadataModule.Equals(sourceEnds.SourceModule))
             {
-                return Invalid(sourceEnds, MetadataTypeDefinitionTableIssue.SourceModuleMismatch, copied.Length);
+                return Invalid(
+                    sourceEnds,
+                    memberPointerCatalog,
+                    MetadataTypeDefinitionTableIssue.SourceModuleMismatch,
+                    copied.Length);
             }
             if (row.ExtendsMetadataToken is { } extendsToken && !sourceEnds.ContainsTypeDefOrRefToken(extendsToken))
             {
-                return Invalid(sourceEnds, MetadataTypeDefinitionTableIssue.ExtendsTokenOutOfRange, copied.Length);
+                return Invalid(
+                    sourceEnds,
+                    memberPointerCatalog,
+                    MetadataTypeDefinitionTableIssue.ExtendsTokenOutOfRange,
+                    copied.Length);
             }
         }
 
         var fieldListIssue = ValidateListCoverage(
             copied,
-            sourceEnds.FieldDefinitionRowCount,
+            sourceEnds.FieldPointerRowCount > 0
+                ? sourceEnds.FieldPointerRowCount
+                : sourceEnds.FieldDefinitionRowCount,
             static row => row.FieldListRowId,
             MetadataTypeDefinitionTableIssue.FieldListStartOutOfRange,
             MetadataTypeDefinitionTableIssue.FieldListOrderInvalid,
             MetadataTypeDefinitionTableIssue.FieldListCoverageInvalid);
         if (fieldListIssue != MetadataTypeDefinitionTableIssue.None)
         {
-            return Invalid(sourceEnds, fieldListIssue, copied.Length);
+            return Invalid(sourceEnds, memberPointerCatalog, fieldListIssue, copied.Length);
         }
 
         var methodListIssue = ValidateListCoverage(
             copied,
-            sourceEnds.MethodDefinitionRowCount,
+            sourceEnds.MethodPointerRowCount > 0
+                ? sourceEnds.MethodPointerRowCount
+                : sourceEnds.MethodDefinitionRowCount,
             static row => row.MethodListRowId,
             MetadataTypeDefinitionTableIssue.MethodListStartOutOfRange,
             MetadataTypeDefinitionTableIssue.MethodListOrderInvalid,
             MetadataTypeDefinitionTableIssue.MethodListCoverageInvalid);
         if (methodListIssue != MetadataTypeDefinitionTableIssue.None)
         {
-            return Invalid(sourceEnds, methodListIssue, copied.Length);
+            return Invalid(sourceEnds, memberPointerCatalog, methodListIssue, copied.Length);
         }
 
         var fieldIntervals = DeriveListIntervals(
             copied,
-            sourceEnds.FieldDefinitionRowCount,
+            sourceEnds.FieldPointerRowCount > 0
+                ? sourceEnds.FieldPointerRowCount
+                : sourceEnds.FieldDefinitionRowCount,
             static row => row.FieldListRowId);
         var methodIntervals = DeriveListIntervals(
             copied,
-            sourceEnds.MethodDefinitionRowCount,
+            sourceEnds.MethodPointerRowCount > 0
+                ? sourceEnds.MethodPointerRowCount
+                : sourceEnds.MethodDefinitionRowCount,
             static row => row.MethodListRowId);
         var rows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionTableRowIdentity>(copied.Length);
         for (var index = 0; index < copied.Length; index++)
@@ -530,13 +676,20 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
                 fieldIntervals[index].Start,
                 fieldIntervals[index].EndExclusive,
                 methodIntervals[index].Start,
-                methodIntervals[index].EndExclusive));
+                methodIntervals[index].EndExclusive,
+                memberPointerCatalog.ResolveFieldDefinitionTokens(
+                    fieldIntervals[index].Start,
+                    fieldIntervals[index].EndExclusive),
+                memberPointerCatalog.ResolveMethodDefinitionTokens(
+                    methodIntervals[index].Start,
+                    methodIntervals[index].EndExclusive)));
         }
 
         return new MetadataTypeDefinitionTableCatalogIdentity(
             MetadataTypeDefinitionTableResultKind.Exact,
             MetadataTypeDefinitionTableIssue.None,
             sourceEnds,
+            memberPointerCatalog,
             rows.MoveToImmutable(),
             null,
             0);
@@ -662,6 +815,7 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
 
     private static MetadataTypeDefinitionTableCatalogIdentity NonExact(
         MetadataSourceEndIdentity sourceEnds,
+        MetadataMemberPointerTableCatalogIdentity memberPointerCatalog,
         MetadataTypeDefinitionTableIssue issue,
         EvaluationDeterministicBound? reachedBound,
         int observedCount) =>
@@ -669,18 +823,21 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
             MetadataTypeDefinitionTableResultKind.NonExact,
             issue,
             sourceEnds,
+            memberPointerCatalog,
             ImmutableArray<MetadataTypeDefinitionTableRowIdentity>.Empty,
             reachedBound,
             observedCount);
 
     private static MetadataTypeDefinitionTableCatalogIdentity Invalid(
         MetadataSourceEndIdentity sourceEnds,
+        MetadataMemberPointerTableCatalogIdentity memberPointerCatalog,
         MetadataTypeDefinitionTableIssue issue,
         int observedCount) =>
         new(
             MetadataTypeDefinitionTableResultKind.Invalid,
             issue,
             sourceEnds,
+            memberPointerCatalog,
             ImmutableArray<MetadataTypeDefinitionTableRowIdentity>.Empty,
             null,
             observedCount);

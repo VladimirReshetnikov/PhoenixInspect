@@ -492,6 +492,8 @@ public sealed class W8V2ContractFoundationTests
             ExpressionV2ContractLimits.DeclaredNestedTypeCountBoundName,
             ExpressionV2ContractLimits.DeclaredPropertyCountBoundName,
             ExpressionV2ContractLimits.FallbackStringCharacterCountBoundName,
+            ExpressionV2ContractLimits.FieldDefinitionRowCountBoundName,
+            ExpressionV2ContractLimits.FieldPointerRowCountBoundName,
             ExpressionV2ContractLimits.FrameCountPerThreadBoundName,
             ExpressionV2ContractLimits.FrameStringCharacterCountBoundName,
             ExpressionV2ContractLimits.FrameThreadCountBoundName,
@@ -504,6 +506,8 @@ public sealed class W8V2ContractFoundationTests
             ExpressionV2ContractLimits.LocalConstantCountBoundName,
             ExpressionV2ContractLimits.LocalCountBoundName,
             ExpressionV2ContractLimits.LocalFunctionAssociationCountBoundName,
+            ExpressionV2ContractLimits.MethodDefinitionRowCountBoundName,
+            ExpressionV2ContractLimits.MethodPointerRowCountBoundName,
             ExpressionV2ContractLimits.NestedClassRowCountBoundName,
             ExpressionV2ContractLimits.ParameterCountBoundName,
             ExpressionV2ContractLimits.RawTypeSignatureNodeCountBoundName,
@@ -529,6 +533,8 @@ public sealed class W8V2ContractFoundationTests
         Assert.Equal(256, StaticFieldV2Limits.MaximumSignatureTokenResolutionCount);
         Assert.Equal(4_096, StaticFieldV2Limits.MaximumInterfaceImplementationRowCount);
         Assert.Equal(65_536, StaticFieldV2Limits.MaximumTypeDefinitionRowCount);
+        Assert.Equal(65_536, StaticFieldV2Limits.MaximumFieldDefinitionRowCount);
+        Assert.Equal(65_536, StaticFieldV2Limits.MaximumMethodDefinitionRowCount);
         Assert.Equal(65_536, StaticFieldV2Limits.MaximumNestedClassRowCount);
         Assert.Equal(65_536, StaticFieldV2Limits.MaximumGenericParameterRowCount);
         Assert.Equal(65_536, StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount);
@@ -541,6 +547,12 @@ public sealed class W8V2ContractFoundationTests
         Assert.Equal(
             StaticFieldV2Limits.MaximumTypeDefinitionRowCount,
             FrameValueV1Limits.MaximumTypeDefinitionRowCount);
+        Assert.Equal(
+            StaticFieldV2Limits.MaximumFieldDefinitionRowCount,
+            FrameValueV1Limits.MaximumFieldDefinitionRowCount);
+        Assert.Equal(
+            StaticFieldV2Limits.MaximumMethodDefinitionRowCount,
+            FrameValueV1Limits.MaximumMethodDefinitionRowCount);
         Assert.Equal(
             StaticFieldV2Limits.MaximumNestedClassRowCount,
             FrameValueV1Limits.MaximumNestedClassRowCount);
