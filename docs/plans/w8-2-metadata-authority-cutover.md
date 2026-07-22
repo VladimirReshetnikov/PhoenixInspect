@@ -181,6 +181,32 @@ authority-issued identities or certificates. Retaining one downstream raw compar
 
 These are order-of-magnitude estimates and may be revised when implementation evidence changes the apparent volume.
 
+### 8.1 Consumer migration clusters
+
+The consumer cutover proceeds in dependency order, but every cluster includes all consumers that can be migrated once
+its inputs exist:
+
+1. **Authority-derived certificates (`~1K LOC`).** Complete the TypeDef/W7 candidate comparison and authority-owned
+   GenericParam owner and binding facts after the landed compiler-name mapping catalog. Candidate objects remain
+   comparison inputs only.
+2. **Generic ownership, constraints, and substitution (`~10K LOC`).** Replace caller-created generic owners, rows,
+   declarations, method certificates, and the legacy GenericParam catalog with physical rows selected through the
+   definition authority. Migrate constraint edges/sets, argument bindings, and field substitution together so no raw
+   owner comparison remains between them.
+3. **TypeDef-or-Ref, token resolution, and signature trees (`~10K LOC`).** Derive every outer-to-inner TypeDef chain by
+   following authority parent tokens. Named signature nodes retain authority rows, authority-bound mappings, and
+   separate semantic certificates rather than one final caller-created TypeDef object.
+4. **Ancestry, interfaces, construction, and classification (`~10K LOC`).** Retype base/interface edges, construction
+   segments, closed types, type-use results, semantic classification, and Nullable interpretation around the same
+   authority chain and constructed argument vector.
+5. **Issuer deletion and producer integration (`~10K LOC`).** Delete raw TypeDef promotion, caller-created generic
+   owner/row/declaration factories, the W7-backed method certificate, final TypeDef factories, and every remaining W8
+   compatibility facade. Then connect the metadata producer directly to the complete catalogs and rerun the complete
+   W1-W8 matrix.
+
+No cluster is a permanent compatibility layer. A legacy issuer remains only while a later cluster still has a compiled
+consumer, and its final consumer migration and deletion land in the same checkpoint.
+
 ## 9. Synthetic verification matrix
 
 The authority tests use complete synthetic modules large enough to exercise interactions rather than isolated scalar
@@ -211,6 +237,8 @@ examples:
 | `fd92ab415` | Complete physical GenericParam and MethodDef catalogs derive owner groups and decoded declaration facts. |
 | `2ba2db3dd` | Exact Param and ParamPtr source ends join the MethodDef catalog to the complete metadata source identity. |
 | `3de41dce4` | The definition-authority join issues TypeDef and MethodDef authority rows, and independent compiler-name facts cover CLS spelling, Roslyn projection, C# spelling, and evaluator admission. |
+| `122b78cfe` | Compiler-name mappings are issued only from complete definition authority and retain fixed-size TypeDef and parent references. |
+| `0bba62c67` | Optional deterministic bounds use one shared canonical encoder across authority, table, and construction contracts. |
 
 Legacy W8 issuer removal and downstream-consumer migration remain active until their own pushed checkpoints and
 verification records land.
