@@ -3515,7 +3515,7 @@ public sealed class MetadataTypeSpecificationGraphIdentity : IEquatable<Metadata
 public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
 {
     private const string CanonicalDomain = "metadata-v2-type-use-result";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataTypeUseResult(
@@ -3523,22 +3523,22 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
         MetadataTypeUseResultKind kind,
         MetadataTypeSpecificationIdentity typeSpecification,
         MetadataTypeSpecificationGraphIdentity graph,
-        MetadataGenericParameterIdentity? constraintOwner)
+        MetadataGenericParameterConstraintTableRowIdentity? constraintRow)
     {
         Role = role;
         Kind = kind;
         TypeSpecification = typeSpecification;
         Graph = graph;
-        ConstraintOwner = constraintOwner;
+        ConstraintRow = constraintRow;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32((int)role);
         writer.WriteInt32((int)kind);
         writer.WriteLengthPrefixedBytes(typeSpecification.CanonicalBytes.AsSpan());
         writer.WriteLengthPrefixedBytes(graph.CanonicalBytes.AsSpan());
-        writer.WriteBoolean(constraintOwner is not null);
-        if (constraintOwner is not null)
+        writer.WriteBoolean(constraintRow is not null);
+        if (constraintRow is not null)
         {
-            writer.WriteLengthPrefixedBytes(constraintOwner.CanonicalBytes.AsSpan());
+            writer.WriteSha256(constraintRow.Sha256, nameof(constraintRow));
         }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -3552,8 +3552,23 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
     public MetadataTypeSpecificationIdentity TypeSpecification { get; }
     /// <summary>Gets the separate complete TypeSpec graph traversal.</summary>
     public MetadataTypeSpecificationGraphIdentity Graph { get; }
-    /// <summary>Gets the exact GenericParam owner only for a constraint use.</summary>
-    public MetadataGenericParameterIdentity? ConstraintOwner { get; }
+    /// <summary>Gets the exact physical GenericParamConstraint row only for a constraint use.</summary>
+    public MetadataGenericParameterConstraintTableRowIdentity? ConstraintRow { get; }
+    /// <summary>Gets the authority-issued GenericParam owner row derived from the constraint row, otherwise null.</summary>
+    public MetadataGenericParameterTableRowIdentity? ConstraintOwnerParameter => ConstraintRow?.OwnerParameter;
+    /// <summary>Gets the authority-issued TypeDef or MethodDef owner group derived from the constraint row.</summary>
+    public MetadataGenericParameterAuthorityOwnerGroupIdentity? ConstraintOwnerGroup => ConstraintRow?.OwnerGroup;
+    /// <summary>Gets the authority-issued declaring TypeDef derived from the constraint owner, otherwise null.</summary>
+    public MetadataTypeDefinitionAuthorityIdentity? ConstraintDeclaringTypeDefinition =>
+        ConstraintRow?.OwnerGroup.TypeDefinition ??
+        ConstraintRow?.OwnerGroup.MethodDefinition?.DeclaringTypeDefinition;
+    /// <summary>Gets the authority-issued declaring MethodDef only for a method-owned constraint.</summary>
+    public MetadataMethodDefinitionAuthorityIdentity? ConstraintDeclaringMethodDefinition =>
+        ConstraintRow?.OwnerGroup.MethodDefinition;
+    /// <summary>Gets the exact source ends retained by the constraint row, otherwise null.</summary>
+    public MetadataSourceEndIdentity? ConstraintSourceEnds => ConstraintRow?.SourceEnds;
+    /// <summary>Gets the unresolved physical TypeDefOrRef constraint token, otherwise null.</summary>
+    public int? ConstraintMetadataToken => ConstraintRow?.ConstraintMetadataToken;
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
@@ -3563,13 +3578,16 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
     /// <param name="role">The exact use-site metadata role.</param>
     /// <param name="typeSpecification">The exact decoder-produced TypeSpec composite.</param>
     /// <param name="graph">The complete row-keyed modifier TypeSpec graph.</param>
-    /// <param name="constraintOwner">The exact GenericParam owner only for a constraint role.</param>
+    /// <param name="constraintRow">
+    /// The exact catalog-issued physical GenericParamConstraint row only for a constraint role. Its unresolved
+    /// Constraint token must identify this exact TypeSpec occurrence in the same source.
+    /// </param>
     /// <returns>A sealed immutable role-specific draft result.</returns>
     public static MetadataTypeUseResult Classify(
         MetadataTypeUseRole role,
         MetadataTypeSpecificationIdentity typeSpecification,
         MetadataTypeSpecificationGraphIdentity graph,
-        MetadataGenericParameterIdentity? constraintOwner = null)
+        MetadataGenericParameterConstraintTableRowIdentity? constraintRow = null)
     {
         ExpressionV2ContractEncoding.RequireDefined(role, nameof(role));
         ArgumentNullException.ThrowIfNull(typeSpecification);
@@ -3584,9 +3602,19 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
         {
             throw new ArgumentException("A retained graph-root decode must equal the exact TypeSpec composite decode.", nameof(graph));
         }
-        if ((role == MetadataTypeUseRole.GenericParameterConstraint) != (constraintOwner is not null))
+        if ((role == MetadataTypeUseRole.GenericParameterConstraint) != (constraintRow is not null))
         {
-            throw new ArgumentException("Only a generic-constraint role requires one exact GenericParam owner.", nameof(constraintOwner));
+            throw new ArgumentException(
+                "Only a generic-constraint role requires one exact physical GenericParamConstraint row.",
+                nameof(constraintRow));
+        }
+        if (constraintRow is not null &&
+            (!constraintRow.SourceEnds.SourceModule.Equals(typeSpecification.Row.Reference.MetadataModule) ||
+             constraintRow.ConstraintMetadataToken != typeSpecification.Row.Reference.TypeSpecificationToken))
+        {
+            throw new ArgumentException(
+                "The constraint row's unresolved target must be this exact TypeSpec row in the same source.",
+                nameof(constraintRow));
         }
         var root = typeSpecification.Root;
         MetadataTypeUseResultKind kind;
@@ -3601,7 +3629,7 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
         else if (((role is MetadataTypeUseRole.FieldDefinition or MetadataTypeUseRole.BaseType or
                     MetadataTypeUseRole.InterfaceImplementation) && root.ContainsMethodTypeParameter) ||
                  (role == MetadataTypeUseRole.GenericParameterConstraint &&
-                    constraintOwner!.Owner.Kind == MetadataGenericParameterOwnerKind.TypeDefinition &&
+                    constraintRow!.OwnerGroup.OwnerKind == MetadataGenericParameterOwnerKind.TypeDefinition &&
                     root.ContainsMethodTypeParameter) ||
                  (role is MetadataTypeUseRole.FieldDefinition or MetadataTypeUseRole.BaseType or
                      MetadataTypeUseRole.InterfaceImplementation or MetadataTypeUseRole.GenericParameterConstraint &&
@@ -3621,7 +3649,7 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
                 _ => throw new ArgumentOutOfRangeException(),
             };
         }
-        return new MetadataTypeUseResult(role, kind, typeSpecification, graph, constraintOwner);
+        return new MetadataTypeUseResult(role, kind, typeSpecification, graph, constraintRow);
     }
 
     /// <summary>Tests canonical equality between two role-specific draft type-use results.</summary>
@@ -3784,83 +3812,55 @@ public sealed class MetadataInterfaceImplementationEdgeIdentity : IEquatable<Met
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one exact GenericParamConstraint row and its complete TypeDefOrRef constraint target.</summary>
-/// <remarks>The sealed draft edge retains both the owner GenericParam row and the independent target row identity.</remarks>
+/// <summary>Projects one exact physical GenericParamConstraint row into an owner-authoritative consumer edge.</summary>
+/// <remarks>
+/// This sealed draft edge has no public issuer and accepts no caller-selected owner, declaration, or semantic target.
+/// Its guarded physical row supplies the authority-issued GenericParam owner and declaration. The Constraint column
+/// remains only an unresolved physical TypeDefOrRef token until a later dedicated authority resolves it.
+/// </remarks>
 public sealed class MetadataGenericParameterConstraintEdgeIdentity : IEquatable<MetadataGenericParameterConstraintEdgeIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-generic-parameter-constraint-edge-identity";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataGenericParameterConstraintEdgeIdentity(
-        int genericParameterConstraintToken,
-        MetadataGenericParameterIdentity ownerParameter,
-        MetadataTypeDefinitionIdentity declaringType,
-        MetadataTypeDefOrRefTargetIdentity target)
+        MetadataGenericParameterConstraintTableRowIdentity constraintRow)
     {
-        GenericParameterConstraintToken = genericParameterConstraintToken;
-        OwnerParameter = ownerParameter;
-        DeclaringType = declaringType;
-        Target = target;
+        ConstraintRow = constraintRow;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteInt32(genericParameterConstraintToken);
-        writer.WriteLengthPrefixedBytes(ownerParameter.CanonicalBytes.AsSpan());
-        writer.WriteLengthPrefixedBytes(declaringType.CanonicalBytes.AsSpan());
-        writer.WriteLengthPrefixedBytes(target.CanonicalBytes.AsSpan());
+        writer.WriteSha256(constraintRow.Sha256, nameof(constraintRow));
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
+    /// <summary>Gets the guarded exact physical GenericParamConstraint row projected by this draft edge.</summary>
+    public MetadataGenericParameterConstraintTableRowIdentity ConstraintRow { get; }
+    /// <summary>Gets the exact source ends inherited from the guarded physical row.</summary>
+    public MetadataSourceEndIdentity SourceEnds => ConstraintRow.SourceEnds;
     /// <summary>Gets the exact non-nil GenericParamConstraint row token.</summary>
-    public int GenericParameterConstraintToken { get; }
-    /// <summary>Gets the exact Owner-column GenericParam row.</summary>
-    public MetadataGenericParameterIdentity OwnerParameter { get; }
-    /// <summary>Gets the exact W8 declaring TypeDef for either a TypeDef- or MethodDef-owned parameter.</summary>
-    public MetadataTypeDefinitionIdentity DeclaringType { get; }
-    /// <summary>Gets the exact Constraint-column TypeDefOrRef target.</summary>
-    public MetadataTypeDefOrRefTargetIdentity Target { get; }
+    public int GenericParameterConstraintToken => ConstraintRow.GenericParameterConstraintToken;
+    /// <summary>Gets the authority-issued Owner-column GenericParam row.</summary>
+    public MetadataGenericParameterTableRowIdentity OwnerParameter => ConstraintRow.OwnerParameter;
+    /// <summary>Gets the authority-issued TypeDef or MethodDef owner group.</summary>
+    public MetadataGenericParameterAuthorityOwnerGroupIdentity OwnerGroup => ConstraintRow.OwnerGroup;
+    /// <summary>Gets the authority-issued declaring TypeDef for either a TypeDef- or MethodDef-owned parameter.</summary>
+    public MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition =>
+        OwnerGroup.TypeDefinition ?? OwnerGroup.MethodDefinition!.DeclaringTypeDefinition;
+    /// <summary>Gets the authority-issued declaring MethodDef only for a method-owned parameter.</summary>
+    public MetadataMethodDefinitionAuthorityIdentity? DeclaringMethodDefinition => OwnerGroup.MethodDefinition;
+    /// <summary>Gets the validated but deliberately unresolved physical TypeDefOrRef Constraint token.</summary>
+    public int ConstraintMetadataToken => ConstraintRow.ConstraintMetadataToken;
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one exact GenericParamConstraint-row draft edge.</summary>
-    /// <param name="genericParameterConstraintToken">The exact non-nil GenericParamConstraint token.</param>
-    /// <param name="ownerParameter">The exact Owner-column GenericParam row.</param>
-    /// <param name="declaringType">The W8 TypeDef owner or exact MethodDef declaring type.</param>
-    /// <param name="target">The exact Constraint-column TypeDefOrRef target.</param>
-    /// <returns>A sealed immutable draft edge preserving both owner rows and the target row.</returns>
-    public static MetadataGenericParameterConstraintEdgeIdentity Create(
-        int genericParameterConstraintToken,
-        MetadataGenericParameterIdentity ownerParameter,
-        MetadataTypeDefinitionIdentity declaringType,
-        MetadataTypeDefOrRefTargetIdentity target)
+    internal static MetadataGenericParameterConstraintEdgeIdentity FromPhysicalRow(
+        MetadataGenericParameterConstraintTableRowIdentity constraintRow)
     {
-        CanonicalReplayEncoding.ValidateMetadataToken(
-            genericParameterConstraintToken,
-            0x2C,
-            nameof(genericParameterConstraintToken));
-        ArgumentNullException.ThrowIfNull(ownerParameter);
-        ArgumentNullException.ThrowIfNull(declaringType);
-        ArgumentNullException.ThrowIfNull(target);
-        var ownerMatches = ownerParameter.Owner.Kind switch
-        {
-            MetadataGenericParameterOwnerKind.TypeDefinition =>
-                declaringType.RawDefinition.Equals(ownerParameter.Owner.TypeDefinition),
-            MetadataGenericParameterOwnerKind.MethodDefinition =>
-                declaringType.RawDefinition.MatchesPinnedW7(ownerParameter.Owner.MethodDefinition!.DeclaringType),
-            _ => false,
-        };
-        if (!ownerMatches || !ownerParameter.Owner.MetadataModule.Equals(target.SourceMetadataModule))
-        {
-            throw new ArgumentException(
-                "The constraint owner must resolve to the exact declaring TypeDef and its target token must share that module.");
-        }
-        return new MetadataGenericParameterConstraintEdgeIdentity(
-            genericParameterConstraintToken,
-            ownerParameter,
-            declaringType,
-            target);
+        ArgumentNullException.ThrowIfNull(constraintRow);
+        return new MetadataGenericParameterConstraintEdgeIdentity(constraintRow);
     }
 
     /// <summary>Tests canonical equality between two draft GenericParamConstraint edges.</summary>
@@ -4116,234 +4116,175 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
     }
 }
 
-/// <summary>Freezes a complete GenericParamConstraint table and one exact GenericParam-owner projection.</summary>
+/// <summary>Projects one authority-issued GenericParam owner from a complete physical constraint catalog.</summary>
 /// <remarks>
-/// The sealed draft aggregate keeps complete-table evidence separate from selected-parameter rows. Bound or source
-/// incompleteness retains neither prefix. Physical rows for other parameters are accepted only in the explicit complete
-/// table needed to prove the selected parameter's exact absence or complete constraint set.
+/// The sealed draft aggregate accepts no caller-supplied owner claim, declaring definition, or target-semantic edge.
+/// It selects one guarded GenericParam row through the catalog's exact authority and derives every edge directly from
+/// the complete physical table. Constraint targets remain unresolved TypeDefOrRef tokens. A non-exact or invalid
+/// physical table exposes no edge prefix.
 /// </remarks>
 public sealed class MetadataGenericParameterConstraintSetIdentity :
     IEquatable<MetadataGenericParameterConstraintSetIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-generic-parameter-constraint-set-identity";
-    private const int CanonicalSchemaVersion = 3;
+    private const int CanonicalSchemaVersion = 4;
     private readonly ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity> completeTableRows;
     private readonly ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity> rows;
-    private readonly ImmutableArray<int> duplicateRowTokens;
-    private readonly ImmutableArray<int> duplicateSemanticRowTokens;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private MetadataGenericParameterConstraintSetIdentity(
-        MetadataGenericParameterTableCatalogIdentity genericParameterCatalog,
-        MetadataGenericParameterIdentity ownerParameter,
+        MetadataGenericParameterConstraintPhysicalTableCatalogIdentity constraintCatalog,
+        MetadataGenericParameterTableRowIdentity ownerParameter,
+        MetadataGenericParameterAuthorityOwnerGroupIdentity ownerGroup,
         ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity> completeTableRows,
         ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity> rows,
         MetadataEdgeAggregateResultKind resultKind,
         MetadataEdgeAggregateIssue issue,
         EvaluationDeterministicBound? reachedBound,
-        int observedCount,
-        ImmutableArray<int> duplicateRowTokens,
-        ImmutableArray<int> duplicateSemanticRowTokens)
+        int observedCount)
     {
-        GenericParameterCatalog = genericParameterCatalog;
-        SourceEnds = genericParameterCatalog.SourceEnds;
+        ConstraintCatalog = constraintCatalog;
         OwnerParameter = ownerParameter;
+        OwnerGroup = ownerGroup;
         this.completeTableRows = completeTableRows;
         this.rows = rows;
         ResultKind = resultKind;
         Issue = issue;
         ReachedBound = reachedBound;
         ObservedCount = observedCount;
-        this.duplicateRowTokens = duplicateRowTokens;
-        this.duplicateSemanticRowTokens = duplicateSemanticRowTokens;
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteLengthPrefixedBytes(genericParameterCatalog.CanonicalBytes.AsSpan());
-        writer.WriteLengthPrefixedBytes(ownerParameter.CanonicalBytes.AsSpan());
+        writer.WriteSha256(constraintCatalog.Sha256, nameof(constraintCatalog));
+        writer.WriteSha256(ownerParameter.Sha256, nameof(ownerParameter));
+        writer.WriteSha256(ownerGroup.Sha256, nameof(ownerGroup));
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, completeTableRows, static row => row.CanonicalBytes);
         ExpressionV2ContractEncoding.WriteCanonicalArray(writer, rows, static row => row.CanonicalBytes);
         writer.WriteInt32((int)resultKind);
         writer.WriteInt32((int)issue);
         ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
-        WriteInt32Array(writer, duplicateRowTokens);
-        WriteInt32Array(writer, duplicateSemanticRowTokens);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets exact metadata-table source ends consulted before any constraint row array.</summary>
-    public MetadataSourceEndIdentity SourceEnds { get; }
-    /// <summary>Gets the exact complete GenericParam catalog proving every constraint-owner identity.</summary>
-    public MetadataGenericParameterTableCatalogIdentity GenericParameterCatalog { get; }
-    /// <summary>Gets the exact selected GenericParam row whose constraints are projected.</summary>
-    public MetadataGenericParameterIdentity OwnerParameter { get; }
-    /// <summary>Gets a defensive copy of the complete physical constraint table only for exact or invalid input.</summary>
+    /// <summary>Gets the complete physical constraint catalog from which this draft projection was derived.</summary>
+    public MetadataGenericParameterConstraintPhysicalTableCatalogIdentity ConstraintCatalog { get; }
+    /// <summary>Gets exact metadata-table source ends inherited from the complete physical catalog.</summary>
+    public MetadataSourceEndIdentity SourceEnds => ConstraintCatalog.SourceEnds;
+    /// <summary>Gets the sole GenericParam authority retained by the complete physical catalog.</summary>
+    public MetadataGenericParameterAuthorityCatalogIdentity GenericParameterAuthority =>
+        ConstraintCatalog.GenericParameterAuthority;
+    /// <summary>Gets the exact authority-issued GenericParam row whose constraints are projected.</summary>
+    public MetadataGenericParameterTableRowIdentity OwnerParameter { get; }
+    /// <summary>Gets the exact authority-issued TypeDef or MethodDef owner group containing the selected row.</summary>
+    public MetadataGenericParameterAuthorityOwnerGroupIdentity OwnerGroup { get; }
+    /// <summary>Gets the authority-issued declaring TypeDef for the selected TypeDef- or MethodDef-owned row.</summary>
+    public MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition =>
+        OwnerGroup.TypeDefinition ?? OwnerGroup.MethodDefinition!.DeclaringTypeDefinition;
+    /// <summary>Gets the authority-issued declaring MethodDef only for a method-owned selected row.</summary>
+    public MetadataMethodDefinitionAuthorityIdentity? DeclaringMethodDefinition => OwnerGroup.MethodDefinition;
+    /// <summary>Gets a defensive copy of every derived physical-table edge only for an exact result.</summary>
     public ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity> CompleteTableRows =>
         ExpressionV2ContractEncoding.Copy(completeTableRows);
-    /// <summary>Gets selected-parameter constraint rows only for an exact result.</summary>
+    /// <summary>Gets derived selected-parameter edges only for an exact result.</summary>
     public ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
     /// <summary>Gets the typed aggregate validation result.</summary>
     public MetadataEdgeAggregateResultKind ResultKind { get; }
     /// <summary>Gets the first deterministic aggregate disposition.</summary>
     public MetadataEdgeAggregateIssue Issue { get; }
-    /// <summary>Gets the module-table or selected-owner constraint bound only for cap plus one.</summary>
+    /// <summary>Gets the physical-table or selected-owner constraint bound only for cap plus one.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
     /// <summary>Gets exactly cap plus one only for a reached-bound result; otherwise zero.</summary>
     public int ObservedCount { get; }
-    /// <summary>Gets sorted physical row tokens that occurred more than once.</summary>
-    public ImmutableArray<int> DuplicateRowTokens => ExpressionV2ContractEncoding.Copy(duplicateRowTokens);
-    /// <summary>Gets sorted later-row tokens whose Owner-plus-Constraint pair duplicates an earlier row.</summary>
-    public ImmutableArray<int> DuplicateSemanticRowTokens =>
-        ExpressionV2ContractEncoding.Copy(duplicateSemanticRowTokens);
     /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
     /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Validates a complete GenericParamConstraint table and projects exactly one parameter owner.</summary>
-    /// <param name="genericParameterCatalog">The exact complete GenericParam catalog anchoring selected and edge owners.</param>
-    /// <param name="ownerParameter">The exact catalog GenericParam row to project after complete-table validation.</param>
-    /// <param name="allRows">Every physical GenericParamConstraint row in RID order, or no prefix after a stop.</param>
+    /// <summary>Projects exactly one authority-issued GenericParam owner from a complete physical table draft.</summary>
+    /// <param name="constraintCatalog">
+    /// The complete physical GenericParamConstraint catalog that alone supplies rows and owner authority.
+    /// </param>
+    /// <param name="ownerParameter">
+    /// An exact GenericParam row issued by that catalog's authority; another source or authority is rejected.
+    /// </param>
     /// <returns>An immutable exact, factless non-exact, or typed invalid draft aggregate.</returns>
     public static MetadataGenericParameterConstraintSetIdentity Create(
-        MetadataGenericParameterTableCatalogIdentity genericParameterCatalog,
-        MetadataGenericParameterIdentity ownerParameter,
-        ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity> allRows)
+        MetadataGenericParameterConstraintPhysicalTableCatalogIdentity constraintCatalog,
+        MetadataGenericParameterTableRowIdentity ownerParameter)
     {
-        ArgumentNullException.ThrowIfNull(genericParameterCatalog);
+        ArgumentNullException.ThrowIfNull(constraintCatalog);
         ArgumentNullException.ThrowIfNull(ownerParameter);
-        if (genericParameterCatalog.ResultKind != MetadataGenericParameterProofResultKind.Exact)
+        var genericParameterAuthority = constraintCatalog.GenericParameterAuthority;
+        if (genericParameterAuthority.ResultKind != MetadataGenericParameterProofResultKind.Exact)
         {
             throw new ArgumentException(
-                "The constraint aggregate requires an exact complete GenericParam catalog.",
-                nameof(genericParameterCatalog));
+                "A constraint-owner projection requires exact GenericParam authority.",
+                nameof(constraintCatalog));
         }
-        var sourceEnds = genericParameterCatalog.SourceEnds;
-        if (!CatalogContainsExactRow(genericParameterCatalog, ownerParameter))
+        if (!ownerParameter.SourceEnds.Equals(constraintCatalog.SourceEnds))
         {
-            return InvalidCatalogBinding(genericParameterCatalog, ownerParameter);
+            throw new ArgumentException(
+                "The selected GenericParam row must retain the exact physical-catalog source ends.",
+                nameof(ownerParameter));
+        }
+        var selectedOwner = genericParameterAuthority.FindGenericParameter(ownerParameter.GenericParameterToken);
+        var ownerGroup = genericParameterAuthority.ExactOwnerGroupOrDefault(ownerParameter.GenericParameterToken);
+        if (selectedOwner is null || ownerGroup is null || !selectedOwner.Equals(ownerParameter))
+        {
+            throw new ArgumentException(
+                "The selected GenericParam row must be the exact row issued by the physical catalog's authority.",
+                nameof(ownerParameter));
         }
 
-        var sourceCount = sourceEnds.GenericParameterConstraintRowCount;
-        if (sourceCount > StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount)
-        {
-            var bound = new EvaluationDeterministicBound(
-                ExpressionV2ContractLimits.GenericParameterConstraintRowCountBoundName,
-                StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount);
-            return new MetadataGenericParameterConstraintSetIdentity(
-                genericParameterCatalog,
-                ownerParameter,
-                ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
-                ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
-                MetadataEdgeAggregateResultKind.NonExact,
-                MetadataEdgeAggregateIssue.BoundReached,
-                bound,
-                checked(StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount + 1),
-                ImmutableArray<int>.Empty,
-                ImmutableArray<int>.Empty);
-        }
-        if (allRows.IsDefault || allRows.Length < sourceCount)
+        if (constraintCatalog.ResultKind != MetadataGenericParameterConstraintPhysicalTableResultKind.Exact)
         {
             return new MetadataGenericParameterConstraintSetIdentity(
-                genericParameterCatalog,
+                constraintCatalog,
                 ownerParameter,
+                ownerGroup,
                 ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
                 ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
-                MetadataEdgeAggregateResultKind.NonExact,
-                MetadataEdgeAggregateIssue.SourceIncomplete,
-                null,
-                0,
-                ImmutableArray<int>.Empty,
-                ImmutableArray<int>.Empty);
-        }
-        if (allRows.Length > sourceCount)
-        {
-            return new MetadataGenericParameterConstraintSetIdentity(
-                genericParameterCatalog,
-                ownerParameter,
-                ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
-                ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
-                MetadataEdgeAggregateResultKind.Invalid,
-                MetadataEdgeAggregateIssue.SourceRowCountConflict,
-                null,
-                0,
-                ImmutableArray<int>.Empty,
-                ImmutableArray<int>.Empty);
+                constraintCatalog.ResultKind == MetadataGenericParameterConstraintPhysicalTableResultKind.NonExact
+                    ? MetadataEdgeAggregateResultKind.NonExact
+                    : MetadataEdgeAggregateResultKind.Invalid,
+                MapCatalogIssue(constraintCatalog.Issue),
+                constraintCatalog.ReachedBound,
+                constraintCatalog.ObservedCount);
         }
 
-        var copied = ExpressionV2ContractEncoding.CopyRequired(
-            allRows,
-            nameof(allRows),
-            StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount);
-        if (copied.Any(row => !CatalogContainsExactRow(genericParameterCatalog, row.OwnerParameter)))
-        {
-            return InvalidCatalogBinding(genericParameterCatalog, ownerParameter);
-        }
-        var duplicateTokens = copied
-            .GroupBy(static row => row.GenericParameterConstraintToken)
-            .Where(static group => group.Count() > 1)
-            .Select(static group => group.Key)
-            .OrderBy(static token => token)
+        var complete = constraintCatalog.Rows
+            .Select(MetadataGenericParameterConstraintEdgeIdentity.FromPhysicalRow)
             .ToImmutableArray();
-        var physicalOrderInvalid = copied
-            .Select((row, index) => CanonicalReplayEncoding.MetadataTokenRowId(row.GenericParameterConstraintToken) != index + 1)
-            .Any(static invalid => invalid);
-        var ownerOrderInvalid = copied
-            .Zip(copied.Skip(1), static (left, right) =>
-                CanonicalReplayEncoding.MetadataTokenRowId(left.OwnerParameter.GenericParameterToken) >
-                CanonicalReplayEncoding.MetadataTokenRowId(right.OwnerParameter.GenericParameterToken))
-            .Any(static invalid => invalid);
-        var moduleMismatch = copied.Any(row =>
-            !row.OwnerParameter.Owner.MetadataModule.Equals(sourceEnds.SourceModule) ||
-            !row.Target.SourceMetadataModule.Equals(sourceEnds.SourceModule));
-        var sourceTokenOutOfRange = copied.Any(row =>
-            !sourceEnds.ContainsGenericParameterToken(row.OwnerParameter.GenericParameterToken) ||
-            !OwnerTokenIsWithinSource(sourceEnds, row.OwnerParameter.Owner) ||
-            !sourceEnds.ContainsTypeDefinitionToken(row.DeclaringType.TypeDefinitionToken) ||
-            !sourceEnds.ContainsTypeDefOrRefToken(row.Target.SourceMetadataToken));
-        var duplicateSemanticTokens = FindDuplicateConstraintSemanticRows(copied);
-        var issue = !duplicateTokens.IsEmpty || physicalOrderInvalid || ownerOrderInvalid
-            ? MetadataEdgeAggregateIssue.PhysicalOrderInvalid
-            : moduleMismatch
-                ? MetadataEdgeAggregateIssue.ModuleMismatch
-                : sourceTokenOutOfRange
-                    ? MetadataEdgeAggregateIssue.SourceTokenOutOfRange
-                    : !duplicateSemanticTokens.IsEmpty
-                        ? MetadataEdgeAggregateIssue.DuplicateSemanticEdge
-                        : MetadataEdgeAggregateIssue.None;
-        var exact = issue == MetadataEdgeAggregateIssue.None;
-        var selected = exact
-            ? copied.Where(row => row.OwnerParameter.Equals(ownerParameter)).ToImmutableArray()
-            : ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty;
-        if (exact && selected.Length > StaticFieldV2Limits.MaximumGenericConstraintCount)
+        var selected = constraintCatalog.RowsForOwnerOrEmpty(ownerParameter)
+            .Select(MetadataGenericParameterConstraintEdgeIdentity.FromPhysicalRow)
+            .ToImmutableArray();
+        if (selected.Length > StaticFieldV2Limits.MaximumGenericConstraintCount)
         {
             var bound = new EvaluationDeterministicBound(
                 ExpressionV2ContractLimits.GenericConstraintCountBoundName,
                 StaticFieldV2Limits.MaximumGenericConstraintCount);
             return new MetadataGenericParameterConstraintSetIdentity(
-                genericParameterCatalog,
+                constraintCatalog,
                 ownerParameter,
+                ownerGroup,
                 ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
                 ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
                 MetadataEdgeAggregateResultKind.NonExact,
                 MetadataEdgeAggregateIssue.BoundReached,
                 bound,
-                checked(StaticFieldV2Limits.MaximumGenericConstraintCount + 1),
-                ImmutableArray<int>.Empty,
-                ImmutableArray<int>.Empty);
+                checked(StaticFieldV2Limits.MaximumGenericConstraintCount + 1));
         }
         return new MetadataGenericParameterConstraintSetIdentity(
-            genericParameterCatalog,
+            constraintCatalog,
             ownerParameter,
-            copied,
+            ownerGroup,
+            complete,
             selected,
-            exact ? MetadataEdgeAggregateResultKind.Exact : MetadataEdgeAggregateResultKind.Invalid,
-            issue,
+            MetadataEdgeAggregateResultKind.Exact,
+            MetadataEdgeAggregateIssue.None,
             null,
-            0,
-            duplicateTokens,
-            duplicateSemanticTokens);
+            0);
     }
 
     /// <summary>Tests canonical equality between two GenericParamConstraint draft aggregates.</summary>
@@ -4359,65 +4300,35 @@ public sealed class MetadataGenericParameterConstraintSetIdentity :
     /// <returns>A deterministic hash code for canonical draft content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
-    private static bool CatalogContainsExactRow(
-        MetadataGenericParameterTableCatalogIdentity genericParameterCatalog,
-        MetadataGenericParameterIdentity candidate)
-    {
-        var rowId = CanonicalReplayEncoding.MetadataTokenRowId(candidate.GenericParameterToken);
-        var catalogRows = genericParameterCatalog.ExactRows;
-        return rowId > 0 && rowId <= catalogRows.Length && catalogRows[rowId - 1].Equals(candidate);
-    }
-
-    private static MetadataGenericParameterConstraintSetIdentity InvalidCatalogBinding(
-        MetadataGenericParameterTableCatalogIdentity genericParameterCatalog,
-        MetadataGenericParameterIdentity ownerParameter) =>
-        new(
-            genericParameterCatalog,
-            ownerParameter,
-            ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
-            ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty,
-            MetadataEdgeAggregateResultKind.Invalid,
-            MetadataEdgeAggregateIssue.GenericParameterCatalogMismatch,
-            null,
-            0,
-            ImmutableArray<int>.Empty,
-            ImmutableArray<int>.Empty);
-
-    private static ImmutableArray<int> FindDuplicateConstraintSemanticRows(
-        ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity> values)
-    {
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        var duplicates = new SortedSet<int>();
-        foreach (var row in values)
+    private static MetadataEdgeAggregateIssue MapCatalogIssue(
+        MetadataGenericParameterConstraintPhysicalTableIssue issue) =>
+        issue switch
         {
-            var key = string.Concat(row.OwnerParameter.Sha256, ":", row.Target.Sha256);
-            if (!seen.Add(key))
-            {
-                duplicates.Add(row.GenericParameterConstraintToken);
-            }
-        }
-        return duplicates.ToImmutableArray();
-    }
-
-    private static void WriteInt32Array(CanonicalReplayEncoding.Writer writer, ImmutableArray<int> values)
-    {
-        writer.WriteInt32(values.Length);
-        foreach (var value in values)
-        {
-            writer.WriteInt32(value);
-        }
-    }
-
-    private static bool OwnerTokenIsWithinSource(
-        MetadataSourceEndIdentity sourceEnds,
-        MetadataGenericParameterOwnerIdentity owner) =>
-        owner.Kind switch
-        {
-            MetadataGenericParameterOwnerKind.TypeDefinition =>
-                sourceEnds.ContainsTypeDefinitionToken(owner.OwnerMetadataToken),
-            MetadataGenericParameterOwnerKind.MethodDefinition =>
-                sourceEnds.ContainsMethodDefinitionToken(owner.OwnerMetadataToken),
-            _ => false,
+            MetadataGenericParameterConstraintPhysicalTableIssue.None => MetadataEdgeAggregateIssue.None,
+            MetadataGenericParameterConstraintPhysicalTableIssue.TableRowBoundReached =>
+                MetadataEdgeAggregateIssue.BoundReached,
+            MetadataGenericParameterConstraintPhysicalTableIssue.TableIncomplete =>
+                MetadataEdgeAggregateIssue.SourceIncomplete,
+            MetadataGenericParameterConstraintPhysicalTableIssue.TableRowCountConflict =>
+                MetadataEdgeAggregateIssue.SourceRowCountConflict,
+            MetadataGenericParameterConstraintPhysicalTableIssue.SourceModuleMismatch =>
+                MetadataEdgeAggregateIssue.ModuleMismatch,
+            MetadataGenericParameterConstraintPhysicalTableIssue.PhysicalRowMissing or
+                MetadataGenericParameterConstraintPhysicalTableIssue.PhysicalOrderInvalid or
+                MetadataGenericParameterConstraintPhysicalTableIssue.OwnerOrderInvalid =>
+                MetadataEdgeAggregateIssue.PhysicalOrderInvalid,
+            MetadataGenericParameterConstraintPhysicalTableIssue.DuplicateOwnerConstraint =>
+                MetadataEdgeAggregateIssue.DuplicateSemanticEdge,
+            MetadataGenericParameterConstraintPhysicalTableIssue.OwnerTokenKindInvalid or
+                MetadataGenericParameterConstraintPhysicalTableIssue.OwnerTokenOutOfRange or
+                MetadataGenericParameterConstraintPhysicalTableIssue.ConstraintTokenKindInvalid or
+                MetadataGenericParameterConstraintPhysicalTableIssue.ConstraintTokenOutOfRange =>
+                MetadataEdgeAggregateIssue.SourceTokenOutOfRange,
+            MetadataGenericParameterConstraintPhysicalTableIssue.GenericParameterAuthoritySourceMismatch or
+                MetadataGenericParameterConstraintPhysicalTableIssue.GenericParameterAuthorityNonExact or
+                MetadataGenericParameterConstraintPhysicalTableIssue.GenericParameterAuthorityInvalid =>
+                MetadataEdgeAggregateIssue.GenericParameterCatalogMismatch,
+            _ => throw new ArgumentOutOfRangeException(nameof(issue)),
         };
 }
 

@@ -147,14 +147,8 @@ public sealed class W8MetadataConstructionContractTests
             0x09000001,
             fixture.DerivedType,
             specificationTarget);
-        var constraint = MetadataGenericParameterConstraintEdgeIdentity.Create(
-            0x2C000001,
-            fixture.MethodParameter,
-            fixture.MethodContainer,
-            MetadataTypeDefOrRefTargetIdentity.FromTypeSpecification(rowTwo));
         Assert.Equal(0x09000001, implementation.InterfaceImplementationToken);
-        Assert.Equal(MetadataGenericParameterOwnerKind.MethodDefinition, constraint.OwnerParameter.Owner.Kind);
-        Assert.Equal(rowTwo.Reference, constraint.Target.TypeSpecification!.Reference);
+        Assert.Equal(rowOne.Reference, implementation.Target.TypeSpecification!.Reference);
     }
 
     /// <summary>Proves ordered physical edge aggregates reject duplicates without normalizing row order.</summary>
@@ -208,31 +202,6 @@ public sealed class W8MetadataConstructionContractTests
         Assert.Empty(duplicate.Rows);
         Assert.Equal(3, duplicate.CompleteTableRows.Length);
         Assert.Equal([repeatedAlpha.InterfaceImplementationToken], duplicate.DuplicateSemanticRowTokens.ToArray());
-
-        var target = MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.InterfaceAlpha);
-        var firstConstraint = MetadataGenericParameterConstraintEdgeIdentity.Create(
-            0x2C000001,
-            fixture.MethodParameter,
-            fixture.MethodContainer,
-            target);
-        var repeatedConstraint = MetadataGenericParameterConstraintEdgeIdentity.Create(
-            0x2C000002,
-            fixture.MethodParameter,
-            fixture.MethodContainer,
-            target);
-        var constraintSourceEnds = CreateAggregateSourceEnds(
-            fixture.Module,
-            interfaceImplementationRowCount: 0,
-            genericParameterConstraintRowCount: 2);
-        var constraints = MetadataGenericParameterConstraintSetIdentity.Create(
-            CreateGenericParameterCatalog(fixture, constraintSourceEnds),
-            fixture.MethodParameter,
-            [firstConstraint, repeatedConstraint]);
-        Assert.Equal(MetadataEdgeAggregateResultKind.Invalid, constraints.ResultKind);
-        Assert.Equal(MetadataEdgeAggregateIssue.DuplicateSemanticEdge, constraints.Issue);
-        Assert.Equal([repeatedConstraint.GenericParameterConstraintToken], constraints.DuplicateSemanticRowTokens.ToArray());
-        Assert.Empty(constraints.Rows);
-        Assert.Equal(2, constraints.CompleteTableRows.Length);
     }
 
     /// <summary>Proves complete edge tables can contain other owners while source stops remain entirely factless.</summary>
@@ -336,144 +305,6 @@ public sealed class W8MetadataConstructionContractTests
             boundedInterfaces.ObservedCount);
         Assert.Empty(boundedInterfaces.CompleteTableRows);
 
-        var typeConstraint = MetadataGenericParameterConstraintEdgeIdentity.Create(
-            0x2C000002,
-            fixture.Pair.GenericParameters[0],
-            fixture.Pair,
-            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.InterfaceAlpha));
-        var methodConstraint = MetadataGenericParameterConstraintEdgeIdentity.Create(
-            0x2C000001,
-            fixture.MethodParameter,
-            fixture.MethodContainer,
-            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.InterfaceBeta));
-        var genericParameterCatalog = CreateGenericParameterCatalog(fixture, sourceEnds);
-        var exactConstraints = MetadataGenericParameterConstraintSetIdentity.Create(
-            genericParameterCatalog,
-            fixture.MethodParameter,
-            [methodConstraint, typeConstraint]);
-        Assert.Equal(MetadataEdgeAggregateResultKind.Exact, exactConstraints.ResultKind);
-        Assert.Equal(genericParameterCatalog, exactConstraints.GenericParameterCatalog);
-        Assert.Equal(2, exactConstraints.CompleteTableRows.Length);
-        Assert.Equal([methodConstraint.GenericParameterConstraintToken],
-            exactConstraints.Rows.Select(static row => row.GenericParameterConstraintToken));
-
-        var incompleteConstraints = MetadataGenericParameterConstraintSetIdentity.Create(
-            genericParameterCatalog,
-            fixture.MethodParameter,
-            [methodConstraint]);
-        Assert.Equal(MetadataEdgeAggregateResultKind.NonExact, incompleteConstraints.ResultKind);
-        Assert.Equal(MetadataEdgeAggregateIssue.SourceIncomplete, incompleteConstraints.Issue);
-        Assert.Empty(incompleteConstraints.CompleteTableRows);
-        Assert.Empty(incompleteConstraints.Rows);
-
-        var absentConstraints = MetadataGenericParameterConstraintSetIdentity.Create(
-            genericParameterCatalog,
-            fixture.MethodParameter,
-            default);
-        Assert.Equal(MetadataEdgeAggregateResultKind.NonExact, absentConstraints.ResultKind);
-        Assert.Equal(MetadataEdgeAggregateIssue.SourceIncomplete, absentConstraints.Issue);
-        Assert.Empty(absentConstraints.CompleteTableRows);
-
-        var surplusConstraint = MetadataGenericParameterConstraintEdgeIdentity.Create(
-            0x2C000003,
-            fixture.MethodParameter,
-            fixture.MethodContainer,
-            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.Int32));
-        var surplusConstraints = MetadataGenericParameterConstraintSetIdentity.Create(
-            genericParameterCatalog,
-            fixture.MethodParameter,
-            [methodConstraint, typeConstraint, surplusConstraint]);
-        Assert.Equal(MetadataEdgeAggregateResultKind.Invalid, surplusConstraints.ResultKind);
-        Assert.Equal(MetadataEdgeAggregateIssue.SourceRowCountConflict, surplusConstraints.Issue);
-        Assert.Empty(surplusConstraints.CompleteTableRows);
-        Assert.Empty(surplusConstraints.Rows);
-
-        var forgedParameter = MetadataGenericParameterIdentity.Create(
-            fixture.MethodParameter.GenericParameterToken,
-            fixture.Pair.GenericParameters[0].Owner,
-            position: 1,
-            "TForgedOwnerAndPosition",
-            attributes: 0);
-        var forgedSelection = MetadataGenericParameterConstraintSetIdentity.Create(
-            genericParameterCatalog,
-            forgedParameter,
-            [methodConstraint, typeConstraint]);
-        Assert.Equal(MetadataEdgeAggregateResultKind.Invalid, forgedSelection.ResultKind);
-        Assert.Equal(MetadataEdgeAggregateIssue.GenericParameterCatalogMismatch, forgedSelection.Issue);
-        Assert.Empty(forgedSelection.CompleteTableRows);
-        Assert.Empty(forgedSelection.Rows);
-
-        var oneConstraintSourceEnds = CreateAggregateSourceEnds(
-            fixture.Module,
-            interfaceImplementationRowCount: 0,
-            genericParameterConstraintRowCount: 1);
-        var forgedConstraint = MetadataGenericParameterConstraintEdgeIdentity.Create(
-            0x2C000001,
-            forgedParameter,
-            fixture.Pair,
-            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(fixture.InterfaceAlpha));
-        var forgedEdgeOwner = MetadataGenericParameterConstraintSetIdentity.Create(
-            CreateGenericParameterCatalog(fixture, oneConstraintSourceEnds),
-            fixture.MethodParameter,
-            [forgedConstraint]);
-        Assert.Equal(MetadataEdgeAggregateResultKind.Invalid, forgedEdgeOwner.ResultKind);
-        Assert.Equal(MetadataEdgeAggregateIssue.GenericParameterCatalogMismatch, forgedEdgeOwner.Issue);
-        Assert.Empty(forgedEdgeOwner.CompleteTableRows);
-        Assert.Empty(forgedEdgeOwner.Rows);
-
-        var incompleteCatalog = MetadataGenericParameterTableCatalogIdentity.Create(sourceEnds, default);
-        Assert.Equal(MetadataGenericParameterProofResultKind.NonExact, incompleteCatalog.ResultKind);
-        Assert.Throws<ArgumentException>(() => MetadataGenericParameterConstraintSetIdentity.Create(
-            incompleteCatalog,
-            fixture.MethodParameter,
-            [methodConstraint, typeConstraint]));
-
-        var constraintCapPlusOne = CreateAggregateSourceEnds(
-            fixture.Module,
-            interfaceImplementationRowCount: 0,
-            genericParameterConstraintRowCount:
-                StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount + 1);
-        var boundedConstraints = MetadataGenericParameterConstraintSetIdentity.Create(
-            CreateGenericParameterCatalog(fixture, constraintCapPlusOne),
-            fixture.MethodParameter,
-            ImmutableArray<MetadataGenericParameterConstraintEdgeIdentity>.Empty);
-        Assert.Equal(MetadataEdgeAggregateResultKind.NonExact, boundedConstraints.ResultKind);
-        Assert.Equal(MetadataEdgeAggregateIssue.BoundReached, boundedConstraints.Issue);
-        Assert.Equal(ExpressionV2ContractLimits.GenericParameterConstraintRowCountBoundName,
-            boundedConstraints.ReachedBound!.Name);
-        Assert.Equal(StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount + 1,
-            boundedConstraints.ObservedCount);
-        Assert.Empty(boundedConstraints.CompleteTableRows);
-
-        var selectedConstraintCount = StaticFieldV2Limits.MaximumGenericConstraintCount + 1;
-        var selectedConstraintSourceEnds = CreateAggregateSourceEnds(
-            fixture.Module,
-            interfaceImplementationRowCount: 0,
-            genericParameterConstraintRowCount: selectedConstraintCount);
-        var selectedConstraintRows = Enumerable.Range(1, selectedConstraintCount)
-            .Select(rowId => MetadataGenericParameterConstraintEdgeIdentity.Create(
-                0x2C000000 | rowId,
-                fixture.MethodParameter,
-                fixture.MethodContainer,
-                MetadataTypeDefOrRefTargetIdentity.FromTypeSpecification(
-                    MetadataTypeSpecificationRowIdentity.Create(
-                        MetadataTypeSpecificationRowReferenceIdentity.Create(
-                            fixture.Module,
-                            0x1B000000 | rowId),
-                        [0x08]))))
-            .ToImmutableArray();
-        var selectedConstraintBound = MetadataGenericParameterConstraintSetIdentity.Create(
-            CreateGenericParameterCatalog(fixture, selectedConstraintSourceEnds),
-            fixture.MethodParameter,
-            selectedConstraintRows);
-        Assert.Equal(MetadataEdgeAggregateResultKind.NonExact, selectedConstraintBound.ResultKind);
-        Assert.Equal(MetadataEdgeAggregateIssue.BoundReached, selectedConstraintBound.Issue);
-        Assert.Equal(ExpressionV2ContractLimits.GenericConstraintCountBoundName,
-            selectedConstraintBound.ReachedBound!.Name);
-        Assert.Equal(StaticFieldV2Limits.MaximumGenericConstraintCount + 1,
-            selectedConstraintBound.ObservedCount);
-        Assert.Empty(selectedConstraintBound.CompleteTableRows);
-        Assert.Empty(selectedConstraintBound.Rows);
     }
 
     /// <summary>Proves the real decoder preserves generic heads, exact ARRAY vectors, and complete source bytes.</summary>
@@ -764,7 +595,7 @@ public sealed class W8MetadataConstructionContractTests
             over.ReachedBound!.Name);
     }
 
-    /// <summary>Proves TypeSpec positional grammar precedes role classification while method-owner context stays separate.</summary>
+    /// <summary>Proves TypeSpec positional grammar precedes role classification while use-site rules stay separate.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Typespec_position_rejects_byref_void_typedbyref_before_role_classification()
@@ -779,16 +610,6 @@ public sealed class W8MetadataConstructionContractTests
             MetadataTypeUseRole.BaseType,
             methodVariable.Specification,
             methodVariable.Graph).Kind);
-        Assert.Equal(MetadataTypeUseResultKind.Invalid, MetadataTypeUseResult.Classify(
-            MetadataTypeUseRole.GenericParameterConstraint,
-            methodVariable.Specification,
-            methodVariable.Graph,
-            fixture.Pair.GenericParameters[0]).Kind);
-        Assert.Equal(MetadataTypeUseResultKind.Open, MetadataTypeUseResult.Classify(
-            MetadataTypeUseRole.GenericParameterConstraint,
-            methodVariable.Specification,
-            methodVariable.Graph,
-            fixture.MethodParameter).Kind);
         Assert.Equal(MetadataTypeUseResultKind.Open, MetadataTypeUseResult.Classify(
             MetadataTypeUseRole.TypeSpecification,
             methodVariable.Specification,
@@ -2162,17 +1983,6 @@ public sealed class W8MetadataConstructionContractTests
             genericParameterRowCount: genericParameterRowCount,
             genericParameterConstraintRowCount: genericParameterConstraintRowCount);
         return MetadataSourceEndIdentity.Create(module, fact);
-    }
-
-    private static MetadataGenericParameterTableCatalogIdentity CreateGenericParameterCatalog(
-        SyntheticMetadataFixture fixture,
-        MetadataSourceEndIdentity sourceEnds)
-    {
-        var catalog = MetadataGenericParameterTableCatalogIdentity.Create(
-            sourceEnds,
-            fixture.GenericParameterRows);
-        Assert.Equal(MetadataGenericParameterProofResultKind.Exact, catalog.ResultKind);
-        return catalog;
     }
 
     private static ImmutableArray<byte> EncodeTypeDefOrRef(int metadataToken)

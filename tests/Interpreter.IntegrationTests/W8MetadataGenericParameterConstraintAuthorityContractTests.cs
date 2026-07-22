@@ -112,6 +112,226 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
         Assert.Equal("94b83067ad34ec0180339c6454a4efea468c97565d9061a8f21196bb269ad03a", rows[0].Sha256);
     }
 
+    /// <summary>Proves constraint edges and sets derive all owner facts and raw targets from physical authority.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Constraint_consumers_derive_owner_declaration_and_unresolved_target_from_physical_authority()
+    {
+        var scenario = BuildScenario(useReorderedMethodPointers: true);
+        var catalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            scenario.SourceEnds,
+            scenario.GenericParameterAuthority,
+            ConstraintRows(scenario.Module));
+        var methodOwner = scenario.GenericParameterAuthority.FindGenericParameter(GenericParameterToken(66))!;
+        var typeOwner = scenario.GenericParameterAuthority.FindGenericParameter(GenericParameterToken(68))!;
+        var unconstrainedOwner = scenario.GenericParameterAuthority.FindGenericParameter(GenericParameterToken(67))!;
+
+        var methodConstraints = MetadataGenericParameterConstraintSetIdentity.Create(catalog, methodOwner);
+        var typeConstraints = MetadataGenericParameterConstraintSetIdentity.Create(catalog, typeOwner);
+        var absentConstraints = MetadataGenericParameterConstraintSetIdentity.Create(catalog, unconstrainedOwner);
+
+        Assert.Equal(MetadataEdgeAggregateResultKind.Exact, methodConstraints.ResultKind);
+        Assert.Equal(MetadataEdgeAggregateIssue.None, methodConstraints.Issue);
+        Assert.Equal(catalog, methodConstraints.ConstraintCatalog);
+        Assert.Equal(scenario.GenericParameterAuthority, methodConstraints.GenericParameterAuthority);
+        Assert.Equal(scenario.SourceEnds, methodConstraints.SourceEnds);
+        Assert.Equal(methodOwner, methodConstraints.OwnerParameter);
+        Assert.Equal(MetadataGenericParameterOwnerKind.MethodDefinition, methodConstraints.OwnerGroup.OwnerKind);
+        Assert.Equal(MethodToken(2), methodConstraints.DeclaringMethodDefinition!.MethodDefinitionToken);
+        Assert.Equal(TypeToken(2), methodConstraints.DeclaringTypeDefinition.TypeDefinitionToken);
+        Assert.Equal(7, methodConstraints.CompleteTableRows.Length);
+
+        var methodEdge = Assert.Single(methodConstraints.Rows);
+        Assert.Equal(catalog.Rows[2], methodEdge.ConstraintRow);
+        Assert.Equal(methodOwner, methodEdge.OwnerParameter);
+        Assert.Equal(methodConstraints.OwnerGroup, methodEdge.OwnerGroup);
+        Assert.Equal(methodConstraints.DeclaringMethodDefinition, methodEdge.DeclaringMethodDefinition);
+        Assert.Equal(methodConstraints.DeclaringTypeDefinition, methodEdge.DeclaringTypeDefinition);
+        Assert.Equal(TypeReferenceToken(4), methodEdge.ConstraintMetadataToken);
+        Assert.Equal(ConstraintToken(3), methodEdge.GenericParameterConstraintToken);
+        Assert.Equal(scenario.SourceEnds, methodEdge.SourceEnds);
+
+        Assert.Equal(MetadataGenericParameterOwnerKind.TypeDefinition, typeConstraints.OwnerGroup.OwnerKind);
+        Assert.Null(typeConstraints.DeclaringMethodDefinition);
+        Assert.Equal(TypeToken(2), typeConstraints.DeclaringTypeDefinition.TypeDefinitionToken);
+        Assert.Equal([ConstraintToken(4), ConstraintToken(5)],
+            typeConstraints.Rows.Select(static edge => edge.GenericParameterConstraintToken).ToArray());
+        Assert.All(typeConstraints.Rows, edge => Assert.Equal(typeOwner, edge.OwnerParameter));
+
+        Assert.Equal(MetadataEdgeAggregateResultKind.Exact, absentConstraints.ResultKind);
+        Assert.Empty(absentConstraints.Rows);
+        Assert.Equal(7, absentConstraints.CompleteTableRows.Length);
+
+        var replayScenario = BuildScenario(useReorderedMethodPointers: true);
+        var replayCatalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            replayScenario.SourceEnds,
+            replayScenario.GenericParameterAuthority,
+            ConstraintRows(replayScenario.Module));
+        var replayOwner = replayScenario.GenericParameterAuthority.FindGenericParameter(GenericParameterToken(66))!;
+        var replay = MetadataGenericParameterConstraintSetIdentity.Create(replayCatalog, replayOwner);
+        Assert.Equal(methodConstraints, replay);
+        Assert.Equal(methodConstraints.GetHashCode(), replay.GetHashCode());
+
+        var returnedRows = methodConstraints.CompleteTableRows;
+        ImmutableCollectionsMarshal.AsArray(returnedRows)![0] = returnedRows[^1];
+        Assert.Equal(ConstraintToken(1), methodConstraints.CompleteTableRows[0].GenericParameterConstraintToken);
+        Assert.Equal("a50fe88c4e4dbc79daa9cbbc7200ef04e3656c2682ed5b477142046926a3657e", methodEdge.Sha256);
+        Assert.Equal("35dff48a5b922ab9af06c1ae54cd1c37d1a0625c91da9174930d721ac2da6761",
+            methodConstraints.Sha256);
+    }
+
+    /// <summary>Proves TypeSpec constraint use joins the exact physical row before applying owner-specific grammar.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Constraint_type_use_requires_exact_same_source_row_and_uses_authority_owner_kind()
+    {
+        var scenario = BuildScenario(useReorderedMethodPointers: true);
+        var catalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            scenario.SourceEnds,
+            scenario.GenericParameterAuthority,
+            ConstraintRowsForTypeUse(scenario.Module));
+        var typeVariable = SpecificationAndGraph(scenario, rowId: 1, [0x1E, 0x00]);
+        var methodVariable = SpecificationAndGraph(scenario, rowId: 3, [0x1E, 0x00]);
+
+        var typeUse = MetadataTypeUseResult.Classify(
+            MetadataTypeUseRole.GenericParameterConstraint,
+            typeVariable.Specification,
+            typeVariable.Graph,
+            catalog.Rows[3]);
+        var methodUse = MetadataTypeUseResult.Classify(
+            MetadataTypeUseRole.GenericParameterConstraint,
+            methodVariable.Specification,
+            methodVariable.Graph,
+            catalog.Rows[5]);
+
+        Assert.Equal(MetadataTypeUseResultKind.Invalid, typeUse.Kind);
+        Assert.Equal(MetadataTypeUseResultKind.Open, methodUse.Kind);
+        Assert.Equal(catalog.Rows[5], methodUse.ConstraintRow);
+        Assert.Equal(catalog.Rows[5].OwnerParameter, methodUse.ConstraintOwnerParameter);
+        Assert.Equal(catalog.Rows[5].OwnerGroup, methodUse.ConstraintOwnerGroup);
+        Assert.Equal(MethodToken(1), methodUse.ConstraintDeclaringMethodDefinition!.MethodDefinitionToken);
+        Assert.Equal(TypeToken(3), methodUse.ConstraintDeclaringTypeDefinition!.TypeDefinitionToken);
+        Assert.Equal(scenario.SourceEnds, methodUse.ConstraintSourceEnds);
+        Assert.Equal(TypeSpecificationToken(3), methodUse.ConstraintMetadataToken);
+
+        Assert.Throws<ArgumentException>(() => MetadataTypeUseResult.Classify(
+            MetadataTypeUseRole.GenericParameterConstraint,
+            typeVariable.Specification,
+            typeVariable.Graph,
+            catalog.Rows[5]));
+        Assert.Throws<ArgumentException>(() => MetadataTypeUseResult.Classify(
+            MetadataTypeUseRole.GenericParameterConstraint,
+            typeVariable.Specification,
+            typeVariable.Graph));
+        Assert.Throws<ArgumentException>(() => MetadataTypeUseResult.Classify(
+            MetadataTypeUseRole.TypeSpecification,
+            typeVariable.Specification,
+            typeVariable.Graph,
+            catalog.Rows[3]));
+
+        var foreignScenario = BuildScenario(CreateMetadataModule(0x3000, 'b'));
+        var foreignCatalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            foreignScenario.SourceEnds,
+            foreignScenario.GenericParameterAuthority,
+            ConstraintRowsForTypeUse(foreignScenario.Module));
+        Assert.Throws<ArgumentException>(() => MetadataTypeUseResult.Classify(
+            MetadataTypeUseRole.GenericParameterConstraint,
+            methodVariable.Specification,
+            methodVariable.Graph,
+            foreignCatalog.Rows[5]));
+        Assert.Equal("0e54d4ed02a35c8370c8d4e491385487539a980cbfc35ffbbf706cd9c354131c", methodUse.Sha256);
+    }
+
+    /// <summary>Proves consumer projections propagate physical stops and reject foreign authority selections.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Constraint_consumer_stops_are_prefix_free_and_owner_selection_is_authority_exact()
+    {
+        var scenario = BuildScenario();
+        var observations = ConstraintRows(scenario.Module);
+        var owner = scenario.GenericParameterAuthority.FindGenericParameter(GenericParameterToken(68))!;
+        var incompleteCatalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            scenario.SourceEnds,
+            scenario.GenericParameterAuthority,
+            observations.RemoveAt(observations.Length - 1));
+        var incomplete = MetadataGenericParameterConstraintSetIdentity.Create(incompleteCatalog, owner);
+        Assert.Equal(MetadataEdgeAggregateResultKind.NonExact, incomplete.ResultKind);
+        Assert.Equal(MetadataEdgeAggregateIssue.SourceIncomplete, incomplete.Issue);
+        Assert.Equal(6, incomplete.ObservedCount);
+        Assert.Empty(incomplete.CompleteTableRows);
+        Assert.Empty(incomplete.Rows);
+
+        var otherModule = CreateMetadataModule(0x3000, 'b');
+        var invalidCatalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            scenario.SourceEnds,
+            scenario.GenericParameterAuthority,
+            Replace(observations, 0, ConstraintRow(
+                otherModule,
+                rowId: 1,
+                ownerToken: GenericParameterToken(1),
+                constraintToken: TypeSpecificationToken(2))));
+        var invalid = MetadataGenericParameterConstraintSetIdentity.Create(invalidCatalog, owner);
+        Assert.Equal(MetadataEdgeAggregateResultKind.Invalid, invalid.ResultKind);
+        Assert.Equal(MetadataEdgeAggregateIssue.ModuleMismatch, invalid.Issue);
+        Assert.Empty(invalid.CompleteTableRows);
+        Assert.Empty(invalid.Rows);
+
+        var exactCatalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            scenario.SourceEnds,
+            scenario.GenericParameterAuthority,
+            observations);
+        var foreignScenario = BuildScenario(otherModule);
+        var foreignOwner = foreignScenario.GenericParameterAuthority.FindGenericParameter(GenericParameterToken(68))!;
+        Assert.Throws<ArgumentException>(() =>
+            MetadataGenericParameterConstraintSetIdentity.Create(exactCatalog, foreignOwner));
+        var sameSourceDifferentAuthority = BuildScenario(scenario.Module, pairLeftName: "OtherPairLeft");
+        var conflictingOwner = sameSourceDifferentAuthority.GenericParameterAuthority.FindGenericParameter(
+            GenericParameterToken(68))!;
+        Assert.Throws<ArgumentException>(() =>
+            MetadataGenericParameterConstraintSetIdentity.Create(exactCatalog, conflictingOwner));
+
+        var tableBoundScenario = BuildScenario(
+            genericParameterConstraintRowCount:
+                StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount + 1);
+        var tableBoundOwner = tableBoundScenario.GenericParameterAuthority.FindGenericParameter(
+            GenericParameterToken(68))!;
+        var tableBoundCatalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            tableBoundScenario.SourceEnds,
+            tableBoundScenario.GenericParameterAuthority,
+            default);
+        var tableBound = MetadataGenericParameterConstraintSetIdentity.Create(tableBoundCatalog, tableBoundOwner);
+        Assert.Equal(MetadataEdgeAggregateResultKind.NonExact, tableBound.ResultKind);
+        Assert.Equal(MetadataEdgeAggregateIssue.BoundReached, tableBound.Issue);
+        Assert.Equal(ExpressionV2ContractLimits.GenericParameterConstraintRowCountBoundName,
+            tableBound.ReachedBound!.Name);
+        Assert.Empty(tableBound.CompleteTableRows);
+
+        var ownerConstraintCount = StaticFieldV2Limits.MaximumGenericConstraintCount + 1;
+        var ownerBoundScenario = BuildScenario(
+            genericParameterConstraintRowCount: ownerConstraintCount,
+            typeSpecificationRowCount: ownerConstraintCount);
+        var ownerBoundObservations = Enumerable.Range(1, ownerConstraintCount)
+            .Select(rowId => ConstraintRow(
+                ownerBoundScenario.Module,
+                rowId,
+                GenericParameterToken(68),
+                TypeSpecificationToken(rowId)))
+            .ToImmutableArray();
+        var ownerBoundCatalog = MetadataGenericParameterConstraintPhysicalTableCatalogIdentity.Create(
+            ownerBoundScenario.SourceEnds,
+            ownerBoundScenario.GenericParameterAuthority,
+            ownerBoundObservations);
+        var ownerBoundOwner = ownerBoundScenario.GenericParameterAuthority.FindGenericParameter(
+            GenericParameterToken(68))!;
+        var ownerBound = MetadataGenericParameterConstraintSetIdentity.Create(ownerBoundCatalog, ownerBoundOwner);
+        Assert.Equal(MetadataEdgeAggregateResultKind.NonExact, ownerBound.ResultKind);
+        Assert.Equal(MetadataEdgeAggregateIssue.BoundReached, ownerBound.Issue);
+        Assert.Equal(ExpressionV2ContractLimits.GenericConstraintCountBoundName, ownerBound.ReachedBound!.Name);
+        Assert.Equal(ownerConstraintCount, ownerBound.ObservedCount);
+        Assert.Empty(ownerBound.CompleteTableRows);
+        Assert.Empty(ownerBound.Rows);
+    }
+
     /// <summary>Proves deterministic rejection for physical ordering, source, token, and duplicate contradictions.</summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -345,6 +565,36 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
             .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
         Assert.Single(typeof(MetadataGenericParameterConstraintPhysicalTableCatalogIdentity)
             .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Empty(typeof(MetadataGenericParameterConstraintEdgeIdentity)
+            .GetConstructors(BindingFlags.Public | BindingFlags.Instance));
+        Assert.Empty(typeof(MetadataGenericParameterConstraintEdgeIdentity)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Null(typeof(MetadataGenericParameterConstraintEdgeIdentity).GetProperty("Target"));
+        Assert.Null(typeof(MetadataGenericParameterConstraintEdgeIdentity).GetProperty("DeclaringType"));
+        Assert.Equal(
+            typeof(MetadataGenericParameterTableRowIdentity),
+            typeof(MetadataGenericParameterConstraintEdgeIdentity)
+                .GetProperty(nameof(MetadataGenericParameterConstraintEdgeIdentity.OwnerParameter))!.PropertyType);
+
+        var setFactory = Assert.Single(typeof(MetadataGenericParameterConstraintSetIdentity)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Equal(nameof(MetadataGenericParameterConstraintSetIdentity.Create), setFactory.Name);
+        Assert.Equal(
+            [
+                typeof(MetadataGenericParameterConstraintPhysicalTableCatalogIdentity),
+                typeof(MetadataGenericParameterTableRowIdentity),
+            ],
+            setFactory.GetParameters().Select(static parameter => parameter.ParameterType).ToArray());
+        Assert.Null(typeof(MetadataGenericParameterConstraintSetIdentity).GetProperty("GenericParameterCatalog"));
+        Assert.Null(typeof(MetadataGenericParameterConstraintSetIdentity).GetProperty("DuplicateRowTokens"));
+        Assert.Null(typeof(MetadataGenericParameterConstraintSetIdentity).GetProperty("DuplicateSemanticRowTokens"));
+
+        var typeUseFactory = Assert.Single(typeof(MetadataTypeUseResult)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly));
+        Assert.Equal(
+            typeof(MetadataGenericParameterConstraintTableRowIdentity),
+            typeUseFactory.GetParameters()[3].ParameterType);
+        Assert.Null(typeof(MetadataTypeUseResult).GetProperty("ConstraintOwner"));
 
         var publicTypes = new[]
         {
@@ -353,6 +603,8 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
             typeof(MetadataGenericParameterConstraintRowObservationIdentity),
             typeof(MetadataGenericParameterConstraintTableRowIdentity),
             typeof(MetadataGenericParameterConstraintPhysicalTableCatalogIdentity),
+            typeof(MetadataGenericParameterConstraintEdgeIdentity),
+            typeof(MetadataGenericParameterConstraintSetIdentity),
         };
         Assert.All(publicTypes.Where(static type => type.IsClass), static type => Assert.True(type.IsSealed));
 
@@ -430,6 +682,28 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
             ConstraintRow(module, 7, GenericParameterToken(134), TypeReferenceToken(1)),
         ];
 
+    private static ImmutableArray<MetadataGenericParameterConstraintRowObservationIdentity> ConstraintRowsForTypeUse(
+        StaticFieldMetadataModuleIdentity module) =>
+        ConstraintRows(module).SetItem(
+            5,
+            ConstraintRow(module, 6, GenericParameterToken(70), TypeSpecificationToken(3)));
+
+    private static (MetadataTypeSpecificationIdentity Specification, MetadataTypeSpecificationGraphIdentity Graph)
+        SpecificationAndGraph(AuthorityScenario scenario, int rowId, ImmutableArray<byte> signatureBytes)
+    {
+        var reference = MetadataTypeSpecificationRowReferenceIdentity.Create(
+            scenario.Module,
+            TypeSpecificationToken(rowId));
+        var tokenCatalog = MetadataSignatureTokenResolutionCatalog.Create(
+            scenario.SourceEnds,
+            ImmutableArray<MetadataSignatureTokenResolutionEntry>.Empty);
+        var outcome = MetadataTypeSignatureDecoder.DecodeTypeSpecification(reference, signatureBytes, tokenCatalog);
+        Assert.Equal(MetadataSignatureDecodeResultKind.Exact, outcome.Kind);
+        var specification = MetadataTypeSpecificationIdentity.FromDecodeOutcome(outcome);
+        var graph = MetadataTypeSpecificationGraphIdentity.Create(reference, [outcome]);
+        return (specification, graph);
+    }
+
     private static MetadataGenericParameterConstraintRowObservationIdentity ConstraintRow(
         StaticFieldMetadataModuleIdentity module,
         int rowId,
@@ -446,7 +720,9 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
         int genericParameterConstraintRowCount = 7,
         bool omitGenericParameterObservations = false,
         string moduleTypeName = "<Module>",
-        string pairLeftName = "PairLeft")
+        string pairLeftName = "PairLeft",
+        bool useReorderedMethodPointers = false,
+        int typeSpecificationRowCount = 3)
     {
         module ??= CreateMetadataModule();
         var genericObservations = AuthorityGenericParameterRows(module, pairLeftName);
@@ -460,23 +736,33 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
                 typeDefinitionRowCount: 4,
                 fieldDefinitionRowCount: 0,
                 typeReferenceRowCount: 4,
-                typeSpecificationRowCount: 3,
+                typeSpecificationRowCount: typeSpecificationRowCount,
                 methodDefinitionRowCount: 2,
                 nestedClassRowCount: 0,
                 genericParameterRowCount: genericObservations.Length,
-                genericParameterConstraintRowCount: genericParameterConstraintRowCount));
-        var typeDefinitions = MetadataTypeDefinitionTableCatalogIdentity.Create(
-            sourceEnds,
-            [
-                AuthorityTypeRow(module, 1, methodListRowId: 0, string.Empty, moduleTypeName,
-                    TypeAttributes.NotPublic),
-                AuthorityTypeRow(module, 2, methodListRowId: 1, "Synthetic.ConstraintAuthority", "Pair`2",
-                    TypeAttributes.Public),
-                AuthorityTypeRow(module, 3, methodListRowId: 2, "Synthetic.ConstraintAuthority", "AtLimit`64",
-                    TypeAttributes.Public),
-                AuthorityTypeRow(module, 4, methodListRowId: 3, "Synthetic.ConstraintAuthority", "BeyondLimit`65",
-                    TypeAttributes.Public),
-            ]);
+                genericParameterConstraintRowCount: genericParameterConstraintRowCount,
+                methodPointerRowCount: useReorderedMethodPointers ? 2 : 0));
+        var typeRows = ImmutableArray.Create(
+            AuthorityTypeRow(module, 1, methodListRowId: 0, string.Empty, moduleTypeName,
+                TypeAttributes.NotPublic),
+            AuthorityTypeRow(module, 2, methodListRowId: 1, "Synthetic.ConstraintAuthority", "Pair`2",
+                TypeAttributes.Public),
+            AuthorityTypeRow(module, 3, methodListRowId: 2, "Synthetic.ConstraintAuthority", "AtLimit`64",
+                TypeAttributes.Public),
+            AuthorityTypeRow(module, 4, methodListRowId: 3, "Synthetic.ConstraintAuthority", "BeyondLimit`65",
+                TypeAttributes.Public));
+        var methodPointers = useReorderedMethodPointers
+            ? MetadataMemberPointerTableCatalogIdentity.Create(
+                sourceEnds,
+                default,
+                [
+                    MetadataMemberPointerRowObservationIdentity.Create(module, 0x05000001, MethodToken(2)),
+                    MetadataMemberPointerRowObservationIdentity.Create(module, 0x05000002, MethodToken(1)),
+                ])
+            : null;
+        var typeDefinitions = methodPointers is null
+            ? MetadataTypeDefinitionTableCatalogIdentity.Create(sourceEnds, typeRows)
+            : MetadataTypeDefinitionTableCatalogIdentity.Create(sourceEnds, typeRows, methodPointers);
         var nestedClasses = MetadataNestedClassTableCatalogIdentity.Create(
             sourceEnds,
             typeDefinitions,
