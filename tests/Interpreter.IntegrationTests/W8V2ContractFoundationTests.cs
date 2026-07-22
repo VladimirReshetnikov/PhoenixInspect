@@ -496,12 +496,17 @@ public sealed class W8V2ContractFoundationTests
             ExpressionV2ContractLimits.FrameStringCharacterCountBoundName,
             ExpressionV2ContractLimits.FrameThreadCountBoundName,
             ExpressionV2ContractLimits.FrameValueByteCountBoundName,
+            ExpressionV2ContractLimits.GenericParameterConstraintRowCountBoundName,
+            ExpressionV2ContractLimits.GenericParameterRowCountBoundName,
             ExpressionV2ContractLimits.IdentifierCharacterCountBoundName,
+            ExpressionV2ContractLimits.InterfaceImplementationRowCountBoundName,
             ExpressionV2ContractLimits.LexicalBlockerCountBoundName,
             ExpressionV2ContractLimits.LocalConstantCountBoundName,
             ExpressionV2ContractLimits.LocalCountBoundName,
             ExpressionV2ContractLimits.LocalFunctionAssociationCountBoundName,
             ExpressionV2ContractLimits.ParameterCountBoundName,
+            ExpressionV2ContractLimits.RawTypeSignatureNodeCountBoundName,
+            ExpressionV2ContractLimits.SignatureTokenResolutionCountBoundName,
             ExpressionV2ContractLimits.ExpressionCharacterCountBoundName,
             ExpressionV2ContractLimits.ExpressionSegmentCountBoundName,
             ExpressionV2ContractLimits.SyntaxDepthBoundName,
@@ -509,6 +514,7 @@ public sealed class W8V2ContractFoundationTests
             ExpressionV2ContractLimits.TypeSpecificationArgumentCountBoundName,
             ExpressionV2ContractLimits.TypeSpecificationByteCountBoundName,
             ExpressionV2ContractLimits.TypeSpecificationDepthBoundName,
+            ExpressionV2ContractLimits.TypeSpecificationRowTraversalCountBoundName,
         }.OrderBy(static name => name, StringComparer.Ordinal);
         Assert.Equal(expectedFrameNames, FrameValueV1Limits.AllDeclaredBounds.Select(static bound => bound.Name));
         Assert.DoesNotContain(FrameValueV1Limits.AllDeclaredBounds,
@@ -516,6 +522,24 @@ public sealed class W8V2ContractFoundationTests
         Assert.Equal(63, StaticFieldV2Limits.MaximumSyntaxPartitionCount);
         Assert.Equal(4_096, StaticFieldV2Limits.MaximumNameCandidateOccurrenceCount);
         Assert.Equal(1_024, StaticFieldV2Limits.MaximumDeclaredMethodCount);
+        Assert.Equal(256, StaticFieldV2Limits.MaximumRawTypeSignatureNodeCount);
+        Assert.Equal(64, StaticFieldV2Limits.MaximumTypeSpecificationRowTraversalCount);
+        Assert.Equal(256, StaticFieldV2Limits.MaximumSignatureTokenResolutionCount);
+        Assert.Equal(4_096, StaticFieldV2Limits.MaximumInterfaceImplementationRowCount);
+        Assert.Equal(65_536, StaticFieldV2Limits.MaximumGenericParameterRowCount);
+        Assert.Equal(65_536, StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount);
+        Assert.Equal(
+            StaticFieldV2Limits.MaximumSignatureTokenResolutionCount,
+            FrameValueV1Limits.MaximumSignatureTokenResolutionCount);
+        Assert.Equal(
+            StaticFieldV2Limits.MaximumInterfaceImplementationRowCount,
+            FrameValueV1Limits.MaximumInterfaceImplementationRowCount);
+        Assert.Equal(
+            StaticFieldV2Limits.MaximumGenericParameterRowCount,
+            FrameValueV1Limits.MaximumGenericParameterRowCount);
+        Assert.Equal(
+            StaticFieldV2Limits.MaximumGenericParameterConstraintRowCount,
+            FrameValueV1Limits.MaximumGenericParameterConstraintRowCount);
         Assert.Equal(32, FrameValueV1Limits.MaximumArrayRank);
     }
 

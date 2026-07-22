@@ -43,6 +43,15 @@ public static class ExpressionV2ContractLimits
     /// <summary>Gets the maximum cumulative generic-argument count in one projected construction.</summary>
     public const int MaximumTypeSpecificationArgumentCount = 64;
 
+    /// <summary>Gets the maximum cumulative raw signature-node count before closed projection.</summary>
+    public const int MaximumRawTypeSignatureNodeCount = 256;
+
+    /// <summary>Gets the maximum cumulative TypeSpec-row count followed through one resolution graph.</summary>
+    public const int MaximumTypeSpecificationRowTraversalCount = 64;
+
+    /// <summary>Gets the maximum token-resolution fact count retained by one metadata signature catalog.</summary>
+    public const int MaximumSignatureTokenResolutionCount = 256;
+
     /// <summary>Gets the maximum closed-type topology depth.</summary>
     public const int MaximumClosedTypeTopologyDepth = 16;
 
@@ -76,6 +85,15 @@ public static class ExpressionV2ContractLimits
 
     /// <summary>Gets the maximum Field-row count examined in one metadata table.</summary>
     public const int MaximumFieldDefinitionRowCount = 65_536;
+
+    /// <summary>Gets the maximum InterfaceImpl-row count examined in one metadata table.</summary>
+    public const int MaximumInterfaceImplementationRowCount = 4_096;
+
+    /// <summary>Gets the maximum GenericParam-row count examined in one complete metadata table.</summary>
+    public const int MaximumGenericParameterRowCount = 65_536;
+
+    /// <summary>Gets the maximum GenericParamConstraint-row count examined in one complete metadata table.</summary>
+    public const int MaximumGenericParameterConstraintRowCount = 65_536;
 
     /// <summary>Gets the maximum runtime-construction count examined for one TypeDef.</summary>
     public const int MaximumRuntimeConstructionCount = 4_096;
@@ -171,6 +189,9 @@ public static class ExpressionV2ContractLimits
     internal const string TypeSpecificationByteCountBoundName = "expression-v2.signature.bytes";
     internal const string TypeSpecificationDepthBoundName = "expression-v2.signature.depth";
     internal const string TypeSpecificationArgumentCountBoundName = "expression-v2.signature.arguments";
+    internal const string RawTypeSignatureNodeCountBoundName = "expression-v2.signature.raw-nodes";
+    internal const string TypeSpecificationRowTraversalCountBoundName = "expression-v2.signature.typespec-rows";
+    internal const string SignatureTokenResolutionCountBoundName = "expression-v2.signature.token-resolutions";
     internal const string ClosedTypeTopologyDepthBoundName = "expression-v2.closed-type.depth";
     internal const string ClosedTypeTopologyNodeCountBoundName = "expression-v2.closed-type.nodes";
     internal const string SyntaxPartitionCountBoundName = "expression-v2.syntax.partitions";
@@ -181,6 +202,10 @@ public static class ExpressionV2ContractLimits
     internal const string ModuleCountBoundName = "expression-v2.metadata.modules";
     internal const string TypeDefinitionRowCountBoundName = "expression-v2.metadata.typedef-rows";
     internal const string FieldDefinitionRowCountBoundName = "expression-v2.metadata.field-rows";
+    internal const string InterfaceImplementationRowCountBoundName = "expression-v2.metadata.interfaceimpl-rows";
+    internal const string GenericParameterRowCountBoundName = "expression-v2.metadata.genericparam-rows";
+    internal const string GenericParameterConstraintRowCountBoundName =
+        "expression-v2.metadata.genericparamconstraint-rows";
     internal const string RuntimeConstructionCountBoundName = "expression-v2.runtime.constructions";
     internal const string FieldCountPerConstructionBoundName = "expression-v2.metadata.fields-per-construction";
     internal const string ImportScopeDepthBoundName = "expression-v2.context.import-depth";
@@ -226,6 +251,7 @@ public static class ExpressionV2ContractLimits
             new EvaluationDeterministicBound(IdentifierCharacterCountBoundName, MaximumIdentifierCharacterCount),
             new EvaluationDeterministicBound(ImportFactCountBoundName, MaximumImportFactCount),
             new EvaluationDeterministicBound(ImportScopeDepthBoundName, MaximumImportScopeDepth),
+            new EvaluationDeterministicBound(InterfaceImplementationRowCountBoundName, MaximumInterfaceImplementationRowCount),
             new EvaluationDeterministicBound(LexicalBlockerCountBoundName, MaximumLexicalBlockerCount),
             new EvaluationDeterministicBound(LocalFunctionAssociationCountBoundName, MaximumLocalFunctionAssociationCount),
             new EvaluationDeterministicBound(LocalConstantCountBoundName, MaximumLocalConstantCount),
@@ -239,6 +265,10 @@ public static class ExpressionV2ContractLimits
             new EvaluationDeterministicBound(FallbackStringCharacterCountBoundName, MaximumFallbackStringCharacterCount),
             new EvaluationDeterministicBound(GenericConstraintCountBoundName, MaximumGenericConstraintCount),
             new EvaluationDeterministicBound(GenericParameterCountBoundName, MaximumGenericParameterCount),
+            new EvaluationDeterministicBound(
+                GenericParameterConstraintRowCountBoundName,
+                MaximumGenericParameterConstraintRowCount),
+            new EvaluationDeterministicBound(GenericParameterRowCountBoundName, MaximumGenericParameterRowCount),
             new EvaluationDeterministicBound(ModuleCountBoundName, MaximumModuleCount),
             new EvaluationDeterministicBound(NameCandidateOccurrenceCountBoundName, MaximumNameCandidateOccurrenceCount),
             new EvaluationDeterministicBound(NamespaceLevelCountBoundName, MaximumNamespaceLevelCount),
@@ -256,7 +286,10 @@ public static class ExpressionV2ContractLimits
             new EvaluationDeterministicBound(TypeReferenceResolutionDepthBoundName, MaximumTypeReferenceResolutionDepth),
             new EvaluationDeterministicBound(TypeSpecificationArgumentCountBoundName, MaximumTypeSpecificationArgumentCount),
             new EvaluationDeterministicBound(TypeSpecificationByteCountBoundName, MaximumTypeSpecificationByteCount),
-            new EvaluationDeterministicBound(TypeSpecificationDepthBoundName, MaximumTypeSpecificationDepth));
+            new EvaluationDeterministicBound(TypeSpecificationDepthBoundName, MaximumTypeSpecificationDepth),
+            new EvaluationDeterministicBound(RawTypeSignatureNodeCountBoundName, MaximumRawTypeSignatureNodeCount),
+            new EvaluationDeterministicBound(SignatureTokenResolutionCountBoundName, MaximumSignatureTokenResolutionCount),
+            new EvaluationDeterministicBound(TypeSpecificationRowTraversalCountBoundName, MaximumTypeSpecificationRowTraversalCount));
 }
 
 /// <summary>Exposes the limits that can constrain the additive <c>StaticFieldExpressionV2</c> profile.</summary>
@@ -308,6 +341,17 @@ public static class StaticFieldV2Limits
     /// <summary>Gets the maximum cumulative generic-argument count.</summary>
     public const int MaximumTypeSpecificationArgumentCount = ExpressionV2ContractLimits.MaximumTypeSpecificationArgumentCount;
 
+    /// <summary>Gets the maximum cumulative raw signature-node count.</summary>
+    public const int MaximumRawTypeSignatureNodeCount = ExpressionV2ContractLimits.MaximumRawTypeSignatureNodeCount;
+
+    /// <summary>Gets the maximum cumulative TypeSpec-row traversal count.</summary>
+    public const int MaximumTypeSpecificationRowTraversalCount =
+        ExpressionV2ContractLimits.MaximumTypeSpecificationRowTraversalCount;
+
+    /// <summary>Gets the maximum metadata signature token-resolution fact count.</summary>
+    public const int MaximumSignatureTokenResolutionCount =
+        ExpressionV2ContractLimits.MaximumSignatureTokenResolutionCount;
+
     /// <summary>Gets the maximum closed-type topology depth.</summary>
     public const int MaximumClosedTypeTopologyDepth = ExpressionV2ContractLimits.MaximumClosedTypeTopologyDepth;
 
@@ -328,6 +372,18 @@ public static class StaticFieldV2Limits
 
     /// <summary>Gets the maximum Field-row count examined in one metadata table.</summary>
     public const int MaximumFieldDefinitionRowCount = ExpressionV2ContractLimits.MaximumFieldDefinitionRowCount;
+
+    /// <summary>Gets the maximum InterfaceImpl-row count examined in one metadata table.</summary>
+    public const int MaximumInterfaceImplementationRowCount =
+        ExpressionV2ContractLimits.MaximumInterfaceImplementationRowCount;
+
+    /// <summary>Gets the maximum GenericParam-row count examined in one complete metadata table.</summary>
+    public const int MaximumGenericParameterRowCount =
+        ExpressionV2ContractLimits.MaximumGenericParameterRowCount;
+
+    /// <summary>Gets the maximum GenericParamConstraint-row count examined in one complete metadata table.</summary>
+    public const int MaximumGenericParameterConstraintRowCount =
+        ExpressionV2ContractLimits.MaximumGenericParameterConstraintRowCount;
 
     /// <summary>Gets the maximum runtime-construction count.</summary>
     public const int MaximumRuntimeConstructionCount = ExpressionV2ContractLimits.MaximumRuntimeConstructionCount;
@@ -440,6 +496,29 @@ public static class FrameValueV1Limits
     /// <summary>Gets the maximum cumulative metadata type-signature argument count.</summary>
     public const int MaximumTypeSignatureArgumentCount = ExpressionV2ContractLimits.MaximumTypeSpecificationArgumentCount;
 
+    /// <summary>Gets the maximum cumulative raw metadata signature-node count.</summary>
+    public const int MaximumRawTypeSignatureNodeCount = ExpressionV2ContractLimits.MaximumRawTypeSignatureNodeCount;
+
+    /// <summary>Gets the maximum cumulative TypeSpec-row traversal count.</summary>
+    public const int MaximumTypeSpecificationRowTraversalCount =
+        ExpressionV2ContractLimits.MaximumTypeSpecificationRowTraversalCount;
+
+    /// <summary>Gets the maximum metadata signature token-resolution fact count.</summary>
+    public const int MaximumSignatureTokenResolutionCount =
+        ExpressionV2ContractLimits.MaximumSignatureTokenResolutionCount;
+
+    /// <summary>Gets the maximum InterfaceImpl-row count examined for metadata type relations.</summary>
+    public const int MaximumInterfaceImplementationRowCount =
+        ExpressionV2ContractLimits.MaximumInterfaceImplementationRowCount;
+
+    /// <summary>Gets the maximum GenericParam-row count examined for metadata type context.</summary>
+    public const int MaximumGenericParameterRowCount =
+        ExpressionV2ContractLimits.MaximumGenericParameterRowCount;
+
+    /// <summary>Gets the maximum GenericParamConstraint-row count examined for metadata type context.</summary>
+    public const int MaximumGenericParameterConstraintRowCount =
+        ExpressionV2ContractLimits.MaximumGenericParameterConstraintRowCount;
+
     /// <summary>Gets the maximum closed-type topology depth.</summary>
     public const int MaximumClosedTypeTopologyDepth = ExpressionV2ContractLimits.MaximumClosedTypeTopologyDepth;
 
@@ -506,6 +585,12 @@ public static class FrameValueV1Limits
                     ExpressionV2ContractLimits.TypeSpecificationByteCountBoundName or
                     ExpressionV2ContractLimits.TypeSpecificationDepthBoundName or
                     ExpressionV2ContractLimits.TypeSpecificationArgumentCountBoundName or
+                    ExpressionV2ContractLimits.RawTypeSignatureNodeCountBoundName or
+                    ExpressionV2ContractLimits.SignatureTokenResolutionCountBoundName or
+                    ExpressionV2ContractLimits.TypeSpecificationRowTraversalCountBoundName or
+                    ExpressionV2ContractLimits.InterfaceImplementationRowCountBoundName or
+                    ExpressionV2ContractLimits.GenericParameterConstraintRowCountBoundName or
+                    ExpressionV2ContractLimits.GenericParameterRowCountBoundName or
                     ExpressionV2ContractLimits.ArrayRankBoundName or
                     ExpressionV2ContractLimits.ParameterCountBoundName or
                     ExpressionV2ContractLimits.LocalCountBoundName or
