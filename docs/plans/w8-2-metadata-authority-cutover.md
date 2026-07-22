@@ -1,8 +1,9 @@
 # W8.2 Metadata Authority Cutover
 
-> **Status:** Active implementation plan.
+> **Status:** Complete for its defined authority-cutover scope; the checkpoint ledger below is the evidence record.
 >
-> **Scale:** `~10K LOC` across additive `~1K LOC` complete-table slices and one `~10K LOC` consumer cutover.
+> **Scale:** Realized as additive `~1K LOC` complete-table slices, `~1K–2K LOC` resolution/ancestry portfolios, and a
+> net-negative consumer cutover; the original `~10K LOC` consumer estimate is retained as calibration only.
 >
 > **Scope caveat:** This document governs the draft W8 metadata authority used by the dump evaluator. It does not
 > change frozen W1–W7 contracts or claim that later W8 binding, runtime mapping, evaluation, and portfolio gates have
@@ -253,21 +254,20 @@ examples:
 | `626ea9226` | The TypeRef resolution portfolio resolves every physical TypeRef row across modules through Module, nested-parent, AssemblyRef, and bounded forwarder paths with complete typed row dispositions. |
 | `59da9fed0` | The ancestry portfolio selects the exact physical core roles, derives every immediate-base edge, classifies TypeDef semantics only from exact immediate base-role edges, and walks bounded cross-module ancestry chains. |
 | `4bf08141f` | Constraint targets join their exact same-module, cross-module, or retained-TypeSpec authority evidence through the resolution portfolio with identical source-end lineage. |
+| `d4d5f745c` | Every caller-authored issuer is deleted: raw and classified TypeDef identities, W7 promotion, caller-created generic owner/row/declaration/owner-set/binding-ledger factories, the W7-backed method certificate, the caller-composed base edge, and the legacy delegate-ancestry proof. TypeSpec, closed-type, and interface-edge machinery is retyped onto classification and resolution rows with seven advanced canonical schemas, and an assembly-wide reflection guard enforces the boundary. |
 
-The multi-module ancestry and semantic-role slice is landed: TypeRef target resolution, core-role selection,
-immediate-base edges, semantic classification, bounded ancestry, and the constraint-target join are all issued by
-guarded portfolios over the same authority lineage, and indirect role derivation is impossible by construction.
-Generic TypeSpec bases and TypeSpec constraint targets remain retained signature rows for the later
-constructed-substitution work.
+The multi-module ancestry and semantic-role slice and the issuer cutover are landed: TypeRef target resolution,
+core-role selection, immediate-base edges, semantic classification, bounded ancestry, the constraint-target join, and
+the retyped construction surface are all issued by guarded portfolios over one authority lineage. Indirect role
+derivation and caller-authored authority claims are impossible by construction, and W7 objects remain comparison
+candidates only. Generic TypeSpec bases and TypeSpec constraint targets remain retained signature rows for the later
+constructed-substitution work. The consumer cutover realized as a net deletion rather than the estimated `~10K LOC`
+addition because repository-wide search proved the legacy chain had no production consumers.
 
-The next implementation slice is **legacy issuer removal and downstream-consumer migration (`~10K LOC`)**. Remaining
-caller-authored issuers — raw TypeDef promotion and construction, caller-created generic owner/row/declaration
-factories, the W7-backed method certificate, and final TypeDef factories — are deleted or migrated onto the landed
-authority portfolios, and the remaining downstream substitution, construction, classification, and binding consumers
-lose every caller-authored bypass.
-
-Legacy W8 issuer removal and every remaining downstream-consumer migration remain active until their own pushed
-checkpoints and verification records land.
+The metadata-authority contract families defined by this plan are complete. The host-owned producer that materializes
+these catalogs from real dump metadata, and the V2 binder that consumes them, land with the W8.3+ projection and
+binding checkpoints of the [Post-W7 Path Forward](post-w7-path-forward.md); they are product work, not authority
+cutover work.
 
 ## 11. Exit gate
 

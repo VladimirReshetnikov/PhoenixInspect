@@ -49,13 +49,13 @@ signature grammar, Product event adapter, and caller-supplied selected-method le
 Checkpoint `5fd87a3e5` also lands exact metadata source ends and token catalogs, raw and role-classified TypeDefs, the
 complete TypeSpec graph, exact FieldSig identity, GenericParam declaration/catalog/owner-set/binding ledgers,
 interface/constraint edge aggregates, provisional construction classification, and Nullable construction
-preservation. The active [metadata-authority cutover](plans/w8-2-metadata-authority-cutover.md) now records the
-non-circular replacement: landed checkpoints through `415b7355a` derive FieldDef anchors, complete TypeDef member
-ownership, NestedClass parents, FieldPtr/MethodPtr mappings, GenericParam and MethodDef catalogs, definition
-authority, compiler-name mappings, W7 compatibility certificates and portfolios, constraint authority and its
-consumer cutover, complete physical reference tables, and authority-derived named-TypeDef chain portfolios from
-physical tables. Multi-module ancestry and semantic roles, public-issuer removal, and the remaining downstream
-migration stay active. These proof objects are not yet mandatory inputs to every downstream consumer. A host-owned lexical
+preservation. The [metadata-authority cutover](plans/w8-2-metadata-authority-cutover.md) is complete for its defined
+scope at checkpoint `d4d5f745c`: physical tables, definition authority, compiler-name mappings, W7 compatibility
+certificates and portfolios, constraint authority, reference tables, named-TypeDef chains, multi-module TypeRef
+resolution, core-role selection, immediate-base edges, semantic classification, bounded ancestry, constraint-target
+joins, and the retyped TypeSpec/closed-type/interface-edge surface are all catalog-issued, every caller-authored
+issuer is deleted, and an assembly-wide reflection guard enforces the boundary. The host-owned producer that
+materializes these catalogs from real dumps and the V2 binder that consumes them remain W8.3+ product work. A host-owned lexical
 producer, the remaining `StaticFieldExpressionV2`/`BindingContextV2` families, and the product
 binder/runtime/evaluator remain active work. The umbrella scale remains `~100K LOC`, split primarily into `~10K LOC`
 checkpoints, and the meaningful portfolio minimum is now thirty-five independent incidents.
@@ -335,7 +335,7 @@ docs/
 | `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
 | `plans/post-w7-path-forward.md` | Planning | Plan | Current · Active | W8 sequence with W8.1 physical gates complete and W8.2 active: additive V2/frame contracts, nested generic owners, scoped aliases/current-member/extern/using-static binding, constraints, accessibility, assignability, admitted stored/literal/frame strategies, suffix composition, thirty-five-incident minimum, and corrected decision gate. |
 | `plans/w8-1-physical-truth-disposition.md` | Planning | Evidence record | Complete · Active | Authoritative W8.1 checkpoint ledger and branch disposition: constructed/thread/RVA/literal/frame admission; context/frame-generic non-admission; exact array topology; W8.2 API and thirty-five-incident consequences. |
-| `plans/w8-2-metadata-authority-cutover.md` | Planning | Implementation plan | Current · Active | Non-circular complete-table authority for TypeDef ownership, NestedClass parents, member pointers, GenericParam owners, MethodDef declarations, compiler-style arity mapping, public-issuer removal, and downstream migration. |
+| `plans/w8-2-metadata-authority-cutover.md` | Planning | Evidence record | Complete · Active | Completed non-circular complete-table authority: TypeDef ownership, NestedClass parents, member pointers, GenericParam owners, MethodDef declarations, compiler-style arity mapping, reference tables, TypeRef resolution, core roles, semantic classification, bounded ancestry, constraint targets, and total public-issuer removal. |
 | `plans/post-w6-path-forward.md` | Planning | Plan | Complete · Reference | Closed W7 static-field expression/context sequence: physical truth, immutable contracts, one-parser admission, fully qualified and selected-frame/PDB/import binding, counted values, suffix composition, sixteen-dump portfolio, selected successor category, and milestone-scoped hosted disposition. |
 | `plans/post-w5-path-forward.md` | Planning | Plan | Complete · Reference | Closed W6 opt-in bounded member-chain contract, certified terminal data-property dependency, evidence/result matrix, headless synthetic corpus, selected context-acquisition successor, and milestone-scoped hosted disposition. |
 | `plans/post-w4-path-forward.md` | Planning | Plan | Complete · Reference | Closed W5 expression-to-result product composition, headless reference consumer, meaningful synthetic usefulness gate, milestone-scoped hosted-gate waiver, and evidence-selected W6 decision. |
