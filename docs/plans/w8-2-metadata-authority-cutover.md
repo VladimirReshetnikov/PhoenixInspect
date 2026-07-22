@@ -202,9 +202,12 @@ examples:
 | `172824d7d` | Complete TypeDef rows derive accepted FieldList and MethodList intervals. |
 | `fac073ae9` | Complete NestedClass rows derive the exact parent map. |
 | `5c90f1b4b` | Complete member-pointer tables resolve TypeDef ownership to definition tokens. |
+| `fd92ab415` | Complete physical GenericParam and MethodDef catalogs derive owner groups and decoded declaration facts. |
+| `2ba2db3dd` | Exact Param and ParamPtr source ends join the MethodDef catalog to the complete metadata source identity. |
+| `3de41dce4` | The definition-authority join issues TypeDef and MethodDef authority rows, and independent compiler-name facts cover CLS spelling, Roslyn projection, C# spelling, and evaluator admission. |
 
-The GenericParam, MethodDef, definition-authority, issuer-removal, and downstream-consumer rows remain active until
-their own pushed checkpoints and verification records land.
+Authority-binding for compiler-name mappings, legacy W8 issuer removal, and downstream-consumer migration remain active
+until their own pushed checkpoints and verification records land.
 
 ## 11. Exit gate
 
