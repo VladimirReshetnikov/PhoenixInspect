@@ -7,8 +7,8 @@
 > [`Post-W6 Path Forward`](../../plans/post-w6-path-forward.md), respectively. The active
 > [`Post-W7 Path Forward`](../../plans/post-w7-path-forward.md) governs W8. W8.1's physical-truth fixture and probes are
 > complete at `220be94b4`; their exact checkpoint ledger and branch dispositions are frozen in the
-> [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is the active contract
-> checkpoint. Metadata proof checkpoint `5fd87a3e5` is landed and locally verified, while mandatory downstream
+> [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). W8.2 is complete for its
+> authority-cutover scope and W8.3 for its projection scope, both landed and locally verified, while mandatory downstream
 > consumption, host production, binding, runtime/storage, and evaluation remain active work. The repository must
 > distinguish checked-in test code, a locally verified
 > result, a CI-enforced gate, and an approved design. The broad abstract-analysis, virtual-stepping, dynamic, async,
@@ -1054,18 +1054,27 @@ mandatory separate `FrameValueExpressionV1`. It excludes context-relative identi
 generic substitution; those branches have no success rows or corresponding product API. Rank and SZ-versus-MD
 topology remain exact despite one retained runtime-oracle asymmetry.
 
-The landed W8.2 contract tests now cover immutable expression/frame foundations, caller-supplied lexical evidence,
-and source-anchored metadata proofs. The metadata cases exercise one shared Core TypeSpec/FieldSig grammar and Product
-event adapter; exact source ends and token catalogs; complex nested generic, array, custom-modifier, and function-
-pointer trees; direct named TypeSpec roots; missing rows, duplicate blobs, cycles, crossed owners, incomplete sources,
-exact-cap and cap-plus-one stops; raw/provisional/exact type classification; FieldSig anchors; complete GenericParam
-tables, selected owner sets, exact-zero arity, row-addressed bindings; edge aggregates; Nullable topology; defensive
-copies; and public draft XML. Verification recorded at `5fd87a3e5` passed the strict Release solution build with zero
-warnings/errors, unit 519/519, integration 344/344, and focused metadata construction 18/18. This validates detached
-proof construction only; it does not validate a host producer or any V2 binder/runtime/evaluator consumer.
+The landed W8.2 and W8.3 contract tests cover immutable expression/frame foundations, caller-supplied lexical
+evidence, the complete metadata authority, and the two syntax projectors. The metadata cases exercise one shared Core
+TypeSpec/FieldSig grammar and Product event adapter; exact source ends and token catalogs; complete physical tables
+for every definition, member-pointer, generic, constraint, and reference table with whole-table coverage, order,
+range, and source-correlation proofs; definition authority and compiler-name mappings; W7 compatibility certificates
+and portfolios; named-TypeDef chains; cross-module TypeRef resolution over module, nested-parent, AssemblyRef, and
+forwarder paths with ambiguity, cycle, and depth stops; physical core-role selection with misparented and ambiguous
+rejections; immediate-base edges and semantic classification that make indirect role derivation impossible; bounded
+ancestry at the exact cap and cap plus one; constraint-target joins; complex nested generic, array, custom-modifier,
+and function-pointer trees; FieldSig anchors and authority-owned substitution; Nullable topology; defensive copies;
+guarded private issuance; and public draft XML. The projection cases cover admitted alias, global, nested generic,
+bare, and suffixed spellings, typed unsupported grammar exclusions, Roslyn-diagnostic invalids, and exact-at-cap
+versus cap-plus-one pairs for every reachable syntax bound. An assembly-wide reflection guard rejects public
+metadata-identity factories that accept W7 candidates and proves the deleted pre-authority types are absent, and the
+one-parser-site guard still admits exactly one production parse. Verification recorded at `8bb74c866` passed the
+strict Release solution build with zero warnings/errors, unit 519/519, and the complete Fast category 424/424 with
+zero skips. This validates detached authority and syntax construction only; it does not validate a host producer or
+any V2 binder, runtime, or evaluator consumer.
 
-The remaining W8.2 work and W8.3 onward require projection, binder, contextual, runtime/value, lexical-completeness,
-product-composition, and generated-conformance lanes. The meaningful synthetic portfolio contains thirty-two fixed
+W8.3b onward require host-producer, binder, contextual, runtime/value, lexical-completeness, product-composition, and
+generated-conformance lanes. The meaningful synthetic portfolio contains thirty-two fixed
 independent core full dumps across four materially distinct application shapes, plus thread-relative, RVA-backed, and
 frame-value incidents: 35 independent incidents minimum. The portfolio retains per-row decision facts and tie
 deferral. Every managed process remains headless, every W1–W7 artifact remains golden, and only landed checkpoints may
