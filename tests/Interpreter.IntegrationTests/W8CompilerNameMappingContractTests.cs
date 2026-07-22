@@ -404,7 +404,8 @@ public sealed class W8CompilerNameMappingContractTests
         int assemblyReferenceRowCount = 0,
         int moduleReferenceRowCount = 0,
         int fileRowCount = 0,
-        int exportedTypeRowCount = 0)
+        int exportedTypeRowCount = 0,
+        int genericParameterConstraintRowCount = 0)
     {
         module ??= CreateMetadataModule();
         var fieldPointersPresent = useFieldPointers ?? usePointers;
@@ -420,7 +421,8 @@ public sealed class W8CompilerNameMappingContractTests
             assemblyReferenceRowCount,
             moduleReferenceRowCount,
             fileRowCount,
-            exportedTypeRowCount);
+            exportedTypeRowCount,
+            genericParameterConstraintRowCount);
         var memberPointers = MetadataMemberPointerTableCatalogIdentity.Create(
             sourceEnds,
             fieldPointersPresent ? PointerRows(module, MetadataMemberPointerTableKind.Field, [2, 1]) : default,
@@ -561,7 +563,8 @@ public sealed class W8CompilerNameMappingContractTests
         int assemblyReferenceRowCount = 0,
         int moduleReferenceRowCount = 0,
         int fileRowCount = 0,
-        int exportedTypeRowCount = 0) =>
+        int exportedTypeRowCount = 0,
+        int genericParameterConstraintRowCount = 0) =>
         MetadataSourceEndIdentity.Create(
             sourceModule: module,
             sourceModuleFact: StaticFieldModuleSearchFact.Exact(
@@ -588,7 +591,7 @@ public sealed class W8CompilerNameMappingContractTests
                 exportedTypeRowCount: exportedTypeRowCount,
                 nestedClassRowCount: 3,
                 genericParameterRowCount: genericParameterRowCount,
-                genericParameterConstraintRowCount: 0,
+                genericParameterConstraintRowCount: genericParameterConstraintRowCount,
                 fieldPointerRowCount: useFieldPointers ? 2 : 0,
                 methodPointerRowCount: useMethodPointers ? 2 : 0,
                 parameterPointerRowCount: 0));
