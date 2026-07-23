@@ -106,6 +106,12 @@ public enum StaticFieldV2ClosedConstructionIssue
 
     /// <summary>One generic constraint cannot be proven by the authorities this draft slice owns.</summary>
     ConstraintUnprovable = 24,
+
+    /// <summary>The supplied interface-implementation authority portfolio prerequisite was non-exact.</summary>
+    InterfaceImplementationPortfolioNonExact = 25,
+
+    /// <summary>The supplied interface-implementation authority portfolio prerequisite was invalid.</summary>
+    InterfaceImplementationPortfolioInvalid = 26,
 }
 
 /// <summary>Classifies the draft disposition of one substituted generic-constraint obligation.</summary>
@@ -247,7 +253,7 @@ public sealed class StaticFieldV2ConstraintCheckIdentity : IEquatable<StaticFiel
 public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFieldV2ClosedConstructionOutcome>
 {
     private const string CanonicalDomain = "static-field-v2-closed-construction-outcome";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private static readonly object RowMintCapability = new();
     private readonly ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments;
     private readonly ImmutableArray<StaticFieldV2ConstraintCheckIdentity> constraintChecks;
@@ -259,6 +265,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         StaticFieldV2TypeNameBindingOutcome nameBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
         MetadataClosedTypeIdentity? ownerConstruction,
         ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments,
         ImmutableArray<StaticFieldV2ConstraintCheckIdentity> constraintChecks,
@@ -271,6 +278,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         NameBinding = nameBinding;
         AncestryPortfolio = ancestryPortfolio;
         ConstraintPortfolio = constraintPortfolio;
+        InterfaceImplementationPortfolio = interfaceImplementationPortfolio;
         OwnerConstruction = ownerConstruction;
         this.flattenedArguments = ExpressionV2ContractEncoding.Copy(flattenedArguments);
         this.constraintChecks = ExpressionV2ContractEncoding.Copy(constraintChecks);
@@ -284,6 +292,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         writer.WriteSha256(nameBinding.Sha256, nameof(nameBinding));
         writer.WriteSha256(ancestryPortfolio.Sha256, nameof(ancestryPortfolio));
         writer.WriteSha256(constraintPortfolio.Sha256, nameof(constraintPortfolio));
+        ExpressionV2ContractEncoding.WriteOptionalDigest(writer, interfaceImplementationPortfolio?.Sha256);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, ownerConstruction?.Sha256);
         writer.WriteInt32(flattenedArguments.Length);
         foreach (var argument in flattenedArguments)
@@ -335,6 +344,9 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
 
     /// <summary>Gets the retained constraint-target resolution draft portfolio prerequisite.</summary>
     public MetadataConstraintTargetResolutionPortfolioIdentity ConstraintPortfolio { get; }
+
+    /// <summary>Gets the retained optional interface-implementation draft portfolio, otherwise null.</summary>
+    public MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementationPortfolio { get; }
 
     /// <summary>Gets the exact closed owner construction, or null for any typed stop.</summary>
     public MetadataClosedTypeIdentity? OwnerConstruction { get; }
@@ -402,6 +414,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         StaticFieldV2TypeNameBindingOutcome nameBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
         MetadataClosedTypeIdentity ownerConstruction,
         ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments,
         ImmutableArray<StaticFieldV2ConstraintCheckIdentity> constraintChecks,
@@ -413,6 +426,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
             nameBinding,
             ancestryPortfolio,
             constraintPortfolio,
+            interfaceImplementationPortfolio,
             ownerConstruction,
             flattenedArguments,
             constraintChecks,
@@ -426,6 +440,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         StaticFieldV2TypeNameBindingOutcome nameBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
         EvaluationDeterministicBound? reachedBound,
         int observedCount,
         int? relatedMetadataToken,
@@ -436,6 +451,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
             nameBinding,
             ancestryPortfolio,
             constraintPortfolio,
+            interfaceImplementationPortfolio,
             null,
             [],
             decisiveCheck is null
@@ -452,9 +468,12 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
 /// consumes one exact name binding, one exact ancestry authority portfolio, and one exact constraint-target
 /// resolution portfolio, and produces either one exact closed owner construction or one prefix-free typed stop.
 /// <para>
-/// Interface obligations are deliberately unprovable here because InterfaceImpl edges belong to a separately owned
-/// later authority; a substituted TypeSpec constraint target is likewise deferred to the constructed-constraint
-/// substitution work. Neither is ever reported as a violation.
+/// An interface constraint target is decided from the optional interface-implementation portfolio: a proved bounded
+/// transitive closure satisfies, a complete closure that never names the target violates, and every incomplete
+/// closure stays unprovable with its typed terminal named in the retained reason. When no portfolio is supplied the
+/// obligation remains deferred and unprovable, exactly as before. A substituted TypeSpec constraint target is
+/// likewise deferred to the constructed-constraint substitution work. Neither deferral is ever reported as a
+/// violation.
 /// </para>
 /// </remarks>
 public static class StaticFieldV2ClosedConstructionBinder
@@ -478,6 +497,10 @@ public static class StaticFieldV2ClosedConstructionBinder
     private const string BaseDefinitionReachedReason = "constraint.base-definition-reached";
     private const string BaseDefinitionUnreachableReason = "constraint.base-definition-unreachable";
     private const string InterfaceTargetReason = "constraint.interface-target-deferred";
+    private const string InterfaceImplementedReason = "constraint.interface-implemented";
+    private const string InterfaceNotImplementedReason = "constraint.interface-not-implemented";
+    private const string InterfaceClosureReasonPrefix = "constraint.interface-closure-";
+    private const string InterfaceClosureUnavailableReason = "constraint.interface-closure-unavailable";
     private const string TypeSpecificationTargetReason = "constraint.typespec-target-deferred";
     private const string UnresolvedReferenceTargetReason = "constraint.unresolved-reference-target";
     private const string TargetClassificationAbsentReason = "constraint.target-classification-absent";
@@ -487,17 +510,23 @@ public static class StaticFieldV2ClosedConstructionBinder
     /// <param name="nameBinding">The owner name-binding draft outcome produced by the preceding draft slice.</param>
     /// <param name="ancestryPortfolio">The exact ancestry authority draft portfolio for every examined module.</param>
     /// <param name="constraintPortfolio">The exact constraint-target resolution draft portfolio.</param>
+    /// <param name="interfaceImplementationPortfolio">
+    /// The optional interface-implementation draft portfolio. Omitting it leaves every interface constraint target
+    /// deferred and unprovable; supplying it decides the obligation from the argument's bounded transitive interface
+    /// closure and never reports an incomplete closure as a violation.
+    /// </param>
     /// <remarks>
     /// Every prerequisite is checked before any construction begins, every declared draft topology bound is checked
     /// before a construction factory is called so a crossing yields cap-plus-one evidence rather than an exception,
     /// and every constraint obligation of every chain segment is examined before an answer is formed.
     /// </remarks>
     /// <returns>A sealed immutable draft outcome that is one exact construction or one prefix-free typed stop.</returns>
-    /// <exception cref="ArgumentNullException">Any supplied draft argument is null.</exception>
+    /// <exception cref="ArgumentNullException">Any required supplied draft argument is null.</exception>
     public static StaticFieldV2ClosedConstructionOutcome BindOwnerConstruction(
         StaticFieldV2TypeNameBindingOutcome nameBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
-        MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio)
+        MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null)
     {
         ArgumentNullException.ThrowIfNull(nameBinding);
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
@@ -529,6 +558,7 @@ public static class StaticFieldV2ClosedConstructionBinder
                 nameBinding,
                 ancestryPortfolio,
                 constraintPortfolio,
+                interfaceImplementationPortfolio,
                 nameBinding.ReachedBound,
                 nameBinding.ObservedCount,
                 null);
@@ -547,6 +577,7 @@ public static class StaticFieldV2ClosedConstructionBinder
                 nameBinding,
                 ancestryPortfolio,
                 constraintPortfolio,
+                interfaceImplementationPortfolio,
                 null,
                 ancestryPortfolio.ObservedCount,
                 null);
@@ -566,14 +597,40 @@ public static class StaticFieldV2ClosedConstructionBinder
                 nameBinding,
                 ancestryPortfolio,
                 constraintPortfolio,
+                interfaceImplementationPortfolio,
                 constraintPortfolio.ReachedBound,
                 constraintPortfolio.ObservedCount,
                 null);
         }
 
+        if (interfaceImplementationPortfolio is { } interfacePortfolio &&
+            interfacePortfolio.ResultKind != MetadataInterfaceImplementationPortfolioResultKind.Exact)
+        {
+            var isInvalid =
+                interfacePortfolio.ResultKind == MetadataInterfaceImplementationPortfolioResultKind.Invalid;
+            return StaticFieldV2ClosedConstructionOutcome.IssueStop(
+                isInvalid
+                    ? StaticFieldV2ClosedConstructionResultKind.Invalid
+                    : StaticFieldV2ClosedConstructionResultKind.NonExact,
+                isInvalid
+                    ? StaticFieldV2ClosedConstructionIssue.InterfaceImplementationPortfolioInvalid
+                    : StaticFieldV2ClosedConstructionIssue.InterfaceImplementationPortfolioNonExact,
+                nameBinding,
+                ancestryPortfolio,
+                constraintPortfolio,
+                interfaceImplementationPortfolio,
+                interfacePortfolio.ReachedBound,
+                interfacePortfolio.ObservedCount,
+                null);
+        }
+
         var candidate = nameBinding.SelectedCandidate!;
         var ownerModule = candidate.SourceModule;
-        var context = new BindContext(nameBinding, ancestryPortfolio, constraintPortfolio);
+        var context = new BindContext(
+            nameBinding,
+            ancestryPortfolio,
+            constraintPortfolio,
+            interfaceImplementationPortfolio);
         if (!context.HasModule(ownerModule))
         {
             return context.Stopped(
@@ -677,6 +734,7 @@ public static class StaticFieldV2ClosedConstructionBinder
             nameBinding,
             ancestryPortfolio,
             constraintPortfolio,
+            interfaceImplementationPortfolio,
             ownerConstruction,
             flattened,
             checks.Value,
@@ -1318,7 +1376,7 @@ public static class StaticFieldV2ClosedConstructionBinder
         }
         if (targetRole == MetadataTypeDefinitionSemanticRole.Interface)
         {
-            return (StaticFieldV2ConstraintDisposition.Unprovable, InterfaceTargetReason);
+            return EvaluateInterfaceTarget(context, argument, targetModule, targetDefinition);
         }
         if (context.Ancestry.CoreRoles is { } coreRoles &&
             targetModule.Equals(coreRoles.CoreModule) &&
@@ -1351,6 +1409,53 @@ public static class StaticFieldV2ClosedConstructionBinder
         }
         return (StaticFieldV2ConstraintDisposition.Violated, BaseDefinitionUnreachableReason);
     }
+
+    private static (StaticFieldV2ConstraintDisposition Disposition, string Reason) EvaluateInterfaceTarget(
+        BindContext context,
+        MetadataClosedTypeIdentity argument,
+        StaticFieldMetadataModuleIdentity targetModule,
+        MetadataTypeDefinitionAuthorityIdentity targetDefinition)
+    {
+        if (context.InterfaceImplementations is not { } portfolio)
+        {
+            return (StaticFieldV2ConstraintDisposition.Unprovable, InterfaceTargetReason);
+        }
+        if (argument.FinalClassification is not { } argumentClassification)
+        {
+            return (StaticFieldV2ConstraintDisposition.Unprovable, NonNamedArgumentReason);
+        }
+
+        var argumentModule = argumentClassification.SourceModule;
+        var argumentToken = argumentClassification.TypeDefinition.TypeDefinitionToken;
+        return portfolio.Implements(
+            argumentModule,
+            argumentToken,
+            targetModule,
+            targetDefinition.TypeDefinitionToken) switch
+        {
+            MetadataInterfaceImplementationAnswer.Yes =>
+                (StaticFieldV2ConstraintDisposition.Satisfied, InterfaceImplementedReason),
+            MetadataInterfaceImplementationAnswer.No =>
+                (StaticFieldV2ConstraintDisposition.Violated, InterfaceNotImplementedReason),
+            _ => (
+                StaticFieldV2ConstraintDisposition.Unprovable,
+                ClosureTerminalReason(portfolio.ExactImplementedInterfacesOrDefault(argumentModule, argumentToken))),
+        };
+    }
+
+    private static string ClosureTerminalReason(MetadataInterfaceImplementationClosureIdentity? closure) =>
+        closure?.TerminalKind switch
+        {
+            MetadataInterfaceImplementationClosureTerminalKind.UnresolvedReferenceReached =>
+                $"{InterfaceClosureReasonPrefix}unresolved-reference-reached",
+            MetadataInterfaceImplementationClosureTerminalKind.GenericInterfaceReached =>
+                $"{InterfaceClosureReasonPrefix}generic-interface-reached",
+            MetadataInterfaceImplementationClosureTerminalKind.CycleDetected =>
+                $"{InterfaceClosureReasonPrefix}cycle-detected",
+            MetadataInterfaceImplementationClosureTerminalKind.DepthBoundReached =>
+                $"{InterfaceClosureReasonPrefix}depth-bound-reached",
+            _ => InterfaceClosureUnavailableReason,
+        };
 
     private static bool TryProveDefaultConstructor(
         BindContext context,
@@ -1442,11 +1547,13 @@ public static class StaticFieldV2ClosedConstructionBinder
         internal BindContext(
             StaticFieldV2TypeNameBindingOutcome nameBinding,
             MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
-            MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio)
+            MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
+            MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio)
         {
             this.nameBinding = nameBinding;
             Ancestry = ancestryPortfolio;
             this.constraintPortfolio = constraintPortfolio;
+            InterfaceImplementations = interfaceImplementationPortfolio;
 
             var chainEntries = ancestryPortfolio.ResolutionPortfolio.ChainPortfolio.Entries;
             var views = ImmutableArray.CreateBuilder<ChainModuleView>(chainEntries.Length);
@@ -1467,6 +1574,8 @@ public static class StaticFieldV2ClosedConstructionBinder
         }
 
         internal MetadataAncestryAuthorityPortfolioIdentity Ancestry { get; }
+
+        internal MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementations { get; }
 
         internal ImmutableArray<ChainModuleView> Modules { get; }
 
@@ -1581,6 +1690,7 @@ public static class StaticFieldV2ClosedConstructionBinder
                 nameBinding,
                 Ancestry,
                 constraintPortfolio,
+                InterfaceImplementations,
                 stopBound,
                 stopObservedCount,
                 stopRelatedMetadataToken,

@@ -92,7 +92,7 @@ public enum StaticFieldV2AssignabilityReason
     /// <summary>The two closed topology kinds admit no assignability rule of this draft slice.</summary>
     ClosedTypeKindMismatch = 18,
 
-    /// <summary>The target was an interface that the class base chain cannot reach; InterfaceImpl is not modeled.</summary>
+    /// <summary>The target was an interface the class base chain cannot reach and no portfolio was supplied.</summary>
     InterfaceTargetNotModeled = 19,
 
     /// <summary>The target's generic definition was reached as a base, whose closed arguments are not modeled here.</summary>
@@ -121,6 +121,24 @@ public enum StaticFieldV2AssignabilityReason
 
     /// <summary>The cumulative comparison count reached the declared draft cap plus one.</summary>
     ComparisonBoundReached = 28,
+
+    /// <summary>One retained InterfaceImpl closure edge named the target interface definition.</summary>
+    InterfaceEdgeImplemented = 29,
+
+    /// <summary>One complete bounded interface closure proved the target interface definition absent.</summary>
+    InterfaceNotImplemented = 30,
+
+    /// <summary>The bounded interface closure stopped at a terminal that proves neither reach nor absence.</summary>
+    InterfaceClosureIncomplete = 31,
+
+    /// <summary>A generic interface instantiation is undecoded, so its arguments cannot be checked here.</summary>
+    GenericInterfaceInstantiationNotModeled = 32,
+
+    /// <summary>The supplied interface-implementation authority portfolio prerequisite was non-exact.</summary>
+    InterfaceImplementationPortfolioNonExact = 33,
+
+    /// <summary>The supplied interface-implementation authority portfolio prerequisite was invalid.</summary>
+    InterfaceImplementationPortfolioInvalid = 34,
 }
 
 /// <summary>Classifies the ECMA-335 declared variance of one GenericParam draft row.</summary>
@@ -145,7 +163,7 @@ public enum StaticFieldV2GenericParameterVariance
 /// </remarks>
 public enum StaticFieldV2AssignabilityCoverageBoundary
 {
-    /// <summary>The physical InterfaceImpl table is not modeled, so an interface target is never reached.</summary>
+    /// <summary>No interface-implementation portfolio was supplied, so an interface target is never reached.</summary>
     InterfaceImplementationNotModeled = 1,
 
     /// <summary>No boxing conversion is modeled, so a value-type source only satisfies canonical identity.</summary>
@@ -161,6 +179,12 @@ public enum StaticFieldV2AssignabilityCoverageBoundary
 
     /// <summary>A generic definition was reached as a base whose closed arguments no consulted authority carries.</summary>
     GenericBaseInstantiationNotModeled = 4,
+
+    /// <summary>
+    /// A generic interface instantiation was reached whose closed arguments no consulted authority decodes, so no
+    /// per-position variance decision over that instantiation is possible in this draft slice.
+    /// </summary>
+    GenericInterfaceInstantiationNotModeled = 5,
 }
 
 /// <summary>Freezes one consulted bounded base-chain level of a constructed-assignability draft answer.</summary>
@@ -380,29 +404,40 @@ public sealed class StaticFieldV2AssignabilityVariancePositionIdentity :
 
 /// <summary>Freezes one complete constructed-assignability draft request.</summary>
 /// <remarks>
-/// The request names one source closed type, one target closed type, and one exact ancestry draft portfolio. It carries
-/// no runtime, no dump, no memory, and no ClrMD evidence: the decision is pure contract logic over already-landed
-/// metadata authority, taken before any suffix of the expression is evaluated.
+/// The request names one source closed type, one target closed type, one exact ancestry draft portfolio, and an
+/// optional interface-implementation draft portfolio. It carries no runtime, no dump, no memory, and no ClrMD
+/// evidence: the decision is pure contract logic over already-landed metadata authority, taken before any suffix of
+/// the expression is evaluated.
+/// <para>
+/// The interface-implementation portfolio is optional because it is a separately acquired authority. When it is
+/// absent the decision keeps the declared
+/// <see cref="StaticFieldV2AssignabilityCoverageBoundary.InterfaceImplementationNotModeled"/> boundary and an
+/// interface target stays unprovable; when it is present that boundary is not declared and an interface target is
+/// decided from the portfolio's bounded transitive closure.
+/// </para>
 /// </remarks>
 public sealed class StaticFieldV2AssignabilityRequest : IEquatable<StaticFieldV2AssignabilityRequest>
 {
     private const string CanonicalDomain = "static-field-v2-assignability-request";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2AssignabilityRequest(
         MetadataClosedTypeIdentity sourceType,
         MetadataClosedTypeIdentity targetType,
-        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio)
+        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio)
     {
         SourceType = sourceType;
         TargetType = targetType;
         AncestryPortfolio = ancestryPortfolio;
+        InterfaceImplementationPortfolio = interfaceImplementationPortfolio;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(sourceType.Sha256, nameof(sourceType));
         writer.WriteSha256(targetType.Sha256, nameof(targetType));
         writer.WriteSha256(ancestryPortfolio.Sha256, nameof(ancestryPortfolio));
+        ExpressionV2ContractEncoding.WriteOptionalDigest(writer, interfaceImplementationPortfolio?.Sha256);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -416,6 +451,9 @@ public sealed class StaticFieldV2AssignabilityRequest : IEquatable<StaticFieldV2
     /// <summary>Gets the ancestry authority draft portfolio supplying core roles and bounded base chains.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
 
+    /// <summary>Gets the optional interface-implementation draft portfolio, or null when none was supplied.</summary>
+    public MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementationPortfolio { get; }
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -426,17 +464,26 @@ public sealed class StaticFieldV2AssignabilityRequest : IEquatable<StaticFieldV2
     /// <param name="sourceType">The exact closed type of the validated non-null reference draft value.</param>
     /// <param name="targetType">The exact closed type the validated draft value must be assignable to.</param>
     /// <param name="ancestryPortfolio">The ancestry authority draft portfolio prerequisite.</param>
+    /// <param name="interfaceImplementationPortfolio">
+    /// The optional interface-implementation draft portfolio. Omitting it keeps the declared InterfaceImpl coverage
+    /// boundary and leaves every interface target unprovable; supplying it makes an interface target provable.
+    /// </param>
     /// <returns>A sealed immutable draft request.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     public static StaticFieldV2AssignabilityRequest Create(
         MetadataClosedTypeIdentity sourceType,
         MetadataClosedTypeIdentity targetType,
-        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio)
+        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null)
     {
         ArgumentNullException.ThrowIfNull(sourceType);
         ArgumentNullException.ThrowIfNull(targetType);
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
-        return new StaticFieldV2AssignabilityRequest(sourceType, targetType, ancestryPortfolio);
+        return new StaticFieldV2AssignabilityRequest(
+            sourceType,
+            targetType,
+            ancestryPortfolio,
+            interfaceImplementationPortfolio);
     }
 
     /// <summary>Tests canonical equality between two constructed-assignability draft requests.</summary>
@@ -465,11 +512,17 @@ public sealed class StaticFieldV2AssignabilityRequest : IEquatable<StaticFieldV2
 /// <see cref="StaticFieldV2AssignabilityResultKind.Invalid"/> - is prefix-free and retains neither, because a partial
 /// derivation is not evidence about the requested pair.
 /// <para>
-/// Declared coverage boundaries are informational draft facts retained by every outcome. The physical InterfaceImpl
-/// table is not modeled, so an interface target that the class base chain cannot reach is unprovable rather than
-/// negative; no boxing conversion is modeled, so a value-typed source satisfies only canonical identity; and the
-/// deliberate W8.1 divergence from the pinned runtime for an SZ source with a rank-one multidimensional target is
-/// retained as an explicit boundary rather than left implicit.
+/// Declared coverage boundaries are informational draft facts retained by every outcome. When no
+/// interface-implementation portfolio was supplied the InterfaceImpl evidence is not modeled, so an interface target
+/// that the class base chain cannot reach is unprovable rather than negative; no boxing conversion is modeled, so a
+/// value-typed source satisfies only canonical identity; and the deliberate W8.1 divergence from the pinned runtime
+/// for an SZ source with a rank-one multidimensional target is retained as an explicit boundary rather than left
+/// implicit.
+/// </para>
+/// <para>
+/// An interface decision that consulted a supplied portfolio additionally retains the matched InterfaceImpl closure
+/// edge and the closure's typed terminal, so a consumer can replay which physical row and which bounded traversal
+/// produced the answer.
 /// </para>
 /// </remarks>
 public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2AssignabilityOutcome>
@@ -485,7 +538,7 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
     public const int MaximumComparisonCount = StaticFieldV2Limits.MaximumConstructedAncestryDepth;
 
     private const string CanonicalDomain = "static-field-v2-assignability-outcome";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private static readonly object RowMintCapability = new();
     private readonly ImmutableArray<StaticFieldV2AssignabilityBaseChainEdgeIdentity> baseChainEdges;
     private readonly ImmutableArray<StaticFieldV2AssignabilityVariancePositionIdentity> variancePositions;
@@ -499,6 +552,8 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
         ImmutableArray<StaticFieldV2AssignabilityBaseChainEdgeIdentity> baseChainEdges,
         ImmutableArray<StaticFieldV2AssignabilityVariancePositionIdentity> variancePositions,
         ImmutableArray<StaticFieldV2AssignabilityCoverageBoundary> declaredCoverageBoundaries,
+        MetadataInterfaceImplementationEdgeAuthorityIdentity? interfaceEdge,
+        MetadataInterfaceImplementationClosureTerminalKind? interfaceClosureTerminal,
         EvaluationDeterministicBound? reachedBound,
         int observedCount,
         int? relatedMetadataToken)
@@ -509,6 +564,8 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
         this.baseChainEdges = ExpressionV2ContractEncoding.Copy(baseChainEdges);
         this.variancePositions = ExpressionV2ContractEncoding.Copy(variancePositions);
         this.declaredCoverageBoundaries = ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
+        InterfaceEdge = interfaceEdge;
+        InterfaceClosureTerminal = interfaceClosureTerminal;
         ReachedBound = reachedBound;
         ObservedCount = observedCount;
         RelatedMetadataToken = relatedMetadataToken;
@@ -532,6 +589,8 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
         {
             writer.WriteInt32((int)boundary);
         }
+        ExpressionV2ContractEncoding.WriteOptionalDigest(writer, interfaceEdge?.Sha256);
+        ExpressionV2ContractEncoding.WriteOptionalEnum(writer, interfaceClosureTerminal);
         ExpressionV2ContractEncoding.WriteOptionalBound(writer, reachedBound);
         writer.WriteInt32(observedCount);
         ExpressionV2ContractEncoding.WriteOptionalInt32(writer, relatedMetadataToken);
@@ -559,6 +618,12 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
     /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this draft answer.</summary>
     public ImmutableArray<StaticFieldV2AssignabilityCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
+
+    /// <summary>Gets the retained InterfaceImpl closure draft edge that named the target, otherwise null.</summary>
+    public MetadataInterfaceImplementationEdgeAuthorityIdentity? InterfaceEdge { get; }
+
+    /// <summary>Gets the consulted bounded interface draft closure terminal, otherwise null.</summary>
+    public MetadataInterfaceImplementationClosureTerminalKind? InterfaceClosureTerminal { get; }
 
     /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
@@ -633,6 +698,8 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
         ImmutableArray<StaticFieldV2AssignabilityBaseChainEdgeIdentity> baseChainEdges,
         ImmutableArray<StaticFieldV2AssignabilityVariancePositionIdentity> variancePositions,
         ImmutableArray<StaticFieldV2AssignabilityCoverageBoundary> declaredCoverageBoundaries,
+        MetadataInterfaceImplementationEdgeAuthorityIdentity? interfaceEdge,
+        MetadataInterfaceImplementationClosureTerminalKind? interfaceClosureTerminal,
         int observedCount,
         int? relatedMetadataToken) =>
         new(
@@ -642,6 +709,8 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
             baseChainEdges,
             variancePositions,
             declaredCoverageBoundaries,
+            interfaceEdge,
+            interfaceClosureTerminal,
             null,
             observedCount,
             relatedMetadataToken);
@@ -661,6 +730,8 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
             [],
             [],
             declaredCoverageBoundaries,
+            null,
+            null,
             reachedBound,
             observedCount,
             relatedMetadataToken);
@@ -674,11 +745,14 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
 /// core-role root, same-definition variance, the bounded base chain, array topology, then nullable and primitive
 /// equality - so a consumer can replay exactly which clause decided the retained answer.
 /// <para>
-/// Declared coverage boundaries of this draft slice: the physical InterfaceImpl table is not modeled by the ancestry
-/// portfolio, so an interface target that the class base chain cannot reach is unprovable rather than negative - the
-/// same honest boundary the closed-construction binder took for interface constraints; no boxing conversion is
-/// modeled, so a value-typed source satisfies only canonical identity; and the closed arguments of a generic base
-/// definition reached on the chain are carried by no consulted authority.
+/// An interface target is decided from the request's optional interface-implementation portfolio: a proved closure
+/// edge admits, a complete closure that never names the target refuses, and every incomplete closure stays
+/// unprovable. When no portfolio is supplied the InterfaceImpl evidence is not modeled, so an interface target that
+/// the class base chain cannot reach remains unprovable rather than negative - the same honest boundary the
+/// closed-construction binder takes for interface constraints. The remaining declared boundaries of this draft slice
+/// are unchanged: no boxing conversion is modeled, so a value-typed source satisfies only canonical identity; the
+/// closed arguments of a generic base definition reached on the chain are carried by no consulted authority; and a
+/// generic interface instantiation is retained undecoded, so no variance decision over it is possible here.
 /// </para>
 /// <para>
 /// One deliberate divergence from the pinned runtime is implemented here and is not inherited: the runtime reports a
@@ -735,6 +809,25 @@ public static class StaticFieldV2AssignabilityBinder
                     null));
         }
 
+        if (request.InterfaceImplementationPortfolio is { } interfacePortfolio &&
+            interfacePortfolio.ResultKind != MetadataInterfaceImplementationPortfolioResultKind.Exact)
+        {
+            var invalid = interfacePortfolio.ResultKind ==
+                MetadataInterfaceImplementationPortfolioResultKind.Invalid;
+            return Stop(
+                walk,
+                Decision.Stopped(
+                    invalid
+                        ? StaticFieldV2AssignabilityResultKind.Invalid
+                        : StaticFieldV2AssignabilityResultKind.NonExact,
+                    invalid
+                        ? StaticFieldV2AssignabilityReason.InterfaceImplementationPortfolioInvalid
+                        : StaticFieldV2AssignabilityReason.InterfaceImplementationPortfolioNonExact,
+                    interfacePortfolio.ReachedBound,
+                    interfacePortfolio.ObservedCount,
+                    null));
+        }
+
         var decision = Decide(walk, request.SourceType, request.TargetType);
         if (decision.IsStop)
         {
@@ -747,6 +840,8 @@ public static class StaticFieldV2AssignabilityBinder
             walk.Edges.ToImmutable(),
             walk.Positions.ToImmutable(),
             walk.DeclaredBoundaries(),
+            walk.InterfaceEdge,
+            walk.InterfaceClosureTerminal,
             walk.ComparisonCount,
             decision.RelatedMetadataToken);
     }
@@ -1030,10 +1125,7 @@ public static class StaticFieldV2AssignabilityBinder
         }
         if (target.Role == MetadataTypeDefinitionSemanticRole.Interface)
         {
-            return Decision.Answer(
-                StaticFieldV2AssignabilityResultKind.Unprovable,
-                StaticFieldV2AssignabilityReason.InterfaceTargetNotModeled,
-                target.TypeDefinition.TypeDefinitionToken);
+            return DecideInterfaceTarget(walk, source, target);
         }
         if (chain.TerminalKind is MetadataAncestryChainTerminalKind.SystemObjectReached
             or MetadataAncestryChainTerminalKind.InterfaceRoot
@@ -1048,6 +1140,93 @@ public static class StaticFieldV2AssignabilityBinder
             StaticFieldV2AssignabilityResultKind.Unprovable,
             StaticFieldV2AssignabilityReason.AncestryChainIncomplete,
             target.TypeDefinition.TypeDefinitionToken);
+    }
+
+    private static Decision DecideInterfaceTarget(
+        AssignabilityWalk walk,
+        MetadataTypeDefinitionSemanticClassificationIdentity source,
+        MetadataTypeDefinitionSemanticClassificationIdentity target)
+    {
+        var targetToken = target.TypeDefinition.TypeDefinitionToken;
+        if (walk.Request.InterfaceImplementationPortfolio is not { } portfolio)
+        {
+            return Decision.Answer(
+                StaticFieldV2AssignabilityResultKind.Unprovable,
+                StaticFieldV2AssignabilityReason.InterfaceTargetNotModeled,
+                targetToken);
+        }
+
+        var sourceModule = source.SourceModule;
+        var sourceToken = source.TypeDefinition.TypeDefinitionToken;
+        if (portfolio.ExactImplementedInterfacesOrDefault(sourceModule, sourceToken) is not { } closure)
+        {
+            return Decision.Answer(
+                StaticFieldV2AssignabilityResultKind.Unprovable,
+                StaticFieldV2AssignabilityReason.InterfaceClosureIncomplete,
+                targetToken);
+        }
+
+        walk.RetainClosureTerminal(closure.TerminalKind);
+        switch (portfolio.Implements(sourceModule, sourceToken, target.SourceModule, targetToken))
+        {
+            case MetadataInterfaceImplementationAnswer.Yes:
+                if (MatchingEdge(closure, target) is not { } edge)
+                {
+                    return Decision.Answer(
+                        StaticFieldV2AssignabilityResultKind.Unprovable,
+                        StaticFieldV2AssignabilityReason.InterfaceClosureIncomplete,
+                        targetToken);
+                }
+                walk.RetainInterfaceEdge(edge);
+                if (target.TypeDefinition.TotalGenericArity > 0)
+                {
+                    walk.DeclareGenericInterfaceBoundary();
+                    return Decision.Answer(
+                        StaticFieldV2AssignabilityResultKind.Unprovable,
+                        StaticFieldV2AssignabilityReason.GenericInterfaceInstantiationNotModeled,
+                        targetToken);
+                }
+                return Decision.Answer(
+                    StaticFieldV2AssignabilityResultKind.Assignable,
+                    StaticFieldV2AssignabilityReason.InterfaceEdgeImplemented,
+                    targetToken);
+            case MetadataInterfaceImplementationAnswer.No:
+                return Decision.Answer(
+                    StaticFieldV2AssignabilityResultKind.NotAssignable,
+                    StaticFieldV2AssignabilityReason.InterfaceNotImplemented,
+                    targetToken);
+            default:
+                if (closure.TerminalKind ==
+                    MetadataInterfaceImplementationClosureTerminalKind.GenericInterfaceReached)
+                {
+                    walk.DeclareGenericInterfaceBoundary();
+                    return Decision.Answer(
+                        StaticFieldV2AssignabilityResultKind.Unprovable,
+                        StaticFieldV2AssignabilityReason.GenericInterfaceInstantiationNotModeled,
+                        targetToken);
+                }
+                return Decision.Answer(
+                    StaticFieldV2AssignabilityResultKind.Unprovable,
+                    StaticFieldV2AssignabilityReason.InterfaceClosureIncomplete,
+                    targetToken);
+        }
+    }
+
+    private static MetadataInterfaceImplementationEdgeAuthorityIdentity? MatchingEdge(
+        MetadataInterfaceImplementationClosureIdentity closure,
+        MetadataTypeDefinitionSemanticClassificationIdentity target)
+    {
+        foreach (var edge in closure.InterfaceEdges)
+        {
+            if (edge.TargetModule is { } module &&
+                edge.TargetTypeDefinition is { } definition &&
+                module.Equals(target.SourceModule) &&
+                definition.TypeDefinitionToken == target.TypeDefinition.TypeDefinitionToken)
+            {
+                return edge;
+            }
+        }
+        return null;
     }
 
     private static bool NamesSameDefinition(
@@ -1117,10 +1296,15 @@ public static class StaticFieldV2AssignabilityBinder
     private sealed class AssignabilityWalk
     {
         private bool genericBaseBoundary;
+        private bool genericInterfaceBoundary;
 
         internal AssignabilityWalk(StaticFieldV2AssignabilityRequest request) => Request = request;
 
         internal StaticFieldV2AssignabilityRequest Request { get; }
+
+        internal MetadataInterfaceImplementationEdgeAuthorityIdentity? InterfaceEdge { get; private set; }
+
+        internal MetadataInterfaceImplementationClosureTerminalKind? InterfaceClosureTerminal { get; private set; }
 
         internal ImmutableArray<StaticFieldV2AssignabilityBaseChainEdgeIdentity>.Builder Edges { get; } =
             ImmutableArray.CreateBuilder<StaticFieldV2AssignabilityBaseChainEdgeIdentity>();
@@ -1135,21 +1319,35 @@ public static class StaticFieldV2AssignabilityBinder
 
         internal void DeclareGenericBaseBoundary() => genericBaseBoundary = true;
 
-        internal ImmutableArray<StaticFieldV2AssignabilityCoverageBoundary> DeclaredBoundaries() =>
-            genericBaseBoundary
-                ? [
-                    StaticFieldV2AssignabilityCoverageBoundary.InterfaceImplementationNotModeled,
-                    StaticFieldV2AssignabilityCoverageBoundary.BoxingConversionNotModeled,
-                    StaticFieldV2AssignabilityCoverageBoundary
-                        .SzToRankOneMultidimensionalDivergenceFromRuntime,
-                    StaticFieldV2AssignabilityCoverageBoundary.GenericBaseInstantiationNotModeled,
-                ]
-                : [
-                    StaticFieldV2AssignabilityCoverageBoundary.InterfaceImplementationNotModeled,
-                    StaticFieldV2AssignabilityCoverageBoundary.BoxingConversionNotModeled,
-                    StaticFieldV2AssignabilityCoverageBoundary
-                        .SzToRankOneMultidimensionalDivergenceFromRuntime,
-                ];
+        internal void DeclareGenericInterfaceBoundary() => genericInterfaceBoundary = true;
+
+        internal void RetainInterfaceEdge(MetadataInterfaceImplementationEdgeAuthorityIdentity edge) =>
+            InterfaceEdge ??= edge;
+
+        internal void RetainClosureTerminal(MetadataInterfaceImplementationClosureTerminalKind terminalKind) =>
+            InterfaceClosureTerminal ??= terminalKind;
+
+        internal ImmutableArray<StaticFieldV2AssignabilityCoverageBoundary> DeclaredBoundaries()
+        {
+            var boundaries = ImmutableArray.CreateBuilder<StaticFieldV2AssignabilityCoverageBoundary>(5);
+            if (Request.InterfaceImplementationPortfolio is null)
+            {
+                boundaries.Add(StaticFieldV2AssignabilityCoverageBoundary.InterfaceImplementationNotModeled);
+            }
+            boundaries.Add(StaticFieldV2AssignabilityCoverageBoundary.BoxingConversionNotModeled);
+            boundaries.Add(
+                StaticFieldV2AssignabilityCoverageBoundary.SzToRankOneMultidimensionalDivergenceFromRuntime);
+            if (genericBaseBoundary)
+            {
+                boundaries.Add(StaticFieldV2AssignabilityCoverageBoundary.GenericBaseInstantiationNotModeled);
+            }
+            if (genericInterfaceBoundary)
+            {
+                boundaries.Add(
+                    StaticFieldV2AssignabilityCoverageBoundary.GenericInterfaceInstantiationNotModeled);
+            }
+            return boundaries.ToImmutable();
+        }
     }
 
     private sealed class Decision

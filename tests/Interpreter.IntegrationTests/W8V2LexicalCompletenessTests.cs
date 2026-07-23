@@ -627,7 +627,7 @@ public sealed class W8V2LexicalCompletenessTests
         Assert.Equal(outcome.Certificate, replay.Certificate);
         Assert.Equal(outcome.Request, replay.Request);
         Assert.Equal(
-            "c4204763bb2727d741b3019212cc58d136025ccc6c925507dfb64d5a65c3c8f2",
+            "8006dd4dcb035c0585ba9da0d70ea37937c4071152a1b57e253ef33519b1a104",
             outcome.Sha256);
 
         var certificate = outcome.Certificate;

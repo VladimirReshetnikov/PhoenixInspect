@@ -29,6 +29,7 @@ public sealed class W8V2ClosedConstructionBindingTests
     private const int DerivedToken = 0x0200_0008;
     private const int StructSlotToken = 0x0200_0009;
     private const int InterfaceMarkerToken = 0x0200_000A;
+    private const int PhantomToken = 0x0200_0010;
 
     private const int ObjectTypeReferenceToken = 0x0100_0001;
     private const int ValueTypeTypeReferenceToken = 0x0100_0002;
@@ -338,6 +339,96 @@ public sealed class W8V2ClosedConstructionBindingTests
     }
 
     /// <summary>
+    /// Proves an interface constraint target becomes provable once the binder is given an interface-implementation
+    /// portfolio: a direct emitted edge and a base-class contribution both satisfy, a complete closure that never
+    /// names the target violates, and an incomplete closure stays unprovable with its typed terminal named in the
+    /// retained reason rather than being reported as a violation.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Interface_constraint_targets_are_provable_with_the_interface_portfolio()
+    {
+        var world = BuildWorld();
+
+        var satisfied = BindWithInterfaces("global::Synthetic.Target.IfaceBound<Synthetic.Target.Widget>.Field", world);
+        Assert.Equal(StaticFieldV2ClosedConstructionResultKind.Exact, satisfied.ResultKind);
+        Assert.Equal(StaticFieldV2ClosedConstructionIssue.None, satisfied.Issue);
+        var satisfiedCheck = Assert.Single(satisfied.ConstraintChecks);
+        Assert.Equal(StaticFieldV2ConstraintDisposition.Satisfied, satisfiedCheck.Disposition);
+        Assert.Equal("constraint.interface-implemented", satisfiedCheck.Reason);
+        Assert.Equal(
+            InterfaceMarkerToken,
+            satisfiedCheck.ConstraintTarget!.TargetTypeDefinition!.TypeDefinitionToken);
+        Assert.Equal(world.InterfaceImplementations, satisfied.InterfaceImplementationPortfolio);
+
+        var inherited = BindWithInterfaces(
+            "global::Synthetic.Target.IfaceBound<Synthetic.Target.Derived>.Field",
+            world);
+        Assert.Equal(StaticFieldV2ClosedConstructionResultKind.Exact, inherited.ResultKind);
+        Assert.Equal("constraint.interface-implemented", Assert.Single(inherited.ConstraintChecks).Reason);
+
+        var violated = BindWithInterfaces("global::Synthetic.Target.IfaceBound<Synthetic.Target.Point>.Field", world);
+        AssertStop(
+            violated,
+            StaticFieldV2ClosedConstructionResultKind.Invalid,
+            StaticFieldV2ClosedConstructionIssue.ConstraintViolated);
+        var violatedCheck = Assert.Single(violated.ConstraintChecks);
+        Assert.Equal(StaticFieldV2ConstraintDisposition.Violated, violatedCheck.Disposition);
+        Assert.Equal("constraint.interface-not-implemented", violatedCheck.Reason);
+
+        var unprovable = BindWithInterfaces(
+            "global::Synthetic.Target.IfaceBound<Synthetic.Target.Phantom>.Field",
+            world);
+        AssertStop(
+            unprovable,
+            StaticFieldV2ClosedConstructionResultKind.NonExact,
+            StaticFieldV2ClosedConstructionIssue.ConstraintUnprovable);
+        var unprovableCheck = Assert.Single(unprovable.ConstraintChecks);
+        Assert.Equal(StaticFieldV2ConstraintDisposition.Unprovable, unprovableCheck.Disposition);
+        Assert.Equal(
+            "constraint.interface-closure-unresolved-reference-reached",
+            unprovableCheck.Reason);
+
+        // Omitting the portfolio keeps the pre-migration deferral for exactly the same obligation.
+        Assert.Equal(
+            "constraint.interface-target-deferred",
+            Assert.Single(
+                Bind("global::Synthetic.Target.IfaceBound<Synthetic.Target.Widget>.Field", world).ConstraintChecks)
+                .Reason);
+        Assert.Null(
+            Bind("global::Synthetic.Target.IfaceBound<Synthetic.Target.Widget>.Field", world)
+                .InterfaceImplementationPortfolio);
+    }
+
+    /// <summary>
+    /// Proves a supplied interface-implementation portfolio that itself stopped propagates as a typed prefix-free
+    /// draft stop rather than silently degrading to the deferred interface obligation.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Interface_portfolio_prerequisite_stops_are_typed_and_prefix_free()
+    {
+        var world = BuildWorld();
+
+        var nonExact = MetadataInterfaceImplementationPortfolioIdentity.Create(world.Ancestry, default);
+        Assert.Equal(MetadataInterfaceImplementationPortfolioResultKind.NonExact, nonExact.ResultKind);
+        AssertStop(
+            BindWithInterfaces("global::Synthetic.Target.GenericSlot<int>.Current", world, nonExact),
+            StaticFieldV2ClosedConstructionResultKind.NonExact,
+            StaticFieldV2ClosedConstructionIssue.InterfaceImplementationPortfolioNonExact);
+
+        var twoCores = W8MetadataAncestryAuthorityContractTests.BuildAncestryWorld(
+            W8MetadataAncestryAuthorityContractTests.BuildCoreModule(),
+            W8MetadataAncestryAuthorityContractTests.BuildCoreModule("Synthetic.Core4", 0xC400, 'b')).Ancestry;
+        var invalid = MetadataInterfaceImplementationPortfolioIdentity.Create(twoCores, []);
+        Assert.Equal(MetadataInterfaceImplementationPortfolioResultKind.Invalid, invalid.ResultKind);
+        AssertStop(
+            BindWithInterfaces("global::Synthetic.Target.GenericSlot<int>.Current", world, invalid),
+            StaticFieldV2ClosedConstructionResultKind.Invalid,
+            StaticFieldV2ClosedConstructionIssue.InterfaceImplementationPortfolioInvalid);
+    }
+
+    /// <summary>
     /// Proves a type-argument name that matches no authority chain and a type-argument name that matches two distinct
     /// physical chains both stop with typed prefix-free dispositions instead of selecting one silently.
     /// </summary>
@@ -558,7 +649,7 @@ public sealed class W8V2ClosedConstructionBindingTests
         Assert.Equal(outcome.GetHashCode(), replay.GetHashCode());
         Assert.Equal(outcome.Sha256, replay.Sha256);
         Assert.Equal(
-            "007350b19b83f78bb678de370716e1db0934d1121383c6382007c8fff705f767",
+            "b2dea9b211bde9c11e1409003a99809a1507286c371bb8dea82a309d546ed8fc",
             outcome.Sha256);
 
         var originalBytes = outcome.CanonicalBytes;
@@ -637,6 +728,19 @@ public sealed class W8V2ClosedConstructionBindingTests
             world.Constraints);
     }
 
+    private static StaticFieldV2ClosedConstructionOutcome BindWithInterfaces(
+        string expressionText,
+        ConstructionWorld world,
+        MetadataInterfaceImplementationPortfolioIdentity? portfolio = null)
+    {
+        var nameBinding = StaticFieldV2TypeNameBinder.BindExplicitRoute(Parse(expressionText), world.ChainPortfolio);
+        return StaticFieldV2ClosedConstructionBinder.BindOwnerConstruction(
+            nameBinding,
+            world.Ancestry,
+            world.Constraints,
+            portfolio ?? world.InterfaceImplementations);
+    }
+
     private static void AssertStop(
         StaticFieldV2ClosedConstructionOutcome outcome,
         StaticFieldV2ClosedConstructionResultKind resultKind,
@@ -660,12 +764,18 @@ public sealed class W8V2ClosedConstructionBindingTests
             ancestryWorld.Resolution,
             [.. modules.Select(static module => module.Constraints)]);
         Assert.Equal(MetadataConstraintTargetResolutionPortfolioResultKind.Exact, constraints.ResultKind);
+        var byModule = modules.ToDictionary(static module => module.Ancestry.Module);
+        var interfaces = MetadataInterfaceImplementationPortfolioIdentity.Create(
+            ancestryWorld.Ancestry,
+            [.. ancestryWorld.Ancestry.Entries.Select(entry => byModule[entry.SourceModule].InterfaceCatalog)]);
+        Assert.Equal(MetadataInterfaceImplementationPortfolioResultKind.Exact, interfaces.ResultKind);
         return new ConstructionWorld(
             core,
             target,
             ancestryWorld.Resolution,
             ancestryWorld.Ancestry,
-            constraints);
+            constraints,
+            interfaces);
     }
 
     private static ConstructionModule BuildCoreModule() =>
@@ -727,6 +837,21 @@ public sealed class W8V2ClosedConstructionBindingTests
                     TargetNamespace, "SpecBound`1", PublicClassAttributes, ObjectTypeReferenceToken, GenericArity: 1),
                 new ConstructionTypeRow(
                     string.Empty, "G`1", PublicClassAttributes, ObjectTypeReferenceToken, GenericArity: 1),
+                new ConstructionTypeRow(
+                    TargetNamespace, "Phantom", PublicClassAttributes, ObjectTypeReferenceToken),
+            ],
+            interfaceImplementations: module =>
+            [
+                MetadataInterfaceImplementationRowObservationIdentity.Create(
+                    module,
+                    0x0900_0001,
+                    WidgetToken,
+                    InterfaceMarkerToken),
+                MetadataInterfaceImplementationRowObservationIdentity.Create(
+                    module,
+                    0x0900_0002,
+                    PhantomToken,
+                    MissingTypeReferenceToken),
             ],
             constraints:
             [
@@ -758,7 +883,9 @@ public sealed class W8V2ClosedConstructionBindingTests
         ImmutableArray<ConstructionTypeRow> namedTypes,
         ImmutableArray<ConstraintRowSpec> constraints = default,
         ImmutableArray<(string NamespaceName, string TypeName)> typeReferences = default,
-        bool typeSpecifications = false)
+        bool typeSpecifications = false,
+        Func<StaticFieldMetadataModuleIdentity,
+            ImmutableArray<MetadataInterfaceImplementationRowObservationIdentity>>? interfaceImplementations = null)
     {
         var module = W8CompilerNameMappingContractTests.CreateMetadataModule(
             moduleAddress,
@@ -766,6 +893,7 @@ public sealed class W8V2ClosedConstructionBindingTests
             assemblyName);
         var constraintSpecs = constraints.IsDefault ? [] : constraints;
         var referenceSpecs = typeReferences.IsDefault ? [] : typeReferences;
+        var interfaceRows = interfaceImplementations?.Invoke(module) ?? [];
 
         var typeReferenceRows =
             ImmutableArray.CreateBuilder<MetadataTypeReferenceRowObservationIdentity>(referenceSpecs.Length);
@@ -839,6 +967,7 @@ public sealed class W8V2ClosedConstructionBindingTests
                 typeReferenceRowCount: typeReferenceRows.Count,
                 typeSpecificationRowCount: typeSpecificationRows.Length,
                 assemblyReferenceRowCount: assemblyReferenceRows.Length,
+                interfaceImplementationRowCount: interfaceRows.Length,
                 nestedClassRowCount: nestedClassRows.Count,
                 genericParameterRowCount: genericParameterRows.Count,
                 genericParameterConstraintRowCount: constraintRows.Count));
@@ -920,13 +1049,17 @@ public sealed class W8V2ClosedConstructionBindingTests
             MetadataGenericParameterConstraintPhysicalTableResultKind.Exact,
             constraintCatalog.ResultKind);
 
+        var interfaceCatalog = MetadataInterfaceImplementationTableCatalogIdentity.Create(authority, interfaceRows);
+        Assert.Equal(MetadataInterfaceImplementationTableResultKind.Exact, interfaceCatalog.ResultKind);
+
         return new ConstructionModule(
             new W8MetadataAncestryAuthorityContractTests.AncestryModule(
                 module,
                 compatibility,
                 chainCatalog,
                 tables),
-            constraintCatalog);
+            constraintCatalog,
+            interfaceCatalog);
     }
 
     private static ImmutableArray<StaticFieldTypeDefinitionIdentity?> NullCandidateSlots(
@@ -980,14 +1113,16 @@ public sealed class W8V2ClosedConstructionBindingTests
 
     private sealed record ConstructionModule(
         W8MetadataAncestryAuthorityContractTests.AncestryModule Ancestry,
-        MetadataGenericParameterConstraintPhysicalTableCatalogIdentity Constraints);
+        MetadataGenericParameterConstraintPhysicalTableCatalogIdentity Constraints,
+        MetadataInterfaceImplementationTableCatalogIdentity InterfaceCatalog);
 
     private sealed record ConstructionWorld(
         ConstructionModule CoreModule,
         ConstructionModule TargetModule,
         MetadataTypeReferenceResolutionPortfolioIdentity Resolution,
         MetadataAncestryAuthorityPortfolioIdentity Ancestry,
-        MetadataConstraintTargetResolutionPortfolioIdentity Constraints)
+        MetadataConstraintTargetResolutionPortfolioIdentity Constraints,
+        MetadataInterfaceImplementationPortfolioIdentity InterfaceImplementations)
     {
         internal StaticFieldMetadataModuleIdentity Core => CoreModule.Ancestry.Module;
 

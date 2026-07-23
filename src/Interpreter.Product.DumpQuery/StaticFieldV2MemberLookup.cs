@@ -124,6 +124,12 @@ public enum StaticFieldV2MemberLookupIssue
 
     /// <summary>The nearest declaring level declared two or more accessible static fields with the name.</summary>
     AmbiguousStaticDeclarations = 22,
+
+    /// <summary>The supplied interface-implementation authority portfolio prerequisite was non-exact.</summary>
+    InterfaceImplementationPortfolioNonExact = 23,
+
+    /// <summary>The supplied interface-implementation authority portfolio prerequisite was invalid.</summary>
+    InterfaceImplementationPortfolioInvalid = 24,
 }
 
 /// <summary>Classifies the physical storage shape of one selected static-field draft declaration.</summary>
@@ -150,7 +156,7 @@ public enum StaticFieldV2MemberLookupCoverageBoundary
     /// <summary>The physical Property and Event tables are not modeled, so same-name accessors cannot block.</summary>
     PropertyAndEventTablesNotModeled = 1,
 
-    /// <summary>Interface ancestry is not a class base chain and the InterfaceImpl table is not modeled here.</summary>
+    /// <summary>An interface owner examined only itself because no interface-implementation portfolio was supplied.</summary>
     InterfaceAncestryNotModeled = 2,
 
     /// <summary>The physical InternalsVisibleTo CustomAttribute table is not modeled; friend grants are supplied.</summary>
@@ -485,14 +491,21 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
 /// <summary>Freezes one complete definition-side static-field member-lookup draft request.</summary>
 /// <remarks>
 /// The request names one owner module, one owner TypeDef token, one decoded field identifier, one exact ancestry
-/// draft portfolio, one FieldDef catalog per ancestry-portfolio module, and the caller-declared accessibility
-/// certificate. It carries no runtime, no storage, no scoped evaluation context, and no PDB evidence, and it
-/// constructs no generic instantiation: substitution onto a closed construction is a separately owned later slice.
+/// draft portfolio, one FieldDef catalog per ancestry-portfolio module, the caller-declared accessibility
+/// certificate, and an optional interface-implementation draft portfolio. It carries no runtime, no storage, no
+/// scoped evaluation context, and no PDB evidence, and it constructs no generic instantiation: substitution onto a
+/// closed construction is a separately owned later slice.
+/// <para>
+/// The interface-implementation portfolio is optional because it is a separately acquired authority. When it is
+/// absent an interface owner examines only itself and the declared
+/// <see cref="StaticFieldV2MemberLookupCoverageBoundary.InterfaceAncestryNotModeled"/> boundary is retained; when it
+/// is present the interface owner's bounded transitive closure supplies the later levels.
+/// </para>
 /// </remarks>
 public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2MemberLookupRequest>
 {
     private const string CanonicalDomain = "static-field-v2-member-lookup-request";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
     private readonly ImmutableArray<byte> canonicalBytes;
@@ -505,7 +518,8 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
         StaticFieldV2AccessibilityMode accessibilityMode,
         StaticFieldContainingAssemblyIdentity? requestingAssembly,
-        ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants)
+        ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio)
     {
         OwnerModule = ownerModule;
         OwnerTypeDefinitionToken = ownerTypeDefinitionToken;
@@ -515,6 +529,7 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         AccessibilityMode = accessibilityMode;
         RequestingAssembly = requestingAssembly;
         this.friendAssemblyGrants = friendAssemblyGrants;
+        InterfaceImplementationPortfolio = interfaceImplementationPortfolio;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(ownerModule.Sha256, nameof(ownerModule));
@@ -536,6 +551,7 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         {
             writer.WriteSha256(grant.Sha256, nameof(friendAssemblyGrants));
         }
+        ExpressionV2ContractEncoding.WriteOptionalDigest(writer, interfaceImplementationPortfolio?.Sha256);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -569,6 +585,9 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     public ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> FriendAssemblyGrants =>
         ExpressionV2ContractEncoding.Copy(friendAssemblyGrants);
 
+    /// <summary>Gets the optional interface-implementation draft portfolio, or null when none was supplied.</summary>
+    public MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementationPortfolio { get; }
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -591,6 +610,11 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// <param name="friendAssemblyGrants">
     /// The caller-supplied friend grants, admitted only for the use-site certificate and bounded by the shared cap.
     /// </param>
+    /// <param name="interfaceImplementationPortfolio">
+    /// The optional interface-implementation draft portfolio. Omitting it keeps the declared interface-ancestry
+    /// coverage boundary and makes an interface owner examine only itself; supplying it walks the owner's bounded
+    /// transitive interface closure after the owner itself.
+    /// </param>
     /// <returns>A sealed immutable draft request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The owner token is not a TypeDef token or the mode is undefined.</exception>
@@ -603,7 +627,8 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
         StaticFieldV2AccessibilityMode accessibilityMode,
         StaticFieldContainingAssemblyIdentity? requestingAssembly = null,
-        ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants = default)
+        ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants = default,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null)
     {
         ArgumentNullException.ThrowIfNull(ownerModule);
         ArgumentNullException.ThrowIfNull(fieldName);
@@ -643,7 +668,8 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
             catalogs,
             accessibilityMode,
             requestingAssembly,
-            grants);
+            grants,
+            interfaceImplementationPortfolio);
     }
 
     /// <summary>Tests canonical equality between two member-lookup draft requests.</summary>
@@ -902,9 +928,12 @@ public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2M
 /// blocking same-name method or instance field, and never claims absence over an incomplete chain.
 /// <para>
 /// Declared coverage boundaries of this draft slice: the physical Property and Event tables are not modeled, so a
-/// same-name property or event cannot block a field here; interface ancestry is not a class base chain and the
-/// InterfaceImpl table is not walked, so an interface owner examines only itself; and the physical
-/// InternalsVisibleTo CustomAttribute table is not modeled, so friend grants are caller-supplied certificates.
+/// same-name property or event cannot block a field here; and the physical InternalsVisibleTo CustomAttribute table
+/// is not modeled, so friend grants are caller-supplied certificates. Interface ancestry is not a class base chain:
+/// an interface owner walks its bounded transitive interface closure when the request supplies an
+/// interface-implementation portfolio, and otherwise examines only itself under the declared interface-ancestry
+/// boundary. An interface closure whose terminal is not complete can never produce an absent answer, exactly as an
+/// incomplete class chain cannot.
 /// </para>
 /// <para>
 /// Because no use-site type exists in a definition-only phase, the use-site certificate refuses every private,
@@ -956,6 +985,25 @@ public static class StaticFieldV2MemberLookup
                 null);
         }
 
+        if (request.InterfaceImplementationPortfolio is { } interfacePortfolio &&
+            interfacePortfolio.ResultKind != MetadataInterfaceImplementationPortfolioResultKind.Exact)
+        {
+            var invalid = interfacePortfolio.ResultKind ==
+                MetadataInterfaceImplementationPortfolioResultKind.Invalid;
+            return Stop(
+                request,
+                invalid
+                    ? StaticFieldV2MemberLookupResultKind.Invalid
+                    : StaticFieldV2MemberLookupResultKind.NonExact,
+                invalid
+                    ? StaticFieldV2MemberLookupIssue.InterfaceImplementationPortfolioInvalid
+                    : StaticFieldV2MemberLookupIssue.InterfaceImplementationPortfolioNonExact,
+                boundaries,
+                interfacePortfolio.ReachedBound,
+                interfacePortfolio.ObservedCount,
+                null);
+        }
+
         var vector = ValidateCatalogVector(request, boundaries, out var catalogsByModule, out var authorityByModule);
         if (vector is not null)
         {
@@ -1002,18 +1050,68 @@ public static class StaticFieldV2MemberLookup
                 0,
                 request.OwnerTypeDefinitionToken);
         }
-        if (classification.Role == MetadataTypeDefinitionSemanticRole.Interface)
+        var isInterfaceOwner = classification.Role == MetadataTypeDefinitionSemanticRole.Interface;
+        if (isInterfaceOwner && request.InterfaceImplementationPortfolio is null)
         {
             boundaries = Add(boundaries, StaticFieldV2MemberLookupCoverageBoundary.InterfaceAncestryNotModeled);
         }
 
-        return Walk(request, boundaries, chain, catalogsByModule, authorityByModule);
+        var plan = isInterfaceOwner && request.InterfaceImplementationPortfolio is { } closurePortfolio
+            ? InterfaceLevelPlan(request, chain, closurePortfolio, catalogsByModule)
+            : ClassLevelPlan(chain);
+        return Walk(request, boundaries, chain, plan, catalogsByModule, authorityByModule);
+    }
+
+    private static LevelPlan ClassLevelPlan(MetadataTypeDefinitionAncestryChainIdentity chain)
+    {
+        var levels = ImmutableArray.CreateBuilder<LookupLevel>(chain.Edges.Length + 1);
+        levels.Add(new LookupLevel(chain.SourceModule, chain.Subject));
+        foreach (var edge in chain.Edges)
+        {
+            levels.Add(new LookupLevel(edge.SourceModule, edge.Owner));
+        }
+        var complete = chain.TerminalKind is MetadataAncestryChainTerminalKind.SystemObjectReached
+            or MetadataAncestryChainTerminalKind.InterfaceRoot
+            or MetadataAncestryChainTerminalKind.ModulePseudoTypeRoot;
+        return new LevelPlan(levels.MoveToImmutable(), complete);
+    }
+
+    private static LevelPlan InterfaceLevelPlan(
+        StaticFieldV2MemberLookupRequest request,
+        MetadataTypeDefinitionAncestryChainIdentity chain,
+        MetadataInterfaceImplementationPortfolioIdentity portfolio,
+        Dictionary<StaticFieldMetadataModuleIdentity, MetadataFieldDefinitionTableCatalogIdentity> catalogsByModule)
+    {
+        var closure = portfolio.ExactImplementedInterfacesOrDefault(
+            request.OwnerModule,
+            request.OwnerTypeDefinitionToken);
+        var levels = ImmutableArray.CreateBuilder<LookupLevel>();
+        levels.Add(new LookupLevel(chain.SourceModule, chain.Subject));
+        if (closure is null)
+        {
+            return new LevelPlan(levels.ToImmutable(), false);
+        }
+
+        var complete = closure.TerminalKind == MetadataInterfaceImplementationClosureTerminalKind.Complete;
+        foreach (var edge in closure.InterfaceEdges)
+        {
+            if (edge.TargetModule is not { } module ||
+                edge.TargetTypeDefinition is not { } definition ||
+                !catalogsByModule.ContainsKey(module))
+            {
+                complete = false;
+                continue;
+            }
+            levels.Add(new LookupLevel(module, definition));
+        }
+        return new LevelPlan(levels.ToImmutable(), complete);
     }
 
     private static StaticFieldV2MemberLookupOutcome Walk(
         StaticFieldV2MemberLookupRequest request,
         ImmutableArray<StaticFieldV2MemberLookupCoverageBoundary> boundaries,
         MetadataTypeDefinitionAncestryChainIdentity chain,
+        LevelPlan plan,
         Dictionary<StaticFieldMetadataModuleIdentity, MetadataFieldDefinitionTableCatalogIdentity> catalogsByModule,
         Dictionary<StaticFieldMetadataModuleIdentity, MetadataDefinitionAuthorityCatalogIdentity> authorityByModule)
     {
@@ -1027,17 +1125,11 @@ public static class StaticFieldV2MemberLookup
         var observedCount = 0;
         var resolved = false;
 
-        var walkModule = chain.SourceModule;
-        var walkType = chain.Subject;
-        var edges = chain.Edges;
-        for (var levelIndex = 0; levelIndex <= edges.Length; levelIndex++)
+        var walkLevels = plan.Levels;
+        for (var levelIndex = 0; levelIndex < walkLevels.Length; levelIndex++)
         {
-            if (levelIndex > 0)
-            {
-                walkModule = edges[levelIndex - 1].SourceModule;
-                walkType = edges[levelIndex - 1].Owner;
-            }
-
+            var walkModule = walkLevels[levelIndex].SourceModule;
+            var walkType = walkLevels[levelIndex].DeclaringTypeDefinition;
             var catalog = catalogsByModule[walkModule];
             var authority = authorityByModule[walkModule];
             var fieldRows = catalog.RowsForDeclaringTypeOrEmpty(walkType);
@@ -1135,9 +1227,7 @@ public static class StaticFieldV2MemberLookup
         var consultedLevels = levels.ToImmutable();
         if (!resolved)
         {
-            var complete = chain.TerminalKind is MetadataAncestryChainTerminalKind.SystemObjectReached
-                or MetadataAncestryChainTerminalKind.InterfaceRoot
-                or MetadataAncestryChainTerminalKind.ModulePseudoTypeRoot;
+            var complete = plan.IsComplete;
             return StaticFieldV2MemberLookupOutcome.IssueComplete(
                 complete
                     ? StaticFieldV2MemberLookupResultKind.Absent
@@ -1567,4 +1657,10 @@ public static class StaticFieldV2MemberLookup
         }
         return MetadataFieldAccessibility.FamilyAndAssembly;
     }
+
+    private readonly record struct LookupLevel(
+        StaticFieldMetadataModuleIdentity SourceModule,
+        MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition);
+
+    private readonly record struct LevelPlan(ImmutableArray<LookupLevel> Levels, bool IsComplete);
 }

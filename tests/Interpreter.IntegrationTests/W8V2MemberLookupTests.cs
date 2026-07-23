@@ -48,6 +48,8 @@ public sealed class W8V2MemberLookupTests
     private const int InnerRid = 17;
     private const int LibDerivedRid = 18;
     private const int MethodOnlyClashRid = 19;
+    private const int ShapeBaseRid = 20;
+    private const int ShapeUnresolvedRid = 21;
 
     private const int LibBaseRid = 2;
 
@@ -230,6 +232,93 @@ public sealed class W8V2MemberLookupTests
         Assert.Empty(modulePseudoType.RejectedCandidates);
         Assert.Null(modulePseudoType.AncestryTerminal);
         Assert.Null(modulePseudoType.SelectedCandidate);
+    }
+
+    /// <summary>
+    /// Proves an interface owner walks its bounded transitive interface closure once the request supplies an
+    /// interface-implementation portfolio: level zero remains the interface itself, each closure interface follows in
+    /// the closure's deterministic order, the unchanged hiding rule still lets the nearest level win, a complete
+    /// closure proves absence, an incomplete closure yields a partial answer rather than absence, and the declared
+    /// interface-ancestry boundary is no longer declared because the evidence was actually consulted.
+    /// </summary>
+    /// <remarks>
+    /// C# permits static fields on an interface, and the fixture declares them on both interface levels. No instance
+    /// member rule is invented here: the same accessibility and hiding rules that govern a class chain apply.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Interface_owner_walks_its_closure_when_the_portfolio_is_supplied()
+    {
+        var world = BuildWorld();
+
+        var inherited = LookupWithInterfaces(world, ShapeInterfaceRid, "BaseOnly");
+        AssertExact(inherited, world.App, ShapeBaseRid, levelIndex: 1, StaticFieldV2FieldStorageShape.StoredSlot);
+        Assert.Equal(
+            [TypeToken(ShapeInterfaceRid), TypeToken(ShapeBaseRid)],
+            inherited.Levels.Select(static level => level.DeclaringTypeDefinitionToken).ToArray());
+        Assert.Equal([0, 1], inherited.Levels.Select(static level => level.LevelIndex).ToArray());
+        Assert.Equal(MetadataAncestryChainTerminalKind.InterfaceRoot, inherited.AncestryTerminal);
+        Assert.DoesNotContain(
+            StaticFieldV2MemberLookupCoverageBoundary.InterfaceAncestryNotModeled,
+            inherited.DeclaredCoverageBoundaries);
+
+        // Hiding is unchanged: the nearest level that declares an accessible same-name static field still wins.
+        var hidden = LookupWithInterfaces(world, ShapeInterfaceRid, "Shared");
+        AssertExact(hidden, world.App, ShapeInterfaceRid, levelIndex: 0, StaticFieldV2FieldStorageShape.StoredSlot);
+        Assert.Single(hidden.Levels);
+
+        // A complete interface closure proves absence exactly as a complete class chain does.
+        var absent = LookupWithInterfaces(world, ShapeInterfaceRid, "RootOnly");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Absent, absent.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.DeclarationAbsent, absent.Issue);
+        Assert.Equal(2, absent.Levels.Length);
+
+        // An incomplete interface closure can never produce an absent answer.
+        var partial = LookupWithInterfaces(world, ShapeUnresolvedRid, "RootOnly");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, partial.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.AncestryIncomplete, partial.Issue);
+        Assert.Single(partial.Levels);
+        Assert.Equal(MetadataAncestryChainTerminalKind.InterfaceRoot, partial.AncestryTerminal);
+        Assert.Null(partial.SelectedCandidate);
+
+        // Omitting the portfolio keeps the pre-migration behaviour: the interface owner examines only itself.
+        var withoutPortfolio = Lookup(world, world.App, ShapeInterfaceRid, "BaseOnly");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Absent, withoutPortfolio.ResultKind);
+        Assert.Single(withoutPortfolio.Levels);
+        Assert.Contains(
+            StaticFieldV2MemberLookupCoverageBoundary.InterfaceAncestryNotModeled,
+            withoutPortfolio.DeclaredCoverageBoundaries);
+
+        // A class owner is unaffected by the portfolio: its levels remain the bounded class base chain.
+        Assert.Equal(
+            Lookup(world, world.App, DeeperRid, "RootOnly").Levels.Length,
+            LookupWithInterfaces(world, DeeperRid, "RootOnly").Levels.Length);
+    }
+
+    /// <summary>
+    /// Proves a supplied interface-implementation portfolio that itself stopped propagates as a typed prefix-free
+    /// draft stop rather than silently degrading to a self-only interface search.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Interface_portfolio_prerequisite_stops_are_typed_and_prefix_free()
+    {
+        var world = BuildWorld();
+
+        var nonExact = MetadataInterfaceImplementationPortfolioIdentity.Create(world.Ancestry, default);
+        Assert.Equal(MetadataInterfaceImplementationPortfolioResultKind.NonExact, nonExact.ResultKind);
+        AssertStop(
+            LookupWithInterfaces(world, ShapeInterfaceRid, "Shared", nonExact),
+            StaticFieldV2MemberLookupResultKind.NonExact,
+            StaticFieldV2MemberLookupIssue.InterfaceImplementationPortfolioNonExact);
+
+        var twoCores = BuildAncestryStop();
+        var invalid = MetadataInterfaceImplementationPortfolioIdentity.Create(twoCores, []);
+        Assert.Equal(MetadataInterfaceImplementationPortfolioResultKind.Invalid, invalid.ResultKind);
+        AssertStop(
+            LookupWithInterfaces(world, ShapeInterfaceRid, "Shared", invalid),
+            StaticFieldV2MemberLookupResultKind.Invalid,
+            StaticFieldV2MemberLookupIssue.InterfaceImplementationPortfolioInvalid);
     }
 
     /// <summary>
@@ -534,7 +623,7 @@ public sealed class W8V2MemberLookupTests
         Assert.True(outcome.CanonicalBytes.AsSpan().SequenceEqual(replay.CanonicalBytes.AsSpan()));
         Assert.NotEqual(outcome, Lookup(world, world.App, DerivedRid, "Shared"));
         Assert.Equal(
-            "b1cd2bcea5b7e660d8766b68e06051fb701eeb1a320a9bb262011535336a4fcf",
+            "c8cc916736efd2d3ba4cb324b336ee3d7cf706f5a5b0cf9776068dd46f59d020",
             outcome.Sha256);
 
         var originalBytes = outcome.CanonicalBytes;
@@ -768,6 +857,22 @@ public sealed class W8V2MemberLookupTests
             requestingAssembly,
             grants));
 
+    private static StaticFieldV2MemberLookupOutcome LookupWithInterfaces(
+        LookupWorld world,
+        int typeRowId,
+        string fieldName,
+        MetadataInterfaceImplementationPortfolioIdentity? portfolio = null) =>
+        StaticFieldV2MemberLookup.SelectStaticField(StaticFieldV2MemberLookupRequest.Create(
+            world.App,
+            TypeToken(typeRowId),
+            DumpExpressionIdentifier.Create(fieldName),
+            world.Ancestry,
+            world.FieldCatalogs,
+            StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
+            null,
+            default,
+            portfolio ?? world.InterfaceImplementations));
+
     private static StaticFieldV2MemberLookupOutcome Select(
         LookupWorld world,
         StaticFieldMetadataModuleIdentity module,
@@ -935,6 +1040,17 @@ public sealed class W8V2MemberLookupTests
                     PublicClass,
                     TypeToken(BaseRid),
                     methods: [Method("Shared", MethodPublicStatic)]),
+                Type(
+                    "Synthetic.Lookup",
+                    "IShapeBase",
+                    InterfaceAttributes,
+                    null,
+                    fields:
+                    [
+                        Field("Shared", FieldPublic | FieldStatic),
+                        Field("BaseOnly", FieldPublic | FieldStatic),
+                    ]),
+                Type("Synthetic.Lookup", "IShapeUnresolved", InterfaceAttributes, null),
             ],
             typeReferences: module =>
             [
@@ -974,12 +1090,31 @@ public sealed class W8V2MemberLookupTests
                     module,
                     0x1B00_0001,
                     [0x15, 0x12, 0x08, 0x01, 0x0E]),
+            ],
+            interfaceImplementations: module =>
+            [
+                MetadataInterfaceImplementationRowObservationIdentity.Create(
+                    module,
+                    0x0900_0001,
+                    TypeToken(ShapeInterfaceRid),
+                    TypeToken(ShapeBaseRid)),
+                MetadataInterfaceImplementationRowObservationIdentity.Create(
+                    module,
+                    0x0900_0002,
+                    TypeToken(ShapeUnresolvedRid),
+                    0x0100_0004),
             ]);
 
         var ancestry = BuildAncestry(core, lib, app);
         var order = ancestry.Entries.Select(static entry => entry.SourceModule).ToArray();
         var byModule = new[] { core, lib, app }.ToDictionary(static built => built.Module);
         var catalogs = ImmutableArray.CreateRange(order.Select(module => byModule[module].FieldCatalog));
+        var interfacePortfolio = MetadataInterfaceImplementationPortfolioIdentity.Create(
+            ancestry,
+            [.. order.Select(module => byModule[module].InterfaceCatalog)]);
+        Assert.Equal(
+            MetadataInterfaceImplementationPortfolioResultKind.Exact,
+            interfacePortfolio.ResultKind);
         return new LookupWorld(
             core.Module,
             lib.Module,
@@ -987,6 +1122,7 @@ public sealed class W8V2MemberLookupTests
             core,
             ancestry,
             catalogs,
+            interfacePortfolio,
             app.Module.ContainingAssembly,
             lib.Module.ContainingAssembly,
             W8CompilerNameMappingContractTests.CreateMetadataModule(
@@ -1041,6 +1177,9 @@ public sealed class W8V2MemberLookupTests
         var byModule = new[] { core, deep }.ToDictionary(static built => built.Module);
         var catalogs = ImmutableArray.CreateRange(
             ancestry.Entries.Select(entry => byModule[entry.SourceModule].FieldCatalog));
+        var interfacePortfolio = MetadataInterfaceImplementationPortfolioIdentity.Create(
+            ancestry,
+            [.. ancestry.Entries.Select(entry => byModule[entry.SourceModule].InterfaceCatalog)]);
         return new LookupWorld(
             core.Module,
             deep.Module,
@@ -1048,10 +1187,20 @@ public sealed class W8V2MemberLookupTests
             core,
             ancestry,
             catalogs,
+            interfacePortfolio,
             deep.Module.ContainingAssembly,
             core.Module.ContainingAssembly,
             deep.Module.ContainingAssembly,
             core.Module.ContainingAssembly);
+    }
+
+    private static MetadataAncestryAuthorityPortfolioIdentity BuildAncestryStop()
+    {
+        var ancestry = W8MetadataAncestryAuthorityContractTests.BuildAncestryWorld(
+            W8MetadataAncestryAuthorityContractTests.BuildCoreModule(),
+            W8MetadataAncestryAuthorityContractTests.BuildCoreModule("Synthetic.Core2", 0x7100, '8')).Ancestry;
+        Assert.Equal(MetadataAncestryAuthorityPortfolioResultKind.Invalid, ancestry.ResultKind);
+        return ancestry;
     }
 
     private static MetadataAncestryAuthorityPortfolioIdentity BuildAncestry(params BuiltModule[] modules)
@@ -1080,11 +1229,14 @@ public sealed class W8V2MemberLookupTests
         Func<StaticFieldMetadataModuleIdentity,
             ImmutableArray<MetadataAssemblyReferenceRowObservationIdentity>>? assemblyReferences = null,
         Func<StaticFieldMetadataModuleIdentity,
-            ImmutableArray<MetadataTypeSpecificationRowObservationIdentity>>? typeSpecifications = null)
+            ImmutableArray<MetadataTypeSpecificationRowObservationIdentity>>? typeSpecifications = null,
+        Func<StaticFieldMetadataModuleIdentity,
+            ImmutableArray<MetadataInterfaceImplementationRowObservationIdentity>>? interfaceImplementations = null)
     {
         var typeReferenceRows = typeReferences?.Invoke(module) ?? [];
         var assemblyReferenceRows = assemblyReferences?.Invoke(module) ?? [];
         var typeSpecificationRows = typeSpecifications?.Invoke(module) ?? [];
+        var interfaceRows = interfaceImplementations?.Invoke(module) ?? [];
         var totalTypeCount = namedTypes.Length + 1;
 
         var fieldObservations = ImmutableArray.CreateBuilder<MetadataFieldDefinitionRowObservationIdentity>();
@@ -1144,6 +1296,7 @@ public sealed class W8V2MemberLookupTests
                 typeSpecificationRowCount: typeSpecificationRows.Length,
                 assemblyReferenceRowCount: assemblyReferenceRows.Length,
                 methodDefinitionRowCount: methodObservations.Count,
+                interfaceImplementationRowCount: interfaceRows.Length,
                 nestedClassRowCount: nestedClassRows.Count));
 
         var typeRows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionRowObservationIdentity>(totalTypeCount);
@@ -1220,7 +1373,17 @@ public sealed class W8V2MemberLookupTests
         var mapping = MetadataCompilerNameMappingCatalogIdentity.Create(authority);
         var chainCatalog = MetadataNamedTypeDefinitionChainCatalogIdentity.Create(compatibility, mapping);
         Assert.Equal(MetadataNamedTypeDefinitionChainCatalogResultKind.Exact, chainCatalog.ResultKind);
-        return new BuiltModule(module, authority, fieldCatalog, compatibility, chainCatalog, tables);
+
+        var interfaceCatalog = MetadataInterfaceImplementationTableCatalogIdentity.Create(authority, interfaceRows);
+        Assert.Equal(MetadataInterfaceImplementationTableResultKind.Exact, interfaceCatalog.ResultKind);
+        return new BuiltModule(
+            module,
+            authority,
+            fieldCatalog,
+            compatibility,
+            chainCatalog,
+            tables,
+            interfaceCatalog);
     }
 
     private static ImmutableArray<StaticFieldTypeDefinitionIdentity?> NullCandidateSlots(
@@ -1277,7 +1440,8 @@ public sealed class W8V2MemberLookupTests
         MetadataFieldDefinitionTableCatalogIdentity FieldCatalog,
         MetadataW7TypeDefinitionCompatibilityCatalogIdentity Compatibility,
         MetadataNamedTypeDefinitionChainCatalogIdentity ChainCatalog,
-        MetadataModuleReferenceTableSetIdentity Tables);
+        MetadataModuleReferenceTableSetIdentity Tables,
+        MetadataInterfaceImplementationTableCatalogIdentity InterfaceCatalog);
 
     private sealed record LookupWorld(
         StaticFieldMetadataModuleIdentity Core,
@@ -1286,6 +1450,7 @@ public sealed class W8V2MemberLookupTests
         BuiltModule CoreCatalogs,
         MetadataAncestryAuthorityPortfolioIdentity Ancestry,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs,
+        MetadataInterfaceImplementationPortfolioIdentity InterfaceImplementations,
         StaticFieldContainingAssemblyIdentity AppAssembly,
         StaticFieldContainingAssemblyIdentity LibAssembly,
         StaticFieldContainingAssemblyIdentity FriendAssembly,

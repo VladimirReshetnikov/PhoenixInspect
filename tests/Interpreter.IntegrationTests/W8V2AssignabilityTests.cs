@@ -46,9 +46,15 @@ public sealed class W8V2AssignabilityTests
     private const int PairNodeToken = 0x0200_000D;
     private const int GenericExtendsToken = 0x0200_000E;
     private const int WideSlotToken = 0x0200_000F;
+    private const int MarkerToken = 0x0200_0010;
+    private const int CarriedToken = 0x0200_0011;
+    private const int PlainNodeToken = 0x0200_0012;
+    private const int GenericCarrierToken = 0x0200_0013;
+    private const int GenericImplementerToken = 0x0200_0014;
 
     private const int ObjectTypeReferenceToken = 0x0100_0001;
     private const int ValueTypeTypeReferenceToken = 0x0100_0002;
+    private const int GenericInterfaceSpecificationToken = 0x1B00_0001;
 
     private const int DeepChainLength = 70;
     private const int WideArity = 64;
@@ -508,6 +514,190 @@ public sealed class W8V2AssignabilityTests
     }
 
     /// <summary>
+    /// Proves the six frozen W8.1 carrier-edge differential rows become proved positives once the request supplies an
+    /// interface-implementation portfolio: a direct emitted TypeDef interface edge, a generic class's own edge, an
+    /// interface-to-interface extension edge, a transitively extended interface, and both a one-hop and a two-hop
+    /// base-class contribution. Each retains the matched closure edge and the complete closure terminal, and the
+    /// declared InterfaceImpl coverage boundary is no longer declared because the evidence was actually consulted.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Emitted_interface_edges_are_assignable_once_the_portfolio_is_supplied()
+    {
+        var world = BuildWorld();
+
+        var direct = DecideWithInterfaces(world, world.Request, world.Marker);
+        AssertInterfaceAnswer(
+            direct,
+            StaticFieldV2AssignabilityResultKind.Assignable,
+            StaticFieldV2AssignabilityReason.InterfaceEdgeImplemented);
+        Assert.Equal(MarkerToken, direct.RelatedMetadataToken);
+        Assert.Equal(
+            MetadataInterfaceImplementationClosureTerminalKind.Complete,
+            direct.InterfaceClosureTerminal);
+        var edge = Assert.IsType<MetadataInterfaceImplementationEdgeAuthorityIdentity>(direct.InterfaceEdge);
+        Assert.Equal(MetadataInterfaceImplementationEdgeKind.TypeDefinition, edge.Kind);
+        Assert.Equal(RequestToken, edge.ImplementingTypeDefinition.TypeDefinitionToken);
+        Assert.Equal(MarkerToken, edge.TargetTypeDefinition!.TypeDefinitionToken);
+        Assert.Equal(0x0900_0002, edge.InterfaceImplementationToken);
+        Assert.NotEmpty(direct.BaseChainEdges);
+
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.Named(world.Target, CarrierToken, world.Request), world.Marker),
+            StaticFieldV2AssignabilityResultKind.Assignable,
+            StaticFieldV2AssignabilityReason.InterfaceEdgeImplemented);
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.Carried, world.Marker),
+            StaticFieldV2AssignabilityResultKind.Assignable,
+            StaticFieldV2AssignabilityReason.InterfaceEdgeImplemented);
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.BatchContext, world.Marker),
+            StaticFieldV2AssignabilityResultKind.Assignable,
+            StaticFieldV2AssignabilityReason.InterfaceEdgeImplemented);
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.DerivedNode, world.Marker),
+            StaticFieldV2AssignabilityResultKind.Assignable,
+            StaticFieldV2AssignabilityReason.InterfaceEdgeImplemented);
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.LeafNode, world.Marker),
+            StaticFieldV2AssignabilityResultKind.Assignable,
+            StaticFieldV2AssignabilityReason.InterfaceEdgeImplemented);
+
+        // Without the portfolio every one of the six rows stays unprovable exactly as it was before this migration.
+        AssertAnswer(
+            Decide(world, world.Request, world.Marker),
+            StaticFieldV2AssignabilityResultKind.Unprovable,
+            StaticFieldV2AssignabilityReason.InterfaceTargetNotModeled);
+        AssertAnswer(
+            Decide(world, world.LeafNode, world.Marker),
+            StaticFieldV2AssignabilityResultKind.Unprovable,
+            StaticFieldV2AssignabilityReason.InterfaceTargetNotModeled);
+    }
+
+    /// <summary>
+    /// Proves the reversed directions of the same carrier-edge rows are proved negatives rather than unprovable, that
+    /// a complete closure which never names the target refuses, and that a value-typed source still needs boxing.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Reversed_interface_directions_are_proved_negatives()
+    {
+        var world = BuildWorld();
+
+        var reversedExtension = DecideWithInterfaces(world, world.Marker, world.Carried);
+        AssertInterfaceAnswer(
+            reversedExtension,
+            StaticFieldV2AssignabilityResultKind.NotAssignable,
+            StaticFieldV2AssignabilityReason.InterfaceNotImplemented);
+        Assert.Equal(CarriedToken, reversedExtension.RelatedMetadataToken);
+        Assert.Equal(
+            MetadataInterfaceImplementationClosureTerminalKind.Complete,
+            reversedExtension.InterfaceClosureTerminal);
+        Assert.Null(reversedExtension.InterfaceEdge);
+
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.PlainNode, world.Marker),
+            StaticFieldV2AssignabilityResultKind.NotAssignable,
+            StaticFieldV2AssignabilityReason.InterfaceNotImplemented);
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.BaseNode, world.Carried),
+            StaticFieldV2AssignabilityResultKind.NotAssignable,
+            StaticFieldV2AssignabilityReason.InterfaceNotImplemented);
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.Marker, world.Request),
+            StaticFieldV2AssignabilityResultKind.NotAssignable,
+            StaticFieldV2AssignabilityReason.DefinitionNotOnBaseChain);
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.Value, world.Marker),
+            StaticFieldV2AssignabilityResultKind.NotAssignable,
+            StaticFieldV2AssignabilityReason.ValueSourceRequiresBoxing);
+    }
+
+    /// <summary>
+    /// Proves a generic interface stays unprovable even with the portfolio supplied, because the physical
+    /// instantiation is retained undecoded: an implementing type whose only interface row is a TypeSpec reaches the
+    /// generic-interface closure terminal, and a named edge to a generic interface definition carries no closed
+    /// arguments over which any per-position variance decision could be taken.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Generic_interface_arguments_remain_unprovable_with_the_portfolio()
+    {
+        var world = BuildWorld();
+        var covariantOfObject = world.Named(world.Target, CovariantNodeToken, world.Object);
+
+        var undecoded = DecideWithInterfaces(world, world.GenericCarrier, covariantOfObject);
+        AssertInterfaceAnswer(
+            undecoded,
+            StaticFieldV2AssignabilityResultKind.Unprovable,
+            StaticFieldV2AssignabilityReason.GenericInterfaceInstantiationNotModeled);
+        Assert.Equal(
+            MetadataInterfaceImplementationClosureTerminalKind.GenericInterfaceReached,
+            undecoded.InterfaceClosureTerminal);
+        Assert.Null(undecoded.InterfaceEdge);
+        Assert.Contains(
+            StaticFieldV2AssignabilityCoverageBoundary.GenericInterfaceInstantiationNotModeled,
+            undecoded.DeclaredCoverageBoundaries);
+
+        var namedGenericEdge = DecideWithInterfaces(world, world.GenericImplementer, covariantOfObject);
+        AssertInterfaceAnswer(
+            namedGenericEdge,
+            StaticFieldV2AssignabilityResultKind.Unprovable,
+            StaticFieldV2AssignabilityReason.GenericInterfaceInstantiationNotModeled);
+        Assert.Equal(
+            MetadataInterfaceImplementationClosureTerminalKind.Complete,
+            namedGenericEdge.InterfaceClosureTerminal);
+        Assert.Equal(
+            CovariantNodeToken,
+            Assert.IsType<MetadataInterfaceImplementationEdgeAuthorityIdentity>(
+                namedGenericEdge.InterfaceEdge).TargetTypeDefinition!.TypeDefinitionToken);
+        Assert.Contains(
+            StaticFieldV2AssignabilityCoverageBoundary.GenericInterfaceInstantiationNotModeled,
+            namedGenericEdge.DeclaredCoverageBoundaries);
+
+        // A generic-interface closure terminal never turns an unnamed interface into a proved negative either.
+        AssertInterfaceAnswer(
+            DecideWithInterfaces(world, world.GenericCarrier, world.Marker),
+            StaticFieldV2AssignabilityResultKind.Unprovable,
+            StaticFieldV2AssignabilityReason.GenericInterfaceInstantiationNotModeled);
+    }
+
+    /// <summary>
+    /// Proves a supplied interface-implementation portfolio that itself stopped propagates as a typed prefix-free
+    /// draft stop rather than silently degrading to the unprovable interface boundary.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Interface_portfolio_prerequisite_stops_are_typed_and_prefix_free()
+    {
+        var world = BuildWorld();
+        var nonExact = MetadataInterfaceImplementationPortfolioIdentity.Create(world.Ancestry, default);
+        Assert.Equal(MetadataInterfaceImplementationPortfolioResultKind.NonExact, nonExact.ResultKind);
+        AssertStop(
+            StaticFieldV2AssignabilityBinder.IsAssignable(StaticFieldV2AssignabilityRequest.Create(
+                world.Request,
+                world.Marker,
+                world.Ancestry,
+                nonExact)),
+            StaticFieldV2AssignabilityResultKind.NonExact,
+            StaticFieldV2AssignabilityReason.InterfaceImplementationPortfolioNonExact);
+
+        var twoCores = W8MetadataAncestryAuthorityContractTests.BuildAncestryWorld(
+            W8MetadataAncestryAuthorityContractTests.BuildCoreModule(),
+            W8MetadataAncestryAuthorityContractTests.BuildCoreModule("Synthetic.Core3", 0xA800, '7'));
+        var invalid = MetadataInterfaceImplementationPortfolioIdentity.Create(twoCores.Ancestry, []);
+        Assert.Equal(MetadataInterfaceImplementationPortfolioResultKind.Invalid, invalid.ResultKind);
+        AssertStop(
+            StaticFieldV2AssignabilityBinder.IsAssignable(StaticFieldV2AssignabilityRequest.Create(
+                world.Request,
+                world.Marker,
+                world.Ancestry,
+                invalid)),
+            StaticFieldV2AssignabilityResultKind.Invalid,
+            StaticFieldV2AssignabilityReason.InterfaceImplementationPortfolioInvalid);
+    }
+
+    /// <summary>
     /// Proves both declared draft bounds stop prefix-free at cap plus one: the bounded ancestry chain that never
     /// reaches the target definition, and the cumulative comparison total, which deliberately reuses the declared
     /// constructed-ancestry-depth bound name and value.
@@ -616,7 +806,7 @@ public sealed class W8V2AssignabilityTests
         Assert.Equal(outcome.GetHashCode(), replay.GetHashCode());
         Assert.Equal(outcome.Sha256, replay.Sha256);
         Assert.Equal(
-            "f67af7e28fde51225fe6c09ff4bc32defb4a86dd218f3382ada9f97bb8861acc",
+            "c0319ec87f52e8feb9b38939f64d643d1f710dde659f5eb7dcfdd5b9d8c674fc",
             outcome.Sha256);
         Assert.Equal(
             [
@@ -722,6 +912,29 @@ public sealed class W8V2AssignabilityTests
         MetadataClosedTypeIdentity target) =>
         Decide(world.Ancestry, source, target);
 
+    private static StaticFieldV2AssignabilityOutcome DecideWithInterfaces(
+        AssignabilityWorld world,
+        MetadataClosedTypeIdentity source,
+        MetadataClosedTypeIdentity target) =>
+        StaticFieldV2AssignabilityBinder.IsAssignable(StaticFieldV2AssignabilityRequest.Create(
+            source,
+            target,
+            world.Ancestry,
+            world.InterfaceImplementations));
+
+    private static void AssertInterfaceAnswer(
+        StaticFieldV2AssignabilityOutcome outcome,
+        StaticFieldV2AssignabilityResultKind resultKind,
+        StaticFieldV2AssignabilityReason reason)
+    {
+        Assert.Equal(resultKind, outcome.ResultKind);
+        Assert.Equal(reason, outcome.Reason);
+        Assert.Null(outcome.ReachedBound);
+        Assert.DoesNotContain(
+            StaticFieldV2AssignabilityCoverageBoundary.InterfaceImplementationNotModeled,
+            outcome.DeclaredCoverageBoundaries);
+    }
+
     private static StaticFieldV2AssignabilityOutcome Decide(
         MetadataAncestryAuthorityPortfolioIdentity ancestry,
         MetadataClosedTypeIdentity source,
@@ -759,8 +972,20 @@ public sealed class W8V2AssignabilityTests
         var target = BuildTargetModule();
         var world = W8MetadataAncestryAuthorityContractTests.BuildAncestryWorld(core, target);
         Assert.Equal(MetadataAncestryAuthorityPortfolioResultKind.Exact, world.Ancestry.ResultKind);
-        return new AssignabilityWorld(core.Module, target.Module, world.Ancestry);
+        var portfolio = MetadataInterfaceImplementationPortfolioIdentity.Create(
+            world.Ancestry,
+            [
+                InterfaceCatalog(core, []),
+                InterfaceCatalog(target, TargetInterfaceImplementations(target.Module)),
+            ]);
+        Assert.Equal(MetadataInterfaceImplementationPortfolioResultKind.Exact, portfolio.ResultKind);
+        return new AssignabilityWorld(core.Module, target.Module, world.Ancestry, portfolio);
     }
+
+    private static MetadataInterfaceImplementationTableCatalogIdentity InterfaceCatalog(
+        W8MetadataAncestryAuthorityContractTests.AncestryModule module,
+        ImmutableArray<MetadataInterfaceImplementationRowObservationIdentity> rows) =>
+        MetadataInterfaceImplementationTableCatalogIdentity.Create(module.ChainCatalog.DefinitionAuthority, rows);
 
     private static DeepWorld BuildDeepWorld()
     {
@@ -865,18 +1090,60 @@ public sealed class W8V2AssignabilityTests
                     PublicClassAttributes,
                     ObjectTypeReferenceToken,
                     [.. Enumerable.Repeat(0, WideArity)]),
-            ]);
+                new VarianceTypeRow(TargetNamespace, "IMarker", InterfaceAttributes, null),
+                new VarianceTypeRow(TargetNamespace, "ICarried", InterfaceAttributes, null),
+                new VarianceTypeRow(TargetNamespace, "PlainNode", PublicClassAttributes, ObjectTypeReferenceToken),
+                new VarianceTypeRow(
+                    TargetNamespace, "GenericCarrier", PublicClassAttributes, ObjectTypeReferenceToken),
+                new VarianceTypeRow(
+                    TargetNamespace, "GenericImplementer", PublicClassAttributes, ObjectTypeReferenceToken),
+            ],
+            interfaceImplementations: TargetInterfaceImplementations,
+            typeSpecifications: true);
+
+    private static ImmutableArray<MetadataInterfaceImplementationRowObservationIdentity>
+        TargetInterfaceImplementations(StaticFieldMetadataModuleIdentity module) =>
+    [
+        InterfaceRow(module, 1, CarriedToken, MarkerToken),
+        InterfaceRow(module, 2, RequestToken, MarkerToken),
+        InterfaceRow(module, 3, BatchToken, CarriedToken),
+        InterfaceRow(module, 4, BaseNodeToken, MarkerToken),
+        InterfaceRow(module, 5, CarrierToken, MarkerToken),
+        InterfaceRow(module, 6, GenericCarrierToken, GenericInterfaceSpecificationToken),
+        InterfaceRow(module, 7, GenericImplementerToken, CovariantNodeToken),
+    ];
+
+    private static MetadataInterfaceImplementationRowObservationIdentity InterfaceRow(
+        StaticFieldMetadataModuleIdentity module,
+        int rowId,
+        int implementingTypeDefinitionToken,
+        int interfaceMetadataToken) =>
+        MetadataInterfaceImplementationRowObservationIdentity.Create(
+            module,
+            0x0900_0000 | rowId,
+            implementingTypeDefinitionToken,
+            interfaceMetadataToken);
 
     private static W8MetadataAncestryAuthorityContractTests.AncestryModule BuildVarianceModule(
         string assemblyName,
         ulong moduleAddress,
         char digestCharacter,
-        ImmutableArray<VarianceTypeRow> namedTypes)
+        ImmutableArray<VarianceTypeRow> namedTypes,
+        Func<StaticFieldMetadataModuleIdentity,
+            ImmutableArray<MetadataInterfaceImplementationRowObservationIdentity>>? interfaceImplementations = null,
+        bool typeSpecifications = false)
     {
         var module = W8CompilerNameMappingContractTests.CreateMetadataModule(
             moduleAddress,
             digestCharacter,
             assemblyName);
+        var interfaceRows = interfaceImplementations?.Invoke(module) ?? [];
+        var typeSpecificationRows = typeSpecifications
+            ? ImmutableArray.Create(MetadataTypeSpecificationRowObservationIdentity.Create(
+                module,
+                GenericInterfaceSpecificationToken,
+                [0x15, 0x12, 0x08, 0x01, 0x0E]))
+            : ImmutableArray<MetadataTypeSpecificationRowObservationIdentity>.Empty;
         var typeReferenceRows = ImmutableArray.Create(
             W8MetadataAncestryAuthorityContractTests.TypeReferenceRow(module, 1, "System", "Object", 0x2300_0001),
             W8MetadataAncestryAuthorityContractTests.TypeReferenceRow(module, 2, "System", "ValueType", 0x2300_0001));
@@ -911,8 +1178,9 @@ public sealed class W8V2AssignabilityTests
                 typeDefinitionRowCount: totalTypeCount,
                 fieldDefinitionRowCount: 0,
                 typeReferenceRowCount: typeReferenceRows.Length,
-                typeSpecificationRowCount: 0,
+                typeSpecificationRowCount: typeSpecificationRows.Length,
                 assemblyReferenceRowCount: assemblyReferenceRows.Length,
+                interfaceImplementationRowCount: interfaceRows.Length,
                 nestedClassRowCount: 0,
                 genericParameterRowCount: genericParameterRows.Count));
 
@@ -967,9 +1235,7 @@ public sealed class W8V2AssignabilityTests
             MetadataModuleReferencePhysicalTableCatalogIdentity.Create(
                 referenceEnds,
                 ImmutableArray<MetadataModuleReferenceRowObservationIdentity>.Empty),
-            MetadataTypeSpecificationPhysicalTableCatalogIdentity.Create(
-                referenceEnds,
-                ImmutableArray<MetadataTypeSpecificationRowObservationIdentity>.Empty),
+            MetadataTypeSpecificationPhysicalTableCatalogIdentity.Create(referenceEnds, typeSpecificationRows),
             MetadataAssemblyReferencePhysicalTableCatalogIdentity.Create(referenceEnds, assemblyReferenceRows),
             MetadataAssemblyFilePhysicalTableCatalogIdentity.Create(
                 referenceEnds,
@@ -1062,7 +1328,8 @@ public sealed class W8V2AssignabilityTests
     private sealed record AssignabilityWorld(
         StaticFieldMetadataModuleIdentity Core,
         StaticFieldMetadataModuleIdentity Target,
-        MetadataAncestryAuthorityPortfolioIdentity Ancestry)
+        MetadataAncestryAuthorityPortfolioIdentity Ancestry,
+        MetadataInterfaceImplementationPortfolioIdentity InterfaceImplementations)
     {
         internal MetadataClosedTypeIdentity Object => Named(Core, ObjectToken);
 
@@ -1079,6 +1346,16 @@ public sealed class W8V2AssignabilityTests
         internal MetadataClosedTypeIdentity DerivedNode => Named(Target, DerivedNodeToken);
 
         internal MetadataClosedTypeIdentity LeafNode => Named(Target, LeafNodeToken);
+
+        internal MetadataClosedTypeIdentity Marker => Named(Target, MarkerToken);
+
+        internal MetadataClosedTypeIdentity Carried => Named(Target, CarriedToken);
+
+        internal MetadataClosedTypeIdentity PlainNode => Named(Target, PlainNodeToken);
+
+        internal MetadataClosedTypeIdentity GenericCarrier => Named(Target, GenericCarrierToken);
+
+        internal MetadataClosedTypeIdentity GenericImplementer => Named(Target, GenericImplementerToken);
 
         internal MetadataClosedTypeIdentity Named(
             StaticFieldMetadataModuleIdentity module,

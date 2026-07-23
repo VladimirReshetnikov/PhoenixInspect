@@ -32,7 +32,7 @@ public sealed class W8V2RuntimeConstructionTests
     private const int FieldRvaRowToken = 0x1D00_0001;
 
     private const string ExactConstructedSlotOutcomeSha256 =
-        "ea9e639580e02e0135c95ae21a14a16cd1856fa11af5f088e73665152b5fdd3f";
+        "00f45ae4c417a88bd974794ce5461c7f98e034d348d0f1ac1a87d81219490955";
 
     /// <summary>
     /// Proves one exact runtime construction is selected among several simultaneously loaded same-TypeDef candidates
