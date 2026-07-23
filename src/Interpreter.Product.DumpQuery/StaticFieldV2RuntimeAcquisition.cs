@@ -1,8 +1,10 @@
 using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Globalization;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Interpreter.Core.Abstractions;
@@ -122,14 +124,44 @@ public enum StaticFieldV2RuntimeAcquisitionIssue
     /// <summary>The landed slot acquisition rejected the acquired physical facts.</summary>
     StaticSlotAcquisitionNonExact = 13,
 
-    /// <summary>The exact memory-home frame-value root acquisition is not implemented by this draft slice.</summary>
-    FrameAcquisitionNotImplemented = 14,
-
     /// <summary>A frame-value root homed in a register is not admitted by this draft slice.</summary>
     FrameRegisterHomeNotAdmitted = 15,
 
     /// <summary>A selected frame's own generic arguments are not admitted by this draft slice.</summary>
     FrameGenericArgumentNotAdmitted = 16,
+
+    /// <summary>The selected thread exposes fewer selector-matching managed frames than the ordinal names.</summary>
+    SelectedFrameAbsent = 17,
+
+    /// <summary>The selected frame's native instruction pointer maps to no exact IL offset.</summary>
+    FrameInstructionOffsetUnavailable = 18,
+
+    /// <summary>The selected frame declares no argument or local at the requested physical ordinal.</summary>
+    FrameRootOrdinalAbsent = 19,
+
+    /// <summary>No supplied Portable-PDB local-scope row declares the requested local name at all.</summary>
+    FrameLocalNameAbsent = 20,
+
+    /// <summary>Every supplied row declaring the local name ends before the selected instruction offset.</summary>
+    FrameLocalLexicallyInactive = 21,
+
+    /// <summary>Two or more supplied rows declare the same live local name at the selected instruction offset.</summary>
+    FrameLocalNameAmbiguous = 22,
+
+    /// <summary>The selected frame-value root reports no location at all at the selected instruction.</summary>
+    FrameRootLocationAbsent = 23,
+
+    /// <summary>The selected frame-value root is split across more than one reported location.</summary>
+    FrameRootLocationSplit = 24,
+
+    /// <summary>The selected frame-value root reports one location whose flag word is not admitted.</summary>
+    FrameRootLocationUnknown = 25,
+
+    /// <summary>The selected frame-value root reports a payload width outside the admitted draft range.</summary>
+    FrameRootWidthNotAdmitted = 26,
+
+    /// <summary>The pinned runtime's legacy stack-walk data interface could not be reached exactly.</summary>
+    FrameInteropUnavailable = 27,
 }
 
 /// <summary>Identifies one declared coverage boundary retained by a runtime draft acquisition answer.</summary>
@@ -151,12 +183,27 @@ public enum StaticFieldV2RuntimeAcquisitionBoundary
     /// <summary>The physical CustomAttribute table is not modeled, so storage markers stay caller-supplied.</summary>
     CustomAttributeTableNotModeled = 4,
 
-    /// <summary>The exact memory-home frame-value root acquisition is declared but not implemented here.</summary>
-    FrameValueRootAcquisitionNotImplemented = 5,
+    /// <summary>A frame-value root homed in a register is refused rather than read out of that register.</summary>
+    FrameRegisterHomeNotAdmitted = 6,
+
+    /// <summary>No selected-frame generic-argument substitution service is modeled or exposed at all.</summary>
+    FrameGenericArgumentSubstitutionNotModeled = 7,
+
+    /// <summary>Portable-PDB local scopes are caller-supplied rows rather than a modeled physical table.</summary>
+    FrameLocalScopesSuppliedByCaller = 8,
+
+    /// <summary>Frame-value homes come from the pinned runtime's legacy stack-walk data interface.</summary>
+    FrameHomeSuppliedByLegacyStackWalkInterface = 9,
+
+    /// <summary>The selected frame's receiver is identified by the legacy interface's own argument name.</summary>
+    FrameReceiverIdentifiedByLegacyArgumentName = 10,
 }
 
-/// <summary>Names the admitted frame-value draft root families of one selected frame.</summary>
-/// <remarks>The draft catalog is the vocabulary the frame-root contract freezes ahead of its physical acquisition.</remarks>
+/// <summary>Names the frame-value draft root families one selected-frame request may name.</summary>
+/// <remarks>
+/// The first three families are admitted and can reach an exact memory home. The two generic-argument families exist
+/// only so a caller can name them and receive the frozen W8.1 non-admission instead of a fabricated substitution.
+/// </remarks>
 public enum StaticFieldV2FrameValueRootKind
 {
     /// <summary>The selected frame's receiver.</summary>
@@ -167,6 +214,12 @@ public enum StaticFieldV2FrameValueRootKind
 
     /// <summary>One named local that is active at the selected instruction offset.</summary>
     Local = 3,
+
+    /// <summary>One closed declaring-type generic argument of the selected frame, which is never admitted.</summary>
+    DeclaringTypeGenericArgument = 4,
+
+    /// <summary>One closed method generic argument of the selected frame, which is never admitted.</summary>
+    MethodGenericArgument = 5,
 }
 
 /// <summary>Freezes the retained physical draft evidence of one opened runtime acquisition snapshot.</summary>
@@ -1466,19 +1519,129 @@ public sealed class StaticFieldV2RuntimeValueAcquisitionOutcome :
     }
 }
 
+/// <summary>Freezes one caller-supplied Portable-PDB local-scope draft row of the selected frame's method.</summary>
+/// <remarks>
+/// The row is the exact Portable-PDB fact a caller reads out of the method's <c>LocalScope</c> and <c>LocalVariable</c>
+/// tables: one declared local name, the zero-based local-signature slot it occupies, and the half-open IL range its
+/// declaring scope covers. The physical Portable-PDB image is not modeled by this draft slice, so these rows are the
+/// only lexical evidence the frame acquisition owns and it never invents one.
+/// </remarks>
+public sealed class StaticFieldV2FramePortablePdbLocalRow : IEquatable<StaticFieldV2FramePortablePdbLocalRow>
+{
+    /// <summary>Gets the maximum admitted declared local-name character count of one draft row.</summary>
+    public const int MaximumNameLength = 256;
+
+    /// <summary>Gets the maximum admitted zero-based local-signature slot draft index of one row.</summary>
+    public const int MaximumSlotIndex = ExpressionV2ContractLimits.MaximumLocalCount - 1;
+
+    private const string CanonicalDomain = "static-field-v2-frame-portable-pdb-local-row";
+    private const int CanonicalSchemaVersion = 1;
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    private StaticFieldV2FramePortablePdbLocalRow(
+        string name,
+        int slotIndex,
+        int scopeStartOffset,
+        int scopeEndOffset)
+    {
+        Name = name;
+        SlotIndex = slotIndex;
+        ScopeStartOffset = scopeStartOffset;
+        ScopeEndOffset = scopeEndOffset;
+
+        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
+        writer.WriteString(name);
+        writer.WriteInt32(slotIndex);
+        writer.WriteInt32(scopeStartOffset);
+        writer.WriteInt32(scopeEndOffset);
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets the exact declared local draft name this row carries.</summary>
+    public string Name { get; }
+
+    /// <summary>Gets the zero-based local-signature slot draft index this row names.</summary>
+    public int SlotIndex { get; }
+
+    /// <summary>Gets the inclusive IL offset at which this row's declaring draft scope begins.</summary>
+    public int ScopeStartOffset { get; }
+
+    /// <summary>Gets the exclusive IL offset at which this row's declaring draft scope ends.</summary>
+    public int ScopeEndOffset { get; }
+
+    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
+
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row.</summary>
+    public string Sha256 { get; }
+
+    /// <summary>Creates one caller-supplied Portable-PDB local-scope draft row.</summary>
+    /// <param name="name">The exact declared local name of the row.</param>
+    /// <param name="slotIndex">The zero-based local-signature slot index the name occupies.</param>
+    /// <param name="scopeStartOffset">The inclusive IL offset at which the declaring scope begins.</param>
+    /// <param name="scopeEndOffset">The exclusive IL offset at which the declaring scope ends.</param>
+    /// <returns>A sealed immutable draft row.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is null.</exception>
+    /// <exception cref="ArgumentException">The name is empty, too long, or carries a NUL.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">An index or offset is outside its admitted range.</exception>
+    public static StaticFieldV2FramePortablePdbLocalRow Create(
+        string name,
+        int slotIndex,
+        int scopeStartOffset,
+        int scopeEndOffset)
+    {
+        ExpressionV2ContractEncoding.RequireText(name, nameof(name), MaximumNameLength);
+        if (slotIndex is < 0 or > MaximumSlotIndex)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(slotIndex),
+                $"A zero-based local slot index of zero through {MaximumSlotIndex} is required.");
+        }
+        ArgumentOutOfRangeException.ThrowIfNegative(scopeStartOffset);
+        if (scopeEndOffset <= scopeStartOffset)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(scopeEndOffset),
+                "A local scope must end strictly after it begins.");
+        }
+        return new StaticFieldV2FramePortablePdbLocalRow(name, slotIndex, scopeStartOffset, scopeEndOffset);
+    }
+
+    /// <summary>Tests canonical equality between two Portable-PDB local-scope draft rows.</summary>
+    /// <param name="other">The other draft row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    public bool Equals(StaticFieldV2FramePortablePdbLocalRow? other) =>
+        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
+
+    /// <summary>Tests Portable-PDB local-scope draft row equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    public override bool Equals(object? obj) => Equals(obj as StaticFieldV2FramePortablePdbLocalRow);
+
+    /// <summary>Computes a deterministic hash code from immutable canonical draft row content.</summary>
+    /// <returns>A hash code for this canonical draft row.</returns>
+    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
+}
+
 /// <summary>Freezes one complete frame-value root draft acquisition request.</summary>
 /// <remarks>
-/// The request names the token-keyed selected thread, the zero-based managed frame ordinal within that thread, and one
-/// admitted root family. A local additionally names its declared local name, which is a Portable-PDB local-scope fact
-/// and never a type name, a global lookup, or an enumeration order.
+/// The request names the token-keyed selected thread, the zero-based ordinal of one selector-matching managed frame on
+/// that thread, and one root family. A local additionally names its declared local name plus the caller-supplied
+/// Portable-PDB local-scope rows of the frame's method; the name is a Portable-PDB local-scope fact and never a type
+/// name, a global lookup, or an enumeration order.
 /// </remarks>
 public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV2FrameValueRootRequest>
 {
     /// <summary>Gets the maximum admitted zero-based managed frame draft ordinal.</summary>
     public const int MaximumFrameOrdinal = ExpressionV2ContractLimits.MaximumFrameCountPerThread - 1;
 
+    /// <summary>Gets the maximum admitted caller-supplied Portable-PDB local-scope draft row count.</summary>
+    public const int MaximumLocalScopeRowCount = ExpressionV2ContractLimits.MaximumLocalCount;
+
     private const string CanonicalDomain = "static-field-v2-frame-value-root-request";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
+    private readonly ImmutableArray<StaticFieldV2FramePortablePdbLocalRow> localScopeRows;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2FrameValueRootRequest(
@@ -1487,6 +1650,7 @@ public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV
         StaticFieldV2FrameValueRootKind rootKind,
         int rootOrdinal,
         string? localName,
+        ImmutableArray<StaticFieldV2FramePortablePdbLocalRow> localScopeRows,
         ExpressionV2CapabilityProbeSet? capabilityProbes)
     {
         ThreadSelector = threadSelector;
@@ -1494,6 +1658,7 @@ public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV
         RootKind = rootKind;
         RootOrdinal = rootOrdinal;
         LocalName = localName;
+        this.localScopeRows = localScopeRows;
         CapabilityProbes = capabilityProbes;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
@@ -1502,6 +1667,10 @@ public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV
         writer.WriteInt32((int)rootKind);
         writer.WriteInt32(rootOrdinal);
         ExpressionV2ContractEncoding.WriteOptionalString(writer, localName);
+        ExpressionV2ContractEncoding.WriteCanonicalArray(
+            writer,
+            localScopeRows,
+            static row => row.CanonicalBytes);
         writer.WriteBoolean(capabilityProbes is not null);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -1522,6 +1691,10 @@ public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV
     /// <summary>Gets the declared local draft name for a local root, otherwise null.</summary>
     public string? LocalName { get; }
 
+    /// <summary>Gets a defensive copy of every caller-supplied Portable-PDB local-scope draft row.</summary>
+    public ImmutableArray<StaticFieldV2FramePortablePdbLocalRow> LocalScopeRows =>
+        ExpressionV2ContractEncoding.Copy(localScopeRows);
+
     /// <summary>Gets the caller-owned capability probes this draft acquisition routes every call through.</summary>
     public ExpressionV2CapabilityProbeSet? CapabilityProbes { get; }
 
@@ -1533,21 +1706,23 @@ public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV
 
     /// <summary>Creates one complete frame-value root draft acquisition request.</summary>
     /// <param name="threadSelector">The token-keyed selected-thread predicate.</param>
-    /// <param name="frameOrdinal">The zero-based managed frame ordinal within the selected thread.</param>
-    /// <param name="rootKind">The admitted frame-value root family.</param>
-    /// <param name="rootOrdinal">The zero-based parameter or local ordinal, or zero for the receiver.</param>
+    /// <param name="frameOrdinal">The zero-based ordinal of one selector-matching managed frame.</param>
+    /// <param name="rootKind">The frame-value root family.</param>
+    /// <param name="rootOrdinal">The zero-based declared parameter ordinal, or zero for every other family.</param>
     /// <param name="localName">The declared local name for a local root, otherwise null.</param>
+    /// <param name="localScopeRows">The Portable-PDB local-scope rows of the frame's method for a local root.</param>
     /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained draft ledger.</param>
-    /// <returns>A sealed immutable draft request.</returns>
+    /// <returns>A sealed immutable draft request with a defensively copied row set.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="threadSelector"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An ordinal is outside its admitted range.</exception>
-    /// <exception cref="ArgumentException">The root family and the supplied local name disagree.</exception>
+    /// <exception cref="ArgumentException">The root family and the supplied local facts disagree.</exception>
     public static StaticFieldV2FrameValueRootRequest Create(
         StaticFieldV2RuntimeThreadSelector threadSelector,
         int frameOrdinal,
         StaticFieldV2FrameValueRootKind rootKind,
         int rootOrdinal = 0,
         string? localName = null,
+        ImmutableArray<StaticFieldV2FramePortablePdbLocalRow> localScopeRows = default,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null)
     {
         ArgumentNullException.ThrowIfNull(threadSelector);
@@ -1559,20 +1734,35 @@ public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV
                 $"A zero-based frame ordinal of zero through {MaximumFrameOrdinal} is required.");
         }
         ArgumentOutOfRangeException.ThrowIfNegative(rootOrdinal);
+        var rows = ExpressionV2ContractEncoding.CopyRequired(
+            localScopeRows.IsDefault
+                ? ImmutableArray<StaticFieldV2FramePortablePdbLocalRow>.Empty
+                : localScopeRows,
+            nameof(localScopeRows),
+            MaximumLocalScopeRowCount);
         if (rootKind == StaticFieldV2FrameValueRootKind.Local)
         {
             ExpressionV2ContractEncoding.RequireIdentifier(localName!, nameof(localName));
         }
-        else if (localName is not null)
+        else
         {
-            throw new ArgumentException(
-                "Only a local frame-value root may carry a declared local name.",
-                nameof(localName));
+            if (localName is not null)
+            {
+                throw new ArgumentException(
+                    "Only a local frame-value root may carry a declared local name.",
+                    nameof(localName));
+            }
+            if (rows.Length != 0)
+            {
+                throw new ArgumentException(
+                    "Only a local frame-value root may carry Portable-PDB local-scope rows.",
+                    nameof(localScopeRows));
+            }
         }
-        if (rootKind == StaticFieldV2FrameValueRootKind.This && rootOrdinal != 0)
+        if (rootKind != StaticFieldV2FrameValueRootKind.Parameter && rootOrdinal != 0)
         {
             throw new ArgumentException(
-                "A receiver frame-value root carries no ordinal.",
+                "Only a declared-parameter frame-value root carries an ordinal.",
                 nameof(rootOrdinal));
         }
         return new StaticFieldV2FrameValueRootRequest(
@@ -1581,8 +1771,11 @@ public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV
             rootKind,
             rootOrdinal,
             localName,
+            rows,
             capabilityProbes);
     }
+
+    internal ImmutableArray<StaticFieldV2FramePortablePdbLocalRow> LocalScopeRowsCore => localScopeRows;
 
     /// <summary>Tests canonical equality between two frame-value root draft requests.</summary>
     /// <param name="other">The other draft request.</param>
@@ -1602,22 +1795,61 @@ public sealed class StaticFieldV2FrameValueRootRequest : IEquatable<StaticFieldV
 
 /// <summary>Freezes the complete draft outcome of one frame-value root acquisition.</summary>
 /// <remarks>
-/// The contract is landed ahead of its physical acquisition. This draft slice performs no stack walk at all, so every
-/// answer is the typed <see cref="StaticFieldV2RuntimeAcquisitionIssue.FrameAcquisitionNotImplemented"/> stop that
-/// exposes no address, no width, no liveness, and no copied bytes. The two frozen non-admissions a later physical
-/// acquisition must keep, a register home and a selected frame's own generic arguments, are already declared in the
-/// shared issue catalog so no consumer can mistake the not-implemented answer for either of them.
+/// An exact answer attributes the named root to one exact memory home: its address, its counted payload width, its
+/// liveness at the selected instruction offset, and exactly the bytes copied out of the pinned snapshot through the
+/// project-owned counted reader. Every other answer is a prefix-free typed stop that exposes no address, no width, and
+/// no copied bytes. The two frozen W8.1 non-admissions, a register home and a selected frame's own generic arguments,
+/// keep their own issues and their own diagnostic codes so no consumer can mistake either for a physical gap.
 /// </remarks>
 public sealed class StaticFieldV2FrameValueRootOutcome : IEquatable<StaticFieldV2FrameValueRootOutcome>
 {
-    /// <summary>Gets the frozen diagnostic code retained by the not-implemented frame-root draft stop.</summary>
-    public const string FrameAcquisitionNotImplementedCode = "W8_FRAME_ROOT_ACQUISITION_NOT_IMPLEMENTED";
-
     /// <summary>Gets the frozen diagnostic code retained by a register-home frame-root draft non-admission.</summary>
     public const string FrameRegisterHomeNotAdmittedCode = "W8_FRAME_ROOT_REGISTER_HOME_NOT_ADMITTED";
 
     /// <summary>Gets the frozen diagnostic code retained by a selected-frame generic-argument non-admission.</summary>
     public const string FrameGenericArgumentNotAdmittedCode = "W8_FRAME_ROOT_GENERIC_ARGUMENT_NOT_ADMITTED";
+
+    /// <summary>Gets the frozen diagnostic code retained by an absent selected-thread frame-root draft stop.</summary>
+    public const string SelectedThreadAbsentCode = "W8_FRAME_ROOT_THREAD_ABSENT";
+
+    /// <summary>Gets the frozen diagnostic code retained by an ambiguous selected-thread frame-root draft stop.</summary>
+    public const string SelectedThreadAmbiguousCode = "W8_FRAME_ROOT_THREAD_AMBIGUOUS";
+
+    /// <summary>Gets the frozen diagnostic code retained by an absent selected-frame draft stop.</summary>
+    public const string SelectedFrameAbsentCode = "W8_FRAME_ROOT_FRAME_ABSENT";
+
+    /// <summary>Gets the frozen diagnostic code retained by an unavailable instruction-offset draft stop.</summary>
+    public const string InstructionOffsetUnavailableCode = "W8_FRAME_ROOT_INSTRUCTION_OFFSET_UNAVAILABLE";
+
+    /// <summary>Gets the frozen diagnostic code retained by an absent physical root-ordinal draft stop.</summary>
+    public const string RootOrdinalAbsentCode = "W8_FRAME_ROOT_ORDINAL_ABSENT";
+
+    /// <summary>Gets the frozen diagnostic code retained by an entirely undeclared local-name draft stop.</summary>
+    public const string LocalNameAbsentCode = "W8_FRAME_ROOT_LOCAL_NAME_ABSENT";
+
+    /// <summary>Gets the frozen diagnostic code retained by a lexically inactive local draft stop.</summary>
+    public const string LocalLexicallyInactiveCode = "W8_FRAME_ROOT_LOCAL_LEXICALLY_INACTIVE";
+
+    /// <summary>Gets the frozen diagnostic code retained by a duplicate live local-name draft stop.</summary>
+    public const string LocalNameAmbiguousCode = "W8_FRAME_ROOT_LOCAL_NAME_AMBIGUOUS";
+
+    /// <summary>Gets the frozen diagnostic code retained by a zero-location frame-root draft stop.</summary>
+    public const string LocationAbsentCode = "W8_FRAME_ROOT_LOCATION_ABSENT";
+
+    /// <summary>Gets the frozen diagnostic code retained by a split-location frame-root draft stop.</summary>
+    public const string LocationSplitCode = "W8_FRAME_ROOT_LOCATION_SPLIT";
+
+    /// <summary>Gets the frozen diagnostic code retained by an unadmitted-flag frame-root draft stop.</summary>
+    public const string LocationUnknownCode = "W8_FRAME_ROOT_LOCATION_UNKNOWN";
+
+    /// <summary>Gets the frozen diagnostic code retained by an inadmissible payload-width draft stop.</summary>
+    public const string RootWidthNotAdmittedCode = "W8_FRAME_ROOT_WIDTH_NOT_ADMITTED";
+
+    /// <summary>Gets the frozen diagnostic code retained by an unreachable legacy stack-walk draft stop.</summary>
+    public const string InteropUnavailableCode = "W8_FRAME_ROOT_INTEROP_UNAVAILABLE";
+
+    /// <summary>Gets the frozen diagnostic code retained by a short counted frame-root draft read.</summary>
+    public const string CountedReadIncompleteCode = "W8_FRAME_ROOT_COUNTED_READ_INCOMPLETE";
 
     private const string CanonicalDomain = "static-field-v2-frame-value-root-outcome";
     private const int CanonicalSchemaVersion = 1;
@@ -1733,27 +1965,51 @@ public sealed class StaticFieldV2FrameValueRootOutcome : IEquatable<StaticFieldV
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2FrameValueRootOutcome IssueStop(
+        StaticFieldV2RuntimeAcquisitionResultKind resultKind,
+        StaticFieldV2RuntimeAcquisitionStage stage,
         StaticFieldV2RuntimeAcquisitionIssue issue,
         StaticFieldV2FrameValueRootRequest request,
         StaticFieldV2RuntimeSnapshotEvidence evidence,
+        bool? isLive,
         ImmutableArray<StaticFieldV2RuntimeAcquisitionBoundary> declaredBoundaries,
         string diagnosticCode)
     {
         ExpressionV2ContractEncoding.RequireDiagnosticCode(diagnosticCode, nameof(diagnosticCode));
         return new StaticFieldV2FrameValueRootOutcome(
-            StaticFieldV2RuntimeAcquisitionResultKind.Unsupported,
-            StaticFieldV2RuntimeAcquisitionStage.FrameRoot,
+            resultKind,
+            stage,
             issue,
             request,
             evidence,
             null,
             null,
-            null,
+            isLive,
             ImmutableArray<byte>.Empty,
             StaticFieldV2LiteralValueOutcome.IssueLedger(request.CapabilityProbes),
             declaredBoundaries,
             diagnosticCode);
     }
+
+    internal static StaticFieldV2FrameValueRootOutcome IssueExact(
+        StaticFieldV2FrameValueRootRequest request,
+        StaticFieldV2RuntimeSnapshotEvidence evidence,
+        ulong rootAddress,
+        int rootWidth,
+        ImmutableArray<byte> rootBytes,
+        ImmutableArray<StaticFieldV2RuntimeAcquisitionBoundary> declaredBoundaries) =>
+        new(
+            StaticFieldV2RuntimeAcquisitionResultKind.Exact,
+            StaticFieldV2RuntimeAcquisitionStage.None,
+            StaticFieldV2RuntimeAcquisitionIssue.None,
+            request,
+            evidence,
+            rootAddress,
+            rootWidth,
+            true,
+            rootBytes,
+            StaticFieldV2LiteralValueOutcome.IssueLedger(request.CapabilityProbes),
+            declaredBoundaries,
+            null);
 }
 
 /// <summary>Acquires exact physical runtime draft facts for one static-field expression from a pinned full dump.</summary>
@@ -2350,26 +2606,171 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
             null);
     }
 
-    /// <summary>Answers one frame-value root draft acquisition with this slice's declared non-implementation.</summary>
+    /// <summary>Attributes one named frame-value root of one selected frame to its exact memory home.</summary>
     /// <param name="request">The complete frame-value root draft acquisition request.</param>
     /// <remarks>
-    /// The contract is landed ahead of its physical acquisition. This draft slice performs no stack walk, exposes no
-    /// substitution service, and routes no capability call, so the answer is always the typed not-implemented stop.
+    /// The acquisition selects exactly one thread by the token-keyed frame predicate, takes the named selector-matching
+    /// managed frame, and resolves the physical variable ordinal before touching the pinned runtime's legacy stack-walk
+    /// data interface. A named local is resolved by correlating the caller-supplied Portable-PDB rows against the exact
+    /// IL offset of the frame's instruction pointer, so an out-of-scope local stops as lexically inactive before any
+    /// read. Only after one exact single memory location is observed is the counted read performed, and it is the only
+    /// capability call this path routes. A register home and a selected frame's own generic arguments keep their frozen
+    /// W8.1 non-admissions: no register is ever read and no substitution service exists here at all.
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome carrying the typed not-implemented stop.</returns>
+    /// <returns>A sealed immutable draft outcome carrying the exact home or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     /// <exception cref="ObjectDisposedException">The draft session is already disposed.</exception>
     public StaticFieldV2FrameValueRootOutcome AcquireFrameValueRoot(StaticFieldV2FrameValueRootRequest request)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         ArgumentNullException.ThrowIfNull(request);
-        return StaticFieldV2FrameValueRootOutcome.IssueStop(
-            StaticFieldV2RuntimeAcquisitionIssue.FrameAcquisitionNotImplemented,
+
+        var boundaries = ImmutableArray.Create(
+            StaticFieldV2RuntimeAcquisitionBoundary.FrameRegisterHomeNotAdmitted,
+            StaticFieldV2RuntimeAcquisitionBoundary.FrameGenericArgumentSubstitutionNotModeled,
+            StaticFieldV2RuntimeAcquisitionBoundary.FrameLocalScopesSuppliedByCaller,
+            StaticFieldV2RuntimeAcquisitionBoundary.FrameHomeSuppliedByLegacyStackWalkInterface,
+            StaticFieldV2RuntimeAcquisitionBoundary.FrameReceiverIdentifiedByLegacyArgumentName);
+        if (request.RootKind is StaticFieldV2FrameValueRootKind.DeclaringTypeGenericArgument or
+            StaticFieldV2FrameValueRootKind.MethodGenericArgument)
+        {
+            return FrameStop(
+                StaticFieldV2RuntimeAcquisitionResultKind.Unsupported,
+                StaticFieldV2RuntimeAcquisitionIssue.FrameGenericArgumentNotAdmitted,
+                request,
+                boundaries,
+                StaticFieldV2FrameValueRootOutcome.FrameGenericArgumentNotAdmittedCode);
+        }
+
+        var threads = SelectThreads(request.ThreadSelector);
+        if (threads.Length == 0)
+        {
+            return FrameStop(
+                StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                StaticFieldV2RuntimeAcquisitionIssue.SelectedThreadAbsent,
+                request,
+                boundaries,
+                StaticFieldV2FrameValueRootOutcome.SelectedThreadAbsentCode,
+                stage: StaticFieldV2RuntimeAcquisitionStage.ThreadSelection);
+        }
+        if (threads.Length > 1)
+        {
+            return FrameStop(
+                StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                StaticFieldV2RuntimeAcquisitionIssue.SelectedThreadAmbiguous,
+                request,
+                boundaries,
+                StaticFieldV2FrameValueRootOutcome.SelectedThreadAmbiguousCode,
+                stage: StaticFieldV2RuntimeAcquisitionStage.ThreadSelection);
+        }
+
+        var thread = threads[0];
+        var selected = SelectMatchingFrames(thread, request.ThreadSelector);
+        if (request.FrameOrdinal >= selected.Length)
+        {
+            return FrameStop(
+                StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                StaticFieldV2RuntimeAcquisitionIssue.SelectedFrameAbsent,
+                request,
+                boundaries,
+                StaticFieldV2FrameValueRootOutcome.SelectedFrameAbsentCode);
+        }
+
+        var frame = selected[request.FrameOrdinal];
+        var instructionOffset = frame.Method!.GetILOffset(frame.InstructionPointer);
+        if (instructionOffset < 0)
+        {
+            return FrameStop(
+                StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                StaticFieldV2RuntimeAcquisitionIssue.FrameInstructionOffsetUnavailable,
+                request,
+                boundaries,
+                StaticFieldV2FrameValueRootOutcome.InstructionOffsetUnavailableCode);
+        }
+
+        var slot = 0;
+        if (request.RootKind == StaticFieldV2FrameValueRootKind.Local)
+        {
+            var declared = request.LocalScopeRowsCore
+                .Where(row => string.Equals(row.Name, request.LocalName, StringComparison.Ordinal))
+                .ToImmutableArray();
+            if (declared.Length == 0)
+            {
+                return FrameStop(
+                    StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                    StaticFieldV2RuntimeAcquisitionIssue.FrameLocalNameAbsent,
+                    request,
+                    boundaries,
+                    StaticFieldV2FrameValueRootOutcome.LocalNameAbsentCode);
+            }
+
+            var live = declared
+                .Where(row => row.ScopeStartOffset <= instructionOffset && instructionOffset < row.ScopeEndOffset)
+                .ToImmutableArray();
+            if (live.Length == 0)
+            {
+                return FrameStop(
+                    StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                    StaticFieldV2RuntimeAcquisitionIssue.FrameLocalLexicallyInactive,
+                    request,
+                    boundaries,
+                    StaticFieldV2FrameValueRootOutcome.LocalLexicallyInactiveCode,
+                    isLive: false);
+            }
+            if (live.Length > 1)
+            {
+                return FrameStop(
+                    StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                    StaticFieldV2RuntimeAcquisitionIssue.FrameLocalNameAmbiguous,
+                    request,
+                    boundaries,
+                    StaticFieldV2FrameValueRootOutcome.LocalNameAmbiguousCode);
+            }
+
+            slot = live[0].SlotIndex;
+        }
+
+        var located = StaticFieldV2FrameValueInterop.Locate(
+            runtime,
+            thread.OSThreadId,
+            frame.InstructionPointer,
+            frame.StackPointer,
+            dataTarget.DataReader.Architecture,
+            request.RootKind,
+            request.RootOrdinal,
+            slot);
+        if (located.Disposition != StaticFieldV2FrameLocationDisposition.Exact)
+        {
+            return FrameStop(
+                located.Disposition == StaticFieldV2FrameLocationDisposition.RegisterHome
+                    ? StaticFieldV2RuntimeAcquisitionResultKind.Unsupported
+                    : StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                LocationIssue(located.Disposition),
+                request,
+                boundaries,
+                LocationCode(located.Disposition));
+        }
+
+        request.CapabilityProbes?.Invoke(StaticFieldV2StorageCapability.MemoryRead);
+        var read = memoryReader.Read(located.Address, located.Width);
+        if (read.Status != MemoryReadStatus.Exact)
+        {
+            return FrameStop(
+                StaticFieldV2RuntimeAcquisitionResultKind.NonExact,
+                StaticFieldV2RuntimeAcquisitionIssue.CountedReadIncomplete,
+                request,
+                boundaries,
+                StaticFieldV2FrameValueRootOutcome.CountedReadIncompleteCode,
+                stage: StaticFieldV2RuntimeAcquisitionStage.CountedRead);
+        }
+
+        return StaticFieldV2FrameValueRootOutcome.IssueExact(
             request,
             Evidence,
-            ImmutableArray.Create(
-                StaticFieldV2RuntimeAcquisitionBoundary.FrameValueRootAcquisitionNotImplemented),
-            StaticFieldV2FrameValueRootOutcome.FrameAcquisitionNotImplementedCode);
+            located.Address,
+            located.Width,
+            read.Bytes,
+            boundaries);
     }
 
     /// <summary>Releases the pinned dump session and every ClrMD resource it owns.</summary>
@@ -3344,6 +3745,81 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
             candidateThreadCount,
             StaticFieldV2StaticSlotAcquisitionOutcome.SlotAddressUnavailableCode);
 
+    private static ImmutableArray<ClrStackFrame> SelectMatchingFrames(
+        ClrThread thread,
+        StaticFieldV2RuntimeThreadSelector selector)
+    {
+        var matches = ImmutableArray.CreateBuilder<ClrStackFrame>();
+        foreach (var frame in thread
+            .EnumerateStackTrace(includeContext: false, maxFrames: MaximumFrameCountPerThread)
+            .Take(MaximumFrameCountPerThread))
+        {
+            if (frame.Kind == ClrStackFrameKind.ManagedMethod &&
+                frame.Method is { } method &&
+                method.MetadataToken == selector.MethodDefinitionToken &&
+                method.Type is { } declaringType &&
+                declaringType.MetadataToken == selector.TypeDefinitionToken &&
+                declaringType.Module.Address == selector.RuntimeModuleAddress)
+            {
+                matches.Add(frame);
+            }
+        }
+        return matches.ToImmutable();
+    }
+
+    private static StaticFieldV2RuntimeAcquisitionIssue LocationIssue(
+        StaticFieldV2FrameLocationDisposition disposition) => disposition switch
+        {
+            StaticFieldV2FrameLocationDisposition.RegisterHome =>
+                StaticFieldV2RuntimeAcquisitionIssue.FrameRegisterHomeNotAdmitted,
+            StaticFieldV2FrameLocationDisposition.RootOrdinalAbsent =>
+                StaticFieldV2RuntimeAcquisitionIssue.FrameRootOrdinalAbsent,
+            StaticFieldV2FrameLocationDisposition.LocationAbsent =>
+                StaticFieldV2RuntimeAcquisitionIssue.FrameRootLocationAbsent,
+            StaticFieldV2FrameLocationDisposition.LocationSplit =>
+                StaticFieldV2RuntimeAcquisitionIssue.FrameRootLocationSplit,
+            StaticFieldV2FrameLocationDisposition.LocationUnknown =>
+                StaticFieldV2RuntimeAcquisitionIssue.FrameRootLocationUnknown,
+            StaticFieldV2FrameLocationDisposition.WidthNotAdmitted =>
+                StaticFieldV2RuntimeAcquisitionIssue.FrameRootWidthNotAdmitted,
+            _ => StaticFieldV2RuntimeAcquisitionIssue.FrameInteropUnavailable,
+        };
+
+    private static string LocationCode(StaticFieldV2FrameLocationDisposition disposition) => disposition switch
+    {
+        StaticFieldV2FrameLocationDisposition.RegisterHome =>
+            StaticFieldV2FrameValueRootOutcome.FrameRegisterHomeNotAdmittedCode,
+        StaticFieldV2FrameLocationDisposition.RootOrdinalAbsent =>
+            StaticFieldV2FrameValueRootOutcome.RootOrdinalAbsentCode,
+        StaticFieldV2FrameLocationDisposition.LocationAbsent =>
+            StaticFieldV2FrameValueRootOutcome.LocationAbsentCode,
+        StaticFieldV2FrameLocationDisposition.LocationSplit =>
+            StaticFieldV2FrameValueRootOutcome.LocationSplitCode,
+        StaticFieldV2FrameLocationDisposition.LocationUnknown =>
+            StaticFieldV2FrameValueRootOutcome.LocationUnknownCode,
+        StaticFieldV2FrameLocationDisposition.WidthNotAdmitted =>
+            StaticFieldV2FrameValueRootOutcome.RootWidthNotAdmittedCode,
+        _ => StaticFieldV2FrameValueRootOutcome.InteropUnavailableCode,
+    };
+
+    private StaticFieldV2FrameValueRootOutcome FrameStop(
+        StaticFieldV2RuntimeAcquisitionResultKind resultKind,
+        StaticFieldV2RuntimeAcquisitionIssue issue,
+        StaticFieldV2FrameValueRootRequest request,
+        ImmutableArray<StaticFieldV2RuntimeAcquisitionBoundary> boundaries,
+        string diagnosticCode,
+        bool? isLive = null,
+        StaticFieldV2RuntimeAcquisitionStage stage = StaticFieldV2RuntimeAcquisitionStage.FrameRoot) =>
+        StaticFieldV2FrameValueRootOutcome.IssueStop(
+            resultKind,
+            stage,
+            issue,
+            request,
+            Evidence,
+            isLive,
+            boundaries,
+            diagnosticCode);
+
     private ImmutableArray<ClrThread> SelectThreads(StaticFieldV2RuntimeThreadSelector selector)
     {
         var matches = ImmutableArray.CreateBuilder<ClrThread>();
@@ -3453,6 +3929,455 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
             ? BinaryPrimitives.ReadUInt32LittleEndian(ReadExact(address, sizeof(uint)))
             : BinaryPrimitives.ReadUInt64LittleEndian(ReadExact(address, sizeof(ulong)));
     }
+}
+
+/// <summary>Classifies the physical home one selected frame-value root reports at the selected instruction.</summary>
+internal enum StaticFieldV2FrameLocationDisposition
+{
+    /// <summary>Exactly one memory home with a nonzero address and an admitted payload width was observed.</summary>
+    Exact = 1,
+
+    /// <summary>The pinned runtime's legacy stack-walk data interface could not be reached exactly.</summary>
+    InteropUnavailable = 2,
+
+    /// <summary>The selected frame declares no argument or local at the requested physical ordinal.</summary>
+    RootOrdinalAbsent = 3,
+
+    /// <summary>The root reports no location at all at the selected instruction.</summary>
+    LocationAbsent = 4,
+
+    /// <summary>The root is split across more than one reported location.</summary>
+    LocationSplit = 5,
+
+    /// <summary>The root reports one location whose flag word or argument is not admitted.</summary>
+    LocationUnknown = 6,
+
+    /// <summary>The root is homed in a register, which this draft slice never reads.</summary>
+    RegisterHome = 7,
+
+    /// <summary>The root reports a payload width outside the admitted draft range.</summary>
+    WidthNotAdmitted = 8,
+}
+
+/// <summary>Carries one classified frame-value root home plus its exact address and counted payload width.</summary>
+/// <param name="Disposition">The classified physical home of the selected root.</param>
+/// <param name="Address">The exact memory-home address, or zero for every non-exact disposition.</param>
+/// <param name="Width">The counted payload width in bytes, or zero for every non-exact disposition.</param>
+internal readonly record struct StaticFieldV2FrameLocation(
+    StaticFieldV2FrameLocationDisposition Disposition,
+    ulong Address,
+    int Width);
+
+/// <summary>Contains every reflection and raw vtable call the frame-value root draft acquisition performs.</summary>
+/// <remarks>
+/// The pinned runtime's managed object model exposes no frame-value home, so the home is read through the runtime's own
+/// legacy stack-walk data interface reached by reflection over the loaded diagnostics assembly. Every member lookup,
+/// every vtable shape, and every HRESULT is checked, and every fault becomes one classified non-exact disposition, so
+/// no exception escapes this adapter and no location is ever fabricated.
+/// </remarks>
+internal static class StaticFieldV2FrameValueInterop
+{
+    /// <summary>Gets the maximum admitted counted payload width in bytes of one frame-value draft root.</summary>
+    internal const int MaximumRootWidth = 64;
+
+    private const int OperationSucceeded = 0;
+    private const uint StackWalkFlags = 0x0f;
+    private const int MaximumWalkFrames = 256;
+    private const int MaximumVariableCount = 256;
+    private const int MaximumLocationCount = 16;
+    private const int MaximumNameCharacters = 512;
+    private const uint MemoryLocationFlag = 0;
+    private const uint RegisterLocationFlag = 1;
+    private const string ReceiverArgumentName = "this";
+    private const string DacLibraryTypeName = "Microsoft.Diagnostics.Runtime.DacLibrary";
+
+    private static readonly StaticFieldV2FrameLocation Unavailable =
+        new(StaticFieldV2FrameLocationDisposition.InteropUnavailable, 0, 0);
+
+    private static readonly StaticFieldV2FrameLocation OrdinalAbsent =
+        new(StaticFieldV2FrameLocationDisposition.RootOrdinalAbsent, 0, 0);
+
+    /// <summary>Locates one named frame-value root of one selected frame through the legacy data interface.</summary>
+    /// <param name="runtime">The opened pinned runtime whose services expose the legacy data library.</param>
+    /// <param name="operatingSystemThreadId">The exact operating-system thread identifier to walk.</param>
+    /// <param name="instructionPointer">The exact native instruction pointer of the selected frame.</param>
+    /// <param name="stackPointer">The exact native stack pointer of the selected frame.</param>
+    /// <param name="architecture">The exact target architecture of the pinned snapshot.</param>
+    /// <param name="rootKind">The admitted frame-value root family being located.</param>
+    /// <param name="parameterOrdinal">The zero-based declared parameter ordinal for a parameter root.</param>
+    /// <param name="localSlotIndex">The zero-based local-signature slot index for a local root.</param>
+    /// <returns>One classified home carrying an exact address and width only for an exact memory home.</returns>
+    internal static StaticFieldV2FrameLocation Locate(
+        ClrRuntime runtime,
+        uint operatingSystemThreadId,
+        ulong instructionPointer,
+        ulong stackPointer,
+        Architecture architecture,
+        StaticFieldV2FrameValueRootKind rootKind,
+        int parameterOrdinal,
+        int localSlotIndex)
+    {
+        object? process = null;
+        object? stackWalk = null;
+        try
+        {
+            var servicesField = typeof(ClrRuntime).GetField(
+                "_services",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            var dacLibraryType = typeof(ClrRuntime).Assembly.GetType(DacLibraryTypeName);
+            if (servicesField?.GetValue(runtime) is not IServiceProvider services ||
+                dacLibraryType is null ||
+                services.GetService(dacLibraryType) is not { } library)
+            {
+                return Unavailable;
+            }
+
+            process = dacLibraryType
+                .GetMethod("CreateClrDataProcess", BindingFlags.Instance | BindingFlags.Public)
+                ?.Invoke(library, null);
+            if (process is null)
+            {
+                return Unavailable;
+            }
+
+            stackWalk = process.GetType()
+                .GetMethod(
+                    "CreateStackWalk",
+                    BindingFlags.Instance | BindingFlags.Public,
+                    binder: null,
+                    [typeof(uint), typeof(uint)],
+                    modifiers: null)
+                ?.Invoke(process, [operatingSystemThreadId, StackWalkFlags]);
+            if (stackWalk is null)
+            {
+                return Unavailable;
+            }
+
+            var self = ReadSelf(stackWalk);
+            return self == IntPtr.Zero
+                ? Unavailable
+                : WalkToFrame(
+                    self,
+                    instructionPointer,
+                    stackPointer,
+                    architecture,
+                    rootKind,
+                    parameterOrdinal,
+                    localSlotIndex);
+        }
+        catch (Exception exception) when (
+            exception is TargetInvocationException or InvalidOperationException or ArgumentException or
+            MemberAccessException or MarshalDirectiveException or NotSupportedException or COMException or
+            EntryPointNotFoundException or BadImageFormatException)
+        {
+            return Unavailable;
+        }
+        finally
+        {
+            (stackWalk as IDisposable)?.Dispose();
+            (process as IDisposable)?.Dispose();
+        }
+    }
+
+    private static StaticFieldV2FrameLocation WalkToFrame(
+        IntPtr stackWalk,
+        ulong instructionPointer,
+        ulong stackPointer,
+        Architecture architecture,
+        StaticFieldV2FrameValueRootKind rootKind,
+        int parameterOrdinal,
+        int localSlotIndex)
+    {
+        var layout = ContextLayout(architecture);
+        if (layout.Size == 0)
+        {
+            return Unavailable;
+        }
+
+        var getContext = VtableDelegate<GetContextDelegate>(stackWalk, 0);
+        var next = VtableDelegate<NoArgumentDelegate>(stackWalk, 2);
+        var getFrame = VtableDelegate<GetInterfaceDelegate>(stackWalk, 5);
+        var context = new byte[layout.Size];
+        for (var index = 0; index < MaximumWalkFrames; index++)
+        {
+            Array.Clear(context);
+            if (getContext(stackWalk, layout.Flags, context.Length, out var observed, context) !=
+                    OperationSucceeded ||
+                observed < layout.Size)
+            {
+                return Unavailable;
+            }
+
+            if (ReadContextPointer(context, layout.InstructionPointerOffset, architecture) == instructionPointer &&
+                ReadContextPointer(context, layout.StackPointerOffset, architecture) == stackPointer)
+            {
+                if (getFrame(stackWalk, out var frame) != OperationSucceeded || frame == IntPtr.Zero)
+                {
+                    return Unavailable;
+                }
+
+                try
+                {
+                    return LocateInFrame(frame, rootKind, parameterOrdinal, localSlotIndex);
+                }
+                finally
+                {
+                    Release(frame);
+                }
+            }
+
+            if (next(stackWalk) != OperationSucceeded)
+            {
+                return Unavailable;
+            }
+        }
+
+        return Unavailable;
+    }
+
+    private static StaticFieldV2FrameLocation LocateInFrame(
+        IntPtr frame,
+        StaticFieldV2FrameValueRootKind rootKind,
+        int parameterOrdinal,
+        int localSlotIndex)
+    {
+        if (rootKind == StaticFieldV2FrameValueRootKind.Local)
+        {
+            return !TryReadCount(frame, 5, out var localCount)
+                ? Unavailable
+                : localSlotIndex >= localCount
+                    ? OrdinalAbsent
+                    : ObserveVariable(frame, 6, localSlotIndex, readName: false, out _);
+        }
+
+        if (!TryReadCount(frame, 3, out var argumentCount))
+        {
+            return Unavailable;
+        }
+        if (argumentCount == 0)
+        {
+            return OrdinalAbsent;
+        }
+
+        var receiver = ObserveVariable(frame, 4, 0, readName: true, out var receiverName);
+        var hasReceiver = string.Equals(receiverName, ReceiverArgumentName, StringComparison.Ordinal);
+        if (rootKind == StaticFieldV2FrameValueRootKind.This)
+        {
+            return hasReceiver ? receiver : OrdinalAbsent;
+        }
+
+        var argumentIndex = checked(parameterOrdinal + (hasReceiver ? 1 : 0));
+        return argumentIndex >= argumentCount
+            ? OrdinalAbsent
+            : argumentIndex == 0
+                ? receiver
+                : ObserveVariable(frame, 4, argumentIndex, readName: false, out _);
+    }
+
+    private static StaticFieldV2FrameLocation ObserveVariable(
+        IntPtr frame,
+        int methodIndex,
+        int variableIndex,
+        bool readName,
+        out string? name)
+    {
+        name = null;
+        var getVariable = VtableDelegate<GetVariableDelegate>(frame, methodIndex);
+        var buffer = readName ? Marshal.AllocHGlobal(MaximumNameCharacters * sizeof(char)) : IntPtr.Zero;
+        try
+        {
+            var hresult = getVariable(
+                frame,
+                checked((uint)variableIndex),
+                out var value,
+                readName ? MaximumNameCharacters : 0U,
+                out var nameLength,
+                buffer);
+            if (hresult != OperationSucceeded || value == IntPtr.Zero)
+            {
+                return OrdinalAbsent;
+            }
+
+            try
+            {
+                if (readName && nameLength is > 1 and <= MaximumNameCharacters)
+                {
+                    name = Marshal.PtrToStringUni(buffer, checked((int)nameLength) - 1);
+                }
+                return ObserveValue(value);
+            }
+            finally
+            {
+                Release(value);
+            }
+        }
+        finally
+        {
+            if (buffer != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+    }
+
+    private static StaticFieldV2FrameLocation ObserveValue(IntPtr value)
+    {
+        var getLocationCount = VtableDelegate<GetUInt32Delegate>(value, 25);
+        if (getLocationCount(value, out var locationCount) != OperationSucceeded)
+        {
+            return Unavailable;
+        }
+        if (locationCount == 0)
+        {
+            return new StaticFieldV2FrameLocation(StaticFieldV2FrameLocationDisposition.LocationAbsent, 0, 0);
+        }
+        if (locationCount > 1)
+        {
+            return new StaticFieldV2FrameLocation(StaticFieldV2FrameLocationDisposition.LocationSplit, 0, 0);
+        }
+
+        var getLocation = VtableDelegate<GetLocationDelegate>(value, 26);
+        if (getLocation(value, 0, out var flags, out var argument) != OperationSucceeded)
+        {
+            return Unavailable;
+        }
+        if (flags == RegisterLocationFlag)
+        {
+            return new StaticFieldV2FrameLocation(StaticFieldV2FrameLocationDisposition.RegisterHome, 0, 0);
+        }
+        if (flags != MemoryLocationFlag || argument == 0)
+        {
+            return new StaticFieldV2FrameLocation(StaticFieldV2FrameLocationDisposition.LocationUnknown, 0, 0);
+        }
+
+        var getSize = VtableDelegate<GetUInt64Delegate>(value, 2);
+        if (getSize(value, out var size) != OperationSucceeded)
+        {
+            return Unavailable;
+        }
+        return size is 0 or > MaximumRootWidth
+            ? new StaticFieldV2FrameLocation(StaticFieldV2FrameLocationDisposition.WidthNotAdmitted, 0, 0)
+            : new StaticFieldV2FrameLocation(
+                StaticFieldV2FrameLocationDisposition.Exact,
+                argument,
+                checked((int)size));
+    }
+
+    private static bool TryReadCount(IntPtr owner, int methodIndex, out int count)
+    {
+        var getCount = VtableDelegate<GetUInt32Delegate>(owner, methodIndex);
+        count = 0;
+        if (getCount(owner, out var observed) != OperationSucceeded || observed > MaximumVariableCount)
+        {
+            return false;
+        }
+
+        count = checked((int)observed);
+        return true;
+    }
+
+    private static (int Size, uint Flags, int InstructionPointerOffset, int StackPointerOffset) ContextLayout(
+        Architecture architecture) => architecture switch
+        {
+            Architecture.X64 => (1232, 0x0010_003fU, 248, 152),
+            Architecture.X86 => (716, 0x0001_003fU, 184, 196),
+            Architecture.Arm => (416, 0U, 64, 56),
+            Architecture.Arm64 => (912, 0U, 264, 256),
+            _ => default,
+        };
+
+    private static ulong ReadContextPointer(byte[] context, int offset, Architecture architecture) =>
+        architecture is Architecture.X86 or Architecture.Arm
+            ? BinaryPrimitives.ReadUInt32LittleEndian(context.AsSpan(offset))
+            : BinaryPrimitives.ReadUInt64LittleEndian(context.AsSpan(offset));
+
+    private static IntPtr ReadSelf(object wrapper)
+    {
+        for (var type = wrapper.GetType(); type is not null; type = type.BaseType)
+        {
+            var property = type.GetProperty(
+                "Self",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly);
+            if (property?.GetValue(wrapper) is IntPtr value)
+            {
+                return value;
+            }
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private static T VtableDelegate<T>(IntPtr self, int interfaceMethodIndex)
+        where T : Delegate
+    {
+        if (self == IntPtr.Zero)
+        {
+            throw new InvalidOperationException("A nonzero legacy interface pointer is required.");
+        }
+
+        var vtable = Marshal.ReadIntPtr(self);
+        if (vtable == IntPtr.Zero)
+        {
+            throw new InvalidOperationException("The legacy interface exposes no method table.");
+        }
+
+        var method = Marshal.ReadIntPtr(vtable, checked((3 + interfaceMethodIndex) * IntPtr.Size));
+        return method == IntPtr.Zero
+            ? throw new InvalidOperationException("The selected legacy interface method pointer was zero.")
+            : Marshal.GetDelegateForFunctionPointer<T>(method);
+    }
+
+    private static void Release(IntPtr self)
+    {
+        if (self == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var vtable = Marshal.ReadIntPtr(self);
+        if (vtable == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var method = Marshal.ReadIntPtr(vtable, checked(2 * IntPtr.Size));
+        if (method != IntPtr.Zero)
+        {
+            _ = Marshal.GetDelegateForFunctionPointer<NoArgumentDelegate>(method)(self);
+        }
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate int GetContextDelegate(
+        IntPtr self,
+        uint flags,
+        int bufferSize,
+        out int actualSize,
+        [Out] byte[] buffer);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate int NoArgumentDelegate(IntPtr self);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate int GetInterfaceDelegate(IntPtr self, out IntPtr value);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate int GetVariableDelegate(
+        IntPtr self,
+        uint index,
+        out IntPtr value,
+        uint bufferLength,
+        out uint nameLength,
+        IntPtr nameBuffer);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate int GetUInt32Delegate(IntPtr self, out uint value);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate int GetUInt64Delegate(IntPtr self, out ulong value);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate int GetLocationDelegate(IntPtr self, uint index, out uint flags, out ulong argument);
 }
 
 /// <summary>Freezes every diagnostic code this runtime draft acquisition can retain outside a typed outcome.</summary>

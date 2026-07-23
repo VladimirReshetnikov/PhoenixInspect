@@ -12,35 +12,53 @@ using Xunit;
 namespace Interpreter.IntegrationTests;
 
 /// <summary>
-/// Generates one real full dump of the W8 truth-gate target and shares it across the runtime-acquisition gates.
+/// Generates the real full dumps of the W8 truth-gate target and shares them across the runtime-acquisition gates.
 /// </summary>
 /// <remarks>
 /// The fixture is draft physical scaffolding. Dump generation is hidden and headless exactly like the W8.1 oracles.
+/// The <c>generic-frame</c> profile is the truth-gate profile whose selected frame carries a receiver, reference and
+/// value parameters, and active named locals; the <c>slot-reuse-frame</c> profile is the truth-gate profile whose
+/// selected frame carries one same-method local that is lexically dead at the paused instruction offset.
 /// </remarks>
 public sealed class W8V2RuntimeAcquisitionFixture : IDisposable
 {
-    /// <summary>Initializes the fixture by writing one full dump of the paused truth-gate target.</summary>
+    /// <summary>Initializes the fixture by writing one full dump per required paused truth-gate profile.</summary>
     public W8V2RuntimeAcquisitionFixture()
     {
-        DumpPath = Path.Combine(Path.GetTempPath(), $"w8-v2-runtime-acquisition-{Guid.NewGuid():N}.dmp");
+        DumpPath = WriteProfileDump("generic-frame");
+        SlotReuseDumpPath = WriteProfileDump("slot-reuse-frame");
+    }
+
+    /// <summary>Gets the complete path of the generated <c>generic-frame</c> draft dump.</summary>
+    public string DumpPath { get; }
+
+    /// <summary>Gets the complete path of the generated <c>slot-reuse-frame</c> draft dump.</summary>
+    public string SlotReuseDumpPath { get; }
+
+    /// <summary>Deletes every generated draft dump.</summary>
+    public void Dispose()
+    {
+        foreach (var path in new[] { DumpPath, SlotReuseDumpPath })
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    private static string WriteProfileDump(string profile)
+    {
+        var dumpPath = Path.Combine(
+            Path.GetTempPath(),
+            $"w8-v2-runtime-acquisition-{profile}-{Guid.NewGuid():N}.dmp");
         var executable = W8V2RuntimeAcquisitionTests.RequireArtifact(W8TestTargetPaths.ResolveExecutable());
         using var target = TestTargetRunner.StartAndWaitReady(
             executable,
-            ["--truth-gate", "generic-frame"],
+            ["--truth-gate", profile],
             isolatedDirectory: null);
-        DumpWriter.WriteFullDump(target.Pid, DumpPath);
-    }
-
-    /// <summary>Gets the complete path of the generated draft dump.</summary>
-    public string DumpPath { get; }
-
-    /// <summary>Deletes the generated draft dump.</summary>
-    public void Dispose()
-    {
-        if (File.Exists(DumpPath))
-        {
-            File.Delete(DumpPath);
-        }
+        DumpWriter.WriteFullDump(target.Pid, dumpPath);
+        return dumpPath;
     }
 }
 
@@ -281,7 +299,7 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
 
     /// <summary>
     /// Proves a metadata literal performs zero calls of every runtime capability against a probe set whose every
-    /// delegate throws, and that the frame-value root acquisition answers with its typed not-implemented stop.
+    /// delegate throws, and that a selected-frame generic-argument request keeps its frozen W8.1 non-admission.
     /// </summary>
     [Fact]
     [Trait("Category", "Dump")]
@@ -330,34 +348,468 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
         Assert.Equal(StaticFieldV2StaticSlotIssue.MetadataLiteralHasNoSlot, slot.SlotOutcome.Issue);
         Assert.Null(slot.SlotOutcome.Slot);
 
-        var frame = world.Session.AcquireFrameValueRoot(
-            StaticFieldV2FrameValueRootRequest.Create(
-                world.PausedFrameThreadSelector(),
-                frameOrdinal: 0,
-                StaticFieldV2FrameValueRootKind.Local,
-                rootOrdinal: 0,
-                localName: "localRequest",
-                capabilityProbes: probes));
-        Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.Unsupported, frame.ResultKind);
-        Assert.Equal(StaticFieldV2RuntimeAcquisitionStage.FrameRoot, frame.Stage);
-        Assert.Equal(
-            StaticFieldV2RuntimeAcquisitionIssue.FrameAcquisitionNotImplemented,
-            frame.Issue);
-        Assert.Equal(
-            StaticFieldV2FrameValueRootOutcome.FrameAcquisitionNotImplementedCode,
-            frame.DiagnosticCode);
-        Assert.Null(frame.RootAddress);
-        Assert.Null(frame.RootWidth);
-        Assert.Null(frame.IsLive);
-        Assert.Empty(frame.RootBytes);
-        Assert.Contains(
-            StaticFieldV2RuntimeAcquisitionBoundary.FrameValueRootAcquisitionNotImplemented,
-            frame.DeclaredBoundaries);
+        foreach (var genericKind in new[]
+        {
+            StaticFieldV2FrameValueRootKind.DeclaringTypeGenericArgument,
+            StaticFieldV2FrameValueRootKind.MethodGenericArgument,
+        })
+        {
+            var frame = world.Session.AcquireFrameValueRoot(
+                StaticFieldV2FrameValueRootRequest.Create(
+                    world.PausedFrameThreadSelector(),
+                    frameOrdinal: 0,
+                    genericKind,
+                    capabilityProbes: probes));
+            Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.Unsupported, frame.ResultKind);
+            Assert.Equal(StaticFieldV2RuntimeAcquisitionStage.FrameRoot, frame.Stage);
+            Assert.Equal(
+                StaticFieldV2RuntimeAcquisitionIssue.FrameGenericArgumentNotAdmitted,
+                frame.Issue);
+            Assert.Equal(
+                StaticFieldV2FrameValueRootOutcome.FrameGenericArgumentNotAdmittedCode,
+                frame.DiagnosticCode);
+            Assert.Null(frame.RootAddress);
+            Assert.Null(frame.RootWidth);
+            Assert.Null(frame.IsLive);
+            Assert.Empty(frame.RootBytes);
+            Assert.Contains(
+                StaticFieldV2RuntimeAcquisitionBoundary.FrameGenericArgumentSubstitutionNotModeled,
+                frame.DeclaredBoundaries);
+            Assert.True(frame.CapabilityCallLedger.IsZero);
+        }
+
         Assert.Equal(0, probes.TotalCallCount);
         Assert.True(construction.CapabilityCallLedger.IsZero);
         Assert.True(slot.CapabilityCallLedger.IsZero);
-        Assert.True(frame.CapabilityCallLedger.IsZero);
     }
+
+    /// <summary>
+    /// Proves the receiver, one reference parameter, one value parameter, and one active named local of the selected
+    /// frame are attributed to exact memory homes whose copied bytes a late high-level oracle agrees with.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8V2RuntimeAcquisitionV1")]
+    public void Frame_roots_are_attributed_to_exact_memory_homes_a_late_oracle_agrees_with()
+    {
+        using var world = W8V2RuntimeAcquisitionWorld.Open(fixture.DumpPath);
+        var selector = world.PausedFrameThreadSelector();
+        var rows = ReadLocalScopeRows(world.TargetMethodToken("GenericFrameOwner`1", "Run"));
+
+        var receiver = AcquireFrameRoot(world, selector, StaticFieldV2FrameValueRootKind.This);
+        var request = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Parameter,
+            rootOrdinal: 2);
+        var value = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Parameter,
+            rootOrdinal: 3);
+        var number = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Parameter,
+            rootOrdinal: 4);
+        var localRequest = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Local,
+            localName: "localRequest",
+            rows: rows);
+        var localNumber = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Local,
+            localName: "localNumber",
+            rows: rows);
+
+        var pointerWidth = world.Session.PointerWidth;
+        AssertExactMemoryHome(receiver, pointerWidth);
+        AssertExactMemoryHome(request, pointerWidth);
+        AssertExactMemoryHome(value, 2 * sizeof(int));
+        AssertExactMemoryHome(number, sizeof(int));
+        AssertExactMemoryHome(localRequest, pointerWidth);
+        AssertExactMemoryHome(localNumber, sizeof(int));
+
+        var distinctAddresses = new[] { receiver, request, value, number, localRequest, localNumber }
+            .Select(static acquired => acquired.Outcome.RootAddress!.Value)
+            .ToArray();
+        Assert.Equal(distinctAddresses.Length, distinctAddresses.Distinct().Count());
+
+        var receiverReference = BinaryPrimitives.ReadUInt64LittleEndian(receiver.Outcome.RootBytes.AsSpan());
+        var requestReference = BinaryPrimitives.ReadUInt64LittleEndian(request.Outcome.RootBytes.AsSpan());
+        var marker = BinaryPrimitives.ReadInt32LittleEndian(value.Outcome.RootBytes.AsSpan());
+        var decodedNumber = BinaryPrimitives.ReadInt32LittleEndian(number.Outcome.RootBytes.AsSpan());
+        var decodedLocalNumber = BinaryPrimitives.ReadInt32LittleEndian(localNumber.Outcome.RootBytes.AsSpan());
+        Assert.Equal(
+            requestReference,
+            BinaryPrimitives.ReadUInt64LittleEndian(localRequest.Outcome.RootBytes.AsSpan()));
+        Assert.NotEqual(0UL, receiverReference);
+        Assert.NotEqual(0UL, requestReference);
+        Assert.Equal(0x1D017A01, marker);
+        Assert.Equal(unchecked((int)0x81A2B3C4), decodedNumber);
+        Assert.Equal(decodedNumber ^ marker, decodedLocalNumber);
+
+        using var dataTarget = DataTarget.LoadDump(
+            fixture.DumpPath,
+            new DataTargetOptions { FileLocator = ClrmdOfflineFileLocator.Instance });
+        using var runtime = Assert.Single(dataTarget.ClrVersions).CreateRuntime();
+        var receiverObject = runtime.Heap.GetObject(receiverReference);
+        Assert.True(receiverObject.IsValid);
+        Assert.Equal(
+            world.TargetTypeToken("GenericFrameOwner`1"),
+            Assert.IsAssignableFrom<ClrType>(receiverObject.Type).MetadataToken);
+        var requestObject = runtime.Heap.GetObject(requestReference);
+        Assert.True(requestObject.IsValid);
+        Assert.Equal(
+            world.TargetTypeToken("RequestContext"),
+            Assert.IsAssignableFrom<ClrType>(requestObject.Type).MetadataToken);
+        Assert.Equal("request-17", requestObject.ReadStringField("<Name>k__BackingField"));
+    }
+
+    /// <summary>
+    /// Proves one same-method local that is lexically dead at the selected instruction stops before any read while
+    /// the disjoint live local of the same frame is attributed to its exact memory home.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8V2RuntimeAcquisitionV1")]
+    public void Lexically_inactive_local_stops_before_any_read()
+    {
+        using var world = W8V2RuntimeAcquisitionWorld.Open(fixture.SlotReuseDumpPath);
+        var methodToken = world.TargetMethodToken("SlotReuseProfile", "Run");
+        var selector = StaticFieldV2RuntimeThreadSelector.Create(
+            world.TargetBinding.RuntimeModuleAddress,
+            world.TargetTypeToken("SlotReuseProfile"),
+            methodToken);
+        var rows = ReadLocalScopeRows(methodToken);
+        Assert.Contains(rows, row => string.Equals(row.Name, "inactiveSlot", StringComparison.Ordinal));
+
+        var inactive = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Local,
+            localName: "inactiveSlot",
+            rows: rows,
+            poisonMemoryRead: true);
+        Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.NonExact, inactive.Outcome.ResultKind);
+        Assert.Equal(StaticFieldV2RuntimeAcquisitionStage.FrameRoot, inactive.Outcome.Stage);
+        Assert.Equal(
+            StaticFieldV2RuntimeAcquisitionIssue.FrameLocalLexicallyInactive,
+            inactive.Outcome.Issue);
+        Assert.Equal(
+            StaticFieldV2FrameValueRootOutcome.LocalLexicallyInactiveCode,
+            inactive.Outcome.DiagnosticCode);
+        Assert.False(inactive.Outcome.IsLive);
+        Assert.Null(inactive.Outcome.RootAddress);
+        Assert.Null(inactive.Outcome.RootWidth);
+        Assert.Empty(inactive.Outcome.RootBytes);
+        Assert.Equal(0, inactive.Probes.TotalCallCount);
+        Assert.True(inactive.Outcome.CapabilityCallLedger.IsZero);
+
+        var active = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Local,
+            localName: "activeSlot",
+            rows: rows);
+        AssertExactMemoryHome(active, sizeof(int));
+        Assert.Equal(
+            unchecked((int)0x81A2B3C4) ^ unchecked((int)0xE5057A05),
+            BinaryPrimitives.ReadInt32LittleEndian(active.Outcome.RootBytes.AsSpan()));
+    }
+
+    /// <summary>
+    /// Proves an undeclared local name, a duplicate live local name, an absent physical ordinal, and an absent
+    /// selector-matching frame each stop with their own typed issue before any counted read is performed.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8V2RuntimeAcquisitionV1")]
+    public void Absent_and_duplicate_frame_roots_stop_before_any_read()
+    {
+        using var world = W8V2RuntimeAcquisitionWorld.Open(fixture.DumpPath);
+        var selector = world.PausedFrameThreadSelector();
+        var rows = ReadLocalScopeRows(world.TargetMethodToken("GenericFrameOwner`1", "Run"));
+        var declared = Assert.Single(
+            rows,
+            row => string.Equals(row.Name, "localNumber", StringComparison.Ordinal));
+        var duplicated = rows.Add(StaticFieldV2FramePortablePdbLocalRow.Create(
+            declared.Name,
+            declared.SlotIndex + 1,
+            declared.ScopeStartOffset,
+            declared.ScopeEndOffset));
+
+        var absentName = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Local,
+            localName: "localNeverDeclared",
+            rows: rows,
+            poisonMemoryRead: true);
+        AssertTypedFrameStop(
+            absentName,
+            StaticFieldV2RuntimeAcquisitionIssue.FrameLocalNameAbsent,
+            StaticFieldV2FrameValueRootOutcome.LocalNameAbsentCode);
+
+        var ambiguousName = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Local,
+            localName: "localNumber",
+            rows: duplicated,
+            poisonMemoryRead: true);
+        AssertTypedFrameStop(
+            ambiguousName,
+            StaticFieldV2RuntimeAcquisitionIssue.FrameLocalNameAmbiguous,
+            StaticFieldV2FrameValueRootOutcome.LocalNameAmbiguousCode);
+
+        var absentOrdinal = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Parameter,
+            rootOrdinal: 64,
+            poisonMemoryRead: true);
+        AssertTypedFrameStop(
+            absentOrdinal,
+            StaticFieldV2RuntimeAcquisitionIssue.FrameRootOrdinalAbsent,
+            StaticFieldV2FrameValueRootOutcome.RootOrdinalAbsentCode);
+
+        var probes = CreateFramePathProbes(poisonMemoryRead: true);
+        var absentFrame = world.Session.AcquireFrameValueRoot(
+            StaticFieldV2FrameValueRootRequest.Create(
+                selector,
+                frameOrdinal: 1,
+                StaticFieldV2FrameValueRootKind.This,
+                capabilityProbes: probes));
+        AssertTypedFrameStop(
+            new AcquiredFrameRoot(absentFrame, probes),
+            StaticFieldV2RuntimeAcquisitionIssue.SelectedFrameAbsent,
+            StaticFieldV2FrameValueRootOutcome.SelectedFrameAbsentCode);
+    }
+
+    /// <summary>
+    /// Sweeps every declared argument and local of the selected frame and proves no root is ever read out of a
+    /// register: an admitted root reaches an exact memory home and any other root keeps the frozen non-admission.
+    /// </summary>
+    /// <remarks>
+    /// The pinned W8 truth-gate corpus reports a memory home for every selected-frame root, so the register branch is
+    /// covered here by the exhaustive invariant rather than by a positive register observation.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8V2RuntimeAcquisitionV1")]
+    public void Register_homed_roots_are_refused_and_never_read()
+    {
+        using var world = W8V2RuntimeAcquisitionWorld.Open(fixture.DumpPath);
+        var selector = world.PausedFrameThreadSelector();
+        var rows = ReadLocalScopeRows(world.TargetMethodToken("GenericFrameOwner`1", "Run"));
+        var swept = new List<AcquiredFrameRoot>
+        {
+            AcquireFrameRoot(world, selector, StaticFieldV2FrameValueRootKind.This),
+        };
+        for (var ordinal = 0; ordinal < 5; ordinal++)
+        {
+            swept.Add(AcquireFrameRoot(
+                world,
+                selector,
+                StaticFieldV2FrameValueRootKind.Parameter,
+                rootOrdinal: ordinal));
+        }
+
+        foreach (var name in rows.Select(static row => row.Name).Distinct(StringComparer.Ordinal))
+        {
+            swept.Add(AcquireFrameRoot(
+                world,
+                selector,
+                StaticFieldV2FrameValueRootKind.Local,
+                localName: name,
+                rows: rows));
+        }
+
+        Assert.Equal(14, swept.Count);
+        var registerHomes = 0;
+        foreach (var acquired in swept)
+        {
+            if (acquired.Outcome.ResultKind == StaticFieldV2RuntimeAcquisitionResultKind.Exact)
+            {
+                Assert.NotEqual(0UL, acquired.Outcome.RootAddress!.Value);
+                Assert.True(acquired.Outcome.RootWidth is > 0 and <= 64);
+                Assert.True(acquired.Outcome.IsLive);
+                Assert.Equal(1, acquired.Probes.MemoryReadCallCount);
+                continue;
+            }
+
+            Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.Unsupported, acquired.Outcome.ResultKind);
+            Assert.Equal(
+                StaticFieldV2RuntimeAcquisitionIssue.FrameRegisterHomeNotAdmitted,
+                acquired.Outcome.Issue);
+            Assert.Equal(
+                StaticFieldV2FrameValueRootOutcome.FrameRegisterHomeNotAdmittedCode,
+                acquired.Outcome.DiagnosticCode);
+            Assert.Null(acquired.Outcome.RootAddress);
+            Assert.Null(acquired.Outcome.RootWidth);
+            Assert.Empty(acquired.Outcome.RootBytes);
+            Assert.Equal(0, acquired.Probes.TotalCallCount);
+            registerHomes++;
+        }
+
+        Assert.Equal(0, registerHomes);
+        Assert.All(
+            swept,
+            static acquired => Assert.Contains(
+                StaticFieldV2RuntimeAcquisitionBoundary.FrameRegisterHomeNotAdmitted,
+                acquired.Outcome.DeclaredBoundaries));
+    }
+
+    /// <summary>
+    /// Proves closing the session, reopening the same dump, and rebinding the same frame-value root produces one
+    /// byte-identical canonical draft outcome.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8V2RuntimeAcquisitionV1")]
+    public void Frame_root_close_reopen_and_rebind_replays_byte_identically()
+    {
+        var first = AcquireFrameReplaySubject();
+        var second = AcquireFrameReplaySubject();
+
+        Assert.Equal(first.Sha256, second.Sha256);
+        Assert.Equal(first.RootAddress, second.RootAddress);
+        Assert.Equal(first.RootWidth, second.RootWidth);
+        Assert.True(first.CanonicalBytes.AsSpan().SequenceEqual(second.CanonicalBytes.AsSpan()));
+        Assert.True(first.RootBytes.AsSpan().SequenceEqual(second.RootBytes.AsSpan()));
+    }
+
+    private FrameReplaySubject AcquireFrameReplaySubject()
+    {
+        using var world = W8V2RuntimeAcquisitionWorld.Open(fixture.DumpPath);
+        var acquired = AcquireFrameRoot(
+            world,
+            world.PausedFrameThreadSelector(),
+            StaticFieldV2FrameValueRootKind.Local,
+            localName: "localRequest",
+            rows: ReadLocalScopeRows(world.TargetMethodToken("GenericFrameOwner`1", "Run")));
+        Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.Exact, acquired.Outcome.ResultKind);
+        return new FrameReplaySubject(
+            acquired.Outcome.Sha256,
+            acquired.Outcome.RootAddress!.Value,
+            acquired.Outcome.RootWidth!.Value,
+            acquired.Outcome.CanonicalBytes,
+            acquired.Outcome.RootBytes);
+    }
+
+    private static ExpressionV2CapabilityProbeSet CreateFramePathProbes(bool poisonMemoryRead) =>
+        ExpressionV2CapabilityProbeSet.Create(
+            runtimeConstruction: static () => throw new InvalidOperationException(
+                "A frame-value root must never acquire a runtime construction."),
+            threadIdentity: static () => throw new InvalidOperationException(
+                "A frame-value root must never acquire a selected-thread identity."),
+            moduleContent: static () => throw new InvalidOperationException(
+                "A frame-value root must never acquire module content."),
+            staticSlotAcquisition: static () => throw new InvalidOperationException(
+                "A frame-value root must never acquire a static storage slot."),
+            memoryRead: poisonMemoryRead
+                ? static () => throw new InvalidOperationException(
+                    "This frame-value root must stop before any counted read.")
+                : null);
+
+    private static AcquiredFrameRoot AcquireFrameRoot(
+        W8V2RuntimeAcquisitionWorld world,
+        StaticFieldV2RuntimeThreadSelector selector,
+        StaticFieldV2FrameValueRootKind rootKind,
+        int rootOrdinal = 0,
+        string? localName = null,
+        ImmutableArray<StaticFieldV2FramePortablePdbLocalRow> rows = default,
+        bool poisonMemoryRead = false)
+    {
+        var probes = CreateFramePathProbes(poisonMemoryRead);
+        var outcome = world.Session.AcquireFrameValueRoot(
+            StaticFieldV2FrameValueRootRequest.Create(
+                selector,
+                frameOrdinal: 0,
+                rootKind,
+                rootOrdinal,
+                localName,
+                rows,
+                probes));
+        return new AcquiredFrameRoot(outcome, probes);
+    }
+
+    private static void AssertExactMemoryHome(AcquiredFrameRoot acquired, int expectedWidth)
+    {
+        Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.Exact, acquired.Outcome.ResultKind);
+        Assert.Equal(StaticFieldV2RuntimeAcquisitionStage.None, acquired.Outcome.Stage);
+        Assert.Equal(StaticFieldV2RuntimeAcquisitionIssue.None, acquired.Outcome.Issue);
+        Assert.Null(acquired.Outcome.DiagnosticCode);
+        Assert.NotEqual(0UL, acquired.Outcome.RootAddress!.Value);
+        Assert.Equal(expectedWidth, acquired.Outcome.RootWidth!.Value);
+        Assert.True(acquired.Outcome.IsLive);
+        Assert.Equal(expectedWidth, acquired.Outcome.RootBytes.Length);
+        Assert.Equal(1, acquired.Probes.MemoryReadCallCount);
+        Assert.Equal(1, acquired.Probes.TotalCallCount);
+        Assert.Equal(1, acquired.Outcome.CapabilityCallLedger.MemoryReadCallCount);
+        Assert.Equal(1, acquired.Outcome.CapabilityCallLedger.TotalCallCount);
+        Assert.Equal(
+            new[]
+            {
+                StaticFieldV2RuntimeAcquisitionBoundary.FrameRegisterHomeNotAdmitted,
+                StaticFieldV2RuntimeAcquisitionBoundary.FrameGenericArgumentSubstitutionNotModeled,
+                StaticFieldV2RuntimeAcquisitionBoundary.FrameLocalScopesSuppliedByCaller,
+                StaticFieldV2RuntimeAcquisitionBoundary.FrameHomeSuppliedByLegacyStackWalkInterface,
+                StaticFieldV2RuntimeAcquisitionBoundary.FrameReceiverIdentifiedByLegacyArgumentName,
+            },
+            acquired.Outcome.DeclaredBoundaries);
+    }
+
+    private static void AssertTypedFrameStop(
+        AcquiredFrameRoot acquired,
+        StaticFieldV2RuntimeAcquisitionIssue expectedIssue,
+        string expectedCode)
+    {
+        Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.NonExact, acquired.Outcome.ResultKind);
+        Assert.Equal(expectedIssue, acquired.Outcome.Issue);
+        Assert.Equal(expectedCode, acquired.Outcome.DiagnosticCode);
+        Assert.Null(acquired.Outcome.RootAddress);
+        Assert.Null(acquired.Outcome.RootWidth);
+        Assert.Empty(acquired.Outcome.RootBytes);
+        Assert.Equal(0, acquired.Probes.TotalCallCount);
+        Assert.True(acquired.Outcome.CapabilityCallLedger.IsZero);
+    }
+
+    private static ImmutableArray<StaticFieldV2FramePortablePdbLocalRow> ReadLocalScopeRows(
+        int methodDefinitionToken)
+    {
+        using var stream = File.OpenRead(RequireArtifact(W8TestTargetPaths.ResolvePortablePdb()));
+        using var provider = MetadataReaderProvider.FromPortablePdbStream(stream);
+        var reader = provider.GetMetadataReader();
+        var methodHandle = MetadataTokens.MethodDefinitionHandle(methodDefinitionToken & 0x00ff_ffff);
+        var builder = ImmutableArray.CreateBuilder<StaticFieldV2FramePortablePdbLocalRow>();
+        foreach (var scopeHandle in reader.GetLocalScopes(methodHandle))
+        {
+            var scope = reader.GetLocalScope(scopeHandle);
+            foreach (var variableHandle in scope.GetLocalVariables())
+            {
+                var variable = reader.GetLocalVariable(variableHandle);
+                builder.Add(StaticFieldV2FramePortablePdbLocalRow.Create(
+                    reader.GetString(variable.Name),
+                    variable.Index,
+                    scope.StartOffset,
+                    scope.EndOffset));
+            }
+        }
+
+        return builder.ToImmutable();
+    }
+
+    private sealed record FrameReplaySubject(
+        string Sha256,
+        ulong RootAddress,
+        int RootWidth,
+        ImmutableArray<byte> CanonicalBytes,
+        ImmutableArray<byte> RootBytes);
 
     /// <summary>
     /// Proves closing the session, reopening the same dump, and rebinding the same expression produces byte-identical
@@ -416,6 +868,12 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
         return path;
     }
 }
+
+/// <summary>Carries the three draft answers and the probe ledger of one acquired static field.</summary>
+/// <remarks>This is draft physical scaffolding and not a product contract.</remarks>
+internal sealed record AcquiredFrameRoot(
+    StaticFieldV2FrameValueRootOutcome Outcome,
+    ExpressionV2CapabilityProbeSet Probes);
 
 /// <summary>Carries the three draft answers and the probe ledger of one acquired static field.</summary>
 /// <remarks>This is draft physical scaffolding and not a product contract.</remarks>
