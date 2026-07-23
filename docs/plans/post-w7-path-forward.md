@@ -909,9 +909,12 @@ bounded `ThisExpressionSyntax` or `IdentifierNameSyntax` root and an already-adm
 
 **Scale:** `~10K LOC` implementation and tests.
 
-**Status:** Added by plan revision after W8.3. The W8.2 authority families are complete but every catalog is currently
-materialized from synthetic rows in tests. Nothing downstream can run against a real artifact until one host-owned
-producer reads a loaded module's physical tables and issues the same catalogs.
+**Status:** Complete at `36fb23301`. The producer reads the generated W8 target assemblies' physical tables and
+issues every per-module catalog plus the compatibility, chain, resolution, ancestry, and constraint-target
+portfolios. Compatibility, chain, and resolution are exact over the three targets and a real cross-assembly TypeRef
+resolves to the authority row another produced module issued. Ancestry reports `CoreModuleAbsent` because the runtime
+core library is not among those modules; adding it is a later host responsibility. Dump-backed acquisition of loaded
+modules, as opposed to on-disk assemblies, remains part of the W8.6 runtime slice.
 
 Implement the producer that reads exact physical rows through the existing SRM/PE and ClrMD seams and materializes
 the complete-table catalogs, definition authority, compiler-name mappings, reference tables, chain, resolution,
