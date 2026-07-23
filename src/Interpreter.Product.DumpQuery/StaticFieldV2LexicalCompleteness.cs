@@ -1945,9 +1945,19 @@ public static class StaticFieldV2LexicalCompleteness
     {
         var rows = facts.ActiveLocalConstants;
         var examined = 0;
+        var unnamed = false;
         foreach (var row in rows)
         {
             examined++;
+            if (row.Name.Length == 0)
+            {
+                // A stripped or unreadable constant name is incomplete evidence: the unnamed constant
+                // could actually carry the requested identifier and shadow a bare root, so absence is
+                // unprovable. This mirrors the CertifyLocalVariables unnamed-slot guard above; constants
+                // carry no StandAloneSig slot, so the unaccounted-slot check does not apply to them.
+                unnamed = true;
+                continue;
+            }
             if (string.Equals(row.Name, name, StringComparison.Ordinal))
             {
                 return Owned(
@@ -1963,6 +1973,13 @@ public static class StaticFieldV2LexicalCompleteness
             return Incomplete(
                 StaticFieldV2LexicalBlockerKind.LocalConstant,
                 StaticFieldV2LexicalIncompletenessSource.ActiveScopeUnavailable,
+                examined);
+        }
+        if (unnamed)
+        {
+            return Incomplete(
+                StaticFieldV2LexicalBlockerKind.LocalConstant,
+                StaticFieldV2LexicalIncompletenessSource.UnnamedLocalSlot,
                 examined);
         }
 

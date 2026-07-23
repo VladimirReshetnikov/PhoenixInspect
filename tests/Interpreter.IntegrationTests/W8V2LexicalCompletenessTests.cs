@@ -187,6 +187,13 @@ public sealed class W8V2LexicalCompletenessTests
         AssertPartial(
             world,
             HostRid,
+            Lexical(world, HostRid, scopes, constants: [string.Empty]),
+            scopes,
+            StaticFieldV2LexicalBlockerKind.LocalConstant,
+            StaticFieldV2LexicalIncompletenessSource.UnnamedLocalSlot);
+        AssertPartial(
+            world,
+            HostRid,
             Lexical(world, HostRid, scopes, locals: ["kept"], extraLocalSlots: 1),
             scopes,
             StaticFieldV2LexicalBlockerKind.LocalVariable,
