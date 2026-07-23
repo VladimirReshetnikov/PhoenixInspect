@@ -323,19 +323,19 @@ public sealed class W7StaticSlotPhysicalTruthTests
         switch (node)
         {
             case MemberAccessExpressionSyntax
-                {
-                    RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
-                    Expression: var receiver,
-                    Name: IdentifierNameSyntax member,
-                }:
+            {
+                RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
+                Expression: var receiver,
+                Name: IdentifierNameSyntax member,
+            }:
                 var hasGlobalQualifier = FlattenName(receiver, segments);
                 segments.Add(member.Identifier.ValueText);
                 return hasGlobalQualifier;
             case AliasQualifiedNameSyntax
-                {
-                    Alias.Identifier.RawKind: (int)SyntaxKind.GlobalKeyword,
-                    Name: IdentifierNameSyntax globalMember,
-                }:
+            {
+                Alias.Identifier.RawKind: (int)SyntaxKind.GlobalKeyword,
+                Name: IdentifierNameSyntax globalMember,
+            }:
                 segments.Add(globalMember.Identifier.ValueText);
                 return true;
             case IdentifierNameSyntax identifier:

@@ -661,13 +661,13 @@ public sealed class W4PureModelExecutionIntegrationTests
             MarkerObservation observation,
             FieldLoadEvidence? evidence,
             int exact) => observation switch
-        {
-            MarkerObservation.Exact => MemoryLoadResult<ProvenanceConcreteValue>.Exact(
-                domain.ConstInt32(exact)),
-            MarkerObservation.Partial or MarkerObservation.Unavailable =>
-                MemoryLoadResult<ProvenanceConcreteValue>.FromFieldEvidence(evidence!),
-            _ => throw new InvalidOperationException("The field observation fixture is undefined."),
-        };
+            {
+                MarkerObservation.Exact => MemoryLoadResult<ProvenanceConcreteValue>.Exact(
+                    domain.ConstInt32(exact)),
+                MarkerObservation.Partial or MarkerObservation.Unavailable =>
+                    MemoryLoadResult<ProvenanceConcreteValue>.FromFieldEvidence(evidence!),
+                _ => throw new InvalidOperationException("The field observation fixture is undefined."),
+            };
 
         private static FieldLoadEvidence? CreateEvidence(
             int ordinal,

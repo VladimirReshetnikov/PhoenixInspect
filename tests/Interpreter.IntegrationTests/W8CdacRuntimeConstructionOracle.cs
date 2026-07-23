@@ -595,15 +595,15 @@ internal sealed class W8CdacRuntimeConstructionOracle
         ReadOnlySpan<byte> bytes,
         int pointerSize,
         W8CdacEndianness endianness) => pointerSize switch
-    {
-        sizeof(uint) => ReadUInt32(bytes, endianness),
-        sizeof(ulong) when endianness == W8CdacEndianness.Little =>
-            BinaryPrimitives.ReadUInt64LittleEndian(bytes),
-        sizeof(ulong) => BinaryPrimitives.ReadUInt64BigEndian(bytes),
-        _ => throw new W8CdacObservationException(
-            "W8_CDAC_READER_POINTER_SIZE",
-            $"Pointer size {pointerSize} is not admitted."),
-    };
+        {
+            sizeof(uint) => ReadUInt32(bytes, endianness),
+            sizeof(ulong) when endianness == W8CdacEndianness.Little =>
+                BinaryPrimitives.ReadUInt64LittleEndian(bytes),
+            sizeof(ulong) => BinaryPrimitives.ReadUInt64BigEndian(bytes),
+            _ => throw new W8CdacObservationException(
+                "W8_CDAC_READER_POINTER_SIZE",
+                $"Pointer size {pointerSize} is not admitted."),
+        };
 
     private static bool IsHashEndSentinel(ulong value) =>
         (value & HashEndSentinelMask) == HashEndSentinelMask;
