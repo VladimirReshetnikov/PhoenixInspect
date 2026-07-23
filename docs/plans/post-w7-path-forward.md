@@ -1104,6 +1104,18 @@ hidden full-dump targets. No profile falls through to another.
 Materialize the frozen four-shape corpus, execute one fresh hidden consumer per incident plus two fresh portfolio
 consumers, validate raw counts/counterfactual decision facts, and select exactly one qualified action or defer.
 
+**Status:** Foundation landed. The thirty-five-incident manifest is predeclared with all twelve typed axes, usefulness
+and decision-changing booleans with counterfactual actions, and frozen successor categories; four materially distinct
+shape targets build; and the two fresh byte-identical machine and human portfolio reports are complete at `b1cc5a11d`
+with the raw counts (33 useful, 26 decision-changing, 19 attributable) and category-qualification arithmetic
+independently validated. Three request-shape incidents execute end to end through the composed pipeline over real
+dumps with proven counterfactual checks. **Remaining:** the other thirty-two incidents stay manifest-only pending
+scoped-context/PDB projection, thread-selector wiring, companion poison artifacts, and the frame-value profile. One
+recorded finding blocks the batch module-RVA incident: its owner type construction is produced `Partial` rather than
+reaching its value, most likely because the batch runner's produced authority does not yet include the RVA target's
+module — a runner-composition gap, not a pipeline defect, since the RVA read itself is proven in the runtime
+acquisition lane.
+
 **Exit gate**
 
 - The thirty-five minimum dumps—thirty-two core plus thread-relative, RVA-backed, and frame-value incidents—execute
