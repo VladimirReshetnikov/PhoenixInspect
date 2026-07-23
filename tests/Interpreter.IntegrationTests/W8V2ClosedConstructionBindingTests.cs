@@ -287,6 +287,39 @@ public sealed class W8V2ClosedConstructionBindingTests
     }
 
     /// <summary>
+    /// Proves the corrected evidence-completeness direction for a base-class constraint target. When the type
+    /// argument's ancestry chain terminates on an incomplete terminal -- here <c>IncompleteBase</c> extends the
+    /// generic base <c>GenericSlot&lt;string&gt;</c>, so the chain stops at
+    /// <see cref="MetadataAncestryChainTerminalKind.GenericBaseReached"/> with no generic substitution -- and the
+    /// resolved base-class target is absent from the truncated edges, the constraint is Unprovable rather than a
+    /// definite Violated, so the construction is NonExact rather than Invalid. Target absence is a definite
+    /// non-derivation only over a complete-root terminal, exactly as the assignability base-chain walk and the
+    /// interface-target closure already discipline it; the sibling
+    /// <see cref="Violated_hard_constraints_are_invalid_and_retain_the_decisive_check"/> case (an argument whose chain
+    /// completes at System.Object) still violates.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Base_class_constraint_over_incomplete_argument_ancestry_is_unprovable_not_violated()
+    {
+        var world = BuildWorld();
+
+        var outcome = Bind("global::Synthetic.Target.Bounded<Synthetic.Target.IncompleteBase>.Field", world);
+
+        AssertStop(
+            outcome,
+            StaticFieldV2ClosedConstructionResultKind.NonExact,
+            StaticFieldV2ClosedConstructionIssue.ConstraintUnprovable);
+        Assert.DoesNotContain(
+            outcome.ConstraintChecks,
+            static check => check.Disposition == StaticFieldV2ConstraintDisposition.Violated);
+        var baseCheck = Assert.Single(
+            outcome.ConstraintChecks,
+            static check => check.Reason == "constraint.base-definition-ancestry-incomplete");
+        Assert.Equal(StaticFieldV2ConstraintDisposition.Unprovable, baseCheck.Disposition);
+    }
+
+    /// <summary>
     /// Proves the declared boundary of this draft slice: an interface constraint target, a substituted TypeSpec
     /// constraint target, and an unresolved TypeRef constraint target are all non-exact and unprovable rather than
     /// violated, because their proofs belong to separately owned later authorities.
@@ -649,7 +682,7 @@ public sealed class W8V2ClosedConstructionBindingTests
         Assert.Equal(outcome.GetHashCode(), replay.GetHashCode());
         Assert.Equal(outcome.Sha256, replay.Sha256);
         Assert.Equal(
-            "b2dea9b211bde9c11e1409003a99809a1507286c371bb8dea82a309d546ed8fc",
+            "12c353850571085aef047c2c964dff4fe42517fe00a685dd721eda6c8bbc375f",
             outcome.Sha256);
 
         var originalBytes = outcome.CanonicalBytes;
@@ -839,6 +872,8 @@ public sealed class W8V2ClosedConstructionBindingTests
                     string.Empty, "G`1", PublicClassAttributes, ObjectTypeReferenceToken, GenericArity: 1),
                 new ConstructionTypeRow(
                     TargetNamespace, "Phantom", PublicClassAttributes, ObjectTypeReferenceToken),
+                new ConstructionTypeRow(
+                    TargetNamespace, "IncompleteBase", PublicClassAttributes, ConstraintTypeSpecificationToken),
             ],
             interfaceImplementations: module =>
             [

@@ -496,6 +496,7 @@ public static class StaticFieldV2ClosedConstructionBinder
     private const string BaseDefinitionExactReason = "constraint.base-definition-exact";
     private const string BaseDefinitionReachedReason = "constraint.base-definition-reached";
     private const string BaseDefinitionUnreachableReason = "constraint.base-definition-unreachable";
+    private const string BaseDefinitionAncestryIncompleteReason = "constraint.base-definition-ancestry-incomplete";
     private const string InterfaceTargetReason = "constraint.interface-target-deferred";
     private const string InterfaceImplementedReason = "constraint.interface-implemented";
     private const string InterfaceNotImplementedReason = "constraint.interface-not-implemented";
@@ -1397,17 +1398,33 @@ public static class StaticFieldV2ClosedConstructionBinder
         var ancestry = context.Ancestry.ExactAncestryChainOrDefault(
             argumentClassification.SourceModule,
             argumentClassification.TypeDefinition.TypeDefinitionToken);
-        if (ancestry is not null)
+        if (ancestry is null)
         {
-            foreach (var edge in ancestry.Edges)
+            return (StaticFieldV2ConstraintDisposition.Unprovable, BaseDefinitionAncestryIncompleteReason);
+        }
+        foreach (var edge in ancestry.Edges)
+        {
+            if (edge.SourceModule.Equals(targetModule) && edge.Owner.Equals(targetDefinition))
             {
-                if (edge.SourceModule.Equals(targetModule) && edge.Owner.Equals(targetDefinition))
-                {
-                    return (StaticFieldV2ConstraintDisposition.Satisfied, BaseDefinitionReachedReason);
-                }
+                return (StaticFieldV2ConstraintDisposition.Satisfied, BaseDefinitionReachedReason);
             }
         }
-        return (StaticFieldV2ConstraintDisposition.Violated, BaseDefinitionUnreachableReason);
+
+        // A base-class constraint target absent from the argument's base chain is a definite non-derivation
+        // only when the chain terminated on a complete root (System.Object, an interface root, or the module
+        // pseudo-type). Every incomplete terminal -- a generic TypeSpec base retained for later construction,
+        // an unresolved TypeRef base, an invalid missing base, a cycle, or the depth bound -- is incomplete
+        // evidence, so the constraint is Unprovable rather than Violated. This mirrors the assignability
+        // base-chain walk (StaticFieldV2AssignabilityBinder.WalkBaseChain) and the interface-target closure
+        // discipline, keeping "absence requires complete evidence" from being applied backwards.
+        return ancestry.TerminalKind switch
+        {
+            MetadataAncestryChainTerminalKind.SystemObjectReached or
+                MetadataAncestryChainTerminalKind.InterfaceRoot or
+                MetadataAncestryChainTerminalKind.ModulePseudoTypeRoot =>
+                (StaticFieldV2ConstraintDisposition.Violated, BaseDefinitionUnreachableReason),
+            _ => (StaticFieldV2ConstraintDisposition.Unprovable, BaseDefinitionAncestryIncompleteReason),
+        };
     }
 
     private static (StaticFieldV2ConstraintDisposition Disposition, string Reason) EvaluateInterfaceTarget(
