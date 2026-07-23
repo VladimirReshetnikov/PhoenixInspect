@@ -39,10 +39,10 @@ public sealed class W8CorpusPortfolioReportTests
                 .SequenceEqual(Encoding.UTF8.GetBytes(second.HumanReport)));
 
         Assert.Equal(
-            "f12fb310889cd3b271672d2943ead7b057d3a48f3b2d27295590df23eeb7871b",
+            "7a2c7560a63ff1c5faca3b04f788cc145d2fa8f1183975b33d325dcd9405e235",
             Digest(first.MachineReport));
         Assert.Equal(
-            "1227bf5432654b4155e20dd0b68486df87fd465e6691bea8829ca262a7d75fb7",
+            "309fd71653b07aa5251d61931a0a083963f6ba8d3afc1e617e06cc5e0c205b13",
             Digest(first.HumanReport));
     }
 

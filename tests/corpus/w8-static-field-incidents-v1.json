@@ -3372,8 +3372,8 @@
       },
       "supportsSuccessorCategory": "evidence-backed-stack-value-root",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "requires-the-frame-value-profile-the-pipeline-does-not-yet-own"
+        "status": "executed",
+        "reason": "composed-frame-value-profile-attributes-the-memory-homed-stagelocal-to-its-exact-home-reaching-the-predeclared-twelve-axes-and-terminal"
       },
       "representative": false
     }

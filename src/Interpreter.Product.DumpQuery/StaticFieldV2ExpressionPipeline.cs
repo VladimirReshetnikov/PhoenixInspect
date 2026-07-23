@@ -52,6 +52,9 @@ public enum StaticFieldV2PipelineEvidenceKind
 
     /// <summary>The caller-supplied unchanged W2/W6 detached-suffix evaluation seam.</summary>
     SuffixChainEvaluation = 7,
+
+    /// <summary>The caller-supplied frame-root evaluation seam owned by the frame-value profile.</summary>
+    FrameRootEvaluation = 8,
 }
 
 /// <summary>Identifies one declared coverage boundary retained by every composed draft evaluation.</summary>
@@ -84,6 +87,9 @@ public enum StaticFieldV2PipelineCoverageBoundary
 
     /// <summary>The frame-value profile is owned by a separate entry point and never falls through to here.</summary>
     FrameValueProfileOwnedBySeparateEntryPoint = 8,
+
+    /// <summary>The frame-root memory home and value are supplied by the caller through one seam.</summary>
+    FrameRootEvidenceSuppliedByCallerSeam = 9,
 }
 
 /// <summary>Freezes how many times each caller-supplied evidence seam was called by one draft evaluation.</summary>
@@ -104,7 +110,8 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         int runtimeConstructionCandidates,
         int runtimeSlotFacts,
         int rawMemoryRead,
-        int suffixChainEvaluation)
+        int suffixChainEvaluation,
+        int frameRootEvaluation)
     {
         ScopedContextProjectionCallCount = scopedContextProjection;
         LexicalEnvelopeCallCount = lexicalEnvelope;
@@ -113,6 +120,7 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         RuntimeSlotFactsCallCount = runtimeSlotFacts;
         RawMemoryReadCallCount = rawMemoryRead;
         SuffixChainEvaluationCallCount = suffixChainEvaluation;
+        FrameRootEvaluationCallCount = frameRootEvaluation;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32(scopedContextProjection);
@@ -122,6 +130,13 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         writer.WriteInt32(runtimeSlotFacts);
         writer.WriteInt32(rawMemoryRead);
         writer.WriteInt32(suffixChainEvaluation);
+
+        // The frame-root counter is appended only when the frame-value profile actually consulted its seam, so every
+        // static-field ledger keeps its exact version-2 byte content and its frozen digest unchanged.
+        if (frameRootEvaluation != 0)
+        {
+            writer.WriteInt32(frameRootEvaluation);
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -147,6 +162,9 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
     /// <summary>Gets how many times the unchanged W2/W6 detached-suffix evaluation draft seam was called.</summary>
     public int SuffixChainEvaluationCallCount { get; }
 
+    /// <summary>Gets how many times the caller-supplied frame-root evaluation draft seam was called.</summary>
+    public int FrameRootEvaluationCallCount { get; }
+
     /// <summary>Gets the total frame, PDB, and import context draft calls this evaluation performed.</summary>
     public int ContextCallCount => ScopedContextProjectionCallCount + LexicalEnvelopeCallCount;
 
@@ -156,7 +174,8 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
 
     /// <summary>Gets the total draft seam calls this evaluation performed.</summary>
     public int TotalCallCount =>
-        ContextCallCount + MetadataConstantRowCallCount + RuntimeCallCount + SuffixChainEvaluationCallCount;
+        ContextCallCount + MetadataConstantRowCallCount + RuntimeCallCount + SuffixChainEvaluationCallCount +
+        FrameRootEvaluationCallCount;
 
     /// <summary>Gets whether this draft evaluation called no caller-supplied seam at all.</summary>
     public bool IsZero => TotalCallCount == 0;
@@ -180,6 +199,7 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         StaticFieldV2PipelineEvidenceKind.RuntimeSlotFacts => RuntimeSlotFactsCallCount,
         StaticFieldV2PipelineEvidenceKind.RawMemoryRead => RawMemoryReadCallCount,
         StaticFieldV2PipelineEvidenceKind.SuffixChainEvaluation => SuffixChainEvaluationCallCount,
+        StaticFieldV2PipelineEvidenceKind.FrameRootEvaluation => FrameRootEvaluationCallCount,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
@@ -205,7 +225,8 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         int runtimeConstructionCandidates,
         int runtimeSlotFacts,
         int rawMemoryRead,
-        int suffixChainEvaluation) =>
+        int suffixChainEvaluation,
+        int frameRootEvaluation) =>
         new(
             scopedContextProjection,
             lexicalEnvelope,
@@ -213,7 +234,8 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
             runtimeConstructionCandidates,
             runtimeSlotFacts,
             rawMemoryRead,
-            suffixChainEvaluation);
+            suffixChainEvaluation,
+            frameRootEvaluation);
 }
 
 /// <summary>Freezes one caller-supplied scoped-context draft seam that this composition never acquires itself.</summary>
@@ -580,6 +602,287 @@ public sealed class StaticFieldV2SuffixEvaluationSource
         evaluate(request);
 }
 
+/// <summary>Classifies one pipeline-level frame-root evaluation draft answer returned by the caller-owned seam.</summary>
+/// <remarks>
+/// Only <see cref="Exact"/> exposes an attributed memory home and a decoded value. Every other disposition is a
+/// prefix-free typed draft stop. The two frozen W8.1 non-admissions, a register home and a selected frame's own generic
+/// arguments, keep their own dispositions and surface their frozen diagnostic codes rather than an absent gap.
+/// </remarks>
+public enum StaticFieldV2FrameRootDisposition
+{
+    /// <summary>One exact frame root was attributed to an exact memory home with a decoded value.</summary>
+    Exact = 1,
+
+    /// <summary>The selected thread or frame context could not be acquired exactly.</summary>
+    ContextUnavailable = 2,
+
+    /// <summary>Two or more selected-thread candidates satisfied the token-keyed frame predicate.</summary>
+    ContextAmbiguous = 3,
+
+    /// <summary>The frame context was exact but the root reports no exact single memory home.</summary>
+    RootUnavailable = 4,
+
+    /// <summary>The frame context was exact but two or more live roots share the requested spelling.</summary>
+    RootAmbiguous = 5,
+
+    /// <summary>The frame context was exact but a higher-precedence declaration shadows the requested root.</summary>
+    RootShadowed = 6,
+
+    /// <summary>The frame context was exact but the acquired root evidence is malformed.</summary>
+    RootInvalid = 7,
+
+    /// <summary>The root homes in a register, a frozen W8.1 non-admission that is never read.</summary>
+    RegisterHomeNotAdmitted = 8,
+
+    /// <summary>The root is a selected frame's own generic argument, a frozen W8.1 non-admission.</summary>
+    GenericArgumentNotAdmitted = 9,
+}
+
+/// <summary>Freezes one pipeline-level frame-root draft request projected from the detached frame descriptor.</summary>
+/// <remarks>
+/// The draft request names only the projected root the composition attributed: the <see langword="this"/>-or-identifier
+/// root kind and, for an identifier root, its decoded value. It carries no physical thread, frame ordinal, or
+/// Portable-PDB row; the caller-owned seam supplies that frame evidence itself, mirroring how the suffix seam owns the
+/// member chain.
+/// </remarks>
+public sealed class StaticFieldV2FrameRootEvaluationRequest
+{
+    private const string CanonicalDomain = "static-field-v2-pipeline-frame-root-evaluation-request";
+
+    internal StaticFieldV2FrameRootEvaluationRequest(
+        FrameValueV1RootKind rootKind,
+        DumpExpressionIdentifier? identifier)
+    {
+        RootKind = rootKind;
+        Identifier = identifier;
+    }
+
+    /// <summary>Gets whether the projected root is <see langword="this"/> or one decoded identifier.</summary>
+    public FrameValueV1RootKind RootKind { get; }
+
+    /// <summary>Gets the decoded identifier root, or <see langword="null"/> for a <see langword="this"/> root.</summary>
+    public DumpExpressionIdentifier? Identifier { get; }
+}
+
+/// <summary>Freezes one pipeline-level frame-root evaluation draft result the caller-owned seam returns.</summary>
+/// <remarks>
+/// An exact draft result exposes the attributed memory home (its address, counted width, and copied bytes), the
+/// resolved root family, and one decoded value from the bounded dump-query domain. A non-null managed reference
+/// additionally exposes the reference address so the composition can root the unchanged W2/W6 suffix at it. Every
+/// non-exact disposition is a prefix-free typed draft stop that exposes no home, no value, and no reference, and a
+/// non-admission retains its frozen code.
+/// </remarks>
+public sealed class StaticFieldV2FrameRootEvaluationResult : IEquatable<StaticFieldV2FrameRootEvaluationResult>
+{
+    private const string CanonicalDomain = "static-field-v2-pipeline-frame-root-evaluation-result";
+    private const int CanonicalSchemaVersion = 1;
+    private readonly ImmutableArray<byte> rootBytes;
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    private StaticFieldV2FrameRootEvaluationResult(
+        StaticFieldV2FrameRootDisposition disposition,
+        StaticFieldV2FrameValueRootKind rootKind,
+        ulong? memoryHomeAddress,
+        int? readWidth,
+        ImmutableArray<byte> rootBytes,
+        DumpQueryValue? value,
+        ulong? referenceAddress,
+        string? diagnosticCode)
+    {
+        Disposition = disposition;
+        RootKind = rootKind;
+        MemoryHomeAddress = memoryHomeAddress;
+        ReadWidth = readWidth;
+        this.rootBytes = rootBytes;
+        Value = value;
+        ReferenceAddress = referenceAddress;
+        DiagnosticCode = diagnosticCode;
+
+        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
+        writer.WriteInt32((int)disposition);
+        writer.WriteInt32((int)rootKind);
+        ExpressionV2ContractEncoding.WriteOptionalUInt64(writer, memoryHomeAddress);
+        ExpressionV2ContractEncoding.WriteOptionalInt32(writer, readWidth);
+        writer.WriteBoolean(!rootBytes.IsDefault);
+        if (!rootBytes.IsDefault)
+        {
+            writer.WriteLengthPrefixedBytes(rootBytes.AsSpan());
+        }
+        writer.WriteBoolean(value is not null);
+        if (value is not null)
+        {
+            writer.WriteString(value.ToCanonicalReplayProjection());
+        }
+        ExpressionV2ContractEncoding.WriteOptionalUInt64(writer, referenceAddress);
+        ExpressionV2ContractEncoding.WriteOptionalString(writer, diagnosticCode);
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets the typed frame-root evaluation disposition.</summary>
+    public StaticFieldV2FrameRootDisposition Disposition { get; }
+
+    /// <summary>Gets the resolved frame-root family the seam attributed for an exact answer.</summary>
+    public StaticFieldV2FrameValueRootKind RootKind { get; }
+
+    /// <summary>Gets the exact attributed memory-home address, or <see langword="null"/> on a stop.</summary>
+    public ulong? MemoryHomeAddress { get; }
+
+    /// <summary>Gets the exact counted read width in bytes of the home, or <see langword="null"/> on a stop.</summary>
+    public int? ReadWidth { get; }
+
+    /// <summary>Gets a defensive copy of the bytes copied from the attributed home, otherwise empty.</summary>
+    public ImmutableArray<byte> RootBytes => ExpressionV2ContractEncoding.Copy(rootBytes);
+
+    /// <summary>Gets the decoded root value for an exact answer, or <see langword="null"/> on a stop.</summary>
+    public DumpQueryValue? Value { get; }
+
+    /// <summary>Gets the non-null managed reference address for suffix rooting, otherwise <see langword="null"/>.</summary>
+    public ulong? ReferenceAddress { get; }
+
+    /// <summary>Gets the frozen diagnostic code retained by a typed non-admission, otherwise <see langword="null"/>.</summary>
+    public string? DiagnosticCode { get; }
+
+    /// <summary>Gets a defensive copy of the fixed-reference canonical result bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
+
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical result.</summary>
+    public string Sha256 { get; }
+
+    /// <summary>Creates one exact frame-root evaluation draft result carrying an attributed memory home and value.</summary>
+    /// <param name="rootKind">The resolved <see langword="this"/>, parameter, or local root family.</param>
+    /// <param name="memoryHomeAddress">The exact attributed memory-home address.</param>
+    /// <param name="readWidth">The exact counted read width in bytes.</param>
+    /// <param name="rootBytes">The exact bytes copied out of the pinned snapshot at the home.</param>
+    /// <param name="value">The decoded root value from the bounded dump-query domain.</param>
+    /// <param name="referenceAddress">The non-null managed reference address for suffix rooting, or null.</param>
+    /// <returns>A sealed immutable exact result with a defensively copied byte payload.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentException">The root family is a non-admitted generic argument.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The read width is outside the admitted range.</exception>
+    public static StaticFieldV2FrameRootEvaluationResult Exact(
+        StaticFieldV2FrameValueRootKind rootKind,
+        ulong memoryHomeAddress,
+        int readWidth,
+        ImmutableArray<byte> rootBytes,
+        DumpQueryValue value,
+        ulong? referenceAddress = null)
+    {
+        ExpressionV2ContractEncoding.RequireDefined(rootKind, nameof(rootKind));
+        ArgumentNullException.ThrowIfNull(value);
+        if (rootBytes.IsDefault)
+        {
+            throw new ArgumentException("An initialized copied-byte payload is required.", nameof(rootBytes));
+        }
+        if (readWidth is <= 0 or > FrameValueV1Limits.MaximumValueByteCount)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(readWidth),
+                $"A counted read width of one through {FrameValueV1Limits.MaximumValueByteCount} is required.");
+        }
+        if (rootKind is StaticFieldV2FrameValueRootKind.DeclaringTypeGenericArgument or
+            StaticFieldV2FrameValueRootKind.MethodGenericArgument)
+        {
+            throw new ArgumentException("A generic-argument root can never be exact.", nameof(rootKind));
+        }
+
+        return new StaticFieldV2FrameRootEvaluationResult(
+            StaticFieldV2FrameRootDisposition.Exact,
+            rootKind,
+            memoryHomeAddress,
+            readWidth,
+            ExpressionV2ContractEncoding.Copy(rootBytes),
+            value,
+            referenceAddress,
+            null);
+    }
+
+    /// <summary>Creates one typed non-exact frame-root evaluation draft stop with no attributed home or value.</summary>
+    /// <param name="disposition">One non-exact disposition.</param>
+    /// <param name="diagnosticCode">The frozen non-admission code, required exactly for a frozen non-admission.</param>
+    /// <returns>A sealed immutable prefix-free typed stop.</returns>
+    /// <exception cref="ArgumentException">The disposition and diagnostic code disagree.</exception>
+    public static StaticFieldV2FrameRootEvaluationResult Stop(
+        StaticFieldV2FrameRootDisposition disposition,
+        string? diagnosticCode = null)
+    {
+        ExpressionV2ContractEncoding.RequireDefined(disposition, nameof(disposition));
+        var nonAdmission = disposition is StaticFieldV2FrameRootDisposition.RegisterHomeNotAdmitted or
+            StaticFieldV2FrameRootDisposition.GenericArgumentNotAdmitted;
+        if (disposition == StaticFieldV2FrameRootDisposition.Exact)
+        {
+            throw new ArgumentException("An exact result must be created through the exact factory.", nameof(disposition));
+        }
+        if (nonAdmission == string.IsNullOrEmpty(diagnosticCode))
+        {
+            throw new ArgumentException(
+                "A frozen non-admission requires its diagnostic code and every other stop forbids one.",
+                nameof(diagnosticCode));
+        }
+        if (diagnosticCode is not null)
+        {
+            ExpressionV2ContractEncoding.RequireDiagnosticCode(diagnosticCode, nameof(diagnosticCode));
+        }
+
+        return new StaticFieldV2FrameRootEvaluationResult(
+            disposition,
+            StaticFieldV2FrameValueRootKind.This,
+            null,
+            null,
+            ImmutableArray<byte>.Empty,
+            null,
+            null,
+            diagnosticCode);
+    }
+
+    /// <summary>Tests canonical equality between two frame-root evaluation results.</summary>
+    /// <param name="other">The other result.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
+    public bool Equals(StaticFieldV2FrameRootEvaluationResult? other) =>
+        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
+
+    /// <summary>Tests frame-root evaluation result equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for a result with identical canonical content.</returns>
+    public override bool Equals(object? obj) => Equals(obj as StaticFieldV2FrameRootEvaluationResult);
+
+    /// <summary>Computes a deterministic hash code from immutable canonical result content.</summary>
+    /// <returns>A hash code for this canonical result.</returns>
+    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
+}
+
+/// <summary>Freezes one caller-supplied frame-root evaluation draft seam this composition never owns.</summary>
+/// <remarks>
+/// The seam keeps the frame-value acquisition behind one caller-owned delegate, mirroring the runtime-evidence and
+/// suffix seams. Fast callers supply a synthetic delegate; the real dump host roots the seam at the pinned runtime's
+/// <c>AcquireFrameValueRoot</c> and decodes the copied bytes into one bounded dump-query value. The composition meters
+/// every call so a frame answer proves it consulted the frame evidence exactly once and no static binder at all.
+/// </remarks>
+public sealed class StaticFieldV2FrameRootEvaluationSource
+{
+    private const string CanonicalDomain = "static-field-v2-pipeline-frame-root-evaluation-source";
+
+    private readonly Func<StaticFieldV2FrameRootEvaluationRequest, StaticFieldV2FrameRootEvaluationResult> evaluate;
+
+    private StaticFieldV2FrameRootEvaluationSource(
+        Func<StaticFieldV2FrameRootEvaluationRequest, StaticFieldV2FrameRootEvaluationResult> evaluate) =>
+        this.evaluate = evaluate;
+
+    /// <summary>Creates one caller-owned frame-root evaluation draft seam.</summary>
+    /// <param name="evaluate">Attributes the projected frame root and decodes its exact memory-homed value.</param>
+    /// <returns>A sealed draft seam whose calls this composition meters.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="evaluate"/> is null.</exception>
+    public static StaticFieldV2FrameRootEvaluationSource Create(
+        Func<StaticFieldV2FrameRootEvaluationRequest, StaticFieldV2FrameRootEvaluationResult> evaluate)
+    {
+        ArgumentNullException.ThrowIfNull(evaluate);
+        return new StaticFieldV2FrameRootEvaluationSource(evaluate);
+    }
+
+    internal StaticFieldV2FrameRootEvaluationResult Evaluate(StaticFieldV2FrameRootEvaluationRequest request) =>
+        evaluate(request);
+}
+
 /// <summary>Freezes one complete composed static-field draft evaluation request.</summary>
 /// <remarks>
 /// The request names the raw expression, the explicitly selected profile, every metadata authority portfolio, the two
@@ -609,7 +912,8 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         StaticFieldV2SuffixEvaluationSource? suffixEvaluation,
         Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource,
         MetadataClosedTypeIdentity? referenceTargetType,
-        ExpressionV2CapabilityProbeSet? capabilityProbes)
+        ExpressionV2CapabilityProbeSet? capabilityProbes,
+        StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation)
     {
         ExpressionText = expressionText;
         Profile = profile;
@@ -626,6 +930,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         LiteralConstantSource = literalConstantSource;
         ReferenceTargetType = referenceTargetType;
         CapabilityProbes = capabilityProbes;
+        FrameRootEvaluation = frameRootEvaluation;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         ExpressionV2ContractEncoding.WriteOptionalString(writer, expressionText);
@@ -654,6 +959,13 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         writer.WriteBoolean(literalConstantSource is not null);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, referenceTargetType?.Sha256);
         writer.WriteBoolean(capabilityProbes is not null);
+
+        // The frame-root seam presence is appended only when the frame-value profile actually supplies it, so every
+        // static-field request keeps its exact version-2 byte content and its frozen digest unchanged.
+        if (frameRootEvaluation is not null)
+        {
+            writer.WriteBoolean(true);
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -710,6 +1022,14 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <summary>Gets the caller-owned capability probes every acquisition of this draft evaluation routes through.</summary>
     public ExpressionV2CapabilityProbeSet? CapabilityProbes { get; }
 
+    /// <summary>Gets the optional caller-owned frame-root evaluation draft seam, or null when none was supplied.</summary>
+    /// <remarks>
+    /// The frame-value entry point engages its composed binder only when this seam is present. A frame-profiled request
+    /// that supplies no frame-root seam is declined as an unsupported profile exactly as before, so no frame request can
+    /// fall through to a static binder and the separate-entry-point isolation stays frozen.
+    /// </remarks>
+    public StaticFieldV2FrameRootEvaluationSource? FrameRootEvaluation { get; }
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -732,6 +1052,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <param name="literalConstantSource">The optional caller-owned metadata Constant-row draft seam.</param>
     /// <param name="referenceTargetType">The optional exact target type of reference-target draft validation.</param>
     /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained draft ledger.</param>
+    /// <param name="frameRootEvaluation">The optional caller-owned frame-root evaluation draft seam.</param>
     /// <returns>A sealed immutable draft request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An enum argument is undefined.</exception>
@@ -752,7 +1073,8 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         StaticFieldV2SuffixEvaluationSource? suffixEvaluation = null,
         Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource = null,
         MetadataClosedTypeIdentity? referenceTargetType = null,
-        ExpressionV2CapabilityProbeSet? capabilityProbes = null)
+        ExpressionV2CapabilityProbeSet? capabilityProbes = null,
+        StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation = null)
     {
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
         ArgumentNullException.ThrowIfNull(constraintPortfolio);
@@ -795,7 +1117,8 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             suffixEvaluation,
             literalConstantSource,
             referenceTargetType,
-            capabilityProbes);
+            capabilityProbes,
+            frameRootEvaluation);
     }
 
     /// <summary>Tests canonical equality between two composed draft evaluation requests.</summary>
@@ -856,6 +1179,7 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         DumpQueryValue? suffixValue,
         StaticFieldV2PipelineEvidenceLedger evidenceLedger,
         StaticFieldV2CapabilityCallLedger? capabilityCallLedger,
+        StaticFieldV2FrameRootEvaluationResult? frameRoot,
         ImmutableArray<StaticFieldV2PipelineCoverageBoundary> declaredCoverageBoundaries)
     {
         RawExpression = rawExpression;
@@ -881,6 +1205,7 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         SuffixValue = suffixValue;
         EvidenceLedger = evidenceLedger;
         CapabilityCallLedger = capabilityCallLedger;
+        FrameRoot = frameRoot;
         this.declaredCoverageBoundaries = declaredCoverageBoundaries;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
@@ -921,6 +1246,13 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         foreach (var boundary in declaredCoverageBoundaries)
         {
             writer.WriteInt32((int)boundary);
+        }
+
+        // The retained frame memory home and value are appended only for the frame-value profile, so every static-field
+        // provenance keeps its exact version-2 byte content and its frozen digest unchanged.
+        if (frameRoot is not null)
+        {
+            writer.WriteSha256(frameRoot.Sha256, nameof(frameRoot));
         }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -996,6 +1328,9 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
     /// <summary>Gets the retained capability-call draft ledger of the deciding stage, or null when none ran.</summary>
     public StaticFieldV2CapabilityCallLedger? CapabilityCallLedger { get; }
 
+    /// <summary>Gets the retained frame-root memory home and value, or null when no frame root was attributed.</summary>
+    public StaticFieldV2FrameRootEvaluationResult? FrameRoot { get; }
+
     /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this draft answer.</summary>
     public ImmutableArray<StaticFieldV2PipelineCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
@@ -1070,16 +1405,24 @@ public sealed class StaticFieldV2ExpressionResult : IEquatable<StaticFieldV2Expr
     public bool IsComplete => Axes.Completeness == DumpExpressionCompletenessOutcome.Complete;
 
     /// <summary>Gets the decoded signed draft value, or null when none was decoded.</summary>
-    public long? SignedValue => Provenance.LiteralValue?.SignedValue ?? Provenance.RuntimeValue?.SignedValue;
+    public long? SignedValue =>
+        Provenance.LiteralValue?.SignedValue ??
+        Provenance.RuntimeValue?.SignedValue ??
+        (FrameValue is { Kind: DumpQueryValueKind.Int32, Int32Value: { } frameInt } ? frameInt : null);
 
     /// <summary>Gets the decoded unsigned draft value, or null when none was decoded.</summary>
     public ulong? UnsignedValue => Provenance.LiteralValue?.UnsignedValue ?? Provenance.RuntimeValue?.UnsignedValue;
 
     /// <summary>Gets the decoded literal string draft value, or null when none was decoded.</summary>
-    public string? StringValue => Provenance.LiteralValue?.StringValue;
+    public string? StringValue =>
+        Provenance.LiteralValue?.StringValue ??
+        (FrameValue is { Kind: DumpQueryValueKind.String } frameString ? frameString.StringValue : null);
 
     /// <summary>Gets the retained non-null managed reference address, or null when none was decoded.</summary>
-    public ulong? ReferenceAddress => Provenance.RuntimeValue?.ReferenceAddress;
+    public ulong? ReferenceAddress => Provenance.RuntimeValue?.ReferenceAddress ?? Provenance.FrameRoot?.ReferenceAddress;
+
+    /// <summary>Gets the decoded frame-root value retained on an exact frame answer, or null when none.</summary>
+    public DumpQueryValue? FrameValue => Provenance.FrameRoot?.Value;
 
     /// <summary>Gets the decoded W2/W6 suffix draft value retained on a completed suffix, or null when none.</summary>
     public DumpQueryValue? SuffixValue => Provenance.SuffixValue;
@@ -1168,9 +1511,12 @@ public static class StaticFieldV2ExpressionPipeline
         private int slotFactCalls;
         private int memoryReadCalls;
         private int suffixEvaluationCalls;
+        private int frameRootEvaluationCalls;
 
         private StaticFieldV2SyntaxOutcome? syntax;
         private StaticFieldV2ExpressionDescriptor? descriptor;
+        private FrameValueV1ExpressionDescriptor? frameDescriptor;
+        private StaticFieldV2FrameRootEvaluationResult? frameRoot;
         private StaticFieldV2ExpressionRoute route = StaticFieldV2ExpressionRoute.NotSelected;
         private StaticFieldV2ScopedContextOutcome? scopedContext;
         private StaticFieldV2ContextualBindingOutcome? contextualBinding;
@@ -1200,12 +1546,23 @@ public static class StaticFieldV2ExpressionPipeline
 
         internal StaticFieldV2ExpressionResult Run(DumpExpressionProfileKind ownedProfile)
         {
-            // Step 1: select the caller-requested profile and enforce the common expression-input bounds.
+            // Step 1: select the caller-requested profile and enforce the common expression-input bounds. Neither entry
+            // point can ever process the other profile, so a static request never reaches the frame binder and a frame
+            // request never reaches a static binder.
             EnterStep(1);
-            if (request.Profile != ownedProfile ||
-                ownedProfile != DumpExpressionProfileKind.StaticFieldExpressionV2)
+            if (request.Profile != ownedProfile)
             {
                 return ProfileRejection();
+            }
+
+            if (ownedProfile == DumpExpressionProfileKind.FrameValueExpressionV1)
+            {
+                // The frame-value binder engages only when the caller supplies its frame-root evidence seam. A
+                // frame-profiled request without that seam is declined as an unsupported profile exactly as before, so
+                // the frame binder never runs without its caller-owned dependency and no answer is fabricated.
+                return request.FrameRootEvaluation is null
+                    ? ProfileRejection()
+                    : RunFrameValue();
             }
 
             // Steps 2 through 4: the sole complete parse, its integrity checks, and the detached projection.
@@ -1341,6 +1698,160 @@ public static class StaticFieldV2ExpressionPipeline
             EnterStep(16);
             return Complete(value, suffixAxis);
         }
+
+        private StaticFieldV2ExpressionResult RunFrameValue()
+        {
+            // Step 2: the sole complete frame-value parse over the frozen FrameValueExpressionV1 grammar.
+            EnterStep(2);
+            var frameSyntax = FrameValueV1ExpressionParser.Parse(request.ExpressionText);
+
+            // Step 3: a non-admitted parse is a typed syntax stop; no later frame axis is reached.
+            EnterStep(3);
+            if (frameSyntax.Status != DumpExpressionSyntaxStatus.Admitted || frameSyntax.Descriptor is null)
+            {
+                return SyntaxStop(frameSyntax.Status);
+            }
+
+            // Step 4: retain the detached descriptor and its frozen unchanged W2/W6 suffix.
+            EnterStep(4);
+            frameDescriptor = frameSyntax.Descriptor;
+            suffix = frameDescriptor.Suffix;
+
+            // Step 5: project the descriptor root into the frame-root evidence request and call the caller-owned seam.
+            EnterStep(5);
+            boundaries.Add(StaticFieldV2PipelineCoverageBoundary.FrameRootEvidenceSuppliedByCallerSeam);
+            frameRootEvaluationCalls++;
+            frameRoot = request.FrameRootEvaluation!.Evaluate(
+                new StaticFieldV2FrameRootEvaluationRequest(frameDescriptor.RootKind, frameDescriptor.Identifier));
+
+            // Step 6: map the frame-root disposition onto the independent context and root-attribution axes.
+            EnterStep(6);
+            var rootStop = MapFrameRootStop(frameRoot.Disposition);
+            if (rootStop is not null)
+            {
+                return rootStop;
+            }
+
+            // Step 7: project the exact frame value and its independent suffix, then compose the single result.
+            EnterStep(7);
+            var value = frameRoot.Value!.Kind == DumpQueryValueKind.Null
+                ? DumpExpressionValueOutcome.ExactNull
+                : DumpExpressionValueOutcome.ExactValue;
+            var lexical = frameRoot.RootKind == StaticFieldV2FrameValueRootKind.Local
+                ? DumpExpressionLexicalCompletenessOutcome.Complete
+                : DumpExpressionLexicalCompletenessOutcome.NotRequired;
+            var suffixAxis = EvaluateFrameSuffix(value);
+            return FrameComplete(lexical, value, suffixAxis);
+        }
+
+        private StaticFieldV2ExpressionResult? MapFrameRootStop(StaticFieldV2FrameRootDisposition disposition) =>
+            disposition switch
+            {
+                StaticFieldV2FrameRootDisposition.Exact => null,
+                StaticFieldV2FrameRootDisposition.ContextUnavailable => FrameRootStop(
+                    DumpExpressionContextOutcome.Unavailable,
+                    DumpExpressionRootAttributionOutcome.NotReached),
+                StaticFieldV2FrameRootDisposition.ContextAmbiguous => FrameRootStop(
+                    DumpExpressionContextOutcome.Ambiguous,
+                    DumpExpressionRootAttributionOutcome.NotReached),
+                StaticFieldV2FrameRootDisposition.RootUnavailable => FrameRootStop(
+                    DumpExpressionContextOutcome.Exact,
+                    DumpExpressionRootAttributionOutcome.Unavailable),
+                StaticFieldV2FrameRootDisposition.RootAmbiguous => FrameRootStop(
+                    DumpExpressionContextOutcome.Exact,
+                    DumpExpressionRootAttributionOutcome.Ambiguous),
+                StaticFieldV2FrameRootDisposition.RootShadowed => FrameRootStop(
+                    DumpExpressionContextOutcome.Exact,
+                    DumpExpressionRootAttributionOutcome.Shadowed),
+                StaticFieldV2FrameRootDisposition.RootInvalid => FrameRootStop(
+                    DumpExpressionContextOutcome.Exact,
+                    DumpExpressionRootAttributionOutcome.Invalid),
+
+                // A register home and a selected frame's own generic arguments are the two frozen W8.1 non-admissions:
+                // both map to a typed executable root-attribution non-admission that surfaces their frozen code through
+                // the retained frame-root result, never an absent gap and never a crash.
+                StaticFieldV2FrameRootDisposition.RegisterHomeNotAdmitted => FrameRootStop(
+                    DumpExpressionContextOutcome.Exact,
+                    DumpExpressionRootAttributionOutcome.Unsupported),
+                StaticFieldV2FrameRootDisposition.GenericArgumentNotAdmitted => FrameRootStop(
+                    DumpExpressionContextOutcome.Exact,
+                    DumpExpressionRootAttributionOutcome.Unsupported),
+                _ => FrameRootStop(
+                    DumpExpressionContextOutcome.Invalid,
+                    DumpExpressionRootAttributionOutcome.NotReached),
+            };
+
+        private DumpExpressionSuffixOutcome EvaluateFrameSuffix(DumpExpressionValueOutcome value)
+        {
+            if (suffix is not { } descriptor || descriptor.Kind == DumpExpressionSuffixKind.NotRequested)
+            {
+                return DumpExpressionSuffixOutcome.NotRequested;
+            }
+
+            // An exact-null root roots no object, so reuse the unchanged W2/W6 null semantics without any suffix read.
+            if (value == DumpExpressionValueOutcome.ExactNull)
+            {
+                return ResolveExactNullSuffix(descriptor);
+            }
+
+            // A primitive or value-typed frame root cannot root an object navigation, exactly as a literal cannot.
+            if (frameRoot is not { ReferenceAddress: { } referenceAddress } || referenceAddress == 0)
+            {
+                return DumpExpressionSuffixOutcome.Unsupported;
+            }
+
+            // Root the unchanged W2/W6 member chain at the resolved exact reference through the same caller seam.
+            if (request.SuffixEvaluation is not { } source)
+            {
+                return DumpExpressionSuffixOutcome.Blocked;
+            }
+
+            suffixEvaluationCalls++;
+            var suffixResult = source.Evaluate(new StaticFieldV2SuffixEvaluationRequest(referenceAddress, descriptor));
+            var mapped = MapSuffixResult(suffixResult);
+            if (mapped == DumpExpressionSuffixOutcome.Completed)
+            {
+                suffixValue = suffixResult.Value;
+            }
+            return mapped;
+        }
+
+        private StaticFieldV2ExpressionResult FrameRootStop(
+            DumpExpressionContextOutcome context,
+            DumpExpressionRootAttributionOutcome rootAttribution) =>
+            Project(
+                DumpExpressionV2OutcomeAxes.Create(
+                    DumpExpressionSyntaxStatus.Admitted,
+                    context,
+                    rootAttribution,
+                    DumpExpressionLexicalCompletenessOutcome.NotReached,
+                    DumpExpressionTypeBindingOutcome.NotReached,
+                    DumpExpressionTypeConstructionOutcome.NotReached,
+                    DumpExpressionMemberLookupOutcome.NotReached,
+                    DumpExpressionRuntimeConstructionOutcome.NotReached,
+                    DumpExpressionStorageOutcome.NotReached,
+                    DumpExpressionValueOutcome.NotReached,
+                    DumpExpressionSuffixOutcome.NotReached,
+                    DumpExpressionCompletenessOutcome.NoAnswer));
+
+        private StaticFieldV2ExpressionResult FrameComplete(
+            DumpExpressionLexicalCompletenessOutcome lexical,
+            DumpExpressionValueOutcome value,
+            DumpExpressionSuffixOutcome suffixOutcome) =>
+            Project(
+                DumpExpressionV2OutcomeAxes.Create(
+                    DumpExpressionSyntaxStatus.Admitted,
+                    DumpExpressionContextOutcome.Exact,
+                    DumpExpressionRootAttributionOutcome.Exact,
+                    lexical,
+                    DumpExpressionTypeBindingOutcome.NotRequired,
+                    DumpExpressionTypeConstructionOutcome.NotRequired,
+                    DumpExpressionMemberLookupOutcome.NotRequired,
+                    DumpExpressionRuntimeConstructionOutcome.NotRequired,
+                    DumpExpressionStorageOutcome.Exact,
+                    value,
+                    suffixOutcome,
+                    ValueCompleteness(value, suffixOutcome)));
 
         private void EnterStep(int step)
         {
@@ -2219,8 +2730,10 @@ public static class StaticFieldV2ExpressionPipeline
                         constructionCandidateCalls,
                         slotFactCalls,
                         memoryReadCalls,
-                        suffixEvaluationCalls),
+                        suffixEvaluationCalls,
+                        frameRootEvaluationCalls),
                     capabilityCallLedger,
+                    frameRoot,
                     [.. boundaries]));
     }
 }

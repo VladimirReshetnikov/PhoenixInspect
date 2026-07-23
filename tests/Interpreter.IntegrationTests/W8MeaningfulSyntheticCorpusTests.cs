@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -273,10 +274,7 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         {
             using var snapshot = W8CorpusSnapshot.Materialize(incident);
             using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, incident.Shape);
-            var produced = world.Evaluate(
-                incident.Expression,
-                incident.ReadWidth,
-                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null);
+            var produced = EvaluateIncident(world, incident);
 
             if (!produced.Result.Axes.Equals(incident.PredeclaredAxes))
             {
@@ -321,10 +319,7 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         {
             using var snapshot = W8CorpusSnapshot.Materialize(incident);
             using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, incident.Shape);
-            var baseline = world.Evaluate(
-                incident.Expression,
-                incident.ReadWidth,
-                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null);
+            var baseline = EvaluateIncident(world, incident);
             var counterfactual = ApplyCounterfactual(world, incident);
 
             Assert.NotEqual(baseline.Result.Sha256, counterfactual.Result.Sha256);
@@ -407,6 +402,14 @@ public sealed class W8MeaningfulSyntheticCorpusTests
     private static DumpExpressionMemberLookupOutcome DecodeMemberLookup(W8CorpusIncident incident) =>
         Enum.Parse<DumpExpressionMemberLookupOutcome>(incident.ExpectedAxisText("memberLookup"));
 
+    private static W8CorpusEvaluation EvaluateIncident(W8CorpusEvaluationWorld world, W8CorpusIncident incident) =>
+        incident.LanguageProfile == "FrameValueExpressionV1"
+            ? world.EvaluateFrameValue(incident.Expression, incident.ReadWidth)
+            : world.Evaluate(
+                incident.Expression,
+                incident.ReadWidth,
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null);
+
     private static W8CorpusEvaluation ApplyCounterfactual(W8CorpusEvaluationWorld world, W8CorpusIncident incident) =>
         incident.CounterfactualAction switch
         {
@@ -418,6 +421,13 @@ public sealed class W8MeaningfulSyntheticCorpusTests
                 incident.Expression,
                 incident.ReadWidth,
                 world.WorkerParkThreadSelector()),
+
+            // The frame-slot counterfactual selects the probe's alternate memory-homed local, which the workflow probe
+            // seeds to a different value at a different exact frame home, changing both the value and the slot address.
+            "select-different-frame-slot" => world.EvaluateFrameValue(
+                incident.Expression,
+                incident.ReadWidth,
+                localNameOverride: "alternateLocal"),
             _ => throw new InvalidOperationException(
                 $"The runner cannot yet apply the declared counterfactual '{incident.CounterfactualAction}'."),
         };
@@ -1039,6 +1049,134 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             FieldCatalogs,
             capabilityProbes: probes));
         return new W8CorpusEvaluation(result, null);
+    }
+
+    /// <summary>
+    /// Evaluates one <c>FrameValueExpressionV1</c> expression through the composed frame-value entry point, wiring the
+    /// caller-owned frame-root evidence seam to the real <c>AcquireFrameValueRoot</c> over the pinned dump session. The
+    /// pipeline projects the descriptor root and never references the acquisition session; this runner supplies the
+    /// selected paused frame, its Portable-PDB local scopes, and the counted decode of the copied bytes as frame
+    /// evidence, exactly as the host would.
+    /// </summary>
+    /// <param name="expression">The predeclared frame-value expression text.</param>
+    /// <param name="readWidth">The counted read width in bytes the predeclared terminal implies.</param>
+    /// <param name="localNameOverride">A different declared local name to select for a frame-slot counterfactual.</param>
+    /// <returns>The produced evaluation together with the acquired frame-home address, when one exists.</returns>
+    internal W8CorpusEvaluation EvaluateFrameValue(
+        string expression,
+        int readWidth,
+        string? localNameOverride = null)
+    {
+        var probes = ExpressionV2CapabilityProbeSet.Create();
+        var selector = FrameSelector("FrameValueProbe", "Run");
+        var rows = ReadFrameLocalScopeRows("FrameValueProbe", "Run");
+        ulong? acquiredAddress = null;
+        var frameSeam = StaticFieldV2FrameRootEvaluationSource.Create(request =>
+        {
+            StaticFieldV2FrameValueRootKind rootKind;
+            string? resolvedLocalName;
+            if (request.RootKind == FrameValueV1RootKind.This)
+            {
+                rootKind = StaticFieldV2FrameValueRootKind.This;
+                resolvedLocalName = null;
+            }
+            else
+            {
+                rootKind = StaticFieldV2FrameValueRootKind.Local;
+                resolvedLocalName = localNameOverride ?? request.Identifier!.DecodedText;
+            }
+
+            var outcome = Session.AcquireFrameValueRoot(
+                StaticFieldV2FrameValueRootRequest.Create(
+                    selector,
+                    frameOrdinal: 0,
+                    rootKind,
+                    rootOrdinal: 0,
+                    resolvedLocalName,
+                    resolvedLocalName is null ? default : rows,
+                    probes));
+            acquiredAddress = outcome.RootAddress;
+            return MapFrameRootOutcome(outcome, rootKind, readWidth);
+        });
+
+        var result = StaticFieldV2ExpressionPipeline.EvaluateFrameValue(StaticFieldV2ExpressionRequest.Create(
+            expression,
+            DumpExpressionProfileKind.FrameValueExpressionV1,
+            Ancestry,
+            Constraints,
+            FieldCatalogs,
+            capabilityProbes: probes,
+            frameRootEvaluation: frameSeam));
+        return new W8CorpusEvaluation(result, acquiredAddress);
+    }
+
+    private static StaticFieldV2FrameRootEvaluationResult MapFrameRootOutcome(
+        StaticFieldV2FrameValueRootOutcome outcome,
+        StaticFieldV2FrameValueRootKind rootKind,
+        int readWidth)
+    {
+        if (outcome.ResultKind == StaticFieldV2RuntimeAcquisitionResultKind.Exact)
+        {
+            var bytes = outcome.RootBytes;
+            var value = DumpQueryValue.FromInt32(BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(0, readWidth)));
+            return StaticFieldV2FrameRootEvaluationResult.Exact(
+                rootKind,
+                outcome.RootAddress!.Value,
+                outcome.RootWidth!.Value,
+                bytes,
+                value);
+        }
+
+        return outcome.Issue switch
+        {
+            StaticFieldV2RuntimeAcquisitionIssue.FrameRegisterHomeNotAdmitted =>
+                StaticFieldV2FrameRootEvaluationResult.Stop(
+                    StaticFieldV2FrameRootDisposition.RegisterHomeNotAdmitted, outcome.DiagnosticCode),
+            StaticFieldV2RuntimeAcquisitionIssue.FrameGenericArgumentNotAdmitted =>
+                StaticFieldV2FrameRootEvaluationResult.Stop(
+                    StaticFieldV2FrameRootDisposition.GenericArgumentNotAdmitted, outcome.DiagnosticCode),
+            StaticFieldV2RuntimeAcquisitionIssue.SelectedThreadAmbiguous =>
+                StaticFieldV2FrameRootEvaluationResult.Stop(StaticFieldV2FrameRootDisposition.ContextAmbiguous),
+            StaticFieldV2RuntimeAcquisitionIssue.SelectedThreadAbsent or
+            StaticFieldV2RuntimeAcquisitionIssue.SelectedFrameAbsent or
+            StaticFieldV2RuntimeAcquisitionIssue.FrameInstructionOffsetUnavailable =>
+                StaticFieldV2FrameRootEvaluationResult.Stop(StaticFieldV2FrameRootDisposition.ContextUnavailable),
+            StaticFieldV2RuntimeAcquisitionIssue.FrameLocalNameAmbiguous =>
+                StaticFieldV2FrameRootEvaluationResult.Stop(StaticFieldV2FrameRootDisposition.RootAmbiguous),
+            StaticFieldV2RuntimeAcquisitionIssue.FrameLocalLexicallyInactive =>
+                StaticFieldV2FrameRootEvaluationResult.Stop(StaticFieldV2FrameRootDisposition.RootShadowed),
+            _ => StaticFieldV2FrameRootEvaluationResult.Stop(StaticFieldV2FrameRootDisposition.RootUnavailable),
+        };
+    }
+
+    private ImmutableArray<StaticFieldV2FramePortablePdbLocalRow> ReadFrameLocalScopeRows(
+        string typeName,
+        string methodName)
+    {
+        var methodToken = FindMethodToken(Primary.Reader, PrimaryNamespace(), typeName, methodName);
+        var pdbPath = Path.ChangeExtension(
+            W8ShapeTargetPaths.ResolveAssembly("Interpreter.W8" + shape + "ShapeTarget"),
+            ".pdb");
+        using var stream = File.OpenRead(W8ShapeTargetPaths.RequireArtifact(pdbPath));
+        using var provider = MetadataReaderProvider.FromPortablePdbStream(stream);
+        var reader = provider.GetMetadataReader();
+        var methodHandle = MetadataTokens.MethodDefinitionHandle(methodToken & 0x00ff_ffff);
+        var builder = ImmutableArray.CreateBuilder<StaticFieldV2FramePortablePdbLocalRow>();
+        foreach (var scopeHandle in reader.GetLocalScopes(methodHandle))
+        {
+            var scope = reader.GetLocalScope(scopeHandle);
+            foreach (var variableHandle in scope.GetLocalVariables())
+            {
+                var variable = reader.GetLocalVariable(variableHandle);
+                builder.Add(StaticFieldV2FramePortablePdbLocalRow.Create(
+                    reader.GetString(variable.Name),
+                    variable.Index,
+                    scope.StartOffset,
+                    scope.EndOffset));
+            }
+        }
+
+        return builder.ToImmutable();
     }
 
     /// <summary>Builds the declared selected-thread predicate of the shape's paused truth-gate frame.</summary>
