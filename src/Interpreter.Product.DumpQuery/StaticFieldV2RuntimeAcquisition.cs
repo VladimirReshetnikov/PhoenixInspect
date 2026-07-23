@@ -2255,6 +2255,16 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
                 StaticFieldV2RuntimeAcquisitionCodes.ModuleMetadataUnavailableCode,
                 $"Runtime module 0x{runtimeModuleAddress:x} reports an inadmissible metadata length.");
         }
+        if (module.MetadataLength > (ulong)memoryReader.MaximumReadLength)
+        {
+            // The counted reader copies at most MaximumReadLength bytes in one exact read. A metadata
+            // image between that cap and the admissible ceiling would otherwise reach memoryReader.Read
+            // and throw an untyped ArgumentOutOfRangeException that escapes this adapter uncaught; report
+            // it as the same typed ModuleMetadataUnavailable stop the host callers already use.
+            throw new StaticFieldV2RuntimeAcquisitionException(
+                StaticFieldV2RuntimeAcquisitionCodes.ModuleMetadataUnavailableCode,
+                $"Runtime module 0x{runtimeModuleAddress:x} reports a metadata length beyond the single-read capacity.");
+        }
 
         var length = checked((int)module.MetadataLength);
         var result = memoryReader.Read(module.MetadataAddress, length);
@@ -4166,12 +4176,16 @@ internal static class StaticFieldV2FrameValueInterop
             return hasReceiver ? receiver : OrdinalAbsent;
         }
 
-        var argumentIndex = checked(parameterOrdinal + (hasReceiver ? 1 : 0));
+        // Widen the receiver-offset add: the frame-root request admits any non-negative parameter
+        // ordinal (validated only against negativity), so a large ordinal such as int.MaxValue must
+        // resolve to the OrdinalAbsent typed stop rather than overflow a checked int add and escape
+        // this adapter as an unclassified exception. Once the range check passes, the index fits in int.
+        var argumentIndex = (long)parameterOrdinal + (hasReceiver ? 1 : 0);
         return argumentIndex >= argumentCount
             ? OrdinalAbsent
             : argumentIndex == 0
                 ? receiver
-                : ObserveVariable(frame, 4, argumentIndex, readName: false, out _);
+                : ObserveVariable(frame, 4, (int)argumentIndex, readName: false, out _);
     }
 
     private static StaticFieldV2FrameLocation ObserveVariable(

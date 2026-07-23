@@ -577,6 +577,19 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
             StaticFieldV2RuntimeAcquisitionIssue.FrameRootOrdinalAbsent,
             StaticFieldV2FrameValueRootOutcome.RootOrdinalAbsentCode);
 
+        // A maximal parameter ordinal must resolve to the same typed OrdinalAbsent stop rather than
+        // overflow the receiver-offset add on an instance-method frame and escape the adapter.
+        var overflowOrdinal = AcquireFrameRoot(
+            world,
+            selector,
+            StaticFieldV2FrameValueRootKind.Parameter,
+            rootOrdinal: int.MaxValue,
+            poisonMemoryRead: true);
+        AssertTypedFrameStop(
+            overflowOrdinal,
+            StaticFieldV2RuntimeAcquisitionIssue.FrameRootOrdinalAbsent,
+            StaticFieldV2FrameValueRootOutcome.RootOrdinalAbsentCode);
+
         var probes = CreateFramePathProbes(poisonMemoryRead: true);
         var absentFrame = world.Session.AcquireFrameValueRoot(
             StaticFieldV2FrameValueRootRequest.Create(
