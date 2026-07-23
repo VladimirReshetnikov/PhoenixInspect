@@ -362,6 +362,7 @@ docs/
 | `proposals/architecture/special-semantics-registry-proposal.md` | Architecture | Proposal | Draft · Research | Candidate unified registry for later modeled semantics. |
 | `proposals/architecture/opcode-support-matrix-proposal.md` | Architecture | Proposal | Current · Supporting | Implemented closed W3 E1/E2 encodings and explicit gates for later opcode expansion. |
 | `proposals/architecture/perf-and-benchmarks-proposal.md` | Architecture | Proposal | Draft · Research | Aspirational performance model and benchmark gates. |
+| `proposals/architecture/fault-injected-dump-corpus-proposal.md` | Architecture | Proposal | Draft · Research | Adversarial capture corpus: fault-injected rich-application dumps as an invariant-accepted evidence tier stressing the evaluator's degradation and non-admission paths; determinism reconciliation, fault catalog, and phased sketch. |
 | `proposals/architecture/virtual-step-debugging-implementation-proposal.md` | Architecture | Proposal | Draft · Research | Candidate stepping control plane, stop reasons, model frames, and undo. |
 | `proposals/architecture/debug-map-design-proposal.md` | Architecture | Proposal | Draft · Research | Candidate source/IL mapping strategy for virtual stepping. |
 | `proposals/architecture/virtual-tasks-proposal.md` | Architecture | Proposal | Draft · Research | Async/await virtualization research. |
@@ -458,6 +459,7 @@ The paths below explore broader design possibilities. They are research/referenc
 11. `proposals/architecture/special-semantics-registry-proposal.md`
 12. `proposals/architecture/opcode-support-matrix-proposal.md`
 13. `proposals/architecture/generic-context-resolver-proposal.md`
+14. `proposals/architecture/fault-injected-dump-corpus-proposal.md`
 
 ### Historical architecture sketches
 
