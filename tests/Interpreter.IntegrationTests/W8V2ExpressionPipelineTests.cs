@@ -39,7 +39,7 @@ public sealed class W8V2ExpressionPipelineTests
     private const int LibAssemblyReferenceToken = 0x2300_0002;
 
     private const string ConstructedSlotGoldenSha256 =
-        "cd5b4b76b4a19bb1e0f9d7e618ff49f9c4af9ccb564daacadce000ec15d38c63";
+        "c7872a08d2ea8039e1f886b54c699ce58875c86ebd14b473ac7eefa58172bc60";
 
     /// <summary>
     /// Proves a fully qualified constructed-generic static field reaches an exact value while calling no context
@@ -402,7 +402,7 @@ public sealed class W8V2ExpressionPipelineTests
             parsed.Descriptor!.Partitions,
             partition => partition.Suffix.Equals(suffix));
         Assert.Contains(
-            StaticFieldV2PipelineCoverageBoundary.SuffixEvaluationDeferredToUnchangedEvaluator,
+            StaticFieldV2PipelineCoverageBoundary.SuffixEvaluationSuppliedByCallerSeam,
             result.Provenance.DeclaredCoverageBoundaries);
     }
 
@@ -533,6 +533,8 @@ public sealed class W8V2ExpressionPipelineTests
             typeof(StaticFieldV2RuntimeSlotFacts),
             typeof(StaticFieldV2LiteralConstantFact),
             typeof(StaticFieldV2RuntimeEvidenceSource),
+            typeof(StaticFieldV2SuffixEvaluationRequest),
+            typeof(StaticFieldV2SuffixEvaluationSource),
             typeof(StaticFieldV2ExpressionRequest),
             typeof(StaticFieldV2ExpressionProvenance),
             typeof(StaticFieldV2ExpressionResult),
@@ -556,6 +558,7 @@ public sealed class W8V2ExpressionPipelineTests
                      type == typeof(StaticFieldV2RuntimeSlotFacts) ||
                      type == typeof(StaticFieldV2LiteralConstantFact) ||
                      type == typeof(StaticFieldV2RuntimeEvidenceSource) ||
+                     type == typeof(StaticFieldV2SuffixEvaluationSource) ||
                      type == typeof(StaticFieldV2ExpressionRequest))
             {
                 Assert.Equal(["Create"], publicStatics);
@@ -633,12 +636,13 @@ public sealed class W8V2ExpressionPipelineTests
         }
     }
 
-    private static StaticFieldV2ExpressionRequest Request(
+    internal static StaticFieldV2ExpressionRequest Request(
         PipelineWorld world,
         string expressionText,
         DumpExpressionProfileKind profile = DumpExpressionProfileKind.StaticFieldExpressionV2,
         StaticFieldV2ScopedContextSource? scopedContext = null,
         StaticFieldV2RuntimeEvidenceSource? runtimeEvidence = null,
+        StaticFieldV2SuffixEvaluationSource? suffixEvaluation = null,
         Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource = null,
         MetadataClosedTypeIdentity? referenceTargetType = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null) =>
@@ -654,6 +658,7 @@ public sealed class W8V2ExpressionPipelineTests
             default,
             scopedContext,
             runtimeEvidence,
+            suffixEvaluation,
             literalConstantSource,
             referenceTargetType,
             capabilityProbes);
@@ -680,13 +685,13 @@ public sealed class W8V2ExpressionPipelineTests
             static (_, _) => throw new InvalidOperationException("slot facts"),
             static (_, _) => throw new InvalidOperationException("memory read"));
 
-    private static StaticFieldV2RuntimeEvidenceSource ConstructedSlotEvidence(PipelineWorld world, byte payload) =>
+    internal static StaticFieldV2RuntimeEvidenceSource ConstructedSlotEvidence(PipelineWorld world, byte payload) =>
         StaticFieldV2RuntimeEvidenceSource.Create(
             (construction, strategy) => Candidates(world, construction, strategy),
             static (_, _) => StaticFieldV2RuntimeSlotFacts.Create(4, 0x5000_0040UL),
             (_, _) => [payload, 0x00, 0x00, 0x00]);
 
-    private static ImmutableArray<StaticFieldV2RuntimeConstructionCandidate> Candidates(
+    internal static ImmutableArray<StaticFieldV2RuntimeConstructionCandidate> Candidates(
         PipelineWorld world,
         StaticFieldV2ClosedConstructionOutcome construction,
         StaticFieldV2StorageStrategyOutcome strategy)
@@ -856,7 +861,7 @@ public sealed class W8V2ExpressionPipelineTests
         return observation;
     }
 
-    private static PipelineWorld BuildWorld()
+    internal static PipelineWorld BuildWorld()
     {
         var core = BuildModule(
             CoreAssembly,
@@ -1177,7 +1182,7 @@ public sealed class W8V2ExpressionPipelineTests
         MetadataGenericParameterConstraintPhysicalTableCatalogIdentity Constraints,
         MetadataFieldDefinitionTableCatalogIdentity FieldCatalog);
 
-    private sealed record PipelineWorld(
+    internal sealed record PipelineWorld(
         StaticFieldMetadataModuleIdentity App,
         MetadataTypeReferenceResolutionPortfolioIdentity Resolution,
         MetadataAncestryAuthorityPortfolioIdentity Ancestry,

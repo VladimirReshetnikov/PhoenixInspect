@@ -49,6 +49,9 @@ public enum StaticFieldV2PipelineEvidenceKind
 
     /// <summary>The caller-supplied raw dump memory read seam.</summary>
     RawMemoryRead = 6,
+
+    /// <summary>The caller-supplied unchanged W2/W6 detached-suffix evaluation seam.</summary>
+    SuffixChainEvaluation = 7,
 }
 
 /// <summary>Identifies one declared coverage boundary retained by every composed draft evaluation.</summary>
@@ -73,8 +76,8 @@ public enum StaticFieldV2PipelineCoverageBoundary
     /// <summary>A contextual or bare route binds an owner definition rather than a closed draft construction.</summary>
     ContextualRouteClosedConstructionDeferred = 5,
 
-    /// <summary>The unchanged W2/W6 suffix evaluator is wired by a later checkpoint, never by this composition.</summary>
-    SuffixEvaluationDeferredToUnchangedEvaluator = 6,
+    /// <summary>The unchanged W2/W6 suffix evaluator is rooted at the resolved reference through one caller seam.</summary>
+    SuffixEvaluationSuppliedByCallerSeam = 6,
 
     /// <summary>Reference-target validation runs only when the caller supplies the exact expected target type.</summary>
     ReferenceTargetValidationRequiresSuppliedTarget = 7,
@@ -91,7 +94,7 @@ public enum StaticFieldV2PipelineCoverageBoundary
 public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticFieldV2PipelineEvidenceLedger>
 {
     private const string CanonicalDomain = "static-field-v2-pipeline-evidence-ledger";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2PipelineEvidenceLedger(
@@ -100,7 +103,8 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         int metadataConstantRow,
         int runtimeConstructionCandidates,
         int runtimeSlotFacts,
-        int rawMemoryRead)
+        int rawMemoryRead,
+        int suffixChainEvaluation)
     {
         ScopedContextProjectionCallCount = scopedContextProjection;
         LexicalEnvelopeCallCount = lexicalEnvelope;
@@ -108,6 +112,7 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         RuntimeConstructionCandidatesCallCount = runtimeConstructionCandidates;
         RuntimeSlotFactsCallCount = runtimeSlotFacts;
         RawMemoryReadCallCount = rawMemoryRead;
+        SuffixChainEvaluationCallCount = suffixChainEvaluation;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32(scopedContextProjection);
@@ -116,6 +121,7 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         writer.WriteInt32(runtimeConstructionCandidates);
         writer.WriteInt32(runtimeSlotFacts);
         writer.WriteInt32(rawMemoryRead);
+        writer.WriteInt32(suffixChainEvaluation);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -138,6 +144,9 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
     /// <summary>Gets how many times the raw dump memory read draft seam was called.</summary>
     public int RawMemoryReadCallCount { get; }
 
+    /// <summary>Gets how many times the unchanged W2/W6 detached-suffix evaluation draft seam was called.</summary>
+    public int SuffixChainEvaluationCallCount { get; }
+
     /// <summary>Gets the total frame, PDB, and import context draft calls this evaluation performed.</summary>
     public int ContextCallCount => ScopedContextProjectionCallCount + LexicalEnvelopeCallCount;
 
@@ -146,7 +155,8 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         RuntimeConstructionCandidatesCallCount + RuntimeSlotFactsCallCount + RawMemoryReadCallCount;
 
     /// <summary>Gets the total draft seam calls this evaluation performed.</summary>
-    public int TotalCallCount => ContextCallCount + MetadataConstantRowCallCount + RuntimeCallCount;
+    public int TotalCallCount =>
+        ContextCallCount + MetadataConstantRowCallCount + RuntimeCallCount + SuffixChainEvaluationCallCount;
 
     /// <summary>Gets whether this draft evaluation called no caller-supplied seam at all.</summary>
     public bool IsZero => TotalCallCount == 0;
@@ -169,6 +179,7 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         StaticFieldV2PipelineEvidenceKind.RuntimeConstructionCandidates => RuntimeConstructionCandidatesCallCount,
         StaticFieldV2PipelineEvidenceKind.RuntimeSlotFacts => RuntimeSlotFactsCallCount,
         StaticFieldV2PipelineEvidenceKind.RawMemoryRead => RawMemoryReadCallCount,
+        StaticFieldV2PipelineEvidenceKind.SuffixChainEvaluation => SuffixChainEvaluationCallCount,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
@@ -193,14 +204,16 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         int metadataConstantRow,
         int runtimeConstructionCandidates,
         int runtimeSlotFacts,
-        int rawMemoryRead) =>
+        int rawMemoryRead,
+        int suffixChainEvaluation) =>
         new(
             scopedContextProjection,
             lexicalEnvelope,
             metadataConstantRow,
             runtimeConstructionCandidates,
             runtimeSlotFacts,
-            rawMemoryRead);
+            rawMemoryRead,
+            suffixChainEvaluation);
 }
 
 /// <summary>Freezes one caller-supplied scoped-context draft seam that this composition never acquires itself.</summary>
@@ -512,6 +525,61 @@ public sealed class StaticFieldV2RuntimeEvidenceSource
     internal ImmutableArray<byte> AcquireRawBytes(ulong address, int width) => rawMemoryRead!(address, width);
 }
 
+/// <summary>Freezes one detached suffix request rooted at an exact resolved reference for the caller seam.</summary>
+/// <remarks>
+/// The request names only the exact non-null managed reference address the composition resolved and the unchanged
+/// W2/W6 suffix descriptor the parser froze. A caller-owned seam roots the unchanged member-chain evaluator at that
+/// reference; this draft request carries no ClrMD object so the composition acquires no dump host dependency itself.
+/// </remarks>
+public sealed class StaticFieldV2SuffixEvaluationRequest
+{
+    private const string CanonicalDomain = "static-field-v2-pipeline-suffix-evaluation-request";
+
+    internal StaticFieldV2SuffixEvaluationRequest(ulong referenceAddress, DumpExpressionSuffixDescriptor suffix)
+    {
+        ReferenceAddress = referenceAddress;
+        Suffix = suffix;
+    }
+
+    /// <summary>Gets the exact non-null managed reference address the composition resolved for the suffix root.</summary>
+    public ulong ReferenceAddress { get; }
+
+    /// <summary>Gets the unchanged frozen W2/W6 detached-suffix descriptor to evaluate at the reference.</summary>
+    public DumpExpressionSuffixDescriptor Suffix { get; }
+}
+
+/// <summary>Freezes one caller-supplied unchanged W2/W6 suffix-evaluation draft seam this composition never owns.</summary>
+/// <remarks>
+/// The seam keeps the unchanged member-chain evaluator behind one caller-owned delegate, mirroring the runtime-evidence
+/// seam. Fast callers supply a synthetic delegate; the real dump host roots <see cref="DumpMemberChainEngine"/> at the
+/// resolved reference and returns its <see cref="EvaluationResult{DumpQueryValue}"/>. The composition meters every call
+/// so a suffix-free or exact-null-short-circuited draft answer can prove it invoked the seam zero times.
+/// </remarks>
+public sealed class StaticFieldV2SuffixEvaluationSource
+{
+    private const string CanonicalDomain = "static-field-v2-pipeline-suffix-evaluation-source";
+
+    private readonly Func<StaticFieldV2SuffixEvaluationRequest, EvaluationResult<DumpQueryValue>> evaluate;
+
+    private StaticFieldV2SuffixEvaluationSource(
+        Func<StaticFieldV2SuffixEvaluationRequest, EvaluationResult<DumpQueryValue>> evaluate) =>
+        this.evaluate = evaluate;
+
+    /// <summary>Creates one caller-owned unchanged W2/W6 suffix-evaluation draft seam.</summary>
+    /// <param name="evaluate">Roots the unchanged member chain at the resolved reference and evaluates it.</param>
+    /// <returns>A sealed draft seam whose calls this composition meters.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="evaluate"/> is null.</exception>
+    public static StaticFieldV2SuffixEvaluationSource Create(
+        Func<StaticFieldV2SuffixEvaluationRequest, EvaluationResult<DumpQueryValue>> evaluate)
+    {
+        ArgumentNullException.ThrowIfNull(evaluate);
+        return new StaticFieldV2SuffixEvaluationSource(evaluate);
+    }
+
+    internal EvaluationResult<DumpQueryValue> Evaluate(StaticFieldV2SuffixEvaluationRequest request) =>
+        evaluate(request);
+}
+
 /// <summary>Freezes one complete composed static-field draft evaluation request.</summary>
 /// <remarks>
 /// The request names the raw expression, the explicitly selected profile, every metadata authority portfolio, the two
@@ -521,7 +589,7 @@ public sealed class StaticFieldV2RuntimeEvidenceSource
 public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2ExpressionRequest>
 {
     private const string CanonicalDomain = "static-field-v2-expression-pipeline-request";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
     private readonly ImmutableArray<byte> canonicalBytes;
@@ -538,6 +606,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants,
         StaticFieldV2ScopedContextSource? scopedContext,
         StaticFieldV2RuntimeEvidenceSource? runtimeEvidence,
+        StaticFieldV2SuffixEvaluationSource? suffixEvaluation,
         Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource,
         MetadataClosedTypeIdentity? referenceTargetType,
         ExpressionV2CapabilityProbeSet? capabilityProbes)
@@ -553,6 +622,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         this.friendAssemblyGrants = friendAssemblyGrants;
         ScopedContext = scopedContext;
         RuntimeEvidence = runtimeEvidence;
+        SuffixEvaluation = suffixEvaluation;
         LiteralConstantSource = literalConstantSource;
         ReferenceTargetType = referenceTargetType;
         CapabilityProbes = capabilityProbes;
@@ -580,6 +650,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         }
         writer.WriteBoolean(scopedContext is not null);
         writer.WriteBoolean(runtimeEvidence is not null);
+        writer.WriteBoolean(suffixEvaluation is not null);
         writer.WriteBoolean(literalConstantSource is not null);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, referenceTargetType?.Sha256);
         writer.WriteBoolean(capabilityProbes is not null);
@@ -622,6 +693,9 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <summary>Gets the optional caller-owned runtime-evidence draft seam, or null when none was supplied.</summary>
     public StaticFieldV2RuntimeEvidenceSource? RuntimeEvidence { get; }
 
+    /// <summary>Gets the optional caller-owned unchanged W2/W6 suffix-evaluation draft seam, or null when absent.</summary>
+    public StaticFieldV2SuffixEvaluationSource? SuffixEvaluation { get; }
+
     /// <summary>Gets the optional caller-owned metadata Constant-row draft seam, or null when none was supplied.</summary>
     public Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? LiteralConstantSource
     {
@@ -654,6 +728,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <param name="friendAssemblyGrants">The caller-supplied friend grants, admitted only for the use-site mode.</param>
     /// <param name="scopedContext">The optional caller-owned scoped-context draft seam.</param>
     /// <param name="runtimeEvidence">The optional caller-owned runtime-evidence draft seam.</param>
+    /// <param name="suffixEvaluation">The optional caller-owned unchanged W2/W6 suffix-evaluation draft seam.</param>
     /// <param name="literalConstantSource">The optional caller-owned metadata Constant-row draft seam.</param>
     /// <param name="referenceTargetType">The optional exact target type of reference-target draft validation.</param>
     /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained draft ledger.</param>
@@ -674,6 +749,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants = default,
         StaticFieldV2ScopedContextSource? scopedContext = null,
         StaticFieldV2RuntimeEvidenceSource? runtimeEvidence = null,
+        StaticFieldV2SuffixEvaluationSource? suffixEvaluation = null,
         Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource = null,
         MetadataClosedTypeIdentity? referenceTargetType = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null)
@@ -716,6 +792,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             grants,
             scopedContext,
             runtimeEvidence,
+            suffixEvaluation,
             literalConstantSource,
             referenceTargetType,
             capabilityProbes);
@@ -750,7 +827,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
 public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2ExpressionProvenance>
 {
     private const string CanonicalDomain = "static-field-v2-expression-pipeline-provenance";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> rawValueBytes;
     private readonly ImmutableArray<StaticFieldV2PipelineCoverageBoundary> declaredCoverageBoundaries;
     private readonly ImmutableArray<byte> canonicalBytes;
@@ -776,6 +853,7 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         StaticFieldV2RuntimeValueOutcome? runtimeValue,
         StaticFieldV2AssignabilityOutcome? referenceTargetValidation,
         DumpExpressionSuffixDescriptor? suffix,
+        DumpQueryValue? suffixValue,
         StaticFieldV2PipelineEvidenceLedger evidenceLedger,
         StaticFieldV2CapabilityCallLedger? capabilityCallLedger,
         ImmutableArray<StaticFieldV2PipelineCoverageBoundary> declaredCoverageBoundaries)
@@ -800,6 +878,7 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         RuntimeValue = runtimeValue;
         ReferenceTargetValidation = referenceTargetValidation;
         Suffix = suffix;
+        SuffixValue = suffixValue;
         EvidenceLedger = evidenceLedger;
         CapabilityCallLedger = capabilityCallLedger;
         this.declaredCoverageBoundaries = declaredCoverageBoundaries;
@@ -831,6 +910,11 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, runtimeValue?.Sha256);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, referenceTargetValidation?.Sha256);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, suffix?.Sha256);
+        writer.WriteBoolean(suffixValue is not null);
+        if (suffixValue is not null)
+        {
+            writer.WriteString(suffixValue.ToCanonicalReplayProjection());
+        }
         writer.WriteSha256(evidenceLedger.Sha256, nameof(evidenceLedger));
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, capabilityCallLedger?.Sha256);
         writer.WriteInt32(declaredCoverageBoundaries.Length);
@@ -902,6 +986,9 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
 
     /// <summary>Gets the frozen detached W2/W6 suffix draft descriptor, or null before syntax projection.</summary>
     public DumpExpressionSuffixDescriptor? Suffix { get; }
+
+    /// <summary>Gets the decoded W2/W6 suffix draft value retained on a completed suffix, or null when none.</summary>
+    public DumpQueryValue? SuffixValue { get; }
 
     /// <summary>Gets the metered caller-supplied evidence draft ledger of this evaluation.</summary>
     public StaticFieldV2PipelineEvidenceLedger EvidenceLedger { get; }
@@ -994,6 +1081,9 @@ public sealed class StaticFieldV2ExpressionResult : IEquatable<StaticFieldV2Expr
     /// <summary>Gets the retained non-null managed reference address, or null when none was decoded.</summary>
     public ulong? ReferenceAddress => Provenance.RuntimeValue?.ReferenceAddress;
 
+    /// <summary>Gets the decoded W2/W6 suffix draft value retained on a completed suffix, or null when none.</summary>
+    public DumpQueryValue? SuffixValue => Provenance.SuffixValue;
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical draft result bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -1077,6 +1167,7 @@ public static class StaticFieldV2ExpressionPipeline
         private int constructionCandidateCalls;
         private int slotFactCalls;
         private int memoryReadCalls;
+        private int suffixEvaluationCalls;
 
         private StaticFieldV2SyntaxOutcome? syntax;
         private StaticFieldV2ExpressionDescriptor? descriptor;
@@ -1097,13 +1188,14 @@ public static class StaticFieldV2ExpressionPipeline
         private StaticFieldV2RuntimeValueOutcome? runtimeValue;
         private StaticFieldV2AssignabilityOutcome? referenceTargetValidation;
         private DumpExpressionSuffixDescriptor? suffix;
+        private DumpQueryValue? suffixValue;
         private StaticFieldV2CapabilityCallLedger? capabilityCallLedger;
 
         internal Execution(StaticFieldV2ExpressionRequest request)
         {
             this.request = request;
             boundaries.Add(StaticFieldV2PipelineCoverageBoundary.FrameValueProfileOwnedBySeparateEntryPoint);
-            boundaries.Add(StaticFieldV2PipelineCoverageBoundary.SuffixEvaluationDeferredToUnchangedEvaluator);
+            boundaries.Add(StaticFieldV2PipelineCoverageBoundary.SuffixEvaluationSuppliedByCallerSeam);
         }
 
         internal StaticFieldV2ExpressionResult Run(DumpExpressionProfileKind ownedProfile)
@@ -1239,10 +1331,13 @@ public static class StaticFieldV2ExpressionPipeline
 
             // Step 14: validate a non-null reference target through constructed assignability when required.
             EnterStep(14);
-            var suffixAxis = ValidateReferenceTarget(value);
+            var referenceTargetBlocked = ValidateReferenceTarget(value);
 
-            // Steps 15 and 16: the unchanged suffix stays deferred, and the canonical result is projected.
+            // Step 15: evaluate the unchanged W2/W6 detached suffix rooted at the resolved reference.
             EnterStep(15);
+            var suffixAxis = EvaluateSuffix(value, referenceTargetBlocked);
+
+            // Step 16: project the single canonical result.
             EnterStep(16);
             return Complete(value, suffixAxis);
         }
@@ -1531,18 +1626,41 @@ public static class StaticFieldV2ExpressionPipeline
             };
         }
 
-        private DumpExpressionSuffixOutcome ValidateReferenceTarget(DumpExpressionValueOutcome value)
+        private bool ValidateReferenceTarget(DumpExpressionValueOutcome value)
         {
             boundaries.Add(
                 StaticFieldV2PipelineCoverageBoundary.ReferenceTargetValidationRequiresSuppliedTarget);
-            var suffixRequested = suffix is not null && suffix.Kind != DumpExpressionSuffixKind.NotRequested;
-            if (value is not DumpExpressionValueOutcome.ExactValue)
+            if (value is not DumpExpressionValueOutcome.ExactValue ||
+                runtimeValue is not { ReferenceAddress: > 0 } reference ||
+                request.ReferenceTargetType is not { } target)
+            {
+                return false;
+            }
+
+            referenceTargetValidation = StaticFieldV2AssignabilityBinder.IsAssignable(
+                StaticFieldV2AssignabilityRequest.Create(
+                    reference.Request.DeclaredType,
+                    target,
+                    request.AncestryPortfolio,
+                    request.InterfaceImplementationPortfolio));
+            return referenceTargetValidation.ResultKind != StaticFieldV2AssignabilityResultKind.Assignable;
+        }
+
+        private DumpExpressionSuffixOutcome EvaluateSuffix(
+            DumpExpressionValueOutcome value,
+            bool referenceTargetBlocked)
+        {
+            // A blocked reference target blocks the suffix before any navigation is attempted.
+            if (referenceTargetBlocked)
+            {
+                return DumpExpressionSuffixOutcome.Blocked;
+            }
+
+            // A non-exact root value maps its own disposition onto the independent suffix axis without any read.
+            if (value is not (DumpExpressionValueOutcome.ExactValue or DumpExpressionValueOutcome.ExactNull))
             {
                 return value switch
                 {
-                    DumpExpressionValueOutcome.ExactNull => suffixRequested
-                        ? DumpExpressionSuffixOutcome.Unsupported
-                        : DumpExpressionSuffixOutcome.NotRequested,
                     DumpExpressionValueOutcome.Partial => DumpExpressionSuffixOutcome.Blocked,
                     DumpExpressionValueOutcome.Unavailable => DumpExpressionSuffixOutcome.Blocked,
                     DumpExpressionValueOutcome.Conflict => DumpExpressionSuffixOutcome.Conflict,
@@ -1551,24 +1669,77 @@ public static class StaticFieldV2ExpressionPipeline
                 };
             }
 
-            if (runtimeValue is { ReferenceAddress: > 0 } reference &&
-                request.ReferenceTargetType is { } target)
+            if (suffix is not { } descriptor || descriptor.Kind == DumpExpressionSuffixKind.NotRequested)
             {
-                referenceTargetValidation = StaticFieldV2AssignabilityBinder.IsAssignable(
-                    StaticFieldV2AssignabilityRequest.Create(
-                        reference.Request.DeclaredType,
-                        target,
-                        request.AncestryPortfolio,
-                        request.InterfaceImplementationPortfolio));
-                if (referenceTargetValidation.ResultKind != StaticFieldV2AssignabilityResultKind.Assignable)
-                {
-                    return DumpExpressionSuffixOutcome.Blocked;
-                }
+                return DumpExpressionSuffixOutcome.NotRequested;
             }
 
-            return suffixRequested
-                ? DumpExpressionSuffixOutcome.Unsupported
-                : DumpExpressionSuffixOutcome.NotRequested;
+            // An exact-null reference roots no object, so reuse the unchanged W2/W6 null semantics without a read.
+            if (value == DumpExpressionValueOutcome.ExactNull)
+            {
+                return ResolveExactNullSuffix(descriptor);
+            }
+
+            // A value-type or primitive field value cannot root an object navigation, exactly as a literal cannot.
+            if (runtimeValue is not { ReferenceAddress: > 0 } reference)
+            {
+                return DumpExpressionSuffixOutcome.Unsupported;
+            }
+
+            // Root the unchanged W2/W6 member chain at the resolved exact reference through the caller seam.
+            if (request.SuffixEvaluation is not { } source)
+            {
+                return DumpExpressionSuffixOutcome.Blocked;
+            }
+
+            suffixEvaluationCalls++;
+            var suffixResult = source.Evaluate(
+                new StaticFieldV2SuffixEvaluationRequest(reference.ReferenceAddress!.Value, descriptor));
+            var mapped = MapSuffixResult(suffixResult);
+            if (mapped == DumpExpressionSuffixOutcome.Completed)
+            {
+                suffixValue = suffixResult.Value;
+            }
+            return mapped;
+        }
+
+        private DumpExpressionSuffixOutcome ResolveExactNullSuffix(DumpExpressionSuffixDescriptor descriptor)
+        {
+            // A direct '.' first edge over an exact-null root is the unchanged W2/W6 null-target block; a conditional
+            // '?.' first edge short-circuits to the coalesce fallback when present, otherwise to the exact null.
+            if (descriptor.Segments[0].AccessKind != DumpExpressionSuffixAccessKind.Conditional)
+            {
+                return DumpExpressionSuffixOutcome.Blocked;
+            }
+
+            suffixValue = descriptor.FallbackKind switch
+            {
+                DumpExpressionFallbackKind.Int32 => DumpQueryValue.FromInt32(descriptor.Int32Fallback!.Value),
+                DumpExpressionFallbackKind.String => DumpQueryValue.FromString(descriptor.StringFallback!),
+                _ => DumpQueryValue.FromNull(),
+            };
+            return DumpExpressionSuffixOutcome.Completed;
+        }
+
+        private static DumpExpressionSuffixOutcome MapSuffixResult(EvaluationResult<DumpQueryValue> result)
+        {
+            if (result.Completion == EvaluationCompletionStatus.Invalid ||
+                result.Evidence == EvaluationEvidenceStatus.Invalid)
+            {
+                return DumpExpressionSuffixOutcome.Invalid;
+            }
+            if (result.Evidence == EvaluationEvidenceStatus.Conflict)
+            {
+                return DumpExpressionSuffixOutcome.Conflict;
+            }
+            if (result.Completion == EvaluationCompletionStatus.Completed &&
+                result.Completeness == EvaluationCompleteness.Complete &&
+                result.Evidence == EvaluationEvidenceStatus.Exact &&
+                result.Value is not null)
+            {
+                return DumpExpressionSuffixOutcome.Completed;
+            }
+            return DumpExpressionSuffixOutcome.Blocked;
         }
 
         private (StaticFieldMetadataModuleIdentity Module, int OwnerToken, int PartitionIndex)
@@ -2040,13 +2211,15 @@ public static class StaticFieldV2ExpressionPipeline
                     runtimeValue,
                     referenceTargetValidation,
                     suffix,
+                    suffixValue,
                     StaticFieldV2PipelineEvidenceLedger.Issue(
                         scopedContextCalls,
                         lexicalEnvelopeCalls,
                         constantRowCalls,
                         constructionCandidateCalls,
                         slotFactCalls,
-                        memoryReadCalls),
+                        memoryReadCalls,
+                        suffixEvaluationCalls),
                     capabilityCallLedger,
                     [.. boundaries]));
     }
