@@ -1100,8 +1100,33 @@ machinery, and register-home/frame-generic dispositions stay typed executable no
 every frozen static-path canonical byte through absence-preserving additive encoding rather than a schema bump, and the
 frame binder engages only when a seam is supplied so the profile-isolation no-fallthrough invariant holds.
 
-**Remaining for W8.8:** the append-only consumer and report schemas, and the generated cross-product executed through
-hidden full-dump targets.
+**W8.8 exit gate is met, with one recorded deviation in form.** The generated cross-product is realized as authored
+per-class slices across the landed suites rather than a separate machine-generated harness; the classes of section 7
+are covered, and each exit-gate statement is discharged by named evidence:
+
+- *Same-session, fresh-object, fresh-process, close/reopen/rebind byte-identity* —
+  `W8V2RuntimeAcquisitionTests.Close_reopen_and_rebind_replays_byte_identically` and its frame-root counterpart,
+  `W8MetadataAuthorityProducerTests.Acquiring_the_same_module_twice_replays_byte_identically`,
+  `W8CorpusPortfolioReportTests.Two_fresh_consumers_emit_byte_identical_machine_and_human_reports`, and a
+  `..._replay_are_immutable_guarded_and_documented` test on every W8 contract family.
+- *Direct, conditional, and compatible fallback suffixes preserve W2/W6 semantics* — the eight
+  `W8V2SuffixEvaluationTests` cases, including coalesce-over-null reaching its fallback with no read.
+- *Outcome axes remain independent* — each axis carries its own typed cases, with
+  `Suffix_seam_dispositions_map_onto_the_independent_suffix_axis` proving the newest axis maps independently.
+- *Differential and replay classes* — pinned-Roslyn differentials
+  (`Pure_terminal_arity_rule_matches_the_pinned_Roslyn_boundaries`,
+  `Roslyn_semantics_distinguish_forwarder_convergence_from_same_level_ambiguity`,
+  `Decoded_identifier_contract_matches_pinned_Roslyn_identifier_values`), left-to-right stops proven unconsulted by
+  poisoned zero-call counters (`Fully_qualified_constructed_generic_reaches_a_value_with_zero_context_calls`,
+  `Literal_reaches_a_value_with_zero_runtime_thread_slot_and_memory_calls`,
+  `Metadata_literals_have_zero_runtime_storage_and_memory_calls`), and preceding canonical artifacts frozen by
+  `W7LegacyCompatibilityGoldenTests`.
+- *All managed processes hidden* — the headless-workflow guard passes and every dump lane runs through the headless
+  wrapper.
+
+The append-only report schema is the pair of byte-identical machine and human portfolio reports at `b1cc5a11d`. The
+declared-field-type ground-primitive boundary is retired for the mandatory owner-`VAR` substitution surface at
+`0b6bc7a69`; the remaining declared boundaries stay as recorded above.
 
 Route only explicit V2 or W8.1-admitted frame-value requests through their declared bind/prepare/read/evaluate path,
 reuse unchanged W2/W6 suffixes, add append-only consumer/report schemas, and execute the generated cross-product through
