@@ -988,6 +988,12 @@ extern-alias/AssemblyRef correlation. Preserve explicit-route laziness.
 
 **Scale:** `~10K LOC` implementation and tests.
 
+**Status:** Split by plan revision. **W8.6a is complete at `6160f0e4e`**: the four-value storage discriminator, its
+frozen per-strategy capability-requirement vectors, the typed context-relative non-admission, and exact metadata
+literal projection with an executable zero-capability-call proof. **W8.6b remains active**: runtime construction
+mapping, per-construction slot selection, address-backed value decoding, thread-relative and RVA acquisition, and
+constructed assignability all require live dump evidence and the runtime seam.
+
 Map metadata constructions to exact runtime constructions, carry ordered generic/nested identity through declaration
 and storage, select per-construction slots, project exact literals without runtime calls, implement every admitted
 primitive/enum/nullable decoder, W8.1-selected storage branch, and exact frozen frame-value root; validate constructed
@@ -1008,6 +1014,11 @@ the admitted contract.
 ### W8.7 — lexical completeness and `using static` bare roots
 
 **Scale:** `~10K LOC` implementation and tests.
+
+**Status:** Complete at `6160f0e4e` for its static-profile scope. The blocker certificate, its incompleteness
+sources, current and enclosing member precedence, and the directly-declared-only using-static rule have landed. The
+admitted `FrameValueExpressionV1` root binding to an exact frozen memory location belongs to W8.6b, because it
+consumes the same runtime location seam.
 
 Project local variables/constants, parameters, type parameters, local functions, current/enclosing members/types, and
 relevant name catalogs; freeze the lexical completeness certificate; implement current-type and directly declared
