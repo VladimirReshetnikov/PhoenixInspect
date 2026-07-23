@@ -963,6 +963,13 @@ member lookup, hiding, declared-owner selection, literals, accessibility, and fi
 
 **Scale:** `~10K LOC` implementation and tests.
 
+**Status:** Complete at `d475f4e3b` for its name-binding scope. Import-scope projection, alias shadowing,
+first-viable-level namespace resolution, same-level import accumulation and convergence, extern-alias module
+restriction, and the retained-evidence absence guard have landed. The `using static` bare-member route that consumes
+the retained using-static facts is W8.7, TypeSpec alias targets stay undecoded until the construction slice consumes
+them, and selection between the W7 metadata-global compatibility route and this contextual route belongs to the
+W8.8 composition slice; each is a declared coverage boundary rather than a silent gap.
+
 Interpret exact active ImportScope chains, TypeSpec aliases, namespace/type alias hiding, namespace imports, global
 imports when physically present, constructed `using static` owners/imported nested types, use-site accessibility, and
 extern-alias/AssemblyRef correlation. Preserve explicit-route laziness.
