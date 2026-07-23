@@ -1062,6 +1062,21 @@ because variance over an undecoded instantiation cannot be checked.
 
 **Scale:** `~10K LOC` implementation and tests.
 
+**Status:** The composition layer is complete at `e5dc2f0d6`. One entry point runs the frozen sixteen-step order with
+a private step cursor that makes a repeated or out-of-order step throw, the two profiles have separate entry points
+so no fallthrough path exists, and absence of a capability call is proven by retained counters rather than omission:
+an explicit route holds a poisoned context seam and still reports zero context calls, and a literal reaches its value
+under a fully poisoned capability probe set. Runtime and context evidence arrive through caller-owned delegates, so
+the layer carries no acquisition dependency.
+
+Four boundaries are declared rather than hidden: a contextual or bare route binds an owner definition and stops typed
+when the spelling carries type arguments, the declared field type is read from a ground primitive signature until
+substitution is wired, the Constant row is a caller seam because no landed catalog models that table, and a present
+W2/W6 suffix is reported as an unsupported reached disposition until the unchanged suffix evaluator is wired.
+
+**Remaining for W8.8:** wiring the unchanged W2/W6 suffix evaluator, the append-only consumer and report schemas, and
+the generated cross-product executed through hidden full-dump targets.
+
 Route only explicit V2 or W8.1-admitted frame-value requests through their declared bind/prepare/read/evaluate path,
 reuse unchanged W2/W6 suffixes, add append-only consumer/report schemas, and execute the generated cross-product through
 hidden full-dump targets. No profile falls through to another.
