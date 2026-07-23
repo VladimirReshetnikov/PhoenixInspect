@@ -990,9 +990,11 @@ extern-alias/AssemblyRef correlation. Preserve explicit-route laziness.
 
 **Status:** Split by plan revision. **W8.6a is complete at `6160f0e4e`**: the four-value storage discriminator, its
 frozen per-strategy capability-requirement vectors, the typed context-relative non-admission, and exact metadata
-literal projection with an executable zero-capability-call proof. **W8.6b remains active**: runtime construction
-mapping, per-construction slot selection, address-backed value decoding, thread-relative and RVA acquisition, and
-constructed assignability all require live dump evidence and the runtime seam.
+literal projection with an executable zero-capability-call proof. **W8.6b's contract layer is complete at
+`05dd6ecef`**: constructed assignability including the non-inherited SZ-versus-rank-one divergence, identity-keyed
+runtime construction selection proven order-independent, per-strategy slot validation with executable capability
+obedience, and pure value decoding over copied bytes. **W8.6c remains active**: binding those contracts to live
+ClrMD acquisition over a real dump, and the admitted `FrameValueExpressionV1` memory-homed root.
 
 Map metadata constructions to exact runtime constructions, carry ordered generic/nested identity through declaration
 and storage, select per-construction slots, project exact literals without runtime calls, implement every admitted
@@ -1034,6 +1036,24 @@ one exact live frozen memory location and allow a direct root result or unchange
 - Inherited using-static members are not imported, matching the declared language rule.
 - An admitted frame-value root proves exact name/scope/liveness/location/type and never invokes static binding; every
   duplicate, dead, partial, unsupported, or missing location stops before a read.
+
+### W8.7b — interface-implementation authority
+
+**Scale:** `~1K LOC` implementation and tests.
+
+**Status:** Added by plan revision. Three landed slices independently declared the same coverage boundary because no
+authority models the InterfaceImpl table: constraint targets that classify as interfaces are unprovable, an interface
+owner's member lookup examines only itself, and interface assignability targets cannot be positives, which leaves six
+rows of the frozen W8.1 differential unreachable. This slice builds the complete physical InterfaceImpl catalog, its
+resolved cross-module edges, and the bounded transitive interface closure, then a following slice migrates the three
+consumers off their declared boundaries.
+
+**Exit gate**
+
+- The complete table proves whole-table coverage, order, range, source correlation, and duplicate-edge rejection.
+- Direct, interface-extends-interface, and base-chain-contributed interfaces all enter one bounded closure with a
+  typed terminal, and cycles and the depth bound are typed rather than silent.
+- A negative implements answer is returned only over a complete closure; every incomplete terminal is unprovable.
 
 ### W8.8 — product composition and generated conformance
 
