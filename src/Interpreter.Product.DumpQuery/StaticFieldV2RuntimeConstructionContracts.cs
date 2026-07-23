@@ -529,10 +529,10 @@ public sealed class StaticFieldV2RuntimeConstructionCandidate :
     /// <summary>Gets the exact containing assembly of this draft candidate's construction.</summary>
     public StaticFieldContainingAssemblyIdentity Assembly { get; }
 
-    /// <summary>Gets the nonzero loader-allocator address of this draft candidate.</summary>
+    /// <summary>Gets this draft candidate's loader-allocator address, or zero for a non-collectible construction.</summary>
     public ulong LoaderAllocatorAddress { get; }
 
-    /// <summary>Gets the nonzero load-context address of this draft candidate.</summary>
+    /// <summary>Gets this draft candidate's load-context address, or zero for the default load context.</summary>
     public ulong LoadContextAddress { get; }
 
     /// <summary>Gets the exact enclosing draft construction, or null for a top-level construction.</summary>
@@ -561,8 +561,15 @@ public sealed class StaticFieldV2RuntimeConstructionCandidate :
     /// <param name="typeDefinitionToken">The exact non-nil TypeDef token being constructed.</param>
     /// <param name="loaderModule">The exact loader module owning the construction.</param>
     /// <param name="assembly">The exact containing assembly of the construction.</param>
-    /// <param name="loaderAllocatorAddress">The nonzero loader-allocator address.</param>
-    /// <param name="loadContextAddress">The nonzero load-context address.</param>
+    /// <param name="loaderAllocatorAddress">
+    /// The exact loader-allocator address, or zero when the construction has no collectible allocator. Zero is a
+    /// physical draft fact rather than missing evidence: the pinned runtime reports zero for every non-collectible
+    /// construction, so requiring a nonzero value would make the ordinary case unrepresentable.
+    /// </param>
+    /// <param name="loadContextAddress">
+    /// The exact assembly-load-context address, or zero for the default load context. Zero is a physical draft fact
+    /// for the same reason, and W8.1 records the same zero observation for a default-context construction.
+    /// </param>
     /// <param name="closedArguments">
     /// The ordered recursive closed arguments already resolved for this candidate. The vector is keyed to this
     /// candidate's own runtime type identity; it is never shared across candidates by position alone.
@@ -613,12 +620,12 @@ public sealed class StaticFieldV2RuntimeConstructionCandidate :
         CanonicalReplayEncoding.ValidatePointerValue(
             loaderAllocatorAddress,
             pointerWidth,
-            allowZero: false,
+            allowZero: true,
             nameof(loaderAllocatorAddress));
         CanonicalReplayEncoding.ValidatePointerValue(
             loadContextAddress,
             pointerWidth,
-            allowZero: false,
+            allowZero: true,
             nameof(loadContextAddress));
 
         var copiedArguments = ExpressionV2ContractEncoding.CopyRequired(
