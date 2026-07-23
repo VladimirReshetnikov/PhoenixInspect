@@ -1548,6 +1548,7 @@ public sealed class W8MetadataConstructionContractTests
                 "StaticFieldV2ClosedConstructionOutcome.OwnerConstruction",
                 "StaticFieldV2ConstraintCheckIdentity.Argument",
                 "StaticFieldV2RuntimeConstructionCandidate.ClosedArguments",
+                "StaticFieldV2RuntimeValueAcquisitionRequest.DeclaredType",
                 "StaticFieldV2RuntimeValueRequest.DeclaredType",
             },
             guardedProperties.Select(static property =>

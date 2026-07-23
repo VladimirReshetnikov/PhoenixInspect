@@ -987,8 +987,14 @@ public sealed class W8V2ContractFoundationTests
             .ToArray();
         Assert.All(checkpointTypes.Where(static type => type.IsClass && !type.IsAbstract), static type => Assert.True(type.IsSealed));
 
+        // The W8.6c physical-acquisition seams are a live dump session, its fault, and one enumerated module
+        // observation. None of the three is a canonical replayable draft identity, so none declares a canonical domain.
         var domainFields = checkpointTypes
             .Where(static type => type.IsClass && !type.IsAbstract)
+            .Where(static type => type.Name is not (
+                nameof(StaticFieldV2RuntimeAcquisitionSession) or
+                nameof(StaticFieldV2RuntimeAcquisitionException) or
+                nameof(StaticFieldV2RuntimeModuleObservation)))
             .Select(type => type.GetField(
                 "CanonicalDomain",
                 System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic))
