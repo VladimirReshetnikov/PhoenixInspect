@@ -1093,6 +1093,13 @@ dispositions map onto the suffix axis and the suffix value is retained in proven
 counter on its own axis. The former unsupported-reached boundary is retired; the remaining declared boundary here is
 `SuffixEvaluationSuppliedByCallerSeam`.
 
+The `FrameValueExpressionV1` route is now composed through the pipeline at `2ae14bd7a`: a caller-owned frame-root
+evidence seam (parallel to the runtime and suffix seams) hands the pipeline the selected-frame memory home and value,
+the frame branch maps the disposition onto the twelve axes and evaluates the descriptor's suffix through the shared
+machinery, and register-home/frame-generic dispositions stay typed executable non-admissions. The composition preserves
+every frozen static-path canonical byte through absence-preserving additive encoding rather than a schema bump, and the
+frame binder engages only when a seam is supplied so the profile-isolation no-fallthrough invariant holds.
+
 **Remaining for W8.8:** the append-only consumer and report schemas, and the generated cross-product executed through
 hidden full-dump targets.
 
@@ -1118,20 +1125,25 @@ consumers, validate raw counts/counterfactual decision facts, and select exactly
 and decision-changing booleans with counterfactual actions, and frozen successor categories; four materially distinct
 shape targets build; and the two fresh byte-identical machine and human portfolio reports are complete at `b1cc5a11d`
 with the raw counts (33 useful, 26 decision-changing, 19 attributable) and category-qualification arithmetic
-independently validated. Six incidents now execute end to end through the composed pipeline over real dumps across three materially distinct
-shapes at `db0630de8` — Request (`request-qualified-constructed-sentinel`, `request-distinct-construction-slots`,
-`request-absent-runtime-construction`, `request-thread-relative-slot`), Batch (`batch-nested-per-segment-arity`), and
-Coordinator (`coordinator-four-coexisting-constructions`) — each with its twelve produced axes equal to its predeclared
-axes and, for the two decision-changing rows (`coordinator-four-coexisting-constructions`,
-`request-thread-relative-slot`), a passing counterfactual. Multi-module authority composition landed: the corpus
-evaluation world now composes every referenced companion module's compatibility, chain, resolution, ancestry, and
-constraint catalogs alongside the synthetic core, and a thread-relative slot reclassifies to `ThreadRelativeSlot` and
-re-acquires its closed construction under that strategy once the `[ThreadStatic]` row is decoded.
+independently validated. Seven incidents now execute end to end through the composed pipeline over real dumps across all four materially
+distinct shapes — Request (`request-qualified-constructed-sentinel`, `request-distinct-construction-slots`,
+`request-absent-runtime-construction`, `request-thread-relative-slot`), Batch (`batch-nested-per-segment-arity`),
+Coordinator (`coordinator-four-coexisting-constructions`) at `db0630de8`, and Workflow
+(`workflow-frame-value-memory-homed-root`) at `2ae14bd7a` — each with its twelve produced axes equal to its predeclared
+axes and, for the three decision-changing rows (`coordinator-four-coexisting-constructions`,
+`request-thread-relative-slot`, `workflow-frame-value-memory-homed-root`), a passing counterfactual. Multi-module
+authority composition landed: the corpus evaluation world composes every referenced companion module's compatibility,
+chain, resolution, ancestry, and constraint catalogs alongside the synthetic core; a thread-relative slot reclassifies
+to `ThreadRelativeSlot` and re-acquires its closed construction under that strategy once the `[ThreadStatic]` row is
+decoded; and the `FrameValueExpressionV1` profile is composed through the pipeline via a caller-owned frame-root seam
+(absence-preserving additive canonical encoding, no schema bump), so the memory-homed frame-value incident attributes
+its exact memory home and value on the Workflow shape while register-home and frame-generic roots stay typed executable
+non-admissions.
 
 **Remaining:** incidents pending scoped-context/PDB projection, companion poison artifacts, the generic-`VAR` field
-signature decoder, and the wired suffix over a real member chain stay manifest-only with precise recorded reasons; the
-frame-value profile composition (the memory-homed `workflow-frame-value-memory-homed-root` incident and its Workflow
-shape) is the keystone remaining piece.
+signature decoder, and the wired suffix over a real member chain stay manifest-only with precise recorded reasons.
+The three W8.1-admitted branches are now covered: thread-relative and frame-value execute end to end, and the RVA
+branch reaches a documented owner-construction boundary (below).
 
 Two produced-vs-predeclared divergences are documented as findings through the
 `Attempted_incidents_stop_at_their_landed_pipeline_boundaries` test with axes captured from real runs, and the manifest
