@@ -1041,12 +1041,15 @@ one exact live frozen memory location and allow a direct root result or unchange
 
 **Scale:** `~1K LOC` implementation and tests.
 
-**Status:** Added by plan revision. Three landed slices independently declared the same coverage boundary because no
-authority models the InterfaceImpl table: constraint targets that classify as interfaces are unprovable, an interface
+**Status:** Complete at `e135bc8a3` (authority) and `46ad6a82d` (consumer migration). Three landed slices had
+independently declared the same coverage boundary because no authority modeled the InterfaceImpl table: constraint targets that classify as interfaces are unprovable, an interface
 owner's member lookup examines only itself, and interface assignability targets cannot be positives, which leaves six
-rows of the frozen W8.1 differential unreachable. This slice builds the complete physical InterfaceImpl catalog, its
-resolved cross-module edges, and the bounded transitive interface closure, then a following slice migrates the three
-consumers off their declared boundaries.
+rows of the frozen W8.1 differential unreachable. The complete physical InterfaceImpl catalog, its resolved
+cross-module edges, and the bounded transitive closure landed first; the three consumers then migrated onto it. The
+six carrier-edge differential rows are now proved positives with their reversed directions proved negatives,
+interface owners walk their own closure, and interface constraints are satisfied or violated rather than deferred.
+An incomplete closure still yields partial or unprovable, and a generic interface instantiation stays unprovable
+because variance over an undecoded instantiation cannot be checked.
 
 **Exit gate**
 
