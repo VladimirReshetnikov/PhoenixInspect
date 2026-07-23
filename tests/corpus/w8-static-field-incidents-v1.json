@@ -1,0 +1,3381 @@
+{
+  "schemaVersion": 1,
+  "corpusId": "interpreter-w8-static-field-incidents-v1",
+  "corpusKind": "MeaningfulSyntheticIncident",
+  "evidenceKind": "designed-synthetic",
+  "predeclaredBeforeImplementation": true,
+  "declaredPurpose": "Freeze the thirty-two core W8 full-dump incidents of docs/plans/post-w7-path-forward.md section 8.1 plus the three branch incidents W8.1 admitted (thread-relative storage, RVA-backed storage, and FrameValueExpressionV1) before any W8.9 target, runner, or report exists. Every row predeclares one dump, one expression, one explicitly selected profile, the target invocation that materializes it, its selected-frame/PDB/artifact inputs, its fully qualified control where one is meaningful, all twelve expected typed axes, its expected first boundary, explicit usefulness and decision-changing booleans with structured rationales, a declared counterfactual action that must change the answer, the named stage at which attributable evidence is measured, and the successor category it would support. This is designed evidence only. It is not an observation of any external application and no row may be promoted to representative observation.",
+  "planSources": [
+    "docs/plans/post-w7-path-forward.md#81-corpus-contract",
+    "docs/plans/post-w7-path-forward.md#82-portfolio-measurement-corrections",
+    "docs/plans/post-w7-path-forward.md#83-successor-gate",
+    "docs/plans/w8-1-physical-truth-disposition.md#10-meaningful-synthetic-portfolio-consequence"
+  ],
+  "languageProfiles": [
+    "StaticFieldExpressionV2",
+    "FrameValueExpressionV1"
+  ],
+  "applicationShapes": [
+    "Request",
+    "Batch",
+    "Coordinator",
+    "Workflow"
+  ],
+  "axisNames": [
+    "syntax",
+    "context",
+    "rootAttribution",
+    "lexicalCompleteness",
+    "typeBinding",
+    "typeConstruction",
+    "memberLookup",
+    "runtimeConstruction",
+    "storage",
+    "value",
+    "suffix",
+    "completeness"
+  ],
+  "axisEnumTypes": {
+    "syntax": "DumpExpressionSyntaxStatus",
+    "context": "DumpExpressionContextOutcome",
+    "rootAttribution": "DumpExpressionRootAttributionOutcome",
+    "lexicalCompleteness": "DumpExpressionLexicalCompletenessOutcome",
+    "typeBinding": "DumpExpressionTypeBindingOutcome",
+    "typeConstruction": "DumpExpressionTypeConstructionOutcome",
+    "memberLookup": "DumpExpressionMemberLookupOutcome",
+    "runtimeConstruction": "DumpExpressionRuntimeConstructionOutcome",
+    "storage": "DumpExpressionStorageOutcome",
+    "value": "DumpExpressionValueOutcome",
+    "suffix": "DumpExpressionSuffixOutcome",
+    "completeness": "DumpExpressionCompletenessOutcome"
+  },
+  "attributableOutcomes": [
+    "Complete",
+    "Completed",
+    "Exact",
+    "ExactNull",
+    "ExactValue",
+    "NotRequested"
+  ],
+  "shapeTargets": [
+    {
+      "shape": "Request",
+      "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+      "assemblyName": "Interpreter.W8RequestShapeTarget",
+      "rootNamespace": "Interpreter.W8RequestShapeTarget",
+      "objectGraphSummary": "A single-parameter generic slot family keyed by context classes, a thread-relative slot, a constructed using-static import surface, nested alias scopes that shadow one another, and a never-constructed argument.",
+      "sourceInputs": [
+        "tests/Interpreter.W8RequestShapeTarget/Program.cs",
+        "tests/Interpreter.W8RequestShapeTarget/RequestGraph.cs",
+        "tests/Interpreter.W8RequestShapeTarget/RequestScopes.cs"
+      ]
+    },
+    {
+      "shape": "Batch",
+      "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+      "assemblyName": "Interpreter.W8BatchShapeTarget",
+      "rootNamespace": "Interpreter.W8BatchShapeTarget",
+      "objectGraphSummary": "A two-level nested generic ledger with per-segment arity, a recursive wrapper used to exceed the construction depth cap, two same-level import paths that converge on one TypeDef, an image-backed RVA store, and a nested using-static reference head.",
+      "sourceInputs": [
+        "tests/Interpreter.W8BatchShapeTarget/Program.cs",
+        "tests/Interpreter.W8BatchShapeTarget/BatchGraph.cs",
+        "tests/Interpreter.W8BatchShapeTarget/BatchImports.cs"
+      ]
+    },
+    {
+      "shape": "Coordinator",
+      "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+      "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+      "rootNamespace": "Interpreter.W8CoordinatorShapeTarget",
+      "objectGraphSummary": "Four coexisting closed constructions of one region registry, a value-type argument reached through a namespace alias, a derived owner over a constructed generic base, a closed nullable slot with a VAR field signature, and a property that shares a bare field spelling.",
+      "sourceInputs": [
+        "tests/Interpreter.W8CoordinatorShapeTarget/Program.cs",
+        "tests/Interpreter.W8CoordinatorShapeTarget/CoordinatorGraph.cs",
+        "tests/Interpreter.W8CoordinatorShapeTarget/CoordinatorValues.cs"
+      ]
+    },
+    {
+      "shape": "Workflow",
+      "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+      "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+      "rootNamespace": "Interpreter.W8WorkflowShapeTarget",
+      "objectGraphSummary": "A VAR-typed stage slot whose reference and array constructions differ, an extern-alias cross-assembly interface owner, a derived member that hides a base static field, competing aliases, a second load context carrying a duplicate definition, and a ground enum literal reached inside a generic method.",
+      "sourceInputs": [
+        "tests/Interpreter.W8WorkflowShapeTarget/Program.cs",
+        "tests/Interpreter.W8WorkflowShapeTarget/WorkflowGraph.cs",
+        "tests/Interpreter.W8WorkflowShapeTarget/WorkflowScopes.cs"
+      ]
+    }
+  ],
+  "companionArtifactContracts": [
+    {
+      "id": "malformed-typespec-blob",
+      "shape": "Request",
+      "acquisition": "explicit-test-owned-signature-mutation",
+      "purpose": "typespec-signature-bytes-malformed-with-original-retained",
+      "artifactPath": "tests/Interpreter.W8RequestShapeTarget/bin/Release/net10.0/Interpreter.W8RequestShapeTarget.dll"
+    },
+    {
+      "id": "truncated-portable-pdb",
+      "shape": "Batch",
+      "acquisition": "explicit-test-resolver-input",
+      "purpose": "portable-pdb-bytes-truncated-before-the-import-scope-table",
+      "artifactPath": "tests/Interpreter.W8BatchShapeTarget/bin/Release/net10.0/Interpreter.W8BatchShapeTarget.pdb"
+    },
+    {
+      "id": "identity-mismatching-portable-pdb",
+      "shape": "Coordinator",
+      "acquisition": "explicit-test-resolver-input",
+      "purpose": "portable-pdb-whose-module-identity-contradicts-the-selected-module",
+      "artifactPath": "tests/Interpreter.W8RequestShapeTarget/bin/Release/net10.0/Interpreter.W8RequestShapeTarget.pdb"
+    },
+    {
+      "id": "named-rva-il-fixture",
+      "shape": "Batch",
+      "acquisition": "referenced-il-assembly-copied-beside-the-target",
+      "purpose": "explicitly-named-field-backed-directly-by-pe-section-data",
+      "artifactPath": "tests/Interpreter.W8TestTarget/NamedRvaFixture/Interpreter.W8NamedRvaTarget.dll"
+    },
+    {
+      "id": "workflow-second-load-context-definition",
+      "shape": "Workflow",
+      "acquisition": "explicit-collectible-load-context-before-pause",
+      "purpose": "second-loaded-module-carrying-a-second-definition-of-the-same-qualified-spelling",
+      "artifactPath": "tests/Interpreter.W8WorkflowShapeTarget/bin/Release/net10.0/Interpreter.W8WorkflowShapeTarget.dll"
+    }
+  ],
+  "counterfactualActions": [
+    {
+      "action": "withhold-scoped-context",
+      "description": "Evaluate the same expression with no scoped-context source supplied."
+    },
+    {
+      "action": "poison-scoped-context",
+      "description": "Evaluate the same expression against a scoped context whose projected facts are deliberately incomplete."
+    },
+    {
+      "action": "remove-selected-frame",
+      "description": "Evaluate the same expression with the selected managed frame removed from the context request."
+    },
+    {
+      "action": "substitute-closed-type-argument",
+      "description": "Replace exactly one closed type argument of the owner construction with the declared alternative."
+    },
+    {
+      "action": "withhold-runtime-evidence",
+      "description": "Evaluate the same expression with no runtime-evidence seam supplied."
+    },
+    {
+      "action": "withhold-slot-facts",
+      "description": "Evaluate the same expression with a runtime-evidence seam that supplies candidates but no slot geometry."
+    },
+    {
+      "action": "withhold-literal-constant-source",
+      "description": "Evaluate the same expression with no metadata Constant-row source supplied."
+    },
+    {
+      "action": "withhold-lexical-envelope",
+      "description": "Evaluate the same bare root with a scoped context that supplies no lexical envelope."
+    },
+    {
+      "action": "withhold-field-catalogs",
+      "description": "Evaluate the same expression with the owner's field-definition catalog removed."
+    },
+    {
+      "action": "evaluate-fully-qualified-control",
+      "description": "Evaluate the declared fully qualified control spelling instead of the contextual spelling."
+    },
+    {
+      "action": "restore-complete-pdb-bytes",
+      "description": "Replace the truncated Portable PDB input with the complete matching bytes."
+    },
+    {
+      "action": "restore-matching-module-identity",
+      "description": "Replace the identity-mismatching Portable PDB with the module's own matching PDB."
+    },
+    {
+      "action": "narrow-with-exact-alias",
+      "description": "Add the exact alias qualification that names one surviving candidate."
+    },
+    {
+      "action": "repair-typespec-blob",
+      "description": "Replace the malformed TypeSpec signature bytes with the well-formed original."
+    },
+    {
+      "action": "lower-typespec-depth-below-cap",
+      "description": "Evaluate the same owner spelled one construction level below the depth cap."
+    },
+    {
+      "action": "align-generic-head-arity",
+      "description": "Spell the generic head with the arity its metadata definition declares."
+    },
+    {
+      "action": "raise-runtime-candidate-cap",
+      "description": "Evaluate with the runtime-construction candidate cap raised above the observed candidate count."
+    },
+    {
+      "action": "restore-static-slot",
+      "description": "Evaluate against a snapshot whose static slot for the selected construction is present."
+    },
+    {
+      "action": "align-substituted-reference-target",
+      "description": "Declare the reference target type the substituted field signature actually names."
+    },
+    {
+      "action": "remove-active-local-shadow",
+      "description": "Evaluate the same bare spelling at a program point where the shadowing local is not active."
+    },
+    {
+      "action": "complete-local-catalogs",
+      "description": "Evaluate with the complete local, parameter, and member catalogs supplied."
+    },
+    {
+      "action": "request-declared-field-instead-of-property",
+      "description": "Spell the declared static field instead of the same-named property."
+    },
+    {
+      "action": "select-different-thread",
+      "description": "Acquire the thread-relative slot of the declared alternative managed thread."
+    },
+    {
+      "action": "withhold-module-rva-mapping",
+      "description": "Evaluate with the mapped module image geometry withheld from the slot facts."
+    },
+    {
+      "action": "select-different-frame-slot",
+      "description": "Attribute the declared alternative memory-homed frame slot as the root."
+    }
+  ],
+  "successorCategories": [
+    {
+      "category": "evidence-backed-stack-value-root",
+      "action": "Implement one evidence-backed stack-value root profile over selected-frame storage.",
+      "description": "A root whose value lives in a managed frame rather than in static storage."
+    },
+    {
+      "category": "additional-static-storage-family",
+      "action": "Implement the next admitted static storage family behind its own explicit profile.",
+      "description": "A static storage family beyond the constructed slot, thread-relative slot, module RVA, and metadata literal set W8 admits."
+    },
+    {
+      "category": "static-property-or-method-execution",
+      "action": "Implement one bounded static property or method execution shape under an explicit no-side-effect gate.",
+      "description": "A static member whose value requires executing code rather than reading storage."
+    },
+    {
+      "category": "broader-frame-generic-context",
+      "action": "Implement broader frame-generic context binding including method type arguments.",
+      "description": "Binding that needs the selected frame's own generic context rather than a ground spelling."
+    },
+    {
+      "category": "collection-and-indexing",
+      "action": "Implement bounded collection and indexing suffixes over exact roots.",
+      "description": "A suffix pipeline that indexes or enumerates an exact root value."
+    },
+    {
+      "category": "observed-boundary-hardening",
+      "action": "Harden the observed first-boundary reporting surface without extending binding reach.",
+      "description": "A first boundary whose report, not whose reach, is what an investigator needs improved."
+    }
+  ],
+  "successorQualification": {
+    "minimumIncidents": 4,
+    "minimumApplicationShapes": 3,
+    "minimumDecisionChangingIncidents": 3
+  },
+  "substantiveEqualityKeys": [
+    "incidentCount",
+    "applicationShapeCount",
+    "decisionChangingCount",
+    "attributableEvidenceCount"
+  ],
+  "tiePolicy": "defer",
+  "selectedSuccessorAction": null,
+  "measurementRules": [
+    "usefulness-and-decision-changing-are-explicit-per-row-booleans-with-structured-rationales",
+    "attributable-evidence-is-measured-at-the-named-stage-not-inferred-from-terminal-value-text",
+    "every-decision-changing-row-declares-one-counterfactual-action-whose-application-changes-the-answer",
+    "successor-categories-and-their-actions-are-frozen-before-target-generation",
+    "a-category-qualifies-only-with-at-least-four-incidents-three-application-shapes-and-three-decision-changing-rows",
+    "substantive-equality-compares-incident-shape-decision-changing-and-attributable-evidence-counts",
+    "any-substantive-tie-defers-rather-than-selecting-by-enum-or-manifest-order"
+  ],
+  "runnerExecutionStatuses": [
+    "executed",
+    "manifest-only"
+  ],
+  "representativeObservationCount": 0,
+  "promotionPolicy": "no-generated-row-may-be-promoted-to-representative-observation",
+  "incidents": [
+    {
+      "id": "request-qualified-constructed-sentinel",
+      "ordinal": 1,
+      "shape": "Request",
+      "plannedQuestion": "Fully qualified GenericSlot<RequestContext>.Sentinel returns its exact Int32",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-qualified-sentinel",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-qualified-sentinel",
+        "targetArguments": [
+          "--truth-gate",
+          "request-qualified-sentinel"
+        ]
+      },
+      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.RequestContext>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1358954753",
+      "expectedEvidenceLedger": {
+        "contextCallCount": 0,
+        "runtimeCallCount": 3
+      },
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-request-sentinel",
+          "question": "Which request sentinel did the paused process hold?",
+          "evidence": "The exact Int32 read from the selected construction's own static slot."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-context-independent-constructed-binding",
+          "summary": "An exact fully qualified constructed-owner read changes the investigator's next step from guessing the construction to reading it."
+        },
+        "counterfactual": {
+          "action": "withhold-runtime-evidence",
+          "expectedChangedAxes": [
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without the runtime-evidence seam the same expression stops at runtimeConstruction Unavailable with no answer."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "value",
+        "expectedOutcome": "ExactValue",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "executed",
+        "reason": "explicit-fully-qualified-constructed-slot-over-one-real-full-dump"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-typespec-alias-whole-owner",
+      "ordinal": 2,
+      "shape": "Batch",
+      "plannedQuestion": "TypeSpec whole-owner alias reaches the same construction/FieldDef/slot/value as its explicit control",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-typespec-alias",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-typespec-alias",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-typespec-alias"
+        ]
+      },
+      "expression": "BatchLedgerAlias.Count",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": "global::Interpreter.W8BatchShapeTarget.Ledger<global::Interpreter.W8BatchShapeTarget.BatchKey>.Count",
+      "controlRelationship": "same-construction-field-slot-and-value",
+      "controlExpectedTerminal": "i32:1627390465",
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1627390465",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-the-batch-ledger-count-through-its-own-alias",
+          "question": "How many entries did the batch ledger hold, spelled the way the code spells it?",
+          "evidence": "The construction stage reaches the same closed owner the explicit control reaches."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-alias-and-control-reach-one-physical-declaration",
+          "summary": "If the alias reached a different construction every batch conclusion drawn through source spellings would be unattributable."
+        },
+        "counterfactual": {
+          "action": "withhold-scoped-context",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without scoped context the alias spelling stops at context Unavailable while the control stays exact."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeConstruction",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "coordinator-four-coexisting-constructions",
+      "ordinal": 3,
+      "shape": "Coordinator",
+      "plannedQuestion": "Four same-TypeDef constructions coexist without enumeration order choosing one",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-four-constructions",
+      "target": {
+        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "truthGateProfile": "coordinator-four-constructions",
+        "targetArguments": [
+          "--truth-gate",
+          "coordinator-four-constructions"
+        ]
+      },
+      "expression": "global::Interpreter.W8CoordinatorShapeTarget.Registry<global::Interpreter.W8CoordinatorShapeTarget.NorthRegion>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1895826177",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-one-regions-coordinator-sentinel",
+          "question": "Which of the four coexisting region registries answers this question?",
+          "evidence": "The runtime-construction stage selects by ordered closed arguments, not by enumeration order."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-order-independent-construction-selection",
+          "summary": "If enumeration order chose the construction, every region-scoped conclusion would be arbitrary."
+        },
+        "counterfactual": {
+          "action": "substitute-closed-type-argument",
+          "expectedChangedAxes": [
+            "runtimeConstruction",
+            "storage",
+            "value"
+          ],
+          "expectedDifference": "Each of the other three regions must select a different method table, slot, and value."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "runtimeConstruction",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-var-substitution-conditional-chain",
+      "ordinal": 4,
+      "shape": "Workflow",
+      "plannedQuestion": "T-typed exact reference substitutes VAR 0 and completes a W6 conditional chain",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-var-substitution",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-var-substitution",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-var-substitution"
+        ]
+      },
+      "expression": "global::Interpreter.W8WorkflowShapeTarget.Stage<global::Interpreter.W8WorkflowShapeTarget.StepContext>.Current?.Label",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "W6ConditionalChainV1",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "Completed",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "string:workflow-step-label",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-the-current-workflow-step-label",
+          "question": "Which step label was the workflow on at the pause?",
+          "evidence": "The suffix stage completes over a root whose VAR 0 field signature substituted to the exact reference type."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-var-substitution-feeds-a-conditional-chain",
+          "summary": "Without exact substitution the chain would either stop or traverse the wrong declared type."
+        },
+        "counterfactual": {
+          "action": "substitute-closed-type-argument",
+          "expectedChangedAxes": [
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "suffix"
+          ],
+          "expectedDifference": "A different closed argument must substitute a different reference type and change the completed label."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "suffix",
+        "expectedOutcome": "Completed",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "collection-and-indexing",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "request-distinct-construction-slots",
+      "ordinal": 5,
+      "shape": "Request",
+      "plannedQuestion": "GenericSlot<RequestContext> and GenericSlot<BatchContext> prove distinct slots and values",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-distinct-constructions",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-distinct-constructions",
+        "targetArguments": [
+          "--truth-gate",
+          "request-distinct-constructions"
+        ]
+      },
+      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.BatchContext>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1358954754",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-which-construction-owns-the-value",
+          "question": "Do two closed constructions of one generic owner hold separate values?",
+          "evidence": "The exact slot address and Int32 of the BatchContext construction, measured at the storage stage."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-per-construction-slot-identity",
+          "summary": "If both constructions shared one slot every per-tenant conclusion drawn from this field would be wrong."
+        },
+        "counterfactual": {
+          "action": "substitute-closed-type-argument",
+          "expectedChangedAxes": [
+            "storage",
+            "value"
+          ],
+          "expectedDifference": "Substituting RequestContext must produce a different slot address and a different exact Int32."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "storage",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "executed",
+        "reason": "explicit-fully-qualified-constructed-slot-over-one-real-full-dump"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-nested-per-segment-arity",
+      "ordinal": 6,
+      "shape": "Batch",
+      "plannedQuestion": "Nested Outer<TKey>.Inner<TValue>.Count binds with per-segment arity",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-nested-arity",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-nested-arity",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-nested-arity"
+        ]
+      },
+      "expression": "global::Interpreter.W8BatchShapeTarget.Outer<global::Interpreter.W8BatchShapeTarget.BatchKey>.Inner<global::Interpreter.W8BatchShapeTarget.BatchValue>.Count",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1627390469",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-a-nested-per-segment-count",
+          "question": "What count does the nested per-segment owner hold?",
+          "evidence": "The construction stage binds each segment with its own arity."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-nested-arity-decomposition",
+          "summary": "The exact count confirms the nested spelling already assumed; no next action changes."
+        },
+        "counterfactual": {
+          "action": "substitute-closed-type-argument",
+          "expectedChangedAxes": [
+            "storage",
+            "value"
+          ],
+          "expectedDifference": "Substituting the inner argument must select a different nested construction and a different value."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeConstruction",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "coordinator-namespace-alias-in-type-argument",
+      "ordinal": 7,
+      "shape": "Coordinator",
+      "plannedQuestion": "A namespace alias inside one type argument resolves an exact closed generic value-type owner",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-alias-argument",
+      "target": {
+        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "truthGateProfile": "coordinator-alias-argument",
+        "targetArguments": [
+          "--truth-gate",
+          "coordinator-alias-argument"
+        ]
+      },
+      "expression": "Registry<RegionsNs.RegionCode>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": "global::Interpreter.W8CoordinatorShapeTarget.Registry<global::Interpreter.W8CoordinatorShapeTarget.Values.RegionCode>.Sentinel",
+      "controlRelationship": "same-construction-field-slot-and-value",
+      "controlExpectedTerminal": "i32:1895826183",
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1895826183",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-a-value-type-region-registry",
+          "question": "Which closed value-type owner does the aliased argument name?",
+          "evidence": "The construction stage closes over the exact value-type argument the namespace alias resolves."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-alias-resolution-inside-a-type-argument",
+          "summary": "A mis-resolved argument alias would select a different registry and mislabel the region."
+        },
+        "counterfactual": {
+          "action": "withhold-scoped-context",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without scoped context the aliased argument stops at context Unavailable."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeConstruction",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-extern-alias-interface-owner",
+      "ordinal": 8,
+      "shape": "Workflow",
+      "plannedQuestion": "An extern-alias-qualified constructed interface owner binds its stored static field across the exact AssemblyRef",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-extern-alias-interface",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-extern-alias-interface",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-extern-alias-interface"
+        ]
+      },
+      "expression": "wflib::Interpreter.W8AliasTarget.IExternalInterfaceSlot<wflib::Interpreter.W8AliasTarget.ExternalRequestContext>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1090520072",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-a-cross-assembly-interface-owned-sentinel",
+          "question": "Which assembly's interface owner holds this workflow sentinel?",
+          "evidence": "The type-binding stage reaches the declaration across the exact AssemblyRef the extern alias names."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-extern-alias-selects-the-exact-assemblyref",
+          "summary": "Reaching the wrong AssemblyRef would answer with another assembly's identically spelled declaration."
+        },
+        "counterfactual": {
+          "action": "withhold-scoped-context",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without scoped context the extern-alias spelling stops at context Unavailable."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeBinding",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "request-inner-alias-shadows-outer-alias",
+      "ordinal": 9,
+      "shape": "Request",
+      "plannedQuestion": "An inner type alias shadows a same-named outer alias and records only consulted facts",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-alias-shadowing",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-alias-shadowing",
+        "targetArguments": [
+          "--truth-gate",
+          "request-alias-shadowing"
+        ]
+      },
+      "expression": "ScopedRequestSlot.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": "global::Interpreter.W8RequestShapeTarget.Inner.InnerScopedSlot.Sentinel",
+      "controlRelationship": "same-symbol-and-value",
+      "controlExpectedTerminal": "i32:1358954761",
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "NotRequired",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1358954761",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-which-alias-the-selected-scope-owns",
+          "question": "Which type does the innermost alias of this name actually name here?",
+          "evidence": "The exact scoped-context projection that consulted only the inner alias declaration."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-existing-inner-alias-precedence",
+          "summary": "The answer confirms the innermost-alias rule already assumed; no next action changes."
+        },
+        "counterfactual": {
+          "action": "poison-scoped-context",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "A poisoned scoped context stops the same spelling at context Partial."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "context",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-import-forwarder-convergence",
+      "ordinal": 10,
+      "shape": "Batch",
+      "plannedQuestion": "Two same-level namespace-import TypeRef/forwarder paths converge on one physical TypeDef and produce one symbol",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-forwarder-convergence",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-forwarder-convergence",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-forwarder-convergence"
+        ]
+      },
+      "expression": "ExternalSlot<ForwardedRequestContext>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": "global::Interpreter.W8AliasTarget.ExternalSlot<global::Interpreter.W8AliasTarget.ForwardedRequestContext>.Sentinel",
+      "controlRelationship": "same-symbol-and-value",
+      "controlExpectedTerminal": "i32:1627390473",
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1627390473",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-the-converged-batch-total",
+          "question": "Do the two same-level import paths name one physical declaration or two?",
+          "evidence": "The type-binding stage reports one exact TypeDef reached through both the TypeRef and the forwarder path."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-single-physical-convergence",
+          "summary": "One symbol confirms the assumed convergence; no next action changes."
+        },
+        "counterfactual": {
+          "action": "withhold-scoped-context",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without scoped context the same spelling stops at context Unavailable."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeBinding",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "coordinator-derived-owner-base-field",
+      "ordinal": 11,
+      "shape": "Coordinator",
+      "plannedQuestion": "A qualified derived owner resolves the exact field declared on its constructed generic base",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-derived-base-field",
+      "target": {
+        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "truthGateProfile": "coordinator-derived-base-field",
+        "targetArguments": [
+          "--truth-gate",
+          "coordinator-derived-base-field"
+        ]
+      },
+      "expression": "global::Interpreter.W8CoordinatorShapeTarget.DerivedRegistry.BaseSentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "NotRequired",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1895826187",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-an-inherited-coordinator-sentinel",
+          "question": "Where is the field a derived owner exposes actually declared?",
+          "evidence": "The member stage names the constructed generic base as the declaring type."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-inherited-declaration-attribution",
+          "summary": "The exact declaring type confirms the inheritance already assumed; no next action changes."
+        },
+        "counterfactual": {
+          "action": "withhold-field-catalogs",
+          "expectedChangedAxes": [
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without the base owner's field catalog the same spelling stops at memberLookup Partial."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "memberLookup",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-derived-unsupported-member-hides-base",
+      "ordinal": 12,
+      "shape": "Workflow",
+      "plannedQuestion": "A derived unsupported same-name member hides a base static field and stops truthfully",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-member-hiding",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-member-hiding",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-member-hiding"
+        ]
+      },
+      "expression": "global::Interpreter.W8WorkflowShapeTarget.HidingStage.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "NotRequired",
+        "memberLookup": "HiddenByUnsupportedMember",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "member-hidden-by-unsupported-member",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-a-hidden-base-field-may-be-read",
+          "question": "Does the derived owner's same-named member let the base static field through?",
+          "evidence": "The member stage names the derived unsupported member and stops truthfully."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-hiding-is-not-bypassed",
+          "summary": "Reading the hidden base field would answer a declaration the user's spelling does not name."
+        },
+        "counterfactual": {
+          "action": "request-declared-field-instead-of-property",
+          "expectedChangedAxes": [
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Spelling the base declaration directly reaches ExactValue on the same snapshot."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "memberLookup",
+        "expectedOutcome": "HiddenByUnsupportedMember",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "static-property-or-method-execution",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "request-using-static-bare-primitive",
+      "ordinal": 13,
+      "shape": "Request",
+      "plannedQuestion": "A blocker-free constructed-TypeSpec using static bare primitive binds its directly declared stored field",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-using-static-bare",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-using-static-bare",
+        "targetArguments": [
+          "--truth-gate",
+          "request-using-static-bare"
+        ]
+      },
+      "expression": "ImportedSentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "Complete",
+        "typeBinding": "NotRequired",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1358954765",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-a-bare-imported-primitive",
+          "question": "What value does the bare imported sentinel hold in the selected scope?",
+          "evidence": "The complete lexical catalog that proves no blocker owns the spelling, measured at the lexical stage."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-blocker-free-bare-root-admission",
+          "summary": "A bare spelling that binds only under a complete blocker catalog changes the investigator from re-spelling fully qualified to trusting the short form."
+        },
+        "counterfactual": {
+          "action": "withhold-lexical-envelope",
+          "expectedChangedAxes": [
+            "lexicalCompleteness",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without the lexical envelope the same bare spelling stops at lexicalCompleteness Partial."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "lexicalCompleteness",
+        "expectedOutcome": "Complete",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-lexical-envelope-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-using-static-nested-head",
+      "ordinal": 14,
+      "shape": "Batch",
+      "plannedQuestion": "A nested type imported by using static becomes the exact constructed head for a reference suffix pipeline",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-using-static-nested",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-using-static-nested",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-using-static-nested"
+        ]
+      },
+      "expression": "ImportedNestedCurrent.Label",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "W2DirectFieldV1",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "Complete",
+        "typeBinding": "NotRequired",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "Completed",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "string:batch-nested-label",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-a-nested-imported-root-through-one-suffix",
+          "question": "What label does the imported nested root carry?",
+          "evidence": "The suffix stage completes over an exact reference root whose head came from a using-static import."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-imported-nested-head-composition",
+          "summary": "The completed suffix confirms the composition already assumed; no next action changes."
+        },
+        "counterfactual": {
+          "action": "withhold-lexical-envelope",
+          "expectedChangedAxes": [
+            "lexicalCompleteness",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "suffix",
+            "completeness"
+          ],
+          "expectedDifference": "Without the lexical envelope the bare head stops at lexicalCompleteness Partial."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "suffix",
+        "expectedOutcome": "Completed",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "collection-and-indexing",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-lexical-envelope-and-a-suffix-evaluator"
+      },
+      "representative": false
+    },
+    {
+      "id": "coordinator-nullable-argument-has-value",
+      "ordinal": 15,
+      "shape": "Coordinator",
+      "plannedQuestion": "A closed nullable type argument and VAR field signature return one exact has-value form",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-nullable-argument",
+      "target": {
+        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "truthGateProfile": "coordinator-nullable-argument",
+        "targetArguments": [
+          "--truth-gate",
+          "coordinator-nullable-argument"
+        ]
+      },
+      "expression": "global::Interpreter.W8CoordinatorShapeTarget.NullableSlot<global::System.Nullable<global::System.Int32>>.Current",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "nullable-i32:has-value:1895826192",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-the-nullable-coordinator-slot-has-a-value",
+          "question": "Does the nullable coordinator slot carry a value or not?",
+          "evidence": "The value stage returns one exact has-value form decoded from the VAR field signature."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-has-value-projection",
+          "summary": "The exact has-value form confirms the assumed state; no next action changes."
+        },
+        "counterfactual": {
+          "action": "substitute-closed-type-argument",
+          "expectedChangedAxes": [
+            "runtimeConstruction",
+            "storage",
+            "value"
+          ],
+          "expectedDifference": "A different closed nullable argument must select a different construction and value."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "value",
+        "expectedOutcome": "ExactValue",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-array-nested-argument-exact-null",
+      "ordinal": 16,
+      "shape": "Workflow",
+      "plannedQuestion": "An array/nested constructed type argument returns exact null",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-array-argument-null",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-array-argument-null",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-array-argument-null"
+        ]
+      },
+      "expression": "global::Interpreter.W8WorkflowShapeTarget.Stage<global::Interpreter.W8WorkflowShapeTarget.StepContext[]>.Current",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactNull",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "null",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-that-the-array-keyed-stage-holds-nothing",
+          "question": "Did the array-keyed workflow stage ever receive a value?",
+          "evidence": "The value stage returns exact null rather than an unavailable read."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-exact-null-is-an-answer",
+          "summary": "Exact null confirms the assumed empty stage; no next action changes."
+        },
+        "counterfactual": {
+          "action": "substitute-closed-type-argument",
+          "expectedChangedAxes": [
+            "runtimeConstruction",
+            "storage",
+            "value"
+          ],
+          "expectedDifference": "The non-array argument must select a different construction whose value is non-null."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "value",
+        "expectedOutcome": "ExactNull",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "request-missing-frame-blocks-alias-route",
+      "ordinal": 17,
+      "shape": "Request",
+      "plannedQuestion": "Missing selected frame stops an alias route while the fully qualified control remains exact",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-frameless-alias",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-frameless-alias",
+        "targetArguments": [
+          "--truth-gate",
+          "request-frameless-alias"
+        ]
+      },
+      "expression": "AliasedRequestSlot.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.RequestContext>.Sentinel",
+      "controlRelationship": "control-remains-exact",
+      "controlExpectedTerminal": "i32:1358954753",
+      "inputs": {
+        "selectedFrame": {
+          "mode": "requested-but-absent",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Unavailable",
+        "rootAttribution": "NotReached",
+        "lexicalCompleteness": "NotReached",
+        "typeBinding": "NotReached",
+        "typeConstruction": "NotReached",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "context-unavailable",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-the-alias-route-can-be-trusted-without-a-frame",
+          "question": "Can the short alias spelling be answered when the selected frame is absent?",
+          "evidence": "The context stage reports Unavailable instead of inventing a scope."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-no-frameless-alias-fallback",
+          "summary": "The stop redirects the investigator to the fully qualified control instead of accepting a guessed scope."
+        },
+        "counterfactual": {
+          "action": "evaluate-fully-qualified-control",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "The fully qualified control reaches ExactValue on the same snapshot."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "context",
+        "expectedOutcome": "Unavailable",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-partial-pdb-bytes",
+      "ordinal": 18,
+      "shape": "Batch",
+      "plannedQuestion": "Partial PDB bytes stop before TypeSpec or runtime construction resolution",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-partial-pdb",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-partial-pdb",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-partial-pdb"
+        ]
+      },
+      "expression": "BatchLedgerAlias.Count",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "partial",
+        "artifactInputs": [
+          "truncated-portable-pdb"
+        ]
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Partial",
+        "rootAttribution": "NotReached",
+        "lexicalCompleteness": "NotReached",
+        "typeBinding": "NotReached",
+        "typeConstruction": "NotReached",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "Partial"
+      },
+      "expectedFirstBoundary": "context-partial",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-partial-symbols-may-be-used",
+          "question": "Can the alias route be answered from truncated symbol bytes?",
+          "evidence": "The context stage reports Partial before any TypeSpec or runtime construction is resolved."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-partial-symbols-stop-before-binding",
+          "summary": "The Partial stop prevents an investigator from treating a half-read import table as a complete scope."
+        },
+        "counterfactual": {
+          "action": "restore-complete-pdb-bytes",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "With complete PDB bytes the same spelling reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "context",
+        "expectedOutcome": "Partial",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-the-truncated-portable-pdb-companion-artifact"
+      },
+      "representative": false
+    },
+    {
+      "id": "coordinator-pdb-module-identity-conflict",
+      "ordinal": 19,
+      "shape": "Coordinator",
+      "plannedQuestion": "PDB/module identity conflict stops before candidate binding",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-pdb-conflict",
+      "target": {
+        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "truthGateProfile": "coordinator-pdb-conflict",
+        "targetArguments": [
+          "--truth-gate",
+          "coordinator-pdb-conflict"
+        ]
+      },
+      "expression": "Registry<regions.RegionCode>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "conflicting",
+        "artifactInputs": [
+          "identity-mismatching-portable-pdb"
+        ]
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Conflict",
+        "rootAttribution": "NotReached",
+        "lexicalCompleteness": "NotReached",
+        "typeBinding": "NotReached",
+        "typeConstruction": "NotReached",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "context-conflict",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-the-supplied-symbols-belong-to-this-module",
+          "question": "Do the supplied symbols describe the module actually loaded?",
+          "evidence": "The context stage reports Conflict before any candidate binding runs."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-identity-conflict-stops-before-binding",
+          "summary": "Binding through foreign symbols would silently answer a different program's question."
+        },
+        "counterfactual": {
+          "action": "restore-matching-module-identity",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "With the module's own PDB the same spelling reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "context",
+        "expectedOutcome": "Conflict",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-the-identity-mismatching-portable-pdb-companion-artifact"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-competing-aliases-ambiguous",
+      "ordinal": 20,
+      "shape": "Workflow",
+      "plannedQuestion": "Competing surviving aliases produce ambiguity; import order cannot choose",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-alias-ambiguity",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-alias-ambiguity",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-alias-ambiguity"
+        ]
+      },
+      "expression": "AmbiguousStageSlot.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Ambiguous",
+        "rootAttribution": "NotReached",
+        "lexicalCompleteness": "NotReached",
+        "typeBinding": "NotReached",
+        "typeConstruction": "NotReached",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "context-ambiguous",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-the-short-spelling-is-decidable",
+          "question": "Which of the competing aliases does this short spelling name?",
+          "evidence": "The context stage reports Ambiguous and refuses to let import order decide."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-import-order-cannot-choose",
+          "summary": "Letting declaration order win would answer with whichever alias happened to be written first."
+        },
+        "counterfactual": {
+          "action": "narrow-with-exact-alias",
+          "expectedChangedAxes": [
+            "context",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Exact alias qualification narrows to one candidate and reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "context",
+        "expectedOutcome": "Ambiguous",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "request-malformed-typespec-invalid",
+      "ordinal": 21,
+      "shape": "Request",
+      "plannedQuestion": "A malformed TypeSpec is Invalid with original bytes retained",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-malformed-typespec",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-malformed-typespec",
+        "targetArguments": [
+          "--truth-gate",
+          "request-malformed-typespec"
+        ]
+      },
+      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.RequestContext>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": [
+          "malformed-typespec-blob"
+        ]
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Invalid",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "type-construction-invalid",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-a-corrupt-signature-was-decoded",
+          "question": "Was the owner construction decoded from intact signature bytes?",
+          "evidence": "The construction stage reports Invalid and the original bytes stay retained."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-malformed-bytes-are-never-repaired",
+          "summary": "The stop tells the investigator the artifact is corrupt rather than letting a repaired guess propagate."
+        },
+        "counterfactual": {
+          "action": "repair-typespec-blob",
+          "expectedChangedAxes": [
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "The repaired blob reaches ExactValue on the same snapshot."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeConstruction",
+        "expectedOutcome": "Invalid",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-the-malformed-typespec-companion-artifact"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-typespec-depth-cap-plus-one",
+      "ordinal": 22,
+      "shape": "Batch",
+      "plannedQuestion": "TypeSpec depth cap-plus-one is Partial without a prefix candidate",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-typespec-depth",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-typespec-depth",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-typespec-depth"
+        ]
+      },
+      "expression": "global::Interpreter.W8BatchShapeTarget.Ledger<global::Interpreter.W8BatchShapeTarget.Wrap<global::Interpreter.W8BatchShapeTarget.Wrap<global::Interpreter.W8BatchShapeTarget.Wrap<global::Interpreter.W8BatchShapeTarget.Wrap<global::Interpreter.W8BatchShapeTarget.BatchKey>>>>>.Count",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Partial",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "Partial"
+      },
+      "expectedFirstBoundary": "type-construction-partial",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": false,
+        "rationale": {
+          "code": "answers-nothing-about-the-application",
+          "question": "Does a construction one level past the depth cap yield a prefix answer?",
+          "evidence": "The construction stage reports Partial and names no prefix candidate."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-no-prefix-candidate-is-emitted",
+          "summary": "A prefix candidate would let an investigator read a shallower owner and believe it was the requested one."
+        },
+        "counterfactual": {
+          "action": "lower-typespec-depth-below-cap",
+          "expectedChangedAxes": [
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "One level below the cap the same shape reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeConstruction",
+        "expectedOutcome": "Partial",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-construction-depth-cap-injection"
+      },
+      "representative": false
+    },
+    {
+      "id": "coordinator-generic-head-arity-disagreement",
+      "ordinal": 23,
+      "shape": "Coordinator",
+      "plannedQuestion": "Generic head/arity disagreement is Invalid before runtime enumeration",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-arity-disagreement",
+      "target": {
+        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "truthGateProfile": "coordinator-arity-disagreement",
+        "targetArguments": [
+          "--truth-gate",
+          "coordinator-arity-disagreement"
+        ]
+      },
+      "expression": "global::Interpreter.W8CoordinatorShapeTarget.Registry<global::Interpreter.W8CoordinatorShapeTarget.NorthRegion, global::Interpreter.W8CoordinatorShapeTarget.SouthRegion>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Invalid",
+        "typeConstruction": "NotReached",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "type-binding-invalid",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-a-mis-arity-spelling-can-be-answered",
+          "question": "Does a head spelled with the wrong arity name anything?",
+          "evidence": "The type-binding stage reports Invalid before any runtime enumeration occurs."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-arity-disagreement-precedes-runtime-work",
+          "summary": "Enumerating the runtime for an impossible head would waste the snapshot and could match an unrelated construction."
+        },
+        "counterfactual": {
+          "action": "align-generic-head-arity",
+          "expectedChangedAxes": [
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "With the declared arity the same head reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeBinding",
+        "expectedOutcome": "Invalid",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-two-definitions-ambiguous",
+      "ordinal": 24,
+      "shape": "Workflow",
+      "plannedQuestion": "Two metadata definitions matching the spelling remain ambiguous without exact alias narrowing",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-definition-ambiguity",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-definition-ambiguity",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-definition-ambiguity"
+        ]
+      },
+      "expression": "global::Interpreter.W8WorkflowShapeTarget.DuplicatedStageStatics.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": [
+          "workflow-second-load-context-definition"
+        ]
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Ambiguous",
+        "typeConstruction": "NotReached",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "type-binding-ambiguous",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-a-qualified-spelling-is-unique",
+          "question": "Does this fully qualified spelling name one definition or two?",
+          "evidence": "The type-binding stage reports Ambiguous across the two loaded definitions."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-duplicate-definition-detection",
+          "summary": "The ambiguity confirms the duplicate load already known; no next action changes."
+        },
+        "counterfactual": {
+          "action": "narrow-with-exact-alias",
+          "expectedChangedAxes": [
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Exact alias narrowing selects one definition and reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "typeBinding",
+        "expectedOutcome": "Ambiguous",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "observed-boundary-hardening",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-the-second-load-context-companion-artifact"
+      },
+      "representative": false
+    },
+    {
+      "id": "request-absent-runtime-construction",
+      "ordinal": 25,
+      "shape": "Request",
+      "plannedQuestion": "Requested closed runtime construction is absent and never falls back to another argument",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-absent-construction",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-absent-construction",
+        "targetArguments": [
+          "--truth-gate",
+          "request-absent-construction"
+        ]
+      },
+      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.NeverConstructedContext>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Absent",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "runtime-construction-absent",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-the-requested-construction-ever-existed",
+          "question": "Did the paused process ever construct this closed owner?",
+          "evidence": "The runtime-construction stage reports Absent while other constructions of the same definition remain enumerated."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-no-neighbouring-argument-fallback",
+          "summary": "Without the Absent stop an investigator would read a neighbouring construction's value and attribute it to the wrong argument."
+        },
+        "counterfactual": {
+          "action": "substitute-closed-type-argument",
+          "expectedChangedAxes": [
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Substituting RequestContext reaches ExactValue on the same snapshot."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "runtimeConstruction",
+        "expectedOutcome": "Absent",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "executed",
+        "reason": "explicit-fully-qualified-absent-construction-over-one-real-full-dump"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-runtime-candidate-cap-plus-one",
+      "ordinal": 26,
+      "shape": "Batch",
+      "plannedQuestion": "Runtime-construction candidate cap-plus-one is Partial and cannot select an in-prefix construction",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-candidate-cap",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-candidate-cap",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-candidate-cap"
+        ]
+      },
+      "expression": "global::Interpreter.W8BatchShapeTarget.Ledger<global::Interpreter.W8BatchShapeTarget.BatchKey>.Count",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Partial",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "Partial"
+      },
+      "expectedFirstBoundary": "runtime-construction-partial",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": false,
+        "rationale": {
+          "code": "answers-nothing-about-the-application",
+          "question": "Does a candidate set one past the cap still select a construction?",
+          "evidence": "The runtime-construction stage reports Partial and selects nothing in the prefix."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-no-in-prefix-selection-under-a-cap",
+          "summary": "Selecting from a truncated prefix would attribute one construction's value to whichever candidate happened to be enumerated first."
+        },
+        "counterfactual": {
+          "action": "raise-runtime-candidate-cap",
+          "expectedChangedAxes": [
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "With the cap above the observed candidate count the same expression reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "runtimeConstruction",
+        "expectedOutcome": "Partial",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-runtime-candidate-cap-injection"
+      },
+      "representative": false
+    },
+    {
+      "id": "coordinator-unavailable-static-slot",
+      "ordinal": 27,
+      "shape": "Coordinator",
+      "plannedQuestion": "An unavailable static slot preserves exact construction identity without a value",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-unavailable-slot",
+      "target": {
+        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "truthGateProfile": "coordinator-unavailable-slot",
+        "targetArguments": [
+          "--truth-gate",
+          "coordinator-unavailable-slot"
+        ]
+      },
+      "expression": "global::Interpreter.W8CoordinatorShapeTarget.Registry<global::Interpreter.W8CoordinatorShapeTarget.EastRegion>.Sentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Unavailable",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "storage-unavailable",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-the-construction-exists-even-without-a-value",
+          "question": "Does the construction exist even though its value cannot be read?",
+          "evidence": "The runtime-construction stage stays Exact while the storage stage reports Unavailable."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-identity-survives-a-missing-value",
+          "summary": "Collapsing an unreadable slot into an absent construction would hide that the region registry existed at all."
+        },
+        "counterfactual": {
+          "action": "restore-static-slot",
+          "expectedChangedAxes": [
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "On a snapshot whose slot is present the same expression reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "storage",
+        "expectedOutcome": "Unavailable",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-snapshot-whose-static-slot-is-absent"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-substituted-reference-target-conflict",
+      "ordinal": 28,
+      "shape": "Workflow",
+      "plannedQuestion": "Substituted reference target conflict blocks suffix evaluation",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-reference-target-conflict",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-reference-target-conflict",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-reference-target-conflict"
+        ]
+      },
+      "expression": "global::Interpreter.W8WorkflowShapeTarget.Stage<global::Interpreter.W8WorkflowShapeTarget.StepContext>.Current?.Label",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "W6ConditionalChainV1",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "Conflict",
+        "suffix": "Conflict",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "value-conflict",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-the-suffix-may-consume-this-root",
+          "question": "Can the declared reference target consume the substituted root value?",
+          "evidence": "The value stage reports Conflict between the substituted declared type and the observed runtime type."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-target-conflict-blocks-suffix-evaluation",
+          "summary": "Evaluating a suffix over a conflicting target would read fields at offsets that belong to another type."
+        },
+        "counterfactual": {
+          "action": "align-substituted-reference-target",
+          "expectedChangedAxes": [
+            "value",
+            "suffix",
+            "completeness"
+          ],
+          "expectedDifference": "With the target the substituted signature names the same expression completes its suffix."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "value",
+        "expectedOutcome": "Conflict",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "collection-and-indexing",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-declared-reference-target-type-and-a-suffix-evaluator"
+      },
+      "representative": false
+    },
+    {
+      "id": "request-active-local-shadows-bare-import",
+      "ordinal": 29,
+      "shape": "Request",
+      "plannedQuestion": "An active local shadows a bare imported field; no local value is guessed",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-local-shadow",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-local-shadow",
+        "targetArguments": [
+          "--truth-gate",
+          "request-local-shadow"
+        ]
+      },
+      "expression": "ShadowedSentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "Shadowed",
+        "typeBinding": "NotReached",
+        "typeConstruction": "NotReached",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "lexical-shadowed",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-which-declaration-owns-a-bare-spelling",
+          "question": "Does this bare spelling name the imported static field or an active local?",
+          "evidence": "The lexical stage names the active local as the higher-precedence owner."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-no-local-value-is-guessed",
+          "summary": "The stop stops the investigator from reading a static value and reporting it as the local's value."
+        },
+        "counterfactual": {
+          "action": "remove-active-local-shadow",
+          "expectedChangedAxes": [
+            "lexicalCompleteness",
+            "typeBinding",
+            "typeConstruction",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "At a program point where the local is not active the same spelling reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "lexicalCompleteness",
+        "expectedOutcome": "Shadowed",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "evidence-backed-stack-value-root",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-lexical-envelope-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-incomplete-local-catalogs",
+      "ordinal": 30,
+      "shape": "Batch",
+      "plannedQuestion": "Incomplete local/parameter/member catalogs block using static selection",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-incomplete-catalogs",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-incomplete-catalogs",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-incomplete-catalogs"
+        ]
+      },
+      "expression": "PendingCount",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "partial",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "Partial",
+        "typeBinding": "NotReached",
+        "typeConstruction": "NotReached",
+        "memberLookup": "NotReached",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "Partial"
+      },
+      "expectedFirstBoundary": "lexical-partial",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-whether-a-bare-spelling-may-be-selected-yet",
+          "question": "Is the blocker catalog complete enough to select this bare spelling?",
+          "evidence": "The lexical stage reports Partial because the local, parameter, and member catalogs are incomplete."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-incomplete-catalogs-block-using-static-selection",
+          "summary": "Selecting under an incomplete catalog could silently prefer an import over an unseen local."
+        },
+        "counterfactual": {
+          "action": "complete-local-catalogs",
+          "expectedChangedAxes": [
+            "lexicalCompleteness",
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "With complete catalogs the same bare spelling reaches ExactValue."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "lexicalCompleteness",
+        "expectedOutcome": "Partial",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "evidence-backed-stack-value-root",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-lexical-envelope-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "coordinator-property-shares-bare-name",
+      "ordinal": 31,
+      "shape": "Coordinator",
+      "plannedQuestion": "A property sharing the bare name is valid but unsupported, not a field fallback",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-property-name",
+      "target": {
+        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "truthGateProfile": "coordinator-property-name",
+        "targetArguments": [
+          "--truth-gate",
+          "coordinator-property-name"
+        ]
+      },
+      "expression": "RegionTotal",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "Complete",
+        "typeBinding": "NotRequired",
+        "typeConstruction": "NotRequired",
+        "memberLookup": "HiddenByUnsupportedMember",
+        "runtimeConstruction": "NotReached",
+        "storage": "NotReached",
+        "value": "NotReached",
+        "suffix": "NotReached",
+        "completeness": "NoAnswer"
+      },
+      "expectedFirstBoundary": "member-hidden-by-unsupported-member",
+      "expectedTerminal": null,
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-which-member-owns-a-bare-coordinator-name",
+          "question": "Does this bare coordinator name reach a field or a property?",
+          "evidence": "The member stage names the property as the higher-precedence owner and refuses a field fallback."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-no-property-to-field-fallback",
+          "summary": "A field fallback would answer a different member's value under the user's spelling."
+        },
+        "counterfactual": {
+          "action": "request-declared-field-instead-of-property",
+          "expectedChangedAxes": [
+            "memberLookup",
+            "runtimeConstruction",
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Spelling the declared field reaches ExactValue on the same snapshot."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "memberLookup",
+        "expectedOutcome": "HiddenByUnsupportedMember",
+        "attributable": false,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "static-property-or-method-execution",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-lexical-envelope-the-runner-does-not-yet-project"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-ground-typespec-alias-enum-literal",
+      "ordinal": 32,
+      "shape": "Workflow",
+      "plannedQuestion": "A fully ground TypeSpec alias inside a generic method returns an exact enum literal with no runtime-context call",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-enum-literal",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-enum-literal",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-enum-literal"
+        ]
+      },
+      "expression": "GroundStageAlias.CompletedMarker",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "NotRequired",
+        "storage": "NotRequired",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "enum-i32:2",
+      "expectedEvidenceLedger": {
+        "contextCallCount": 1,
+        "runtimeCallCount": 0
+      },
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-a-workflow-marker-without-touching-the-runtime",
+          "question": "Which marker does the ground alias name inside the generic method?",
+          "evidence": "The value stage projects the metadata Constant row with a zero runtime call count."
+        }
+      },
+      "decisionChanging": {
+        "value": false,
+        "rationale": {
+          "code": "confirms-literal-projection-order",
+          "summary": "The literal confirms the no-runtime-call ordering already assumed; no next action changes."
+        },
+        "counterfactual": {
+          "action": "withhold-literal-constant-source",
+          "expectedChangedAxes": [
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without the Constant-row source the same expression stops at value Unavailable."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "value",
+        "expectedOutcome": "ExactValue",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "broader-frame-generic-context",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-a-scoped-context-source-and-a-metadata-constant-row-source"
+      },
+      "representative": false
+    },
+    {
+      "id": "request-thread-relative-slot",
+      "ordinal": 33,
+      "shape": "Request",
+      "plannedQuestion": "W8.1 admitted branch: one ThreadRelativeSlot incident with exact selected-thread identity",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-thread-relative",
+      "target": {
+        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "truthGateProfile": "request-thread-relative",
+        "targetArguments": [
+          "--truth-gate",
+          "request-thread-relative"
+        ]
+      },
+      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.RequestContext>.ThreadSentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "Exact",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "Exact",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1358954786",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-a-per-thread-request-sentinel",
+          "question": "What did this exact managed thread hold for the per-thread request sentinel?",
+          "evidence": "The storage stage names one exact selected thread identity and that thread's own slot address."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-thread-relative-storage-is-selected-not-averaged",
+          "summary": "Reading any other thread's slot would attribute one thread's request state to another."
+        },
+        "counterfactual": {
+          "action": "select-different-thread",
+          "expectedChangedAxes": [
+            "storage",
+            "value"
+          ],
+          "expectedDifference": "The declared alternative thread must yield a different slot address and a different exact Int32."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "storage",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "thread-relative-slot-needs-a-thread-selector-the-simple-runner-does-not-yet-supply"
+      },
+      "representative": false
+    },
+    {
+      "id": "batch-module-rva-storage",
+      "ordinal": 34,
+      "shape": "Batch",
+      "plannedQuestion": "W8.1 admitted branch: one ModuleRva incident with construction and slot marked NotRequired",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-module-rva",
+      "target": {
+        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "truthGateProfile": "batch-module-rva",
+        "targetArguments": [
+          "--truth-gate",
+          "batch-module-rva"
+        ]
+      },
+      "expression": "global::Interpreter.W8NamedRvaTarget.NamedRvaStorage.NamedSentinel",
+      "languageProfile": "StaticFieldExpressionV2",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "none",
+          "threadSelector": null,
+          "frameOrdinal": null
+        },
+        "portablePdb": "not-requested",
+        "artifactInputs": [
+          "named-rva-il-fixture"
+        ]
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "NotRequired",
+        "rootAttribution": "NotRequired",
+        "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact",
+        "typeConstruction": "NotRequired",
+        "memberLookup": "Exact",
+        "runtimeConstruction": "NotRequired",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:553941601",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-an-image-backed-batch-constant",
+          "question": "What bytes does the image-backed named sentinel actually carry?",
+          "evidence": "The storage stage names the FieldRVA row and the mapped module image address."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-rva-storage-needs-no-runtime-construction",
+          "summary": "Requiring a runtime construction for image-backed storage would make this field unreadable whenever its owner was never constructed."
+        },
+        "counterfactual": {
+          "action": "withhold-module-rva-mapping",
+          "expectedChangedAxes": [
+            "storage",
+            "value",
+            "completeness"
+          ],
+          "expectedDifference": "Without mapped image geometry the same expression stops at storage Unavailable."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "storage",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "additional-static-storage-family",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+      },
+      "representative": false
+    },
+    {
+      "id": "workflow-frame-value-memory-homed-root",
+      "ordinal": 35,
+      "shape": "Workflow",
+      "plannedQuestion": "W8.1 admitted branch: one FrameValueExpressionV1 incident with an exact memory-homed root and no static fallback",
+      "snapshotKind": "independent-full-dump",
+      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-frame-value",
+      "target": {
+        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "truthGateProfile": "workflow-frame-value",
+        "targetArguments": [
+          "--truth-gate",
+          "workflow-frame-value"
+        ]
+      },
+      "expression": "stageLocal",
+      "languageProfile": "FrameValueExpressionV1",
+      "suffixProfile": "None",
+      "controlExpression": null,
+      "controlRelationship": "none",
+      "controlExpectedTerminal": null,
+      "inputs": {
+        "selectedFrame": {
+          "mode": "managed-thread-and-frame",
+          "threadSelector": "paused-truth-gate-frame",
+          "frameOrdinal": 0
+        },
+        "portablePdb": "exact",
+        "artifactInputs": []
+      },
+      "expectedAxes": {
+        "syntax": "Admitted",
+        "context": "Exact",
+        "rootAttribution": "Exact",
+        "lexicalCompleteness": "Complete",
+        "typeBinding": "NotRequired",
+        "typeConstruction": "NotRequired",
+        "memberLookup": "NotRequired",
+        "runtimeConstruction": "NotRequired",
+        "storage": "Exact",
+        "value": "ExactValue",
+        "suffix": "NotRequested",
+        "completeness": "Complete"
+      },
+      "expectedFirstBoundary": "none",
+      "expectedTerminal": "i32:1090520099",
+      "expectedEvidenceLedger": null,
+      "usefulness": {
+        "value": true,
+        "rationale": {
+          "code": "answers-a-memory-homed-workflow-local",
+          "question": "What did the selected frame's memory-homed local hold?",
+          "evidence": "The root-attribution stage names one exact memory-homed frame slot with no static fallback."
+        }
+      },
+      "decisionChanging": {
+        "value": true,
+        "rationale": {
+          "code": "proves-frame-value-roots-need-no-static-fallback",
+          "summary": "Falling back to a static of the same spelling would answer a different storage entirely."
+        },
+        "counterfactual": {
+          "action": "select-different-frame-slot",
+          "expectedChangedAxes": [
+            "storage",
+            "value"
+          ],
+          "expectedDifference": "The declared alternative frame slot must yield a different exact value."
+        }
+      },
+      "attributableEvidence": {
+        "stage": "rootAttribution",
+        "expectedOutcome": "Exact",
+        "attributable": true,
+        "measurement": "named-stage-axis"
+      },
+      "supportsSuccessorCategory": "evidence-backed-stack-value-root",
+      "runnerExecution": {
+        "status": "manifest-only",
+        "reason": "requires-the-frame-value-profile-the-pipeline-does-not-yet-own"
+      },
+      "representative": false
+    }
+  ]
+}

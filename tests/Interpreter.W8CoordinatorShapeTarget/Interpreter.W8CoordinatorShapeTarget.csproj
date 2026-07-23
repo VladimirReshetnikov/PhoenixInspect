@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Interpreter.W8CoordinatorShapeTarget</AssemblyName>
+    <RootNamespace>Interpreter.W8CoordinatorShapeTarget</RootNamespace>
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../TestInfrastructure/HeadlessTestProcess.cs"
+             Link="TestInfrastructure/HeadlessTestProcess.cs" />
+  </ItemGroup>
+</Project>
