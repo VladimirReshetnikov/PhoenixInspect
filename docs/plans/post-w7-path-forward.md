@@ -1165,10 +1165,19 @@ decoded; and the `FrameValueExpressionV1` profile is composed through the pipeli
 its exact memory home and value on the Workflow shape while register-home and frame-generic roots stay typed executable
 non-admissions.
 
-**Remaining:** incidents pending scoped-context/PDB projection, companion poison artifacts, the generic-`VAR` field
-signature decoder, and the wired suffix over a real member chain stay manifest-only with precise recorded reasons.
-The three W8.1-admitted branches are now covered: thread-relative and frame-value execute end to end, and the RVA
-branch reaches a documented owner-construction boundary (below).
+**Remaining:** incidents pending scoped-context/PDB projection, companion poison artifacts, and the wired suffix over a
+real member chain stay manifest-only with precise recorded reasons. The three W8.1-admitted branches are now covered:
+thread-relative and frame-value execute end to end, and the RVA branch reaches a documented owner-construction
+boundary (below).
+
+The owner-`VAR` field-signature decoder landed at `0b6bc7a69` and, in doing so, disproved the reason previously
+recorded against the two generic-`VAR` incidents. Real runs show neither is blocked by the decoder: the nullable
+incident stops earlier at a non-exact construction because the composed core declares no `Nullable`1` or `Int32` for
+its spelled argument, and the array/nested incident stops at an ambiguous owner name binding because its target module
+is deliberately double-composed — a duplication another incident depends on, so it was not removed to force a pass.
+Both `runnerExecution` reasons are corrected to those findings, their predeclared axes stay frozen, and the produced
+divergences are documented with real-run axes. Correcting a stale recorded reason is bookkeeping; retuning a
+predeclared axis would not be.
 
 Two produced-vs-predeclared divergences are documented as findings through the
 `Attempted_incidents_stop_at_their_landed_pipeline_boundaries` test with axes captured from real runs, and the manifest
