@@ -946,9 +946,68 @@ public sealed class W8V2ExpressionPipelineTests
             app.Ancestry.ChainCatalog.ExactChainOrDefault(AppHostToken)!.FinalTypeDefinition);
     }
 
+    /// <summary>
+    /// Builds an independent world whose sole application type is a closed-constructible generic <c>Slot`1</c> owning
+    /// three static fields: an owner <c>VAR 0</c> field, an out-of-arity owner <c>VAR 1</c> field, and a ground
+    /// <c>Int32</c> field. It shares none of <see cref="BuildWorld"/>'s frozen-golden modules, so the owner-VAR
+    /// substitution decoder can be exercised end to end without touching any frozen static-path digest.
+    /// </summary>
+    internal static PipelineWorld BuildGenericVarWorld()
+    {
+        var core = BuildModule(
+            CoreAssembly,
+            0xE100,
+            '1',
+            [
+                new PipeTypeRow("System", "Object", PublicClass, null),
+                new PipeTypeRow("System", "ValueType", PublicClass, 0x0200_0002),
+                new PipeTypeRow("System", "Enum", PublicClass, 0x0200_0003),
+                new PipeTypeRow("System", "Delegate", PublicClass, 0x0200_0002),
+                new PipeTypeRow("System", "MulticastDelegate", PublicClass, 0x0200_0005),
+            ],
+            []);
+        var app = BuildModule(
+            AppAssembly,
+            0xE300,
+            '3',
+            [
+                new PipeTypeRow("Pipe.App", "Slot`1", PublicClass, 0x0100_0001, GenericArity: 1),
+            ],
+            [
+                new PipeFieldRow("Slot`1", "Current", FieldPublic | FieldStatic, OwnerVar0Signature),
+                new PipeFieldRow("Slot`1", "OutOfArity", FieldPublic | FieldStatic, OwnerVar1Signature),
+                new PipeFieldRow("Slot`1", "IntCurrent", FieldPublic | FieldStatic, Int32Signature),
+            ],
+            [("System", "Object")],
+            [CoreAssembly]);
+
+        var ancestryWorld = W8MetadataAncestryAuthorityContractTests.BuildAncestryWorld(core.Ancestry, app.Ancestry);
+        Assert.Equal(MetadataAncestryAuthorityPortfolioResultKind.Exact, ancestryWorld.Ancestry.ResultKind);
+
+        var byModule = new[] { core, app }.ToDictionary(static built => built.Ancestry.Module);
+        var order = ancestryWorld.Ancestry.Entries.Select(static entry => entry.SourceModule).ToArray();
+        var constraints = MetadataConstraintTargetResolutionPortfolioIdentity.Create(
+            ancestryWorld.Resolution,
+            [.. order.Select(module => byModule[module].Constraints)]);
+        Assert.Equal(MetadataConstraintTargetResolutionPortfolioResultKind.Exact, constraints.ResultKind);
+        var fieldCatalogs = ImmutableArray.CreateRange(order.Select(module => byModule[module].FieldCatalog));
+
+        return new PipelineWorld(
+            app.Ancestry.Module,
+            ancestryWorld.Resolution,
+            ancestryWorld.Ancestry,
+            constraints,
+            fieldCatalogs,
+            app.Ancestry.ChainCatalog.ExactChainOrDefault(AppGenericSlotToken)!.FinalTypeDefinition);
+    }
+
     private static ImmutableArray<byte> Int32Signature => [0x06, 0x08];
 
     private static ImmutableArray<byte> StringSignature => [0x06, 0x0E];
+
+    private static ImmutableArray<byte> OwnerVar0Signature => [0x06, 0x13, 0x00];
+
+    private static ImmutableArray<byte> OwnerVar1Signature => [0x06, 0x13, 0x01];
 
     private static PipeModule BuildModule(
         string assemblyName,

@@ -397,6 +397,67 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.Null(produced.Result.SignedValue);
             Assert.NotEqual(derivedBase.PredeclaredAxes, produced.Result.Axes);
         }
+
+        // Incident 15 coordinator-nullable-argument-has-value: the owner name binds Exact, but the closed construction
+        // of the nested global::System.Nullable<global::System.Int32> type argument is NonExact (TypeArgumentAbsent).
+        // The composed synthetic core deliberately declares only Object, ValueType, Enum, Delegate, and
+        // MulticastDelegate — it supplies no System.Nullable`1 and no System.Int32 TypeDef — so that spelled argument
+        // resolves to no definition and the owner construction never closes. The field-signature stage that now
+        // substitutes an owner VAR is therefore never reached. The predeclared row expects an Exact construction
+        // reaching one exact has-value form; the produced divergence — landing at typeConstruction Partial upstream of
+        // the broadened owner-VAR field decoder — is the reported finding. Supplying those corelib definitions is an
+        // authority-composition change across the whole corpus, not a field-signature decode change. The extended
+        // decoder itself is proven end to end by the Fast W8V2GenericVarFieldTests; here the corpus authority stops the
+        // run before it, so the predeclared row stays manifest-only and completely untouched.
+        var nullableArgument = manifest.Incidents.Single(
+            static incident => incident.Id == "coordinator-nullable-argument-has-value");
+        Assert.Equal("manifest-only", nullableArgument.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(nullableArgument))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, nullableArgument.Shape))
+        {
+            var produced = world.Evaluate(nullableArgument.Expression, nullableArgument.ReadWidth);
+            Assert.Equal(
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Partial/NotReached/NotReached/NotReached/" +
+                "NotReached/NotReached/Partial",
+                Describe(produced.Result.Axes));
+            Assert.Equal(DumpExpressionTypeBindingOutcome.Exact, produced.Result.Axes.TypeBinding);
+            Assert.Equal(DumpExpressionTypeConstructionOutcome.Partial, produced.Result.Axes.TypeConstruction);
+            Assert.Equal(
+                StaticFieldV2ClosedConstructionResultKind.NonExact,
+                produced.Result.Provenance.OwnerConstruction!.ResultKind);
+            Assert.Equal(
+                StaticFieldV2ClosedConstructionIssue.TypeArgumentAbsent,
+                produced.Result.Provenance.OwnerConstruction.Issue);
+            Assert.Equal(DumpExpressionValueOutcome.NotReached, produced.Result.Axes.Value);
+            Assert.Null(produced.Result.SignedValue);
+            Assert.NotEqual(nullableArgument.PredeclaredAxes, produced.Result.Axes);
+        }
+
+        // Incident 16 workflow-array-nested-argument-exact-null: the Workflow shape target materializes a second
+        // definition of its whole module in a separate collectible load context, and the runner composes every module
+        // observation whose content matches the on-disk artifact. Both copies therefore enter the authority, so the
+        // owner name Stage`1 has two definitions and binds Ambiguous. That double composition is deliberate — incident
+        // 24 workflow-two-definitions-ambiguous depends on exactly it — so it is not deduplicated to force this row.
+        // The run stops at typeBinding before construction, member lookup, and the broadened owner-VAR field decoder.
+        // The predeclared row expects an Exact binding reaching exact null; the produced Ambiguous binding is the
+        // reported finding, so the predeclared row stays manifest-only and completely untouched.
+        var arrayArgument = manifest.Incidents.Single(
+            static incident => incident.Id == "workflow-array-nested-argument-exact-null");
+        Assert.Equal("manifest-only", arrayArgument.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(arrayArgument))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, arrayArgument.Shape))
+        {
+            var produced = world.Evaluate(arrayArgument.Expression, arrayArgument.ReadWidth);
+            Assert.Equal(
+                "Admitted/NotRequired/NotRequired/NotRequired/Ambiguous/NotReached/NotReached/NotReached/NotReached/" +
+                "NotReached/NotReached/NoAnswer",
+                Describe(produced.Result.Axes));
+            Assert.Equal(DumpExpressionTypeBindingOutcome.Ambiguous, produced.Result.Axes.TypeBinding);
+            Assert.Equal(DumpExpressionTypeConstructionOutcome.NotReached, produced.Result.Axes.TypeConstruction);
+            Assert.Equal(DumpExpressionValueOutcome.NotReached, produced.Result.Axes.Value);
+            Assert.Null(produced.Result.SignedValue);
+            Assert.NotEqual(arrayArgument.PredeclaredAxes, produced.Result.Axes);
+        }
     }
 
     private static DumpExpressionMemberLookupOutcome DecodeMemberLookup(W8CorpusIncident incident) =>

@@ -1609,9 +1609,17 @@ public static class StaticFieldV2ExpressionPipeline
 
             // Step 9: instantiate the FieldDef signature and decode the literal Constant row when one applies.
             EnterStep(9);
-            boundaries.Add(
-                StaticFieldV2PipelineCoverageBoundary.DeclaredFieldTypeLimitedToGroundPrimitiveSignature);
-            var declaredType = GroundDeclaredType(fieldRow);
+            var declaredType = GroundDeclaredType(fieldRow, out var ownerVariableSubstituted);
+            if (!ownerVariableSubstituted)
+            {
+                // The ground-primitive declared-type boundary still applies to every field this stage does not lift
+                // through owner-VAR substitution: a decoded ground primitive, an unsupported signature shape, and an
+                // incomplete substitution each remain limited to the ground-primitive grammar exactly as before. A
+                // field whose owner VAR is substituted to its bound closed argument is decoded by the broadened
+                // grammar and therefore declares no such boundary.
+                boundaries.Add(
+                    StaticFieldV2PipelineCoverageBoundary.DeclaredFieldTypeLimitedToGroundPrimitiveSignature);
+            }
             if (fieldRow.IsLiteral && fieldRow.HasDefault)
             {
                 literalConstant = AcquireConstantRow(fieldRow);
@@ -2306,34 +2314,114 @@ public static class StaticFieldV2ExpressionPipeline
             return false;
         }
 
-        private static MetadataClosedTypeIdentity? GroundDeclaredType(
-            MetadataFieldDefinitionTableRowIdentity fieldRow)
+        private static readonly BoundedEcmaSignatureLimits FieldSignatureLimits = new(
+            StaticFieldV2Limits.MaximumTypeSpecificationByteCount,
+            StaticFieldV2Limits.MaximumTypeSpecificationDepth,
+            StaticFieldV2Limits.MaximumRawTypeSignatureNodeCount,
+            StaticFieldV2Limits.MaximumTypeSpecificationArgumentCount,
+            StaticFieldV2Limits.MaximumGenericParameterCount,
+            StaticFieldV2Limits.MaximumParameterCount,
+            StaticFieldV2Limits.MaximumLocalCount,
+            StaticFieldV2Limits.MaximumArrayRank);
+
+        private MetadataClosedTypeIdentity? GroundDeclaredType(
+            MetadataFieldDefinitionTableRowIdentity fieldRow,
+            out bool ownerVariableSubstituted)
         {
+            ownerVariableSubstituted = false;
             var signature = fieldRow.SignatureBytes;
-            if (signature.Length != 2 || signature[0] != FieldSignatureCallingConvention)
+            if (signature.Length < 2 || signature[0] != FieldSignatureCallingConvention)
             {
                 return null;
             }
-            return signature[1] switch
+            if (signature.Length == 2)
             {
-                0x02 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Boolean),
-                0x03 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Char),
-                0x04 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int8),
-                0x05 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.UInt8),
-                0x06 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int16),
-                0x07 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.UInt16),
-                0x08 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int32),
-                0x09 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.UInt32),
-                0x0A => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int64),
-                0x0B => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.UInt64),
-                0x0C => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Single),
-                0x0D => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Double),
-                0x0E => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.String),
-                0x18 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.NativeInt),
-                0x19 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.NativeUInt),
-                0x1C => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Object),
-                _ => null,
-            };
+                // The unchanged two-byte ground-primitive fast path: every previously admitted primitive FieldSig
+                // decodes byte-for-byte as before, so no frozen static-path result digest can shift.
+                return signature[1] switch
+                {
+                    0x02 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Boolean),
+                    0x03 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Char),
+                    0x04 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int8),
+                    0x05 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.UInt8),
+                    0x06 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int16),
+                    0x07 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.UInt16),
+                    0x08 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int32),
+                    0x09 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.UInt32),
+                    0x0A => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Int64),
+                    0x0B => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.UInt64),
+                    0x0C => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Single),
+                    0x0D => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Double),
+                    0x0E => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.String),
+                    0x18 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.NativeInt),
+                    0x19 => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.NativeUInt),
+                    0x1C => MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.Object),
+                    _ => null,
+                };
+            }
+
+            // Owner VAR substitution: an ELEMENT_TYPE_VAR (0x13) field signature over a bound closed owner
+            // construction is decoded to that construction's corresponding ordered closed argument. The owner
+            // construction was already bound in step seven and carries the recursively closed argument vector, so
+            // the argument (a primitive, closed nullable, array, or nested construction) flows unchanged into the
+            // existing storage and value decoding. Any owner-VAR index outside the bound owner's arity, or any
+            // signature shape this bounded reader does not project to a single owner VAR, is an incomplete decode
+            // returned as a typed non-answer (null), never an absence and never a fault.
+            if (!TryDecodeOwnerVariableIndex(signature, out var ownerVariableIndex) ||
+                ownerConstruction is not
+                { ResultKind: StaticFieldV2ClosedConstructionResultKind.Exact } construction)
+            {
+                return null;
+            }
+            var arguments = construction.FlattenedArguments;
+            if (ownerVariableIndex < 0 || ownerVariableIndex >= arguments.Length)
+            {
+                return null;
+            }
+            ownerVariableSubstituted = true;
+            return arguments[ownerVariableIndex];
+        }
+
+        private static bool TryDecodeOwnerVariableIndex(ImmutableArray<byte> signature, out int ownerVariableIndex)
+        {
+            ownerVariableIndex = -1;
+            var sink = new OwnerVariableSignatureSink();
+            var outcome = BoundedEcmaSignatureProjection.Decode(
+                signature.AsSpan(),
+                BoundedEcmaSignatureForm.Field,
+                FieldSignatureLimits,
+                sink);
+            if (outcome.Kind != BoundedEcmaSignatureDecodeKind.Exact)
+            {
+                return false;
+            }
+
+            // Only a bare owner VAR is grounded here: exactly one projected node, the root, whose kind is the owner
+            // type parameter. Any wrapper (SZARRAY, GENERICINST, custom modifier) projects more than one node and is
+            // deliberately declined so no partial or guessed declared type is ever produced.
+            var events = sink.Events;
+            if (events.Length != 1)
+            {
+                return false;
+            }
+            var root = events[0];
+            if (root.ParentNodeOrdinal != -1 ||
+                root.Kind != BoundedEcmaSignatureNodeKind.OwnerTypeParameter)
+            {
+                return false;
+            }
+            ownerVariableIndex = root.Index;
+            return true;
+        }
+
+        private sealed class OwnerVariableSignatureSink : IBoundedEcmaSignatureNodeSink
+        {
+            private readonly ImmutableArray<BoundedEcmaSignatureNodeEvent>.Builder nodes =
+                ImmutableArray.CreateBuilder<BoundedEcmaSignatureNodeEvent>();
+
+            internal ImmutableArray<BoundedEcmaSignatureNodeEvent> Events => nodes.ToImmutable();
+
+            public void Add(in BoundedEcmaSignatureNodeEvent node) => nodes.Add(node);
         }
 
         private static DumpExpressionTypeBindingOutcome MapExplicitBinding(

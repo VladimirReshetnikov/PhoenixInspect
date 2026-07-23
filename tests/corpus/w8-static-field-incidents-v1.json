@@ -1617,7 +1617,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "declared-field-type-is-a-generic-var-signature-outside-the-ground-primitive-decoder"
+        "reason": "owner-type-argument-absent-because-the-composed-core-declares-no-nullable-or-int32-definition"
       },
       "representative": false
     },
@@ -1702,7 +1702,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "declared-field-type-is-a-generic-var-signature-outside-the-ground-primitive-decoder"
+        "reason": "owner-name-binding-ambiguous-because-the-target-module-is-deliberately-double-composed"
       },
       "representative": false
     },
