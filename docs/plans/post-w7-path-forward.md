@@ -993,8 +993,17 @@ frozen per-strategy capability-requirement vectors, the typed context-relative n
 literal projection with an executable zero-capability-call proof. **W8.6b's contract layer is complete at
 `05dd6ecef`**: constructed assignability including the non-inherited SZ-versus-rank-one divergence, identity-keyed
 runtime construction selection proven order-independent, per-strategy slot validation with executable capability
-obedience, and pure value decoding over copied bytes. **W8.6c remains active**: binding those contracts to live
-ClrMD acquisition over a real dump, and the admitted `FrameValueExpressionV1` memory-homed root.
+obedience, and pure value decoding over copied bytes. **W8.6c is complete at `c14744c96` and `09aa4f01e`**: the
+production adapter acquires constructions, slots, counted reads, and values from a real full dump, and frame roots
+attribute `this`, parameters, and active locals to exact memory homes with the register-home and frame-generic
+non-admissions held.
+
+One coverage limit is recorded rather than obscured: every root of every managed frame across all six truth-gate
+profiles is memory-homed, because the targets compile without optimization, so the register-home refusal branch is
+proved as an invariant over the complete sweep rather than by a live register-homed root. A target whose pause site
+keeps a value in a callee-saved register would close it. A runtime argument that no supplied authority can classify
+is counted and excluded rather than collapsed to a primitive, and the real core library remains unacquirable because
+it declares a pointer to TYPEDBYREF that the ECMA Type production does not admit.
 
 Map metadata constructions to exact runtime constructions, carry ordered generic/nested identity through declaration
 and storage, select per-construction slots, project exact literals without runtime calls, implement every admitted
