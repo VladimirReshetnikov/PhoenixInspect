@@ -566,8 +566,8 @@
       },
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "status": "executed",
+        "reason": "explicit-fully-qualified-constructed-slot-over-one-real-full-dump"
       },
       "representative": false
     },
@@ -653,7 +653,7 @@
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "reason": "requires-the-unwired-w2-w6-suffix-evaluator-over-a-generic-var-field-type"
       },
       "representative": false
     },
@@ -820,8 +820,8 @@
       },
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "status": "executed",
+        "reason": "explicit-fully-qualified-nested-constructed-slot-over-one-real-full-dump"
       },
       "representative": false
     },
@@ -1266,7 +1266,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "reason": "member-lookup-into-the-constructed-generic-base-produces-partial-diverging-from-predeclared-exact-documented-in-attempted-boundary-test"
       },
       "representative": false
     },
@@ -1353,7 +1353,7 @@
       "supportsSuccessorCategory": "static-property-or-method-execution",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "reason": "requires-the-declared-field-over-property-counterfactual-the-runner-does-not-drive"
       },
       "representative": false
     },
@@ -1617,7 +1617,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "reason": "declared-field-type-is-a-generic-var-signature-outside-the-ground-primitive-decoder"
       },
       "representative": false
     },
@@ -1702,7 +1702,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "reason": "declared-field-type-is-a-generic-var-signature-outside-the-ground-primitive-decoder"
       },
       "representative": false
     },
@@ -2333,7 +2333,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "reason": "one-parameter-generic-head-spelled-with-two-arguments-pending-the-invalid-arity-diagnosis"
       },
       "representative": false
     },
@@ -3201,8 +3201,8 @@
       },
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "thread-relative-slot-needs-a-thread-selector-the-simple-runner-does-not-yet-supply"
+        "status": "executed",
+        "reason": "thread-relative-slot-driven-by-the-paused-frame-thread-selector-over-one-real-full-dump"
       },
       "representative": false
     },
@@ -3289,7 +3289,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "non-request-shape-deferred-to-a-later-w8-9-step"
+        "reason": "module-rva-owner-composed-lifts-typebinding-to-exact-but-owner-typeconstruction-stays-partial-diverging-from-predeclared-documented-in-attempted-boundary-test"
       },
       "representative": false
     },

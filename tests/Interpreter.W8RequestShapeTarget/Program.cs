@@ -82,9 +82,46 @@ public static class RequestShapeGate
             "request-malformed-typespec" => RequestPause.WaitForDump(profile, RequestSlot<RequestContext>.Sentinel),
             "request-absent-construction" => RequestPause.WaitForDump(profile, RequestSlot<RequestContext>.Sentinel),
             "request-local-shadow" => LocalShadowProbe.Run(profile),
-            "request-thread-relative" => RequestPause.WaitForDump(profile, RequestSlot<RequestContext>.ThreadSentinel),
+            "request-thread-relative" => RequestThreadWorker.Run(profile),
             _ => 92,
         };
+    }
+}
+
+/// <summary>Parks one alternative worker thread with its own thread-relative sentinel before the main pause.</summary>
+/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+public static class RequestThreadWorker
+{
+    /// <summary>Stores the distinct sentinel the parked worker writes into its own thread-relative slot.</summary>
+    public const int WorkerSentinel = 0x51_00_01_23;
+
+    private static readonly ManualResetEventSlim WorkerParked = new(initialState: false);
+
+    /// <summary>Starts the identifiable parked worker and then pauses the main truth-gate thread.</summary>
+    /// <param name="profile">The selected truth-gate profile.</param>
+    /// <returns>A process exit code if the pause unexpectedly returns.</returns>
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int Run(string profile)
+    {
+        var worker = new Thread(static () => Park(WorkerSentinel))
+        {
+            IsBackground = true,
+            Name = "w8-request-thread-relative-worker",
+        };
+        worker.Start();
+        WorkerParked.Wait();
+        return RequestPause.WaitForDump(profile, RequestSlot<RequestContext>.ThreadSentinel);
+    }
+
+    /// <summary>Writes the worker's own thread-relative sentinel and parks inside this identifiable frame.</summary>
+    /// <param name="workerSentinel">The distinct worker sentinel value.</param>
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    private static void Park(int workerSentinel)
+    {
+        RequestSlot<RequestContext>.ThreadSentinel = workerSentinel;
+        WorkerParked.Set();
+        Thread.Sleep(Timeout.Infinite);
+        GC.KeepAlive(workerSentinel);
     }
 }
 

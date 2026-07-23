@@ -254,27 +254,29 @@ public sealed class W8MeaningfulSyntheticCorpusTests
     }
 
     /// <summary>
-    /// Materializes one independent full dump per executable request-shape incident, evaluates it through the composed
-    /// V2 pipeline over the produced metadata authority, and compares the produced twelve axes to the predeclared row.
+    /// Materializes one independent full dump per executable incident, evaluates it through the composed V2 pipeline
+    /// over the produced metadata authority, and compares the produced twelve axes to the predeclared row.
     /// </summary>
     [Fact]
     [Trait("Category", "Dump")]
     [Trait("Corpus", "W8MeaningfulSyntheticV1")]
-    public void Executable_request_shape_incidents_reach_their_predeclared_axes()
+    public void Executable_incidents_reach_their_predeclared_axes()
     {
         var manifest = W8CorpusManifest.Load();
         var executable = manifest.Incidents
             .Where(static incident => incident.RunnerExecutionStatus == "executed")
             .ToArray();
         Assert.NotEmpty(executable);
-        Assert.All(executable, incident => Assert.Equal("Request", incident.Shape));
 
         var disagreements = new List<string>();
         foreach (var incident in executable)
         {
             using var snapshot = W8CorpusSnapshot.Materialize(incident);
             using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, incident.Shape);
-            var produced = world.Evaluate(incident.Expression, incident.ReadWidth);
+            var produced = world.Evaluate(
+                incident.Expression,
+                incident.ReadWidth,
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null);
 
             if (!produced.Result.Axes.Equals(incident.PredeclaredAxes))
             {
@@ -319,7 +321,10 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         {
             using var snapshot = W8CorpusSnapshot.Materialize(incident);
             using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, incident.Shape);
-            var baseline = world.Evaluate(incident.Expression, incident.ReadWidth);
+            var baseline = world.Evaluate(
+                incident.Expression,
+                incident.ReadWidth,
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null);
             var counterfactual = ApplyCounterfactual(world, incident);
 
             Assert.NotEqual(baseline.Result.Sha256, counterfactual.Result.Sha256);
@@ -338,6 +343,70 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         }
     }
 
+    /// <summary>
+    /// Documents the honest produced-versus-predeclared divergence of one attempted incident the composed pipeline
+    /// evaluates over a real dump but cannot carry to its predeclared axes.
+    /// </summary>
+    /// <remarks>
+    /// Every assertion here is a produced physical fact captured from a real run, not a predeclaration: the manifest
+    /// row stays manifest-only and untouched, and the produced-versus-predeclared divergence is the reported finding.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8MeaningfulSyntheticV1")]
+    public void Attempted_incidents_stop_at_their_landed_pipeline_boundaries()
+    {
+        var manifest = W8CorpusManifest.Load();
+
+        // Incident 34 batch-module-rva-storage: the named-RVA owner module is composed into every portfolio, which
+        // lifts the owner name binding to Exact, but the pipeline's owner type-construction stage still produces
+        // Partial for the cross-module RVA owner over the composed authority, so member lookup and the proven RVA read
+        // are never reached. This diverges both from the predeclared row (a bound Exact member reaching ExactValue)
+        // and from the design decision's intended typeConstruction Exact. Composing the module was necessary but not
+        // sufficient; lifting the cross-module owner construction to Exact is pipeline-side work outside this runner.
+        // Per the corpus discipline the predeclaration is never retuned; the produced divergence is the finding.
+        var moduleRva = manifest.Incidents.Single(static incident => incident.Id == "batch-module-rva-storage");
+        using (var snapshot = W8CorpusSnapshot.Materialize(moduleRva))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, moduleRva.Shape))
+        {
+            var produced = world.Evaluate(moduleRva.Expression, moduleRva.ReadWidth);
+            Assert.Equal(
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Partial/NotReached/NotReached/NotReached/" +
+                "NotReached/NotReached/Partial",
+                Describe(produced.Result.Axes));
+            Assert.Equal(DumpExpressionTypeBindingOutcome.Exact, produced.Result.Axes.TypeBinding);
+            Assert.Equal(DumpExpressionTypeConstructionOutcome.Partial, produced.Result.Axes.TypeConstruction);
+            Assert.Equal(DumpExpressionTypeConstructionOutcome.NotRequired, moduleRva.PredeclaredAxes.TypeConstruction);
+            Assert.Equal(DumpExpressionMemberLookupOutcome.NotReached, produced.Result.Axes.MemberLookup);
+            Assert.Equal(DumpExpressionValueOutcome.NotReached, produced.Result.Axes.Value);
+            Assert.Null(produced.Result.SignedValue);
+            Assert.NotEqual(moduleRva.PredeclaredAxes, produced.Result.Axes);
+        }
+
+        // Incident 11 coordinator-derived-owner-base-field: the non-generic derived owner constructs Exact at arity
+        // zero, but member lookup of the field inherited from its closed generic base produces Partial over the landed
+        // authority, so the run stops before the base slot is read. The row predeclares typeConstruction NotRequired
+        // and an Exact member reaching ExactValue; the produced divergence is the reported finding.
+        var derivedBase = manifest.Incidents.Single(
+            static incident => incident.Id == "coordinator-derived-owner-base-field");
+        using (var snapshot = W8CorpusSnapshot.Materialize(derivedBase))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, derivedBase.Shape))
+        {
+            var produced = world.Evaluate(derivedBase.Expression, derivedBase.ReadWidth);
+            Assert.Equal(
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Partial/NotReached/NotReached/" +
+                "NotReached/NotReached/Partial",
+                Describe(produced.Result.Axes));
+            Assert.Equal(DumpExpressionMemberLookupOutcome.Partial, produced.Result.Axes.MemberLookup);
+            Assert.Equal(DumpExpressionMemberLookupOutcome.Exact, DecodeMemberLookup(derivedBase));
+            Assert.Null(produced.Result.SignedValue);
+            Assert.NotEqual(derivedBase.PredeclaredAxes, produced.Result.Axes);
+        }
+    }
+
+    private static DumpExpressionMemberLookupOutcome DecodeMemberLookup(W8CorpusIncident incident) =>
+        Enum.Parse<DumpExpressionMemberLookupOutcome>(incident.ExpectedAxisText("memberLookup"));
+
     private static W8CorpusEvaluation ApplyCounterfactual(W8CorpusEvaluationWorld world, W8CorpusIncident incident) =>
         incident.CounterfactualAction switch
         {
@@ -345,7 +414,10 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             "substitute-closed-type-argument" => world.Evaluate(
                 incident.CounterfactualExpression ?? incident.Expression,
                 incident.ReadWidth),
-            "select-different-thread" => world.EvaluateWithoutRuntimeEvidence(incident.Expression),
+            "select-different-thread" => world.Evaluate(
+                incident.Expression,
+                incident.ReadWidth,
+                world.WorkerParkThreadSelector()),
             _ => throw new InvalidOperationException(
                 $"The runner cannot yet apply the declared counterfactual '{incident.CounterfactualAction}'."),
         };
@@ -415,7 +487,9 @@ public sealed class W8CorpusIncident
         TruthGateProfile = W8CorpusManifest.RequiredString(target, "truthGateProfile");
         TargetArguments = W8CorpusManifest.ReadStrings(target.GetProperty("targetArguments"));
 
-        ArtifactInputs = W8CorpusManifest.ReadStrings(element.GetProperty("inputs").GetProperty("artifactInputs"));
+        var inputs = element.GetProperty("inputs");
+        ArtifactInputs = W8CorpusManifest.ReadStrings(inputs.GetProperty("artifactInputs"));
+        SelectedFrameMode = W8CorpusManifest.RequiredString(inputs.GetProperty("selectedFrame"), "mode");
         ExpectedTerminal = element.GetProperty("expectedTerminal").ValueKind == JsonValueKind.Null
             ? null
             : element.GetProperty("expectedTerminal").GetString();
@@ -494,6 +568,12 @@ public sealed class W8CorpusIncident
 
     /// <summary>Gets the companion artifact inputs the incident needs.</summary>
     public ImmutableArray<string> ArtifactInputs { get; }
+
+    /// <summary>Gets the predeclared selected-frame input mode of the incident.</summary>
+    public string SelectedFrameMode { get; }
+
+    /// <summary>Gets whether the row declares the paused truth-gate frame's thread as a required input.</summary>
+    public bool RequestsPausedFrameThread => SelectedFrameMode == "managed-thread-and-frame";
 
     /// <summary>Gets the predeclared terminal answer text, or null when no answer is expected.</summary>
     public string? ExpectedTerminal { get; }
@@ -607,6 +687,14 @@ public sealed class W8CorpusIncident
             ".NeverConstructedContext>",
             ".RequestContext>",
             StringComparison.Ordinal),
+        "coordinator-four-coexisting-constructions" => Expression.Replace(
+            ".NorthRegion>",
+            ".SouthRegion>",
+            StringComparison.Ordinal),
+        "batch-nested-per-segment-arity" => Expression.Replace(
+            ".BatchValue>",
+            ".BatchKey>",
+            StringComparison.Ordinal),
         _ => Expression,
     };
 }
@@ -681,6 +769,9 @@ internal static class W8ShapeTargetPaths
     internal static string ResolveAssembly(string assemblyName) =>
         Path.Combine(ResolveOutputDirectory(assemblyName), assemblyName + ".dll");
 
+    internal static string ResolveNamedRvaFixture() =>
+        RepositoryPath("tests/Interpreter.W8TestTarget/NamedRvaFixture/Interpreter.W8NamedRvaTarget.dll");
+
     internal static string RequireArtifact(string path)
     {
         Assert.True(File.Exists(path), $"The required corpus artifact is missing: {path}");
@@ -742,43 +833,42 @@ internal readonly record struct W8CorpusEvaluation(StaticFieldV2ExpressionResult
 /// expressions through the unchanged V2 pipeline.
 /// </summary>
 /// <remarks>
-/// The authority is composed from the produced target module plus one synthetic core module carrying the real
-/// <c>System.Runtime</c> assembly identity, because the pinned corelib is rejected by the shared bounded ECMA
-/// signature grammar. This scaffolding is draft physical evidence, not a product discovery rule.
+/// The authority is composed from every produced module the shape's incidents reference plus one synthetic core module
+/// carrying the real <c>System.Runtime</c> assembly identity, because the pinned corelib is rejected by the shared
+/// bounded ECMA signature grammar. The batch shape additionally binds the referenced named-RVA module that owns the
+/// module-RVA storage. This scaffolding is draft physical evidence, not a product discovery rule.
 /// </remarks>
 internal sealed class W8CorpusEvaluationWorld : IDisposable
 {
     private const int PublicClassAttributes = 0x0000_0001;
     private const ulong SyntheticCoreModuleAddress = 0x0000_7E00_0000_0002UL;
 
-    private readonly MetadataReaderProvider provider;
+    private readonly ImmutableArray<ProducedModule> modules;
     private readonly DataTarget rawReadTarget;
+    private readonly string shape;
 
     private W8CorpusEvaluationWorld(
         StaticFieldV2RuntimeAcquisitionSession session,
         DataTarget rawReadTarget,
-        MetadataReaderProvider provider,
-        MetadataModuleAcquisitionOutcome outcome,
+        string shape,
+        ImmutableArray<ProducedModule> modules,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
-        StaticFieldV2RuntimeModuleBinding binding,
         MetadataNamedTypeDefinitionChainPortfolioIdentity chainPortfolio,
         MetadataAncestryAuthorityPortfolioIdentity ancestry,
         MetadataConstraintTargetResolutionPortfolioIdentity constraints)
     {
         Session = session;
         this.rawReadTarget = rawReadTarget;
-        this.provider = provider;
-        Outcome = outcome;
+        this.shape = shape;
+        this.modules = modules;
         FieldCatalogs = fieldCatalogs;
-        Bindings = [binding];
+        Bindings = [.. modules.Select(static module => module.Binding)];
         ChainPortfolio = chainPortfolio;
         Ancestry = ancestry;
         Constraints = constraints;
     }
 
     internal StaticFieldV2RuntimeAcquisitionSession Session { get; }
-
-    internal MetadataModuleAcquisitionOutcome Outcome { get; }
 
     internal ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs { get; }
 
@@ -790,17 +880,11 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
 
     internal MetadataConstraintTargetResolutionPortfolioIdentity Constraints { get; }
 
+    private ProducedModule Primary => modules[0];
+
     internal static W8CorpusEvaluationWorld Open(string dumpPath, string shape)
     {
-        var assemblyName = shape switch
-        {
-            "Request" => "Interpreter.W8RequestShapeTarget",
-            "Batch" => "Interpreter.W8BatchShapeTarget",
-            "Coordinator" => "Interpreter.W8CoordinatorShapeTarget",
-            "Workflow" => "Interpreter.W8WorkflowShapeTarget",
-            _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, "The shape is not one of the four."),
-        };
-
+        var artifacts = ShapeArtifacts(shape);
         var session = StaticFieldV2RuntimeAcquisitionSession.Open(dumpPath);
         try
         {
@@ -809,44 +893,45 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 new DataTargetOptions { FileLocator = ClrmdOfflineFileLocator.Instance });
             try
             {
-                var artifact = ReadArtifactContent(
-                    W8ShapeTargetPaths.RequireArtifact(W8ShapeTargetPaths.ResolveAssembly(assemblyName)));
-                var observation = Assert.Single(session.Modules.Where(candidate =>
-                    candidate.MetadataLength == (ulong)artifact.Bytes.Length &&
-                    ModuleContentIdentity
-                        .FromMetadata(artifact.Mvid, session.ReadModuleMetadata(candidate.ModuleAddress).AsSpan())
-                        .Equals(artifact.Content)));
-                var metadataBytes = session.ReadModuleMetadata(observation.ModuleAddress);
-                var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+                var produced = ImmutableArray.CreateBuilder<ProducedModule>();
                 try
                 {
-                    var reader = provider.GetMetadataReader();
-                    var metadataModule = MetadataAuthorityProducer.AcquireManifestModuleIdentity(
-                        session.CreateModuleInstance(observation.ModuleAddress),
-                        reader,
-                        metadataBytes);
-                    var outcome = MetadataAuthorityProducer.AcquireModule(
-                        MetadataModuleAcquisitionRequest.Create(metadataModule, () => provider.GetMetadataReader()));
-                    Assert.Equal(MetadataModuleAcquisitionResultKind.Exact, outcome.ResultKind);
-                    var binding = StaticFieldV2RuntimeModuleBinding.Create(
-                        observation.ModuleAddress,
-                        observation.ImageBase,
-                        observation.ImageSize,
-                        metadataModule);
+                    foreach (var artifactPath in artifacts)
+                    {
+                        var artifact = ReadArtifactContent(W8ShapeTargetPaths.RequireArtifact(artifactPath));
+                        var observations = session.Modules
+                            .Where(candidate =>
+                                candidate.MetadataLength == (ulong)artifact.Bytes.Length &&
+                                ModuleContentIdentity
+                                    .FromMetadata(
+                                        artifact.Mvid,
+                                        session.ReadModuleMetadata(candidate.ModuleAddress).AsSpan())
+                                    .Equals(artifact.Content))
+                            .OrderBy(static candidate => candidate.ModuleAddress)
+                            .ToArray();
+                        Assert.NotEmpty(observations);
+                        foreach (var observation in observations)
+                        {
+                            produced.Add(ProducedModule.Bind(session, observation));
+                        }
+                    }
 
-                    var core = BuildSyntheticCoreModule(session, metadataModule);
+                    var core = BuildSyntheticCoreModule(session, produced[0].MetadataModule);
                     var compatibility = MetadataDefinitionCompatibilityPortfolioIdentity.Create(
-                        [core.Compatibility, outcome.Compatibility!]);
+                        [core.Compatibility, .. produced.Select(static module => module.Outcome.Compatibility!)]);
                     var chainPortfolio = MetadataNamedTypeDefinitionChainPortfolioIdentity.Create(
                         compatibility,
-                        [core.ChainCatalog, outcome.ChainCatalog!]);
+                        [core.ChainCatalog, .. produced.Select(static module => module.Outcome.ChainCatalog!)]);
                     var resolution = MetadataTypeReferenceResolutionPortfolioIdentity.Create(
                         chainPortfolio,
-                        [core.Tables, outcome.ReferenceTables!]);
+                        [core.Tables, .. produced.Select(static module => module.Outcome.ReferenceTables!)]);
                     var ancestry = MetadataAncestryAuthorityPortfolioIdentity.Create(resolution);
                     var constraints = MetadataConstraintTargetResolutionPortfolioIdentity.Create(
                         resolution,
-                        [core.Constraints, outcome.GenericParameterConstraints!]);
+                        [
+                            core.Constraints,
+                            .. produced.Select(static module => module.Outcome.GenericParameterConstraints!),
+                        ]);
                     Assert.Equal(MetadataAncestryAuthorityPortfolioResultKind.Exact, ancestry.ResultKind);
                     Assert.Equal(
                         MetadataConstraintTargetResolutionPortfolioResultKind.Exact,
@@ -855,17 +940,23 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                     return new W8CorpusEvaluationWorld(
                         session,
                         rawReadTarget,
-                        provider,
-                        outcome,
-                        [core.FieldCatalog, outcome.FieldDefinitions!],
-                        binding,
+                        shape,
+                        produced.ToImmutable(),
+                        [
+                            core.FieldCatalog,
+                            .. produced.Select(static module => module.Outcome.FieldDefinitions!),
+                        ],
                         chainPortfolio,
                         ancestry,
                         constraints);
                 }
                 catch
                 {
-                    provider.Dispose();
+                    foreach (var module in produced)
+                    {
+                        module.Dispose();
+                    }
+
                     throw;
                 }
             }
@@ -882,40 +973,47 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         }
     }
 
-    internal W8CorpusEvaluation Evaluate(string expression, int readWidth)
+    /// <summary>Evaluates one predeclared expression through the unchanged composed V2 pipeline.</summary>
+    /// <param name="expression">The predeclared expression text.</param>
+    /// <param name="readWidth">The counted read width in bytes.</param>
+    /// <param name="threadSelector">The declared selected-thread predicate, or null when the row declares none.</param>
+    /// <returns>The produced evaluation together with the acquired physical address, when one exists.</returns>
+    internal W8CorpusEvaluation Evaluate(
+        string expression,
+        int readWidth,
+        StaticFieldV2RuntimeThreadSelector? threadSelector = null)
     {
         var probes = ExpressionV2CapabilityProbeSet.Create();
         ulong? acquiredSlotAddress = null;
+        StaticFieldV2ClosedConstructionOutcome? metadataConstruction = null;
         var evidence = StaticFieldV2RuntimeEvidenceSource.Create(
-            constructionCandidates: (construction, strategy) => Session.AcquireConstruction(
-                StaticFieldV2RuntimeConstructionAcquisitionRequest.Create(
-                    construction,
-                    strategy,
-                    ChainPortfolio,
-                    Ancestry,
-                    Bindings,
-                    probes)).Candidates,
+            constructionCandidates: (construction, strategy) =>
+            {
+                metadataConstruction = construction;
+                return Session.AcquireConstruction(
+                    StaticFieldV2RuntimeConstructionAcquisitionRequest.Create(
+                        construction,
+                        strategy,
+                        ChainPortfolio,
+                        Ancestry,
+                        Bindings,
+                        probes)).Candidates;
+            },
             slotFacts: (strategy, selection) =>
             {
-                var slot = Session.AcquireStaticSlot(
-                    StaticFieldV2StaticSlotAcquisitionRequest.Create(
-                        strategy,
-                        readWidth,
-                        constructionSelection: selection,
-                        capabilityProbes: probes));
-                if (slot.ResultKind != StaticFieldV2RuntimeAcquisitionResultKind.Exact)
+                var facts = AcquireSlotFacts(
+                    strategy,
+                    selection,
+                    metadataConstruction,
+                    readWidth,
+                    threadSelector,
+                    probes);
+                if (facts is not null)
                 {
-                    return null;
+                    acquiredSlotAddress = facts.SlotAddress ?? facts.MappedAddress;
                 }
 
-                acquiredSlotAddress = slot.SlotAddress;
-                return StaticFieldV2RuntimeSlotFacts.Create(
-                    readWidth,
-                    slot.SlotAddress,
-                    slot.SelectedThread,
-                    fieldRvaRowToken: slot.FieldRvaRowToken,
-                    mappedRelativeVirtualAddress: slot.MappedRelativeVirtualAddress,
-                    mappedAddress: slot.MappedAddress);
+                return facts;
             },
             rawMemoryRead: ReadRawBytes);
 
@@ -943,9 +1041,26 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         return new W8CorpusEvaluation(result, null);
     }
 
+    /// <summary>Builds the declared selected-thread predicate of the shape's paused truth-gate frame.</summary>
+    /// <returns>The token-keyed thread selector of the pause frame.</returns>
+    internal StaticFieldV2RuntimeThreadSelector PausedFrameThreadSelector() =>
+        FrameSelector(shape + "Pause", "WaitForDump");
+
+    /// <summary>Builds the declared alternative-thread predicate of the request shape's parked worker frame.</summary>
+    /// <returns>The token-keyed thread selector of the worker park frame.</returns>
+    internal StaticFieldV2RuntimeThreadSelector WorkerParkThreadSelector()
+    {
+        Assert.Equal("Request", shape);
+        return FrameSelector("RequestThreadWorker", "Park");
+    }
+
     public void Dispose()
     {
-        provider.Dispose();
+        foreach (var module in modules)
+        {
+            module.Dispose();
+        }
+
         rawReadTarget.Dispose();
         Session.Dispose();
     }
@@ -965,6 +1080,211 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         var bytes = peReader.GetMetadata().GetContent();
         var mvid = reader.GetGuid(reader.GetModuleDefinition().Mvid);
         return new ArtifactContent(bytes, mvid, ModuleContentIdentity.FromMetadata(mvid, bytes.AsSpan()));
+    }
+
+    private static ImmutableArray<string> ShapeArtifacts(string shape) =>
+        shape switch
+        {
+            "Request" => [W8ShapeTargetPaths.ResolveAssembly("Interpreter.W8RequestShapeTarget")],
+
+            // The batch shape references the named-RVA module that owns the module-RVA storage; both are composed so
+            // that owner type is present in every portfolio the module-RVA incident consults.
+            "Batch" =>
+            [
+                W8ShapeTargetPaths.ResolveAssembly("Interpreter.W8BatchShapeTarget"),
+                W8ShapeTargetPaths.ResolveNamedRvaFixture(),
+            ],
+            "Coordinator" => [W8ShapeTargetPaths.ResolveAssembly("Interpreter.W8CoordinatorShapeTarget")],
+            "Workflow" => [W8ShapeTargetPaths.ResolveAssembly("Interpreter.W8WorkflowShapeTarget")],
+            _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, "The shape is not one of the four."),
+        };
+
+    private string PrimaryNamespace() => "Interpreter.W8" + shape + "ShapeTarget";
+
+    private StaticFieldV2RuntimeThreadSelector FrameSelector(string typeName, string methodName) =>
+        StaticFieldV2RuntimeThreadSelector.Create(
+            Primary.Binding.RuntimeModuleAddress,
+            FindTypeToken(Primary.Reader, PrimaryNamespace(), typeName),
+            FindMethodToken(Primary.Reader, PrimaryNamespace(), typeName, methodName));
+
+    private StaticFieldV2RuntimeSlotFacts? AcquireSlotFacts(
+        StaticFieldV2StorageStrategyOutcome strategy,
+        StaticFieldV2RuntimeConstructionSelection? selection,
+        StaticFieldV2ClosedConstructionOutcome? metadataConstruction,
+        int readWidth,
+        StaticFieldV2RuntimeThreadSelector? threadSelector,
+        ExpressionV2CapabilityProbeSet probes)
+    {
+        var effectiveStrategy = strategy;
+        var effectiveSelection = selection;
+        StaticFieldV2RuntimeThreadSelector? selector = null;
+        if (strategy.Strategy == StaticFieldV2StorageStrategy.ConstructedSlot &&
+            threadSelector is not null &&
+            metadataConstruction is not null &&
+            FieldCarriesThreadStaticAttribute(strategy.Request.FieldRow))
+        {
+            // The pipeline classifies without the physical CustomAttribute table; the runner decodes the real
+            // ThreadStatic marker row of the produced module and reclassifies for the session acquisition alone.
+            // The slot request rejects a construction selection classified under a different strategy, so the runner
+            // re-selects the same closed construction under the reclassified thread-relative strategy.
+            effectiveStrategy = StaticFieldV2StorageStrategyBinder.ClassifyStrategy(
+                StaticFieldV2StorageStrategyRequest.Create(
+                    strategy.Request.FieldRow,
+                    strategy.Request.DeclaringTypeDefinition,
+                    threadStaticAttributeSuppliedByCaller: true));
+            Assert.Equal(StaticFieldV2StorageStrategy.ThreadRelativeSlot, effectiveStrategy.Strategy);
+            var reacquired = Session.AcquireConstruction(
+                StaticFieldV2RuntimeConstructionAcquisitionRequest.Create(
+                    metadataConstruction,
+                    effectiveStrategy,
+                    ChainPortfolio,
+                    Ancestry,
+                    Bindings,
+                    probes));
+            if (reacquired.ResultKind != StaticFieldV2RuntimeAcquisitionResultKind.Exact)
+            {
+                return null;
+            }
+
+            effectiveSelection = reacquired.Selection;
+            selector = threadSelector;
+        }
+
+        StaticFieldV2RuntimeModuleBinding? declaringBinding = null;
+        if (strategy.Strategy == StaticFieldV2StorageStrategy.ModuleRva)
+        {
+            declaringBinding = BindingFor(strategy.Request.FieldRow);
+        }
+
+        var slot = Session.AcquireStaticSlot(
+            StaticFieldV2StaticSlotAcquisitionRequest.Create(
+                effectiveStrategy,
+                readWidth,
+                constructionSelection: effectiveSelection,
+                threadSelector: selector,
+                declaringModuleBinding: declaringBinding,
+                capabilityProbes: probes));
+        if (slot.ResultKind != StaticFieldV2RuntimeAcquisitionResultKind.Exact)
+        {
+            return null;
+        }
+
+        // The pipeline's own strategy never carries the selected-thread fact: the CustomAttribute table is a declared
+        // coverage boundary there, so its constructed-slot plan admits the exact address alone.
+        return StaticFieldV2RuntimeSlotFacts.Create(
+            readWidth,
+            slot.SlotAddress,
+            selectedThread: null,
+            moduleContent: declaringBinding?.MetadataModule.ModuleContent,
+            fieldRvaRowToken: slot.FieldRvaRowToken,
+            mappedRelativeVirtualAddress: slot.MappedRelativeVirtualAddress,
+            mappedAddress: slot.MappedAddress);
+    }
+
+    private bool FieldCarriesThreadStaticAttribute(MetadataFieldDefinitionTableRowIdentity fieldRow)
+    {
+        var reader = ReaderFor(fieldRow);
+        var handle = (FieldDefinitionHandle)MetadataTokens.Handle(fieldRow.FieldDefinitionToken);
+        foreach (var attributeHandle in reader.GetFieldDefinition(handle).GetCustomAttributes())
+        {
+            var constructor = reader.GetCustomAttribute(attributeHandle).Constructor;
+            string? namespaceName;
+            string? typeName;
+            switch (constructor.Kind)
+            {
+                case HandleKind.MemberReference:
+                    var parent = reader.GetMemberReference((MemberReferenceHandle)constructor).Parent;
+                    if (parent.Kind != HandleKind.TypeReference)
+                    {
+                        continue;
+                    }
+
+                    var typeReference = reader.GetTypeReference((TypeReferenceHandle)parent);
+                    namespaceName = reader.GetString(typeReference.Namespace);
+                    typeName = reader.GetString(typeReference.Name);
+                    break;
+                case HandleKind.MethodDefinition:
+                    var declaringType = reader.GetTypeDefinition(
+                        reader.GetMethodDefinition((MethodDefinitionHandle)constructor).GetDeclaringType());
+                    namespaceName = reader.GetString(declaringType.Namespace);
+                    typeName = reader.GetString(declaringType.Name);
+                    break;
+                default:
+                    continue;
+            }
+
+            if (string.Equals(namespaceName, "System", StringComparison.Ordinal) &&
+                string.Equals(typeName, "ThreadStaticAttribute", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private MetadataReader ReaderFor(MetadataFieldDefinitionTableRowIdentity fieldRow)
+    {
+        foreach (var module in modules)
+        {
+            if (module.MetadataModule.Equals(fieldRow.SourceEnds.SourceModule))
+            {
+                return module.Reader;
+            }
+        }
+
+        throw new InvalidOperationException("The field row names a module this world did not produce.");
+    }
+
+    private StaticFieldV2RuntimeModuleBinding BindingFor(MetadataFieldDefinitionTableRowIdentity fieldRow)
+    {
+        foreach (var module in modules)
+        {
+            if (module.MetadataModule.Equals(fieldRow.SourceEnds.SourceModule))
+            {
+                return module.Binding;
+            }
+        }
+
+        throw new InvalidOperationException("The field row names a module this world did not produce.");
+    }
+
+    private static int FindTypeToken(MetadataReader reader, string namespaceName, string typeName)
+    {
+        foreach (var handle in reader.TypeDefinitions)
+        {
+            var definition = reader.GetTypeDefinition(handle);
+            if (string.Equals(reader.GetString(definition.Namespace), namespaceName, StringComparison.Ordinal) &&
+                string.Equals(reader.GetString(definition.Name), typeName, StringComparison.Ordinal))
+            {
+                return MetadataTokens.GetToken(handle);
+            }
+        }
+
+        throw new InvalidOperationException($"The shape module declares no type {namespaceName}.{typeName}.");
+    }
+
+    private static int FindMethodToken(
+        MetadataReader reader,
+        string namespaceName,
+        string typeName,
+        string methodName)
+    {
+        var typeToken = FindTypeToken(reader, namespaceName, typeName);
+        var definition = reader.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle(typeToken));
+        foreach (var handle in definition.GetMethods())
+        {
+            if (string.Equals(
+                    reader.GetString(reader.GetMethodDefinition(handle).Name),
+                    methodName,
+                    StringComparison.Ordinal))
+            {
+                return MetadataTokens.GetToken(handle);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"The shape type {namespaceName}.{typeName} declares no method {methodName}.");
     }
 
     private static SyntheticCoreModule BuildSyntheticCoreModule(
@@ -1137,4 +1457,65 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         MetadataModuleReferenceTableSetIdentity Tables,
         MetadataGenericParameterConstraintPhysicalTableCatalogIdentity Constraints,
         MetadataFieldDefinitionTableCatalogIdentity FieldCatalog);
+
+    /// <summary>Produces the composed metadata authority of one real module observed in the dump.</summary>
+    /// <remarks>This is draft physical scaffolding and not a product contract.</remarks>
+    private sealed class ProducedModule : IDisposable
+    {
+        private readonly MetadataReaderProvider provider;
+
+        private ProducedModule(
+            MetadataReaderProvider provider,
+            MetadataReader reader,
+            StaticFieldMetadataModuleIdentity metadataModule,
+            MetadataModuleAcquisitionOutcome outcome,
+            StaticFieldV2RuntimeModuleBinding binding)
+        {
+            this.provider = provider;
+            Reader = reader;
+            MetadataModule = metadataModule;
+            Outcome = outcome;
+            Binding = binding;
+        }
+
+        internal MetadataReader Reader { get; }
+
+        internal StaticFieldMetadataModuleIdentity MetadataModule { get; }
+
+        internal MetadataModuleAcquisitionOutcome Outcome { get; }
+
+        internal StaticFieldV2RuntimeModuleBinding Binding { get; }
+
+        internal static ProducedModule Bind(
+            StaticFieldV2RuntimeAcquisitionSession session,
+            StaticFieldV2RuntimeModuleObservation observation)
+        {
+            var metadataBytes = session.ReadModuleMetadata(observation.ModuleAddress);
+            var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+            try
+            {
+                var reader = provider.GetMetadataReader();
+                var metadataModule = MetadataAuthorityProducer.AcquireManifestModuleIdentity(
+                    session.CreateModuleInstance(observation.ModuleAddress),
+                    reader,
+                    metadataBytes);
+                var outcome = MetadataAuthorityProducer.AcquireModule(
+                    MetadataModuleAcquisitionRequest.Create(metadataModule, () => provider.GetMetadataReader()));
+                Assert.Equal(MetadataModuleAcquisitionResultKind.Exact, outcome.ResultKind);
+                var binding = StaticFieldV2RuntimeModuleBinding.Create(
+                    observation.ModuleAddress,
+                    observation.ImageBase,
+                    observation.ImageSize,
+                    metadataModule);
+                return new ProducedModule(provider, reader, metadataModule, outcome, binding);
+            }
+            catch
+            {
+                provider.Dispose();
+                throw;
+            }
+        }
+
+        public void Dispose() => provider.Dispose();
+    }
 }
