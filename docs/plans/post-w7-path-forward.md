@@ -1078,13 +1078,23 @@ an explicit route holds a poisoned context seam and still reports zero context c
 under a fully poisoned capability probe set. Runtime and context evidence arrive through caller-owned delegates, so
 the layer carries no acquisition dependency.
 
-Four boundaries are declared rather than hidden: a contextual or bare route binds an owner definition and stops typed
+Three boundaries are declared rather than hidden: a contextual or bare route binds an owner definition and stops typed
 when the spelling carries type arguments, the declared field type is read from a ground primitive signature until
-substitution is wired, the Constant row is a caller seam because no landed catalog models that table, and a present
-W2/W6 suffix is reported as an unsupported reached disposition until the unchanged suffix evaluator is wired.
+substitution is wired, and the Constant row is a caller seam because no landed catalog models that table.
 
-**Remaining for W8.8:** wiring the unchanged W2/W6 suffix evaluator, the append-only consumer and report schemas, and
-the generated cross-product executed through hidden full-dump targets.
+The W2/W6 suffix is now evaluated end to end at `727dbdb7d`: the pipeline hands the resolved non-null static-field
+reference address and the frozen suffix descriptor to a caller-supplied member-chain evidence seam
+(`StaticFieldV2SuffixEvaluationSource`) that speaks only the Core evaluation result and the query value, so the pipeline
+gains no runtime dependency and Fast tests drive it synthetically. An exact-null reference takes the unchanged
+conditional-null/coalesce path with no read (proven by a poisoned seam observing zero suffix-evidence calls); a
+value-type or literal reference with a requested suffix stays Unsupported; a blocked reference target blocks the suffix
+before any seam call; and a missing seam is a typed Blocked rather than a crash. The engine's completed/partial/unavailable
+dispositions map onto the suffix axis and the suffix value is retained in provenance, with a dedicated evidence-ledger
+counter on its own axis. The former unsupported-reached boundary is retired; the remaining declared boundary here is
+`SuffixEvaluationSuppliedByCallerSeam`.
+
+**Remaining for W8.8:** the append-only consumer and report schemas, and the generated cross-product executed through
+hidden full-dump targets.
 
 Route only explicit V2 or W8.1-admitted frame-value requests through their declared bind/prepare/read/evaluate path,
 reuse unchanged W2/W6 suffixes, add append-only consumer/report schemas, and execute the generated cross-product through
@@ -1108,24 +1118,35 @@ consumers, validate raw counts/counterfactual decision facts, and select exactly
 and decision-changing booleans with counterfactual actions, and frozen successor categories; four materially distinct
 shape targets build; and the two fresh byte-identical machine and human portfolio reports are complete at `b1cc5a11d`
 with the raw counts (33 useful, 26 decision-changing, 19 attributable) and category-qualification arithmetic
-independently validated. Three request-shape incidents execute end to end through the composed pipeline over real
-dumps with proven counterfactual checks. **Remaining:** the other thirty-two incidents stay manifest-only pending
-scoped-context/PDB projection, thread-selector wiring, companion poison artifacts, and the frame-value profile. One
-recorded finding blocks the batch module-RVA incident: its owner type construction is produced `Partial` rather than
-reaching its value. Code investigation confirmed the cause — the corpus evaluation world composes authority from only
-the synthetic core plus the one shape-target module, while the RVA field's owner type lives in a third module
-(`Interpreter.W8NamedRvaTarget`) the batch target merely references, so that owner is absent from the portfolio. This
-is a runner-composition gap, not a pipeline defect; the RVA read itself is proven in the runtime acquisition lane. The
-fix is to acquire and compose every referenced companion module into the compatibility, chain, resolution, ancestry,
-and constraint portfolios before evaluating a cross-module-owner incident.
+independently validated. Six incidents now execute end to end through the composed pipeline over real dumps across three materially distinct
+shapes at `db0630de8` — Request (`request-qualified-constructed-sentinel`, `request-distinct-construction-slots`,
+`request-absent-runtime-construction`, `request-thread-relative-slot`), Batch (`batch-nested-per-segment-arity`), and
+Coordinator (`coordinator-four-coexisting-constructions`) — each with its twelve produced axes equal to its predeclared
+axes and, for the two decision-changing rows (`coordinator-four-coexisting-constructions`,
+`request-thread-relative-slot`), a passing counterfactual. Multi-module authority composition landed: the corpus
+evaluation world now composes every referenced companion module's compatibility, chain, resolution, ancestry, and
+constraint catalogs alongside the synthetic core, and a thread-relative slot reclassifies to `ThreadRelativeSlot` and
+re-acquires its closed construction under that strategy once the `[ThreadStatic]` row is decoded.
 
-The incident also carries a resolved design decision. The twelve axes separate metadata `typeConstruction` from
-`runtimeConstruction`. For a `ModuleRva` static field on a non-generic owner the correct produced axes are
-`typeConstruction = Exact` (the owner is bound and trivially constructed at arity zero so member lookup can select the
-field), `runtimeConstruction = NotRequired` (RVA storage needs no runtime construction), `storage = Exact`, and
-`value = ExactValue`. Incident 34's predeclared `typeConstruction = NotRequired` conflated the two construction axes.
-Per the corpus discipline the manifest predeclaration is not retuned to the produced result; instead the produced
-divergence is documented as a finding through the attempted-boundary test, and the manifest row stays frozen.
+**Remaining:** incidents pending scoped-context/PDB projection, companion poison artifacts, the generic-`VAR` field
+signature decoder, and the wired suffix over a real member chain stay manifest-only with precise recorded reasons; the
+frame-value profile composition (the memory-homed `workflow-frame-value-memory-homed-root` incident and its Workflow
+shape) is the keystone remaining piece.
+
+Two produced-vs-predeclared divergences are documented as findings through the
+`Attempted_incidents_stop_at_their_landed_pipeline_boundaries` test with axes captured from real runs, and the manifest
+rows stay frozen (never retuned). The batch module-RVA incident's owner name-binding lifts to `Exact` once the
+named-RVA owner module is composed (proving composition was necessary), but the pipeline's owner **type-construction
+stays `Partial`** for the cross-module RVA owner over the composed authority, so member lookup and the
+separately-proven RVA read are never reached — composition was necessary but not sufficient, and lifting the
+cross-module owner construction to `Exact` is remaining pipeline-side work. This also refines the earlier design note:
+the twelve axes separate metadata `typeConstruction` from `runtimeConstruction`, and while the intended terminal for a
+`ModuleRva` field on a non-generic owner is `typeConstruction = Exact` / `runtimeConstruction = NotRequired` /
+`storage = Exact` / `value = ExactValue`, the current composed pipeline produces `typeConstruction = Partial`; the
+divergence from both the predeclared row (which conflated the two construction axes as `NotRequired`) and the intended
+terminal is recorded rather than hidden. The `coordinator-derived-owner-base-field` incident constructs its non-generic
+derived owner `Exact` at arity zero but returns `Partial` member lookup for the field inherited from its closed generic
+base — a second documented boundary.
 
 **Exit gate**
 
