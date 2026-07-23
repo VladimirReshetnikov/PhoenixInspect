@@ -1112,9 +1112,20 @@ independently validated. Three request-shape incidents execute end to end throug
 dumps with proven counterfactual checks. **Remaining:** the other thirty-two incidents stay manifest-only pending
 scoped-context/PDB projection, thread-selector wiring, companion poison artifacts, and the frame-value profile. One
 recorded finding blocks the batch module-RVA incident: its owner type construction is produced `Partial` rather than
-reaching its value, most likely because the batch runner's produced authority does not yet include the RVA target's
-module — a runner-composition gap, not a pipeline defect, since the RVA read itself is proven in the runtime
-acquisition lane.
+reaching its value. Code investigation confirmed the cause — the corpus evaluation world composes authority from only
+the synthetic core plus the one shape-target module, while the RVA field's owner type lives in a third module
+(`Interpreter.W8NamedRvaTarget`) the batch target merely references, so that owner is absent from the portfolio. This
+is a runner-composition gap, not a pipeline defect; the RVA read itself is proven in the runtime acquisition lane. The
+fix is to acquire and compose every referenced companion module into the compatibility, chain, resolution, ancestry,
+and constraint portfolios before evaluating a cross-module-owner incident.
+
+The incident also carries a resolved design decision. The twelve axes separate metadata `typeConstruction` from
+`runtimeConstruction`. For a `ModuleRva` static field on a non-generic owner the correct produced axes are
+`typeConstruction = Exact` (the owner is bound and trivially constructed at arity zero so member lookup can select the
+field), `runtimeConstruction = NotRequired` (RVA storage needs no runtime construction), `storage = Exact`, and
+`value = ExactValue`. Incident 34's predeclared `typeConstruction = NotRequired` conflated the two construction axes.
+Per the corpus discipline the manifest predeclaration is not retuned to the produced result; instead the produced
+divergence is documented as a finding through the attempted-boundary test, and the manifest row stays frozen.
 
 **Exit gate**
 
