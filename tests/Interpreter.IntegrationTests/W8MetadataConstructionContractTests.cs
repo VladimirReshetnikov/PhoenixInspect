@@ -1540,9 +1540,15 @@ public sealed class W8MetadataConstructionContractTests
                 "MetadataTypeSubstitutionRequest.Root",
                 "MetadataTypeSubstitutionResult.ClosedType",
                 "MetadataTypeSubstitutionResult.Root",
+                "StaticFieldV2AssignabilityRequest.SourceType",
+                "StaticFieldV2AssignabilityRequest.TargetType",
+                "StaticFieldV2AssignabilityVariancePositionIdentity.SourceArgument",
+                "StaticFieldV2AssignabilityVariancePositionIdentity.TargetArgument",
                 "StaticFieldV2ClosedConstructionOutcome.FlattenedArguments",
                 "StaticFieldV2ClosedConstructionOutcome.OwnerConstruction",
                 "StaticFieldV2ConstraintCheckIdentity.Argument",
+                "StaticFieldV2RuntimeConstructionCandidate.ClosedArguments",
+                "StaticFieldV2RuntimeValueRequest.DeclaredType",
             },
             guardedProperties.Select(static property =>
                 $"{property.DeclaringType!.Name}.{property.Name}").ToArray());
