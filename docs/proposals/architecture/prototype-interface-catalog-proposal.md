@@ -13,9 +13,9 @@ expression, binding-context, symbol, storage, and value contracts are recorded b
 are summarized separately; W8.2 is the active additive V2 contract checkpoint.
 Strengthened W3 checkpoint `19c292f9f`
 passed the required local milestone-selected lanes and all four jobs in [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs
 at that exact commit. W4.1–W4.5 have since landed. Exact W4.2 implementation commit `e89e43498` remains the
 explained-arithmetic checkpoint; exact W4.3 implementation commit `7479b1ad4` is the structured field-continuation
 checkpoint; and W4.4 checkpoints `2e596c117`/`742ef2c4f` are the current direct-MethodDef graph-preparation checkpoint.
@@ -351,7 +351,7 @@ canonical result byte sequences and result SHA-256 values for all 22 cases, plus
 plan SHA-256 values for the 13 cases whose preparation succeeds, must match. The same corpus asserts exact axes,
 diagnostics, context, path bounds, ordered provenance payload, and memory-read geometry. The implementation and full
 corpus are locally verified and passed all four required hosted jobs at exact closure commit `5bed47100` in [GitHub
-Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
+Actions run 29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178).
 
 ### Standalone counterfactual target outcome
 

@@ -11,11 +11,11 @@ The funded product direction is a **deterministic, read-only expression evaluato
 The proof obligations are deliberately ordered. The first three have exact-HEAD hosted closure evidence for their
 revised milestone-selected scopes. W3's strengthened implementation checkpoint is `19c292f9f`; exact documentation-closure
 commit `de6cea124` passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W4.1–W4.9 have since landed;
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237). W4.1–W4.9 have since landed;
 exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four jobs in [GitHub Actions run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083).
+29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083).
 Final documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230).
 The bounded expression-to-result composition and meaningful synthetic usefulness gate in the
 [`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md) is closed for W5's stated prototype scope. W5.5b
 checkpoint `90ade6d92` selects one fixed-depth member-chain prototype slice from twelve designed incidents across two
@@ -336,7 +336,7 @@ fallback, typed-root, binding, syntax, type, and partial-string outcomes. Every 
 plan projection/fingerprint is identical when repeated within one session and when the dump is reopened, its root
 rediscovered, and the query rebound. This implementation and corpus pass locally and at exact W2 closure commit
 `5bed47100` in [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178).
 
 ### 4.5 Interpreter kernel
 
@@ -365,9 +365,9 @@ snapshot-scoped module, method shape/body, exact receiver type, admitted `ldfld`
 counted dump evidence; it reopens and rebinds the dump to reproduce identities, outcome, events, budget, memory, and
 canonical transcript. The independently opened disk PE remains a late comparison oracle. These implementation facts
 and all required milestone-selected lanes pass locally at `19c292f9f`; [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) also passed all four jobs.
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) also passed all four jobs.
 Exact documentation-closure commit `de6cea124` then passed all four required jobs in [closure run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), formally closing W3's defined
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237), formally closing W3's defined
 milestone-selected scope.
 
 W4.2 exact implementation commit `e89e43498` extends the same machine rather than creating a parallel interpreter.
@@ -588,7 +588,7 @@ preparation succeeds proceed to bound-plan evaluation. It compares the complete 
 result SHA-256 plus those 13 plans' canonical projection strings and plan SHA-256 values, then closes and reopens the
 dump, reconstructs typed root bindings, and reproduces those artifacts. Input, request, root-selection, plan, and
 result identities are versioned and content-derived rather than enumeration- or allocation-derived. [GitHub Actions
-run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required
+run 29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required
 jobs at exact W2 closure commit `5bed47100`.
 
 The W3 implementation proof repeats compiler-derived E1/E2 executions through one frozen machine and through freshly
@@ -596,8 +596,8 @@ opened SRM modules. Its dump E2 proof additionally closes and reopens the dump, 
 object, reprojects the method/field from counted evidence, reimports the exact field cell, and reproduces structural
 identities plus the canonical execution transcript. This passes locally at strengthened implementation commit `19c292f9f`, whose
 four hosted jobs also passed in [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Exact documentation-closure
-commit `de6cea124` and [run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237)
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767). Exact documentation-closure
+commit `de6cea124` and [run 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237)
 close that evidence chain with all four required jobs passing.
 
 The W4.2 dump-free proof independently freezes canonical bytes and hard-coded IDs for `InputOrigin` and

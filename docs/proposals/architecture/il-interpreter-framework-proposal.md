@@ -1,7 +1,7 @@
 > **Roadmap status: supporting design with substantial research content.** The active product is the dump-backed read-
 > only evaluator. The closed W3 concrete opcode/memory proof was strengthened at implementation checkpoint `19c292f9f` and
 > formally closed at exact documentation commit `de6cea124`; [GitHub Actions run
-> 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+> 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs
 > at that exact closure commit. W4.2–W4.5 now prove a narrow dump-free explained-unknown, graph-preparation, and
 > interpreted-call path. Exact W4.6a commit `77c92789b16d9258c907d5026a36e39f8c957b41` adds structural pure-model
 > selection, exact W4.6b commit `fd723a912` adds modeled-return lineage construction, exact W4.6c commit `877c9fb55`
@@ -768,9 +768,9 @@ The generated dump E2 case goes further: method shape/body and the exact correla
 counted dump evidence, and closing/reopening/rebinding the dump reproduces structural identities, state, memory,
 budget, events, and transcript. This passed locally at strengthened checkpoint `19c292f9f`, whose four hosted jobs passed in
 [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 then closed formally at
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767). W3 then closed formally at
 exact documentation commit `de6cea124` when [run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs.
 
 For later supported verifiable IL:
 

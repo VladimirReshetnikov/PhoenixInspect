@@ -61,10 +61,10 @@ An experiment must implement the same projected contract and run the same confor
   method-shape projection, contextual FieldDef resolution, metadata-derived activation, compiler/CoreCLR plus
   real-dump getter fixtures, exact compact `ldarg.0` enforcement for E2, and positive coverage for every admitted
   arithmetic operator and `nop`. The primary checkpoint `12b6ef942` passed all four jobs in [GitHub Actions run
-  29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656). [Run
-  29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at
+  29372661656](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29372661656). [Run
+  29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four jobs at
   exact strengthened checkpoint `19c292f9f`. [Run
-  29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all
+  29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) subsequently passed all
   four required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
   milestone-selected scope.
 - This evidence does not implement Portable PDBs, generic-context substitution, broader opcode/token families, a

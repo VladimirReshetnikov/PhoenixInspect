@@ -6,7 +6,7 @@
 
 **Normative scope:** W3 milestone-selected closure
 
-**Implementation status:** complete and formally closed at exact documentation commit `de6cea124` in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237)
+**Implementation status:** complete and formally closed at exact documentation commit `de6cea124` in [GitHub Actions run 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237)
 
 ## 1) Purpose
 
@@ -376,16 +376,16 @@ Local verification used only the repository's headless process wrapper and passe
 - the focused W3 dump lane at 2/2, all with zero skips.
 
 These results satisfy the implementation and local portions of the gate. [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four jobs at
 the exact implementation commit and independently corroborates the code checkpoint. Exact documentation-closure commit
 `de6cea124` subsequently passed all four required jobs in [run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), satisfying the remaining gate.
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237), satisfying the remaining gate.
 
 ## 14) Completion and expansion rule
 
 W3 required the exact pushed documentation-closure commit to pass every required hosted job and the realized
 hand-written implementation LOC to be recorded in the roadmap. Exact commit `de6cea124` and [run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) satisfy that rule. Local success,
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) satisfy that rule. Local success,
 a compiler-only getter, a standalone memory test, or a dump read that bypasses `IlMachine` remains insufficient for any
 later expansion claim.
 

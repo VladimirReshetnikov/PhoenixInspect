@@ -60,10 +60,10 @@ Strengthened checkpoint `19c292f9f` passed local headless verification with a ze
 the focused 2-test W3 lane, and both documentation guards, all with zero skips. Its cumulative hand-written
 implementation range from `e7b6a4ace` is `+8,842/-1,650` LOC (`+5,362/-928` production and `+3,480/-722`
 tests/fixtures), plus 39 generated lock-file lines. The primary checkpoint `12b6ef942` passed all four jobs in
-[GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656);
-[run 29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at
+[GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29372661656);
+[run 29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four jobs at
 exact strengthened checkpoint `19c292f9f`. [Run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed every
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) subsequently passed every
 required job at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
 milestone-selected scope. That historical closure did not by itself create the later product-facing capabilities.
 

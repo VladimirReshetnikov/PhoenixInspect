@@ -4,9 +4,9 @@
 
 Supporting design for W3/W4. The closed W3 concrete state/domain contract is implemented and locally verified at
 strengthened checkpoint `19c292f9f`; all four jobs also passed in [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
- 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+ 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs
  at that exact commit. W4.1–W4.6 are now implemented. Exact W4.2 commit `e89e43498` adds the dump-free
 provenance-aware `Int32` arithmetic kernel; exact W4.3 commit `7479b1ad4` adds structured non-exact field continuation
 through that same machine; and W4.4 checkpoints `2e596c117`/`742ef2c4f` add complete direct-MethodDef graph

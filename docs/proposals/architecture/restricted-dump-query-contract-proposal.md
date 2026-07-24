@@ -204,7 +204,7 @@ module/source context, independently expected path bounds, full ordered provenan
 value-only equality, replay-only equality, or one representative query does not satisfy this gate.
 
 This gate is satisfied for the milestone-selected W2 v1 scope at exact closure commit `5bed47100`; [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs.
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required jobs.
 
 ## 10) Expansion rule
 

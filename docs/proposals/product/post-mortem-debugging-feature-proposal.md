@@ -39,9 +39,9 @@ configurable traversal, canonical request/plan/result contracts, private typed b
 execution, and common rooted/standalone projection. W4.9 checkpoints through `a8b5f32f0` add the ClrMD graph/field
 producer, detached rooted dump memory, and six exact/degraded interpreted/modeled generated-dump rows with close/
 reopen canonical replay. W4 implementation closed at exact commit `a819a08fd` in [hosted run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083); final documentation-closure
+29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083); final documentation-closure
 commit `aaec73c5b` passed the same matrix in [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230). An isolated virtual heap and
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230). An isolated virtual heap and
 broader method workflows remain research.
 
 ---
@@ -221,7 +221,7 @@ literal.
   diagnostics, context, path bounds, ordered provenance payload, and value-read geometry.
 
 The implementation and full corpus are locally headless-verified. [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required jobs at
 exact W2 closure commit `5bed47100`.
 
 **Closed W7 static-field profile and approved W8 expansion**
@@ -333,10 +333,10 @@ verification at the strengthened checkpoint passed a zero-warning 15-project Rel
 unit tests, 67 fast integration tests, 5 ordinary dump tests, 1 optimized-context dump test, the focused 2-test W3
 lane, and both documentation guards, all with zero skips. The primary checkpoint `12b6ef942` passed all four jobs in
 [GitHub Actions run
-29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656). [Run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact
+29372661656](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29372661656). [Run
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four jobs at exact
 strengthened checkpoint `19c292f9f`. [Run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) subsequently passed all four
 required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
 milestone-selected architecture-proof scope.
 The W2 query grammar continues to reject every method/getter execution entry point. W4 is a separate request, plan,
@@ -794,7 +794,7 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`; the active W8 sequence
 * **W3:** closed scenario-derived concrete E1/E2 IL slice plus CoreCLR and real-dump getter evidence implemented at
   strengthened checkpoint `19c292f9f`; formally closed for its defined milestone-selected architecture-proof scope at exact
   documentation commit `de6cea124` after [GitHub Actions run
-  29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
+  29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs.
 * **W4:** closed branchless generated-dump `GetMarkerSummary`/`CombineMarkers` scenario under the normative
   counterfactual-method contract. W4.1's exact fixture/CoreCLR/current-W3-boundary gate is implemented at `82363585b`,
   W4.2's dump-free explained-unknown arithmetic and canonical lineage kernel is implemented at `e89e43498`, and
@@ -808,9 +808,9 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`; the active W8 sequence
   canonical rooted facade/runner lands through `44b050ec8`, and W4.9's detached ClrMD generated-dump corpus lands
   through `a8b5f32f0`. Exact W4 implementation-closure commit
   `a819a08fd9ccdf926620c505732475990b242be9` passed all four jobs in [hosted run
-  29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083); final documentation-closure
+  29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083); final documentation-closure
   commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed them again in [run
-  29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
+  29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230).
   Branches, broader
   calls/opcodes, generics, allocation, PDB-backed context, and whole-method abstract analysis remain gated.
 * **W5:** closed product-composition and usefulness milestone under the

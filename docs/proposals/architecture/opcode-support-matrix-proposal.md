@@ -23,10 +23,10 @@ Promotion requires an evidence link, not a documentation edit alone.
 
 The E1/E2 implementation below was strengthened at checkpoint `19c292f9f` and passed all required local
 milestone-selected verification plus all four jobs in [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). The normative boundary is
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767). The normative boundary is
 [Concrete IL Execution Contract](concrete-il-execution-contract-proposal.md). W3 formally closed at exact documentation
 commit `de6cea124`; [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs at
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs at
 that exact commit.
 
 ## 3. Executable slices

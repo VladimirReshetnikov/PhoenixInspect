@@ -40,27 +40,27 @@ The cumulative hand-written implementation range from `e7b6a4ace` is `+8,842/-1,
 production and `+3,480/-722` test/fixture LOC, plus 39 generated lock-file lines. Local headless verification passed a
 zero-warning 15-project Release build, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump
 tests, 1 optimized-context dump test, the focused 2-test W3 lane, and both documentation guards, all with zero skips.
-[GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29372661656)
+[GitHub Actions run 29372661656](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29372661656)
 historically passed all four jobs at `12b6ef942`. [Run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at exact
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four jobs at exact
 strengthened checkpoint `19c292f9f`. [Run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) subsequently passed all four
 required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
 milestone-selected scope. That closure does not add product method evaluation or evidence beyond the named fixture shapes.
 
 W4 exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed documentation consistency,
 build/Fast/unit, real-dump, and optimized-dump jobs in [GitHub Actions run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083). The real-dump job therefore
+29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083). The real-dump job therefore
 reproduces the W4.9 generated-dump row in the hosted headless environment within the milestone test selection; it does not
 expand the scenario or establish evidence beyond the named fixture shapes. Final documentation-closure commit
 `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same four jobs in [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230).
 
 W5 exact source baseline `26ba75fb1` executes the twelve-snapshot row above inside the complete 10/10 ordinary-dump
 lane and retains optimized-dump 1/1. Hosted run
-[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passed documentation and
+[29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137) passed documentation and
 Build/Fast, but GitHub rejected both dump jobs before their first step. Run
-[29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) executed no jobs. Those
+[29513051897](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29513051897) executed no jobs. Those
 zero-step results are not hosted dump evidence. W5 is nevertheless closed for its defined prototype scope under the
 owner's explicit 2026-07-16 waiver of that milestone's final hosted-only condition; the waiver adds no backend
 confidence, representative observation, or field-readiness evidence and does not apply to future milestones.

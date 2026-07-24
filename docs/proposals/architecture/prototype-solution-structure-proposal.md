@@ -178,7 +178,7 @@ decoder, and exact optional literal; request identity also preserves bounded fai
 full 22-case/20-expression corpus reproduces every result byte sequence/fingerprint and the 13 successfully prepared
 plan projection strings/fingerprints within and across dump sessions. This implementation and local headless
 verification passed all four required hosted jobs at exact closure commit `5bed47100` in [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178).
 It does not prove exact-null query roots, frame/local/argument/static recovery, arbitrary heap-root discovery, chained
 or null-conditional query access, product-level properties/getters, calls, indexers, arrays, reflection, construction,
 general operators, broad IL semantics, or debugger stepping. Separately, W3 proves only counterfactual execution of
@@ -189,9 +189,9 @@ Strengthened W3 checkpoint `19c292f9f` is locally verified through locked restor
 build, Markdown/headless guards, 103 milestone-selected unit tests, 67 fast integration tests, 5 ordinary dump tests,
 1 optimized-context dump test, and the focused 2-test W3 lane. All four hosted jobs also passed at that exact
 implementation checkpoint in [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). W3 formally closed at exact
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767). W3 formally closed at exact
 documentation commit `de6cea124`; [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs
 at that exact commit.
 
 W4.1–W4.9 are landed and exact hosted closure passed in run 29463426083. Exact W4.2 implementation commit `e89e43498` adds the optional precision seam,
@@ -338,7 +338,7 @@ A desired namespace, future product, candidate backend, or possible plugin is no
   warnings as errors, fast tests, then the supported ordinary-dump and optimized-context Windows lanes. The historical exact pushed W0 commit
   `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` passed the documentation job, the build/fast job (60
   semantic/differential and 40 fast adapter/harness tests), and the dependent 3-test dump job in
-  [GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+  [GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29309374548),
   completed 2026-07-14 UTC (2026-07-13 PDT). Third-party actions are pinned to verified release commit SHAs.
 
 That hosted run is the W0 baseline. Later out-of-scope experiments have since been removed.
@@ -346,21 +346,21 @@ That hosted run is the W0 baseline. Later out-of-scope experiments have since be
 Historical unfiltered local verification on 2026-07-14 passed locked restore, the strict 15-project Release build with
 0 warnings/errors, 64/64 core tests, 63/63 fast integration tests, 3/3 ordinary dump tests, and 1/1 optimized-context
 test through the headless wrapper. [Hosted run
-29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs
+29353198889](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29353198889) passed all four required jobs
 at exact W1 closure commit `e2580a8a8`.
 
 The later W2 v1 local checkpoint `ff7cd1965` passes the then-current 15-project zero-warning build, 64 core tests, 67 fast
 integration tests, 4 ordinary dump tests (including its 22-case corpus), and 1 optimized-context test. Historical test
 counts refer to the milestone-selected set at that commit. Caveat: they establish behavior only for the named fixture
 and input shapes. [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required jobs
 at exact W2 closure commit `5bed47100`; the W1 run above remains W1-only history.
 
 The later strengthened W3 checkpoint `19c292f9f` passes the same headless, milestone-selected workflow locally with
 103 unit, 67 fast integration, 5 ordinary dump, 1 optimized-context, and 2 focused W3 tests; [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passes all four jobs at that
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passes all four jobs at that
 implementation commit. Formal W3 closure is recorded at exact documentation commit `de6cea124`, whose [GitHub Actions
-run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required
+run 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required
 jobs.
 
 The physical layout and contracts remain prototype hypotheses. They may change freely as later evidence forces better boundaries.

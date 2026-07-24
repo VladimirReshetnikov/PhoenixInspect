@@ -57,7 +57,7 @@ Scope expands only through an explicit decision gate backed by executable eviden
 
 **Current milestone status:** W1 is complete for its revised milestone-selected evidence scope at exact closure commit
 `e2580a8a8`. W2 v1 is complete for its milestone-selected scope at exact closure commit `5bed47100`; [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs.
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required jobs.
 Its deliberately narrow contract is the [Restricted Dump Query v1
 Contract](../proposals/architecture/restricted-dump-query-contract-proposal.md), and any increment beyond that contract
 requires an explicit scope decision. Representative private-production measurement is outside W1. W4 was admitted around the
@@ -67,12 +67,12 @@ execution, and W4.6's structural model admission, lineage, machine transfer, and
 W4.7's issuer-certified standalone target-outcome projection/compiler replay, W4.8's complete canonical product
 runner, and W4.9's detached ClrMD generated-dump corpus have landed. W4 is complete at exact closure commit
 `a819a08fd9ccdf926620c505732475990b242be9`; [GitHub Actions run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs. Final
+29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083) passed all four jobs. Final
 documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230). W3 is complete for its defined milestone-selected architecture-validation scope
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230). W3 is complete for its defined milestone-selected architecture-validation scope
 at exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9`; [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs.
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs.
 
 ## 2) LOC sizing and work-in-progress
 
@@ -136,7 +136,7 @@ ranges must be recalibrated from this evidence and kept attributable through ded
 
 **Status:** **Complete.** Implementation and local verification completed on 2026-07-13. All service-side W0 gates
 passed for exact pushed commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` in
-[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29309374548),
 completed 2026-07-14 UTC (2026-07-13 PDT): documentation consistency passed; the build/fast job passed locked
 restore, a zero-warning Release build, 60 semantic/differential tests, and 40 fast adapter/harness tests; and the
 dependent real-dump job passed 3 dump tests.
@@ -205,7 +205,7 @@ Local verification at `f85545c0c` on 2026-07-14 used only `Invoke-HeadlessProces
 15-project Release build with 0 warnings/errors; 64/64 core tests; 63/63 fast integration tests; 3/3 ordinary dump
 tests; and 1/1 optimized-context test, with no skips or UI.
 
-[GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed
+[GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29353198889) passed
 all four required jobs at exact closure commit `e2580a8a8`: documentation/headless consistency, the 15-project
 zero-warning Release build and fast suites, ordinary real-dump evidence, and optimized-context evidence.
 
@@ -277,7 +277,7 @@ commits. Its attributable-current-surface column therefore records 1,253 LOC; th
 **Status:** **Complete for the milestone-selected W2 v1 scope.** The generated strong-root fixture and dump-free contract
 tests pass headlessly at the `ff7cd1965` implementation state. Documentation closure commit `5bed47100` passed all four
 required hosted jobs in [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178).
 
 The first grammar intentionally supports exactly one exact non-null ordinal root, one direct field through `.`, and
 optional bounded null/`Int32`/string coalescing. The staged parse/bind/plan/evaluate pipeline consumes a typed root
@@ -330,7 +330,7 @@ Evaluate a restricted expression such as `root.OptionalMessage ?? "<missing>"` a
   succeeds additionally reproduce an equivalent fresh plan's canonical projection string and plan SHA-256 before
   evaluation.
 - The exact pushed documentation-closure commit passes the required hosted jobs. Satisfied by `5bed47100` in [GitHub
-  Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
+  Actions run 29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178).
 
 ### W3 — Concrete IL semantics and differential oracle
 
@@ -353,10 +353,10 @@ checkpoint `19c292f9f` passed locked
 restore; a fifteen-project Release build with zero warnings/errors; Markdown-link and headless-workflow guards; 103
 milestone-selected unit tests; 67 fast integration tests; 5 ordinary dump tests; 1 optimized-context test; and the
 focused 2-test W3 dump lane, all headlessly with zero skips. [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at the
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four jobs at the
 exact implementation commit. Exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), satisfying the final W3 gate.
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237), satisfying the final W3 gate.
 
 **Goal:** validate the domain-parametric interpreter on a scenario-derived, closed opcode set.
 
@@ -649,9 +649,9 @@ the complete local gate, exact pushed hosted evidence, and closure.
 W4.9d local closure passes locked restore; a strict sixteen-project Release build at zero warnings/errors; complete
 unit 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
 destinations; and the one-workflow headless guard. Every behavioral filter includes the milestone test selection, with zero
-skips. [Hosted run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all
+skips. [Hosted run 29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083) passed all
 four jobs at exact implementation-closure commit `a819a08fd9ccdf926620c505732475990b242be9`; [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) passed them again at final
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230) passed them again at final
 documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f`.
 
 **Admitted work slices**

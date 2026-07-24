@@ -186,9 +186,9 @@ The W3 corpus spans structural/SRM projection, negative admission, domain/memory
 compiler/CoreCLR arithmetic/overflow/getter/null differential comparison, same/fresh-session replay, and generated
 counted-dump import/execution/reopen replay. Tests assert resolver and memory call counts, exact budget deltas, ordered
 events, failure-state preservation, and emitted compiler opcode shapes—not just final values. [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four required jobs
 at that exact implementation checkpoint. Exact documentation-closure commit `de6cea124` then passed all four required
-jobs in [run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), so W3 is formally
+jobs in [run 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237), so W3 is formally
 closed for its defined milestone-selected scope.
 
 ### Backend-failure normalization
@@ -215,7 +215,7 @@ separate product-readiness question.
 | Repository build | Stable .NET 10.0.2xx feature-band/minimum-patch pin, central versions, committed lock files, deterministic Release build, warnings-as-errors under `CI=true`. | `CI-enforced` for exact completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: locked restore and the zero-warning Release build passed in GitHub run 29309374548. |
 | Fast tests | Unit/domain/admission/differential/determinism/metadata suite plus artifact-text-free harness start/readiness failure coverage is checked in. | The same run passed 60 semantic/differential tests and 40 fast adapter/harness tests. |
 | Dump integration | Required Windows dump category and a bounded target/dump harness are checked in. | The dependent Windows job passed 3/3 dump tests. An inability to create/load the dump remains a failure, not a passing skip. |
-| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes carry explicit replayable evidence context. W3's successful prepared-execution test projection separately retains owner-evidence identity, structural method/field facts, imported memory, resolver/load counts, state, budget, events, and return outcome, then serializes those documented observables canonically. The same dump reopened in a fresh session reproduces module/root selection, W2 result/plan bytes, and W3 successful prepared-execution identity/transcript/fingerprint. Target-null idempotence and CoreCLR agreement are asserted separately rather than claimed as a fresh-session canonical transcript. | W1 passed at exact closure commit `e2580a8a8` in run 29353198889; W3's expanded replay passed at strengthened implementation checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124` in [run 29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). |
+| Determinism | Canonical UTF-8 machine transcripts and multi-axis W1/W2 result envelopes carry explicit replayable evidence context. W3's successful prepared-execution test projection separately retains owner-evidence identity, structural method/field facts, imported memory, resolver/load counts, state, budget, events, and return outcome, then serializes those documented observables canonically. The same dump reopened in a fresh session reproduces module/root selection, W2 result/plan bytes, and W3 successful prepared-execution identity/transcript/fingerprint. Target-null idempotence and CoreCLR agreement are asserted separately rather than claimed as a fresh-session canonical transcript. | W1 passed at exact closure commit `e2580a8a8` in run 29353198889; W3's expanded replay passed at strengthened implementation checkpoint `19c292f9f` and formally closed at exact documentation commit `de6cea124` in [run 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237). |
 | Documentation truth | The evidence matrix distinguishes raw dump bytes, dump metadata-derived facts, ClrMD-decoded runtime structures, whole-file-identified disk oracle facts, and explicit fixture inputs. `eng/verify-markdown-links.ps1` validates repository-local inline/reference destinations with stable file/line diagnostics. | The dedicated documentation-consistency job passed on the exact completion commit. Keep the evidence matrix synchronized whenever an evidence fallback changes. |
 
 The workflow in `.github/workflows/ci.yml` is checked in and has reported successful exact-commit runs, recorded below.
@@ -244,7 +244,7 @@ This table records local verification only; the independent service-side evidenc
 
 ### Service-side verification record — 2026-07-14 UTC (2026-07-13 PDT)
 
-[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548)
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29309374548)
 executed exact pushed completion commit `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` under .NET SDK 10.0.201:
 
 | Job | Service-side result |
@@ -258,11 +258,11 @@ generated-fixture proof boundary.
 
 ### Current revised-scope service evidence — 2026-07-14
 
-[GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889)
+[GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29353198889)
 passed all four required jobs at exact W1 closure commit `e2580a8a8`: documentation/headless consistency; the
 15-project zero-warning Release build and fast suites; ordinary real-dump evidence; and optimized-context evidence.
 
-[GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178)
+[GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178)
 passed the same four required jobs at exact W2 closure commit `5bed47100`, with all test commands filtered by
 the milestone test selection.
 
@@ -302,9 +302,9 @@ and no UI was displayed.
 
 This verifies all behavioral portions of W3 and the implementation-checkpoint portion of its repository-wide gate.
 [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four required jobs
 at the same exact pushed implementation commit. Exact documentation-closure commit `de6cea124` and [run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently satisfied the
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) subsequently satisfied the
 separate hosted closure requirement. The implementation checkpoint realizes `+8,842/-1,650` hand-written LOC
 (`+5,362/-928` production and `+3,480/-722` tests) plus 39 generated lock-file lines.
 
@@ -586,9 +586,9 @@ skips. W4.9d records repository-wide local and exact pushed hosted closure.
 W4.9d's local candidate passes locked restore, a strict sixteen-project Release build at 0 warnings/errors, complete
 unit 502/502, Fast 88/88, ordinary dump 6/6, optimized dump 1/1, aggregate W4 integration 14/14, Markdown 62/44, and
 the one-workflow headless guard. [Hosted run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs at exact
+29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083) passed all four jobs at exact
 implementation-closure commit `a819a08fd9ccdf926620c505732475990b242be9`. [Run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) passed the same jobs at final
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230) passed the same jobs at final
 documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f`.
 
 ## 3) Active test layers
@@ -757,7 +757,7 @@ Do not create a matrix for `fast`/`balanced`/`deep` policies, concrete/abstract/
   string/fingerprint.
 - Member access remains read-only and never silently invokes getters, reflection, or user IL.
 - Exact closure commit `5bed47100` passes all required hosted jobs in [GitHub Actions run
-  29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178).
+  29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178).
 
 ### W3 — concrete IL semantics and differential oracle
 
@@ -780,9 +780,9 @@ W3 has eleven normative executable-evidence gates:
 
 All eleven pass locally at strengthened implementation commit `19c292f9f` with the exact matrix recorded in section 2;
 [implementation-checkpoint run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) also passed all four required
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) also passed all four required
 jobs at that exact commit. Exact documentation-closure commit `de6cea124` passed all four required jobs in [run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), formally closing W3.
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237), formally closing W3.
 
 ### W4 — unknown-aware method evaluation
 
@@ -947,9 +947,9 @@ facade 3/3; focused generated usefulness 1/1; focused meaningful synthetic usefu
 destinations; and the one-workflow headless guard. All
 behavioral invocations use `eng/Invoke-HeadlessProcess.ps1` and have zero skips. The full matrix is regression and
 complete local closure evidence at exact source baseline `26ba75fb1`. Run
-[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passed documentation and
+[29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137) passed documentation and
 Build/Fast at exact commit `24825ce53`, while GitHub rejected both dump jobs with zero executed steps. Run
-[29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) rejected every job before
+[29513051897](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29513051897) rejected every job before
 execution, including repeated attempts. Neither run is hosted dump evidence. The owner explicitly waived only W5's
 final hosted condition on 2026-07-16, closing the defined milestone scope without weakening the workflow, claiming
 field readiness, or setting policy for the selected next slice.

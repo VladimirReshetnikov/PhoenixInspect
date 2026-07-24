@@ -352,7 +352,7 @@ The stages below are required by the W0 exit gate. Successful local 2026-07-13 c
 `3ece32a36eccc06a61025b1b35b58c09f6e4ed09`: documentation consistency passed; the build/fast job passed locked
 restore, a zero-warning Release build, 60 semantic/differential tests, and 40 fast adapter/harness tests; and the
 dependent Windows job passed 3 real-dump tests in
-[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29309374548),
 completed 2026-07-14 UTC (2026-07-13 PDT). Checkout and .NET setup actions are pinned to verified release commit
 SHAs rather than movable major tags.
 
@@ -366,20 +366,20 @@ SHAs rather than movable major tags.
 The historical W1 workflow used the same headless wrapper for locked restore, the then-current 15-project Release build, fast tests,
 ordinary real-dump evidence, and optimized-context evidence. All four
 required jobs passed at exact W1 closure commit `e2580a8a8` in [GitHub Actions run
-29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889).
+29353198889](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29353198889).
 
 At W2 implementation checkpoint `ff7cd1965`, every command used the milestone-selected set at that commit and the
 then-current 15-project solution. [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required jobs
 at exact W2 closure commit `5bed47100`.
 
 Strengthened W3 checkpoint `19c292f9f` passes locally through the same headless workflow: locked restore; the strict
 15-project Release build with zero warnings/errors; Markdown-link and headless-workflow guards; 103 milestone-selected
 unit tests; 67 fast integration tests; 5 ordinary dump tests; 1 optimized-context test; and the focused 2-test W3
 lane. All four jobs also pass at that exact implementation commit in [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767). Formal W3 closure is recorded
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767). Formal W3 closure is recorded
 at exact documentation commit `de6cea124`; [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) passed all four required jobs
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required jobs
 at that exact commit.
 
 Formatting/analyzers, dependency audit, and scheduled benchmarks are added when their signal is stable. Package validation waits until packages exist.

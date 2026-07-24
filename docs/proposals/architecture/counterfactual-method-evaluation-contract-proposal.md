@@ -16,9 +16,9 @@
 > evidence graph implemented at `24bd8fe6f`; W4.9b detached rooted dump binding implemented at `2d41f528d`;
 > W4.9c six-row generated-dump reopen/replay corpus implemented at `a8b5f32f0`; W4.9d closed at exact commit
 > `a819a08fd9ccdf926620c505732475990b242be9` in [GitHub Actions run
-> 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083); final documentation-
+> 29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083); final documentation-
 > closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
-> 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230)
+> 29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230)
 
 ## 1) Purpose and authority
 
@@ -1011,7 +1011,7 @@ behavioral command ran through the headless wrapper with the milestone test sele
 local candidate passes locked restore; the strict sixteen-project Release build at 0 warnings/errors; complete unit
 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
 destinations; and the one-workflow headless guard. [GitHub Actions run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) then passed documentation,
+29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083) then passed documentation,
 build/Fast/unit, real-dump, and optimized-dump jobs at exact commit
 `a819a08fd9ccdf926620c505732475990b242be9`, closing the W4 umbrella.
 

@@ -81,9 +81,9 @@ Core principles:
   and execution runner, and common projection of rooted and standalone outcomes. W4.9 now supplies the ClrMD method/
   field evidence graph, a detached product-owned dump-memory binding, and six exact/degraded interpreted/modeled
   generated-dump rows with close/reopen canonical replay. W4 implementation is formally closed for this scope at exact commit
-  `a819a08fd`; [GitHub Actions run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083)
+  `a819a08fd`; [GitHub Actions run 29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083)
   passed all four required jobs. Final documentation-closure commit `aaec73c5b` passed the same matrix in
-  [run 29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230). The completed
+  [run 29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230). The completed
   [`Post-W4 Path Forward`](docs/plans/post-w4-path-forward.md) records W5 and its selection decision. The completed
   [`Post-W5 Path Forward`](docs/plans/post-w5-path-forward.md) records W6, and the completed
   [`Post-W6 Path Forward`](docs/plans/post-w6-path-forward.md) records W7. The active sequence is the
@@ -100,9 +100,9 @@ Core principles:
   not representative: the external-observation denominator remains 0 questions across 0 incidents and 0 application
   shapes, and no readiness rate is claimed. W5 is closed for its defined prototype scope under the owner's explicit
   2026-07-16 waiver of the hosted-only closure condition. The exact source baseline `26ba75fb1` passes the complete
-  local headless matrix. [Run 29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137)
+  local headless matrix. [Run 29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137)
   passed documentation and Build/Fast at exact commit `24825ce53`, but GitHub rejected both dump jobs before their
-  first step; [run 29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) was
+  first step; [run 29513051897](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29513051897) was
   rejected before any job executed. The waiver is a W5-only governance exception, not hosted dump evidence, a
   field-readiness claim, or permission to weaken the unchanged workflow.
 - **W6 closure record:** the detailed W6 and
@@ -344,11 +344,11 @@ oracles. The focused generated-dump lane passes 1/1, ordinary dump 6/6, and Fast
 W4.9d local closure passes locked restore; a strict 16-project Release build at 0 warnings/errors; complete unit
 502/502; Fast 88/88; ordinary dump 6/6; optimized dump 1/1; aggregate W4 integration 14/14; Markdown 62 files/44
 local destinations; and the one-workflow headless guard. Every behavioral filter uses the milestone test selection and every
-lane has zero skips. [GitHub Actions run 29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083)
+lane has zero skips. [GitHub Actions run 29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083)
 passed documentation, build/Fast/unit, real-dump, and optimized-dump jobs at exact W4 closure commit
 `a819a08fd9ccdf926620c505732475990b242be9`. Final documentation-closure commit
 `aaec73c5b987089addb539d3628de67bd815bd8f` passed those same four jobs in [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230).
 
 The historical W4.2 checkpoint records 3,454 realized LOC: 3,429 attributable implementation LOC (1,521 production
 plus 1,908 focused tests) and 25 LOC that segregate an excluded test scope from the milestone lane. Together with
@@ -375,16 +375,16 @@ scenario. All specified exact, degraded-evidence, budget, differential, same/fre
 are implemented, and exact pushed hosted evidence is recorded above. W4 is closed for its defined milestone-selected
 scope.
 
-The W1 dump-evidence slice is executable against generated full and intentionally sparse dumps. W2's restricted dump-query v1 is complete for its milestone-selected scope: typed root states, `Parse`/`Prepare`/`Evaluate(plan)` staging, immutable object-specific plans, exact `String`/`Int32`/`Nullable<Int32>` behavior, stable diagnostics, and all-case same/fresh-session replay are exercised against the generated full dump. [GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs at exact W2 closure commit `5bed47100`. W1 remains complete for its revised milestone-selected evidence scope: typed exact/partial/unavailable/conflict outcomes, honest answer completeness, stable identity/context/provenance, path-accurate bounds, fresh-session canonical replay, headless execution, truthful topology, and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
+The W1 dump-evidence slice is executable against generated full and intentionally sparse dumps. W2's restricted dump-query v1 is complete for its milestone-selected scope: typed root states, `Parse`/`Prepare`/`Evaluate(plan)` staging, immutable object-specific plans, exact `String`/`Int32`/`Nullable<Int32>` behavior, stable diagnostics, and all-case same/fresh-session replay are exercised against the generated full dump. [GitHub Actions run 29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required jobs at exact W2 closure commit `5bed47100`. W1 remains complete for its revised milestone-selected evidence scope: typed exact/partial/unavailable/conflict outcomes, honest answer completeness, stable identity/context/provenance, path-accurate bounds, fresh-session canonical replay, headless execution, truthful topology, and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
 W3 strengthened implementation checkpoint `19c292f9f` completes the code and local evidence for its deliberately closed
 milestone-selected architecture proof. Headless local verification passed locked restore; a fifteen-project Release
 build with zero warnings and errors; 103 semantic/admission/differential tests; 67 fast integration tests; 5 ordinary
 dump tests; 1 optimized-context dump test; and the focused 2-test W3 dump lane, all with zero skips. W3 does not add a
 product-facing method evaluator or claim historical execution. [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) also passed all four jobs at
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) also passed all four jobs at
 the exact implementation commit. [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) subsequently passed all four
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) subsequently passed all four
 required jobs at exact documentation-closure commit `de6cea124`, formally closing W3 for its defined
 milestone-selected scope.
 

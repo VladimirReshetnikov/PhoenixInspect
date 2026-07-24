@@ -12,7 +12,7 @@ coalescing over `String` and `Nullable<Int32>` alongside direct `Int32`, canonic
 identities, path-accurate bounds, and honest no-answer completeness. The versioned W2 corpus contains 22 cases over
 20 distinct expression texts and reproduces every complete result plus each successfully prepared plan after a fresh
 open and rebind. W2 is complete for its milestone-selected scope: [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) passed all four required jobs
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) passed all four required jobs
 at exact closure commit `5bed47100`.
 
 W3 strengthened implementation checkpoint `19c292f9f` adds structural execution identities; SRM-projected static/instance signatures,
@@ -23,9 +23,9 @@ missing cells, executes direct and adjusted getters, and reproduces the canonica
 reopen/rebind. Local headless verification passed locked restore, the zero-warning fifteen-project Release build,
 103 unit tests, 67 fast tests, 5 ordinary dump tests, 1 optimized-context test, and the focused 2-test W3 lane with no
 skips. [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four jobs at the
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four jobs at the
 exact implementation commit. [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237) then passed all four required
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) then passed all four required
 jobs at exact documentation-closure commit `de6cea124`, so W3 is formally closed for its defined milestone-selected
 scope. A whole-file-identified disk PE remains only an independent oracle, never dump resolver input.
 
@@ -101,9 +101,9 @@ return lineage at `fd723a912`, W4.6c machine invocation/transfer at `877c9fb55`,
 replay at `dad6a6dd4`. W4.8's configurable traversal, canonical facade, typed binding, preparation, result, and runner
 land through `44b050ec8`. W4.9's ClrMD evidence graph, detached dump binding, and six-row generated-dump reopen/replay
 land through `a8b5f32f0`. W4 is closed at exact commit `a819a08fd`; [GitHub Actions run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs.
+29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083) passed all four jobs.
 Final documentation-closure commit `aaec73c5b` passed the same matrix in [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230).
 W5.1–W5.5b are now implemented through pushed checkpoints `7c3d52572`, `d88b13c2c`, `fc8a43a7a`, `59d9bb590`,
 `0f5230e13`, `b788f4f66`, and `90ade6d92`. The product owns canonical expression admission, dump-to-method acquisition, and mode-preserving W2/W4
 evaluation. A repository-owned headless consumer runs the nine-row generated facade corpus in fresh processes, and
@@ -117,9 +117,9 @@ prototype design slice. The designed corpus is not field evidence: representativ
 questions across 0 incidents and 0 application shapes, and no readiness rate is claimed. W5 is closed for its defined
 prototype scope under the owner's explicit 2026-07-16 waiver of the hosted-only closure condition. Exact source
 baseline `26ba75fb1` passes the complete local headless matrix. Hosted run
-[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passed documentation and
+[29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137) passed documentation and
 Build/Fast but never executed either dump job; [run
-29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) executed no jobs. The
+29513051897](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29513051897) executed no jobs. The
 milestone-scoped waiver does not convert either infrastructure rejection into hosted evidence, establish field
 readiness, or apply to future milestones.
 The first scenario is deliberately branchless: from a generated dump, `DumpProbe.GetMarkerSummary` reads the two
@@ -285,10 +285,10 @@ historical 18,532–26,132, 19,228–25,728, 21,179–26,779, 24,013–29,313, 2
 unit 502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and guards 62/44 and 1, with zero skips. Exact pushed
 implementation closure passed in run 29463426083 at exact commit
 `a819a08fd9ccdf926620c505732475990b242be9`; final documentation closure passed in [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) at
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230) at
 `aaec73c5b987089addb539d3628de67bd815bd8f`.
 
-W1 is complete for its revised milestone-selected dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
+W1 is complete for its revised milestone-selected dump-evidence scope: real reads; typed exact/partial/unavailable/conflict outcomes; honest answer completeness; stable identity/context/provenance; path-accurate bounds; fresh-session canonical replay; repository-wide headless execution; truthful topology; and exact-HEAD hosted CI. [GitHub Actions run 29353198889](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29353198889) passed all four required jobs at exact closure commit `e2580a8a8`.
 
 Caveat: current evidence covers only the named generated fixtures and explicitly admitted input shapes. Earlier
 out-of-scope experiments have been removed, and the workflow now runs every remaining test in

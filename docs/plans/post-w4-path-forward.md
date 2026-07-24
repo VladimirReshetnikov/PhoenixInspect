@@ -13,9 +13,9 @@ W1–W4 prove a strong architecture: the repository can recover bounded dump evi
 query, execute one branchless direct-call method graph with exact or provenance-bearing unknown values, substitute one
 exact no-effect model, and reproduce canonical results after dump close/reopen. W4 implementation closure commit
 `a819a08fd9ccdf926620c505732475990b242be9` passed every required job in hosted run
-[29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083). Its final documentation-
+[29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083). Its final documentation-
 closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` then passed the same four-job matrix in run
-[29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230).
+[29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230).
 
 The next bottleneck is no longer the interpreter kernel. The existing method evaluator is reachable only after a
 caller performs the structural work demonstrated in integration tests: locate the module/type/method, acquire and
@@ -294,9 +294,9 @@ observation denominator remains 0 questions across 0 incidents and 0 application
 W5.1–W5.5b and the W5 umbrella are closed for the defined prototype scope. Exact source baseline `26ba75fb1` passes
 the meaningful portfolio and complete local matrix. The owner explicitly waived the final hosted-only condition for
 W5 on 2026-07-16 because the external account state could not be repaired in this milestone. Run
-[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passed documentation and
+[29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137) passed documentation and
 Build/Fast at exact commit `24825ce53`, but GitHub rejected both dependent dump jobs before their first step. Run
-[29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) rejected every job before
+[29513051897](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29513051897) rejected every job before
 execution, including repeated attempts. Those runs are infrastructure history, not passing hosted dump evidence.
 
 The current documentation candidate passes the complete local headless matrix: locked restore; strict 14-project

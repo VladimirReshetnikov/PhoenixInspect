@@ -233,10 +233,10 @@ gates. At exact strengthened implementation checkpoint `19c292f9f`, their status
 
 The strengthened implementation checkpoint realizes `+8,842/-1,650` hand-written LOC (`+5,362/-928` production and
 `+3,480/-722` tests/fixtures) plus 39 generated lock-file lines. All eleven gates pass locally, and [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs at
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four required jobs at
 that exact pushed code checkpoint. Exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9` then passed all four required jobs in [GitHub Actions run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), formally closing W3 for its
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237), formally closing W3 for its
 defined milestone-selected scope.
 
 ## Evidence matrix
@@ -276,7 +276,7 @@ SHAs. A missing DAC or inability to write/load a required dump is a failing infr
 
 That workflow passed service-side for exact pushed completion commit
 `3ece32a36eccc06a61025b1b35b58c09f6e4ed09` in
-[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29309374548),
+[GitHub Actions run 29309374548](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29309374548),
 completed 2026-07-14 UTC (2026-07-13 PDT). Documentation consistency passed; the build/fast job passed locked restore,
 a zero-warning Release build, 60 semantic/differential tests, and 40 fast adapter/harness tests; and the dependent
 Windows job passed 3/3 required dump tests.
@@ -286,7 +286,7 @@ modeled-incident, headless-policy, topology, W2 query, or W3 execution packages.
 a successful hosted run records its exact pushed closure commit.
 
 [GitHub Actions run
-29353198889](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29353198889) passed all four required jobs
+29353198889](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29353198889) passed all four required jobs
 at exact W1 closure commit `e2580a8a8`: documentation/headless consistency, the 15-project Release build and fast
 suites, ordinary real-dump evidence, and optimized-context evidence.
 
@@ -295,7 +295,7 @@ Current local verification on 2026-07-14 at W2 implementation commit `ff7cd1965`
 `Category=Fast` integration
 tests; 4/4 ordinary dump tests (including the 22-case W2 corpus); and 1/1 modeled optimized-context test. Every
 managed command used `Invoke-HeadlessProcess`; there were no skips or UI. [GitHub Actions run
-29364905178](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29364905178) then passed all four required
+29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29364905178) then passed all four required
 jobs at exact W2 closure commit `5bed47100`.
 
 Current local W3 verification at exact strengthened implementation checkpoint `19c292f9f` passed locked restore; a strict 15-project
@@ -306,10 +306,10 @@ additional ordinary-dump facts. The Markdown-link and headless-workflow guards a
 `Invoke-HeadlessProcess`, every test command used the milestone-selected set at that commit, and there were zero skips and no UI. The
 checkpoint realizes `+8,842/-1,650` hand-written LOC (`+5,362/-928` production and `+3,480/-722` tests/fixtures) plus
 39 generated lock-file lines. [GitHub Actions run
-29374585767](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29374585767) passed all four required jobs on
+29374585767](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29374585767) passed all four required jobs on
 the same exact pushed implementation checkpoint. Exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9` passed the same four-job workflow in [run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237), satisfying the closure gate.
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237), satisfying the closure gate.
 
 Historical local W4.2 verification at exact pushed checkpoint `e89e43498` passed locked restore; a strict 15-project
 Release build with 0 warnings and 0 errors; focused W4.2 53/53, split into 23 domain, 14 lineage, and 16 machine facts;
@@ -456,7 +456,7 @@ laws, direct/adjusted getter, CoreCLR differential, same/fresh-session replay, a
 exact strengthened implementation checkpoint `19c292f9f`, together with the full local repository matrix and all four jobs
 of hosted run 29374585767. Exact documentation-closure commit
 `de6cea124488d503d13c61a4c8e67203a16d06f9` passed all four required jobs in [run
-29375584237](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29375584237). W3 is complete for its defined
+29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237). W3 is complete for its defined
 milestone-selected scope.
 
 W4.2 demonstrates the second meaningful unknown-aware domain over the shared E1/E2 kernel at `e89e43498` while
@@ -510,9 +510,9 @@ disposed before execution; close/reopen/rebind reproduces all canonical memory/r
 rows agree with late CoreCLR and degraded rows remain typed unknown. Focused generated dump passes 1/1, ordinary dump
 6/6, and Fast 88/88. W4.9d's local candidate additionally passes locked restore, strict Release 0/0, complete unit
 502/502, Fast 88/88, dumps 6/6 and 1/1, aggregate W4 14/14, and both guards. [Hosted run
-29463426083](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463426083) passed all four jobs at exact
+29463426083](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463426083) passed all four jobs at exact
 implementation-closure commit `a819a08fd9ccdf926620c505732475990b242be9`; [run
-29463847230](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29463847230) passed them again at final
+29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230) passed them again at final
 documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f`, closing W4. New opcodes or method families enter only
 through a scenario-derived compiler fixture and its complete
 dependency closure; opcode counts and percentage targets do not define readiness. Caveat: validation beyond the named
@@ -555,10 +555,10 @@ The cumulative documentation candidate passes locked restore; strict 14-project 
 1/1; focused meaningful synthetic usefulness 1/1; Markdown 63 files/59 local destinations; and the one-workflow
 headless guard. All behavioral lanes are wrapper-launched and have zero skips. These local facts satisfy the W5 local
 closure matrix but not field readiness. Exact-commit hosted run
-[29512657137](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29512657137) passes documentation and
+[29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137) passes documentation and
 Build/Fast. Its real-dump and optimized-dump jobs execute zero steps because GitHub rejects them for account payment/
 spending-limit state; an unchanged retry has the same result. Run
-[29513051897](https://github.com/VladimirReshetnikov/Interpreter/actions/runs/29513051897) likewise executed no jobs.
+[29513051897](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29513051897) likewise executed no jobs.
 The owner explicitly waived W5's final hosted-only condition on 2026-07-16, so the milestone is closed on its complete
 exact-source local matrix. This exception does not mark the rejected jobs passing, reduce the unchanged selection,
 establish field readiness, or apply to a future milestone.
