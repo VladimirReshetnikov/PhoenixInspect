@@ -353,13 +353,13 @@ Every implementation slice preserves the existing gates and adds its focused cor
 the named-fixture scope. The expected command shape is:
 
 ```powershell
-.\eng\Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode
-.\eng\Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore  --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5ExpressionFacadeV1" --verbosity normal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5UsefulnessGeneratedV1" --verbosity normal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5MeaningfulSyntheticV2" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
+.\eng\Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore  --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5ExpressionFacadeV1" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5UsefulnessGeneratedV1" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W5MeaningfulSyntheticV2" --verbosity normal
 ```
 
 Documentation gates remain:

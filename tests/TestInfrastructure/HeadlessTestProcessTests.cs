@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Interpreter.Tests.Infrastructure;
+namespace PhoenixInspect.Tests.Infrastructure;
 
 /// <summary>Verifies that each managed test host is unable to display Windows failure-reporting dialogs.</summary>
 public sealed class HeadlessTestProcessTests

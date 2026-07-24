@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "phoenixinspect.core.abstractions": {
+        "type": "Project"
+      },
+      "phoenixinspect.metadata.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "PhoenixInspect.Core.Abstractions": "[1.0.0, )"
+        }
+      }
+    }
+  }
+}

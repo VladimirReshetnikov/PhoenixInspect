@@ -63,7 +63,7 @@ I’ll group packages by layer, and for each package list:
 
 ### 0) Foundations (no dependencies except BCL)
 
-#### `Interpreter.Foundation`
+#### `PhoenixInspect.Foundation`
 
 **Purpose**
 
@@ -80,7 +80,7 @@ I’ll group packages by layer, and for each package list:
 
 ## 1) Core semantics (VM + IR), metadata-agnostic
 
-#### `Interpreter.Types`
+#### `PhoenixInspect.Types`
 
 **Purpose**
 
@@ -91,12 +91,12 @@ I’ll group packages by layer, and for each package list:
   * `GenericContext` (type args + method args, can contain “unknown/canonical” placeholders)
 * These are *pure data*. No token reading inside.
 
-**Depends on:** `Interpreter.Foundation`
+**Depends on:** `PhoenixInspect.Foundation`
 **Used by:** VM, models, metadata bridges, analysis
 
 ---
 
-#### `Interpreter.IL`
+#### `PhoenixInspect.IL`
 
 **Purpose**
 
@@ -106,12 +106,12 @@ I’ll group packages by layer, and for each package list:
   * `MethodBody` (IL bytes, decoded instructions, maxstack, locals sig handle, EH clauses)
   * minimal IL verification checks (stack transitions sanity, optional)
 
-**Depends on:** `Interpreter.Foundation`, `Interpreter.Types`
+**Depends on:** `PhoenixInspect.Foundation`, `PhoenixInspect.Types`
 **Used by:** VM execution, IR builder, analysis, rewrite pipeline
 
 ---
 
-#### `Interpreter.Core.Abstractions`
+#### `PhoenixInspect.Core.Abstractions`
 
 **Purpose**
 
@@ -124,12 +124,12 @@ I’ll group packages by layer, and for each package list:
   * `IBranchPolicy`, `ICallPolicy`, `IBudgetPolicy`
   * `EffectSummary`, `UnknownOrigin`, `Provenance` hooks
 
-**Depends on:** `Interpreter.Foundation`, `Interpreter.Types`, `Interpreter.IL`
+**Depends on:** `PhoenixInspect.Foundation`, `PhoenixInspect.Types`, `PhoenixInspect.IL`
 **Used by:** VM engine, domains, hosts, models, tooling
 
 ---
 
-#### `Interpreter.Core.Execution`
+#### `PhoenixInspect.Core.Execution`
 
 **Purpose**
 
@@ -140,12 +140,12 @@ I’ll group packages by layer, and for each package list:
   * exception propagation model (at least “throw stops”; optionally EH-aware execution)
   * debug events emission (writes, call enter/exit, unknown minted)
 
-**Depends on:** `Interpreter.Core.Abstractions`
+**Depends on:** `PhoenixInspect.Core.Abstractions`
 **Used by:** debugger stepping host, no-JIT runtime host, testing harness
 
 ---
 
-#### `Interpreter.Core.IR`
+#### `PhoenixInspect.Core.IR`
 
 **Purpose**
 
@@ -156,12 +156,12 @@ I’ll group packages by layer, and for each package list:
   * typed temporaries (stack SSA-ish)
   * mapping IR nodes ↔ IL offsets
 
-**Depends on:** `Interpreter.IL`, `Interpreter.Types`, `Interpreter.Foundation`
+**Depends on:** `PhoenixInspect.IL`, `PhoenixInspect.Types`, `PhoenixInspect.Foundation`
 **Used by:** analysis, pattern rewriters, advanced stepping maps
 
 ---
 
-#### `Interpreter.Core.Analysis`
+#### `PhoenixInspect.Core.Analysis`
 
 **Purpose**
 
@@ -171,12 +171,12 @@ I’ll group packages by layer, and for each package list:
   * interprocedural summaries (optional module)
   * analysis runners with strategies (conservative EH, modeled EH)
 
-**Depends on:** `Interpreter.Core.Abstractions`, `Interpreter.Core.IR`
+**Depends on:** `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Core.IR`
 **Used by:** static analyzer products, “predictive debugging” features, effect inference tooling
 
 ---
 
-#### `Interpreter.Core.Tracing`
+#### `PhoenixInspect.Core.Tracing`
 
 **Purpose**
 
@@ -186,7 +186,7 @@ I’ll group packages by layer, and for each package list:
   * stable serialization (for “save session”, diagnostics, replay)
   * “explain value” graph extraction helpers
 
-**Depends on:** `Interpreter.Core.Abstractions`
+**Depends on:** `PhoenixInspect.Core.Abstractions`
 **Used by:** debugger UI, replay tooling, fuzz harness, diagnostic output
 
 ---
@@ -195,43 +195,43 @@ I’ll group packages by layer, and for each package list:
 
 These are pluggable and should be independent of metadata readers.
 
-#### `Interpreter.Domain.Concrete`
+#### `PhoenixInspect.Domain.Concrete`
 
 **Purpose**
 
 * Concrete values: primitives, exact refs, exact structs
 * Used for runtime execution / deterministic evaluation when data is known
 
-**Depends on:** `Interpreter.Core.Abstractions`
+**Depends on:** `PhoenixInspect.Core.Abstractions`
 **Used by:** dump debugging, live speculative, no-JIT runtime mode (initially)
 
 ---
 
-#### `Interpreter.Domain.CNTypeOriginLabels` (your MVP domain)
+#### `PhoenixInspect.Domain.CNTypeOriginLabels` (your MVP domain)
 
 **Purpose**
 
 * Constants + Nullness + Runtime Type-set + origin labels
 * plus optional small-struct field sensitivity
 
-**Depends on:** `Interpreter.Core.Abstractions`
+**Depends on:** `PhoenixInspect.Core.Abstractions`
 **Used by:** dump debugging, static analysis baseline, speculative debugging
 
 ---
 
-#### `Interpreter.Domain.Range` (optional)
+#### `PhoenixInspect.Domain.Range` (optional)
 
 **Purpose**
 
 * Numeric intervals and simple predicate refinement
 * Works as a product domain with CNTypeOriginLabels
 
-**Depends on:** `Interpreter.Core.Abstractions`
+**Depends on:** `PhoenixInspect.Core.Abstractions`
 **Used by:** analysis, predictive stepping
 
 ---
 
-#### `Interpreter.Memory.VirtualHeap`
+#### `PhoenixInspect.Memory.VirtualHeap`
 
 **Purpose**
 
@@ -241,12 +241,12 @@ These are pluggable and should be independent of metadata readers.
   * byref addressables to locals/fields/array elements
   * supports persistence (structural sharing) for Undo/replay
 
-**Depends on:** `Interpreter.Core.Abstractions`
+**Depends on:** `PhoenixInspect.Core.Abstractions`
 **Used by:** all hosts as the writable layer
 
 ---
 
-#### `Interpreter.Memory.Overlay`
+#### `PhoenixInspect.Memory.Overlay`
 
 **Purpose**
 
@@ -256,19 +256,19 @@ These are pluggable and should be independent of metadata readers.
   * write: overlay only
 * supports diffs and undo cheaply
 
-**Depends on:** `Interpreter.Core.Abstractions`, `Interpreter.Memory.VirtualHeap`
+**Depends on:** `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Memory.VirtualHeap`
 **Used by:** dump host, live snapshot host, “no-JIT runtime”
 
 ---
 
-#### `Interpreter.Memory.SummaryHeap` (analysis-focused)
+#### `PhoenixInspect.Memory.SummaryHeap` (analysis-focused)
 
 **Purpose**
 
 * Points-to sets, weak updates, summary regions, havoc regions
 
-**Depends on:** `Interpreter.Core.Abstractions`
-**Used by:** `Interpreter.Core.Analysis`
+**Depends on:** `PhoenixInspect.Core.Abstractions`
+**Used by:** `PhoenixInspect.Core.Analysis`
 
 ---
 
@@ -278,7 +278,7 @@ These packages depend on the core abstractions, and optionally on metadata abstr
 
 ### 3.1 Modeling interfaces (base)
 
-#### `Interpreter.Models.Abstractions`
+#### `PhoenixInspect.Models.Abstractions`
 
 **Purpose**
 
@@ -289,14 +289,14 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * heap projections (“view ConcurrentDictionary”)
 * plus `ModelInfo`/`RewriteInfo` with provenance/effects/confidence
 
-**Depends on:** `Interpreter.Core.Abstractions`, `Interpreter.Core.IR` (optional), `Interpreter.Foundation`
+**Depends on:** `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Core.IR` (optional), `PhoenixInspect.Foundation`
 **Used by:** all model packages, hosts
 
 ---
 
 ### 3.2 Core BCL models
 
-#### `Interpreter.Models.CoreLib.Primitives`
+#### `PhoenixInspect.Models.CoreLib.Primitives`
 
 **Purpose**
 
@@ -306,12 +306,12 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * small math intrinsics
 * bounded formatting helpers (debugger view)
 
-**Depends on:** `Interpreter.Models.Abstractions`
+**Depends on:** `PhoenixInspect.Models.Abstractions`
 **Used by:** dump/live/runtime
 
 ---
 
-#### `Interpreter.Models.Environment`
+#### `PhoenixInspect.Models.Environment`
 
 **Purpose**
 
@@ -320,14 +320,14 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * `DateTime.Now/UtcNow`, `Environment.*`, `Guid.NewGuid`, `Random`
 * operates against a `SessionSnapshot` service supplied by host
 
-**Depends on:** `Interpreter.Models.Abstractions`
+**Depends on:** `PhoenixInspect.Models.Abstractions`
 **Used by:** dump/live/runtime (policy-driven)
 
 ---
 
 ### 3.3 Big “intent lifts”
 
-#### `Interpreter.Models.Async`
+#### `PhoenixInspect.Models.Async`
 
 **Purpose**
 
@@ -338,13 +338,13 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * intercept builder/awaiter calls
 * Exposes a “virtual continuation” interface used by stepping and replay
 
-**Depends on:** `Interpreter.Models.Abstractions`, `Interpreter.Memory.VirtualHeap`
-**Optionally depends on:** `Interpreter.Metadata.Abstractions` (for `AsyncStateMachineAttribute` / PDB mapping)
+**Depends on:** `PhoenixInspect.Models.Abstractions`, `PhoenixInspect.Memory.VirtualHeap`
+**Optionally depends on:** `PhoenixInspect.Metadata.Abstractions` (for `AsyncStateMachineAttribute` / PDB mapping)
 **Used by:** dump stepping, speculative stepping, no-JIT runtime (cooperative)
 
 ---
 
-#### `Interpreter.Models.Dynamic`
+#### `PhoenixInspect.Models.Dynamic`
 
 **Purpose**
 
@@ -354,13 +354,13 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * minimal internal resolver, or
   * optional Roslyn-backed resolver via separate adapter package
 
-**Depends on:** `Interpreter.Models.Abstractions`, `Interpreter.Core.IR` (pattern matching), `Interpreter.Types`
-**Optionally depends on:** `Interpreter.Metadata.Abstractions` (to resolve candidate method sets)
+**Depends on:** `PhoenixInspect.Models.Abstractions`, `PhoenixInspect.Core.IR` (pattern matching), `PhoenixInspect.Types`
+**Optionally depends on:** `PhoenixInspect.Metadata.Abstractions` (to resolve candidate method sets)
 **Used by:** dump/live evaluation
 
 ---
 
-#### `Interpreter.Models.Collections`
+#### `PhoenixInspect.Models.Collections`
 
 **Purpose**
 
@@ -369,13 +369,13 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * `Dictionary<,>`, `List<T>`, `ConcurrentDictionary<,>`, queues/stacks
 * Copy-on-write materialization for dump-backed instances
 
-**Depends on:** `Interpreter.Models.Abstractions`, `Interpreter.Memory.Overlay`
-**Optionally depends on:** `Interpreter.Metadata.Abstractions` (field discovery heuristics)
+**Depends on:** `PhoenixInspect.Models.Abstractions`, `PhoenixInspect.Memory.Overlay`
+**Optionally depends on:** `PhoenixInspect.Metadata.Abstractions` (field discovery heuristics)
 **Used by:** dump/live evaluation
 
 ---
 
-#### `Interpreter.Models.CompilerPatterns`
+#### `PhoenixInspect.Models.CompilerPatterns`
 
 **Purpose**
 
@@ -387,14 +387,14 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * throw helpers / guards
   * interpolated string handler patterns
 
-**Depends on:** `Interpreter.Models.Abstractions`, `Interpreter.Core.IR`
+**Depends on:** `PhoenixInspect.Models.Abstractions`, `PhoenixInspect.Core.IR`
 **Used by:** stepping, readability, analysis
 
 ---
 
 ### 3.4 Optional: Roslyn integration
 
-#### `Interpreter.Models.RoslynAdapter`
+#### `PhoenixInspect.Models.RoslynAdapter`
 
 **Purpose**
 
@@ -404,7 +404,7 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * expression compilation to a synthetic method for “debug this expression”
 * Maps `IMethodSymbol` → `MethodKey`
 
-**Depends on:** `Interpreter.Metadata.Abstractions`, `Interpreter.Models.Dynamic` (or shared contract), Roslyn packages
+**Depends on:** `PhoenixInspect.Metadata.Abstractions`, `PhoenixInspect.Models.Dynamic` (or shared contract), Roslyn packages
 **Used by:** IDE products only
 **Important:** keep this out of core so the VM stays lightweight.
 
@@ -414,7 +414,7 @@ These packages depend on the core abstractions, and optionally on metadata abstr
 
 ### 4.1 Abstractions (no heavy deps)
 
-#### `Interpreter.Metadata.Abstractions`
+#### `PhoenixInspect.Metadata.Abstractions`
 
 **Purpose**
 
@@ -428,14 +428,14 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * `IDebugMapProvider` (best map: PDB → decompiler → IL fallback)
   * `ISourceTextProvider`
 
-**Depends on:** `Interpreter.Types`, `Interpreter.IL`, `Interpreter.Foundation`
+**Depends on:** `PhoenixInspect.Types`, `PhoenixInspect.IL`, `PhoenixInspect.Foundation`
 **Used by:** artifacts layer, hosts, decompiler integration, some models
 
 ---
 
 ### 4.2 Concrete metadata readers
 
-#### `Interpreter.Metadata.SRM`
+#### `PhoenixInspect.Metadata.SRM`
 
 **Purpose**
 
@@ -443,64 +443,64 @@ These packages depend on the core abstractions, and optionally on metadata abstr
 
   * `System.Reflection.Metadata` + `PEReader`
 
-**Depends on:** `Interpreter.Metadata.Abstractions`, SRM/PEReader
+**Depends on:** `PhoenixInspect.Metadata.Abstractions`, SRM/PEReader
 **Used by:** most products as the default metadata backend
 
 ---
 
-#### `Interpreter.Metadata.AsmResolver` (optional)
+#### `PhoenixInspect.Metadata.AsmResolver` (optional)
 
 **Purpose**
 
 * Alternative metadata backend using AsmResolver object model
 * Useful if you want rewriting or Windows PDB synergy via AsmResolver suite
 
-**Depends on:** `Interpreter.Metadata.Abstractions`, AsmResolver
+**Depends on:** `PhoenixInspect.Metadata.Abstractions`, AsmResolver
 **Used by:** optional
 
 ---
 
 ### 4.3 Symbols
 
-#### `Interpreter.Symbols.PortablePdb`
+#### `PhoenixInspect.Symbols.PortablePdb`
 
 **Purpose**
 
 * Portable PDB reader implementing `ISymbolInfo` using SRM
 * Also exposes SourceLink + EmbeddedSource info to source providers
 
-**Depends on:** `Interpreter.Metadata.Abstractions`, SRM
+**Depends on:** `PhoenixInspect.Metadata.Abstractions`, SRM
 **Used by:** debugger stepping maps, source lookup
 
 ---
 
-#### `Interpreter.Symbols.WindowsPdb.Dia` (optional, Windows-only)
+#### `PhoenixInspect.Symbols.WindowsPdb.Dia` (optional, Windows-only)
 
 **Purpose**
 
 * Windows PDB reader using DiaSymReader native components (or similar)
 * Implements `ISymbolInfo`
 
-**Depends on:** `Interpreter.Metadata.Abstractions`, DIA packages
+**Depends on:** `PhoenixInspect.Metadata.Abstractions`, DIA packages
 **Used by:** optional Windows support
 
 ---
 
-#### `Interpreter.Symbols.WindowsPdb.Managed` (optional)
+#### `PhoenixInspect.Symbols.WindowsPdb.Managed` (optional)
 
 **Purpose**
 
 * Cross-platform Windows PDB reading (dnlib or AsmResolver.Symbols.Pdb), best-effort
 * Implements `ISymbolInfo`
 
-**Depends on:** `Interpreter.Metadata.Abstractions`, dnlib or AsmResolver PDB package
+**Depends on:** `PhoenixInspect.Metadata.Abstractions`, dnlib or AsmResolver PDB package
 **Used by:** optional
 
 ---
 
 ### 4.4 Decompiler integration + debug maps
 
-#### `Interpreter.Decompiler.ILSpy`
+#### `PhoenixInspect.Decompiler.ILSpy`
 
 **Purpose**
 
@@ -510,12 +510,12 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * IL↔text sequence points for stepping fallback
   * `CodeMappingInfo` (state machine/lambda mapping)
 
-**Depends on:** `Interpreter.Metadata.Abstractions`, ILSpy decompiler packages
+**Depends on:** `PhoenixInspect.Metadata.Abstractions`, ILSpy decompiler packages
 **Used by:** `IDebugMapProvider` fallback pipeline, UI source view
 
 ---
 
-#### `Interpreter.DebugMaps`
+#### `PhoenixInspect.DebugMaps`
 
 **Purpose**
 
@@ -525,14 +525,14 @@ These packages depend on the core abstractions, and optionally on metadata abstr
   * from ILSpy sequence points
   * synthetic IL/block maps fallback
 
-**Depends on:** `Interpreter.Metadata.Abstractions`, `Interpreter.Foundation`
+**Depends on:** `PhoenixInspect.Metadata.Abstractions`, `PhoenixInspect.Foundation`
 **Used by:** stepping engine, UI
 
 ---
 
 ## 5) Artifact acquisition (binaries/PDB/source) – separate from parsing
 
-#### `Interpreter.Artifacts.Abstractions`
+#### `PhoenixInspect.Artifacts.Abstractions`
 
 **Purpose**
 
@@ -540,30 +540,30 @@ These packages depend on the core abstractions, and optionally on metadata abstr
 * identities: `ModuleIdentity`, `PdbIdentity`, `DocumentIdentity`
 * policies for symbol server layouts, local caches (policy lives here; caching implementation can be separate)
 
-**Depends on:** `Interpreter.Foundation`
+**Depends on:** `PhoenixInspect.Foundation`
 **Used by:** dump/live hosts, metadata backends, source providers
 
 ---
 
-#### `Interpreter.Artifacts.SymbolStore` (optional)
+#### `PhoenixInspect.Artifacts.SymbolStore` (optional)
 
 **Purpose**
 
 * Implementation that understands symbol-server conventions, local caches, etc.
 
-**Depends on:** `Interpreter.Artifacts.Abstractions` (+ whatever symbol store libs you choose)
+**Depends on:** `PhoenixInspect.Artifacts.Abstractions` (+ whatever symbol store libs you choose)
 **Used by:** product deployments
 
 ---
 
-#### `Interpreter.Source.SourceLink` (optional)
+#### `PhoenixInspect.Source.SourceLink` (optional)
 
 **Purpose**
 
 * Resolve SourceLink URLs to source text (policy-driven, offline/online modes)
 * Also handles embedded sources from portable PDB when available
 
-**Depends on:** `Interpreter.Artifacts.Abstractions`, `Interpreter.Metadata.Abstractions` (for embedded source info)
+**Depends on:** `PhoenixInspect.Artifacts.Abstractions`, `PhoenixInspect.Metadata.Abstractions` (for embedded source info)
 **Used by:** source text provider, UI
 
 ---
@@ -574,7 +574,7 @@ These are the *only* packages that talk to ClrMD / debugger APIs / OS.
 
 ### 6.1 Host abstractions
 
-#### `Interpreter.Host.Abstractions`
+#### `PhoenixInspect.Host.Abstractions`
 
 **Purpose**
 
@@ -586,14 +586,14 @@ These are the *only* packages that talk to ClrMD / debugger APIs / OS.
   * `ILiveSnapshotProvider` (for live debugging mode)
   * optional “policy surfaces”: network/file/time allowed?
 
-**Depends on:** `Interpreter.Core.Abstractions`, `Interpreter.Artifacts.Abstractions`
+**Depends on:** `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Artifacts.Abstractions`
 **Used by:** host implementations + models like Environment/Async
 
 ---
 
 ### 6.2 Dump host (ClrMD)
 
-#### `Interpreter.Host.Dump.ClrMD`
+#### `PhoenixInspect.Host.Dump.ClrMD`
 
 **Purpose**
 
@@ -605,14 +605,14 @@ These are the *only* packages that talk to ClrMD / debugger APIs / OS.
   * runtime↔metadata bridging (`ClrMethod` → `MethodKey`, module identity resolution)
 * Provides a read-only heap backend and seeds an overlay memory
 
-**Depends on:** `Interpreter.Host.Abstractions`, ClrMD, `Interpreter.Metadata.Abstractions`
+**Depends on:** `PhoenixInspect.Host.Abstractions`, ClrMD, `PhoenixInspect.Metadata.Abstractions`
 **Used by:** post-mortem debugger engine
 
 ---
 
 ### 6.3 Live debugging host (optional)
 
-#### `Interpreter.Host.Live.Snapshot`
+#### `PhoenixInspect.Host.Live.Snapshot`
 
 **Purpose**
 
@@ -622,14 +622,14 @@ These are the *only* packages that talk to ClrMD / debugger APIs / OS.
   * or best-effort reads with inconsistency detection
 * Exposes `ILiveSnapshotProvider` to the VM
 
-**Depends on:** `Interpreter.Host.Abstractions` + whichever live-debug API you use
+**Depends on:** `PhoenixInspect.Host.Abstractions` + whichever live-debug API you use
 **Used by:** speculative debugging engine
 
 ---
 
 ### 6.4 no-JIT runtime host (no-JIT execution)
 
-#### `Interpreter.Host.Runtime.NoJit`
+#### `PhoenixInspect.Host.Runtime.NoJit`
 
 **Purpose**
 
@@ -640,7 +640,7 @@ These are the *only* packages that talk to ClrMD / debugger APIs / OS.
   * optional time/env/io gated by policy
 * Uses concrete domain + virtual heap, no ClrMD, no PDB, no decompiler
 
-**Depends on:** `Interpreter.Host.Abstractions`, `Interpreter.Memory.VirtualHeap`, `Interpreter.Domain.Concrete`
+**Depends on:** `PhoenixInspect.Host.Abstractions`, `PhoenixInspect.Memory.VirtualHeap`, `PhoenixInspect.Domain.Concrete`
 **Used by:** IL-on-no-JIT runtime product
 
 ---
@@ -649,19 +649,19 @@ These are the *only* packages that talk to ClrMD / debugger APIs / OS.
 
 Keep stepping orchestration separate from the VM itself.
 
-#### `Interpreter.Debugger.Engine`
+#### `PhoenixInspect.Debugger.Engine`
 
 **Purpose**
 
 * Implements Step Into/Over/Out on top of:
 
-  * `Interpreter.Core.Execution` micro-step runner
-  * `Interpreter.DebugMaps` statement boundaries
+  * `PhoenixInspect.Core.Execution` micro-step runner
+  * `PhoenixInspect.DebugMaps` statement boundaries
   * model frames (async/dynamic/environment)
   * undo/redo history and branching (if you support “choose true/false”)
 * Owns “stop predicates”, not the VM
 
-**Depends on:** `Interpreter.Core.Execution`, `Interpreter.DebugMaps`, `Interpreter.Host.Abstractions`, `Interpreter.Models.Abstractions`
+**Depends on:** `PhoenixInspect.Core.Execution`, `PhoenixInspect.DebugMaps`, `PhoenixInspect.Host.Abstractions`, `PhoenixInspect.Models.Abstractions`
 **Used by:** dump debugger product, speculative debugger product
 
 ---
@@ -672,15 +672,15 @@ These are “glue” packages that wire everything together with reasonable defa
 
 ### A) Post-mortem dump debugger engine
 
-#### `Interpreter.Product.DumpDebugging`
+#### `PhoenixInspect.Product.DumpDebugging`
 
 **Includes/wires**
 
-* `Interpreter.Host.Dump.ClrMD`
-* `Interpreter.Metadata.SRM`
-* `Interpreter.Symbols.PortablePdb` (+ optional WindowsPdb plugin)
-* `Interpreter.Decompiler.ILSpy` + `Interpreter.DebugMaps`
-* `Interpreter.Debugger.Engine`
+* `PhoenixInspect.Host.Dump.ClrMD`
+* `PhoenixInspect.Metadata.SRM`
+* `PhoenixInspect.Symbols.PortablePdb` (+ optional WindowsPdb plugin)
+* `PhoenixInspect.Decompiler.ILSpy` + `PhoenixInspect.DebugMaps`
+* `PhoenixInspect.Debugger.Engine`
 * Domains: `CNTypeOriginLabels` + VirtualHeap + Overlay
 * Models: CoreLib, Environment, Async, Dynamic, Collections, CompilerPatterns
 
@@ -691,12 +691,12 @@ These are “glue” packages that wire everything together with reasonable defa
 
 ### B) Static analysis toolchain
 
-#### `Interpreter.Product.StaticAnalysis`
+#### `PhoenixInspect.Product.StaticAnalysis`
 
 **Includes/wires**
 
-* `Interpreter.Metadata.SRM`
-* `Interpreter.Core.IR` + `Interpreter.Core.Analysis`
+* `PhoenixInspect.Metadata.SRM`
+* `PhoenixInspect.Core.IR` + `PhoenixInspect.Core.Analysis`
 * Domains: CNTypeOriginLabels + Range + SummaryHeap
 * Models: CoreLib, Environment (for effect tagging), CompilerPatterns
 * Optional: decompiler only for presentation, not required
@@ -709,12 +709,12 @@ These are “glue” packages that wire everything together with reasonable defa
 
 ### C) Speculative/live debugging augmentation
 
-#### `Interpreter.Product.LiveSpeculation`
+#### `PhoenixInspect.Product.LiveSpeculation`
 
 **Includes/wires**
 
-* `Interpreter.Host.Live.Snapshot` (or whatever live snapshot provider)
-* `Interpreter.Debugger.Engine`
+* `PhoenixInspect.Host.Live.Snapshot` (or whatever live snapshot provider)
+* `PhoenixInspect.Debugger.Engine`
 * Domains: CNTypeOriginLabels + Overlay over live snapshot backend
 * Models: Environment (target-derived snapshot), Async, Dynamic, Collections, CompilerPatterns
 * Optional: RoslynAdapter for “compile expression to synthetic method” experience
@@ -723,14 +723,14 @@ These are “glue” packages that wire everything together with reasonable defa
 
 ### D) No-JIT runtime / bounded execution
 
-#### `Interpreter.Product.NoJitRuntime`
+#### `PhoenixInspect.Product.NoJitRuntime`
 
 **Includes/wires**
 
-* `Interpreter.Host.Runtime.NoJit`
-* `Interpreter.Core.Execution`
-* `Interpreter.Domain.Concrete` (+ optional CNTypeOriginLabels for diagnostics mode)
-* `Interpreter.Memory.VirtualHeap`
+* `PhoenixInspect.Host.Runtime.NoJit`
+* `PhoenixInspect.Core.Execution`
+* `PhoenixInspect.Domain.Concrete` (+ optional CNTypeOriginLabels for diagnostics mode)
+* `PhoenixInspect.Memory.VirtualHeap`
 * Models: CoreLib.Primitives + a policy-driven set of environment/io services
 * No PDB, no decompiler, no artifacts, no ClrMD
 
@@ -740,23 +740,23 @@ These are “glue” packages that wire everything together with reasonable defa
 
 These rules keep reuse intact:
 
-* `Interpreter.Core.Execution` **must never** reference:
+* `PhoenixInspect.Core.Execution` **must never** reference:
 
   * ClrMD
   * SRM/AsmResolver
   * ILSpy
   * Roslyn
   * symbol server acquisition
-* `Interpreter.Metadata.*` packages **must never** reference:
+* `PhoenixInspect.Metadata.*` packages **must never** reference:
 
   * ClrMD
   * debugger stepping
   * models
-* `Interpreter.Decompiler.ILSpy` **must never** reference:
+* `PhoenixInspect.Decompiler.ILSpy` **must never** reference:
 
   * ClrMD
   * VM execution
-* `Interpreter.Host.Dump.ClrMD` **may** reference metadata abstractions (to produce `MethodKey` etc.), but **should not** depend on ILSpy/Roslyn.
+* `PhoenixInspect.Host.Dump.ClrMD` **may** reference metadata abstractions (to produce `MethodKey` etc.), but **should not** depend on ILSpy/Roslyn.
 
 ---
 
@@ -766,10 +766,10 @@ If you later decide granularity is too much, merge along *layer boundaries*, not
 
 Compatible merges (usually fine):
 
-* `Interpreter.Foundation` + `Interpreter.Types` + `Interpreter.IL` into `Interpreter.Core.Common`
-* `Interpreter.Core.Execution` + `Interpreter.Core.Abstractions` into `Interpreter.VM`
-* `Interpreter.DebugMaps` + `Interpreter.Decompiler.ILSpy` into `Interpreter.Source`
-* Model packages into `Interpreter.Models`
+* `PhoenixInspect.Foundation` + `PhoenixInspect.Types` + `PhoenixInspect.IL` into `PhoenixInspect.Core.Common`
+* `PhoenixInspect.Core.Execution` + `PhoenixInspect.Core.Abstractions` into `PhoenixInspect.VM`
+* `PhoenixInspect.DebugMaps` + `PhoenixInspect.Decompiler.ILSpy` into `PhoenixInspect.Source`
+* Model packages into `PhoenixInspect.Models`
 
 Merges I would **avoid** even long-term:
 
@@ -785,8 +785,8 @@ Those are the seams that keep “runtime mode” and “analysis mode” from in
 
 This modular split makes “add feature X” predictable:
 
-* New value facts → new `Interpreter.Domain.*` package
-* New layout projection (e.g., `ConcurrentQueue`) → extend `Interpreter.Models.Collections`
-* New platform host (WASM, game engine) → new `Interpreter.Host.*`
-* New decompiler (if you ever add one) → new `Interpreter.Decompiler.*`
-* New symbol story → new `Interpreter.Symbols.*`
+* New value facts → new `PhoenixInspect.Domain.*` package
+* New layout projection (e.g., `ConcurrentQueue`) → extend `PhoenixInspect.Models.Collections`
+* New platform host (WASM, game engine) → new `PhoenixInspect.Host.*`
+* New decompiler (if you ever add one) → new `PhoenixInspect.Decompiler.*`
+* New symbol story → new `PhoenixInspect.Symbols.*`

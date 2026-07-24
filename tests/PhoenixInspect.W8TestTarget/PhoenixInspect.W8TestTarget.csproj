@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>PhoenixInspect.W8TestTarget</AssemblyName>
+    <RootNamespace>PhoenixInspect.W8TestTarget</RootNamespace>
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="PhoenixInspect.W8NamedRvaTarget">
+      <HintPath>NamedRvaFixture/PhoenixInspect.W8NamedRvaTarget.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <ProjectReference Include="../PhoenixInspect.W8AliasTarget/PhoenixInspect.W8AliasTarget.csproj">
+      <Aliases>global,requestlib</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="../PhoenixInspect.W8ForwarderTarget/PhoenixInspect.W8ForwarderTarget.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="NamedRvaFixture/PhoenixInspect.W8NamedRvaTarget.il"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Update="NamedRvaFixture/PhoenixInspect.W8NamedRvaTarget.xml"
+          CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../TestInfrastructure/HeadlessTestProcess.cs"
+             Link="TestInfrastructure/HeadlessTestProcess.cs" />
+  </ItemGroup>
+</Project>

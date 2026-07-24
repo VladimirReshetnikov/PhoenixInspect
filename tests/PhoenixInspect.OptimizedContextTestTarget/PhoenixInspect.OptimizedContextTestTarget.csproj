@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>PhoenixInspect.OptimizedContextTestTarget</AssemblyName>
+    <RootNamespace>PhoenixInspect.OptimizedContextTestTarget</RootNamespace>
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <IsPackable>false</IsPackable>
+    <DefineConstants Condition="'$(Configuration)' == 'Release'">$(DefineConstants);INTERPRETER_OPTIMIZED_RELEASE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../TestInfrastructure/HeadlessTestProcess.cs"
+             Link="TestInfrastructure/HeadlessTestProcess.cs" />
+  </ItemGroup>
+</Project>

@@ -71,7 +71,7 @@ policy. A raw `dotnet test` command is not an approved unattended test entry poi
 
 ### Fast concrete, admission, determinism, and metadata proofs
 
-`tests/Interpreter.Tests` is dump-free. Its checked-in corpus covers:
+`tests/PhoenixInspect.Tests` is dump-free. Its checked-in corpus covers:
 
 1. lifted-flat concrete-domain order, join, meet, widening, canonical unknowns, and value-omitting display;
 2. provenance-aware lifted-flat laws whose semantic equality/hash/order ignore explanation, plus versioned
@@ -148,7 +148,7 @@ page remains partial/unavailable rather than being zero-filled.
 
 ### Restricted dump-query proof
 
-`Interpreter.Product.DumpQuery` is exercised both without a dump and through the generated full-dump scenario. The
+`PhoenixInspect.Product.DumpQuery` is exercised both without a dump and through the generated full-dump scenario. The
 historical W2 fast corpus admits exactly one exact non-null ordinal root, `.`, one field, and optional bounded literal coalescing,
 while rejecting `?.`, calls, indexing, chaining, arithmetic, oversized inputs, malformed literals, and unsupported
 escapes with stable payload-omitting codes. Preparation consumes a typed, snapshot-bound root result and selects the outer
@@ -234,10 +234,10 @@ not imply that the later wrapper existed when the original W0 run was recorded.
 
 | Gate | Command shape | Result |
 |---|---|---|
-| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode --disable-parallel --disable-build-servers` | Passed. |
-| Full prototype build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln -c Release --no-restore --disable-build-servers -m:1 /p:UseSharedCompilation=false` | Passed, 0 warnings / 0 errors. |
-| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj -c Release --no-build --no-restore ` | Passed, 60/60. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast"` | Passed, 40/40. |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode --disable-parallel --disable-build-servers` | Passed. |
+| Full prototype build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln -c Release --no-restore --disable-build-servers -m:1 /p:UseSharedCompilation=false` | Passed, 0 warnings / 0 errors. |
+| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj -c Release --no-build --no-restore ` | Passed, 60/60. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast"` | Passed, 40/40. |
 | Real dump evidence | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 3/3 on the W0 completion tree; the earlier reset tree also passed three consecutive runs (9/9 executions). |
 
 This table records local verification only; the independent service-side evidence follows.
@@ -272,12 +272,12 @@ Every command below ran through `./eng/Invoke-HeadlessProcess.ps1`; no test was 
 
 | Gate | Headless command shape | Result |
 |---|---|---|
-| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
-| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
-| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 64/64 at W2 implementation commit `ff7cd1965`. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 67/67 at W2 implementation commit `ff7cd1965`. |
-| Ordinary real-dump evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 4/4 at W2 implementation commit `ff7cd1965`, including the 22-case W2 corpus. |
-| Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 64/64 at W2 implementation commit `ff7cd1965`. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 67/67 at W2 implementation commit `ff7cd1965`. |
+| Ordinary real-dump evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 4/4 at W2 implementation commit `ff7cd1965`, including the 22-case W2 corpus. |
+| Optimized modeled-context evidence | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1 at W2 implementation commit `ff7cd1965`. |
 
 Both W1 and W2 local results are corroborated by their exact-commit hosted closure runs above. Their historical project
 and test counts describe the repositories at those commits. The current workflow builds all 20 projects and runs every
@@ -291,10 +291,10 @@ and no UI was displayed.
 
 | Gate | Headless command shape | Result |
 |---|---|---|
-| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
-| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
-| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 103/103. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 67/67. |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 103/103. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 67/67. |
 | Ordinary real-dump evidence | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 5/5. |
 | Optimized modeled-context evidence | the same wrapped integration-project command with `--filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1. |
 | Focused W3 evidence | the same wrapped integration-project command with `--filter "FullyQualifiedName~W3DumpGetterExecutionIntegrationTests"` | Passed, 2/2. This is a focused re-run/view, not two additional ordinary-dump facts. |
@@ -316,11 +316,11 @@ displayed.
 
 | Gate | Headless command shape | Result |
 |---|---|---|
-| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
-| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false` | Passed across 15 projects, 0 warnings / 0 errors. |
 | Focused W4.2 kernel | the wrapped unit-project command filtered to `ProvenanceConcreteDomainTests`, `ProvenanceLineageTests`, and `ProvenanceMachineTransferTests`, together with the milestone test selection | Passed, 53/53: 23 domain, 14 lineage, and 16 machine facts. |
-| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 156/156. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 71/71. |
+| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 156/156. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 71/71. |
 | Ordinary real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 5/5. This is regression evidence only; W4.2 creates no dump-grounded result. |
 | Documentation/workflow guards | `./eng/verify-markdown-links.ps1` and `./eng/verify-headless-workflows.ps1` | Passed. |
 
@@ -339,11 +339,11 @@ displayed.
 
 | Gate | Headless command shape | Result |
 |---|---|---|
-| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
-| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
 | Focused W4.3 field-evidence kernel | the wrapped unit-project command filtered to `FieldLoadEvidenceTests`, `ProvenanceFieldLineageTests`, and `ProvenanceFieldTransferTests`, together with the milestone test selection | Passed, 55/55. |
-| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 211/211. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 71/71. |
+| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 211/211. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 71/71. |
 | Ordinary real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 5/5. This is regression evidence only; W4.3 creates no dump-grounded result. |
 | Optimized real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1. This is regression evidence only; W4.3 creates no dump-grounded result. |
 | Documentation/workflow guards | `./eng/verify-markdown-links.ps1` and `./eng/verify-headless-workflows.ps1` | Passed. |
@@ -364,12 +364,12 @@ the milestone test selection; no test was skipped; and no UI was displayed.
 
 | Gate | Headless command shape | Result |
 |---|---|---|
-| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
-| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
 | Focused W4.4 graph planner | the wrapped unit-project command filtered to `MethodGraphPlannerTests`, together with the milestone test selection | Passed, 35/35. |
 | Focused W4 fixture | the wrapped integration-project command filtered to `W4GateFixtureTests`, together with the milestone test selection | Passed, 6/6. |
-| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 250/250. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 73/73. |
+| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 250/250. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 73/73. |
 | Ordinary real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 5/5. This is regression evidence only. |
 | Optimized real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1. This is regression evidence only. |
 | Documentation/workflow guards | `./eng/verify-markdown-links.ps1` and `./eng/verify-headless-workflows.ps1` | Passed. |
@@ -395,14 +395,14 @@ was displayed.
 
 | Gate | Headless command shape | Result |
 |---|---|---|
-| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
-| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
-| Strict unit project build | wrapped Release build of `tests/Interpreter.Tests/Interpreter.Tests.csproj` with restore disabled, build servers disabled, shared compilation disabled, and warnings as errors | Passed, 0 warnings / 0 errors. |
-| Strict integration project build | wrapped Release build of `tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj` with restore disabled, build servers disabled, shared compilation disabled, and warnings as errors | Passed, 0 warnings / 0 errors. |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Strict unit project build | wrapped Release build of `tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj` with restore disabled, build servers disabled, shared compilation disabled, and warnings as errors | Passed, 0 warnings / 0 errors. |
+| Strict integration project build | wrapped Release build of `tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj` with restore disabled, build servers disabled, shared compilation disabled, and warnings as errors | Passed, 0 warnings / 0 errors. |
 | Focused prepared-graph execution | the wrapped unit-project command filtered to `PreparedGraphExecutionTests`, together with the milestone test selection | Passed, 25/25. |
 | Focused W4 fixture | the wrapped integration-project command filtered to `W4GateFixtureTests`, together with the milestone test selection | Passed, 7/7. |
-| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 275/275. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 74/74. |
+| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 275/275. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 74/74. |
 | Ordinary real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 5/5. This is regression evidence only. |
 | Optimized real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1. This is regression evidence only. |
 | Markdown-link guard | `./eng/verify-markdown-links.ps1` | Passed, 62 files / 41 destinations. |
@@ -430,14 +430,14 @@ the milestone test selection; no test was skipped; and no UI was displayed.
 
 | Gate | Headless command shape | Result |
 |---|---|---|
-| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode` | Passed. |
-| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
+| Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode` | Passed. |
+| Strict solution build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:TreatWarningsAsErrors=true` | Passed across 15 projects, 0 warnings / 0 errors. |
 | Focused prepared-graph execution | the wrapped unit-project command filtered to `PreparedGraphExecutionTests`, together with the milestone test selection | Passed, 40/40. |
 | Combined lineage/audit regression | the wrapped unit-project command selecting the complete prepared-call lineage and compatibility audit set, together with the milestone test selection | Passed, 76/76, including 29 frozen legacy identity cases. |
 | Compiler-emitted lineage fixture | the wrapped integration-project command filtered to the compiler lineage cases, together with the milestone test selection | Passed, 2/2. |
 | Focused W4 fixture | the wrapped integration-project command filtered to `W4GateFixtureTests`, together with the milestone test selection | Passed, 9/9. |
-| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 297/297. |
-| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 76/76. |
+| Complete semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore ` | Passed, 297/297. |
+| Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast"` | Passed, 76/76. |
 | Ordinary real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 5/5. This is regression evidence only. |
 | Optimized real-dump regression | the same wrapped integration-project command with `--filter "Category=Dump&Corpus=ModeledIncidentContextV1"` | Passed, 1/1. This is regression evidence only. |
 | Documentation/workflow guards | `./eng/verify-markdown-links.ps1` and `./eng/verify-headless-workflows.ps1` | Passed. |
@@ -556,7 +556,7 @@ Exact pushed commits `2e70fe76d` and `dad6a6dd4` complete the standalone exact-n
 requires a complete same-machine sequence of issuer-certified transitions from legacy IL-zero activation through the
 first null-reference latch, optionally plus one certified idempotent re-step. It validates location, memory identity,
 budget, and events; rejects caller-authored or malformed evidence by stable code; and freezes literal fragment SHA-256
-`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`. W4.7b proves direct/adjusted compiler
+`99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`. W4.7b proves direct/adjusted compiler
 getters, fresh SRM/module/domain/machine replay, and no re-step resolver/domain/memory access or repeated field load.
 
 | Gate | Evidence scope | Result |

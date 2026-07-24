@@ -1,6 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>Interpreter.Core.Abstractions</AssemblyName>
-    <RootNamespace>Interpreter.Core.Abstractions</RootNamespace>
-  </PropertyGroup>
-</Project>

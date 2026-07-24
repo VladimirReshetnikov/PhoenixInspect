@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>Interpreter.Metadata.SRM</AssemblyName>
-    <RootNamespace>Interpreter.Metadata.SRM</RootNamespace>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="../Interpreter.Metadata.Abstractions/Interpreter.Metadata.Abstractions.csproj" />
-  </ItemGroup>
-</Project>

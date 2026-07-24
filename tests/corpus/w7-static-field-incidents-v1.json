@@ -4,42 +4,42 @@
   "evidenceKind": "designed-synthetic",
   "languageProfile": "StaticFieldExpressionV1",
   "targetContract": {
-    "projectPath": "tests/Interpreter.W7TestTarget/Interpreter.W7TestTarget.csproj",
-    "assemblyName": "Interpreter.W7TestTarget",
+    "projectPath": "tests/PhoenixInspect.W7TestTarget/PhoenixInspect.W7TestTarget.csproj",
+    "assemblyName": "PhoenixInspect.W7TestTarget",
     "targetFramework": "net10.0",
     "configuration": "Release",
     "optimize": true,
     "debugType": "portable",
     "headlessProcess": true,
-    "pauseMethod": "Interpreter.W7TestTarget.IncidentPause.WaitForDump",
+    "pauseMethod": "PhoenixInspect.W7TestTarget.IncidentPause.WaitForDump",
     "sourceInputs": [
-      "tests/Interpreter.W7TestTarget/Program.cs",
-      "tests/Interpreter.W7TestTarget/StaticValues.cs",
-      "tests/Interpreter.W7TestTarget/RequestPipeline.cs",
-      "tests/Interpreter.W7TestTarget/BatchPipeline.cs",
-      "tests/Interpreter.W7TestTarget/CoordinatorPipeline.cs",
-      "tests/Interpreter.W7TestTarget/WorkflowPipeline.cs"
+      "tests/PhoenixInspect.W7TestTarget/Program.cs",
+      "tests/PhoenixInspect.W7TestTarget/StaticValues.cs",
+      "tests/PhoenixInspect.W7TestTarget/RequestPipeline.cs",
+      "tests/PhoenixInspect.W7TestTarget/BatchPipeline.cs",
+      "tests/PhoenixInspect.W7TestTarget/CoordinatorPipeline.cs",
+      "tests/PhoenixInspect.W7TestTarget/WorkflowPipeline.cs"
     ],
-    "portablePdbArtifact": "tests/Interpreter.W7TestTarget/bin/Release/net10.0/Interpreter.W7TestTarget.pdb"
+    "portablePdbArtifact": "tests/PhoenixInspect.W7TestTarget/bin/Release/net10.0/PhoenixInspect.W7TestTarget.pdb"
   },
   "companionArtifactContracts": [
     {
       "id": "portable-pdb-identity-conflict",
-      "projectPath": "tests/Interpreter.W7PdbConflictFixture/Interpreter.W7PdbConflictFixture.csproj",
+      "projectPath": "tests/PhoenixInspect.W7PdbConflictFixture/PhoenixInspect.W7PdbConflictFixture.csproj",
       "sourceInputs": [
-        "tests/Interpreter.W7PdbConflictFixture/ConflictingImports.cs"
+        "tests/PhoenixInspect.W7PdbConflictFixture/ConflictingImports.cs"
       ],
-      "artifactPath": "tests/Interpreter.W7PdbConflictFixture/bin/Release/net10.0/Interpreter.W7PdbConflictFixture.pdb",
+      "artifactPath": "tests/PhoenixInspect.W7PdbConflictFixture/bin/Release/net10.0/PhoenixInspect.W7PdbConflictFixture.pdb",
       "acquisition": "explicit-test-resolver-input",
       "purpose": "identity-mismatching-portable-pdb"
     },
     {
       "id": "duplicate-qualified-type",
-      "projectPath": "tests/Interpreter.W7DuplicateTypeFixture/Interpreter.W7DuplicateTypeFixture.csproj",
+      "projectPath": "tests/PhoenixInspect.W7DuplicateTypeFixture/PhoenixInspect.W7DuplicateTypeFixture.csproj",
       "sourceInputs": [
-        "tests/Interpreter.W7DuplicateTypeFixture/CoordinatorDuplicateStatics.cs"
+        "tests/PhoenixInspect.W7DuplicateTypeFixture/CoordinatorDuplicateStatics.cs"
       ],
-      "artifactPath": "tests/Interpreter.W7DuplicateTypeFixture/bin/Release/net10.0/Interpreter.W7DuplicateTypeFixture.dll",
+      "artifactPath": "tests/PhoenixInspect.W7DuplicateTypeFixture/bin/Release/net10.0/PhoenixInspect.W7DuplicateTypeFixture.dll",
       "acquisition": "explicit-assembly-load-before-pause",
       "purpose": "second-loaded-module-with-duplicate-qualified-type"
     }
@@ -62,7 +62,7 @@
       "targetArguments": ["--incident", "request-qualified-scalar"],
       "artifactInputs": [],
       "evidenceView": "exact",
-      "expression": "global::Interpreter.W7TestTarget.StaticValues.Counter",
+      "expression": "global::PhoenixInspect.W7TestTarget.StaticValues.Counter",
       "suffixProfile": "None",
       "controlExpression": null,
       "controlExpected": null,
@@ -86,7 +86,7 @@
       "evidenceView": "exact",
       "expression": "BatchStatics.Root.State",
       "suffixProfile": "W2DirectFieldV1",
-      "controlExpression": "global::Interpreter.W7TestTarget.Batch.BatchStatics.Root.State",
+      "controlExpression": "global::PhoenixInspect.W7TestTarget.Batch.BatchStatics.Root.State",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactString" },
       "controlRelationship": "same-symbol-and-value",
       "contextRequest": { "mode": "managed-thread-and-frame", "frameOrdinal": 0, "pdbMode": "exact" },
@@ -108,7 +108,7 @@
       "evidenceView": "exact",
       "expression": "CoordinatorValues.Root.Owner?.Name",
       "suffixProfile": "W6ConditionalChainV1",
-      "controlExpression": "global::Interpreter.W7TestTarget.Coordinator.CoordinatorStatics.Root.Owner?.Name",
+      "controlExpression": "global::PhoenixInspect.W7TestTarget.Coordinator.CoordinatorStatics.Root.Owner?.Name",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactString" },
       "controlRelationship": "same-symbol-and-value",
       "contextRequest": { "mode": "managed-thread-and-frame", "frameOrdinal": 0, "pdbMode": "exact" },
@@ -130,7 +130,7 @@
       "evidenceView": "exact",
       "expression": "WorkflowStatics.Root.CurrentAttempt.Status",
       "suffixProfile": "W6MemberChainV1",
-      "controlExpression": "global::Interpreter.W7TestTarget.Workflow.WorkflowStatics.Root.CurrentAttempt.Status",
+      "controlExpression": "global::PhoenixInspect.W7TestTarget.Workflow.WorkflowStatics.Root.CurrentAttempt.Status",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactString" },
       "controlRelationship": "same-symbol-and-value",
       "contextRequest": { "mode": "managed-thread-and-frame", "frameOrdinal": 0, "pdbMode": "exact" },
@@ -150,7 +150,7 @@
       "targetArguments": ["--incident", "request-exact-null-reference"],
       "artifactInputs": [],
       "evidenceView": "exact",
-      "expression": "global::Interpreter.W7TestTarget.Request.RequestStatics.CurrentRequest",
+      "expression": "global::PhoenixInspect.W7TestTarget.Request.RequestStatics.CurrentRequest",
       "suffixProfile": "None",
       "controlExpression": null,
       "controlExpected": null,
@@ -174,7 +174,7 @@
       "evidenceView": "exact",
       "expression": "BatchStatics.Progress",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W7TestTarget.Batch.BatchStatics.Progress",
+      "controlExpression": "global::PhoenixInspect.W7TestTarget.Batch.BatchStatics.Progress",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactNullableNoValue" },
       "controlRelationship": "same-symbol-and-value",
       "contextRequest": { "mode": "managed-thread-and-frame", "frameOrdinal": 0, "pdbMode": "exact" },
@@ -196,7 +196,7 @@
       "evidenceView": "exact",
       "expression": "CoordinatorStatics.Root",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W7TestTarget.Coordinator.CoordinatorStatics.Root",
+      "controlExpression": "global::PhoenixInspect.W7TestTarget.Coordinator.CoordinatorStatics.Root",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactObject" },
       "controlRelationship": "fully-qualified-exact-baseline",
       "contextRequest": { "mode": "missing-managed-thread", "frameOrdinal": 0, "pdbMode": "not-reached" },
@@ -206,7 +206,7 @@
       "firstBoundary": "selected-frame-unavailable",
       "postW7Boundary": "BindingContextPrecision",
       "expectedTerminal": null,
-      "controlExpectedTerminal": "object:Interpreter.W7TestTarget.Coordinator.CoordinatorRoot"
+      "controlExpectedTerminal": "object:PhoenixInspect.W7TestTarget.Coordinator.CoordinatorRoot"
     },
     {
       "id": "workflow-pdb-partial",
@@ -218,7 +218,7 @@
       "evidenceView": "exact",
       "expression": "BatchStatics.Root",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W7TestTarget.Batch.BatchStatics.Root",
+      "controlExpression": "global::PhoenixInspect.W7TestTarget.Batch.BatchStatics.Root",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactObject" },
       "controlRelationship": "fully-qualified-exact-baseline",
       "contextRequest": { "mode": "managed-thread-and-frame", "frameOrdinal": 0, "pdbMode": "partial-bytes" },
@@ -228,7 +228,7 @@
       "firstBoundary": "portable-pdb-partial",
       "postW7Boundary": "BindingContextPrecision",
       "expectedTerminal": null,
-      "controlExpectedTerminal": "object:Interpreter.W7TestTarget.Batch.BatchRoot"
+      "controlExpectedTerminal": "object:PhoenixInspect.W7TestTarget.Batch.BatchRoot"
     },
     {
       "id": "request-pdb-identity-conflict",
@@ -240,7 +240,7 @@
       "evidenceView": "exact",
       "expression": "StaticValues.Counter",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W7TestTarget.StaticValues.Counter",
+      "controlExpression": "global::PhoenixInspect.W7TestTarget.StaticValues.Counter",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactInt32" },
       "controlRelationship": "fully-qualified-exact-baseline",
       "contextRequest": { "mode": "managed-thread-and-frame", "frameOrdinal": 0, "pdbMode": "identity-conflict" },
@@ -262,7 +262,7 @@
       "evidenceView": "exact",
       "expression": "BatchStatics.State",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W7TestTarget.Batch.BatchStatics.State",
+      "controlExpression": "global::PhoenixInspect.W7TestTarget.Batch.BatchStatics.State",
       "controlExpected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Exact", "storage": "Exact", "value": "ExactString" },
       "controlRelationship": "fully-qualified-exact-baseline",
       "contextRequest": { "mode": "managed-thread-and-frame", "frameOrdinal": 0, "pdbMode": "two-competing-imports" },
@@ -282,7 +282,7 @@
       "targetArguments": ["--incident", "coordinator-duplicate-qualified-definition", "--load-companion", "duplicate-qualified-type"],
       "artifactInputs": ["duplicate-qualified-type"],
       "evidenceView": "exact",
-      "expression": "global::Interpreter.W7TestTarget.Coordinator.CoordinatorStatics.Root",
+      "expression": "global::PhoenixInspect.W7TestTarget.Coordinator.CoordinatorStatics.Root",
       "suffixProfile": "None",
       "controlExpression": null,
       "controlExpected": null,
@@ -304,7 +304,7 @@
       "targetArguments": ["--incident", "workflow-field-absence-vs-invalid-signature"],
       "artifactInputs": [],
       "evidenceView": "exact",
-      "expression": "global::Interpreter.W7TestTarget.Workflow.WorkflowStatics.MissingAttempt",
+      "expression": "global::PhoenixInspect.W7TestTarget.Workflow.WorkflowStatics.MissingAttempt",
       "suffixProfile": "None",
       "controlExpression": null,
       "controlExpected": null,
@@ -313,7 +313,7 @@
       "expected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Unavailable", "storage": "NotReached", "value": "NotReached" },
       "comparisonProjection": {
         "evidenceView": "invalidate-field-signature",
-        "expression": "global::Interpreter.W7TestTarget.Workflow.WorkflowStatics.Root",
+        "expression": "global::PhoenixInspect.W7TestTarget.Workflow.WorkflowStatics.Root",
         "expected": { "syntax": "Exact", "context": "NotRequired", "symbol": "Invalid", "storage": "NotReached", "value": "NotReached" },
         "relationship": "invalid-declaration-distinct-from-exhaustive-absence",
         "firstBoundary": "metadata-invalid"
@@ -333,7 +333,7 @@
       "targetArguments": ["--incident", "request-slot-unavailable"],
       "artifactInputs": [],
       "evidenceView": "exact",
-      "expression": "global::Interpreter.W7TestTarget.Request.UninitializedRequestStatics.Pending",
+      "expression": "global::PhoenixInspect.W7TestTarget.Request.UninitializedRequestStatics.Pending",
       "suffixProfile": "None",
       "controlExpression": null,
       "controlExpected": null,
@@ -355,7 +355,7 @@
       "targetArguments": ["--incident", "batch-partial-slot-bytes"],
       "artifactInputs": [],
       "evidenceView": "truncate-static-slot",
-      "expression": "global::Interpreter.W7TestTarget.Batch.BatchStatics.Progress",
+      "expression": "global::PhoenixInspect.W7TestTarget.Batch.BatchStatics.Progress",
       "suffixProfile": "None",
       "controlExpression": null,
       "controlExpected": null,
@@ -377,7 +377,7 @@
       "targetArguments": ["--incident", "coordinator-target-header-conflict"],
       "artifactInputs": [],
       "evidenceView": "replace-method-table",
-      "expression": "global::Interpreter.W7TestTarget.Coordinator.CoordinatorStatics.Root.Owner.Name",
+      "expression": "global::PhoenixInspect.W7TestTarget.Coordinator.CoordinatorStatics.Root.Owner.Name",
       "suffixProfile": "W6MemberChainV1",
       "controlExpression": null,
       "controlExpected": null,
@@ -399,7 +399,7 @@
       "targetArguments": ["--incident", "workflow-valid-unadmitted-generic-call"],
       "artifactInputs": [],
       "evidenceView": "exact",
-      "expression": "global::Interpreter.W7TestTarget.Workflow.WorkflowStatics.GetCurrent<System.String>()",
+      "expression": "global::PhoenixInspect.W7TestTarget.Workflow.WorkflowStatics.GetCurrent<System.String>()",
       "suffixProfile": "None",
       "controlExpression": null,
       "controlExpected": null,

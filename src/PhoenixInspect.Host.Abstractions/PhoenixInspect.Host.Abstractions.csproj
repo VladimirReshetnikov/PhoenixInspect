@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PhoenixInspect.Host.Abstractions</AssemblyName>
+    <RootNamespace>PhoenixInspect.Host.Abstractions</RootNamespace>
+  </PropertyGroup>
+</Project>

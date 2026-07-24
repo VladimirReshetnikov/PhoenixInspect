@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PhoenixInspect.Host.Dump.ClrMD</AssemblyName>
+    <RootNamespace>PhoenixInspect.Host.Dump.ClrMD</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../PhoenixInspect.Core.Abstractions/PhoenixInspect.Core.Abstractions.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Host.Abstractions/PhoenixInspect.Host.Abstractions.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Metadata.SRM/PhoenixInspect.Metadata.SRM.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" />
+  </ItemGroup>
+</Project>

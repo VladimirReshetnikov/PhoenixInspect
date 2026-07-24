@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PhoenixInspect.Product.DumpDebugging</AssemblyName>
+    <RootNamespace>PhoenixInspect.Product.DumpDebugging</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../PhoenixInspect.Core.Abstractions/PhoenixInspect.Core.Abstractions.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Core.Execution/PhoenixInspect.Core.Execution.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Domain.Concrete/PhoenixInspect.Domain.Concrete.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Host.Abstractions/PhoenixInspect.Host.Abstractions.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Host.Dump.ClrMD/PhoenixInspect.Host.Dump.ClrMD.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Product.DumpQuery/PhoenixInspect.Product.DumpQuery.csproj" />
+  </ItemGroup>
+</Project>

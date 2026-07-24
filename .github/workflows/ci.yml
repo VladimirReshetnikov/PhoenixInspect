@@ -41,13 +41,13 @@ jobs:
           cache: true
           cache-dependency-path: '**/packages.lock.json'
       - name: Restore locked dependencies
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
       - name: Build Release
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Run semantic and differential tests
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
       - name: Run fast adapter tests
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
 
   dump-evidence:
     name: Real dump evidence
@@ -62,11 +62,11 @@ jobs:
           cache: true
           cache-dependency-path: '**/packages.lock.json'
       - name: Restore locked dependencies
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
       - name: Build Release
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Generate and inspect a real dump
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1" --verbosity normal
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1" --verbosity normal
 
   optimized-context-evidence:
     name: Optimized Release context evidence
@@ -81,8 +81,8 @@ jobs:
           cache: true
           cache-dependency-path: '**/packages.lock.json'
       - name: Restore locked dependencies
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --locked-mode
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --locked-mode
       - name: Build optimized context evidence
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Measure the versioned optimized incident corpus
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1" --verbosity normal
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1" --verbosity normal

@@ -1,5 +1,5 @@
 <Project>
-  <ItemGroup Condition="'$(IsTestProject)' == 'true' Or '$(MSBuildProjectName)' == 'Interpreter.TestTarget'">
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' Or '$(MSBuildProjectName)' == 'PhoenixInspect.TestTarget'">
     <Compile Include="$(MSBuildThisFileDirectory)TestInfrastructure\HeadlessTestProcess.cs"
              Link="TestInfrastructure\HeadlessTestProcess.cs" />
   </ItemGroup>
@@ -10,7 +10,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)TestInfrastructure\HeadlessTestProcessTests.cs"
              Link="TestInfrastructure\HeadlessTestProcessTests.cs" />
     <AssemblyAttribute Include="Xunit.TestFrameworkAttribute">
-      <_Parameter1>Interpreter.Tests.Infrastructure.HeadlessTestFramework</_Parameter1>
+      <_Parameter1>PhoenixInspect.Tests.Infrastructure.HeadlessTestFramework</_Parameter1>
       <_Parameter2>$(AssemblyName)</_Parameter2>
     </AssemblyAttribute>
   </ItemGroup>

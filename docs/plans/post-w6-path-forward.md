@@ -32,13 +32,13 @@ boundary was the unique qualified leader and selected exactly one permitted acti
 W7 chooses the following minimum concrete expressions:
 
 ```text
-reference value:  global::Interpreter.OptimizedContextTestTarget.StaticContextProbe.Root
-member value:     global::Interpreter.OptimizedContextTestTarget.StaticContextProbe.Root.Marker
+reference value:  global::PhoenixInspect.OptimizedContextTestTarget.StaticContextProbe.Root
+member value:     global::PhoenixInspect.OptimizedContextTestTarget.StaticContextProbe.Root.Marker
 expected member:  0x4A44C004
-scalar fixture:   global::Interpreter.W7TestTarget.StaticValues.Counter
+scalar fixture:   global::PhoenixInspect.W7TestTarget.StaticValues.Counter
 expected scalar:  fixture-declared Int32
 contextual pair:  StaticValues.Counter
-required context: selected frame + exact `using Interpreter.W7TestTarget;` import scope
+required context: selected frame + exact `using PhoenixInspect.W7TestTarget;` import scope
 ```
 
 The existing optimized-context fixture already predeclares this axis. Its heap object and `Marker` bytes are exact.
@@ -546,10 +546,10 @@ arbitrary C# semantics.
 ### 8.1 Physical truth gate
 
 W7.1 uses the existing optimized Release target unchanged. While
-`Interpreter.OptimizedContextTestTarget.StaticContextProbe.Root` is live, the gate must prove:
+`PhoenixInspect.OptimizedContextTestTarget.StaticContextProbe.Root` is live, the gate must prove:
 
 - one complete Roslyn parse and one exact static-access projection for
-  `global::Interpreter.OptimizedContextTestTarget.StaticContextProbe.Root`;
+  `global::PhoenixInspect.OptimizedContextTestTarget.StaticContextProbe.Root`;
 - exactly one target runtime/module/type/ordinary static field/application-domain mapping;
 - a nonzero initialized slot address;
 - one exact raw pointer read from that slot;
@@ -581,7 +581,7 @@ every poison that affects only contextual lookup. Separate frozen companion proj
 Portable PDB and the second explicitly loaded assembly containing a duplicate fully qualified declaration; neither is
 left to an unspecified test mutation.
 
-The target is separate from `Interpreter.TestTarget` and `Interpreter.OptimizedContextTestTarget`, so W7 does not
+The target is separate from `PhoenixInspect.TestTarget` and `PhoenixInspect.OptimizedContextTestTarget`, so W7 does not
 silently refresh W2–W6 artifact identities. Every target launch and dump/consumer process is hidden and headless.
 
 ### 8.3 Predeclared sixteen-incident portfolio
@@ -590,7 +590,7 @@ Before implementation changes target bytes, a source-controlled manifest freezes
 
 | # | Shape | Binding/storage condition | Expression / expected first result |
 |---:|---|---|---|
-| 1 | Request | Fully qualified scalar, no context required | `global::Interpreter.W7TestTarget.StaticValues.Counter` → exact `Int32` |
+| 1 | Request | Fully qualified scalar, no context required | `global::PhoenixInspect.W7TestTarget.StaticValues.Counter` → exact `Int32` |
 | 2 | Batch | Exact namespace import plus one W2 direct-field suffix | `BatchStatics.Root.State` → exact string and same symbol/value as its fully qualified spelling |
 | 3 | Coordinator | Exact type alias | `CoordinatorValues.Root.Owner?.Name` → exact string through a frozen conditional suffix |
 | 4 | Workflow | Exact current namespace | `WorkflowStatics.Root.CurrentAttempt.Status` → exact string through a frozen W6 chain |
@@ -878,12 +878,12 @@ All managed commands remain headless. The exact filters were refined as tests la
 Expected command shape:
 
 ```powershell
-.\eng\Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode
-.\eng\Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:ContinuousIntegrationBuild=true
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=StaticFieldExpressionV1" --verbosity normal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W7MeaningfulSyntheticV1" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
+.\eng\Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:ContinuousIntegrationBuild=true
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=StaticFieldExpressionV1" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W7MeaningfulSyntheticV1" --verbosity normal
 pwsh -NoLogo -NoProfile -NonInteractive -File .\eng\verify-markdown-links.ps1
 pwsh -NoLogo -NoProfile -NonInteractive -File .\eng\verify-headless-workflows.ps1
 ```
@@ -938,7 +938,7 @@ W7 closes only when all of the following are proven at current state:
 - exact non-null object acquisition validates target header/module/TypeDef before issuing an object value or suffix
   plan, and no non-exact result exposes a candidate or invokes an alternate source;
 - the exact optimized static expression
-  `global::Interpreter.OptimizedContextTestTarget.StaticContextProbe.Root.Marker` answers `0x4A44C004` through the
+  `global::PhoenixInspect.OptimizedContextTestTarget.StaticContextProbe.Root.Marker` answers `0x4A44C004` through the
   existing W2 engine;
 - W6 member-chain suffixes accept the same exact static object without a second parser or semantic expansion;
 - Roslyn remains the sole complete expression parser, while supported behavior remains a versioned binder/evaluator

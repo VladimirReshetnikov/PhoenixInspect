@@ -69,7 +69,7 @@ the milestone test selection. W4.6 totals 7,652 LOC and brings W4.1–W4.6 to 24
 `451d0054771d42b541d48459dd038250869a62bf941e60b0bce06a7ee19761ff` and
 `31c45f6902e446d179cc2a5205363e0d5892416ed85c5907135bb79128d6c42f`.
 
-Exact W4.7a checkpoint `2e70fe76d` adds `Interpreter.Product.DumpDebugging` and the contracts described below.
+Exact W4.7a checkpoint `2e70fe76d` adds `PhoenixInspect.Product.DumpDebugging` and the contracts described below.
 Projection accepts only a complete exact transition sequence issued by the same machine from legacy IL-zero activation
 through the first exact null-reference latch, optionally plus one certified idempotent re-step. Exact W4.7b checkpoint
 `dad6a6dd4` proves direct/adjusted compiler getters, fresh SRM/module/domain/machine replay, and poison/count evidence
@@ -77,7 +77,7 @@ that re-step performs no capability call or repeated load. W4.7a/b realize 2,448
 27,270 LOC. Closure passed strict sixteen-project build 0/0, unit 430/430, Fast 80/80, dumps 5/5 and 1/1, focused
 15/15 plus 2/2 (17/17 combined), compiler differential 23/23, and both guards, headlessly with zero skips and
 the milestone test selection. The literal standalone fragment SHA-256 is
-`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
+`99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`.
 
 The original full-W4 baseline 16,860–25,310 and checkpoint projections 18,532–26,132, 19,228–25,728,
 21,179–26,779, 24,013–29,313, 25,017–29,417, 27,217–32,117, 28,376–32,476, 28,876–33,276,
@@ -92,7 +92,7 @@ gets ahead of code.
 
 ### Core semantics
 
-`Interpreter.Core.Abstractions` contains:
+`PhoenixInspect.Core.Abstractions` contains:
 
 - structural, path-independent `ModuleHandle`, `MethodHandle`, `FieldHandle`, and metadata-defined `TypeSig`
   identities. Disk handles derive from complete-artifact content; dump handles derive from counted metadata plus
@@ -137,7 +137,7 @@ gets ahead of code.
   acquired; MemberRef/MethodSpec substitution remains outside the contract; and
 - immutable `TypeSig`/`MethodBody`, budget, operation, and stack-category shapes used by those contracts.
 
-`Interpreter.Core.Execution` contains:
+`PhoenixInspect.Core.Execution` contains:
 
 - semantic `MachineState` and separate `MachineOperationalState` instruction budget plus configured/required logical
   depth and observed logical/active-frame high-water bookkeeping;
@@ -213,7 +213,7 @@ outside the exact callee profile, and broader instance methods remain rejected.
 
 ### Concrete validation domain
 
-`Interpreter.Domain.Concrete` supplies the first real implementation of both semantic seams:
+`PhoenixInspect.Domain.Concrete` supplies the first real implementation of both semantic seams:
 
 - a lifted-flat concrete value lattice with one semantic top per static type;
 - executable lattice order and meet/join laws;
@@ -260,8 +260,8 @@ production heap.
 
 ### Artifact metadata
 
-`Interpreter.Metadata.Abstractions` retains module identity/descriptor and complete method/field projection contracts,
-including contextual body-independent direct-MethodDef resolution. `Interpreter.Metadata.SRM` implements them with
+`PhoenixInspect.Metadata.Abstractions` retains module identity/descriptor and complete method/field projection contracts,
+including contextual body-independent direct-MethodDef resolution. `PhoenixInspect.Metadata.SRM` implements them with
 `PEReader` and `System.Reflection.Metadata`; its reusable projection also operates over counted metadata supplied by
 the dump host. The W4.4 projection distinguishes malformed/nil MethodDefs from structurally valid but unsupported
 MemberRef/MethodSpec tokens, validates same-module ownership and ordinary managed IL, and decodes exact call signature
@@ -276,9 +276,9 @@ forms and value-type/interface receiver shapes return structured failures rather
 
 ### Dump evidence
 
-`Interpreter.Host.Abstractions` contains only the counted immutable process-memory read contract and its exact/partial/unavailable result.
+`PhoenixInspect.Host.Abstractions` contains only the counted immutable process-memory read contract and its exact/partial/unavailable result.
 
-`Interpreter.Host.Dump.ClrMD` owns ClrMD-specific evidence:
+`PhoenixInspect.Host.Dump.ClrMD` owns ClrMD-specific evidence:
 
 - content-identified dump sessions and snapshot-scoped runtime-module instances;
 - immutable module catalogs and bounded object searches that retain the exact ordinal selector, status/issue,
@@ -315,7 +315,7 @@ fixtures and explicitly admitted input shapes.
 
 ### Read-only dump query
 
-`Interpreter.Product.DumpQuery` exposes the bounded `DumpQueryEngine` and the closed `DumpQueryValue` projection for one
+`PhoenixInspect.Product.DumpQuery` exposes the bounded `DumpQueryEngine` and the closed `DumpQueryValue` projection for one
 host-named root, one direct field, and an optional admitted coalescing literal. The compact normative contract is
 [Restricted Dump Query v1](restricted-dump-query-contract-proposal.md). Its active public staging surface is:
 
@@ -355,7 +355,7 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 
 ### Standalone counterfactual target outcome
 
-`Interpreter.Product.DumpDebugging` exposes three W4.7 draft types:
+`PhoenixInspect.Product.DumpDebugging` exposes three W4.7 draft types:
 
 - `CounterfactualTargetOutcomeProjector.Project`, which validates the exact machine, initial semantic/operational
   state, and complete immutable issued-transition sequence rather than relying on a naked terminal record;
@@ -367,7 +367,7 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/Interpreter/acti
 The projector accepts the first exact null-reference transition and optionally one issuer-certified idempotent re-step.
 It rejects forged or incomplete chronology, unsupported target kind, malformed latch/location, prepared-graph mode,
 misaccounting, or an inconsistent transcript with stable `W4.TargetException.*` codes. The fragment has no snapshot,
-root, request, plan, or traversal property. `Interpreter.Product.DumpDebugging` depends only on core abstractions and
+root, request, plan, or traversal property. `PhoenixInspect.Product.DumpDebugging` depends only on core abstractions and
 execution; no host, metadata backend, dump session, query product, rooted facade, or runner dependency crosses it.
 
 ### W5/W6 expression-to-result facade
@@ -404,7 +404,7 @@ fragment. W6 checkpoints extend only the explicitly selected language profile an
 The [C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md) governs
 the implemented one-parse boundary, project-owned W2/W5/W6/W7 descriptors, and no-parse preparation/evaluation rule.
 
-`Interpreter.Headless.ReferenceConsumer` remains an internal, independently launched prototype host rather than a
+`PhoenixInspect.Headless.ReferenceConsumer` remains an internal, independently launched prototype host rather than a
 stable CLI. Schema v1 preserves W5 scenario replay, schema v2 adds generated W6 exact and typed non-exact rows without
 changing the W5 path, and schema v3 evaluates twenty-four independent designed incidents across four graph shapes.
 Controlled/generated, designed/synthetic, and representative rows remain separate; promotion is rejected and the
@@ -437,7 +437,7 @@ declaration, and `StaticFieldExpressionEvaluator` composes the typed stages. Ful
 selected-frame/PDB acquisition. Contextual lookup may consume exact current-namespace, namespace-import, type-alias,
 or namespace-alias facts and never chooses by enumeration order.
 
-`Interpreter.Product.DumpQuery` now exposes immutable families for:
+`PhoenixInspect.Product.DumpQuery` now exposes immutable families for:
 
 - parsed static-access descriptors and canonical expression identities;
 - counted module/TypeDef/FieldDef declarations, contextual name expansions, rejected declaration evidence, symbol
@@ -449,7 +449,7 @@ or namespace-alias facts and never chooses by enumeration order.
 - `StaticFieldExpressionEvaluationResult`, whose stage/status/suffix axes retain exact, null, absent, partial,
   unavailable, ambiguous, conflicting, invalid, and unsupported terminal cases without candidate leakage.
 
-`Interpreter.Host.Dump.ClrMD` now exposes `DumpSelectedFrameSelector`/observation identities,
+`PhoenixInspect.Host.Dump.ClrMD` now exposes `DumpSelectedFrameSelector`/observation identities,
 `DumpPortablePdbArtifactResolutionRequest` and `IDumpPortablePdbArtifactResolver`, immutable Portable-PDB debug/content/
 artifact/scope/import facts, `DumpExpressionBindingContext`, runtime declaration mapping, nullable layout,
 `ClrmdStaticFieldEvaluationRequest`, counted storage/raw-memory/target evidence, exact object/string/value results, and
@@ -472,7 +472,7 @@ grammar, its Product event adapter, and a selected-method lexical contract envel
 caller-supplied physical rows and source ends; it is not yet produced by one host-owned ClrMD acquisition authority.
 
 The completed [metadata-authority cutover](../../plans/w8-2-metadata-authority-cutover.md) replaced the earlier
-caller-authored proof inventory. Through `d4d5f745c` the public draft surface in `Interpreter.Product.DumpQuery` is:
+caller-authored proof inventory. Through `d4d5f745c` the public draft surface in `PhoenixInspect.Product.DumpQuery` is:
 
 - `MetadataSourceEndIdentity` and `MetadataSignatureTokenResolutionCatalog` freeze exact table ends, physical token
   order, same-module resolution, and prefix-free incomplete/invalid/bound outcomes;

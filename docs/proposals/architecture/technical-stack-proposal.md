@@ -72,25 +72,25 @@ The objective is to pick technologies that maximize:
 
 Current prototype structure:
 
-- `src/Interpreter.Core.Execution`
+- `src/PhoenixInspect.Core.Execution`
   - metadata-derived activation, typed whole-body admission, and deterministic IL micro-step engine.
-- `src/Interpreter.Core.Abstractions`
+- `src/PhoenixInspect.Core.Abstractions`
   - draft structural type/method/field identities, atomic resolution, value/memory, evidence-result, and budget
     contracts consumed by the engine.
-- `src/Interpreter.Metadata.Abstractions` and `src/Interpreter.Metadata.SRM`
+- `src/PhoenixInspect.Metadata.Abstractions` and `src/PhoenixInspect.Metadata.SRM`
   - projected metadata contracts and the active SRM/PEReader adapter.
-- `src/Interpreter.Domain.Concrete`
+- `src/PhoenixInspect.Domain.Concrete`
   - concrete validation domain and persistent allocated/imported virtual memory.
-- `src/Interpreter.Host.Abstractions`
+- `src/PhoenixInspect.Host.Abstractions`
   - typed dump-memory/evidence contracts.
-- `src/Interpreter.Host.Dump.ClrMD`
+- `src/PhoenixInspect.Host.Dump.ClrMD`
   - dump loading, runtime discovery, raw evidence reads, and snapshot-scoped W3 execution resolution/import
     correlation.
-- `src/Interpreter.Product.DumpQuery`
+- `src/PhoenixInspect.Product.DumpQuery`
   - the closed, bounded root-field query evaluator and result projection; W6.2 contains the internal C# expression
     front end and versioned tree-shape recognizers here.
-- `tests/Interpreter.Tests`, `tests/Interpreter.IntegrationTests`, `tests/Interpreter.TestTarget`, and
-  `tests/Interpreter.OptimizedContextTestTarget`
+- `tests/PhoenixInspect.Tests`, `tests/PhoenixInspect.IntegrationTests`, `tests/PhoenixInspect.TestTarget`, and
+  `tests/PhoenixInspect.OptimizedContextTestTarget`
   - fast semantic/contract tests, real dump evidence, and the generated optimized-context report.
 
 Every repository-managed restore/build/test invocation runs through `./eng/Invoke-HeadlessProcess.ps1 dotnet ...` so
@@ -98,8 +98,8 @@ the same no-dialog process policy applies locally and in CI.
 
 ### Package boundaries
 
-- Keep `Interpreter.Core.Execution` free of host-specific dependencies.
-- Avoid cyclic dependencies; depend “inward” toward `Interpreter.Core.Abstractions`.
+- Keep `PhoenixInspect.Core.Execution` free of host-specific dependencies.
+- Avoid cyclic dependencies; depend “inward” toward `PhoenixInspect.Core.Abstractions`.
 - Add a physical project only with implementation, an independently useful dependency boundary, and a test that exercises it. Logical future seams stay in documentation.
 
 ### C# expression front-end dependency
@@ -109,7 +109,7 @@ W6.2 uses `Microsoft.CodeAnalysis.CSharp` as the sole production expression pars
 package is centrally pinned at `5.3.0`, matching the Roslyn train in the repository's pinned .NET SDK 10.0.201. The
 front end calls `SyntaxFactory.ParseExpression` with explicit C# 14 regular-source options and full-text consumption.
 
-The dependency is contained in `Interpreter.Product.DumpQuery`. Workspaces, Scripting, compilation, semantic models,
+The dependency is contained in `PhoenixInspect.Product.DumpQuery`. Workspaces, Scripting, compilation, semantic models,
 and emission are not part of the active product path. Internal tree visitors immediately project enabled W2/W5/W6/W7
 shapes into project-owned immutable descriptors; no Roslyn object enters core execution, dump/metadata abstractions,
 public prototype contracts, or canonical artifacts. A package or language-version change requires a three-bucket
@@ -151,9 +151,9 @@ metadata bytes and separately revalidates the counted physical method body. The 
 choice is superseded. Backend-neutral projected contracts remain a goal; an alternative adapter is justified only by
 a recorded fixture/corpus gap.
 
-W8.2 uses one bounded ECMA signature grammar in `Interpreter.Core.Abstractions` for TypeSpec, FieldSig,
+W8.2 uses one bounded ECMA signature grammar in `PhoenixInspect.Core.Abstractions` for TypeSpec, FieldSig,
 MethodDefSig, and LocalVarSig positions. It emits structural parent-indexed events, exact full-consumption
-certificates, and typed invalid/bound outcomes without resolving metadata tokens. `Interpreter.Product.DumpQuery`
+certificates, and typed invalid/bound outcomes without resolving metadata tokens. `PhoenixInspect.Product.DumpQuery`
 owns the event adapter and exact token-resolution catalog. It reconstructs immutable TypeSpec/FieldSig trees only
 after exact source-end and token-domain checks, and retains no usable tree on incomplete, invalid, or cap-plus-one
 paths. Direct `CLASS` and `VALUETYPE` TypeSpec roots are ordinary Type-grammar roots; later role/construction
@@ -418,7 +418,7 @@ thread-relative, one RVA-backed, and one exact memory-homed frame-value incident
 Current facts:
 
 - The solution retains ten `src/` projects with active code/contracts plus ten test/target/evidence projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
-- Handwritten prototype code exists in `Interpreter.Core.Abstractions`, `Interpreter.Core.Execution`, `Interpreter.Domain.Concrete`, `Interpreter.Metadata.Abstractions`, `Interpreter.Metadata.SRM`, `Interpreter.Host.Abstractions`, `Interpreter.Host.Dump.ClrMD`, `Interpreter.Product.DumpQuery`, `Interpreter.Product.DumpDebugging`, and `Interpreter.Headless.ReferenceConsumer`.
+- Handwritten prototype code exists in `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Core.Execution`, `PhoenixInspect.Domain.Concrete`, `PhoenixInspect.Metadata.Abstractions`, `PhoenixInspect.Metadata.SRM`, `PhoenixInspect.Host.Abstractions`, `PhoenixInspect.Host.Dump.ClrMD`, `PhoenixInspect.Product.DumpQuery`, `PhoenixInspect.Product.DumpDebugging`, and `PhoenixInspect.Headless.ReferenceConsumer`.
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
   terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct
@@ -435,7 +435,7 @@ Current facts:
   imports only that cell. The independently opened disk PE carries exact whole-file length/SHA-256 identity and serves
   only as a comparison oracle; its body/signature contributes no fact to dump-backed execution.
 - Resource ceilings are 8 GiB per dump before hashing/ClrMD parsing, a 256 MiB ClrMD dump cache with stack-trace/root caching disabled, and 512 MiB at the typed external-PE `Open` boundary before SRM parsing. Caveat: these bounds are validated only on the named fixture paths and do not admit other artifact shapes.
-- `Interpreter.Core.Execution` depends on core abstractions, not on SRM or ClrMD. `MetadataResolutionServices` supplies
+- `PhoenixInspect.Core.Execution` depends on core abstractions, not on SRM or ClrMD. `MetadataResolutionServices` supplies
   the disk bridge; `ClrmdDumpExecutionResolver` supplies the counted-dump bridge while implementing the same
   `IResolutionServices` contract, including body-independent contextual direct-MethodDef targets.
 - W4.4 checkpoints `2e596c117`/`742ef2c4f` freeze complete definitions, typed boundaries, canonical nodes/fields/call

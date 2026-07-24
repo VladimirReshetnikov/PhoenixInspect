@@ -60,50 +60,50 @@
   "shapeTargets": [
     {
       "shape": "Request",
-      "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-      "assemblyName": "Interpreter.W8RequestShapeTarget",
-      "rootNamespace": "Interpreter.W8RequestShapeTarget",
+      "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+      "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
+      "rootNamespace": "PhoenixInspect.W8RequestShapeTarget",
       "objectGraphSummary": "A single-parameter generic slot family keyed by context classes, a thread-relative slot, a constructed using-static import surface, nested alias scopes that shadow one another, and a never-constructed argument.",
       "sourceInputs": [
-        "tests/Interpreter.W8RequestShapeTarget/Program.cs",
-        "tests/Interpreter.W8RequestShapeTarget/RequestGraph.cs",
-        "tests/Interpreter.W8RequestShapeTarget/RequestScopes.cs"
+        "tests/PhoenixInspect.W8RequestShapeTarget/Program.cs",
+        "tests/PhoenixInspect.W8RequestShapeTarget/RequestGraph.cs",
+        "tests/PhoenixInspect.W8RequestShapeTarget/RequestScopes.cs"
       ]
     },
     {
       "shape": "Batch",
-      "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-      "assemblyName": "Interpreter.W8BatchShapeTarget",
-      "rootNamespace": "Interpreter.W8BatchShapeTarget",
+      "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+      "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
+      "rootNamespace": "PhoenixInspect.W8BatchShapeTarget",
       "objectGraphSummary": "A two-level nested generic ledger with per-segment arity, a recursive wrapper used to exceed the construction depth cap, two same-level import paths that converge on one TypeDef, an image-backed RVA store, and a nested using-static reference head.",
       "sourceInputs": [
-        "tests/Interpreter.W8BatchShapeTarget/Program.cs",
-        "tests/Interpreter.W8BatchShapeTarget/BatchGraph.cs",
-        "tests/Interpreter.W8BatchShapeTarget/BatchImports.cs"
+        "tests/PhoenixInspect.W8BatchShapeTarget/Program.cs",
+        "tests/PhoenixInspect.W8BatchShapeTarget/BatchGraph.cs",
+        "tests/PhoenixInspect.W8BatchShapeTarget/BatchImports.cs"
       ]
     },
     {
       "shape": "Coordinator",
-      "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-      "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
-      "rootNamespace": "Interpreter.W8CoordinatorShapeTarget",
+      "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+      "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
+      "rootNamespace": "PhoenixInspect.W8CoordinatorShapeTarget",
       "objectGraphSummary": "Four coexisting closed constructions of one region registry, a value-type argument reached through a namespace alias, a derived owner over a constructed generic base, a closed nullable slot with a VAR field signature, and a property that shares a bare field spelling.",
       "sourceInputs": [
-        "tests/Interpreter.W8CoordinatorShapeTarget/Program.cs",
-        "tests/Interpreter.W8CoordinatorShapeTarget/CoordinatorGraph.cs",
-        "tests/Interpreter.W8CoordinatorShapeTarget/CoordinatorValues.cs"
+        "tests/PhoenixInspect.W8CoordinatorShapeTarget/Program.cs",
+        "tests/PhoenixInspect.W8CoordinatorShapeTarget/CoordinatorGraph.cs",
+        "tests/PhoenixInspect.W8CoordinatorShapeTarget/CoordinatorValues.cs"
       ]
     },
     {
       "shape": "Workflow",
-      "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-      "assemblyName": "Interpreter.W8WorkflowShapeTarget",
-      "rootNamespace": "Interpreter.W8WorkflowShapeTarget",
+      "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+      "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
+      "rootNamespace": "PhoenixInspect.W8WorkflowShapeTarget",
       "objectGraphSummary": "A VAR-typed stage slot whose reference and array constructions differ, an extern-alias cross-assembly interface owner, a derived member that hides a base static field, competing aliases, a second load context carrying a duplicate definition, and a ground enum literal reached inside a generic method.",
       "sourceInputs": [
-        "tests/Interpreter.W8WorkflowShapeTarget/Program.cs",
-        "tests/Interpreter.W8WorkflowShapeTarget/WorkflowGraph.cs",
-        "tests/Interpreter.W8WorkflowShapeTarget/WorkflowScopes.cs"
+        "tests/PhoenixInspect.W8WorkflowShapeTarget/Program.cs",
+        "tests/PhoenixInspect.W8WorkflowShapeTarget/WorkflowGraph.cs",
+        "tests/PhoenixInspect.W8WorkflowShapeTarget/WorkflowScopes.cs"
       ]
     }
   ],
@@ -113,35 +113,35 @@
       "shape": "Request",
       "acquisition": "explicit-test-owned-signature-mutation",
       "purpose": "typespec-signature-bytes-malformed-with-original-retained",
-      "artifactPath": "tests/Interpreter.W8RequestShapeTarget/bin/Release/net10.0/Interpreter.W8RequestShapeTarget.dll"
+      "artifactPath": "tests/PhoenixInspect.W8RequestShapeTarget/bin/Release/net10.0/PhoenixInspect.W8RequestShapeTarget.dll"
     },
     {
       "id": "truncated-portable-pdb",
       "shape": "Batch",
       "acquisition": "explicit-test-resolver-input",
       "purpose": "portable-pdb-bytes-truncated-before-the-import-scope-table",
-      "artifactPath": "tests/Interpreter.W8BatchShapeTarget/bin/Release/net10.0/Interpreter.W8BatchShapeTarget.pdb"
+      "artifactPath": "tests/PhoenixInspect.W8BatchShapeTarget/bin/Release/net10.0/PhoenixInspect.W8BatchShapeTarget.pdb"
     },
     {
       "id": "identity-mismatching-portable-pdb",
       "shape": "Coordinator",
       "acquisition": "explicit-test-resolver-input",
       "purpose": "portable-pdb-whose-module-identity-contradicts-the-selected-module",
-      "artifactPath": "tests/Interpreter.W8RequestShapeTarget/bin/Release/net10.0/Interpreter.W8RequestShapeTarget.pdb"
+      "artifactPath": "tests/PhoenixInspect.W8RequestShapeTarget/bin/Release/net10.0/PhoenixInspect.W8RequestShapeTarget.pdb"
     },
     {
       "id": "named-rva-il-fixture",
       "shape": "Batch",
       "acquisition": "referenced-il-assembly-copied-beside-the-target",
       "purpose": "explicitly-named-field-backed-directly-by-pe-section-data",
-      "artifactPath": "tests/Interpreter.W8TestTarget/NamedRvaFixture/Interpreter.W8NamedRvaTarget.dll"
+      "artifactPath": "tests/PhoenixInspect.W8TestTarget/NamedRvaFixture/PhoenixInspect.W8NamedRvaTarget.dll"
     },
     {
       "id": "workflow-second-load-context-definition",
       "shape": "Workflow",
       "acquisition": "explicit-collectible-load-context-before-pause",
       "purpose": "second-loaded-module-carrying-a-second-definition-of-the-same-qualified-spelling",
-      "artifactPath": "tests/Interpreter.W8WorkflowShapeTarget/bin/Release/net10.0/Interpreter.W8WorkflowShapeTarget.dll"
+      "artifactPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/bin/Release/net10.0/PhoenixInspect.W8WorkflowShapeTarget.dll"
     }
   ],
   "counterfactualActions": [
@@ -313,17 +313,17 @@
       "shape": "Request",
       "plannedQuestion": "Fully qualified GenericSlot<RequestContext>.Sentinel returns its exact Int32",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-qualified-sentinel",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-qualified-sentinel",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-qualified-sentinel",
         "targetArguments": [
           "--truth-gate",
           "request-qualified-sentinel"
         ]
       },
-      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.RequestContext>.Sentinel",
+      "expression": "global::PhoenixInspect.W8RequestShapeTarget.RequestSlot<global::PhoenixInspect.W8RequestShapeTarget.RequestContext>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -402,10 +402,10 @@
       "shape": "Batch",
       "plannedQuestion": "TypeSpec whole-owner alias reaches the same construction/FieldDef/slot/value as its explicit control",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-typespec-alias",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-typespec-alias",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-typespec-alias",
         "targetArguments": [
           "--truth-gate",
@@ -415,7 +415,7 @@
       "expression": "BatchLedgerAlias.Count",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W8BatchShapeTarget.Ledger<global::Interpreter.W8BatchShapeTarget.BatchKey>.Count",
+      "controlExpression": "global::PhoenixInspect.W8BatchShapeTarget.Ledger<global::PhoenixInspect.W8BatchShapeTarget.BatchKey>.Count",
       "controlRelationship": "same-construction-field-slot-and-value",
       "controlExpectedTerminal": "i32:1627390465",
       "inputs": {
@@ -492,17 +492,17 @@
       "shape": "Coordinator",
       "plannedQuestion": "Four same-TypeDef constructions coexist without enumeration order choosing one",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-four-constructions",
+      "snapshotIdentity": "PhoenixInspect.W8CoordinatorShapeTarget|coordinator-four-constructions",
       "target": {
-        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
         "truthGateProfile": "coordinator-four-constructions",
         "targetArguments": [
           "--truth-gate",
           "coordinator-four-constructions"
         ]
       },
-      "expression": "global::Interpreter.W8CoordinatorShapeTarget.Registry<global::Interpreter.W8CoordinatorShapeTarget.NorthRegion>.Sentinel",
+      "expression": "global::PhoenixInspect.W8CoordinatorShapeTarget.Registry<global::PhoenixInspect.W8CoordinatorShapeTarget.NorthRegion>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -577,17 +577,17 @@
       "shape": "Workflow",
       "plannedQuestion": "T-typed exact reference substitutes VAR 0 and completes a W6 conditional chain",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-var-substitution",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-var-substitution",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-var-substitution",
         "targetArguments": [
           "--truth-gate",
           "workflow-var-substitution"
         ]
       },
-      "expression": "global::Interpreter.W8WorkflowShapeTarget.Stage<global::Interpreter.W8WorkflowShapeTarget.StepContext>.Current?.Label",
+      "expression": "global::PhoenixInspect.W8WorkflowShapeTarget.Stage<global::PhoenixInspect.W8WorkflowShapeTarget.StepContext>.Current?.Label",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "W6ConditionalChainV1",
       "controlExpression": null,
@@ -663,17 +663,17 @@
       "shape": "Request",
       "plannedQuestion": "GenericSlot<RequestContext> and GenericSlot<BatchContext> prove distinct slots and values",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-distinct-constructions",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-distinct-constructions",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-distinct-constructions",
         "targetArguments": [
           "--truth-gate",
           "request-distinct-constructions"
         ]
       },
-      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.BatchContext>.Sentinel",
+      "expression": "global::PhoenixInspect.W8RequestShapeTarget.RequestSlot<global::PhoenixInspect.W8RequestShapeTarget.BatchContext>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -747,17 +747,17 @@
       "shape": "Batch",
       "plannedQuestion": "Nested Outer<TKey>.Inner<TValue>.Count binds with per-segment arity",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-nested-arity",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-nested-arity",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-nested-arity",
         "targetArguments": [
           "--truth-gate",
           "batch-nested-arity"
         ]
       },
-      "expression": "global::Interpreter.W8BatchShapeTarget.Outer<global::Interpreter.W8BatchShapeTarget.BatchKey>.Inner<global::Interpreter.W8BatchShapeTarget.BatchValue>.Count",
+      "expression": "global::PhoenixInspect.W8BatchShapeTarget.Outer<global::PhoenixInspect.W8BatchShapeTarget.BatchKey>.Inner<global::PhoenixInspect.W8BatchShapeTarget.BatchValue>.Count",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -831,10 +831,10 @@
       "shape": "Coordinator",
       "plannedQuestion": "A namespace alias inside one type argument resolves an exact closed generic value-type owner",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-alias-argument",
+      "snapshotIdentity": "PhoenixInspect.W8CoordinatorShapeTarget|coordinator-alias-argument",
       "target": {
-        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
         "truthGateProfile": "coordinator-alias-argument",
         "targetArguments": [
           "--truth-gate",
@@ -844,7 +844,7 @@
       "expression": "Registry<RegionsNs.RegionCode>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W8CoordinatorShapeTarget.Registry<global::Interpreter.W8CoordinatorShapeTarget.Values.RegionCode>.Sentinel",
+      "controlExpression": "global::PhoenixInspect.W8CoordinatorShapeTarget.Registry<global::PhoenixInspect.W8CoordinatorShapeTarget.Values.RegionCode>.Sentinel",
       "controlRelationship": "same-construction-field-slot-and-value",
       "controlExpectedTerminal": "i32:1895826183",
       "inputs": {
@@ -921,17 +921,17 @@
       "shape": "Workflow",
       "plannedQuestion": "An extern-alias-qualified constructed interface owner binds its stored static field across the exact AssemblyRef",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-extern-alias-interface",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-extern-alias-interface",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-extern-alias-interface",
         "targetArguments": [
           "--truth-gate",
           "workflow-extern-alias-interface"
         ]
       },
-      "expression": "wflib::Interpreter.W8AliasTarget.IExternalInterfaceSlot<wflib::Interpreter.W8AliasTarget.ExternalRequestContext>.Sentinel",
+      "expression": "wflib::PhoenixInspect.W8AliasTarget.IExternalInterfaceSlot<wflib::PhoenixInspect.W8AliasTarget.ExternalRequestContext>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -1011,10 +1011,10 @@
       "shape": "Request",
       "plannedQuestion": "An inner type alias shadows a same-named outer alias and records only consulted facts",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-alias-shadowing",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-alias-shadowing",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-alias-shadowing",
         "targetArguments": [
           "--truth-gate",
@@ -1024,7 +1024,7 @@
       "expression": "ScopedRequestSlot.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W8RequestShapeTarget.Inner.InnerScopedSlot.Sentinel",
+      "controlExpression": "global::PhoenixInspect.W8RequestShapeTarget.Inner.InnerScopedSlot.Sentinel",
       "controlRelationship": "same-symbol-and-value",
       "controlExpectedTerminal": "i32:1358954761",
       "inputs": {
@@ -1100,10 +1100,10 @@
       "shape": "Batch",
       "plannedQuestion": "Two same-level namespace-import TypeRef/forwarder paths converge on one physical TypeDef and produce one symbol",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-forwarder-convergence",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-forwarder-convergence",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-forwarder-convergence",
         "targetArguments": [
           "--truth-gate",
@@ -1113,7 +1113,7 @@
       "expression": "ExternalSlot<ForwardedRequestContext>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W8AliasTarget.ExternalSlot<global::Interpreter.W8AliasTarget.ForwardedRequestContext>.Sentinel",
+      "controlExpression": "global::PhoenixInspect.W8AliasTarget.ExternalSlot<global::PhoenixInspect.W8AliasTarget.ForwardedRequestContext>.Sentinel",
       "controlRelationship": "same-symbol-and-value",
       "controlExpectedTerminal": "i32:1627390473",
       "inputs": {
@@ -1189,17 +1189,17 @@
       "shape": "Coordinator",
       "plannedQuestion": "A qualified derived owner resolves the exact field declared on its constructed generic base",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-derived-base-field",
+      "snapshotIdentity": "PhoenixInspect.W8CoordinatorShapeTarget|coordinator-derived-base-field",
       "target": {
-        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
         "truthGateProfile": "coordinator-derived-base-field",
         "targetArguments": [
           "--truth-gate",
           "coordinator-derived-base-field"
         ]
       },
-      "expression": "global::Interpreter.W8CoordinatorShapeTarget.DerivedRegistry.BaseSentinel",
+      "expression": "global::PhoenixInspect.W8CoordinatorShapeTarget.DerivedRegistry.BaseSentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -1276,17 +1276,17 @@
       "shape": "Workflow",
       "plannedQuestion": "A derived unsupported same-name member hides a base static field and stops truthfully",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-member-hiding",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-member-hiding",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-member-hiding",
         "targetArguments": [
           "--truth-gate",
           "workflow-member-hiding"
         ]
       },
-      "expression": "global::Interpreter.W8WorkflowShapeTarget.HidingStage.Sentinel",
+      "expression": "global::PhoenixInspect.W8WorkflowShapeTarget.HidingStage.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -1363,10 +1363,10 @@
       "shape": "Request",
       "plannedQuestion": "A blocker-free constructed-TypeSpec using static bare primitive binds its directly declared stored field",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-using-static-bare",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-using-static-bare",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-using-static-bare",
         "targetArguments": [
           "--truth-gate",
@@ -1453,10 +1453,10 @@
       "shape": "Batch",
       "plannedQuestion": "A nested type imported by using static becomes the exact constructed head for a reference suffix pipeline",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-using-static-nested",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-using-static-nested",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-using-static-nested",
         "targetArguments": [
           "--truth-gate",
@@ -1542,17 +1542,17 @@
       "shape": "Coordinator",
       "plannedQuestion": "A closed nullable type argument and VAR field signature return one exact has-value form",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-nullable-argument",
+      "snapshotIdentity": "PhoenixInspect.W8CoordinatorShapeTarget|coordinator-nullable-argument",
       "target": {
-        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
         "truthGateProfile": "coordinator-nullable-argument",
         "targetArguments": [
           "--truth-gate",
           "coordinator-nullable-argument"
         ]
       },
-      "expression": "global::Interpreter.W8CoordinatorShapeTarget.NullableSlot<global::System.Nullable<global::System.Int32>>.Current",
+      "expression": "global::PhoenixInspect.W8CoordinatorShapeTarget.NullableSlot<global::System.Nullable<global::System.Int32>>.Current",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -1627,17 +1627,17 @@
       "shape": "Workflow",
       "plannedQuestion": "An array/nested constructed type argument returns exact null",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-array-argument-null",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-array-argument-null",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-array-argument-null",
         "targetArguments": [
           "--truth-gate",
           "workflow-array-argument-null"
         ]
       },
-      "expression": "global::Interpreter.W8WorkflowShapeTarget.Stage<global::Interpreter.W8WorkflowShapeTarget.StepContext[]>.Current",
+      "expression": "global::PhoenixInspect.W8WorkflowShapeTarget.Stage<global::PhoenixInspect.W8WorkflowShapeTarget.StepContext[]>.Current",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -1712,10 +1712,10 @@
       "shape": "Request",
       "plannedQuestion": "Missing selected frame stops an alias route while the fully qualified control remains exact",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-frameless-alias",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-frameless-alias",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-frameless-alias",
         "targetArguments": [
           "--truth-gate",
@@ -1725,7 +1725,7 @@
       "expression": "AliasedRequestSlot.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
-      "controlExpression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.RequestContext>.Sentinel",
+      "controlExpression": "global::PhoenixInspect.W8RequestShapeTarget.RequestSlot<global::PhoenixInspect.W8RequestShapeTarget.RequestContext>.Sentinel",
       "controlRelationship": "control-remains-exact",
       "controlExpectedTerminal": "i32:1358954753",
       "inputs": {
@@ -1802,10 +1802,10 @@
       "shape": "Batch",
       "plannedQuestion": "Partial PDB bytes stop before TypeSpec or runtime construction resolution",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-partial-pdb",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-partial-pdb",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-partial-pdb",
         "targetArguments": [
           "--truth-gate",
@@ -1894,10 +1894,10 @@
       "shape": "Coordinator",
       "plannedQuestion": "PDB/module identity conflict stops before candidate binding",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-pdb-conflict",
+      "snapshotIdentity": "PhoenixInspect.W8CoordinatorShapeTarget|coordinator-pdb-conflict",
       "target": {
-        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
         "truthGateProfile": "coordinator-pdb-conflict",
         "targetArguments": [
           "--truth-gate",
@@ -1986,10 +1986,10 @@
       "shape": "Workflow",
       "plannedQuestion": "Competing surviving aliases produce ambiguity; import order cannot choose",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-alias-ambiguity",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-alias-ambiguity",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-alias-ambiguity",
         "targetArguments": [
           "--truth-gate",
@@ -2076,17 +2076,17 @@
       "shape": "Request",
       "plannedQuestion": "A malformed TypeSpec is Invalid with original bytes retained",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-malformed-typespec",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-malformed-typespec",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-malformed-typespec",
         "targetArguments": [
           "--truth-gate",
           "request-malformed-typespec"
         ]
       },
-      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.RequestContext>.Sentinel",
+      "expression": "global::PhoenixInspect.W8RequestShapeTarget.RequestSlot<global::PhoenixInspect.W8RequestShapeTarget.RequestContext>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -2166,17 +2166,17 @@
       "shape": "Batch",
       "plannedQuestion": "TypeSpec depth cap-plus-one is Partial without a prefix candidate",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-typespec-depth",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-typespec-depth",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-typespec-depth",
         "targetArguments": [
           "--truth-gate",
           "batch-typespec-depth"
         ]
       },
-      "expression": "global::Interpreter.W8BatchShapeTarget.Ledger<global::Interpreter.W8BatchShapeTarget.Wrap<global::Interpreter.W8BatchShapeTarget.Wrap<global::Interpreter.W8BatchShapeTarget.Wrap<global::Interpreter.W8BatchShapeTarget.Wrap<global::Interpreter.W8BatchShapeTarget.BatchKey>>>>>.Count",
+      "expression": "global::PhoenixInspect.W8BatchShapeTarget.Ledger<global::PhoenixInspect.W8BatchShapeTarget.Wrap<global::PhoenixInspect.W8BatchShapeTarget.Wrap<global::PhoenixInspect.W8BatchShapeTarget.Wrap<global::PhoenixInspect.W8BatchShapeTarget.Wrap<global::PhoenixInspect.W8BatchShapeTarget.BatchKey>>>>>.Count",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -2254,17 +2254,17 @@
       "shape": "Coordinator",
       "plannedQuestion": "Generic head/arity disagreement is Invalid before runtime enumeration",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-arity-disagreement",
+      "snapshotIdentity": "PhoenixInspect.W8CoordinatorShapeTarget|coordinator-arity-disagreement",
       "target": {
-        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
         "truthGateProfile": "coordinator-arity-disagreement",
         "targetArguments": [
           "--truth-gate",
           "coordinator-arity-disagreement"
         ]
       },
-      "expression": "global::Interpreter.W8CoordinatorShapeTarget.Registry<global::Interpreter.W8CoordinatorShapeTarget.NorthRegion, global::Interpreter.W8CoordinatorShapeTarget.SouthRegion>.Sentinel",
+      "expression": "global::PhoenixInspect.W8CoordinatorShapeTarget.Registry<global::PhoenixInspect.W8CoordinatorShapeTarget.NorthRegion, global::PhoenixInspect.W8CoordinatorShapeTarget.SouthRegion>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -2343,17 +2343,17 @@
       "shape": "Workflow",
       "plannedQuestion": "Two metadata definitions matching the spelling remain ambiguous without exact alias narrowing",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-definition-ambiguity",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-definition-ambiguity",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-definition-ambiguity",
         "targetArguments": [
           "--truth-gate",
           "workflow-definition-ambiguity"
         ]
       },
-      "expression": "global::Interpreter.W8WorkflowShapeTarget.DuplicatedStageStatics.Sentinel",
+      "expression": "global::PhoenixInspect.W8WorkflowShapeTarget.DuplicatedStageStatics.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -2434,17 +2434,17 @@
       "shape": "Request",
       "plannedQuestion": "Requested closed runtime construction is absent and never falls back to another argument",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-absent-construction",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-absent-construction",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-absent-construction",
         "targetArguments": [
           "--truth-gate",
           "request-absent-construction"
         ]
       },
-      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.NeverConstructedContext>.Sentinel",
+      "expression": "global::PhoenixInspect.W8RequestShapeTarget.RequestSlot<global::PhoenixInspect.W8RequestShapeTarget.NeverConstructedContext>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -2520,17 +2520,17 @@
       "shape": "Batch",
       "plannedQuestion": "Runtime-construction candidate cap-plus-one is Partial and cannot select an in-prefix construction",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-candidate-cap",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-candidate-cap",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-candidate-cap",
         "targetArguments": [
           "--truth-gate",
           "batch-candidate-cap"
         ]
       },
-      "expression": "global::Interpreter.W8BatchShapeTarget.Ledger<global::Interpreter.W8BatchShapeTarget.BatchKey>.Count",
+      "expression": "global::PhoenixInspect.W8BatchShapeTarget.Ledger<global::PhoenixInspect.W8BatchShapeTarget.BatchKey>.Count",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -2606,17 +2606,17 @@
       "shape": "Coordinator",
       "plannedQuestion": "An unavailable static slot preserves exact construction identity without a value",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-unavailable-slot",
+      "snapshotIdentity": "PhoenixInspect.W8CoordinatorShapeTarget|coordinator-unavailable-slot",
       "target": {
-        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
         "truthGateProfile": "coordinator-unavailable-slot",
         "targetArguments": [
           "--truth-gate",
           "coordinator-unavailable-slot"
         ]
       },
-      "expression": "global::Interpreter.W8CoordinatorShapeTarget.Registry<global::Interpreter.W8CoordinatorShapeTarget.EastRegion>.Sentinel",
+      "expression": "global::PhoenixInspect.W8CoordinatorShapeTarget.Registry<global::PhoenixInspect.W8CoordinatorShapeTarget.EastRegion>.Sentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -2691,17 +2691,17 @@
       "shape": "Workflow",
       "plannedQuestion": "Substituted reference target conflict blocks suffix evaluation",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-reference-target-conflict",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-reference-target-conflict",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-reference-target-conflict",
         "targetArguments": [
           "--truth-gate",
           "workflow-reference-target-conflict"
         ]
       },
-      "expression": "global::Interpreter.W8WorkflowShapeTarget.Stage<global::Interpreter.W8WorkflowShapeTarget.StepContext>.Current?.Label",
+      "expression": "global::PhoenixInspect.W8WorkflowShapeTarget.Stage<global::PhoenixInspect.W8WorkflowShapeTarget.StepContext>.Current?.Label",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "W6ConditionalChainV1",
       "controlExpression": null,
@@ -2776,10 +2776,10 @@
       "shape": "Request",
       "plannedQuestion": "An active local shadows a bare imported field; no local value is guessed",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-local-shadow",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-local-shadow",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-local-shadow",
         "targetArguments": [
           "--truth-gate",
@@ -2866,10 +2866,10 @@
       "shape": "Batch",
       "plannedQuestion": "Incomplete local/parameter/member catalogs block using static selection",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-incomplete-catalogs",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-incomplete-catalogs",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-incomplete-catalogs",
         "targetArguments": [
           "--truth-gate",
@@ -2954,10 +2954,10 @@
       "shape": "Coordinator",
       "plannedQuestion": "A property sharing the bare name is valid but unsupported, not a field fallback",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8CoordinatorShapeTarget|coordinator-property-name",
+      "snapshotIdentity": "PhoenixInspect.W8CoordinatorShapeTarget|coordinator-property-name",
       "target": {
-        "projectPath": "tests/Interpreter.W8CoordinatorShapeTarget/Interpreter.W8CoordinatorShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8CoordinatorShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8CoordinatorShapeTarget/PhoenixInspect.W8CoordinatorShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8CoordinatorShapeTarget",
         "truthGateProfile": "coordinator-property-name",
         "targetArguments": [
           "--truth-gate",
@@ -3041,10 +3041,10 @@
       "shape": "Workflow",
       "plannedQuestion": "A fully ground TypeSpec alias inside a generic method returns an exact enum literal with no runtime-context call",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-enum-literal",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-enum-literal",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-enum-literal",
         "targetArguments": [
           "--truth-gate",
@@ -3128,17 +3128,17 @@
       "shape": "Request",
       "plannedQuestion": "W8.1 admitted branch: one ThreadRelativeSlot incident with exact selected-thread identity",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8RequestShapeTarget|request-thread-relative",
+      "snapshotIdentity": "PhoenixInspect.W8RequestShapeTarget|request-thread-relative",
       "target": {
-        "projectPath": "tests/Interpreter.W8RequestShapeTarget/Interpreter.W8RequestShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8RequestShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8RequestShapeTarget/PhoenixInspect.W8RequestShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8RequestShapeTarget",
         "truthGateProfile": "request-thread-relative",
         "targetArguments": [
           "--truth-gate",
           "request-thread-relative"
         ]
       },
-      "expression": "global::Interpreter.W8RequestShapeTarget.RequestSlot<global::Interpreter.W8RequestShapeTarget.RequestContext>.ThreadSentinel",
+      "expression": "global::PhoenixInspect.W8RequestShapeTarget.RequestSlot<global::PhoenixInspect.W8RequestShapeTarget.RequestContext>.ThreadSentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -3212,17 +3212,17 @@
       "shape": "Batch",
       "plannedQuestion": "W8.1 admitted branch: one ModuleRva incident with construction and slot marked NotRequired",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8BatchShapeTarget|batch-module-rva",
+      "snapshotIdentity": "PhoenixInspect.W8BatchShapeTarget|batch-module-rva",
       "target": {
-        "projectPath": "tests/Interpreter.W8BatchShapeTarget/Interpreter.W8BatchShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8BatchShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8BatchShapeTarget/PhoenixInspect.W8BatchShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8BatchShapeTarget",
         "truthGateProfile": "batch-module-rva",
         "targetArguments": [
           "--truth-gate",
           "batch-module-rva"
         ]
       },
-      "expression": "global::Interpreter.W8NamedRvaTarget.NamedRvaStorage.NamedSentinel",
+      "expression": "global::PhoenixInspect.W8NamedRvaTarget.NamedRvaStorage.NamedSentinel",
       "languageProfile": "StaticFieldExpressionV2",
       "suffixProfile": "None",
       "controlExpression": null,
@@ -3299,10 +3299,10 @@
       "shape": "Workflow",
       "plannedQuestion": "W8.1 admitted branch: one FrameValueExpressionV1 incident with an exact memory-homed root and no static fallback",
       "snapshotKind": "independent-full-dump",
-      "snapshotIdentity": "Interpreter.W8WorkflowShapeTarget|workflow-frame-value",
+      "snapshotIdentity": "PhoenixInspect.W8WorkflowShapeTarget|workflow-frame-value",
       "target": {
-        "projectPath": "tests/Interpreter.W8WorkflowShapeTarget/Interpreter.W8WorkflowShapeTarget.csproj",
-        "assemblyName": "Interpreter.W8WorkflowShapeTarget",
+        "projectPath": "tests/PhoenixInspect.W8WorkflowShapeTarget/PhoenixInspect.W8WorkflowShapeTarget.csproj",
+        "assemblyName": "PhoenixInspect.W8WorkflowShapeTarget",
         "truthGateProfile": "workflow-frame-value",
         "targetArguments": [
           "--truth-gate",

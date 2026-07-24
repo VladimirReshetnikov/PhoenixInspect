@@ -1,4 +1,4 @@
-# Design & Architecture Review — Interpreter (.NET IL Interpreter / Dump-Time Evaluation)
+# Design & Architecture Review — PhoenixInspect (.NET IL Interpreter / Dump-Time Evaluation)
 
 > **Point-in-time review and reset input.** Counts and implementation facts below describe the repository before the 2026-07-13 remediation pass; they are intentionally preserved as review evidence rather than rewritten as current status. The active scope, W6 roadmap, historical W0–W4 record, and topology now live in `README.md`, `docs/plans/post-w5-path-forward.md`, `docs/plans/future-work-planning.md`, and `docs/proposals/architecture/architecture-overview-proposal.md`.
 
@@ -9,7 +9,7 @@ This is a documentation-first conceptual-design project for a reusable CIL (ECMA
 ## What the project is (grounded snapshot)
 
 - **Documentation:** ~79,935 words across 56 Markdown files; ~20 proposal docs under `docs/proposals/architecture/` alone.
-- **Solution:** 42 projects under `src/` (44 in `Interpreter.sln` including `TestTarget` + `IntegrationTests`).
+- **Solution:** 42 projects under `src/` (44 in `PhoenixInspect.sln` including `TestTarget` + `IntegrationTests`).
 - **Implemented vs empty:** only **8** src projects contain any C#; **34 are project-file-only stubs** (all Domains, Memory, Models, Symbols, Decompiler, DebugMaps, Analysis/IR/Tracing, and all four Products).
 - **Real code:** ~1,633 lines of C#; ~66% is pure interface/enum/record/DTO contracts (~85 public types); executable logic lives in **5 files**. Only `IlMachine` has behavior, and it interprets exactly **one opcode** (`ret`, `0x2A`), faulting on everything else.
 - **Tests:** **one** `[Fact]` (a real dump-loading integration test) plus a one-method `TestTarget`. Zero unit tests. No `.github/workflows`, no CI of any kind.
@@ -31,7 +31,7 @@ The doc-first posture is explicit and legitimate for a concept-phase repo. The p
 ## Strengths (what genuinely works)
 
 - **The central abstraction is the right one.** The domain-parametric spine (`IValueDomain<TValue>` + `IMemoryModel<TValue,TMem>` + `ICallModel`) is the correct way to reuse one semantics engine across concrete/hybrid/abstract modes and avoids the classic "built a concrete interpreter, now rewrite for analysis" trap.
-- **Dependency direction is sound and machine-verifiable.** Every `ProjectReference` edge points downward, the graph is acyclic (Kahn toposort passes over all edges), and `Interpreter.Core.Execution` references only `Interpreter.Core.Abstractions` — no backend leakage into the VM. Concrete backends (SRM, ClrMD) are correctly isolated at the leaves.
+- **Dependency direction is sound and machine-verifiable.** Every `ProjectReference` edge points downward, the graph is acyclic (Kahn toposort passes over all edges), and `PhoenixInspect.Core.Execution` references only `PhoenixInspect.Core.Abstractions` — no backend leakage into the VM. Concrete backends (SRM, ClrMD) are correctly isolated at the leaves.
 - **The one real test is a genuine end-to-end seam, not a mock.** It writes a real full process dump via `DiagnosticsClient.WriteDump`, loads it with ClrMD, matches MVID, reads IL, and single-steps the VM. This is the right shape for a first bounded milestone and proves the hardest integration.
 - **Evidence/honesty posture is disciplined and differentiating.** Read-only dump, provenance-bearing unknowns, "prefer Unavailable over guessing," fail-closed to typed-unknown/`UnsupportedLayout`, no silent fallback to concrete guesses — all well-matched to the interpretation problem of dump evaluation.
 - **The "lift the semantics, not the machinery" pattern is applied consistently** (intercept builder/awaiter and DLR call-site calls as intrinsics rather than interpreting TPL/DLR internals) and is the correct layering choice.
@@ -173,8 +173,8 @@ Two further independent reviews were produced in parallel and merged into this b
 3. **The prototype's public contracts cannot express mandatory partialness/provenance (`codex/review-architecture` F10; `codex/review-project-architecture` 6.2/6.7/9.2).** This generalizes and strengthens my single "IValueDomain lacks `leq`/`meet`" finding. `IResolutionServices`, `IMemoryModel`, `IProcessMemoryReader`, `IExternalObjectModel`, `IGenericContextResolver`, and `IDebugMapProvider` use `bool Try*`, raw returns, or exceptions, and cannot carry a miss reason, completeness, or provenance — which directly undercuts the project's defining explainability requirement. Typed evidence-result envelopes (`Exact / Partial / Unavailable / Conflict / Invalid`) are the right shape. **Incorporated as a high-severity architecture finding.**
 
 4. **Concrete code-level defects I missed — now independently verified in the source.** Both reviews found these and I confirmed each by reading the files:
-   - `SrmMetadataModule.ComputeStableHandleValue` returns `(ulong)StringComparer.OrdinalIgnoreCase.GetHashCode(path)` ([SrmMetadataModule.cs:181](src/Interpreter.Metadata.SRM/SrmMetadataModule.cs)). .NET string hashing is randomized per process, so the "stable handle" is not stable across runs — it breaks the project's headline replay/determinism goal. `ModuleId` equality also includes `Name`/`PathHint`, and method handles are sequential per-module counters — both order/identity-unstable.
-   - The integration harness can hang on its failure path: `process.StandardError.ReadToEnd()` is called *before* `process.Kill()` (historical `tests/Interpreter.IntegrationTests/RetOnlyDumpIntegrationTests.cs:186`, removed by the remediation pass); with the target alive, the read blocks until EOF.
+   - `SrmMetadataModule.ComputeStableHandleValue` returns `(ulong)StringComparer.OrdinalIgnoreCase.GetHashCode(path)` ([SrmMetadataModule.cs:181](src/PhoenixInspect.Metadata.SRM/SrmMetadataModule.cs)). .NET string hashing is randomized per process, so the "stable handle" is not stable across runs — it breaks the project's headline replay/determinism goal. `ModuleId` equality also includes `Name`/`PathHint`, and method handles are sequential per-module counters — both order/identity-unstable.
+   - The integration harness can hang on its failure path: `process.StandardError.ReadToEnd()` is called *before* `process.Kill()` (historical `tests/PhoenixInspect.IntegrationTests/RetOnlyDumpIntegrationTests.cs:186`, removed by the remediation pass); with the target alive, the read blocks until EOF.
    - `IlMachine.StepOne` emits an `InstructionExecuted` event for budget-exhausted, missing-body, invalid-offset, and unsupported-opcode cases — none of which executed an instruction — so replay/explanations would assert events that never occurred.
    - The one integration test reads IL from the on-disk module and compares two disk reads' MVIDs; it does **not** read IL or identity from dump memory. It is a module-discovery smoke test, not evidence of dump-backed interpretation.
 

@@ -117,7 +117,7 @@ has been curated and pinned.
 
 ### 4.2 The fault agent
 
-A small `Interpreter.FaultAgent` library, linked into Tier-A targets, exposing labeled injections invoked by profile
+A small `PhoenixInspect.FaultAgent` library, linked into Tier-A targets, exposing labeled injections invoked by profile
 name. Every injection:
 
 - runs behind the existing hidden/windowless execution policy and the headless wrapper `eng/Invoke-HeadlessProcess.ps1`;

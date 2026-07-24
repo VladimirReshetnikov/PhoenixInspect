@@ -53,7 +53,7 @@ An experiment must implement the same projected contract and run the same confor
 
 ## Consequences
 
-- `Interpreter.Metadata.AsmResolver` is removed rather than retained as an empty option.
+- `PhoenixInspect.Metadata.AsmResolver` is removed rather than retained as an empty option.
 - AsmResolver, dnlib, Cecil, and DIA notes under `docs/lib/` remain research references, not roadmap commitments.
 - Package count and backend vocabulary shrink while the public boundary remains replaceable.
 - Any future backend decision is based on executable differential evidence.

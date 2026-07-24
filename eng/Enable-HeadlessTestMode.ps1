@@ -14,12 +14,12 @@ function Enable-HeadlessTestMode {
         }
     }
 
-    $nativeMethods = 'Interpreter.Testing.WindowsErrorMode' -as [type]
+    $nativeMethods = 'PhoenixInspect.Testing.WindowsErrorMode' -as [type]
     if ($null -eq $nativeMethods) {
         Add-Type -TypeDefinition @'
 using System.Runtime.InteropServices;
 
-namespace Interpreter.Testing
+namespace PhoenixInspect.Testing
 {
     public static class WindowsErrorMode
     {
@@ -31,7 +31,7 @@ namespace Interpreter.Testing
     }
 }
 '@
-        $nativeMethods = 'Interpreter.Testing.WindowsErrorMode' -as [type]
+        $nativeMethods = 'PhoenixInspect.Testing.WindowsErrorMode' -as [type]
     }
 
     # These flags are inherited by children. SEM_NOGPFAULTERRORBOX is essential for failures that occur before

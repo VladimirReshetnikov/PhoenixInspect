@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PhoenixInspect.W8ForwarderTarget</AssemblyName>
+    <RootNamespace>PhoenixInspect.W8ForwarderTarget</RootNamespace>
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../PhoenixInspect.W8AliasTarget/PhoenixInspect.W8AliasTarget.csproj" />
+  </ItemGroup>
+</Project>

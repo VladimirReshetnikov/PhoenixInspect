@@ -33,8 +33,8 @@ a bare member by `using static`.
 The minimum invariant remains:
 
 ```csharp
-global::Interpreter.W8TestTarget.GenericSlot<
-    global::Interpreter.W8TestTarget.RequestContext>.Current
+global::PhoenixInspect.W8TestTarget.GenericSlot<
+    global::PhoenixInspect.W8TestTarget.RequestContext>.Current
 ```
 
 If exactly one loaded module, closed runtime construction, ordinary static field, application domain, and slot match
@@ -45,10 +45,10 @@ The same physical field may also be reached through exact contextual forms such 
 
 ```csharp
 RequestSlot.Current
-requestlib::Interpreter.W8TestTarget.GenericSlot<
-    requestlib::Interpreter.W8TestTarget.RequestContext>.Current
+requestlib::PhoenixInspect.W8TestTarget.GenericSlot<
+    requestlib::PhoenixInspect.W8TestTarget.RequestContext>.Current
 Current.Owner?.Name ?? "none"
-global::Interpreter.W8TestTarget.Outer<RequestContext>.Inner<BatchContext>.Count
+global::PhoenixInspect.W8TestTarget.Outer<RequestContext>.Inner<BatchContext>.Count
 ```
 
 In these examples `RequestSlot` is a type alias whose Portable-PDB target is a `TypeSpec`, `requestlib` is an exact
@@ -585,7 +585,7 @@ The fully qualified route's provenance must prove absence of frame/PDB calls, no
 
 ### 6.1 Dedicated emitted fixture
 
-W8.1 added `Interpreter.W8TestTarget`, `Interpreter.W8AliasTarget`, `Interpreter.W8ForwarderTarget`, and the named
+W8.1 added `PhoenixInspect.W8TestTarget`, `PhoenixInspect.W8AliasTarget`, `PhoenixInspect.W8ForwarderTarget`, and the named
 FieldRVA companion. The target materializes before each dump:
 
 - at least four closed constructions of the same generic TypeDef;
@@ -1235,12 +1235,12 @@ evidence.
 Expected managed command shape:
 
 ```powershell
-.\eng\Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode
-.\eng\Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:ContinuousIntegrationBuild=true
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=StaticFieldExpressionV2" --verbosity normal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W8MeaningfulSyntheticV1" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
+.\eng\Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers --property:UseSharedCompilation=false --property:ContinuousIntegrationBuild=true
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=StaticFieldExpressionV2" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W8MeaningfulSyntheticV1" --verbosity normal
 ```
 
 Repository scripts then verify Markdown links and workflow headlessness. The authored-scope vocabulary guard excludes

@@ -283,11 +283,11 @@ W6 adds no project. Responsibilities remain aligned with the then-current fourte
 
 | Project / area | W6 responsibility |
 |---|---|
-| `Interpreter.Product.DumpQuery` | Sole internal Roslyn dependency, pinned expression adapter, W2/W5/W6 tree recognizers, immutable project-owned parsed shapes, declared-member plan, derived-query evaluator, null/coalesce semantics, canonical plan replay; no Roslyn type escapes |
-| `Interpreter.Host.Dump.ClrMD` | Immutable declared-type/field/property certificate projection from SRM plus dump evidence, counted object-reference observation, exact non-root target identity, descriptor-consuming terminal reads |
-| `Interpreter.Product.DumpDebugging` | Explicit opt-in language profile, append-only expression-kind routing, W6 request identity, product outcome projection, preservation of W2/W4 payloads |
-| `Interpreter.Headless.ReferenceConsumer` | Versioned W6 manifest/report execution and usefulness reporting; frozen W5 manifests/reports remain unchanged; no reusable query semantics |
-| `Interpreter.TestTarget` | Source-controlled multi-shape object graphs and readiness oracles |
+| `PhoenixInspect.Product.DumpQuery` | Sole internal Roslyn dependency, pinned expression adapter, W2/W5/W6 tree recognizers, immutable project-owned parsed shapes, declared-member plan, derived-query evaluator, null/coalesce semantics, canonical plan replay; no Roslyn type escapes |
+| `PhoenixInspect.Host.Dump.ClrMD` | Immutable declared-type/field/property certificate projection from SRM plus dump evidence, counted object-reference observation, exact non-root target identity, descriptor-consuming terminal reads |
+| `PhoenixInspect.Product.DumpDebugging` | Explicit opt-in language profile, append-only expression-kind routing, W6 request identity, product outcome projection, preservation of W2/W4 payloads |
+| `PhoenixInspect.Headless.ReferenceConsumer` | Versioned W6 manifest/report execution and usefulness reporting; frozen W5 manifests/reports remain unchanged; no reusable query semantics |
+| `PhoenixInspect.TestTarget` | Source-controlled multi-shape object graphs and readiness oracles |
 | Unit/integration corpus | Three-bucket parser/admission laws, legacy compatibility, adapter evidence, plan/evaluation semantics, real dumps, fresh-process replay, and usefulness decision |
 
 Illustrative type names in this plan express ownership, not a frozen public API. Any public prototype type or method
@@ -303,7 +303,7 @@ corpus and twelve-row W5.5b corpus remain replayable without schema rewriting, a
 artifacts remain commit-scoped evidence rather than being rewritten. Roslyn replaces the implementation mechanism in
 W6.2; it does not rewrite the historical claim that the earlier artifacts used the handwritten parser.
 
-W6.1 intentionally adds coordinator and workflow graphs to `Interpreter.TestTarget`, so its PE identity and every dump-
+W6.1 intentionally adds coordinator and workflow graphs to `PhoenixInspect.TestTarget`, so its PE identity and every dump-
 or PE-derived W2/W4/W5 identity necessarily change for newly generated artifacts. After the emitted-shape relations
 pass, current artifact-derived goldens are refreshed exactly once and attributed to the new PE; comparison across that
 boundary is semantic and relational, not byte identity across different content. Within either fixed content baseline,
@@ -568,7 +568,7 @@ schemas, classifications, outcome semantics, aggregate-count rules, and legacy c
 - same/fresh-object canonical opt-in chain-request replay and deletion of the production handwritten parser.
 
 **Implemented checkpoint.** Commit `68aaf418f` closes W6.2 at `~1K LOC` scale. It pins the sole direct Roslyn package
-on `Interpreter.Product.DumpQuery`, uses one C# 14 regular-source full-text expression parse, projects disjoint W2,
+on `PhoenixInspect.Product.DumpQuery`, uses one C# 14 regular-source full-text expression parse, projects disjoint W2,
 W5, direct-chain, and conditional-chain shapes into project-owned descriptors, and adds a separately tagged opt-in
 request/chain identity. The production handwritten reader, literal decoder, and W5 diagnostic-dependent fallback are
 absent. The W5 evaluator consumes the already parsed direct-member descriptor, so preparation does not parse again.
@@ -819,7 +819,7 @@ does not cause unexplained target-artifact churn.
 
 W6.1 freezes every target-affecting graph, member name, constructor input, and value needed by these semantic rows
 before the single PE/identity refresh. W6.6 may refine only manifest/report metadata that does not rebuild
-`Interpreter.TestTarget`. Before any W6.1 target build or portfolio dump is generated, one versioned scenario draft
+`PhoenixInspect.TestTarget`. Before any W6.1 target build or portfolio dump is generated, one versioned scenario draft
 must therefore freeze the exact target inputs and expressions. Before any W6.6 evaluation, the versioned manifest must
 additionally freeze every root selector/outcome, evidence view, expected completion/completeness/evidence/value or
 prefix/diagnostic, usefulness classification, decision-changing flag, first boundary, and application shape:
@@ -896,12 +896,12 @@ All managed commands remain headless. Exact filters may be refined as tests land
 The expected command shape remains:
 
 ```powershell
-.\eng\Invoke-HeadlessProcess.ps1 dotnet restore Interpreter.sln --locked-mode
-.\eng\Invoke-HeadlessProcess.ps1 dotnet build Interpreter.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.Tests/Interpreter.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W6MemberChainV1" --verbosity normal
-.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/Interpreter.IntegrationTests/Interpreter.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W6MeaningfulSyntheticV3" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
+.\eng\Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W6MemberChainV1" --verbosity normal
+.\eng\Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=W6MeaningfulSyntheticV3" --verbosity normal
 pwsh -NoLogo -NoProfile -NonInteractive -File .\eng\verify-markdown-links.ps1
 pwsh -NoLogo -NoProfile -NonInteractive -File .\eng\verify-headless-workflows.ps1
 ```

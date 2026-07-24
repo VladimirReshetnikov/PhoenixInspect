@@ -1,0 +1,1187 @@
+using System.Collections.Immutable;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using PhoenixInspect.Core.Abstractions;
+using PhoenixInspect.Host.Abstractions;
+using PhoenixInspect.Host.Dump.ClrMD;
+using PhoenixInspect.Product.DumpDebugging;
+using PhoenixInspect.Product.DumpQuery;
+
+namespace PhoenixInspect.Headless.ReferenceConsumer;
+
+internal static class Program
+{
+    private const int MachineSchemaVersion = 1;
+    private const int ManifestSchemaVersion = 1;
+    private const int W6MachineSchemaVersion = 2;
+    private const int W6ManifestSchemaVersion = 2;
+    private const int MaximumScenarios = 64;
+    private const string GeneratedFixtureCaveat =
+        "Generated fixture evidence views validate routing only; they are not representative incident observations.";
+    private const string SyntheticIncidentCaveat =
+        "Designed synthetic incidents validate prototype behavior and design decisions only; they are not external observations or field-readiness evidence.";
+    private const string RepresentativeCorpusCaveat =
+        "Representative designation comes from the predeclared incident manifest; the consumer does not independently verify provenance.";
+
+    internal static int Main(string[] args)
+    {
+        if (W7StaticFieldPortfolioRunner.IsRequested(args))
+        {
+            return W7StaticFieldPortfolioRunner.Run(args);
+        }
+
+        if (UsefulnessPortfolioRunner.IsRequested(args))
+        {
+            return UsefulnessPortfolioRunner.Run(args);
+        }
+
+        try
+        {
+            var options = CommandLineOptions.Parse(args);
+            var manifest = LoadManifest(options.ManifestPath);
+            var dumpPath = ResolveDumpPath(options, manifest);
+            var opened = ClrmdDumpSession.Open(dumpPath);
+            if (opened.Status != ClrmdEvidenceStatus.Exact || opened.Value is null)
+            {
+                Console.Error.WriteLine($"W5_CONSUMER_DUMP_OPEN_FAILED:{opened.Status}:{opened.Issue}");
+                return 4;
+            }
+
+            using var session = opened.Value;
+            var capturedRootSearch = session.FindStrongHandleObjectsByTypeName(
+                manifest.Root.TypeName,
+                manifest.Root.MaximumMatches,
+                manifest.Root.MaximumHandlesScanned);
+            var rootSearch = ApplyRootEvidenceView(capturedRootSearch, ParseRootView(manifest.Root.FixtureEvidenceView));
+            var rootBinding = DumpQueryRootBinding.FromSearchResult(manifest.Root.Name, rootSearch);
+            if (manifest.SchemaVersion == ManifestSchemaVersion &&
+                (rootBinding.Status != DumpQueryRootBindingStatus.ExactObject || rootBinding.Root is null))
+            {
+                Console.Error.WriteLine($"W5_CONSUMER_ROOT_NOT_EXACT:{rootBinding.Status}:{rootBinding.Issue}");
+                return 4;
+            }
+
+            var rows = manifest.Scenarios
+                .Select(scenario => RunScenario(session, rootBinding, manifest.SchemaVersion, scenario))
+                .ToImmutableArray();
+            WriteMachineReport(options.MachineOutputPath, manifest, session.Snapshot, rootBinding, rows);
+            WriteHumanReport(options.HumanOutputPath, manifest, rootBinding, rows);
+            Console.WriteLine(manifest.SchemaVersion == ManifestSchemaVersion
+                ? $"W5_CONSUMER_OK:{rows.Length}"
+                : $"W6_CONSUMER_OK:{rows.Length}");
+            return 0;
+        }
+        catch (CommandLineException exception)
+        {
+            Console.Error.WriteLine($"W5_CONSUMER_ARGUMENT_INVALID:{exception.Message}");
+            return 2;
+        }
+        catch (Exception exception) when (
+            exception is JsonException or InvalidDataException or ArgumentException or ArgumentOutOfRangeException)
+        {
+            Console.Error.WriteLine($"W5_CONSUMER_MANIFEST_INVALID:{exception.Message}");
+            return 3;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Console.Error.WriteLine($"W5_CONSUMER_OUTPUT_FAILED:{exception.GetType().Name}");
+            return 5;
+        }
+    }
+
+    private static ScenarioManifest LoadManifest(string path)
+    {
+        if (!File.Exists(path))
+        {
+            throw new InvalidDataException("The named scenario manifest does not exist.");
+        }
+
+        var manifest = JsonSerializer.Deserialize<ScenarioManifest>(
+            File.ReadAllBytes(path),
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = false,
+                UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+            }) ?? throw new InvalidDataException("The scenario manifest is empty.");
+        manifest.Validate();
+        return manifest;
+    }
+
+    private static string ResolveDumpPath(CommandLineOptions options, ScenarioManifest manifest)
+    {
+        var candidate = options.DumpPathOverride ?? manifest.DumpPath;
+        if (string.IsNullOrWhiteSpace(candidate))
+        {
+            throw new InvalidDataException("A dump path is required in the manifest or command line.");
+        }
+
+        if (Path.IsPathFullyQualified(candidate))
+        {
+            return candidate;
+        }
+
+        var manifestDirectory = Path.GetDirectoryName(Path.GetFullPath(options.ManifestPath))!;
+        return Path.GetFullPath(Path.Combine(manifestDirectory, candidate));
+    }
+
+    private static ScenarioRow RunScenario(
+        ClrmdDumpSession session,
+        DumpQueryRootBinding root,
+        int manifestSchemaVersion,
+        ScenarioDefinition scenario)
+    {
+        var mode = ParseMode(scenario.MethodMode);
+        var view = ParseView(scenario.FixtureEvidenceView);
+        var policy = DumpExpressionPolicy.Create(
+            mode,
+            scenario.InstructionLimit,
+            scenario.LogicalDepthLimit,
+            scenario.TraversalLimit);
+        OutcomeProjection? firstProjection = null;
+        string? firstProjectionSha256 = null;
+        DumpExpressionRequest? request = null;
+
+        for (var repetition = 0; repetition < scenario.RepeatCount; repetition++)
+        {
+            using var cancellation = new CancellationTokenSource();
+            if (scenario.CancelBeforeExecution)
+            {
+                cancellation.Cancel();
+            }
+
+            var outcome = EvaluateScenario(
+                session,
+                root,
+                manifestSchemaVersion,
+                scenario,
+                policy,
+                view,
+                cancellation.Token);
+            request ??= outcome.Request;
+            var projection = ProjectOutcome(outcome);
+            var projectionBytes = SerializeOutcomeProjection(projection);
+            var projectionSha256 = Hash(projectionBytes);
+            if (firstProjection is null)
+            {
+                firstProjection = projection;
+                firstProjectionSha256 = projectionSha256;
+            }
+            else if (!SerializeOutcomeProjection(firstProjection).AsSpan().SequenceEqual(projectionBytes))
+            {
+                throw new InvalidDataException(
+                    $"Scenario '{scenario.Id}' did not replay identically within one open session.");
+            }
+        }
+
+        return new ScenarioRow(
+            scenario.Id,
+            scenario.Expression,
+            scenario.MethodMode,
+            manifestSchemaVersion == ManifestSchemaVersion ? null : scenario.LanguageProfile,
+            scenario.FixtureEvidenceView,
+            scenario.RepeatCount,
+            request?.Sha256,
+            firstProjection!,
+            firstProjectionSha256!);
+    }
+
+    private static DumpExpressionEvaluationOutcome EvaluateScenario(
+        ClrmdDumpSession session,
+        DumpQueryRootBinding root,
+        int manifestSchemaVersion,
+        ScenarioDefinition scenario,
+        DumpExpressionPolicy policy,
+        FixtureEvidenceView view,
+        CancellationToken cancellationToken)
+    {
+        if (manifestSchemaVersion == W6ManifestSchemaVersion)
+        {
+            var profile = ParseLanguageProfile(scenario.LanguageProfile);
+            if (view == FixtureEvidenceView.Captured)
+            {
+                return DumpExpressionEvaluator.Evaluate(
+                    session,
+                    scenario.Expression,
+                    root,
+                    policy,
+                    profile,
+                    cancellationToken);
+            }
+
+            var chainClassification = DumpExpressionClassifier.Classify(
+                scenario.Expression,
+                root,
+                policy,
+                profile);
+            if (chainClassification.Status != DumpExpressionClassificationStatus.Accepted)
+            {
+                return DumpExpressionEvaluationOutcome.FromClassificationFailure(chainClassification);
+            }
+
+            if (chainClassification.Kind != DumpExpressionKind.FixedDepthMemberChain)
+            {
+                throw new InvalidDataException(
+                    $"Scenario '{scenario.Id}' applies a generated member-evidence view to a non-chain expression.");
+            }
+
+            return DumpExpressionEvaluator.EvaluateMemberChain(
+                new FixtureMemberChainEvidenceSource(session, view),
+                chainClassification.Request!);
+        }
+
+        if (view == FixtureEvidenceView.Captured)
+        {
+            return DumpExpressionEvaluator.Evaluate(
+                session,
+                scenario.Expression,
+                root,
+                policy,
+                cancellationToken);
+        }
+
+        var classification = DumpExpressionClassifier.Classify(scenario.Expression, root, policy);
+        if (classification.Status != DumpExpressionClassificationStatus.Accepted)
+        {
+            return DumpExpressionEvaluationOutcome.FromClassificationFailure(classification);
+        }
+
+        if (classification.Kind != DumpExpressionKind.CounterfactualMethod)
+        {
+            throw new InvalidDataException(
+                $"Scenario '{scenario.Id}' applies a generated method-evidence view to a W2 expression.");
+        }
+
+        return DumpExpressionEvaluator.EvaluateMethod(
+            new FixtureEvidenceSource(session, view),
+            classification.Request!,
+            cancellationToken);
+    }
+
+    private static OutcomeProjection ProjectOutcome(DumpExpressionEvaluationOutcome outcome)
+    {
+        var request = outcome.Request;
+        return outcome.Kind switch
+        {
+            DumpExpressionEvaluationOutcomeKind.DerivedQuery =>
+                ProjectDerivedQuery(request!, outcome.DerivedQueryResult!),
+            DumpExpressionEvaluationOutcomeKind.CounterfactualExecution =>
+                ProjectCounterfactual(request!, outcome.CounterfactualExecutionResult!),
+            DumpExpressionEvaluationOutcomeKind.CounterfactualPreparationFailure =>
+                ProjectPreparationFailure(request!, outcome.CounterfactualPreparationFailure!),
+            DumpExpressionEvaluationOutcomeKind.ClassificationFailure =>
+                ProjectClassificationFailure(outcome.ClassificationFailure!),
+            DumpExpressionEvaluationOutcomeKind.AcquisitionFailure =>
+                ProjectAcquisitionFailure(request!, outcome.AcquisitionFailure!),
+            _ => throw new InvalidDataException("The evaluator returned an unknown outcome case."),
+        };
+    }
+
+    private static OutcomeProjection ProjectDerivedQuery(
+        DumpExpressionRequest request,
+        EvaluationResult<DumpQueryValue> result)
+    {
+        var canonical = EvaluationResultReplay.SerializeCanonical(
+            result,
+            static value => value.ToCanonicalReplayProjection());
+        return new OutcomeProjection(
+            DumpExpressionEvaluationOutcomeKind.DerivedQuery.ToString(),
+            result.SemanticMode.ToString(),
+            result.Completion.ToString(),
+            result.Completeness.ToString(),
+            result.Evidence.ToString(),
+            result.Effects.ToString(),
+            result.Value?.ToCanonicalReplayProjection(),
+            CollectBounds(request, result.Context.Bounds),
+            ProjectProvenance(result.Provenance),
+            ProjectDiagnostics(result.Diagnostics),
+            Hash(canonical),
+            Convert.ToBase64String(canonical));
+    }
+
+    private static OutcomeProjection ProjectCounterfactual(
+        DumpExpressionRequest request,
+        CounterfactualExecutionResult result) => new(
+        DumpExpressionEvaluationOutcomeKind.CounterfactualExecution.ToString(),
+        result.SemanticMode.ToString(),
+        result.Completion.ToString(),
+        result.Completeness.ToString(),
+        result.Evidence.ToString(),
+        result.Effects.ToString(),
+        ProjectCounterfactualValue(result.Value),
+        CollectBounds(request, result.Context.EvidenceContext.Bounds),
+        ProjectProvenance(result.Provenance),
+        ProjectDiagnostics(result.Diagnostics),
+        result.Sha256,
+        Convert.ToBase64String(result.CanonicalBytes.AsSpan()));
+
+    private static OutcomeProjection ProjectPreparationFailure(
+        DumpExpressionRequest request,
+        CounterfactualMethodPreparationFailure failure) => new(
+        DumpExpressionEvaluationOutcomeKind.CounterfactualPreparationFailure.ToString(),
+        failure.SemanticMode.ToString(),
+        failure.Completion.ToString(),
+        failure.Completeness.ToString(),
+        failure.Evidence.ToString(),
+        failure.Effects.ToString(),
+        Value: null,
+        CollectBounds(request, failure.Context.Bounds),
+        ProjectProvenance(failure.Provenance),
+        ProjectDiagnostics(failure.Diagnostics),
+        UnderlyingArtifactSha256: null,
+        UnderlyingCanonicalBase64: null);
+
+    private static OutcomeProjection ProjectClassificationFailure(DumpExpressionClassification failure) => new(
+        DumpExpressionEvaluationOutcomeKind.ClassificationFailure.ToString(),
+        SemanticMode: null,
+        Completion: null,
+        Completeness: null,
+        Evidence: null,
+        Effects: null,
+        Value: null,
+        CollectBounds(failure.Request, ImmutableArray<EvaluationDeterministicBound>.Empty),
+        ImmutableArray<ProvenanceProjection>.Empty,
+        ImmutableArray.Create(new DiagnosticProjection(failure.DiagnosticCode!, failure.DiagnosticMessage!)),
+        UnderlyingArtifactSha256: null,
+        UnderlyingCanonicalBase64: null);
+
+    private static OutcomeProjection ProjectAcquisitionFailure(
+        DumpExpressionRequest request,
+        DumpMethodAcquisitionFailure failure) => new(
+        DumpExpressionEvaluationOutcomeKind.AcquisitionFailure.ToString(),
+        SemanticMode: null,
+        Completion: null,
+        Completeness: null,
+        failure.EvidenceStatus is { } status ? $"Adapter:{status}" : null,
+        Effects: null,
+        Value: null,
+        CollectBounds(request, ImmutableArray<EvaluationDeterministicBound>.Empty),
+        ImmutableArray<ProvenanceProjection>.Empty,
+        ImmutableArray.Create(new DiagnosticProjection(failure.Code, failure.Message)),
+        UnderlyingArtifactSha256: null,
+        UnderlyingCanonicalBase64: null);
+
+    private static string? ProjectCounterfactualValue(CounterfactualExecutionValue? value) => value?.Kind switch
+    {
+        null => null,
+        CounterfactualExecutionValueKind.ExactReturn => $"i32:{value.ExactInt32}",
+        CounterfactualExecutionValueKind.UnknownReturn => $"unknown:sha256:{value.Lineage!.Sha256}",
+        CounterfactualExecutionValueKind.ExecutionPrefix => "execution-prefix",
+        CounterfactualExecutionValueKind.TargetException => $"target-outcome:sha256:{value.TargetOutcome!.Sha256}",
+        _ => throw new InvalidDataException("The W4 result returned an unknown value case."),
+    };
+
+    private static ImmutableArray<BoundProjection> CollectBounds(
+        DumpExpressionRequest? request,
+        ImmutableArray<EvaluationDeterministicBound> resultBounds)
+    {
+        var byName = new SortedDictionary<string, long>(StringComparer.Ordinal);
+        if (request is not null)
+        {
+            Add(request.RootBinding.AppliedBounds);
+            Add(request.ReachedBounds);
+        }
+
+        Add(resultBounds);
+        return byName.Select(static pair => new BoundProjection(pair.Key, pair.Value)).ToImmutableArray();
+
+        void Add(ImmutableArray<EvaluationDeterministicBound> bounds)
+        {
+            foreach (var bound in bounds)
+            {
+                if (byName.TryGetValue(bound.Name, out var prior) && prior != bound.Value)
+                {
+                    throw new InvalidDataException($"Bound '{bound.Name}' has conflicting values.");
+                }
+
+                byName[bound.Name] = bound.Value;
+            }
+        }
+    }
+
+    private static ImmutableArray<ProvenanceProjection> ProjectProvenance(
+        ImmutableArray<EvaluationProvenance> provenance) => provenance
+        .Select(static item => new ProvenanceProjection(
+            item.Kind.ToString(),
+            item.SourceId,
+            item.Address,
+            item.RequestedLength,
+            item.ObservedLength))
+        .ToImmutableArray();
+
+    private static ImmutableArray<DiagnosticProjection> ProjectDiagnostics(
+        ImmutableArray<EvaluationDiagnostic> diagnostics) => diagnostics
+        .Select(static item => new DiagnosticProjection(item.Code, item.Message))
+        .ToImmutableArray();
+
+    private static byte[] SerializeOutcomeProjection(OutcomeProjection projection)
+    {
+        var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            WriteOutcome(writer, projection);
+        }
+
+        return buffer.ToArray();
+    }
+
+    private static void WriteMachineReport(
+        string path,
+        ScenarioManifest manifest,
+        ClrmdSnapshotIdentity snapshot,
+        DumpQueryRootBinding root,
+        ImmutableArray<ScenarioRow> rows)
+    {
+        EnsureParentDirectory(path);
+        using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        writer.WriteStartObject();
+        writer.WriteNumber(
+            "machineSchemaVersion",
+            manifest.SchemaVersion == ManifestSchemaVersion ? MachineSchemaVersion : W6MachineSchemaVersion);
+        writer.WriteNumber("manifestSchemaVersion", manifest.SchemaVersion);
+        writer.WriteString("corpusKind", manifest.CorpusKind);
+        writer.WriteString("dumpSnapshotSha256", snapshot.Sha256);
+        writer.WriteString("rootName", manifest.Root.Name);
+        writer.WriteString("rootTypeName", manifest.Root.TypeName);
+        writer.WriteString("fixtureCaveat", GetCorpusCaveat(manifest));
+        if (manifest.SchemaVersion == W6ManifestSchemaVersion)
+        {
+            WriteRootSelection(writer, manifest.Root.FixtureEvidenceView, root);
+        }
+
+        writer.WriteStartArray("scenarios");
+        foreach (var row in rows)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("id", row.Id);
+            if (row.Expression is null)
+            {
+                writer.WriteNull("expression");
+            }
+            else
+            {
+                writer.WriteString("expression", row.Expression);
+            }
+
+            writer.WriteString("methodMode", row.MethodMode);
+            if (manifest.SchemaVersion == W6ManifestSchemaVersion)
+            {
+                writer.WriteString("languageProfile", row.LanguageProfile);
+            }
+
+            writer.WriteString("fixtureEvidenceView", row.FixtureEvidenceView);
+            writer.WriteNumber("repetitions", row.Repetitions);
+            if (row.RequestSha256 is null)
+            {
+                writer.WriteNull("requestSha256");
+            }
+            else
+            {
+                writer.WriteString("requestSha256", row.RequestSha256);
+            }
+
+            writer.WriteString("outcomeProjectionSha256", row.OutcomeProjectionSha256);
+            writer.WritePropertyName("outcome");
+            WriteOutcome(writer, row.Outcome);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+        writer.WriteEndObject();
+    }
+
+    private static void WriteRootSelection(
+        Utf8JsonWriter writer,
+        string fixtureEvidenceView,
+        DumpQueryRootBinding root)
+    {
+        writer.WriteStartObject("rootSelection");
+        WriteNullable(writer, "name", root.Name);
+        WriteNullable(writer, "typeNameSelector", root.TypeNameSelector);
+        writer.WriteString("bindingStatus", root.Status.ToString());
+        writer.WriteString("issue", root.Issue.ToString());
+        WriteNullable(writer, "adapterSearchStatus", root.SearchStatus?.ToString());
+        WriteNullable(writer, "handlesScanned", root.HandlesScanned);
+        WriteNullable(writer, "maximumHandlesScanned", root.MaximumHandlesScanned);
+        WriteNullable(writer, "maximumMatches", root.MaximumMatches);
+        WriteNullable(writer, "matchesRetained", root.MatchesRetained);
+        if (root.MatchLimitReached is { } matchLimitReached)
+        {
+            writer.WriteBoolean("matchLimitReached", matchLimitReached);
+        }
+        else
+        {
+            writer.WriteNull("matchLimitReached");
+        }
+
+        writer.WriteNumber("evidenceCount", root.Evidence.Length);
+        writer.WriteString("fixtureEvidenceView", fixtureEvidenceView);
+        writer.WriteEndObject();
+    }
+
+    private static void WriteOutcome(Utf8JsonWriter writer, OutcomeProjection projection)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("kind", projection.Kind);
+        WriteNullable(writer, "semanticMode", projection.SemanticMode);
+        WriteNullable(writer, "completion", projection.Completion);
+        WriteNullable(writer, "completeness", projection.Completeness);
+        WriteNullable(writer, "evidence", projection.Evidence);
+        WriteNullable(writer, "effects", projection.Effects);
+        WriteNullable(writer, "value", projection.Value);
+        writer.WriteStartArray("reachedBounds");
+        foreach (var bound in projection.ReachedBounds)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("name", bound.Name);
+            writer.WriteNumber("value", bound.Value);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+        writer.WriteStartArray("provenance");
+        foreach (var item in projection.Provenance)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("kind", item.Kind);
+            writer.WriteString("sourceId", item.SourceId);
+            WriteNullableHex(writer, "address", item.Address);
+            WriteNullable(writer, "requestedLength", item.RequestedLength);
+            WriteNullable(writer, "observedLength", item.ObservedLength);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+        writer.WriteStartArray("diagnostics");
+        foreach (var diagnostic in projection.Diagnostics)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("code", diagnostic.Code);
+            writer.WriteString("message", diagnostic.Message);
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
+        WriteNullable(writer, "underlyingArtifactSha256", projection.UnderlyingArtifactSha256);
+        WriteNullable(writer, "underlyingCanonicalBase64", projection.UnderlyingCanonicalBase64);
+        writer.WriteEndObject();
+    }
+
+    private static void WriteHumanReport(
+        string path,
+        ScenarioManifest manifest,
+        DumpQueryRootBinding root,
+        ImmutableArray<ScenarioRow> rows)
+    {
+        EnsureParentDirectory(path);
+        using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        writer.WriteLine(manifest.SchemaVersion == ManifestSchemaVersion
+            ? "W5 expression-facade report v1"
+            : "W6 expression-facade report v2");
+        writer.WriteLine($"Corpus: {manifest.CorpusKind}");
+        writer.WriteLine($"Caveat: {GetCorpusCaveat(manifest)}");
+        if (manifest.SchemaVersion == W6ManifestSchemaVersion)
+        {
+            writer.WriteLine(
+                $"Root: name={root.Name ?? "none"}; selector={root.TypeNameSelector ?? "none"}; " +
+                $"binding={root.Status}; adapter={root.SearchStatus?.ToString() ?? "none"}; issue={root.Issue}; " +
+                $"handles={root.HandlesScanned?.ToString() ?? "none"}/{root.MaximumHandlesScanned?.ToString() ?? "none"}; " +
+                $"matches={root.MatchesRetained?.ToString() ?? "none"}/{root.MaximumMatches?.ToString() ?? "none"}; " +
+                $"limit-reached={root.MatchLimitReached?.ToString() ?? "none"}; evidence={root.Evidence.Length}; " +
+                $"fixture-view={manifest.Root.FixtureEvidenceView}");
+        }
+
+        foreach (var row in rows)
+        {
+            var outcome = row.Outcome;
+            var bounds = outcome.ReachedBounds.IsEmpty
+                ? "none"
+                : string.Join(',', outcome.ReachedBounds.Select(static bound => $"{bound.Name}={bound.Value}"));
+            var diagnostics = outcome.Diagnostics.IsEmpty
+                ? "none"
+                : string.Join(',', outcome.Diagnostics.Select(static item => item.Code));
+            var value = manifest.SchemaVersion == ManifestSchemaVersion
+                ? outcome.Value ?? "none"
+                : ProjectHumanValueShape(outcome.Value);
+            var profile = manifest.SchemaVersion == ManifestSchemaVersion
+                ? string.Empty
+                : $"; profile={row.LanguageProfile}";
+            writer.WriteLine(
+                $"{row.Id}: outcome={outcome.Kind}; semantic={outcome.SemanticMode ?? "none"}; " +
+                $"completion={outcome.Completion ?? "none"}; completeness={outcome.Completeness ?? "none"}; " +
+                $"evidence={outcome.Evidence ?? "none"}; effects={outcome.Effects ?? "none"}; " +
+                $"value={value}; bounds={bounds}; provenance={outcome.Provenance.Length}; " +
+                $"diagnostics={diagnostics}; fixture-view={row.FixtureEvidenceView}; repetitions={row.Repetitions}{profile}");
+        }
+    }
+
+    private static string ProjectHumanValueShape(string? value)
+    {
+        if (value is null)
+        {
+            return "none";
+        }
+
+        if (string.Equals(value, "null", StringComparison.Ordinal))
+        {
+            return "Null";
+        }
+
+        if (value.StartsWith("s16:", StringComparison.Ordinal))
+        {
+            var hexadecimalLength = value.Length - "s16:".Length;
+            return hexadecimalLength >= 0 && hexadecimalLength % 4 == 0
+                ? $"String(length={hexadecimalLength / 4})"
+                : "String(invalid-projection)";
+        }
+
+        if (value.StartsWith("i32:", StringComparison.Ordinal))
+        {
+            return "Int32(value omitted)";
+        }
+
+        return "Opaque(value omitted)";
+    }
+
+    private static string GetCorpusCaveat(ScenarioManifest manifest) => manifest.CorpusKind switch
+    {
+        "GeneratedValidation" => GeneratedFixtureCaveat,
+        "SyntheticIncident" => SyntheticIncidentCaveat,
+        "RepresentativeIncident" => RepresentativeCorpusCaveat,
+        _ => throw new InvalidDataException($"Unknown corpus kind '{manifest.CorpusKind}'."),
+    };
+
+    private static void EnsureParentDirectory(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(fullPath)!;
+        Directory.CreateDirectory(directory);
+    }
+
+    private static void WriteNullable(Utf8JsonWriter writer, string name, string? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNull(name);
+        }
+        else
+        {
+            writer.WriteString(name, value);
+        }
+    }
+
+    private static void WriteNullable(Utf8JsonWriter writer, string name, int? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNull(name);
+        }
+        else
+        {
+            writer.WriteNumber(name, value.Value);
+        }
+    }
+
+    private static void WriteNullableHex(Utf8JsonWriter writer, string name, ulong? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNull(name);
+        }
+        else
+        {
+            writer.WriteString(name, $"0x{value.Value:X16}");
+        }
+    }
+
+    private static string Hash(ReadOnlySpan<byte> value) =>
+        Convert.ToHexString(SHA256.HashData(value)).ToLowerInvariant();
+
+    private static DumpMethodEvaluationMode ParseMode(string value) => value switch
+    {
+        nameof(DumpMethodEvaluationMode.Interpreted) => DumpMethodEvaluationMode.Interpreted,
+        nameof(DumpMethodEvaluationMode.Modeled) => DumpMethodEvaluationMode.Modeled,
+        _ => throw new InvalidDataException($"Unknown method mode '{value}'."),
+    };
+
+    private static DumpExpressionLanguageProfile ParseLanguageProfile(string? value) => value switch
+    {
+        nameof(DumpExpressionLanguageProfile.FixedDepthMemberChainV1) =>
+            DumpExpressionLanguageProfile.FixedDepthMemberChainV1,
+        _ => throw new InvalidDataException($"Unknown expression language profile '{value}'."),
+    };
+
+    private static RootFixtureEvidenceView ParseRootView(string value) => value switch
+    {
+        nameof(RootFixtureEvidenceView.Captured) => RootFixtureEvidenceView.Captured,
+        nameof(RootFixtureEvidenceView.Partial) => RootFixtureEvidenceView.Partial,
+        nameof(RootFixtureEvidenceView.Unavailable) => RootFixtureEvidenceView.Unavailable,
+        nameof(RootFixtureEvidenceView.Conflict) => RootFixtureEvidenceView.Conflict,
+        nameof(RootFixtureEvidenceView.Invalid) => RootFixtureEvidenceView.Invalid,
+        _ => throw new InvalidDataException($"Unknown root fixture evidence view '{value}'."),
+    };
+
+    private static ClrmdHeapObjectSearchResult ApplyRootEvidenceView(
+        ClrmdHeapObjectSearchResult captured,
+        RootFixtureEvidenceView view)
+    {
+        if (view == RootFixtureEvidenceView.Captured)
+        {
+            return captured;
+        }
+
+        var (status, issue, matches) = view switch
+        {
+            RootFixtureEvidenceView.Partial =>
+                (ClrmdEvidenceStatus.Partial, ClrmdValueIssue.MemoryUnavailable, captured.Matches),
+            RootFixtureEvidenceView.Unavailable =>
+                (ClrmdEvidenceStatus.Unavailable, ClrmdValueIssue.MemoryUnavailable,
+                    ImmutableArray<ClrmdHeapObjectInfo>.Empty),
+            RootFixtureEvidenceView.Conflict =>
+                (ClrmdEvidenceStatus.Conflict, ClrmdValueIssue.AmbiguousMatch,
+                    ImmutableArray<ClrmdHeapObjectInfo>.Empty),
+            RootFixtureEvidenceView.Invalid =>
+                (ClrmdEvidenceStatus.Invalid, ClrmdValueIssue.InvalidData,
+                    ImmutableArray<ClrmdHeapObjectInfo>.Empty),
+            _ => throw new ArgumentOutOfRangeException(nameof(view)),
+        };
+        return new ClrmdHeapObjectSearchResult(
+            captured.Snapshot,
+            captured.TypeNameSelector,
+            status,
+            issue,
+            captured.HandlesScanned,
+            captured.MaximumHandlesScanned,
+            captured.MaximumMatches,
+            captured.MatchLimitReached,
+            matches,
+            captured.Evidence);
+    }
+
+    private static FixtureEvidenceView ParseView(string value) => value switch
+    {
+        nameof(FixtureEvidenceView.Captured) => FixtureEvidenceView.Captured,
+        nameof(FixtureEvidenceView.MarkerPartial) => FixtureEvidenceView.MarkerPartial,
+        nameof(FixtureEvidenceView.MarkerUnavailable) => FixtureEvidenceView.MarkerUnavailable,
+        nameof(FixtureEvidenceView.ModuleUnavailable) => FixtureEvidenceView.ModuleUnavailable,
+        nameof(FixtureEvidenceView.ReferencePartial) => FixtureEvidenceView.ReferencePartial,
+        nameof(FixtureEvidenceView.ReferenceUnavailable) => FixtureEvidenceView.ReferenceUnavailable,
+        nameof(FixtureEvidenceView.TargetConflict) => FixtureEvidenceView.TargetConflict,
+        nameof(FixtureEvidenceView.TargetInvalid) => FixtureEvidenceView.TargetInvalid,
+        nameof(FixtureEvidenceView.StringPartialLimit) => FixtureEvidenceView.StringPartialLimit,
+        _ => throw new InvalidDataException($"Unknown fixture evidence view '{value}'."),
+    };
+
+    private sealed class FixtureEvidenceSource(
+        ClrmdDumpSession session,
+        FixtureEvidenceView view) : IDumpMethodEvidenceSource
+    {
+        public ClrmdSnapshotIdentity Snapshot => session.Snapshot;
+
+        public ImmutableArray<ClrmdModuleInfo> Modules => view == FixtureEvidenceView.ModuleUnavailable
+            ? ImmutableArray<ClrmdModuleInfo>.Empty
+            : session.Modules;
+
+        public ClrmdEvidenceResult<ModuleContentIdentity> ReadModuleContentIdentity(ClrmdModuleInfo module) =>
+            session.ReadModuleContentIdentity(module);
+
+        public ClrmdEvidenceResult<ClrmdMethodBodyInfo> ReadMethodBody(
+            ClrmdModuleInfo module,
+            string typeName,
+            string methodName) => session.ReadMethodBody(module, typeName, methodName);
+
+        public ClrmdHeapObjectSearchResult FindStrongHandleObjectsByTypeName(
+            string typeName,
+            int maximumMatches,
+            int maximumHandlesScanned) => session.FindStrongHandleObjectsByTypeName(
+            typeName,
+            maximumMatches,
+            maximumHandlesScanned);
+
+        public ClrmdEvidenceResult<ClrmdInt32FieldObservation> ReadInt32Field(
+            ClrmdHeapObjectInfo owner,
+            string fieldName)
+        {
+            var exact = session.ReadInt32Field(owner, fieldName);
+            if (view is not (FixtureEvidenceView.MarkerPartial or FixtureEvidenceView.MarkerUnavailable) ||
+                !string.Equals(fieldName, DumpMethodAcquisitionFacade.MarkerFieldName, StringComparison.Ordinal))
+            {
+                return exact;
+            }
+
+            if (exact.Status != ClrmdEvidenceStatus.Exact || exact.Value is null)
+            {
+                return exact;
+            }
+
+            var prefixLength = view == FixtureEvidenceView.MarkerPartial ? 2 : 0;
+            var memory = MemoryReadResult.Create(
+                exact.Value.Memory.SourceId,
+                exact.Value.Memory.Address,
+                exact.Value.Memory.RequestedLength,
+                exact.Value.Memory.Bytes.AsSpan(0, prefixLength));
+            return ClrmdEvidenceResult<ClrmdInt32FieldObservation>.Create(
+                view == FixtureEvidenceView.MarkerPartial
+                    ? ClrmdEvidenceStatus.Partial
+                    : ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.MemoryUnavailable,
+                new ClrmdInt32FieldObservation(exact.Value.Field, memory, value: null),
+                ImmutableArray.Create(memory),
+                exact.AppliedBounds);
+        }
+    }
+
+    private sealed class FixtureMemberChainEvidenceSource(
+        ClrmdDumpSession session,
+        FixtureEvidenceView view) : IDumpMemberChainEvidenceSource
+    {
+        public ClrmdSnapshotIdentity Snapshot => session.Snapshot;
+
+        public int MaximumReadLength => session.Memory.MaximumReadLength;
+
+        public ClrmdEvidenceResult<ClrmdDeclaredDataMemberCertificate> CertifyDeclaredDataMember(
+            ClrmdHeapObjectInfo root,
+            string referenceFieldName,
+            string terminalMemberName) =>
+            session.CertifyDeclaredDataMember(root, referenceFieldName, terminalMemberName);
+
+        public ClrmdEvidenceResult<ClrmdObjectReferenceObservation> ReadObjectReference(
+            ClrmdHeapObjectInfo root,
+            ClrmdInstanceFieldInfo field)
+        {
+            var exact = session.ReadObjectReference(root, field);
+            if (view is not (FixtureEvidenceView.ReferencePartial or FixtureEvidenceView.ReferenceUnavailable))
+            {
+                return exact;
+            }
+
+            if (exact.Status != ClrmdEvidenceStatus.Exact || exact.Value is null)
+            {
+                throw new InvalidDataException(
+                    $"Generated view '{view}' requires an exact captured reference observation.");
+            }
+
+            var bytes = view == FixtureEvidenceView.ReferencePartial
+                ? exact.Value.Memory.Bytes.AsSpan(0, Math.Min(2, exact.Value.Memory.BytesRead)).ToArray()
+                : [];
+            return ClrmdObjectReferenceObservation.Project(
+                field,
+                field.Size,
+                MemoryReadResult.Create(
+                    field.Snapshot.MemorySourceId,
+                    field.Address,
+                    field.Size,
+                    bytes));
+        }
+
+        public ClrmdEvidenceResult<ClrmdReferencedObjectInfo> ValidateReferencedObject(
+            ClrmdDeclaredDataMemberCertificate certificate,
+            ClrmdObjectReferenceObservation reference) => view switch
+        {
+            FixtureEvidenceView.TargetConflict => ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch,
+                evidence: [reference.Memory]),
+            FixtureEvidenceView.TargetInvalid => ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                evidence: [reference.Memory]),
+            _ => session.ValidateReferencedObject(certificate, reference),
+        };
+
+        public ClrmdEvidenceResult<ClrmdInstanceFieldInfo> BindTerminalStorage(
+            ClrmdDeclaredDataMemberCertificate certificate,
+            ClrmdReferencedObjectInfo target) => session.BindTerminalStorage(certificate, target);
+
+        public ClrmdEvidenceResult<ClrmdInt32FieldObservation> ReadInt32Field(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field) => session.ReadInt32Field(target, field);
+
+        public ClrmdEvidenceResult<ClrmdNullableInt32FieldObservation> ReadNullableInt32Field(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field) => session.ReadNullableInt32Field(target, field);
+
+        public ClrmdStringFieldObservation ReadStringField(
+            ClrmdReferencedObjectInfo target,
+            ClrmdInstanceFieldInfo field,
+            int maximumCharacters)
+        {
+            if (view != FixtureEvidenceView.StringPartialLimit)
+            {
+                return session.ReadStringField(target, field, maximumCharacters);
+            }
+
+            var limited = session.ReadStringField(target, field, maximumCharacters: 2);
+            if (limited.Status != ClrmdEvidenceStatus.Partial || limited.Issue != ClrmdValueIssue.LimitExceeded)
+            {
+                throw new InvalidDataException(
+                    "The generated string-limit view requires a captured string longer than two UTF-16 code units.");
+            }
+
+            return limited;
+        }
+    }
+
+    private enum FixtureEvidenceView
+    {
+        Captured,
+        MarkerPartial,
+        MarkerUnavailable,
+        ModuleUnavailable,
+        ReferencePartial,
+        ReferenceUnavailable,
+        TargetConflict,
+        TargetInvalid,
+        StringPartialLimit,
+    }
+
+    private enum RootFixtureEvidenceView
+    {
+        Captured,
+        Partial,
+        Unavailable,
+        Conflict,
+        Invalid,
+    }
+
+    private sealed record ScenarioRow(
+        string Id,
+        string? Expression,
+        string MethodMode,
+        string? LanguageProfile,
+        string FixtureEvidenceView,
+        int Repetitions,
+        string? RequestSha256,
+        OutcomeProjection Outcome,
+        string OutcomeProjectionSha256);
+
+    private sealed record OutcomeProjection(
+        string Kind,
+        string? SemanticMode,
+        string? Completion,
+        string? Completeness,
+        string? Evidence,
+        string? Effects,
+        string? Value,
+        ImmutableArray<BoundProjection> ReachedBounds,
+        ImmutableArray<ProvenanceProjection> Provenance,
+        ImmutableArray<DiagnosticProjection> Diagnostics,
+        string? UnderlyingArtifactSha256,
+        string? UnderlyingCanonicalBase64);
+
+    private sealed record BoundProjection(string Name, long Value);
+
+    private sealed record ProvenanceProjection(
+        string Kind,
+        string SourceId,
+        ulong? Address,
+        int? RequestedLength,
+        int? ObservedLength);
+
+    private sealed record DiagnosticProjection(string Code, string Message);
+
+    private sealed class ScenarioManifest
+    {
+        [JsonPropertyName("schemaVersion")]
+        public int SchemaVersion { get; init; }
+
+        [JsonPropertyName("dumpPath")]
+        public string? DumpPath { get; init; }
+
+        [JsonPropertyName("corpusKind")]
+        public string CorpusKind { get; init; } = "GeneratedValidation";
+
+        [JsonPropertyName("root")]
+        public RootDefinition Root { get; init; } = null!;
+
+        [JsonPropertyName("scenarios")]
+        public ImmutableArray<ScenarioDefinition> Scenarios { get; init; }
+
+        internal void Validate()
+        {
+            if (SchemaVersion is not (ManifestSchemaVersion or W6ManifestSchemaVersion))
+            {
+                throw new InvalidDataException(
+                    $"Manifest schema version must be {ManifestSchemaVersion} or {W6ManifestSchemaVersion}.");
+            }
+
+            if (Root is null)
+            {
+                throw new InvalidDataException("The manifest root selector is required.");
+            }
+
+            _ = GetCorpusCaveat(this);
+
+            Root.Validate(SchemaVersion);
+            if (Scenarios.IsDefaultOrEmpty || Scenarios.Length > MaximumScenarios ||
+                Scenarios.Any(static scenario => scenario is null))
+            {
+                throw new InvalidDataException($"A manifest requires 1 to {MaximumScenarios} scenarios.");
+            }
+
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var scenario in Scenarios)
+            {
+                scenario.Validate(SchemaVersion);
+                if (!ids.Add(scenario.Id))
+                {
+                    throw new InvalidDataException($"Scenario id '{scenario.Id}' is duplicated.");
+                }
+            }
+        }
+    }
+
+    private sealed class RootDefinition
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; init; } = string.Empty;
+
+        [JsonPropertyName("typeName")]
+        public string TypeName { get; init; } = string.Empty;
+
+        [JsonPropertyName("maximumMatches")]
+        public int MaximumMatches { get; init; }
+
+        [JsonPropertyName("maximumHandlesScanned")]
+        public int MaximumHandlesScanned { get; init; }
+
+        [JsonPropertyName("fixtureEvidenceView")]
+        public string FixtureEvidenceView { get; init; } = nameof(RootFixtureEvidenceView.Captured);
+
+        internal void Validate(int manifestSchemaVersion)
+        {
+            if (string.IsNullOrWhiteSpace(Name) || Name.Length > DumpExpressionRequest.MaximumRootNameCharacters ||
+                string.IsNullOrWhiteSpace(TypeName) || TypeName.Length > 4_096 ||
+                MaximumMatches is < 1 or > 4_096 ||
+                MaximumHandlesScanned is < 1 or > 100_000)
+            {
+                throw new InvalidDataException("The root selector is missing or outside its deterministic bounds.");
+            }
+
+            var view = ParseRootView(FixtureEvidenceView);
+            if (manifestSchemaVersion == ManifestSchemaVersion && view != RootFixtureEvidenceView.Captured)
+            {
+                throw new InvalidDataException("Manifest schema v1 permits only captured root evidence.");
+            }
+        }
+    }
+
+    private sealed class ScenarioDefinition
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; init; } = string.Empty;
+
+        [JsonPropertyName("expression")]
+        public string? Expression { get; init; }
+
+        [JsonPropertyName("methodMode")]
+        public string MethodMode { get; init; } = string.Empty;
+
+        [JsonPropertyName("languageProfile")]
+        public string? LanguageProfile { get; init; }
+
+        [JsonPropertyName("instructionLimit")]
+        public long InstructionLimit { get; init; }
+
+        [JsonPropertyName("logicalDepthLimit")]
+        public int LogicalDepthLimit { get; init; }
+
+        [JsonPropertyName("traversalLimit")]
+        public int TraversalLimit { get; init; }
+
+        [JsonPropertyName("fixtureEvidenceView")]
+        public string FixtureEvidenceView { get; init; } = string.Empty;
+
+        [JsonPropertyName("cancelBeforeExecution")]
+        public bool CancelBeforeExecution { get; init; }
+
+        [JsonPropertyName("repeatCount")]
+        public int RepeatCount { get; init; }
+
+        internal void Validate(int manifestSchemaVersion)
+        {
+            if (string.IsNullOrWhiteSpace(Id) || Id.Length > 128 ||
+                !Id.All(static character => character is >= 'a' and <= 'z' or >= '0' and <= '9' or '.' or '-'))
+            {
+                throw new InvalidDataException("Scenario ids require bounded lowercase ASCII identity text.");
+            }
+
+            if (Expression?.Length > DumpExpressionRequest.MaximumExpressionCharacters || RepeatCount is < 1 or > 4)
+            {
+                throw new InvalidDataException($"Scenario '{Id}' exceeds an expression or repetition bound.");
+            }
+
+            _ = ParseMode(MethodMode);
+            _ = ParseView(FixtureEvidenceView);
+            if (manifestSchemaVersion == ManifestSchemaVersion)
+            {
+                if (!string.IsNullOrEmpty(LanguageProfile))
+                {
+                    throw new InvalidDataException($"Scenario '{Id}' cannot select a W6 language profile in schema v1.");
+                }
+            }
+            else
+            {
+                _ = ParseLanguageProfile(LanguageProfile);
+                if (ParseView(FixtureEvidenceView) is not (
+                        Program.FixtureEvidenceView.Captured or
+                        Program.FixtureEvidenceView.ReferencePartial or
+                        Program.FixtureEvidenceView.ReferenceUnavailable or
+                        Program.FixtureEvidenceView.TargetConflict or
+                        Program.FixtureEvidenceView.TargetInvalid or
+                        Program.FixtureEvidenceView.StringPartialLimit))
+                {
+                    throw new InvalidDataException(
+                        $"Scenario '{Id}' selects an unsupported member-evidence view in manifest schema v2.");
+                }
+            }
+
+            _ = DumpExpressionPolicy.Create(
+                ParseMode(MethodMode),
+                InstructionLimit,
+                LogicalDepthLimit,
+                TraversalLimit);
+        }
+    }
+
+    private sealed record CommandLineOptions(
+        string ManifestPath,
+        string MachineOutputPath,
+        string HumanOutputPath,
+        string? DumpPathOverride)
+    {
+        internal static CommandLineOptions Parse(string[] args)
+        {
+            ArgumentNullException.ThrowIfNull(args);
+            var values = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (args.Length == 0 || args.Length % 2 != 0)
+            {
+                throw new CommandLineException("Expected named option/value pairs.");
+            }
+
+            for (var index = 0; index < args.Length; index += 2)
+            {
+                if (args[index] is not ("--manifest" or "--machine-output" or "--human-output" or "--dump") ||
+                    string.IsNullOrWhiteSpace(args[index + 1]) ||
+                    !values.TryAdd(args[index], args[index + 1]))
+                {
+                    throw new CommandLineException("An option is unknown, duplicated, or has an empty value.");
+                }
+            }
+
+            return new CommandLineOptions(
+                Required("--manifest"),
+                Required("--machine-output"),
+                Required("--human-output"),
+                values.GetValueOrDefault("--dump"));
+
+            string Required(string name) => values.TryGetValue(name, out var value)
+                ? value
+                : throw new CommandLineException($"Required option '{name}' is missing.");
+        }
+    }
+
+    private sealed class CommandLineException(string message) : ArgumentException(message);
+}

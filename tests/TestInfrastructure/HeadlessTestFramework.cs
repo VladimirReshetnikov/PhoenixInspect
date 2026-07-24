@@ -2,7 +2,7 @@ using System.Reflection;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace Interpreter.Tests.Infrastructure;
+namespace PhoenixInspect.Tests.Infrastructure;
 
 /// <summary>
 /// Supplies an execution hook that reasserts the test host's non-interactive Windows failure policy immediately before

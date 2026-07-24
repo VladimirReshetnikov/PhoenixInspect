@@ -113,7 +113,7 @@ adds direct/adjusted compiler and fresh SRM replay plus capability poison/count 
 (2,448 + 353), bringing W4 to 27,270 LOC. Closure passed strict sixteen-project build 0/0, unit 430/430, Fast 80/80,
 dumps 5/5 and 1/1, focused 15/15 plus 2/2 (17/17 combined), compiler differential 23/23, and both guards, headlessly
 with zero skips and the milestone test selection. The literal fragment SHA-256 is
-`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
+`99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`.
 
 W4.8a–f realize 11,924 LOC and W4.9a–c realize 2,698 LOC, bringing full W4 realization to 41,892 LOC excluding
 documentation and generated lockfile changes. Preserve the original 16,860–25,310 baseline and historical
@@ -460,7 +460,7 @@ and W4.9 executes it from detached dump evidence without acquiring the helper bo
 
 ### 4.7 Standalone target-outcome projector
 
-W4.7 moves only the exact-null conformance outcome into `Interpreter.Product.DumpDebugging`. The projector requires
+W4.7 moves only the exact-null conformance outcome into `PhoenixInspect.Product.DumpDebugging`. The projector requires
 the complete exact `StepOne` sequence issued by one machine from legacy single-root IL-zero activation through the
 first null-reference latch, optionally followed by one certified idempotent re-step. It validates machine/predecessor
 reference authority, the legacy envelope, exception kind/code/location, memory identity, budget delta, and complete
@@ -483,7 +483,7 @@ The execution runner activates one issued frozen graph, consults no resolver or 
 machine-issued transition and operational envelope, and projects exact, explained-unknown, budget, cancellation,
 blocked, invalid, modeled, and standalone-target outcomes through one immutable result vocabulary. Same/fresh-object
 reconstruction freezes exact synthetic rooted result SHA-256
-`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`.
+`6e87efdf3a6f8d73a5f5733aa8fe1eac99d822f184da3b88d46b8cbd67068592`.
 
 ### 4.9 Detached ClrMD execution binding
 
@@ -692,23 +692,23 @@ unchanged baselines.
 
 The prototype retains only projects containing behavior or contracts exercised by the active slices:
 
-- `Interpreter.Core.Abstractions` and `Interpreter.Core.Execution` — backend-neutral type/body/call-target shapes,
+- `PhoenixInspect.Core.Abstractions` and `PhoenixInspect.Core.Execution` — backend-neutral type/body/call-target shapes,
   domain/memory contracts, optional value-precision and field-approximation capabilities, canonical structured field
   evidence, exact-only-by-default unknown policy, precision events, complete direct-call/model graph preparation,
   frozen pure-model capability binding, deterministic model attempts, the shared bounded ECMA signature projection,
   and the interpreter kernel;
-- `Interpreter.Domain.Concrete` — concrete validation semantics and persistent memory plus W4.2–W4.3's
+- `PhoenixInspect.Domain.Concrete` — concrete validation semantics and persistent memory plus W4.2–W4.3's
   provenance-aware value/domain and canonical input, binary, field, call, interpreted-return, and modeled-return
   lineage graph;
-- `Interpreter.Metadata.Abstractions` and `Interpreter.Metadata.SRM` — projected metadata contracts, including
+- `PhoenixInspect.Metadata.Abstractions` and `PhoenixInspect.Metadata.SRM` — projected metadata contracts, including
   body-independent contextual direct-MethodDef resolution, and the active SRM adapter;
-- `Interpreter.Host.Abstractions` and `Interpreter.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, exact
+- `PhoenixInspect.Host.Abstractions` and `PhoenixInspect.Host.Dump.ClrMD` — typed dump evidence, ClrMD adapter, exact
   counted W3 method/field composition into a snapshot-scoped resolver/import descriptor, W6.3's immutable
   declared-target/direct-field/data-property certificate with MethodDef-token physical getter acquisition and no
   reference or leaf read, and W7's selected-frame/PDB/import and ordinary-static declaration/storage/value/target
   acquisition. W8.2 adds a selected-method lexical envelope over caller-supplied complete physical catalogs, not yet
   a host-owned producer, without introducing ClrMD into core execution;
-- `Interpreter.Product.DumpQuery` — the sole internal Roslyn dependency, one complete-expression parse adapter, and
+- `PhoenixInspect.Product.DumpQuery` — the sole internal Roslyn dependency, one complete-expression parse adapter, and
   versioned W2/W5/W6/W7 tree recognizers; typed root/static-symbol binding, immutable prepared plans, descriptor-only
   W2 and W6 `Evaluate(plan)` paths, W7 static value/provenance/suffix composition, canonical identities, and closed
   result-value projection remain project-owned. W8.2 adds immutable common expression and detached static/frame
@@ -716,12 +716,12 @@ The prototype retains only projects containing behavior or contracts exercised b
   TypeSpec graph identities, FieldSig certificates, GenericParam owner/table/binding ledgers, edge aggregates,
   provisional construction classification, and Nullable preservation. These proof objects are not yet mandatory
   inputs to downstream Product consumers; no V2 binder, runtime/storage mapper, or evaluator has landed;
-- `Interpreter.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
+- `PhoenixInspect.Product.DumpDebugging` — W4's standalone exact-null projector; canonical rooted request, plan, and
   result contracts; authoritative preparation/execution runner; private typed runtime bindings; detached product-owned
   dump memory; ClrMD evidence binder; W5 canonical expression classifier; W7 static-expression facade and lazy
   context composition; and strict mode-preserving evaluation unions. It depends on the active query, ClrMD, and SRM boundaries to compose the
   admitted dump scenario, while the core execution projects remain backend-independent;
-- `Interpreter.Headless.ReferenceConsumer` — the independently launched prototype composition root, append-only W5/
+- `PhoenixInspect.Headless.ReferenceConsumer` — the independently launched prototype composition root, append-only W5/
   W6/W7 generated scenario consumer, stable machine/human reporter, typed root/static-selection projection, and usefulness-
   portfolio raw-count/gate runner. It owns no reusable semantics and is not a shipping CLI contract.
 

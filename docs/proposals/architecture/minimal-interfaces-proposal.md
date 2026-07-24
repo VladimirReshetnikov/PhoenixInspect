@@ -2,9 +2,9 @@
 
 Below is an earlier candidate public interface surface for three abstraction packages:
 
-* `Interpreter.Core.Abstractions`
-* `Interpreter.Metadata.Abstractions`
-* `Interpreter.Host.Abstractions`
+* `PhoenixInspect.Core.Abstractions`
+* `PhoenixInspect.Metadata.Abstractions`
+* `PhoenixInspect.Host.Abstractions`
 
 The goal is to make every leaf subsystem (ClrMD host, SRM metadata reader, ILSpy decompiler integration, async/dynamic models, analysis) depend only on **small contracts** instead of each other’s concrete types. This keeps dependencies directional and keeps mocking/testing easy.
 
@@ -17,7 +17,7 @@ I’m going to:
 
 ---
 
-# 1) `Interpreter.Core.Abstractions`
+# 1) `PhoenixInspect.Core.Abstractions`
 
 ## 1.1 What belongs here
 
@@ -55,7 +55,7 @@ That keeps models isolated from execution engine internals.
 You want identities the VM can pass around without knowing *who* resolves them.
 
 ```csharp
-namespace Interpreter.Core.Abstractions;
+namespace PhoenixInspect.Core.Abstractions;
 
 public readonly record struct ModuleHandle(ulong Value);
 public readonly record struct TypeHandle(ulong Value);
@@ -70,7 +70,7 @@ These are *opaque*. Metadata implementations decide how they’re constructed (o
 ## 1.3 Effects, unknown provenance, diagnostics
 
 ```csharp
-namespace Interpreter.Core.Abstractions;
+namespace PhoenixInspect.Core.Abstractions;
 
 [Flags]
 public enum EffectKind
@@ -136,7 +136,7 @@ These are essential for:
 * bounded execution (resource limits).
 
 ```csharp
-namespace Interpreter.Core.Abstractions;
+namespace PhoenixInspect.Core.Abstractions;
 
 public sealed record BudgetState(
     long InstructionBudget,
@@ -154,7 +154,7 @@ public interface IBudgetPolicy
 Branch decisions:
 
 ```csharp
-namespace Interpreter.Core.Abstractions;
+namespace PhoenixInspect.Core.Abstractions;
 
 public enum BranchDecisionKind
 {
@@ -181,7 +181,7 @@ public readonly record struct BranchDecision(
 Your earlier domain was richer; this is the “minimum interface that scales”:
 
 ```csharp
-namespace Interpreter.Core.Abstractions;
+namespace PhoenixInspect.Core.Abstractions;
 
 public enum Nullness { NotApplicable, Null, NonNull, MaybeNull }
 
@@ -209,21 +209,21 @@ public enum ConvOp
 public interface IValueDomain<TValue>
 {
     // Construction
-    TValue Top(Interpreter.Types.TypeSig type, UnknownOrigin origin);
-    TValue ConstNull(Interpreter.Types.TypeSig refType);
+    TValue Top(PhoenixInspect.Types.TypeSig type, UnknownOrigin origin);
+    TValue ConstNull(PhoenixInspect.Types.TypeSig refType);
     TValue ConstInt32(int value);
     TValue ConstInt64(long value);
     TValue ConstBool(bool value);
     TValue ConstString(string value);
 
-    TValue FreshUnknown(Interpreter.Types.TypeSig type, UnknownOrigin origin);
+    TValue FreshUnknown(PhoenixInspect.Types.TypeSig type, UnknownOrigin origin);
 
     // Lattice
     TValue Join(TValue a, TValue b);
     TValue Widen(TValue prev, TValue next);
 
     // Queries / refinement
-    Interpreter.Types.TypeSig GetStaticType(TValue value);
+    PhoenixInspect.Types.TypeSig GetStaticType(TValue value);
     StackKind GetStackKind(TValue value);
 
     Nullness GetNullness(TValue value);
@@ -239,8 +239,8 @@ public interface IValueDomain<TValue>
     TValue Convert(ConvOp op, TValue v, bool checkedOverflow);
 
     // Boxing / type ops (needed for C#/BCL patterns)
-    TValue Box(TValue v, Interpreter.Types.TypeSig boxedType);
-    TValue UnboxAny(TValue boxed, Interpreter.Types.TypeSig targetType);
+    TValue Box(TValue v, PhoenixInspect.Types.TypeSig boxedType);
+    TValue UnboxAny(TValue boxed, PhoenixInspect.Types.TypeSig targetType);
 
     // Attach/propagate effects/origin labels is domain-specific; keep it inside TValue.
 }
@@ -260,7 +260,7 @@ This is the minimum the engine and models need. It supports:
 * havoc (critical for unknown/native calls).
 
 ```csharp
-namespace Interpreter.Core.Abstractions;
+namespace PhoenixInspect.Core.Abstractions;
 
 public enum HavocRegionKind
 {
@@ -277,8 +277,8 @@ public interface IMemoryModel<TValue, TMem>
     bool CanAllocate { get; }
 
     // Allocation
-    (TValue objRef, TMem mem) NewObject(TMem mem, Interpreter.Types.TypeSig type);
-    (TValue arrRef, TMem mem) NewArray(TMem mem, Interpreter.Types.TypeSig elemType, TValue length);
+    (TValue objRef, TMem mem) NewObject(TMem mem, PhoenixInspect.Types.TypeSig type);
+    (TValue arrRef, TMem mem) NewArray(TMem mem, PhoenixInspect.Types.TypeSig elemType, TValue length);
 
     // Field access
     TValue LoadField(TMem mem, TValue objRef, FieldHandle field);
@@ -306,30 +306,30 @@ public interface IMemoryModel<TValue, TMem>
 The VM can’t decode signatures or resolve tokens itself. It asks a resolver.
 
 ```csharp
-namespace Interpreter.Core.Abstractions;
+namespace PhoenixInspect.Core.Abstractions;
 
-public readonly record struct ResolvedType(TypeHandle Type, Interpreter.Types.TypeSig Sig);
+public readonly record struct ResolvedType(TypeHandle Type, PhoenixInspect.Types.TypeSig Sig);
 
 public readonly record struct ResolvedField(
     FieldHandle Field,
-    Interpreter.Types.FieldSig Sig,
+    PhoenixInspect.Types.FieldSig Sig,
     TypeHandle DeclaringType);
 
 public readonly record struct ResolvedMethod(
     MethodHandle Definition,
-    Interpreter.Types.MethodSig Signature,
-    Interpreter.Types.GenericContext CalleeGenericContext,
+    PhoenixInspect.Types.MethodSig Signature,
+    PhoenixInspect.Types.GenericContext CalleeGenericContext,
     TypeHandle DeclaringType);
 
 public interface IResolutionServices
 {
     // Resolve metadata token operands used by IL instructions
-    ResolvedType  ResolveType(ModuleHandle module, int metadataToken, Interpreter.Types.GenericContext ctx);
-    ResolvedField ResolveField(ModuleHandle module, int metadataToken, Interpreter.Types.GenericContext ctx);
-    ResolvedMethod ResolveMethod(ModuleHandle module, int metadataToken, Interpreter.Types.GenericContext ctx);
+    ResolvedType  ResolveType(ModuleHandle module, int metadataToken, PhoenixInspect.Types.GenericContext ctx);
+    ResolvedField ResolveField(ModuleHandle module, int metadataToken, PhoenixInspect.Types.GenericContext ctx);
+    ResolvedMethod ResolveMethod(ModuleHandle module, int metadataToken, PhoenixInspect.Types.GenericContext ctx);
 
     // Method bodies (for interpretation)
-    bool TryGetMethodBody(MethodHandle method, out Interpreter.IL.MethodBody body);
+    bool TryGetMethodBody(MethodHandle method, out PhoenixInspect.IL.MethodBody body);
 
     // Virtual/interface dispatch (metadata-level)
     MethodHandle ResolveVirtualOverride(MethodHandle declared, TypeHandle runtimeType);
@@ -348,7 +348,7 @@ This is deliberately “just enough” for:
 ## 1.8 Call modeling interface (intrinsics / semantic lifts)
 
 ```csharp
-namespace Interpreter.Core.Abstractions;
+namespace PhoenixInspect.Core.Abstractions;
 
 public enum CallKind { Call, CallVirt, NewObj }
 
@@ -357,7 +357,7 @@ public readonly record struct CallSite(
     ModuleHandle Module,
     int MethodToken,                      // original operand token for provenance
     ResolvedMethod Target,                // resolved methoddef + signature + ctx
-    Interpreter.Types.TypeSig? ConstrainedType = null);
+    PhoenixInspect.Types.TypeSig? ConstrainedType = null);
 
 public enum CallOutcomeKind { NotHandled, Returned, Threw, Forked, StopForDecision }
 
@@ -395,7 +395,7 @@ Key properties of this shape:
 
 ---
 
-## 1.9 What must NOT live in `Interpreter.Core.Abstractions`
+## 1.9 What must NOT live in `PhoenixInspect.Core.Abstractions`
 
 * ClrMD types
 * SRM/AsmResolver types
@@ -405,7 +405,7 @@ Key properties of this shape:
 
 ---
 
-# 2) `Interpreter.Metadata.Abstractions`
+# 2) `PhoenixInspect.Metadata.Abstractions`
 
 ## 2.1 What belongs here
 
@@ -432,7 +432,7 @@ It should not care whether the implementation uses:
 Make module identity explicit and comparable.
 
 ```csharp
-namespace Interpreter.Metadata.Abstractions;
+namespace PhoenixInspect.Metadata.Abstractions;
 
 public readonly record struct ModuleId(
     Guid Mvid,
@@ -455,11 +455,11 @@ The metadata layer is where you turn “token + generic context” into:
 * and the **Core handles** (`TypeHandle/MethodHandle/FieldHandle`) used by the VM.
 
 ```csharp
-using Interpreter.Core.Abstractions;
-using Interpreter.Types;
-using Interpreter.IL;
+using PhoenixInspect.Core.Abstractions;
+using PhoenixInspect.Types;
+using PhoenixInspect.IL;
 
-namespace Interpreter.Metadata.Abstractions;
+namespace PhoenixInspect.Metadata.Abstractions;
 
 public interface IMetadataModule
 {
@@ -505,7 +505,7 @@ Instead of exposing raw “Portable PDB reader objects”, provide a normalized 
 ### Sequence points and locals
 
 ```csharp
-namespace Interpreter.Metadata.Abstractions;
+namespace PhoenixInspect.Metadata.Abstractions;
 
 public readonly record struct SequencePoint(
     int IlOffset,
@@ -540,7 +540,7 @@ public interface ISymbolInfo
 This matches the “unified DebugMap model” we discussed earlier, but here it’s only the interface; concrete debug maps can come from PDB or decompiler.
 
 ```csharp
-namespace Interpreter.Metadata.Abstractions;
+namespace PhoenixInspect.Metadata.Abstractions;
 
 public enum DebugDocumentKind { RealFile, Embedded, SourceLink, Decompiled, IL }
 
@@ -588,7 +588,7 @@ Source can come from:
 * decompiler output.
 
 ```csharp
-namespace Interpreter.Metadata.Abstractions;
+namespace PhoenixInspect.Metadata.Abstractions;
 
 public interface ISourceTextProvider
 {
@@ -599,7 +599,7 @@ public interface ISourceTextProvider
 
 ---
 
-## 2.5 What must NOT live in `Interpreter.Metadata.Abstractions`
+## 2.5 What must NOT live in `PhoenixInspect.Metadata.Abstractions`
 
 * ClrMD types (those are host concerns)
 * any “symbol server download” logic (artifact acquisition)
@@ -608,7 +608,7 @@ public interface ISourceTextProvider
 
 ---
 
-# 3) `Interpreter.Host.Abstractions`
+# 3) `PhoenixInspect.Host.Abstractions`
 
 ## 3.1 What belongs here
 
@@ -630,7 +630,7 @@ Host abstractions should be *domain-agnostic* where possible, but in practice yo
 ## 3.2 External references and values
 
 ```csharp
-namespace Interpreter.Host.Abstractions;
+namespace PhoenixInspect.Host.Abstractions;
 
 public readonly record struct ExternalObjectRef(ulong Address);
 public readonly record struct ExternalThreadId(uint OsId);
@@ -660,7 +660,7 @@ public sealed record ExternalValue(
 ## 3.3 Session snapshot (time/env/random, etc.)
 
 ```csharp
-namespace Interpreter.Host.Abstractions;
+namespace PhoenixInspect.Host.Abstractions;
 
 public sealed record SessionSnapshot(
     DateTimeOffset? DumpCaptureTimeUtc,
@@ -682,10 +682,10 @@ public interface ISessionSnapshotProvider
 This is what overlay memory and projections use.
 
 ```csharp
-using Interpreter.Core.Abstractions; // for TypeHandle/FieldHandle
-using Interpreter.Metadata.Abstractions; // for ModuleId, etc.
+using PhoenixInspect.Core.Abstractions; // for TypeHandle/FieldHandle
+using PhoenixInspect.Metadata.Abstractions; // for ModuleId, etc.
 
-namespace Interpreter.Host.Abstractions;
+namespace PhoenixInspect.Host.Abstractions;
 
 public interface IExternalObjectModel
 {
@@ -726,7 +726,7 @@ public interface IProcessMemoryReader
 This keeps “how to get locals from a dump frame” out of the VM.
 
 ```csharp
-namespace Interpreter.Host.Abstractions;
+namespace PhoenixInspect.Host.Abstractions;
 
 public sealed record FrameSeed(
     ExternalObjectRef? ThisObject,
@@ -749,9 +749,9 @@ If locals aren’t available, `LocalsByName` can be empty; the interpreter will 
 This is where you connect “runtime method at IP” to `ModuleId` + metadata token.
 
 ```csharp
-using Interpreter.Metadata.Abstractions;
+using PhoenixInspect.Metadata.Abstractions;
 
-namespace Interpreter.Host.Abstractions;
+namespace PhoenixInspect.Host.Abstractions;
 
 public readonly record struct RuntimeMethodId(ulong Value);  // MethodDesc, or code address, host-defined
 public readonly record struct RuntimeModuleId(ulong Value);  // module base, host-defined
@@ -777,9 +777,9 @@ Dump hosts can fill this via ClrMD’s method/module info; live hosts via debugg
 This is hard and host-dependent; make it optional.
 
 ```csharp
-using Interpreter.Types;
+using PhoenixInspect.Types;
 
-namespace Interpreter.Host.Abstractions;
+namespace PhoenixInspect.Host.Abstractions;
 
 public interface IGenericContextResolver
 {
@@ -791,9 +791,9 @@ If it fails, the interpreter still runs with unknown/canonical generic args.
 
 ---
 
-## 3.8 What must NOT live in `Interpreter.Host.Abstractions`
+## 3.8 What must NOT live in `PhoenixInspect.Host.Abstractions`
 
-* ClrMD types (those go in `Interpreter.Host.Dump.ClrMD`)
+* ClrMD types (those go in `PhoenixInspect.Host.Dump.ClrMD`)
 * metadata reader types (SRM/AsmResolver)
 * IL interpreter state and stepping logic
 * symbol server / artifact acquisition policy (separate layer)
@@ -815,7 +815,7 @@ In a dump-debugging product, the “composition root” usually builds:
 4. `IResolutionServices` implementation that:
 
    * uses `IMetadataUniverse` to resolve token operands + bodies + virtual overrides
-5. The VM engine (in `Interpreter.Core.Execution`) uses:
+5. The VM engine (in `PhoenixInspect.Core.Execution`) uses:
 
    * `IValueDomain<TValue>`
    * `IMemoryModel<TValue,TMem>`

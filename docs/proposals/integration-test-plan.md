@@ -135,7 +135,7 @@ These tests may use fixed IL where a C# compiler cannot conveniently emit the in
 
 ## Real dump-evidence lane
 
-`tests/Interpreter.IntegrationTests/DumpMemoryEvidenceIntegrationTests.cs` generates one full dump from `Interpreter.TestTarget`. The target keeps one object alive through a strong GCHandle; that object contains:
+`tests/PhoenixInspect.IntegrationTests/DumpMemoryEvidenceIntegrationTests.cs` generates one full dump from `PhoenixInspect.TestTarget`. The target keeps one object alive through a strong GCHandle; that object contains:
 
 - a known `Int32` marker;
 - a known present and a known null `Nullable<Int32>`;
@@ -291,7 +291,7 @@ at exact W1 closure commit `e2580a8a8`: documentation/headless consistency, the 
 suites, ordinary real-dump evidence, and optimized-context evidence.
 
 Current local verification on 2026-07-14 at W2 implementation commit `ff7cd1965` passed locked restore; a strict
-15-project Release build with 0 warnings and 0 errors; 64/64 milestone-selected `Interpreter.Tests`; 67/67
+15-project Release build with 0 warnings and 0 errors; 64/64 milestone-selected `PhoenixInspect.Tests`; 67/67
 `Category=Fast` integration
 tests; 4/4 ordinary dump tests (including the 22-case W2 corpus); and 1/1 modeled optimized-context test. Every
 managed command used `Invoke-HeadlessProcess`; there were no skips or UI. [GitHub Actions run
@@ -299,7 +299,7 @@ managed command used `Invoke-HeadlessProcess`; there were no skips or UI. [GitHu
 jobs at exact W2 closure commit `5bed47100`.
 
 Current local W3 verification at exact strengthened implementation checkpoint `19c292f9f` passed locked restore; a strict 15-project
-Release build with 0 warnings and 0 errors; 103/103 `Interpreter.Tests`; 67/67 fast integration tests; 5/5 ordinary dump
+Release build with 0 warnings and 0 errors; 103/103 `PhoenixInspect.Tests`; 67/67 fast integration tests; 5/5 ordinary dump
 tests; 1/1 optimized modeled-context test; and a separate focused 2/2
 `W3DumpGetterExecutionIntegrationTests` invocation. The focused invocation is a filtered view/re-run, not two
 additional ordinary-dump facts. The Markdown-link and headless-workflow guards also passed. Every managed command used
@@ -313,7 +313,7 @@ the same exact pushed implementation checkpoint. Exact documentation-closure com
 
 Historical local W4.2 verification at exact pushed checkpoint `e89e43498` passed locked restore; a strict 15-project
 Release build with 0 warnings and 0 errors; focused W4.2 53/53, split into 23 domain, 14 lineage, and 16 machine facts;
-the complete 156/156 `Interpreter.Tests` lane; 71/71 fast integration tests; 5/5 ordinary dump regression tests; and
+the complete 156/156 `PhoenixInspect.Tests` lane; 71/71 fast integration tests; 5/5 ordinary dump regression tests; and
 the Markdown-link and headless-workflow guards. Every managed command was headless, every test command used
 the milestone test selection, and there were zero skips. The checkpoint accounts for 3,454 LOC: 3,429 attributable W4.2
 implementation LOC (1,521 production plus 1,908 tests) against the final refined 3,350–3,500 LOC estimate, plus 25
@@ -324,7 +324,7 @@ product facade or dump-grounded counterfactual result.
 
 Historical local W4.3 verification at exact implementation checkpoint `7479b1ad4` passed locked restore; a strict
 15-project Release build with 0 warnings and 0 errors; focused W4.3 field-evidence/domain/machine tests 55/55; the
-complete 211/211 `Interpreter.Tests` lane; 71/71 fast integration tests; 5/5 ordinary dump regression tests; 1/1
+complete 211/211 `PhoenixInspect.Tests` lane; 71/71 fast integration tests; 5/5 ordinary dump regression tests; 1/1
 optimized dump regression test; and the Markdown-link and headless-workflow guards. Every managed command was
 headless, every test command used the milestone test selection, there were zero skips, and no UI was displayed. The checkpoint
 realizes 3,096 implementation LOC: 1,100 production LOC plus 1,996 test LOC. W4 has 7,028 realized checkpoint LOC through W4.3,
@@ -336,7 +336,7 @@ facade, dump-grounded W4 result, direct call, or hosted umbrella closure.
 
 Current local W4.4 verification at pushed checkpoints `2e596c117` and `742ef2c4f` passed locked restore; a strict
 15-project Release build with 0 warnings and 0 errors; focused graph-planner tests 35/35; focused W4 fixture tests 6/6;
-the complete 250/250 `Interpreter.Tests` lane; 73/73 fast integration tests; 5/5 ordinary dump regression tests; 1/1
+the complete 250/250 `PhoenixInspect.Tests` lane; 73/73 fast integration tests; 5/5 ordinary dump regression tests; 1/1
 optimized dump regression test; and the Markdown-link and headless-workflow guards. Every managed command was
 headless, every behavioral test command used the milestone test selection, there were zero skips, and no UI was displayed.
 
@@ -353,7 +353,7 @@ guards, not the configurable product traversal budget. Both dump lanes remain re
 execute calls, enforce request depth, select models, construct a product result, or ground the graph in dump evidence.
 
 Current local W4.5a verification at exact pushed commit `356c07037` passed locked restore; focused prepared-graph
-execution tests 25/25; focused W4 fixture tests 7/7; the complete 275/275 `Interpreter.Tests` lane; 74/74 fast
+execution tests 25/25; focused W4 fixture tests 7/7; the complete 275/275 `PhoenixInspect.Tests` lane; 74/74 fast
 integration tests; 5/5 ordinary dump regression tests; 1/1 optimized dump regression test; the strict 15-project
 Release solution build and strict unit/integration project builds with 0 warnings and 0 errors; the Markdown-link guard over 62 files/41 destinations; and the
 headless-workflow guard over one workflow. Every managed command was headless, every behavioral filter used
@@ -493,7 +493,7 @@ degraded, repeated, and fresh-session execution conformance at `da5346813`.
 
 W4.7 now demonstrates standalone target-outcome projection at `2e70fe76d`/`dad6a6dd4`: complete same-machine
 issuer-certified IL-zero-to-null chronology, exact latch/location/accounting/events, optional idempotent re-step,
-schema-v1 fragment SHA-256 `a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`, and fresh direct/adjusted compiler replay.
+schema-v1 fragment SHA-256 `99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`, and fresh direct/adjusted compiler replay.
 Closure passed the strict sixteen-project build 0/0, unit 430/430, Fast 80/80, dumps 5/5 and 1/1, focused 15/15 plus
 2/2 (17/17 combined), compiler differential 23/23, and both guards with zero skips, headlessly and under
 the milestone test selection.
@@ -502,7 +502,7 @@ W4.8 checkpoints through `44b050ec8` now demonstrate configurable traversal, can
 plan/result artifacts, private typed bindings and recording memory, authoritative preparation, common standalone/
 rooted projection, and transition-validating execution. Focused execution passes 10/10, the counterfactual family
 77/77, and complete unit 502/502 with exact synthetic rooted result SHA-256
-`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`.
+`6e87efdf3a6f8d73a5f5733aa8fe1eac99d822f184da3b88d46b8cbd67068592`.
 
 W4.9 checkpoints `24bd8fe6f`/`2d41f528d`/`a8b5f32f0` now demonstrate the atomic ClrMD graph/field producer,
 detached rooted product memory, and six exact/partial/unavailable interpreted/modeled generated-dump rows. ClrMD is
@@ -624,7 +624,7 @@ workflow remains unchanged.
 ## Closed W7 static-expression and binding-context evidence
 
 W7 first passed a physical truth test against the existing optimized target. It parses
-`global::Interpreter.OptimizedContextTestTarget.StaticContextProbe.Root` once with pinned Roslyn, uniquely binds its
+`global::PhoenixInspect.OptimizedContextTestTarget.StaticContextProbe.Root` once with pinned Roslyn, uniquely binds its
 ordinary static field from counted dump metadata, obtains the initialized slot from the pinned runtime, reads the
 pointer through project-owned dump memory, and independently validates the exact target. Convenience value reads and
 heap-type scans are late oracles only; the pinned runtime supplies the stable slot without reconstruction or fallback.

@@ -117,7 +117,7 @@ Microsoft.CodeAnalysis.CSharp 5.3.0
 ```
 
 The version is centrally pinned in `Directory.Packages.props` and locked by the normal transitive project lock graph.
-It is placed only on `Interpreter.Product.DumpQuery`, which owns the expression front-end boundary. The dependency is
+It is placed only on `PhoenixInspect.Product.DumpQuery`, which owns the expression front-end boundary. The dependency is
 not added to the interpreter kernel, metadata abstractions, dump host abstractions, or domain projects. Dependent
 executables receive the runtime assets through ordinary project dependency flow.
 
@@ -575,7 +575,7 @@ member-chain rows remain unsupported under the frozen profile. The three-bucket 
 evidence for complex patterns, lambdas, query and switch expressions, casts/indexers, interpolation, raw/verbatim
 strings, escaped/Unicode identifiers, malformed neighbors, directives, and every frozen front-end bound. Source and
 reflection guards prove one production parse site, no handwritten reader or W5 fallback route, descriptor-consuming
-preparation, package placement only on `Interpreter.Product.DumpQuery`, and no Roslyn type in public product APIs.
+preparation, package placement only on `PhoenixInspect.Product.DumpQuery`, and no Roslyn type in public product APIs.
 
 ## 15) Primary references
 

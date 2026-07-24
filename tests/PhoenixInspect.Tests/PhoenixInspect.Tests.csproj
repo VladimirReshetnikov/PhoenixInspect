@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PhoenixInspect.Tests</AssemblyName>
+    <RootNamespace>PhoenixInspect.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/PhoenixInspect.Core.Abstractions/PhoenixInspect.Core.Abstractions.csproj" />
+    <ProjectReference Include="../../src/PhoenixInspect.Core.Execution/PhoenixInspect.Core.Execution.csproj" />
+    <ProjectReference Include="../../src/PhoenixInspect.Domain.Concrete/PhoenixInspect.Domain.Concrete.csproj" />
+    <ProjectReference Include="../../src/PhoenixInspect.Metadata.SRM/PhoenixInspect.Metadata.SRM.csproj" />
+    <ProjectReference Include="../../src/PhoenixInspect.Product.DumpDebugging/PhoenixInspect.Product.DumpDebugging.csproj" />
+  </ItemGroup>
+</Project>

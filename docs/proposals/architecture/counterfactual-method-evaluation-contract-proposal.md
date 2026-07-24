@@ -740,7 +740,7 @@ domain, memory, or model capability exception is not a target exception and maps
 or violated structural invariant maps to `Invalid`.
 
 W4.7a checkpoint `2e70fe76d` implements this as `CounterfactualTargetOutcomeProjector` in the independent
-`Interpreter.Product.DumpDebugging` assembly. Input is the complete immutable sequence of exact `StepOne` outcomes
+`PhoenixInspect.Product.DumpDebugging` assembly. Input is the complete immutable sequence of exact `StepOne` outcomes
 from a legacy single-root activation at IL offset zero through the first target transition, optionally followed by
 exactly one idempotent re-step. Every outcome must certify that the exact machine issued it from the exact predecessor
 state and operational-state references. Certification authority remains outside the record and canonical equality;
@@ -754,7 +754,7 @@ The emitted schema-v1 fragment fixes `CounterfactualExecution`, `Completed`, `Co
 complete event transcript, and `W4.TargetException.NullReference`; and excludes snapshot, root, request, plan, and
 traversal properties. Its domain-separated big-endian canonical codec uses explicit stable tags and structural method
 handles; content equality and hashing derive from canonical bytes/digest. The literal fixture freezes SHA-256
-`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
+`99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`.
 
 W4.7b checkpoint `dad6a6dd4` projects both direct and constant-adjusted compiler-emitted typed-null getters. Fresh
 SRM/module/domain/machine objects reproduce fragment content, canonical bytes, and digest. Counting and poisonable
@@ -884,7 +884,7 @@ request/plan/result identity or dump close/reopen/rebind replay.
 W4.8 final checkpoint `44b050ec8` supplies the formerly missing canonical product identity and same/fresh-object
 runner replay. It reconstructs synthetic interpreted and modeled runs through fresh runner, resolver, domain, memory,
 and model objects and reproduces request, plan, and result bytes; the exact rooted synthetic result freezes SHA-256
-`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`. W4.9 final implementation checkpoint
+`6e87efdf3a6f8d73a5f5733aa8fe1eac99d822f184da3b88d46b8cbd67068592`. W4.9 final implementation checkpoint
 `a8b5f32f0` closes the dump obligation for every admitted dump-grounded row: exact, partial, and unavailable evidence
 under both interpreted and body-free modeled plans reproduce detached memory, request, plan, and result bytes after
 the original ClrMD session is disposed and the same dump is reopened, rediscovered, and rebound.
@@ -895,7 +895,7 @@ same terminal outcome, accounting, diagnostics, and byte-identical canonical tar
 Tests must assert the absence of snapshot/root/request/plan identities rather than manufacturing them.
 
 W4.7 satisfies that separate rule at `2e70fe76d`/`dad6a6dd4`: the literal schema fixture freezes SHA-256
-`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`; independently executed synthetic machines
+`99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`; independently executed synthetic machines
 produce content-equal fragments; first-terminal and optionally re-stepped projections are identical; and direct/
 adjusted compiler getters reproduce after fresh SRM/module/domain/machine construction. This is not item 1–3 or 9
 product request/plan/result replay above and does not imply rooted-facade reachability.

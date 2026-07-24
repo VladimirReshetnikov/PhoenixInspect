@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PhoenixInspect.Product.DumpQuery</AssemblyName>
+    <RootNamespace>PhoenixInspect.Product.DumpQuery</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <ProjectReference Include="../PhoenixInspect.Core.Abstractions/PhoenixInspect.Core.Abstractions.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Host.Dump.ClrMD/PhoenixInspect.Host.Dump.ClrMD.csproj" />
+  </ItemGroup>
+</Project>

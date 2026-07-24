@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>PhoenixInspect.Headless.ReferenceConsumer</AssemblyName>
+    <RootNamespace>PhoenixInspect.Headless.ReferenceConsumer</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../PhoenixInspect.Core.Abstractions/PhoenixInspect.Core.Abstractions.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Host.Dump.ClrMD/PhoenixInspect.Host.Dump.ClrMD.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Product.DumpDebugging/PhoenixInspect.Product.DumpDebugging.csproj" />
+    <ProjectReference Include="../PhoenixInspect.Product.DumpQuery/PhoenixInspect.Product.DumpQuery.csproj" />
+  </ItemGroup>
+</Project>

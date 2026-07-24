@@ -164,7 +164,7 @@ dependent real-dump job passed 3 dump tests.
 **Realized architecture-review implementation surface through `f85545c0c`:** 7,423 hand-written additions and 89
 deletions. The exact cumulative diff from the preceding W0 evidence commit `7c6bf91f2` is 7,719 additions and 98
 deletions. Classify generated churn first: five package-lock files contribute 236 additions/9 deletions and
-`Interpreter.sln` contributes 60 additions/0 deletions. No documentation or generated `bin`/`obj` output is included.
+`PhoenixInspect.sln` contributes 60 additions/0 deletions. No documentation or generated `bin`/`obj` output is included.
 The remaining paths are hand-written implementation/test/harness/configuration work. Dedicated package commits make the
 additions attributable without assigning the same line to two packages:
 
@@ -555,7 +555,7 @@ interpreted call-site hash remains frozen.
 
 The machine rejects every modeled graph before activation as `EXEC_MODEL_EXECUTION_UNAVAILABLE`, without argument
 validation, state creation, resolver use, or model invocation. Real SRM/compiler evidence replays the body-free graph
-over deterministic PDB-free `Interpreter.TestTarget` PE SHA-256
+over deterministic PDB-free `PhoenixInspect.TestTarget` PE SHA-256
 `fae40c5805d619845b3d28e6f64e612d1ce520617f6bd369ef8b309609c5a801`; W4.5 lineage hashes were deliberately
 re-frozen to that path-independent artifact.
 
@@ -611,7 +611,7 @@ fast 80/80; ordinary dump 5/5; and optimized dump 1/1. All lanes were headless w
 and every behavioral filter used the milestone test selection. Combined W4.6 realizes 7,652 LOC, and W4.1–W4.6d
 cumulatively realize 24,469 LOC.
 
-Pushed W4.7a checkpoint `2e70fe76d` adds the independently useful `Interpreter.Product.DumpDebugging` boundary. Its
+Pushed W4.7a checkpoint `2e70fe76d` adds the independently useful `PhoenixInspect.Product.DumpDebugging` boundary. Its
 standalone projector consumes the complete exact sequence from same-machine legacy activation at IL offset zero to
 the first exact null-reference target transition, optionally followed by one issuer-certified idempotent latch re-step.
 Each outcome must have been issued by that exact machine for the exact predecessor state and operational-state
@@ -620,7 +620,7 @@ one-frame envelope, exact exception kind/code/location, persistent-memory identi
 complete event transcript. The schema-v1 fragment fixes the five result axes, retains only the exception, call trace,
 accounting, events, stable diagnostic, canonical bytes, and SHA-256, and exposes no snapshot/root/request/plan/
 traversal reachability claims. The literal fixture freezes digest
-`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`.
+`99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`.
 
 Pushed W4.7b checkpoint `dad6a6dd4` projects both direct and constant-adjusted compiler-emitted exact-null getters.
 Fresh SRM/module/domain/machine reconstruction reproduces fragment content, bytes, and hash. Counting and poisonable
@@ -637,7 +637,7 @@ The former W4.7 estimate of 2,200–3,150 LOC and its 31,069–34,319 full-W4 pr
 `4f268a4bc` through `44b050ec8` implement configurable traversal, canonical request/observation/plan/result schemas,
 private typed runtime binding and recording memory, authoritative preparation, common projection, and transition-
 validating execution. Same/fresh-object coverage freezes the exact synthetic rooted result SHA-256
-`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`. W4.8 realizes 11,924 LOC.
+`6e87efdf3a6f8d73a5f5733aa8fe1eac99d822f184da3b88d46b8cbd67068592`. W4.8 realizes 11,924 LOC.
 
 W4.9a `24bd8fe6f` implements the atomic ClrMD execution-evidence graph; W4.9b `2d41f528d` implements the product-owned
 detached rooted binding/memory; and W4.9c `a8b5f32f0` executes exact, partial, and unavailable rows under interpreted

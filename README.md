@@ -139,9 +139,9 @@ Core principles:
   work. W6's umbrella scale is `~10K LOC` split into `~1K LOC` evidence checkpoints.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The query path parses each bounded expression once with the pinned complete Roslyn expression parser, admits only the versioned W2/W5/W6/W7 tree subsets, binds either a typed snapshot root or one exact static declaration, and evaluates immutable plans without reparsing or rebinding. W7 adds counted selected-frame/PDB/import context, fully qualified and contextual static binding, ordinary static scalar/string/nullable/reference storage, target validation, and unchanged W2/W6 suffix reuse. W8.1 adds pre-contract emitted TypeSpec/import/constraint/literal evidence, candidate-keyed runtime construction identity, exact strategy-specific storage facts, exact memory-homed frame roots, typed context/frame-generic non-admissions, and close/reopen replay. W8.2 now validates source ends, shared-grammar signature projection, TypeSpec graphs, FieldSig anchors, GenericParam ownership/bindings, edge aggregates, provisional type use, and Nullable topology as immutable Product proof objects. Canonical request, context, symbol, storage, plan, root-selection, and complete-result identities preserve the distinctions needed for deterministic replay. The legacy 22-case W2 corpus, W3/W4 generated-dump lanes, W6 conformance/portfolio lanes, W7's sixteen-dump/four-shape portfolio, W8.1 physical gates, and the landed W8.2 proof tests all remain passing; CoreCLR and high-level runtime reads remain late oracles, not inputs to interpreter shape, dump evidence, preparation, or execution.
 - **Physical scope:** ten source projects contain active contracts or behavior in a twenty-project solution.
-  `Interpreter.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
+  `PhoenixInspect.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
   evaluation, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources.
-  `Interpreter.Headless.ReferenceConsumer` is the independently launched prototype composition root and report runner;
+  `PhoenixInspect.Headless.ReferenceConsumer` is the independently launched prototype composition root and report runner;
   it is not a shipping CLI contract. The earlier empty placeholders and later out-of-scope experiments remain removed,
   and physical boundaries are still justified by executable evidence rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
@@ -315,7 +315,7 @@ The schema-v1 fragment retains only target-exception identity/location, the stru
 accounting, events, one stable diagnostic, canonical bytes, and lowercase SHA-256. Snapshot, root, request, plan, and
 traversal identities are absent because no rooted product request reached this conformance case; issuer certification
 is validation authority, not canonical content. The synthetic literal fixture freezes SHA-256
-`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`. Pushed W4.7b checkpoint `dad6a6dd4`
+`99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`. Pushed W4.7b checkpoint `dad6a6dd4`
 proves direct and constant-adjusted compiler-emitted typed-null getters through fresh SRM/module/domain/machine
 reconstruction. Counting and poisonable resolver, domain, and memory wrappers prove a terminal re-step consults no
 capability and repeats no field load; both projections remain byte-, content-, and hash-identical.
@@ -333,7 +333,7 @@ Private typed bindings materialize exact or explained inputs into a fresh domain
 `Run` then validates every issued machine transition and projects completed, budget-exhausted, cancelled, blocked,
 invalid, modeled, and standalone-target outcomes without execution-time resolver or registry queries. Same/fresh-
 object replay freezes the exact synthetic rooted result SHA-256
-`8eb243d415e739a9101f0dd7b8e1cdb4de38208069caa495b8c1bd02a37b7d09`.
+`6e87efdf3a6f8d73a5f5733aa8fe1eac99d822f184da3b88d46b8cbd67068592`.
 
 W4.9a checkpoint `24bd8fe6f` adds a canonical ClrMD method graph and three-state correlated field evidence; W4.9b
 checkpoint `2d41f528d` derives rooted product identities and a detached persistent memory from issuer-validated dump

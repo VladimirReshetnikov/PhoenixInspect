@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PhoenixInspect.Metadata.Abstractions</AssemblyName>
+    <RootNamespace>PhoenixInspect.Metadata.Abstractions</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../PhoenixInspect.Core.Abstractions/PhoenixInspect.Core.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

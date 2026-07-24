@@ -253,7 +253,7 @@ warnings/errors; focused W4.6c 34/34; focused W4.6d 3/3; aggregate W4 integratio
 80/80; ordinary dump 5/5; and optimized dump 1/1, all headlessly with zero skips and
 the milestone test selection on behavioral filters.
 
-W4.7a checkpoint `2e70fe76d` adds `Interpreter.Product.DumpDebugging` and projects only a complete sequence of exact
+W4.7a checkpoint `2e70fe76d` adds `PhoenixInspect.Product.DumpDebugging` and projects only a complete sequence of exact
 transitions issued by the same `IlMachine`, from one legacy root activation at IL offset zero through the first exact
 null-reference target latch. The sequence may include one certified idempotent terminal re-step. Issuer binding is
 validated per outcome against exact machine/predecessor references; it does not participate in fragment identity.
@@ -264,7 +264,7 @@ The successful schema-v1 fragment fixes `CounterfactualExecution`/`Completed`/`C
 the exact exception and structural location, one-method call trace, initial/used/remaining instruction units, complete
 events, stable diagnostic, canonical bytes, and lowercase digest, and deliberately exposes no snapshot, root, request,
 plan, or traversal identity. The literal standalone fixture freezes SHA-256
-`a9b98e46583dcf90ac108571c126d8d86cec0465c595e2689fae767e33ff108e`. W4.7b checkpoint `dad6a6dd4`
+`99cadd992d88ac481b570ec4bc1eb3c914f7d43565db414d9147225e01a9c754`. W4.7b checkpoint `dad6a6dd4`
 reconstructs direct and adjusted compiler-emitted null getters through fresh SRM/module/domain/machine objects and
 reproduces identical fragment content, bytes, and hash. Counting/poisonable wrappers prove the optional terminal
 re-step consults no resolver, value-domain, or memory capability and that each execution performs exactly one load.

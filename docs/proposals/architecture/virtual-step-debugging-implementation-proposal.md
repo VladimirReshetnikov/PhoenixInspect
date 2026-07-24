@@ -730,7 +730,7 @@ Everything else (unknown propagation, origin labels/effects, call modeling, dump
 
 ## Appendix A) Current prototype contract alignment (`src/`)
 
-`src/` is no longer scaffolding-only. `Interpreter.Core.Execution` contains draft semantic/operational state,
+`src/` is no longer scaffolding-only. `PhoenixInspect.Core.Execution` contains draft semantic/operational state,
 `MachineActivationResult`, `StepOutcome`, `MachineRunStatus`, deterministic budgets/events, frozen typed whole-body
 admission, and `IlMachine.ActivateRoot`/`StepOne`. Activation derives receiver, parameter, local, and return shapes
 from one atomically resolved method definition; callers no longer seed counts, local values, or return disposition.
@@ -751,4 +751,4 @@ terminal target-exception boundary. It does **not** provide command history, und
 branches, calls/frame pushes, handler transfer, or a resumable exception stop. The candidate `SessionPauseReason`
 below is deliberately not a current code contract.
 
-The actual debugger control plane remains unimplemented; the speculative `Interpreter.Debugger.Engine` project was removed with the empty scaffolding. There is no Step Into/Over/Out, stop plan, history, branch-decision, or source-map orchestration. This research design must not be read as a current stepping contract.
+The actual debugger control plane remains unimplemented; the speculative `PhoenixInspect.Debugger.Engine` project was removed with the empty scaffolding. There is no Step Into/Over/Out, stop plan, history, branch-decision, or source-map orchestration. This research design must not be read as a current stepping contract.
