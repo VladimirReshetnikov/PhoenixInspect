@@ -423,7 +423,7 @@ public sealed class FrozenMethodGraphPlan : IEquatable<FrozenMethodGraphPlan>
 /// <summary>Reports either one complete frozen method graph or a structured preparation failure.</summary>
 /// <remarks>
 /// Failed results never carry a partial graph. Successful results always use <see cref="MachineRunStatus.Ready"/>
-/// and carry no failure, making the public facts a closed discriminated outcome for this prototype phase.
+/// and carry no failure, making the public facts a closed discriminated outcome for this early-development phase.
 /// </remarks>
 public sealed class MethodGraphPreparationResult
 {

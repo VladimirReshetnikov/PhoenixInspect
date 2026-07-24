@@ -4,7 +4,7 @@ using PhoenixInspect.Core.Abstractions;
 namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Classifies one complete GenericParam proof-stage outcome.</summary>
-/// <remarks>The draft result never exposes a usable prefix after incomplete acquisition or a reached bound.</remarks>
+/// <remarks>The result never exposes a usable prefix after incomplete acquisition or a reached bound.</remarks>
 public enum MetadataGenericParameterProofResultKind
 {
     /// <summary>The complete operation is exact and exposes its normalized result.</summary>
@@ -16,7 +16,7 @@ public enum MetadataGenericParameterProofResultKind
 }
 
 /// <summary>Identifies the typed issue carried by one GenericParam proof-stage outcome.</summary>
-/// <remarks>The draft issue catalog distinguishes absent evidence, bounds, and contradictory physical rows.</remarks>
+/// <remarks>The issue catalog distinguishes absent evidence, bounds, and contradictory physical rows.</remarks>
 public enum MetadataGenericParameterProofIssue
 {
     /// <summary>No issue applies to an exact result.</summary>
@@ -61,7 +61,7 @@ public enum MetadataGenericParameterProofIssue
 
 /// <summary>Classifies evaluator admission for one authority-issued GenericParam owner group.</summary>
 /// <remarks>
-/// This draft discriminator leaves the complete physical group exact when its arity exceeds the current evaluator
+/// This discriminator leaves the complete physical group exact when its arity exceeds the current evaluator
 /// limit. Admission is a separate disposition and never truncates the authority-issued row set.
 /// </remarks>
 public enum MetadataGenericParameterOwnerAdmissionKind
@@ -75,7 +75,7 @@ public enum MetadataGenericParameterOwnerAdmissionKind
 
 /// <summary>Freezes one complete GenericParam owner group issued from definition authority.</summary>
 /// <remarks>
-/// This sealed draft identity has no public issuer. An exact
+/// This sealed identity has no public issuer. An exact
 /// <see cref="MetadataGenericParameterAuthorityCatalogIdentity"/> alone may mint it from an authority-issued TypeDef
 /// or MethodDef and that row's complete Number-ordered GenericParam group. Physical exactness remains independent of
 /// evaluator admission.
@@ -139,10 +139,10 @@ public sealed class MetadataGenericParameterAuthorityOwnerGroupIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the complete definition authority that issued this draft group.</summary>
+    /// <summary>Gets the complete definition authority that issued this group.</summary>
     public MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority { get; }
 
-    /// <summary>Gets whether this exact draft group belongs to a TypeDef or MethodDef authority row.</summary>
+    /// <summary>Gets whether this exact group belongs to a TypeDef or MethodDef authority row.</summary>
     public MetadataGenericParameterOwnerKind OwnerKind { get; }
 
     /// <summary>Gets the authority-issued TypeDef owner, or null for a MethodDef group.</summary>
@@ -158,7 +158,7 @@ public sealed class MetadataGenericParameterAuthorityOwnerGroupIdentity :
     /// <summary>Gets the exact source ends retained by the issuing definition authority.</summary>
     public MetadataSourceEndIdentity SourceEnds => DefinitionAuthority.SourceEnds;
 
-    /// <summary>Gets a defensive Number-ordered copy of every exact physical row in this draft group.</summary>
+    /// <summary>Gets a defensive Number-ordered copy of every exact physical row in this group.</summary>
     public ImmutableArray<MetadataGenericParameterTableRowIdentity> Parameters =>
         ExpressionV2ContractEncoding.Copy(parameters);
 
@@ -167,38 +167,38 @@ public sealed class MetadataGenericParameterAuthorityOwnerGroupIdentity :
     /// </summary>
     public int DeclaredArity { get; }
 
-    /// <summary>Gets the evaluator admission disposition without changing physical draft exactness.</summary>
+    /// <summary>Gets the evaluator admission disposition without changing physical exactness.</summary>
     public MetadataGenericParameterOwnerAdmissionKind AdmissionKind { get; }
 
-    /// <summary>Gets whether the exact draft group is within the current evaluator arity limit.</summary>
+    /// <summary>Gets whether the exact group is within the current evaluator arity limit.</summary>
     public bool IsAdmitted => AdmissionKind == MetadataGenericParameterOwnerAdmissionKind.Admitted;
 
-    /// <summary>Gets the evaluator arity limit only when the exact draft group exceeds it.</summary>
+    /// <summary>Gets the evaluator arity limit only when the exact group exceeds it.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets limit plus one only when the exact draft group exceeds evaluator admission.</summary>
+    /// <summary>Gets limit plus one only when the exact group exceeds evaluator admission.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two authority-issued GenericParam draft groups.</summary>
-    /// <param name="other">The other authority-issued draft group.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two authority-issued GenericParam groups.</summary>
+    /// <param name="other">The other authority-issued group.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterAuthorityOwnerGroupIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests authority-issued GenericParam draft group equality against an arbitrary object.</summary>
+    /// <summary>Tests authority-issued GenericParam group equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an identity with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an identity with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataGenericParameterAuthorityOwnerGroupIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft content.</summary>
-    /// <returns>A hash code for this authority-issued GenericParam draft group.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical content.</summary>
+    /// <returns>A hash code for this authority-issued GenericParam group.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataGenericParameterAuthorityOwnerGroupIdentity CreateForTypeDefinition(
@@ -252,7 +252,7 @@ public sealed class MetadataGenericParameterAuthorityOwnerGroupIdentity :
 
 /// <summary>Freezes every authority-issued TypeDef and MethodDef GenericParam owner group for one source.</summary>
 /// <remarks>
-/// This sealed draft catalog consumes only definition authority. Exact results issue one group for every definition,
+/// This sealed catalog consumes only definition authority. Exact results issue one group for every definition,
 /// including initialized zero-arity groups, in TypeOrMethodDef coded-owner order. Non-exact and invalid prerequisites
 /// expose no group prefix.
 /// </remarks>
@@ -316,25 +316,25 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete draft owner catalog is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether the complete owner catalog is exact, non-exact, or invalid.</summary>
     public MetadataGenericParameterProofResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft owner-catalog issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed owner-catalog issue, or none for an exact result.</summary>
     public MetadataGenericParameterProofIssue Issue { get; }
 
-    /// <summary>Gets the complete definition-authority prerequisite retained by this draft outcome.</summary>
+    /// <summary>Gets the complete definition-authority prerequisite retained by this outcome.</summary>
     public MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority { get; }
 
-    /// <summary>Gets the source ends retained by the definition-authority draft prerequisite.</summary>
+    /// <summary>Gets the source ends retained by the definition-authority prerequisite.</summary>
     public MetadataSourceEndIdentity SourceEnds => DefinitionAuthority.SourceEnds;
 
     /// <summary>
-    /// Gets a defensive TypeOrMethodDef coded-owner-order copy of exact draft groups, or an empty array otherwise.
+    /// Gets a defensive TypeOrMethodDef coded-owner-order copy of exact groups, or an empty array otherwise.
     /// </summary>
     public ImmutableArray<MetadataGenericParameterAuthorityOwnerGroupIdentity> Groups =>
         ExpressionV2ContractEncoding.Copy(groups);
 
-    /// <summary>Gets a prerequisite bound propagated by a non-exact authority draft, otherwise null.</summary>
+    /// <summary>Gets a prerequisite bound propagated by a non-exact authority, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound => DefinitionAuthority.ReachedBound;
 
     /// <summary>Gets the prerequisite's issue-related count, otherwise zero.</summary>
@@ -343,13 +343,13 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
     /// <summary>Gets the prerequisite's issue-related metadata token, otherwise null.</summary>
     public int? RelatedMetadataToken => DefinitionAuthority.RelatedMetadataToken;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates the complete GenericParam owner-group draft catalog from definition authority.</summary>
+    /// <summary>Creates the complete GenericParam owner-group catalog from definition authority.</summary>
     /// <param name="definitionAuthority">
     /// The complete authority catalog that alone supplies exact owners, declared arities, and physical rows.
     /// </param>
@@ -428,9 +428,9 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
             exactMethodGroups);
     }
 
-    /// <summary>Finds the exact draft owner group for one authority-issued TypeDef.</summary>
+    /// <summary>Finds the exact owner group for one authority-issued TypeDef.</summary>
     /// <param name="typeDefinition">The TypeDef authority row to locate.</param>
-    /// <returns>The matching draft group, or null when this catalog did not issue that authority row.</returns>
+    /// <returns>The matching group, or null when this catalog did not issue that authority row.</returns>
     public MetadataGenericParameterAuthorityOwnerGroupIdentity? FindTypeDefinitionOwner(
         MetadataTypeDefinitionAuthorityIdentity typeDefinition)
     {
@@ -450,9 +450,9 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
         return typeGroups[rowId - 1];
     }
 
-    /// <summary>Finds the exact draft owner group for one authority-issued MethodDef.</summary>
+    /// <summary>Finds the exact owner group for one authority-issued MethodDef.</summary>
     /// <param name="methodDefinition">The MethodDef authority row to locate.</param>
-    /// <returns>The matching draft group, or null when this catalog did not issue that authority row.</returns>
+    /// <returns>The matching group, or null when this catalog did not issue that authority row.</returns>
     public MetadataGenericParameterAuthorityOwnerGroupIdentity? FindMethodDefinitionOwner(
         MetadataMethodDefinitionAuthorityIdentity methodDefinition)
     {
@@ -478,10 +478,10 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
     /// The non-nil GenericParam token within this catalog's exact source end.
     /// </param>
     /// <returns>
-    /// The exact authority-owned draft row, or null when the retained definition-authority prerequisite is not exact.
+    /// The exact authority-owned row, or null when the retained definition-authority prerequisite is not exact.
     /// </returns>
     /// <remarks>
-    /// This guarded draft lookup rejects the wrong metadata table and out-of-source-range tokens before consulting
+    /// This guarded lookup rejects the wrong metadata table and out-of-source-range tokens before consulting
     /// derived state. A returned row therefore cannot be supplied independently of this catalog's exact authority.
     /// </remarks>
     public MetadataGenericParameterTableRowIdentity? FindGenericParameter(int genericParameterToken)
@@ -503,19 +503,19 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
             : null;
     }
 
-    /// <summary>Tests canonical equality between two authority-owned GenericParam draft catalogs.</summary>
-    /// <param name="other">The other complete draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two authority-owned GenericParam catalogs.</summary>
+    /// <param name="other">The other complete catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterAuthorityCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests authority-owned GenericParam draft catalog equality against an arbitrary object.</summary>
+    /// <summary>Tests authority-owned GenericParam catalog equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterAuthorityCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft content.</summary>
-    /// <returns>A hash code for this complete authority-owned GenericParam draft catalog.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical content.</summary>
+    /// <returns>A hash code for this complete authority-owned GenericParam catalog.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsOwnerGroupMintCapability(object? capability) =>
@@ -548,7 +548,7 @@ public sealed class MetadataGenericParameterAuthorityCatalogIdentity :
 
 /// <summary>Classifies one authority-row-addressed GenericParam binding observation.</summary>
 /// <remarks>
-/// The draft discriminator distinguishes an exact closed argument from an explicitly unavailable observation.
+/// The discriminator distinguishes an exact closed argument from an explicitly unavailable observation.
 /// </remarks>
 public enum MetadataGenericParameterAuthorityBindingKind
 {
@@ -561,9 +561,9 @@ public enum MetadataGenericParameterAuthorityBindingKind
 
 /// <summary>Freezes one authority-row-addressed exact or unavailable GenericParam binding.</summary>
 /// <remarks>
-/// This sealed draft identity names the physical table-row identity directly. Exact bindings remain internally issued
+/// This sealed identity names the physical table-row identity directly. Exact bindings remain internally issued
 /// from source-derived closed types; public callers may only record explicit unavailability. The Product.DumpQuery
-/// assembly is the provisional draft exact-observation issuer boundary until the complete producer is introduced.
+/// assembly is the provisional exact-observation issuer boundary until the complete producer is introduced.
 /// </remarks>
 public sealed class MetadataGenericParameterAuthorityBindingIdentity :
     IEquatable<MetadataGenericParameterAuthorityBindingIdentity>
@@ -593,24 +593,24 @@ public sealed class MetadataGenericParameterAuthorityBindingIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact draft binding observation kind.</summary>
+    /// <summary>Gets the exact binding observation kind.</summary>
     public MetadataGenericParameterAuthorityBindingKind Kind { get; }
 
     /// <summary>Gets the exact authority-issued GenericParam table row.</summary>
     public MetadataGenericParameterTableRowIdentity Parameter { get; }
 
-    /// <summary>Gets the exact closed argument only for an exact draft binding.</summary>
+    /// <summary>Gets the exact closed argument only for an exact binding.</summary>
     public MetadataClosedTypeIdentity? Argument { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
     /// <summary>Creates one authority-issued GenericParam row with no observed closed binding.</summary>
     /// <param name="parameter">The exact authority-issued physical table row.</param>
-    /// <returns>A sealed immutable unavailable draft binding.</returns>
+    /// <returns>A sealed immutable unavailable binding.</returns>
     public static MetadataGenericParameterAuthorityBindingIdentity Unavailable(
         MetadataGenericParameterTableRowIdentity parameter)
     {
@@ -621,19 +621,19 @@ public sealed class MetadataGenericParameterAuthorityBindingIdentity :
             null);
     }
 
-    /// <summary>Tests canonical equality between two authority-row-addressed draft bindings.</summary>
-    /// <param name="other">The other draft binding.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two authority-row-addressed bindings.</summary>
+    /// <param name="other">The other binding.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterAuthorityBindingIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests authority-row-addressed draft binding equality against an arbitrary object.</summary>
+    /// <summary>Tests authority-row-addressed binding equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an identity with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an identity with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterAuthorityBindingIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft content.</summary>
-    /// <returns>A hash code for this authority-row-addressed draft binding.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical content.</summary>
+    /// <returns>A hash code for this authority-row-addressed binding.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataGenericParameterAuthorityBindingIdentity Exact(
@@ -651,7 +651,7 @@ public sealed class MetadataGenericParameterAuthorityBindingIdentity :
 
 /// <summary>Freezes one complete authority-row-addressed binding ledger for an authority-issued owner group.</summary>
 /// <remarks>
-/// This sealed draft ledger normalizes caller observations by authority-proven Number. Missing evidence and evaluator
+/// This sealed ledger normalizes caller observations by authority-proven Number. Missing evidence and evaluator
 /// arity stops expose no binding prefix; contradictory rows remain typed invalid results.
 /// </remarks>
 public sealed class MetadataGenericParameterAuthorityBindingLedgerIdentity :
@@ -691,19 +691,19 @@ public sealed class MetadataGenericParameterAuthorityBindingLedgerIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete draft binding ledger is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether the complete binding ledger is exact, non-exact, or invalid.</summary>
     public MetadataGenericParameterProofResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft ledger issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed ledger issue, or none for an exact result.</summary>
     public MetadataGenericParameterProofIssue Issue { get; }
 
-    /// <summary>Gets the authority-issued exact owner group retained by this draft ledger.</summary>
+    /// <summary>Gets the authority-issued exact owner group retained by this ledger.</summary>
     public MetadataGenericParameterAuthorityOwnerGroupIdentity OwnerGroup { get; }
 
-    /// <summary>Gets the definition authority that issued the ledger's draft owner group.</summary>
+    /// <summary>Gets the definition authority that issued the ledger's owner group.</summary>
     public MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority => OwnerGroup.DefinitionAuthority;
 
-    /// <summary>Gets a defensive Number-ordered copy of exact draft bindings, or an empty array otherwise.</summary>
+    /// <summary>Gets a defensive Number-ordered copy of exact bindings, or an empty array otherwise.</summary>
     public ImmutableArray<MetadataGenericParameterAuthorityBindingIdentity> Bindings =>
         ExpressionV2ContractEncoding.Copy(bindings);
 
@@ -713,16 +713,16 @@ public sealed class MetadataGenericParameterAuthorityBindingLedgerIdentity :
     /// <summary>Gets limit plus one for an arity stop, otherwise zero.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete authority-row-addressed draft binding ledger.</summary>
+    /// <summary>Creates one complete authority-row-addressed binding ledger.</summary>
     /// <param name="ownerGroup">The exact authority-issued TypeDef or MethodDef owner group.</param>
     /// <param name="bindings">One row-addressed observation per declared parameter, in any caller order.</param>
-    /// <returns>An exact normalized ledger, prefix-free stop, or typed invalid draft result.</returns>
+    /// <returns>An exact normalized ledger, prefix-free stop, or typed invalid result.</returns>
     public static MetadataGenericParameterAuthorityBindingLedgerIdentity Create(
         MetadataGenericParameterAuthorityOwnerGroupIdentity ownerGroup,
         ImmutableArray<MetadataGenericParameterAuthorityBindingIdentity> bindings)
@@ -802,20 +802,20 @@ public sealed class MetadataGenericParameterAuthorityBindingLedgerIdentity :
             0);
     }
 
-    /// <summary>Tests canonical equality between two authority-row-addressed draft binding ledgers.</summary>
-    /// <param name="other">The other complete draft ledger.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two authority-row-addressed binding ledgers.</summary>
+    /// <param name="other">The other complete ledger.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterAuthorityBindingLedgerIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests authority-row-addressed draft ledger equality against an arbitrary object.</summary>
+    /// <summary>Tests authority-row-addressed ledger equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a ledger with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a ledger with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataGenericParameterAuthorityBindingLedgerIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft content.</summary>
-    /// <returns>A hash code for this complete authority-row-addressed draft binding ledger.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical content.</summary>
+    /// <returns>A hash code for this complete authority-row-addressed binding ledger.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal MetadataGenericParameterAuthorityBindingIdentity? FindBinding(int number) =>

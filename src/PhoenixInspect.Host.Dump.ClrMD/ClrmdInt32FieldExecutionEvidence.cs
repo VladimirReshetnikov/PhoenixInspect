@@ -10,7 +10,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// Instances are issued only by <see cref="ClrmdDumpExecutionResolver.CorrelateInt32FieldObservation"/> after the
 /// owner selection, runtime layout, metadata identity, target address, raw-read provenance, evidence disposition,
 /// and optional scalar have been validated as one coherent tuple. Partial and unavailable evidence never exposes an
-/// invented value. This draft W4 adapter remains limited to ordinary instance <see cref="int"/> fields declared by
+/// invented value. This W4 adapter remains limited to ordinary instance <see cref="int"/> fields declared by
 /// the root receiver type.
 /// </remarks>
 public sealed class ClrmdInt32FieldExecutionEvidence

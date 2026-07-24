@@ -3,7 +3,7 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Freezes one source-anchored physical AssemblyRef-row draft observation.</summary>
+/// <summary>Freezes one source-anchored physical AssemblyRef-row observation.</summary>
 /// <remarks>The W8 observation owns raw row payload and makes no target AssemblyDef assertion.</remarks>
 public sealed class MetadataAssemblyReferenceRowObservationIdentity :
     IEquatable<MetadataAssemblyReferenceRowObservationIdentity>
@@ -79,13 +79,13 @@ public sealed class MetadataAssemblyReferenceRowObservationIdentity :
     /// <summary>Gets a defensive copy of the physical AssemblyRef hash-value blob.</summary>
     public ImmutableArray<byte> HashValue => ExpressionV2ContractEncoding.Copy(hashValue);
 
-    /// <summary>Gets a defensive copy of the canonical physical draft observation bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical physical observation bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft observation bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical observation bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one source-anchored physical AssemblyRef-row draft observation.</summary>
+    /// <summary>Creates one source-anchored physical AssemblyRef-row observation.</summary>
     /// <param name="sourceModule">The exact metadata module containing the physical row.</param>
     /// <param name="assemblyReferenceToken">The exact non-nil AssemblyRef token.</param>
     /// <param name="name">The exact non-empty assembly name.</param>
@@ -97,7 +97,7 @@ public sealed class MetadataAssemblyReferenceRowObservationIdentity :
     /// <param name="flags">The exact raw AssemblyRef flags.</param>
     /// <param name="publicKeyOrToken">The initialized physical key-or-token blob.</param>
     /// <param name="hashValue">The initialized physical hash-value blob.</param>
-    /// <returns>A physical W8 draft observation with no target-assembly assertion.</returns>
+    /// <returns>A physical W8 observation with no target-assembly assertion.</returns>
     public static MetadataAssemblyReferenceRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity sourceModule,
         int assemblyReferenceToken,
@@ -126,7 +126,7 @@ public sealed class MetadataAssemblyReferenceRowObservationIdentity :
         return new MetadataAssemblyReferenceRowObservationIdentity(sourceModule, payload);
     }
 
-    /// <summary>Tests whether this physical draft observation has the same payload as one W7 candidate row.</summary>
+    /// <summary>Tests whether this physical observation has the same payload as one W7 candidate row.</summary>
     /// <param name="candidate">The W7 AssemblyRef candidate to compare.</param>
     /// <returns><see langword="true"/> only when every physical row field agrees.</returns>
     public bool MatchesCandidate(StaticFieldAssemblyReferenceIdentity candidate)
@@ -141,24 +141,24 @@ public sealed class MetadataAssemblyReferenceRowObservationIdentity :
             hashValue.AsSpan().SequenceEqual(candidate.HashValue.AsSpan());
     }
 
-    /// <summary>Tests canonical equality between two physical AssemblyRef draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical AssemblyRef observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAssemblyReferenceRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical AssemblyRef draft observation equality against an arbitrary object.</summary>
+    /// <summary>Tests physical AssemblyRef observation equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAssemblyReferenceRowObservationIdentity);
 
-    /// <summary>Computes a deterministic hash code from canonical physical draft content.</summary>
-    /// <returns>A hash code for this physical AssemblyRef draft observation.</returns>
+    /// <summary>Computes a deterministic hash code from canonical physical content.</summary>
+    /// <returns>A hash code for this physical AssemblyRef observation.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one guarded physical AssemblyRef draft row.</summary>
-/// <remarks>Only an exact complete AssemblyRef table can mint this fixed-reference draft row.</remarks>
+/// <summary>Freezes one guarded physical AssemblyRef row.</summary>
+/// <remarks>Only an exact complete AssemblyRef table can mint this fixed-reference row.</remarks>
 public sealed class MetadataAssemblyReferencePhysicalRowIdentity :
     IEquatable<MetadataAssemblyReferencePhysicalRowIdentity>
 {
@@ -179,34 +179,34 @@ public sealed class MetadataAssemblyReferencePhysicalRowIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact draft reference source ends containing this row.</summary>
+    /// <summary>Gets the exact reference source ends containing this row.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the unchanged physical AssemblyRef-row draft observation.</summary>
+    /// <summary>Gets the unchanged physical AssemblyRef-row observation.</summary>
     public MetadataAssemblyReferenceRowObservationIdentity Observation { get; }
 
     /// <summary>Gets the exact non-nil physical AssemblyRef token.</summary>
     public int AssemblyReferenceToken => Observation.AssemblyReferenceToken;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two guarded physical AssemblyRef draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two guarded physical AssemblyRef rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAssemblyReferencePhysicalRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests guarded physical AssemblyRef draft equality against an arbitrary object.</summary>
+    /// <summary>Tests guarded physical AssemblyRef equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAssemblyReferencePhysicalRowIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this guarded physical AssemblyRef draft row.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this guarded physical AssemblyRef row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataAssemblyReferencePhysicalRowIdentity Create(
@@ -222,12 +222,12 @@ public sealed class MetadataAssemblyReferencePhysicalRowIdentity :
     }
 }
 
-/// <summary>Freezes one complete RID-ordered physical AssemblyRef draft table.</summary>
+/// <summary>Freezes one complete RID-ordered physical AssemblyRef table.</summary>
 /// <remarks>Every catalog-level stop is prefix-free and retains no guarded row.</remarks>
 public sealed class MetadataAssemblyReferencePhysicalTableCatalogIdentity :
     IEquatable<MetadataAssemblyReferencePhysicalTableCatalogIdentity>
 {
-    /// <summary>Gets the deterministic draft bound name for physical AssemblyRef rows.</summary>
+    /// <summary>Gets the deterministic bound name for physical AssemblyRef rows.</summary>
     public const string TableRowCountBoundName = "metadata-v2.physical-assemblyref.rows";
 
     private const string CanonicalDomain = "metadata-v2-assemblyref-physical-table";
@@ -265,35 +265,35 @@ public sealed class MetadataAssemblyReferencePhysicalTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this physical AssemblyRef draft table is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this physical AssemblyRef table is exact, non-exact, or invalid.</summary>
     public MetadataReferencePhysicalTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed complete physical AssemblyRef draft issue.</summary>
+    /// <summary>Gets the typed complete physical AssemblyRef issue.</summary>
     public MetadataReferencePhysicalTableIssue Issue { get; }
 
-    /// <summary>Gets the exact draft reference source ends for this table.</summary>
+    /// <summary>Gets the exact reference source ends for this table.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
     /// <summary>Gets a defensive RID-order copy of exact guarded rows, or an empty vector for every stop.</summary>
     public ImmutableArray<MetadataAssemblyReferencePhysicalRowIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
 
-    /// <summary>Gets the physical AssemblyRef row-count draft bound after a cap-plus-one outcome.</summary>
+    /// <summary>Gets the physical AssemblyRef row-count bound after a cap-plus-one outcome.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the supplied, exact, or cap-plus-one draft observation count.</summary>
+    /// <summary>Gets the supplied, exact, or cap-plus-one observation count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft table bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical table bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft table bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical table bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete RID-ordered physical AssemblyRef draft table.</summary>
+    /// <summary>Creates one complete RID-ordered physical AssemblyRef table.</summary>
     /// <param name="sourceEnds">The exact reference source ends defining the physical table length.</param>
     /// <param name="observations">Every source-anchored physical AssemblyRef row in RID order.</param>
-    /// <returns>An exact guarded table or a prefix-free typed draft stop.</returns>
+    /// <returns>An exact guarded table or a prefix-free typed stop.</returns>
     public static MetadataAssemblyReferencePhysicalTableCatalogIdentity Create(
         MetadataReferenceSourceEndIdentity sourceEnds,
         ImmutableArray<MetadataAssemblyReferenceRowObservationIdentity> observations)
@@ -337,9 +337,9 @@ public sealed class MetadataAssemblyReferencePhysicalTableCatalogIdentity :
             observations.Length);
     }
 
-    /// <summary>Finds one exact guarded physical AssemblyRef draft row by token.</summary>
+    /// <summary>Finds one exact guarded physical AssemblyRef row by token.</summary>
     /// <param name="assemblyReferenceToken">The non-nil physical AssemblyRef token.</param>
-    /// <returns>The exact draft row, or null when the table or token is not exact.</returns>
+    /// <returns>The exact row, or null when the table or token is not exact.</returns>
     public MetadataAssemblyReferencePhysicalRowIdentity? FindRow(int assemblyReferenceToken)
     {
         if (ResultKind != MetadataReferencePhysicalTableResultKind.Exact ||
@@ -351,25 +351,25 @@ public sealed class MetadataAssemblyReferencePhysicalTableCatalogIdentity :
         return rowId > 0 && rowId <= rows.Length ? rows[rowId - 1] : null;
     }
 
-    /// <summary>Tests canonical equality between two complete physical AssemblyRef draft tables.</summary>
-    /// <param name="other">The other draft table.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete physical AssemblyRef tables.</summary>
+    /// <param name="other">The other table.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAssemblyReferencePhysicalTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete physical AssemblyRef draft-table equality against an arbitrary object.</summary>
+    /// <summary>Tests complete physical AssemblyRef table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a table with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a table with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAssemblyReferencePhysicalTableCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this complete physical AssemblyRef draft table.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this complete physical AssemblyRef table.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);
 }
 
-/// <summary>Freezes one source-anchored physical TypeSpec-row draft observation.</summary>
+/// <summary>Freezes one source-anchored physical TypeSpec-row observation.</summary>
 /// <remarks>The W8 observation retains complete bytes independently of any caller-supplied decode graph.</remarks>
 public sealed class MetadataTypeSpecificationRowObservationIdentity :
     IEquatable<MetadataTypeSpecificationRowObservationIdentity>
@@ -404,17 +404,17 @@ public sealed class MetadataTypeSpecificationRowObservationIdentity :
     /// <summary>Gets a defensive copy of the complete original TypeSpec signature blob.</summary>
     public ImmutableArray<byte> SignatureBytes => ExpressionV2ContractEncoding.Copy(signatureBytes);
 
-    /// <summary>Gets a defensive copy of the canonical physical draft observation bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical physical observation bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft observation bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical observation bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one source-anchored physical TypeSpec-row draft observation.</summary>
+    /// <summary>Creates one source-anchored physical TypeSpec-row observation.</summary>
     /// <param name="sourceModule">The exact metadata module containing the physical row.</param>
     /// <param name="typeSpecificationToken">The exact non-nil TypeSpec token.</param>
     /// <param name="signatureBytes">The complete initialized physical signature blob.</param>
-    /// <returns>A physical W8 draft observation independent of later decoding.</returns>
+    /// <returns>A physical W8 observation independent of later decoding.</returns>
     public static MetadataTypeSpecificationRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity sourceModule,
         int typeSpecificationToken,
@@ -429,24 +429,24 @@ public sealed class MetadataTypeSpecificationRowObservationIdentity :
             signatureBytes);
     }
 
-    /// <summary>Tests canonical equality between two physical TypeSpec draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical TypeSpec observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSpecificationRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical TypeSpec draft observation equality against an arbitrary object.</summary>
+    /// <summary>Tests physical TypeSpec observation equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSpecificationRowObservationIdentity);
 
-    /// <summary>Computes a deterministic hash code from canonical physical draft content.</summary>
-    /// <returns>A hash code for this physical TypeSpec draft observation.</returns>
+    /// <summary>Computes a deterministic hash code from canonical physical content.</summary>
+    /// <returns>A hash code for this physical TypeSpec observation.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one guarded physical TypeSpec draft row.</summary>
-/// <remarks>Only an exact complete TypeSpec table can mint this fixed-reference draft row.</remarks>
+/// <summary>Freezes one guarded physical TypeSpec row.</summary>
+/// <remarks>Only an exact complete TypeSpec table can mint this fixed-reference row.</remarks>
 public sealed class MetadataTypeSpecificationPhysicalRowIdentity :
     IEquatable<MetadataTypeSpecificationPhysicalRowIdentity>
 {
@@ -467,34 +467,34 @@ public sealed class MetadataTypeSpecificationPhysicalRowIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact draft reference source ends containing this row.</summary>
+    /// <summary>Gets the exact reference source ends containing this row.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the unchanged physical TypeSpec-row draft observation.</summary>
+    /// <summary>Gets the unchanged physical TypeSpec-row observation.</summary>
     public MetadataTypeSpecificationRowObservationIdentity Observation { get; }
 
     /// <summary>Gets the exact non-nil physical TypeSpec token.</summary>
     public int TypeSpecificationToken => Observation.TypeSpecificationToken;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two guarded physical TypeSpec draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two guarded physical TypeSpec rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSpecificationPhysicalRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests guarded physical TypeSpec draft equality against an arbitrary object.</summary>
+    /// <summary>Tests guarded physical TypeSpec equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSpecificationPhysicalRowIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this guarded physical TypeSpec draft row.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this guarded physical TypeSpec row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataTypeSpecificationPhysicalRowIdentity Create(
@@ -510,12 +510,12 @@ public sealed class MetadataTypeSpecificationPhysicalRowIdentity :
     }
 }
 
-/// <summary>Freezes one complete RID-ordered physical TypeSpec draft table.</summary>
+/// <summary>Freezes one complete RID-ordered physical TypeSpec table.</summary>
 /// <remarks>Physical row completeness remains independent of signature decode or graph traversal success.</remarks>
 public sealed class MetadataTypeSpecificationPhysicalTableCatalogIdentity :
     IEquatable<MetadataTypeSpecificationPhysicalTableCatalogIdentity>
 {
-    /// <summary>Gets the deterministic draft bound name for physical TypeSpec rows.</summary>
+    /// <summary>Gets the deterministic bound name for physical TypeSpec rows.</summary>
     public const string TableRowCountBoundName = "metadata-v2.physical-typespec.rows";
 
     private const string CanonicalDomain = "metadata-v2-typespec-physical-table";
@@ -553,35 +553,35 @@ public sealed class MetadataTypeSpecificationPhysicalTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this physical TypeSpec draft table is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this physical TypeSpec table is exact, non-exact, or invalid.</summary>
     public MetadataReferencePhysicalTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed complete physical TypeSpec draft issue.</summary>
+    /// <summary>Gets the typed complete physical TypeSpec issue.</summary>
     public MetadataReferencePhysicalTableIssue Issue { get; }
 
-    /// <summary>Gets the exact draft reference source ends for this table.</summary>
+    /// <summary>Gets the exact reference source ends for this table.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
     /// <summary>Gets a defensive RID-order copy of exact guarded rows, or an empty vector for every stop.</summary>
     public ImmutableArray<MetadataTypeSpecificationPhysicalRowIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
 
-    /// <summary>Gets the physical TypeSpec row-count draft bound after a cap-plus-one outcome.</summary>
+    /// <summary>Gets the physical TypeSpec row-count bound after a cap-plus-one outcome.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the supplied, exact, or cap-plus-one draft observation count.</summary>
+    /// <summary>Gets the supplied, exact, or cap-plus-one observation count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft table bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical table bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft table bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical table bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete RID-ordered physical TypeSpec draft table.</summary>
+    /// <summary>Creates one complete RID-ordered physical TypeSpec table.</summary>
     /// <param name="sourceEnds">The exact reference source ends defining the physical table length.</param>
     /// <param name="observations">Every source-anchored physical TypeSpec row in RID order.</param>
-    /// <returns>An exact guarded table or a prefix-free typed draft stop.</returns>
+    /// <returns>An exact guarded table or a prefix-free typed stop.</returns>
     public static MetadataTypeSpecificationPhysicalTableCatalogIdentity Create(
         MetadataReferenceSourceEndIdentity sourceEnds,
         ImmutableArray<MetadataTypeSpecificationRowObservationIdentity> observations)
@@ -625,9 +625,9 @@ public sealed class MetadataTypeSpecificationPhysicalTableCatalogIdentity :
             observations.Length);
     }
 
-    /// <summary>Finds one exact guarded physical TypeSpec draft row by token.</summary>
+    /// <summary>Finds one exact guarded physical TypeSpec row by token.</summary>
     /// <param name="typeSpecificationToken">The non-nil physical TypeSpec token.</param>
-    /// <returns>The exact draft row, or null when the table or token is not exact.</returns>
+    /// <returns>The exact row, or null when the table or token is not exact.</returns>
     public MetadataTypeSpecificationPhysicalRowIdentity? FindRow(int typeSpecificationToken)
     {
         if (ResultKind != MetadataReferencePhysicalTableResultKind.Exact ||
@@ -639,30 +639,30 @@ public sealed class MetadataTypeSpecificationPhysicalTableCatalogIdentity :
         return rowId > 0 && rowId <= rows.Length ? rows[rowId - 1] : null;
     }
 
-    /// <summary>Tests canonical equality between two complete physical TypeSpec draft tables.</summary>
-    /// <param name="other">The other draft table.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete physical TypeSpec tables.</summary>
+    /// <param name="other">The other table.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSpecificationPhysicalTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete physical TypeSpec draft-table equality against an arbitrary object.</summary>
+    /// <summary>Tests complete physical TypeSpec table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a table with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a table with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSpecificationPhysicalTableCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this complete physical TypeSpec draft table.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this complete physical TypeSpec table.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);
 }
 
-/// <summary>Freezes one source-anchored raw File-row draft observation.</summary>
+/// <summary>Freezes one source-anchored raw File-row observation.</summary>
 /// <remarks>The physical shape covers metadata-bearing and ContainsNoMetadata rows without selecting a netmodule.</remarks>
 public sealed class MetadataAssemblyFileRowObservationIdentity :
     IEquatable<MetadataAssemblyFileRowObservationIdentity>
 {
-    /// <summary>Gets the maximum physical File.HashValue byte count retained by this draft observation.</summary>
+    /// <summary>Gets the maximum physical File.HashValue byte count retained by this observation.</summary>
     public const int MaximumHashValueLength = StaticFieldAssemblyFileIdentity.MaximumHashValueLength;
 
     private const string CanonicalDomain = "metadata-v2-file-row-observation";
@@ -711,19 +711,19 @@ public sealed class MetadataAssemblyFileRowObservationIdentity :
     /// <summary>Gets a defensive copy of the complete physical File hash-value blob.</summary>
     public ImmutableArray<byte> HashValue => ExpressionV2ContractEncoding.Copy(hashValue);
 
-    /// <summary>Gets a defensive copy of the canonical physical draft observation bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical physical observation bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft observation bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical observation bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one source-anchored raw File-row draft observation.</summary>
+    /// <summary>Creates one source-anchored raw File-row observation.</summary>
     /// <param name="sourceModule">The exact metadata module containing the physical row.</param>
     /// <param name="fileToken">The exact non-nil File token.</param>
     /// <param name="flags">The exact raw File flags.</param>
     /// <param name="name">The exact decoded non-empty File name.</param>
     /// <param name="hashValue">The initialized bounded physical hash-value blob.</param>
-    /// <returns>A physical W8 draft observation that covers either File flag disposition.</returns>
+    /// <returns>A physical W8 observation that covers either File flag disposition.</returns>
     public static MetadataAssemblyFileRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity sourceModule,
         int fileToken,
@@ -747,7 +747,7 @@ public sealed class MetadataAssemblyFileRowObservationIdentity :
         return new MetadataAssemblyFileRowObservationIdentity(sourceModule, fileToken, flags, name, hashValue);
     }
 
-    /// <summary>Tests whether this physical draft observation agrees with one metadata-bearing W7 File candidate.</summary>
+    /// <summary>Tests whether this physical observation agrees with one metadata-bearing W7 File candidate.</summary>
     /// <param name="candidate">The W7 metadata-bearing File candidate.</param>
     /// <returns><see langword="true"/> only when every physical row field agrees.</returns>
     public bool MatchesCandidate(StaticFieldAssemblyFileIdentity candidate)
@@ -758,24 +758,24 @@ public sealed class MetadataAssemblyFileRowObservationIdentity :
             hashValue.AsSpan().SequenceEqual(candidate.HashValue.AsSpan());
     }
 
-    /// <summary>Tests canonical equality between two raw File draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two raw File observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAssemblyFileRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests raw File draft observation equality against an arbitrary object.</summary>
+    /// <summary>Tests raw File observation equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAssemblyFileRowObservationIdentity);
 
-    /// <summary>Computes a deterministic hash code from canonical physical draft content.</summary>
-    /// <returns>A hash code for this raw File draft observation.</returns>
+    /// <summary>Computes a deterministic hash code from canonical physical content.</summary>
+    /// <returns>A hash code for this raw File observation.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one guarded physical File draft row.</summary>
-/// <remarks>Only an exact complete File table can mint this fixed-reference draft row.</remarks>
+/// <summary>Freezes one guarded physical File row.</summary>
+/// <remarks>Only an exact complete File table can mint this fixed-reference row.</remarks>
 public sealed class MetadataAssemblyFilePhysicalRowIdentity :
     IEquatable<MetadataAssemblyFilePhysicalRowIdentity>
 {
@@ -796,34 +796,34 @@ public sealed class MetadataAssemblyFilePhysicalRowIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact draft reference source ends containing this row.</summary>
+    /// <summary>Gets the exact reference source ends containing this row.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the unchanged raw File-row draft observation.</summary>
+    /// <summary>Gets the unchanged raw File-row observation.</summary>
     public MetadataAssemblyFileRowObservationIdentity Observation { get; }
 
     /// <summary>Gets the exact non-nil physical File token.</summary>
     public int FileToken => Observation.FileToken;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two guarded physical File draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two guarded physical File rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAssemblyFilePhysicalRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests guarded physical File draft equality against an arbitrary object.</summary>
+    /// <summary>Tests guarded physical File equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAssemblyFilePhysicalRowIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this guarded physical File draft row.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this guarded physical File row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataAssemblyFilePhysicalRowIdentity Create(
@@ -839,12 +839,12 @@ public sealed class MetadataAssemblyFilePhysicalRowIdentity :
     }
 }
 
-/// <summary>Freezes one complete RID-ordered physical File draft table.</summary>
+/// <summary>Freezes one complete RID-ordered physical File table.</summary>
 /// <remarks>Metadata-bearing and ContainsNoMetadata rows participate equally in complete coverage.</remarks>
 public sealed class MetadataAssemblyFilePhysicalTableCatalogIdentity :
     IEquatable<MetadataAssemblyFilePhysicalTableCatalogIdentity>
 {
-    /// <summary>Gets the deterministic draft bound name for physical File rows.</summary>
+    /// <summary>Gets the deterministic bound name for physical File rows.</summary>
     public const string TableRowCountBoundName = "metadata-v2.physical-file.rows";
 
     private const string CanonicalDomain = "metadata-v2-file-physical-table";
@@ -882,35 +882,35 @@ public sealed class MetadataAssemblyFilePhysicalTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this physical File draft table is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this physical File table is exact, non-exact, or invalid.</summary>
     public MetadataReferencePhysicalTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed complete physical File draft issue.</summary>
+    /// <summary>Gets the typed complete physical File issue.</summary>
     public MetadataReferencePhysicalTableIssue Issue { get; }
 
-    /// <summary>Gets the exact draft reference source ends for this table.</summary>
+    /// <summary>Gets the exact reference source ends for this table.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
     /// <summary>Gets a defensive RID-order copy of exact guarded rows, or an empty vector for every stop.</summary>
     public ImmutableArray<MetadataAssemblyFilePhysicalRowIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
 
-    /// <summary>Gets the physical File row-count draft bound after a cap-plus-one outcome.</summary>
+    /// <summary>Gets the physical File row-count bound after a cap-plus-one outcome.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the supplied, exact, or cap-plus-one draft observation count.</summary>
+    /// <summary>Gets the supplied, exact, or cap-plus-one observation count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft table bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical table bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft table bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical table bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete RID-ordered physical File draft table.</summary>
+    /// <summary>Creates one complete RID-ordered physical File table.</summary>
     /// <param name="sourceEnds">The exact reference source ends defining the physical table length.</param>
     /// <param name="observations">Every source-anchored raw physical File row in RID order.</param>
-    /// <returns>An exact guarded table or a prefix-free typed draft stop.</returns>
+    /// <returns>An exact guarded table or a prefix-free typed stop.</returns>
     public static MetadataAssemblyFilePhysicalTableCatalogIdentity Create(
         MetadataReferenceSourceEndIdentity sourceEnds,
         ImmutableArray<MetadataAssemblyFileRowObservationIdentity> observations)
@@ -954,9 +954,9 @@ public sealed class MetadataAssemblyFilePhysicalTableCatalogIdentity :
             observations.Length);
     }
 
-    /// <summary>Finds one exact guarded physical File draft row by token.</summary>
+    /// <summary>Finds one exact guarded physical File row by token.</summary>
     /// <param name="fileToken">The non-nil physical File token.</param>
-    /// <returns>The exact draft row, or null when the table or token is not exact.</returns>
+    /// <returns>The exact row, or null when the table or token is not exact.</returns>
     public MetadataAssemblyFilePhysicalRowIdentity? FindRow(int fileToken)
     {
         if (ResultKind != MetadataReferencePhysicalTableResultKind.Exact ||
@@ -968,25 +968,25 @@ public sealed class MetadataAssemblyFilePhysicalTableCatalogIdentity :
         return rowId > 0 && rowId <= rows.Length ? rows[rowId - 1] : null;
     }
 
-    /// <summary>Tests canonical equality between two complete physical File draft tables.</summary>
-    /// <param name="other">The other draft table.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete physical File tables.</summary>
+    /// <param name="other">The other table.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAssemblyFilePhysicalTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete physical File draft-table equality against an arbitrary object.</summary>
+    /// <summary>Tests complete physical File table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a table with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a table with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAssemblyFilePhysicalTableCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this complete physical File draft table.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this complete physical File table.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);
 }
 
-/// <summary>Freezes one source-anchored raw ExportedType-row draft observation.</summary>
+/// <summary>Freezes one source-anchored raw ExportedType-row observation.</summary>
 /// <remarks>
 /// The physical shape retains File, AssemblyRef, and enclosing-ExportedType Implementation forms. It does not select
 /// a target assembly or assume the row is a top-level forwarder.
@@ -1047,13 +1047,13 @@ public sealed class MetadataExportedTypeRowObservationIdentity :
     /// <summary>Gets the exact non-nil File, AssemblyRef, or ExportedType Implementation token.</summary>
     public int ImplementationMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the canonical physical draft observation bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical physical observation bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft observation bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical observation bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one source-anchored raw ExportedType-row draft observation.</summary>
+    /// <summary>Creates one source-anchored raw ExportedType-row observation.</summary>
     /// <param name="sourceModule">The exact manifest metadata module containing the physical row.</param>
     /// <param name="exportedTypeToken">The exact non-nil ExportedType token.</param>
     /// <param name="typeAttributes">The exact raw ExportedType attributes.</param>
@@ -1061,7 +1061,7 @@ public sealed class MetadataExportedTypeRowObservationIdentity :
     /// <param name="namespaceName">The exact namespace, including empty for a nested row.</param>
     /// <param name="typeName">The exact non-empty metadata type name.</param>
     /// <param name="implementationMetadataToken">The non-nil File, AssemblyRef, or ExportedType token.</param>
-    /// <returns>A raw W8 draft observation with no selected target assembly.</returns>
+    /// <returns>A raw W8 observation with no selected target assembly.</returns>
     public static MetadataExportedTypeRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity sourceModule,
         int exportedTypeToken,
@@ -1097,7 +1097,7 @@ public sealed class MetadataExportedTypeRowObservationIdentity :
             implementationMetadataToken);
     }
 
-    /// <summary>Tests whether this physical draft observation agrees with one W7 top-level forwarder candidate.</summary>
+    /// <summary>Tests whether this physical observation agrees with one W7 top-level forwarder candidate.</summary>
     /// <param name="candidate">The W7 forwarder candidate to compare.</param>
     /// <returns><see langword="true"/> only when every physical row field and source assembly agree.</returns>
     public bool MatchesCandidate(StaticFieldExportedTypeForwarderIdentity candidate)
@@ -1111,24 +1111,24 @@ public sealed class MetadataExportedTypeRowObservationIdentity :
             ImplementationMetadataToken == candidate.ImplementationAssemblyReference.AssemblyReferenceToken;
     }
 
-    /// <summary>Tests canonical equality between two raw ExportedType draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two raw ExportedType observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataExportedTypeRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests raw ExportedType draft observation equality against an arbitrary object.</summary>
+    /// <summary>Tests raw ExportedType observation equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataExportedTypeRowObservationIdentity);
 
-    /// <summary>Computes a deterministic hash code from canonical physical draft content.</summary>
-    /// <returns>A hash code for this raw ExportedType draft observation.</returns>
+    /// <summary>Computes a deterministic hash code from canonical physical content.</summary>
+    /// <returns>A hash code for this raw ExportedType observation.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one guarded physical ExportedType draft row.</summary>
-/// <remarks>Only an exact complete ExportedType table can mint this fixed-reference draft row.</remarks>
+/// <summary>Freezes one guarded physical ExportedType row.</summary>
+/// <remarks>Only an exact complete ExportedType table can mint this fixed-reference row.</remarks>
 public sealed class MetadataExportedTypePhysicalRowIdentity :
     IEquatable<MetadataExportedTypePhysicalRowIdentity>
 {
@@ -1149,34 +1149,34 @@ public sealed class MetadataExportedTypePhysicalRowIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact draft reference source ends containing this row.</summary>
+    /// <summary>Gets the exact reference source ends containing this row.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the unchanged raw ExportedType-row draft observation.</summary>
+    /// <summary>Gets the unchanged raw ExportedType-row observation.</summary>
     public MetadataExportedTypeRowObservationIdentity Observation { get; }
 
     /// <summary>Gets the exact non-nil physical ExportedType token.</summary>
     public int ExportedTypeToken => Observation.ExportedTypeToken;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two guarded physical ExportedType draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two guarded physical ExportedType rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataExportedTypePhysicalRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests guarded physical ExportedType draft equality against an arbitrary object.</summary>
+    /// <summary>Tests guarded physical ExportedType equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataExportedTypePhysicalRowIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this guarded physical ExportedType draft row.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this guarded physical ExportedType row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataExportedTypePhysicalRowIdentity Create(
@@ -1192,12 +1192,12 @@ public sealed class MetadataExportedTypePhysicalRowIdentity :
     }
 }
 
-/// <summary>Freezes one complete RID-ordered physical ExportedType draft table.</summary>
+/// <summary>Freezes one complete RID-ordered physical ExportedType table.</summary>
 /// <remarks>File, AssemblyRef, and enclosing-ExportedType implementations are range-checked before issuance.</remarks>
 public sealed class MetadataExportedTypePhysicalTableCatalogIdentity :
     IEquatable<MetadataExportedTypePhysicalTableCatalogIdentity>
 {
-    /// <summary>Gets the deterministic draft bound name for physical ExportedType rows.</summary>
+    /// <summary>Gets the deterministic bound name for physical ExportedType rows.</summary>
     public const string TableRowCountBoundName = "metadata-v2.physical-exportedtype.rows";
 
     private const string CanonicalDomain = "metadata-v2-exportedtype-physical-table";
@@ -1235,35 +1235,35 @@ public sealed class MetadataExportedTypePhysicalTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this physical ExportedType draft table is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this physical ExportedType table is exact, non-exact, or invalid.</summary>
     public MetadataReferencePhysicalTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed complete physical ExportedType draft issue.</summary>
+    /// <summary>Gets the typed complete physical ExportedType issue.</summary>
     public MetadataReferencePhysicalTableIssue Issue { get; }
 
-    /// <summary>Gets the exact draft reference source ends for this table.</summary>
+    /// <summary>Gets the exact reference source ends for this table.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
     /// <summary>Gets a defensive RID-order copy of exact guarded rows, or an empty vector for every stop.</summary>
     public ImmutableArray<MetadataExportedTypePhysicalRowIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
 
-    /// <summary>Gets the physical ExportedType row-count draft bound after a cap-plus-one outcome.</summary>
+    /// <summary>Gets the physical ExportedType row-count bound after a cap-plus-one outcome.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the supplied, exact, or cap-plus-one draft observation count.</summary>
+    /// <summary>Gets the supplied, exact, or cap-plus-one observation count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft table bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical table bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft table bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical table bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete RID-ordered physical ExportedType draft table.</summary>
+    /// <summary>Creates one complete RID-ordered physical ExportedType table.</summary>
     /// <param name="sourceEnds">The exact reference source ends defining the physical table and implementation ends.</param>
     /// <param name="observations">Every source-anchored raw ExportedType row in RID order.</param>
-    /// <returns>An exact guarded table or a prefix-free typed draft stop.</returns>
+    /// <returns>An exact guarded table or a prefix-free typed stop.</returns>
     public static MetadataExportedTypePhysicalTableCatalogIdentity Create(
         MetadataReferenceSourceEndIdentity sourceEnds,
         ImmutableArray<MetadataExportedTypeRowObservationIdentity> observations)
@@ -1317,9 +1317,9 @@ public sealed class MetadataExportedTypePhysicalTableCatalogIdentity :
             observations.Length);
     }
 
-    /// <summary>Finds one exact guarded physical ExportedType draft row by token.</summary>
+    /// <summary>Finds one exact guarded physical ExportedType row by token.</summary>
     /// <param name="exportedTypeToken">The non-nil physical ExportedType token.</param>
-    /// <returns>The exact draft row, or null when the table or token is not exact.</returns>
+    /// <returns>The exact row, or null when the table or token is not exact.</returns>
     public MetadataExportedTypePhysicalRowIdentity? FindRow(int exportedTypeToken)
     {
         if (ResultKind != MetadataReferencePhysicalTableResultKind.Exact ||
@@ -1331,19 +1331,19 @@ public sealed class MetadataExportedTypePhysicalTableCatalogIdentity :
         return rowId > 0 && rowId <= rows.Length ? rows[rowId - 1] : null;
     }
 
-    /// <summary>Tests canonical equality between two complete physical ExportedType draft tables.</summary>
-    /// <param name="other">The other draft table.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete physical ExportedType tables.</summary>
+    /// <param name="other">The other table.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataExportedTypePhysicalTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete physical ExportedType draft-table equality against an arbitrary object.</summary>
+    /// <summary>Tests complete physical ExportedType table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a table with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a table with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataExportedTypePhysicalTableCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this complete physical ExportedType draft table.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this complete physical ExportedType table.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);

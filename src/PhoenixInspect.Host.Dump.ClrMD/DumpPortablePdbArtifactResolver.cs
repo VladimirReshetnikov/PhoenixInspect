@@ -6,7 +6,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// <summary>Classifies one bounded Portable-PDB artifact read returned by a host resolver.</summary>
 /// <remarks>
 /// Only byte acquisition is represented here. GUID/stamp validation, content hashing, candidate ambiguity, and PDB
-/// decoding remain producer responsibilities. Numeric values are part of the draft W7 resolver contract.
+/// decoding remain producer responsibilities. Numeric values are part of the W7 resolver contract.
 /// </remarks>
 public enum DumpPortablePdbArtifactReadStatus : byte
 {
@@ -26,7 +26,7 @@ public enum DumpPortablePdbArtifactReadStatus : byte
 /// <remarks>
 /// <see cref="SourceId"/> is diagnostic resolver state and may be a path, URI, or store key. It is deliberately
 /// excluded from every dump-expression identity; only complete bytes that pass producer validation can contribute
-/// content identity. Caveat: this draft accepts standalone Portable PDB byte streams only.
+/// content identity. Caveat: this accepts standalone Portable PDB byte streams only.
 /// </remarks>
 public sealed class DumpPortablePdbArtifactRead
 {
@@ -172,7 +172,7 @@ public sealed class DumpPortablePdbArtifactResolutionRequest
 /// <remarks>
 /// Implementations perform discovery/acquisition only and must not choose a winning candidate. Returned source ids
 /// remain transient; the producer owns bounds, hashing, identity validation, ambiguity, and scope projection.
-/// Caveat: implementations execute synchronously in the current draft host seam.
+/// Caveat: implementations execute synchronously in the current host seam.
 /// </remarks>
 public interface IDumpPortablePdbArtifactResolver
 {

@@ -3,37 +3,37 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one normalized multi-module draft compatibility portfolio.</summary>
+/// <summary>Classifies one normalized multi-module compatibility portfolio.</summary>
 /// <remarks>
 /// Exact means every retained module has one exact W7 comparison catalog in one snapshot. Non-exact and invalid
 /// results retain no entry prefix.
 /// </remarks>
 public enum MetadataDefinitionCompatibilityPortfolioResultKind
 {
-    /// <summary>The initialized draft vector normalized into one complete module portfolio.</summary>
+    /// <summary>The initialized vector normalized into one complete module portfolio.</summary>
     Exact = 1,
 
-    /// <summary>A missing prerequisite or declared draft bound prevented complete normalization.</summary>
+    /// <summary>A missing prerequisite or declared bound prevented complete normalization.</summary>
     NonExact = 2,
 
-    /// <summary>Complete draft inputs contradicted one another.</summary>
+    /// <summary>Complete inputs contradicted one another.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the deterministic issue for one multi-module draft compatibility portfolio.</summary>
+/// <summary>Identifies the deterministic issue for one multi-module compatibility portfolio.</summary>
 /// <remarks>
 /// Issue precedence is vector initialization, module count, missing entry, non-exact catalog, invalid catalog,
 /// snapshot disagreement, then duplicate module. This precedence is independent of caller order.
 /// </remarks>
 public enum MetadataDefinitionCompatibilityPortfolioIssue
 {
-    /// <summary>No issue applies to an exact draft portfolio.</summary>
+    /// <summary>No issue applies to an exact portfolio.</summary>
     None = 0,
 
     /// <summary>The supplied compatibility-catalog vector was default rather than explicitly initialized.</summary>
     CatalogVectorUninitialized = 1,
 
-    /// <summary>The supplied vector reached the shared module-count draft bound plus one.</summary>
+    /// <summary>The supplied vector reached the shared module-count bound plus one.</summary>
     ModuleCountBoundReached = 2,
 
     /// <summary>An initialized vector slot did not contain a compatibility catalog.</summary>
@@ -52,7 +52,7 @@ public enum MetadataDefinitionCompatibilityPortfolioIssue
     DuplicateSourceModule = 7,
 }
 
-/// <summary>Freezes one guarded fixed-reference entry in a normalized draft compatibility portfolio.</summary>
+/// <summary>Freezes one guarded fixed-reference entry in a normalized compatibility portfolio.</summary>
 /// <remarks>
 /// The entry retains the exact catalog for later row lookup, but its canonical form contains only fixed-size snapshot,
 /// module, definition-authority, and compatibility-catalog digests. It neither copies nor reinterprets row outcomes.
@@ -83,41 +83,41 @@ public sealed class MetadataDefinitionCompatibilityPortfolioEntryIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact draft W7 comparison catalog retained without row reinterpretation.</summary>
+    /// <summary>Gets the exact W7 comparison catalog retained without row reinterpretation.</summary>
     public MetadataW7TypeDefinitionCompatibilityCatalogIdentity CompatibilityCatalog { get; }
 
-    /// <summary>Gets the exact draft definition authority referenced by the compatibility catalog.</summary>
+    /// <summary>Gets the exact definition authority referenced by the compatibility catalog.</summary>
     public MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority { get; }
 
-    /// <summary>Gets the exact draft physical source ends shared by the authority and its issued rows.</summary>
+    /// <summary>Gets the exact physical source ends shared by the authority and its issued rows.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the exact draft metadata module used as the portfolio key.</summary>
+    /// <summary>Gets the exact metadata module used as the portfolio key.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule { get; }
 
-    /// <summary>Gets the lowercase complete dump-snapshot digest shared by the draft portfolio.</summary>
+    /// <summary>Gets the lowercase complete dump-snapshot digest shared by the portfolio.</summary>
     public string SnapshotSha256 { get; }
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft entry.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical entry.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of this canonical draft entry.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of this canonical entry.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two fixed-reference draft portfolio entries.</summary>
-    /// <param name="other">The other draft portfolio entry.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two fixed-reference portfolio entries.</summary>
+    /// <param name="other">The other portfolio entry.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataDefinitionCompatibilityPortfolioEntryIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft portfolio-entry equality against an arbitrary object.</summary>
+    /// <summary>Tests portfolio-entry equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an entry with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an entry with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataDefinitionCompatibilityPortfolioEntryIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft entry content.</summary>
-    /// <returns>A hash code for this fixed-reference draft entry.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical entry content.</summary>
+    /// <returns>A hash code for this fixed-reference entry.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataDefinitionCompatibilityPortfolioEntryIdentity Create(
@@ -143,7 +143,7 @@ public sealed class MetadataDefinitionCompatibilityPortfolioEntryIdentity :
     }
 }
 
-/// <summary>Normalizes exact per-module comparison catalogs into one snapshot-scoped draft portfolio.</summary>
+/// <summary>Normalizes exact per-module comparison catalogs into one snapshot-scoped portfolio.</summary>
 /// <remarks>
 /// Caller order is discarded in favor of exact metadata-module canonical order. Every entry retains its original
 /// comparison catalog, including compatible, absent, and mismatched row outcomes. The portfolio requires catalog
@@ -197,26 +197,26 @@ public sealed class MetadataDefinitionCompatibilityPortfolioIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the shared draft module-count cap.</summary>
+    /// <summary>Gets the shared module-count cap.</summary>
     public const int MaximumModuleCount = ExpressionV2ContractLimits.MaximumModuleCount;
 
-    /// <summary>Gets whether this normalized draft portfolio is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this normalized portfolio is exact, non-exact, or invalid.</summary>
     public MetadataDefinitionCompatibilityPortfolioResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft portfolio issue, or none for an exact portfolio.</summary>
+    /// <summary>Gets the typed portfolio issue, or none for an exact portfolio.</summary>
     public MetadataDefinitionCompatibilityPortfolioIssue Issue { get; }
 
     /// <summary>Gets the exact portfolio's common snapshot digest, or null for an empty portfolio or any stop.</summary>
     public string? SnapshotSha256 { get; }
 
-    /// <summary>Gets a defensive module-canonical-order copy of exact draft entries, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive module-canonical-order copy of exact entries, or an empty array for a stop.</summary>
     public ImmutableArray<MetadataDefinitionCompatibilityPortfolioEntryIdentity> Entries =>
         ExpressionV2ContractEncoding.Copy(entries);
 
-    /// <summary>Gets the shared module-count draft bound only for a cap-plus-one result.</summary>
+    /// <summary>Gets the shared module-count bound only for a cap-plus-one result.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the issue-related supplied or cap-plus-one draft observation count.</summary>
+    /// <summary>Gets the issue-related supplied or cap-plus-one observation count.</summary>
     public int ObservedCount { get; }
 
     /// <summary>Gets a prerequisite issue-related metadata token, otherwise null.</summary>
@@ -228,18 +228,18 @@ public sealed class MetadataDefinitionCompatibilityPortfolioIdentity :
     /// <summary>Gets an issue-related compatibility-catalog digest, otherwise null.</summary>
     public string? RelatedCatalogSha256 { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft portfolio bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical portfolio bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft portfolio bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical portfolio bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one normalized snapshot-scoped draft compatibility portfolio.</summary>
+    /// <summary>Creates one normalized snapshot-scoped compatibility portfolio.</summary>
     /// <param name="compatibilityCatalogs">
     /// An explicitly initialized vector containing at most one exact comparison catalog per exact metadata module.
     /// </param>
     /// <returns>
-    /// An exact module-canonical draft portfolio, a prefix-free non-exact stop, or a prefix-free invalid result.
+    /// An exact module-canonical portfolio, a prefix-free non-exact stop, or a prefix-free invalid result.
     /// </returns>
     public static MetadataDefinitionCompatibilityPortfolioIdentity Create(
         ImmutableArray<MetadataW7TypeDefinitionCompatibilityCatalogIdentity> compatibilityCatalogs)
@@ -347,20 +347,20 @@ public sealed class MetadataDefinitionCompatibilityPortfolioIdentity :
         return Exact(snapshotSha256, entries.MoveToImmutable());
     }
 
-    /// <summary>Tests canonical equality between two normalized draft compatibility portfolios.</summary>
-    /// <param name="other">The other draft portfolio.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two normalized compatibility portfolios.</summary>
+    /// <param name="other">The other portfolio.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataDefinitionCompatibilityPortfolioIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft compatibility-portfolio equality against an arbitrary object.</summary>
+    /// <summary>Tests compatibility-portfolio equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a portfolio with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a portfolio with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataDefinitionCompatibilityPortfolioIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft portfolio content.</summary>
-    /// <returns>A hash code for this normalized draft portfolio.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical portfolio content.</summary>
+    /// <returns>A hash code for this normalized portfolio.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal MetadataDefinitionCompatibilityPortfolioEntryIdentity? ExactEntryOrDefault(

@@ -10,7 +10,7 @@ namespace PhoenixInspect.Core.Execution;
 /// <remarks>
 /// Operational budgets are excluded by construction because they live in <see cref="MachineOperationalState"/>.
 /// Domain equivalence is mutual lattice ordering, so presentation-only differences need not perturb worklists.
-/// The current prototype deliberately returns a constant hash code: <see cref="IValueDomain{TValue}"/> has no
+/// The current implementation deliberately returns a constant hash code: <see cref="IValueDomain{TValue}"/> has no
 /// semantic hashing contract, and correctness is preferable to a hash that disagrees with semantic equality.
 /// Introduce a domain hashing capability alongside the first measured fixpoint implementation.
 /// </remarks>

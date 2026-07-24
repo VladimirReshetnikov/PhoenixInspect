@@ -3,10 +3,10 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one exact constructed-assignability draft answer between two closed metadata types.</summary>
+/// <summary>Classifies one exact constructed-assignability answer between two closed metadata types.</summary>
 /// <remarks>
-/// <see cref="Assignable"/> and <see cref="NotAssignable"/> are complete derived draft answers that retain their
-/// traversed base-chain edges and per-position variance decisions. <see cref="Unprovable"/> is also a complete draft
+/// <see cref="Assignable"/> and <see cref="NotAssignable"/> are complete derived answers that retain their
+/// traversed base-chain edges and per-position variance decisions. <see cref="Unprovable"/> is also a complete
 /// answer: it states that a declared coverage boundary, and not a proven negative, prevented a positive result.
 /// <see cref="NonExact"/> and <see cref="Invalid"/> are prefix-free stops that retain no edge and no decision.
 /// </remarks>
@@ -21,17 +21,17 @@ public enum StaticFieldV2AssignabilityResultKind
     /// <summary>A declared coverage boundary prevented a positive proof; this is not a proven negative.</summary>
     Unprovable = 3,
 
-    /// <summary>A prerequisite or a declared draft bound prevented any complete answer.</summary>
+    /// <summary>A prerequisite or a declared bound prevented any complete answer.</summary>
     NonExact = 4,
 
-    /// <summary>Complete supplied draft evidence contradicted the ancestry portfolio or itself.</summary>
+    /// <summary>Complete supplied evidence contradicted the ancestry portfolio or itself.</summary>
     Invalid = 5,
 }
 
-/// <summary>Identifies the deterministic draft rule that decided one constructed-assignability answer.</summary>
+/// <summary>Identifies the deterministic rule that decided one constructed-assignability answer.</summary>
 /// <remarks>
 /// Every reason names exactly one rule of the frozen W8.1 differential, so a consumer can replay which clause - and
-/// not merely which verdict - produced the retained draft answer.
+/// not merely which verdict - produced the retained answer.
 /// </remarks>
 public enum StaticFieldV2AssignabilityReason
 {
@@ -86,10 +86,10 @@ public enum StaticFieldV2AssignabilityReason
     /// <summary>Two primitive closed types were not canonically equal.</summary>
     PrimitiveNotEqual = 16,
 
-    /// <summary>The source had value-type semantics, and this draft slice models no boxing conversion.</summary>
+    /// <summary>The source had value-type semantics, and this slice models no boxing conversion.</summary>
     ValueSourceRequiresBoxing = 17,
 
-    /// <summary>The two closed topology kinds admit no assignability rule of this draft slice.</summary>
+    /// <summary>The two closed topology kinds admit no assignability rule of this slice.</summary>
     ClosedTypeKindMismatch = 18,
 
     /// <summary>The target was an interface the class base chain cannot reach and no portfolio was supplied.</summary>
@@ -116,10 +116,10 @@ public enum StaticFieldV2AssignabilityReason
     /// <summary>One GenericParam row carried the reserved variance combination.</summary>
     VarianceFlagsInvalid = 26,
 
-    /// <summary>The bounded base chain reached the declared ancestry-depth draft cap plus one.</summary>
+    /// <summary>The bounded base chain reached the declared ancestry-depth cap plus one.</summary>
     AncestryDepthBoundReached = 27,
 
-    /// <summary>The cumulative comparison count reached the declared draft cap plus one.</summary>
+    /// <summary>The cumulative comparison count reached the declared cap plus one.</summary>
     ComparisonBoundReached = 28,
 
     /// <summary>One retained InterfaceImpl closure edge named the target interface definition.</summary>
@@ -141,8 +141,8 @@ public enum StaticFieldV2AssignabilityReason
     InterfaceImplementationPortfolioInvalid = 34,
 }
 
-/// <summary>Classifies the ECMA-335 declared variance of one GenericParam draft row.</summary>
-/// <remarks>The draft classification is a pure decoding of the GenericParam variance mask and nothing else.</remarks>
+/// <summary>Classifies the ECMA-335 declared variance of one GenericParam row.</summary>
+/// <remarks>The classification is a pure decoding of the GenericParam variance mask and nothing else.</remarks>
 public enum StaticFieldV2GenericParameterVariance
 {
     /// <summary>The parameter declared no variance.</summary>
@@ -155,9 +155,9 @@ public enum StaticFieldV2GenericParameterVariance
     Contravariant = 3,
 }
 
-/// <summary>Identifies one declared coverage boundary retained by a constructed-assignability draft outcome.</summary>
+/// <summary>Identifies one declared coverage boundary retained by a constructed-assignability outcome.</summary>
 /// <remarks>
-/// Every boundary is an informational draft fact rather than an error. A boundary states what this pure-contract phase
+/// Every boundary is an informational fact rather than an error. A boundary states what this pure-contract phase
 /// deliberately does not model, so a consumer can never mistake a silent gap - or a deliberate divergence from the
 /// pinned runtime - for a proven negative.
 /// </remarks>
@@ -182,12 +182,12 @@ public enum StaticFieldV2AssignabilityCoverageBoundary
 
     /// <summary>
     /// A generic interface instantiation was reached whose closed arguments no consulted authority decodes, so no
-    /// per-position variance decision over that instantiation is possible in this draft slice.
+    /// per-position variance decision over that instantiation is possible in this slice.
     /// </summary>
     GenericInterfaceInstantiationNotModeled = 5,
 }
 
-/// <summary>Freezes one consulted bounded base-chain level of a constructed-assignability draft answer.</summary>
+/// <summary>Freezes one consulted bounded base-chain level of a constructed-assignability answer.</summary>
 /// <remarks>
 /// The edge is minted only by <see cref="StaticFieldV2AssignabilityOutcome"/>. Level zero is the source's own named
 /// definition and every later level is one authority-derived immediate base edge, so provenance can establish that the
@@ -220,40 +220,40 @@ public sealed class StaticFieldV2AssignabilityBaseChainEdgeIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the zero-based draft level index, where zero is the source's own named definition.</summary>
+    /// <summary>Gets the zero-based level index, where zero is the source's own named definition.</summary>
     public int LevelIndex { get; }
 
-    /// <summary>Gets the exact metadata module that declares the TypeDef consulted at this draft level.</summary>
+    /// <summary>Gets the exact metadata module that declares the TypeDef consulted at this level.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule { get; }
 
-    /// <summary>Gets the authority-issued TypeDef consulted at this bounded base-chain draft level.</summary>
+    /// <summary>Gets the authority-issued TypeDef consulted at this bounded base-chain level.</summary>
     public MetadataTypeDefinitionAuthorityIdentity TypeDefinition { get; }
 
-    /// <summary>Gets whether this draft level named the requested target's exact definition.</summary>
+    /// <summary>Gets whether this level named the requested target's exact definition.</summary>
     public bool IsTargetDefinition { get; }
 
-    /// <summary>Gets the exact TypeDef token consulted at this draft level.</summary>
+    /// <summary>Gets the exact TypeDef token consulted at this level.</summary>
     public int TypeDefinitionToken => TypeDefinition.TypeDefinitionToken;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft edge bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical edge bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft edge.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical edge.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two consulted base-chain draft edges.</summary>
-    /// <param name="other">The other draft edge.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two consulted base-chain edges.</summary>
+    /// <param name="other">The other edge.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2AssignabilityBaseChainEdgeIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests consulted base-chain draft edge equality against an arbitrary object.</summary>
+    /// <summary>Tests consulted base-chain edge equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an edge with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an edge with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2AssignabilityBaseChainEdgeIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft edge content.</summary>
-    /// <returns>A hash code for this canonical draft edge.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical edge content.</summary>
+    /// <returns>A hash code for this canonical edge.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2AssignabilityBaseChainEdgeIdentity Create(
@@ -281,7 +281,7 @@ public sealed class StaticFieldV2AssignabilityBaseChainEdgeIdentity :
     }
 }
 
-/// <summary>Freezes one examined generic-argument position of a constructed-assignability draft answer.</summary>
+/// <summary>Freezes one examined generic-argument position of a constructed-assignability answer.</summary>
 /// <remarks>
 /// The position is minted only by <see cref="StaticFieldV2AssignabilityOutcome"/>. It retains the physical GenericParam
 /// row, the declared variance decoded from that row, the effective variance after the CLI value-type rule, both
@@ -323,49 +323,49 @@ public sealed class StaticFieldV2AssignabilityVariancePositionIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the zero-based position in the canonical flattened draft argument vector.</summary>
+    /// <summary>Gets the zero-based position in the canonical flattened argument vector.</summary>
     public int PositionIndex { get; }
 
-    /// <summary>Gets the exact physical GenericParam draft row that governs this position.</summary>
+    /// <summary>Gets the exact physical GenericParam row that governs this position.</summary>
     public MetadataGenericParameterTableRowIdentity Parameter { get; }
 
-    /// <summary>Gets the variance decoded from the GenericParam draft row's variance mask.</summary>
+    /// <summary>Gets the variance decoded from the GenericParam row's variance mask.</summary>
     public StaticFieldV2GenericParameterVariance DeclaredVariance { get; }
 
     /// <summary>Gets the variance actually applied after the CLI value-type-argument rule.</summary>
     public StaticFieldV2GenericParameterVariance EffectiveVariance { get; }
 
-    /// <summary>Gets the exact closed argument the source construction supplied at this draft position.</summary>
+    /// <summary>Gets the exact closed argument the source construction supplied at this position.</summary>
     public MetadataClosedTypeIdentity SourceArgument { get; }
 
-    /// <summary>Gets the exact closed argument the target construction supplied at this draft position.</summary>
+    /// <summary>Gets the exact closed argument the target construction supplied at this position.</summary>
     public MetadataClosedTypeIdentity TargetArgument { get; }
 
-    /// <summary>Gets whether this draft position admitted the examined argument pair.</summary>
+    /// <summary>Gets whether this position admitted the examined argument pair.</summary>
     public bool IsAdmitted { get; }
 
-    /// <summary>Gets the exact GenericParam token of the draft row that governs this position.</summary>
+    /// <summary>Gets the exact GenericParam token of the row that governs this position.</summary>
     public int GenericParameterToken => Parameter.GenericParameterToken;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft position bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical position bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft position.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical position.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two examined variance draft positions.</summary>
-    /// <param name="other">The other draft position.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two examined variance positions.</summary>
+    /// <param name="other">The other position.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2AssignabilityVariancePositionIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests examined variance draft position equality against an arbitrary object.</summary>
+    /// <summary>Tests examined variance position equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a position with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a position with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2AssignabilityVariancePositionIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft position content.</summary>
-    /// <returns>A hash code for this canonical draft position.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical position content.</summary>
+    /// <returns>A hash code for this canonical position.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2AssignabilityVariancePositionIdentity Create(
@@ -402,10 +402,10 @@ public sealed class StaticFieldV2AssignabilityVariancePositionIdentity :
     }
 }
 
-/// <summary>Freezes one complete constructed-assignability draft request.</summary>
+/// <summary>Freezes one complete constructed-assignability request.</summary>
 /// <remarks>
-/// The request names one source closed type, one target closed type, one exact ancestry draft portfolio, and an
-/// optional interface-implementation draft portfolio. It carries no runtime, no dump, no memory, and no ClrMD
+/// The request names one source closed type, one target closed type, one exact ancestry portfolio, and an
+/// optional interface-implementation portfolio. It carries no runtime, no dump, no memory, and no ClrMD
 /// evidence: the decision is pure contract logic over already-landed metadata authority, taken before any suffix of
 /// the expression is evaluated.
 /// <para>
@@ -442,33 +442,33 @@ public sealed class StaticFieldV2AssignabilityRequest : IEquatable<StaticFieldV2
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact closed type of the non-null reference draft value being validated.</summary>
+    /// <summary>Gets the exact closed type of the non-null reference value being validated.</summary>
     public MetadataClosedTypeIdentity SourceType { get; }
 
-    /// <summary>Gets the exact closed type the validated draft value must be assignable to.</summary>
+    /// <summary>Gets the exact closed type the validated value must be assignable to.</summary>
     public MetadataClosedTypeIdentity TargetType { get; }
 
-    /// <summary>Gets the ancestry authority draft portfolio supplying core roles and bounded base chains.</summary>
+    /// <summary>Gets the ancestry authority portfolio supplying core roles and bounded base chains.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
 
-    /// <summary>Gets the optional interface-implementation draft portfolio, or null when none was supplied.</summary>
+    /// <summary>Gets the optional interface-implementation portfolio, or null when none was supplied.</summary>
     public MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementationPortfolio { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft request.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical request.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete constructed-assignability draft request.</summary>
-    /// <param name="sourceType">The exact closed type of the validated non-null reference draft value.</param>
-    /// <param name="targetType">The exact closed type the validated draft value must be assignable to.</param>
-    /// <param name="ancestryPortfolio">The ancestry authority draft portfolio prerequisite.</param>
+    /// <summary>Creates one complete constructed-assignability request.</summary>
+    /// <param name="sourceType">The exact closed type of the validated non-null reference value.</param>
+    /// <param name="targetType">The exact closed type the validated value must be assignable to.</param>
+    /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
     /// <param name="interfaceImplementationPortfolio">
-    /// The optional interface-implementation draft portfolio. Omitting it keeps the declared InterfaceImpl coverage
+    /// The optional interface-implementation portfolio. Omitting it keeps the declared InterfaceImpl coverage
     /// boundary and leaves every interface target unprovable; supplying it makes an interface target provable.
     /// </param>
-    /// <returns>A sealed immutable draft request.</returns>
+    /// <returns>A sealed immutable request.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     public static StaticFieldV2AssignabilityRequest Create(
         MetadataClosedTypeIdentity sourceType,
@@ -486,25 +486,25 @@ public sealed class StaticFieldV2AssignabilityRequest : IEquatable<StaticFieldV2
             interfaceImplementationPortfolio);
     }
 
-    /// <summary>Tests canonical equality between two constructed-assignability draft requests.</summary>
-    /// <param name="other">The other draft request.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two constructed-assignability requests.</summary>
+    /// <param name="other">The other request.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2AssignabilityRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests constructed-assignability draft request equality against an arbitrary object.</summary>
+    /// <summary>Tests constructed-assignability request equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a request with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a request with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2AssignabilityRequest);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft request content.</summary>
-    /// <returns>A hash code for this canonical draft request.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical request content.</summary>
+    /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes the complete draft outcome of one exact constructed-assignability decision.</summary>
+/// <summary>Freezes the complete outcome of one exact constructed-assignability decision.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of every base-chain edge and variance position it retains. A complete
+/// This sealed outcome is the sole issuer of every base-chain edge and variance position it retains. A complete
 /// derived answer - <see cref="StaticFieldV2AssignabilityResultKind.Assignable"/>,
 /// <see cref="StaticFieldV2AssignabilityResultKind.NotAssignable"/>, or
 /// <see cref="StaticFieldV2AssignabilityResultKind.Unprovable"/> - retains the edges and positions it consulted,
@@ -512,7 +512,7 @@ public sealed class StaticFieldV2AssignabilityRequest : IEquatable<StaticFieldV2
 /// <see cref="StaticFieldV2AssignabilityResultKind.Invalid"/> - is prefix-free and retains neither, because a partial
 /// derivation is not evidence about the requested pair.
 /// <para>
-/// Declared coverage boundaries are informational draft facts retained by every outcome. When no
+/// Declared coverage boundaries are informational facts retained by every outcome. When no
 /// interface-implementation portfolio was supplied the InterfaceImpl evidence is not modeled, so an interface target
 /// that the class base chain cannot reach is unprovable rather than negative; no boxing conversion is modeled, so a
 /// value-typed source satisfies only canonical identity; and the deliberate W8.1 divergence from the pinned runtime
@@ -527,10 +527,10 @@ public sealed class StaticFieldV2AssignabilityRequest : IEquatable<StaticFieldV2
 /// </remarks>
 public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2AssignabilityOutcome>
 {
-    /// <summary>Gets the shared bounded base-chain depth draft cap applied by one complete decision.</summary>
+    /// <summary>Gets the shared bounded base-chain depth cap applied by one complete decision.</summary>
     public const int MaximumAncestryDepth = StaticFieldV2Limits.MaximumConstructedAncestryDepth;
 
-    /// <summary>Gets the shared cumulative comparison draft cap applied by one complete decision.</summary>
+    /// <summary>Gets the shared cumulative comparison cap applied by one complete decision.</summary>
     /// <remarks>
     /// The comparison total deliberately reuses the declared constructed-ancestry-depth bound name and value rather
     /// than introducing a second numeric declaration: both count edges of the same bounded metadata derivation.
@@ -598,64 +598,64 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft decision is assignable, not assignable, unprovable, or a typed stop.</summary>
+    /// <summary>Gets whether this decision is assignable, not assignable, unprovable, or a typed stop.</summary>
     public StaticFieldV2AssignabilityResultKind ResultKind { get; }
 
-    /// <summary>Gets the deterministic draft rule that decided this outcome.</summary>
+    /// <summary>Gets the deterministic rule that decided this outcome.</summary>
     public StaticFieldV2AssignabilityReason Reason { get; }
 
-    /// <summary>Gets the complete draft request that produced this outcome.</summary>
+    /// <summary>Gets the complete request that produced this outcome.</summary>
     public StaticFieldV2AssignabilityRequest Request { get; }
 
-    /// <summary>Gets a defensive most-derived-first copy of every consulted draft edge, empty for a stop.</summary>
+    /// <summary>Gets a defensive most-derived-first copy of every consulted edge, empty for a stop.</summary>
     public ImmutableArray<StaticFieldV2AssignabilityBaseChainEdgeIdentity> BaseChainEdges =>
         ExpressionV2ContractEncoding.Copy(baseChainEdges);
 
-    /// <summary>Gets a defensive examination-order copy of every examined variance draft position.</summary>
+    /// <summary>Gets a defensive examination-order copy of every examined variance position.</summary>
     public ImmutableArray<StaticFieldV2AssignabilityVariancePositionIdentity> VariancePositions =>
         ExpressionV2ContractEncoding.Copy(variancePositions);
 
-    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this draft answer.</summary>
+    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this answer.</summary>
     public ImmutableArray<StaticFieldV2AssignabilityCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
 
-    /// <summary>Gets the retained InterfaceImpl closure draft edge that named the target, otherwise null.</summary>
+    /// <summary>Gets the retained InterfaceImpl closure edge that named the target, otherwise null.</summary>
     public MetadataInterfaceImplementationEdgeAuthorityIdentity? InterfaceEdge { get; }
 
-    /// <summary>Gets the consulted bounded interface draft closure terminal, otherwise null.</summary>
+    /// <summary>Gets the consulted bounded interface closure terminal, otherwise null.</summary>
     public MetadataInterfaceImplementationClosureTerminalKind? InterfaceClosureTerminal { get; }
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>
-    /// Gets the cumulative comparison count of a complete draft answer, or the propagated prerequisite or
+    /// Gets the cumulative comparison count of a complete answer, or the propagated prerequisite or
     /// cap-plus-one observation of a typed stop.
     /// </summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets the metadata token related to this draft answer or stop, otherwise null.</summary>
+    /// <summary>Gets the metadata token related to this answer or stop, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two constructed-assignability draft outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two constructed-assignability outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2AssignabilityOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests constructed-assignability draft outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests constructed-assignability outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2AssignabilityOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -739,7 +739,7 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
 
 /// <summary>Decides exact constructed assignability between two closed types from metadata authority alone.</summary>
 /// <remarks>
-/// This draft binder owns the exact W8 assignability rule and nothing else. It consults only the already-landed closed
+/// This binder owns the exact W8 assignability rule and nothing else. It consults only the already-landed closed
 /// construction model and the ancestry authority portfolio: no runtime, dump, memory, or ClrMD capability is called,
 /// and no physical table is re-read. The rules are evaluated in one fixed order - canonical identity, the System.Object
 /// core-role root, same-definition variance, the bounded base chain, array topology, then nullable and primitive
@@ -749,7 +749,7 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
 /// edge admits, a complete closure that never names the target refuses, and every incomplete closure stays
 /// unprovable. When no portfolio is supplied the InterfaceImpl evidence is not modeled, so an interface target that
 /// the class base chain cannot reach remains unprovable rather than negative - the same honest boundary the
-/// closed-construction binder takes for interface constraints. The remaining declared boundaries of this draft slice
+/// closed-construction binder takes for interface constraints. The remaining declared boundaries of this slice
 /// are unchanged: no boxing conversion is modeled, so a value-typed source satisfies only canonical identity; the
 /// closed arguments of a generic base definition reached on the chain are carried by no consulted authority; and a
 /// generic interface instantiation is retained undecoded, so no variance decision over it is possible here.
@@ -757,7 +757,7 @@ public sealed class StaticFieldV2AssignabilityOutcome : IEquatable<StaticFieldV2
 /// <para>
 /// One deliberate divergence from the pinned runtime is implemented here and is not inherited: the runtime reports a
 /// positive result when the target is a rank-one multidimensional array and the source is an SZ array with a
-/// compatible reference element. This draft rule requires equal rank <em>and</em> equal SZ-versus-multidimensional
+/// compatible reference element. This rule requires equal rank <em>and</em> equal SZ-versus-multidimensional
 /// topology before any recursive reference-element assignability, so both cross-topology directions are refused and
 /// the divergence is retained as the
 /// <see cref="StaticFieldV2AssignabilityCoverageBoundary.SzToRankOneMultidimensionalDivergenceFromRuntime"/> boundary.
@@ -772,13 +772,13 @@ public static class StaticFieldV2AssignabilityBinder
     private const int GenericParameterContravariantFlag = 0x0002;
 
     /// <summary>Decides whether one closed source type is assignable to one closed target type.</summary>
-    /// <param name="request">The complete constructed-assignability draft request.</param>
+    /// <param name="request">The complete constructed-assignability request.</param>
     /// <remarks>
-    /// The decision is taken before any suffix of the expression is evaluated and validates a non-null reference draft
+    /// The decision is taken before any suffix of the expression is evaluated and validates a non-null reference
     /// value only. A negative answer is never inferred from a coverage boundary: every boundary produces
     /// <see cref="StaticFieldV2AssignabilityResultKind.Unprovable"/> and retains the evidence that reached it.
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome that is one complete answer or one prefix-free typed stop.</returns>
+    /// <returns>A sealed immutable outcome that is one complete answer or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2AssignabilityOutcome IsAssignable(StaticFieldV2AssignabilityRequest request)
     {

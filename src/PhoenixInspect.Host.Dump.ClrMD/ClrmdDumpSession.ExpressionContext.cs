@@ -251,7 +251,7 @@ public sealed partial class ClrmdDumpSession
     /// <remarks>
     /// The module CodeView GUID/stamp is read from counted mapped-image bytes. Every existing candidate is completely
     /// hashed and its Portable-PDB content id must match before scope/import projection. Enumeration order and file
-    /// names never choose among distinct matching artifacts. Caveat: this draft accepts only standalone Portable PDBs
+    /// names never choose among distinct matching artifacts. Caveat: this accepts only standalone Portable PDBs
     /// and the bounded import-definition subset represented by <see cref="DumpPortablePdbImportFact"/>.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="selectedFrame"/> is null.</exception>
@@ -310,7 +310,7 @@ public sealed partial class ClrmdDumpSession
     /// <remarks>
     /// The resolver is called only after exact selected-frame and counted mapped-PE CodeView evidence are available.
     /// Default output, exceptions, over-bound results, and incomplete reads become typed evidence; source identifiers
-    /// never enter the canonical result. Caveat: resolver execution is synchronous in this draft seam.
+    /// never enter the canonical result. Caveat: resolver execution is synchronous in this seam.
     /// </remarks>
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
     public DumpPortablePdbObservation ReadExpressionPortablePdbContext(

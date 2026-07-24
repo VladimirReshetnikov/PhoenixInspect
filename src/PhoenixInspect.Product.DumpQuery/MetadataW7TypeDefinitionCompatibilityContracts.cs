@@ -3,7 +3,7 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one authority-to-W7 TypeDef draft comparison.</summary>
+/// <summary>Classifies one authority-to-W7 TypeDef comparison.</summary>
 /// <remarks>
 /// A compatible result means the candidate agrees with the authority-issued physical TypeDef chain and with the
 /// direct interpretation of the authority's resolved FieldDef and MethodDef ownership. The candidate remains a
@@ -11,7 +11,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 /// </remarks>
 public enum MetadataW7TypeDefinitionCompatibilityResultKind
 {
-    /// <summary>The W7 candidate agrees with every field compared by this draft certificate.</summary>
+    /// <summary>The W7 candidate agrees with every field compared by this certificate.</summary>
     Compatible = 1,
 
     /// <summary>No W7 candidate was supplied for this authority-issued TypeDef row.</summary>
@@ -21,7 +21,7 @@ public enum MetadataW7TypeDefinitionCompatibilityResultKind
     Mismatch = 3,
 }
 
-/// <summary>Identifies the first deterministic issue in one authority-to-W7 TypeDef draft comparison.</summary>
+/// <summary>Identifies the first deterministic issue in one authority-to-W7 TypeDef comparison.</summary>
 /// <remarks>
 /// The issue order is stable for explanation and replay. Enclosing-type mismatch covers the complete retained W7
 /// parent chain; member-ownership issues compare resolved authority tokens with the candidate interval's direct-table
@@ -29,7 +29,7 @@ public enum MetadataW7TypeDefinitionCompatibilityResultKind
 /// </remarks>
 public enum MetadataW7TypeDefinitionCompatibilityIssue
 {
-    /// <summary>No issue applies to a compatible draft certificate.</summary>
+    /// <summary>No issue applies to a compatible certificate.</summary>
     None = 0,
 
     /// <summary>No W7 candidate was supplied for the authority TypeDef.</summary>
@@ -78,7 +78,7 @@ public enum MetadataW7TypeDefinitionCompatibilityIssue
     MethodOwnershipMismatch = 15,
 }
 
-/// <summary>Identifies the active physical member-list domain used by one draft compatibility certificate.</summary>
+/// <summary>Identifies the active physical member-list domain used by one compatibility certificate.</summary>
 /// <remarks>
 /// The value explains whether authority ownership was read directly from the definition table or resolved through a
 /// complete pointer table. It does not let a W7 interval assert pointer-table contents.
@@ -92,31 +92,31 @@ public enum MetadataW7MemberOwnershipDomainKind
     PointerTable = 2,
 }
 
-/// <summary>Classifies one complete authority-to-W7 TypeDef draft catalog.</summary>
+/// <summary>Classifies one complete authority-to-W7 TypeDef catalog.</summary>
 /// <remarks>
 /// Exact means every authority TypeDef RID received one complete comparison outcome. It does not require every
 /// candidate to be present or compatible. Non-exact and invalid results expose no certificate prefix.
 /// </remarks>
 public enum MetadataW7TypeDefinitionCompatibilityCatalogResultKind
 {
-    /// <summary>Every authority TypeDef received one complete RID-ordered draft comparison.</summary>
+    /// <summary>Every authority TypeDef received one complete RID-ordered comparison.</summary>
     Exact = 1,
 
-    /// <summary>A prerequisite or candidate vector stopped before a complete draft comparison.</summary>
+    /// <summary>A prerequisite or candidate vector stopped before a complete comparison.</summary>
     NonExact = 2,
 
     /// <summary>A prerequisite or candidate vector contains contradictory complete input.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed issue for one authority-to-W7 TypeDef draft catalog.</summary>
+/// <summary>Identifies the typed issue for one authority-to-W7 TypeDef catalog.</summary>
 /// <remarks>
 /// Candidate absence in an initialized complete vector is a row outcome rather than a catalog issue. These values
 /// explain only why a complete RID-ordered comparison catalog could not be emitted.
 /// </remarks>
 public enum MetadataW7TypeDefinitionCompatibilityCatalogIssue
 {
-    /// <summary>No catalog-level issue applies to an exact complete draft comparison.</summary>
+    /// <summary>No catalog-level issue applies to an exact complete comparison.</summary>
     None = 0,
 
     /// <summary>The definition-authority prerequisite was non-exact.</summary>
@@ -132,7 +132,7 @@ public enum MetadataW7TypeDefinitionCompatibilityCatalogIssue
     CandidateSlotCountConflict = 4,
 }
 
-/// <summary>Freezes one guarded authority-to-W7 TypeDef draft compatibility outcome.</summary>
+/// <summary>Freezes one guarded authority-to-W7 TypeDef compatibility outcome.</summary>
 /// <remarks>
 /// This sealed certificate retains the authority-issued TypeDef and the optional W7 comparison candidate. Resolved
 /// member tokens always come from the authority, including pointer layouts. The contract compares the physical fields
@@ -178,10 +178,10 @@ public sealed class MetadataW7TypeDefinitionCompatibilityCertificateIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this complete draft comparison is compatible, absent, or mismatched.</summary>
+    /// <summary>Gets whether this complete comparison is compatible, absent, or mismatched.</summary>
     public MetadataW7TypeDefinitionCompatibilityResultKind ResultKind { get; }
 
-    /// <summary>Gets the first deterministic draft issue, or none for a compatible result.</summary>
+    /// <summary>Gets the first deterministic issue, or none for a compatible result.</summary>
     public MetadataW7TypeDefinitionCompatibilityIssue Issue { get; }
 
     /// <summary>Gets the exact authority-issued TypeDef row that remains the source of physical facts.</summary>
@@ -202,29 +202,29 @@ public sealed class MetadataW7TypeDefinitionCompatibilityCertificateIdentity :
     /// <summary>Gets a defensive authority-issued ownership-order copy of resolved MethodDef tokens.</summary>
     public ImmutableArray<int> MethodDefinitionTokens => AuthorityTypeDefinition.MethodDefinitionTokens;
 
-    /// <summary>Gets whether every field compared by this draft certificate agrees.</summary>
+    /// <summary>Gets whether every field compared by this certificate agrees.</summary>
     public bool IsCompatible => ResultKind == MetadataW7TypeDefinitionCompatibilityResultKind.Compatible;
 
-    /// <summary>Gets a defensive copy of the bounded versioned canonical draft certificate bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded versioned canonical certificate bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft certificate bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical certificate bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two authority-to-W7 TypeDef draft certificates.</summary>
-    /// <param name="other">The other draft certificate.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two authority-to-W7 TypeDef certificates.</summary>
+    /// <param name="other">The other certificate.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataW7TypeDefinitionCompatibilityCertificateIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests authority-to-W7 TypeDef draft certificate equality against an arbitrary object.</summary>
+    /// <summary>Tests authority-to-W7 TypeDef certificate equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a certificate with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a certificate with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataW7TypeDefinitionCompatibilityCertificateIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft certificate content.</summary>
-    /// <returns>A hash code for this authority-to-W7 TypeDef draft certificate.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical certificate content.</summary>
+    /// <returns>A hash code for this authority-to-W7 TypeDef certificate.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataW7TypeDefinitionCompatibilityCertificateIdentity Create(
@@ -271,7 +271,7 @@ public sealed class MetadataW7TypeDefinitionCompatibilityCertificateIdentity :
     }
 }
 
-/// <summary>Freezes the complete guarded authority-to-W7 TypeDef draft comparison catalog.</summary>
+/// <summary>Freezes the complete guarded authority-to-W7 TypeDef comparison catalog.</summary>
 /// <remarks>
 /// This sealed catalog embeds the definition authority once, compares one nullable candidate slot per TypeDef RID,
 /// and is the sole issuer of row certificates. Exact catalogs include absent and mismatched row outcomes; every
@@ -318,19 +318,19 @@ public sealed class MetadataW7TypeDefinitionCompatibilityCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this complete draft comparison catalog is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this complete comparison catalog is exact, non-exact, or invalid.</summary>
     public MetadataW7TypeDefinitionCompatibilityCatalogResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed catalog-level draft issue, or none for an exact complete comparison.</summary>
+    /// <summary>Gets the typed catalog-level issue, or none for an exact complete comparison.</summary>
     public MetadataW7TypeDefinitionCompatibilityCatalogIssue Issue { get; }
 
-    /// <summary>Gets the complete definition-authority draft prerequisite retained by this catalog.</summary>
+    /// <summary>Gets the complete definition-authority prerequisite retained by this catalog.</summary>
     public MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority { get; }
 
-    /// <summary>Gets the detailed issue retained by the definition-authority draft prerequisite.</summary>
+    /// <summary>Gets the detailed issue retained by the definition-authority prerequisite.</summary>
     public MetadataDefinitionAuthorityIssue DefinitionAuthorityIssue => DefinitionAuthority.Issue;
 
-    /// <summary>Gets a prerequisite operation bound propagated by a non-exact draft authority, otherwise null.</summary>
+    /// <summary>Gets a prerequisite operation bound propagated by a non-exact authority, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the issue-related prerequisite or candidate-slot observation count.</summary>
@@ -340,19 +340,19 @@ public sealed class MetadataW7TypeDefinitionCompatibilityCatalogIdentity :
     public int? RelatedMetadataToken { get; }
 
     /// <summary>
-    /// Gets a defensive TypeDef-RID-order copy of all draft certificates, or an empty array for a catalog stop.
+    /// Gets a defensive TypeDef-RID-order copy of all certificates, or an empty array for a catalog stop.
     /// </summary>
     public ImmutableArray<MetadataW7TypeDefinitionCompatibilityCertificateIdentity> Certificates =>
         ExpressionV2ContractEncoding.Copy(certificates);
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft catalog bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical catalog bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft catalog bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical catalog bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete authority-to-W7 TypeDef draft comparison catalog.</summary>
-    /// <param name="definitionAuthority">The complete physical definition-authority draft prerequisite.</param>
+    /// <summary>Creates one complete authority-to-W7 TypeDef comparison catalog.</summary>
+    /// <param name="definitionAuthority">The complete physical definition-authority prerequisite.</param>
     /// <param name="candidatesByTypeDefinitionRid">
     /// Exactly one nullable W7 candidate slot per authority TypeDef RID; null explicitly records candidate absence.
     /// </param>
@@ -442,20 +442,20 @@ public sealed class MetadataW7TypeDefinitionCompatibilityCatalogIdentity :
             null);
     }
 
-    /// <summary>Tests canonical equality between two complete authority-to-W7 TypeDef draft catalogs.</summary>
-    /// <param name="other">The other draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete authority-to-W7 TypeDef catalogs.</summary>
+    /// <param name="other">The other catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataW7TypeDefinitionCompatibilityCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests authority-to-W7 TypeDef draft catalog equality against an arbitrary object.</summary>
+    /// <summary>Tests authority-to-W7 TypeDef catalog equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataW7TypeDefinitionCompatibilityCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft catalog content.</summary>
-    /// <returns>A hash code for this complete authority-to-W7 TypeDef draft catalog.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical catalog content.</summary>
+    /// <returns>A hash code for this complete authority-to-W7 TypeDef catalog.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal MetadataW7TypeDefinitionCompatibilityCertificateIdentity? CompleteCertificateOrDefault(

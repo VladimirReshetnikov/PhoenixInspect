@@ -9,7 +9,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// Preserves one counted outer-field pointer read without fabricating missing reference bytes.
 /// </summary>
 /// <remarks>
-/// This draft W6 observation is distinct from target-object validation. Exact zero is a truthful null reference;
+/// This W6 observation is distinct from target-object validation. Exact zero is a truthful null reference;
 /// partial and unavailable reads retain only their observed prefix and expose no target address.
 /// </remarks>
 public sealed class ClrmdObjectReferenceObservation
@@ -54,7 +54,7 @@ public sealed class ClrmdObjectReferenceObservation
     public bool IsExactNonNull => Status == ClrmdEvidenceStatus.Exact && TargetAddress is > 0;
 
     /// <summary>Produces the deterministic replay projection of field identity and exact observed pointer evidence.</summary>
-    /// <returns>A length-delimited draft representation containing no inferred target facts.</returns>
+    /// <returns>A length-delimited representation containing no inferred target facts.</returns>
     public string ToCanonicalReplayProjection()
     {
         var builder = new StringBuilder();

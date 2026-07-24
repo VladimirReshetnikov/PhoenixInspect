@@ -1,7 +1,7 @@
 namespace PhoenixInspect.W8TestTarget;
 
 /// <summary>Supplies a directly imported non-generic static-member owner.</summary>
-/// <remarks>This type is a draft compiler/PDB fixture and not a product lookup contract.</remarks>
+/// <remarks>This type is a compiler/PDB fixture and not a product lookup contract.</remarks>
 public static class NonGenericImports
 {
     /// <summary>Stores the directly imported non-generic sentinel.</summary>
@@ -36,7 +36,7 @@ public static class NonGenericOuter
 
 /// <summary>Supplies class-base substitution and inherited-name lookup evidence.</summary>
 /// <typeparam name="T">The exact value stored by the base construction.</typeparam>
-/// <remarks>This type exists only as a draft emitted lookup fixture.</remarks>
+/// <remarks>This type exists only as an emitted lookup fixture.</remarks>
 public class ClassLookupBase<T>
 {
     /// <summary>Stores a value on the exact base construction.</summary>
@@ -48,7 +48,7 @@ public class ClassLookupBase<T>
 
 /// <summary>Substitutes a constructed list into the class-base lookup fixture.</summary>
 /// <typeparam name="T">The argument wrapped by the derived base edge.</typeparam>
-/// <remarks>This type exists only as a draft emitted lookup fixture.</remarks>
+/// <remarks>This type exists only as an emitted lookup fixture.</remarks>
 public sealed class ClassLookupDerived<T> : ClassLookupBase<List<T>>
 {
     /// <summary>Stores a directly declared derived sentinel.</summary>
@@ -57,7 +57,7 @@ public sealed class ClassLookupDerived<T> : ClassLookupBase<List<T>>
 
 /// <summary>Supplies an interface base edge with a stored static field.</summary>
 /// <typeparam name="T">The exact interface construction argument.</typeparam>
-/// <remarks>This type exists only as a draft emitted lookup fixture.</remarks>
+/// <remarks>This type exists only as an emitted lookup fixture.</remarks>
 public interface IInterfaceLookupBase<T>
 {
     /// <summary>Stores the base-interface sentinel.</summary>
@@ -66,7 +66,7 @@ public interface IInterfaceLookupBase<T>
 
 /// <summary>Substitutes an array into the interface-base lookup fixture.</summary>
 /// <typeparam name="T">The array element argument.</typeparam>
-/// <remarks>This type exists only as a draft emitted lookup fixture.</remarks>
+/// <remarks>This type exists only as an emitted lookup fixture.</remarks>
 public interface IInterfaceLookupDerived<T> : IInterfaceLookupBase<T[]>
 {
     /// <summary>Stores the directly declared derived-interface sentinel.</summary>
@@ -74,7 +74,7 @@ public interface IInterfaceLookupDerived<T> : IInterfaceLookupBase<T[]>
 }
 
 /// <summary>Supplies all CLI field-accessibility flags on one emitted owner.</summary>
-/// <remarks>This type exists only as a draft accessibility metadata fixture.</remarks>
+/// <remarks>This type exists only as an accessibility metadata fixture.</remarks>
 public class AccessibilityMatrix
 {
     /// <summary>Stores the public sentinel.</summary>
@@ -105,7 +105,7 @@ public class AccessibilityMatrix
 }
 
 /// <summary>Supplies an effectively non-public nested owner.</summary>
-/// <remarks>This type exists only as a draft effective-accessibility fixture.</remarks>
+/// <remarks>This type exists only as an effective-accessibility fixture.</remarks>
 public static class NestedAccessibilityOwner
 {
     private static class PrivateNested
@@ -120,7 +120,7 @@ public static class NestedAccessibilityOwner
 
 /// <summary>Supplies a reference and public-constructor constraint.</summary>
 /// <typeparam name="T">A reference type with a public parameterless constructor.</typeparam>
-/// <remarks>This type exists only as a draft generic-constraint fixture.</remarks>
+/// <remarks>This type exists only as a generic-constraint fixture.</remarks>
 public static class ReferenceConstructorConstraintSlot<T>
     where T : class, new()
 {
@@ -130,7 +130,7 @@ public static class ReferenceConstructorConstraintSlot<T>
 
 /// <summary>Supplies a nullable-reference constraint.</summary>
 /// <typeparam name="T">A nullable reference type.</typeparam>
-/// <remarks>This type exists only as a draft generic-constraint fixture.</remarks>
+/// <remarks>This type exists only as a generic-constraint fixture.</remarks>
 public static class NullableReferenceConstraintSlot<T>
     where T : class?
 {
@@ -140,7 +140,7 @@ public static class NullableReferenceConstraintSlot<T>
 
 /// <summary>Supplies a non-null warning constraint.</summary>
 /// <typeparam name="T">A type subject to the non-null warning constraint.</typeparam>
-/// <remarks>This type exists only as a draft generic-constraint fixture.</remarks>
+/// <remarks>This type exists only as a generic-constraint fixture.</remarks>
 public static class NonNullConstraintSlot<T>
     where T : notnull
 {
@@ -150,7 +150,7 @@ public static class NonNullConstraintSlot<T>
 
 /// <summary>Supplies a value-type constraint.</summary>
 /// <typeparam name="T">A non-nullable value type.</typeparam>
-/// <remarks>This type exists only as a draft generic-constraint fixture.</remarks>
+/// <remarks>This type exists only as a generic-constraint fixture.</remarks>
 public static class ValueConstraintSlot<T>
     where T : struct
 {
@@ -160,7 +160,7 @@ public static class ValueConstraintSlot<T>
 
 /// <summary>Supplies an enum constraint.</summary>
 /// <typeparam name="T">A non-nullable enum type.</typeparam>
-/// <remarks>This type exists only as a draft generic-constraint fixture.</remarks>
+/// <remarks>This type exists only as a generic-constraint fixture.</remarks>
 public static class EnumConstraintSlot<T>
     where T : struct, Enum
 {
@@ -170,7 +170,7 @@ public static class EnumConstraintSlot<T>
 
 /// <summary>Supplies a delegate constraint.</summary>
 /// <typeparam name="T">A delegate type.</typeparam>
-/// <remarks>This type exists only as a draft generic-constraint fixture.</remarks>
+/// <remarks>This type exists only as a generic-constraint fixture.</remarks>
 public static class DelegateConstraintSlot<T>
     where T : Delegate
 {
@@ -180,7 +180,7 @@ public static class DelegateConstraintSlot<T>
 
 /// <summary>Supplies recursively substituted base, interface, and constructor constraints.</summary>
 /// <typeparam name="T">A stream implementation with a public parameterless constructor.</typeparam>
-/// <remarks>This type exists only as a draft generic-constraint fixture.</remarks>
+/// <remarks>This type exists only as a generic-constraint fixture.</remarks>
 public static class CompositeConstraintSlot<T>
     where T : Stream, IDisposable, new()
 {
@@ -190,7 +190,7 @@ public static class CompositeConstraintSlot<T>
 
 /// <summary>Supplies the ref-like anti-constraint encoding accepted by the pinned compiler.</summary>
 /// <typeparam name="T">A type that may be ref-like.</typeparam>
-/// <remarks>This type exists only as a draft generic-constraint fixture.</remarks>
+/// <remarks>This type exists only as a generic-constraint fixture.</remarks>
 public static class RefLikeConstraintSlot<T>
     where T : allows ref struct
 {

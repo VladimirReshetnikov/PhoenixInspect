@@ -4,8 +4,8 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one complete pointer-aware MethodDef declaration-table draft proof.</summary>
-/// <remarks>Every non-exact or invalid draft result exposes no derived MethodDef row prefix.</remarks>
+/// <summary>Classifies one complete pointer-aware MethodDef declaration-table proof.</summary>
+/// <remarks>Every non-exact or invalid result exposes no derived MethodDef row prefix.</remarks>
 public enum MetadataMethodDefinitionTableResultKind
 {
     /// <summary>Every physical MethodDef row, owner, receiver form, and signature grammar fact is exact.</summary>
@@ -18,8 +18,8 @@ public enum MetadataMethodDefinitionTableResultKind
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed disposition of one MethodDef declaration-table draft proof.</summary>
-/// <remarks>The draft issue remains available without retaining any derived row candidate.</remarks>
+/// <summary>Identifies the typed disposition of one MethodDef declaration-table proof.</summary>
+/// <remarks>The issue remains available without retaining any derived row candidate.</remarks>
 public enum MetadataMethodDefinitionTableIssue
 {
     /// <summary>No issue applies to an exact complete catalog.</summary>
@@ -80,9 +80,9 @@ public enum MetadataMethodDefinitionTableIssue
     ReceiverMismatch = 18,
 }
 
-/// <summary>Freezes physical columns needed for one MethodDef generic-declaration draft projection.</summary>
+/// <summary>Freezes physical columns needed for one MethodDef generic-declaration projection.</summary>
 /// <remarks>
-/// This sealed draft observation retains every physical MethodDef table column after heap decoding plus a bounded
+/// This sealed observation retains every physical MethodDef table column after heap decoding plus a bounded
 /// signature prefix and optional exact blob source end. ParamList is checked only against the physical simple-index
 /// domain in this checkpoint. Complete source ends now cover Param and ParamPtr, but their ordering and ownership
 /// semantics require a dedicated pointer catalog and remain deliberately unasserted here. The observation carries no
@@ -94,7 +94,7 @@ public sealed class MetadataMethodDefinitionRowObservationIdentity :
     /// <summary>Gets the maximum exact MethodDef signature byte count admitted by shared grammar projection.</summary>
     public const int MaximumSignatureByteCount = 256;
 
-    /// <summary>Gets the stable draft bound name for one retained MethodDef signature.</summary>
+    /// <summary>Gets the stable bound name for one retained MethodDef signature.</summary>
     public const string MaximumSignatureByteCountBoundName = "metadata-v2.methoddef-signature.bytes";
 
     private const string CanonicalDomain = "metadata-v2-methoddef-row-observation";
@@ -138,28 +138,28 @@ public sealed class MetadataMethodDefinitionRowObservationIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata module containing the physical draft MethodDef row.</summary>
+    /// <summary>Gets the exact metadata module containing the physical MethodDef row.</summary>
     public StaticFieldMetadataModuleIdentity MetadataModule { get; }
 
-    /// <summary>Gets the exact non-nil physical draft MethodDef token.</summary>
+    /// <summary>Gets the exact non-nil physical MethodDef token.</summary>
     public int MethodDefinitionToken { get; }
 
-    /// <summary>Gets the exact raw physical draft MethodDef RVA.</summary>
+    /// <summary>Gets the exact raw physical MethodDef RVA.</summary>
     public int RelativeVirtualAddress { get; }
 
-    /// <summary>Gets the exact raw physical draft MethodImplAttributes bits.</summary>
+    /// <summary>Gets the exact raw physical MethodImplAttributes bits.</summary>
     public int ImplementationAttributes { get; }
 
-    /// <summary>Gets the exact raw physical draft MethodAttributes bits.</summary>
+    /// <summary>Gets the exact raw physical MethodAttributes bits.</summary>
     public int Attributes { get; }
 
-    /// <summary>Gets the exact decoded bounded physical draft MethodDef name, including empty.</summary>
+    /// <summary>Gets the exact decoded bounded physical MethodDef name, including empty.</summary>
     public string Name { get; }
 
-    /// <summary>Gets whether the physical draft row has MethodAttributes.Static.</summary>
+    /// <summary>Gets whether the physical row has MethodAttributes.Static.</summary>
     public bool IsStatic => (Attributes & (int)MethodAttributes.Static) != 0;
 
-    /// <summary>Gets a defensive copy of the bounded physical draft MethodDef signature prefix.</summary>
+    /// <summary>Gets a defensive copy of the bounded physical MethodDef signature prefix.</summary>
     /// <remarks>
     /// The prefix is complete when <see cref="SignatureByteCount"/> is at most
     /// <see cref="MaximumSignatureByteCount"/>. Otherwise it contains exactly cap plus one bytes.
@@ -172,19 +172,19 @@ public sealed class MetadataMethodDefinitionRowObservationIdentity :
     /// <summary>Gets whether the exact complete signature length and source end were observed.</summary>
     public bool SignatureSourceEndObserved => SignatureByteCount.HasValue;
 
-    /// <summary>Gets the raw physical draft MethodDef.ParamList starting row identifier.</summary>
-    /// <remarks>This draft catalog does not yet consume the complete ParamPtr rows needed to prove list ownership.</remarks>
+    /// <summary>Gets the raw physical MethodDef.ParamList starting row identifier.</summary>
+    /// <remarks>This catalog does not yet consume the complete ParamPtr rows needed to prove list ownership.</remarks>
     public int ParameterListRowId { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft observation bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical observation bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft observation.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical observation.</summary>
     public string Sha256 { get; }
 
     internal ImmutableArray<byte> SignaturePrefixBytesCore => signaturePrefixBytes;
 
-    /// <summary>Creates one physical-column-only MethodDef row draft observation.</summary>
+    /// <summary>Creates one physical-column-only MethodDef row observation.</summary>
     /// <param name="metadataModule">The exact metadata module containing the physical row.</param>
     /// <param name="methodDefinitionToken">The exact non-nil MethodDef token.</param>
     /// <param name="relativeVirtualAddress">The exact raw MethodDef RVA.</param>
@@ -194,17 +194,17 @@ public sealed class MetadataMethodDefinitionRowObservationIdentity :
     /// The exact decoded bounded MethodDef name; empty is retained without inferring the original heap index.
     /// </param>
     /// <param name="signaturePrefixBytes">
-    /// An initialized prefix containing at most the draft grammar cap plus one bytes. When the exact total is known,
+    /// An initialized prefix containing at most the grammar cap plus one bytes. When the exact total is known,
     /// the prefix must contain either every byte or exactly cap plus one bytes.
     /// </param>
     /// <param name="signatureByteCount">
     /// The exact complete signature length, or null when acquisition stopped before observing the source end.
     /// </param>
     /// <param name="parameterListRowId">
-    /// The raw ParamList start. Only its physical simple-index width is checked in this draft because the dedicated
+    /// The raw ParamList start. Only its physical simple-index width is checked in this checkpoint because the dedicated
     /// ParamPtr catalog is not yet an input.
     /// </param>
-    /// <returns>A sealed immutable physical draft row with no caller-authored declaring type.</returns>
+    /// <returns>A sealed immutable physical row with no caller-authored declaring type.</returns>
     public static MetadataMethodDefinitionRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity metadataModule,
         int methodDefinitionToken,
@@ -274,25 +274,25 @@ public sealed class MetadataMethodDefinitionRowObservationIdentity :
             parameterListRowId);
     }
 
-    /// <summary>Tests canonical equality between two physical MethodDef draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical MethodDef observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataMethodDefinitionRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataMethodDefinitionRowObservationIdentity);
 
-    /// <summary>Computes a hash code from the immutable physical MethodDef draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable physical MethodDef bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one MethodDef generic declaration after exact ownership and shared-grammar draft validation.</summary>
+/// <summary>Freezes one MethodDef generic declaration after exact ownership and shared-grammar validation.</summary>
 /// <remarks>
-/// This sealed draft identity can be issued only by the complete catalog. Its declaring TypeDef token is derived from
+/// This sealed identity can be issued only by the complete catalog. Its declaring TypeDef token is derived from
 /// exact direct or MethodPtr ownership, and its signature facts come only from the shared Core grammar certificate.
 /// </remarks>
 public sealed class MetadataMethodDefinitionTableRowIdentity :
@@ -347,77 +347,77 @@ public sealed class MetadataMethodDefinitionTableRowIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact source-end draft identity governing the physical row and declaring type.</summary>
+    /// <summary>Gets the exact source-end identity governing the physical row and declaring type.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the unchanged physical MethodDef draft observation.</summary>
+    /// <summary>Gets the unchanged physical MethodDef observation.</summary>
     public MetadataMethodDefinitionRowObservationIdentity Observation { get; }
 
-    /// <summary>Gets the exact physical draft MethodDef token.</summary>
+    /// <summary>Gets the exact physical MethodDef token.</summary>
     public int MethodDefinitionToken => Observation.MethodDefinitionToken;
 
-    /// <summary>Gets the declaring TypeDef token derived from exact pointer-aware draft ownership.</summary>
+    /// <summary>Gets the declaring TypeDef token derived from exact pointer-aware ownership.</summary>
     public int DeclaringTypeDefinitionToken { get; }
 
-    /// <summary>Gets a defensive copy of the complete exact draft MethodDef signature.</summary>
+    /// <summary>Gets a defensive copy of the complete exact MethodDef signature.</summary>
     public ImmutableArray<byte> SignatureBytes => Observation.SignaturePrefixBytes;
 
-    /// <summary>Gets whether the exact physical draft MethodDef is static.</summary>
+    /// <summary>Gets whether the exact physical MethodDef is static.</summary>
     public bool IsStatic => Observation.IsStatic;
 
-    /// <summary>Gets whether the exact physical draft MethodDef is an instance declaration.</summary>
+    /// <summary>Gets whether the exact physical MethodDef is an instance declaration.</summary>
     public bool IsInstance => !IsStatic;
 
-    /// <summary>Gets whether the exact physical draft MethodDef declares generic parameters.</summary>
+    /// <summary>Gets whether the exact physical MethodDef declares generic parameters.</summary>
     public bool IsGeneric => DeclaredGenericArity > 0;
 
-    /// <summary>Gets the complete shared-grammar draft signature header.</summary>
+    /// <summary>Gets the complete shared-grammar signature header.</summary>
     public int SignatureHeader { get; }
 
-    /// <summary>Gets the shared-grammar draft calling-convention discriminator.</summary>
+    /// <summary>Gets the shared-grammar calling-convention discriminator.</summary>
     public int CallingConvention { get; }
 
-    /// <summary>Gets the exact shared-grammar draft implicit-receiver flag.</summary>
+    /// <summary>Gets the exact shared-grammar implicit-receiver flag.</summary>
     public bool HasThis { get; }
 
-    /// <summary>Gets the exact shared-grammar draft explicit-receiver flag.</summary>
-    /// <remarks>The current MethodDef grammar rejects this flag, so every issued exact draft row reports false.</remarks>
+    /// <summary>Gets the exact shared-grammar explicit-receiver flag.</summary>
+    /// <remarks>The current MethodDef grammar rejects this flag, so every issued exact row reports false.</remarks>
     public bool HasExplicitThis { get; }
 
-    /// <summary>Gets the exact physical generic arity declared by the MethodDef signature draft.</summary>
+    /// <summary>Gets the exact physical generic arity declared by the MethodDef signature.</summary>
     public int DeclaredGenericArity { get; }
 
-    /// <summary>Gets the exact top-level parameter count declared by the MethodDef signature draft.</summary>
+    /// <summary>Gets the exact top-level parameter count declared by the MethodDef signature.</summary>
     public int ParameterCount { get; }
 
-    /// <summary>Gets the shared-grammar aggregate draft type-node count.</summary>
+    /// <summary>Gets the shared-grammar aggregate type-node count.</summary>
     public int AggregateTypeCount { get; }
 
-    /// <summary>Gets the shared-grammar aggregate draft generic-argument count.</summary>
+    /// <summary>Gets the shared-grammar aggregate generic-argument count.</summary>
     public int AggregateGenericArgumentCount { get; }
 
-    /// <summary>Gets the greatest shared-grammar recursive draft type depth.</summary>
+    /// <summary>Gets the greatest shared-grammar recursive type depth.</summary>
     public int MaximumSignatureDepth { get; }
 
-    /// <summary>Gets the complete shared-grammar projected draft event-node count.</summary>
+    /// <summary>Gets the complete shared-grammar projected event-node count.</summary>
     public int ProjectedSignatureNodeCount { get; }
 
-    /// <summary>Gets the greatest generic-parameter count declared by the method or a nested function-pointer draft.</summary>
+    /// <summary>Gets the greatest generic-parameter count declared by the method or a nested function-pointer.</summary>
     public int MaximumDeclaredGenericParameterCount { get; }
 
-    /// <summary>Gets the greatest parameter count declared by the method or a nested function-pointer draft.</summary>
+    /// <summary>Gets the greatest parameter count declared by the method or a nested function-pointer.</summary>
     public int MaximumDeclaredParameterCount { get; }
 
-    /// <summary>Gets the greatest multidimensional-array rank declared anywhere in the signature draft.</summary>
+    /// <summary>Gets the greatest multidimensional-array rank declared anywhere in the signature.</summary>
     public int MaximumDeclaredArrayRank { get; }
 
-    /// <summary>Gets the explicit full-signature source-end observation retained by this exact draft row.</summary>
+    /// <summary>Gets the explicit full-signature source-end observation retained by this exact row.</summary>
     public bool SignatureSourceEndObserved => Observation.SignatureSourceEndObserved;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row.</summary>
     public string Sha256 { get; }
 
     internal static MetadataMethodDefinitionTableRowIdentity Create(
@@ -444,7 +444,7 @@ public sealed class MetadataMethodDefinitionTableRowIdentity :
             certificate.SignatureByteCount != observation.SignaturePrefixBytesCore.Length ||
             observation.SignatureByteCount != certificate.SignatureByteCount)
         {
-            throw new ArgumentException("A matching exact shared-grammar MethodDef draft certificate is required.");
+            throw new ArgumentException("A matching exact shared-grammar MethodDef certificate is required.");
         }
         return new MetadataMethodDefinitionTableRowIdentity(
             sourceEnds,
@@ -453,25 +453,25 @@ public sealed class MetadataMethodDefinitionTableRowIdentity :
             certificate);
     }
 
-    /// <summary>Tests canonical equality between two complete MethodDef declaration draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete MethodDef declaration rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataMethodDefinitionTableRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete MethodDef declaration draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete MethodDef declaration equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataMethodDefinitionTableRowIdentity);
 
-    /// <summary>Computes a hash code from the immutable complete MethodDef declaration draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable complete MethodDef declaration bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes a complete pointer-aware MethodDef generic-declaration table draft projection.</summary>
+/// <summary>Freezes a complete pointer-aware MethodDef generic-declaration table projection.</summary>
 /// <remarks>
-/// This sealed draft catalog requires an exact TypeDef ownership catalog and exact RID-complete MethodDef rows. It
+/// This sealed catalog requires an exact TypeDef ownership catalog and exact RID-complete MethodDef rows. It
 /// validates every signature with shared Core grammar before issuing any row, so every stop remains prefix-free.
 /// </remarks>
 public sealed class MetadataMethodDefinitionTableCatalogIdentity :
@@ -527,43 +527,43 @@ public sealed class MetadataMethodDefinitionTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete draft MethodDef table is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether the complete MethodDef table is exact, non-exact, or invalid.</summary>
     public MetadataMethodDefinitionTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed issue, or none for an exact result.</summary>
     public MetadataMethodDefinitionTableIssue Issue { get; }
 
-    /// <summary>Gets the pointer-aware TypeDef draft catalog supplying every declaring owner.</summary>
+    /// <summary>Gets the pointer-aware TypeDef catalog supplying every declaring owner.</summary>
     public MetadataTypeDefinitionTableCatalogIdentity TypeDefinitionCatalog { get; }
 
-    /// <summary>Gets the exact source ends inherited from the pointer-aware TypeDef draft catalog.</summary>
+    /// <summary>Gets the exact source ends inherited from the pointer-aware TypeDef catalog.</summary>
     public MetadataSourceEndIdentity SourceEnds => TypeDefinitionCatalog.SourceEnds;
 
-    /// <summary>Gets a defensive RID-order copy of exact derived MethodDef draft rows, or an empty array otherwise.</summary>
+    /// <summary>Gets a defensive RID-order copy of exact derived MethodDef rows, or an empty array otherwise.</summary>
     public ImmutableArray<MetadataMethodDefinitionTableRowIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
 
-    /// <summary>Gets the exact reached draft bound only for a cap-plus-one result.</summary>
+    /// <summary>Gets the exact reached bound only for a cap-plus-one result.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the issue-related draft supplied count or cap-plus-one observation.</summary>
+    /// <summary>Gets the issue-related supplied count or cap-plus-one observation.</summary>
     public int ObservedCount { get; }
 
     /// <summary>Gets the physical MethodDef token at which signature or row validation stopped, otherwise null.</summary>
     public int? StoppedMethodDefinitionToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft catalog bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical catalog bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft catalog.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical catalog.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete pointer-aware MethodDef generic-declaration table draft projection.</summary>
-    /// <param name="typeDefinitionCatalog">The complete pointer-aware TypeDef ownership draft catalog.</param>
+    /// <summary>Creates one complete pointer-aware MethodDef generic-declaration table projection.</summary>
+    /// <param name="typeDefinitionCatalog">The complete pointer-aware TypeDef ownership catalog.</param>
     /// <param name="observations">
     /// Every physical MethodDef row in RID order; default denotes unavailable acquisition when the source is non-empty.
     /// </param>
-    /// <returns>An exact catalog, a prefix-free non-exact stop, or a factless invalid draft result.</returns>
+    /// <returns>An exact catalog, a prefix-free non-exact stop, or a factless invalid result.</returns>
     public static MetadataMethodDefinitionTableCatalogIdentity Create(
         MetadataTypeDefinitionTableCatalogIdentity typeDefinitionCatalog,
         ImmutableArray<MetadataMethodDefinitionRowObservationIdentity> observations)
@@ -741,19 +741,19 @@ public sealed class MetadataMethodDefinitionTableCatalogIdentity :
             null);
     }
 
-    /// <summary>Tests canonical equality between two complete MethodDef table draft projections.</summary>
-    /// <param name="other">The other draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete MethodDef table projections.</summary>
+    /// <param name="other">The other catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataMethodDefinitionTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete MethodDef table draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete MethodDef table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataMethodDefinitionTableCatalogIdentity);
 
-    /// <summary>Computes a hash code from the immutable complete MethodDef table draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable complete MethodDef table bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>

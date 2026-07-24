@@ -4,7 +4,7 @@ namespace PhoenixInspect.Host.Abstractions;
 /// Reads immutable byte evidence from a captured process address space.
 /// </summary>
 /// <remarks>
-/// This draft contract deliberately reports exact byte counts instead of a Boolean success flag. Dumps are sparse,
+/// This contract deliberately reports exact byte counts instead of a Boolean success flag. Dumps are sparse,
 /// and a short read is materially different from both a complete read and a wholly unavailable range. Callers must
 /// not decode a scalar value unless the corresponding <see cref="MemoryReadResult.Status"/> is
 /// <see cref="MemoryReadStatus.Exact"/>.

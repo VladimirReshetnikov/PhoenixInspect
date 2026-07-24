@@ -13,7 +13,7 @@ public enum ExecutionFailureKind
     /// <summary>The current IL offset is outside the body or not decodable.</summary>
     InvalidInstruction,
 
-    /// <summary>The decoded opcode is outside the admitted prototype slice.</summary>
+    /// <summary>The decoded opcode is outside the admitted slice.</summary>
     UnsupportedInstruction,
 
     /// <summary>The evaluation stack does not satisfy the instruction's contract.</summary>

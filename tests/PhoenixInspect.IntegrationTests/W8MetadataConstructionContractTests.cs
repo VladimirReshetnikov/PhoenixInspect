@@ -14,7 +14,7 @@ public sealed class W8MetadataConstructionContractTests
     private const string SnapshotDigest =
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
-    /// <summary>Proves nested named draft chains partition flattened arguments from authority-carried arities.</summary>
+    /// <summary>Proves nested named chains partition flattened arguments from authority-carried arities.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Nested_named_chains_partition_flattened_arguments_from_authority_arities()
@@ -661,7 +661,7 @@ public sealed class W8MetadataConstructionContractTests
         Assert.Equal(replay.CanonicalBytes.ToArray(), outcome.CanonicalBytes.ToArray());
     }
 
-    /// <summary>Proves every FieldSig stop is typed, source-anchored, and exposes no draft projection prefix.</summary>
+    /// <summary>Proves every FieldSig stop is typed, source-anchored, and exposes no projection prefix.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Field_signature_stops_are_prefix_free_for_incomplete_invalid_and_bounded_inputs()
@@ -761,7 +761,7 @@ public sealed class W8MetadataConstructionContractTests
         AssertFieldStopHasNoProjection(ownerStop);
     }
 
-    /// <summary>Proves wrapper-inclusive Product depth is exact at its draft cap and prefix-free at cap-plus-one.</summary>
+    /// <summary>Proves wrapper-inclusive Product depth is exact at its cap and prefix-free at cap-plus-one.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Field_signature_modifier_chain_observes_product_depth_cap_inclusively()
@@ -1572,7 +1572,7 @@ public sealed class W8MetadataConstructionContractTests
                 ContainsGuardedType(argument, guarded));
     }
 
-    /// <summary>Proves every public metadata-construction checkpoint type is sealed where applicable and draft-documented.</summary>
+    /// <summary>Proves every public metadata-construction checkpoint type is sealed where applicable and documented.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Public_metadata_construction_surface_is_sealed_and_draft_documented()
@@ -1594,7 +1594,7 @@ public sealed class W8MetadataConstructionContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.True(typeDocumentation.Value.Contains("draft", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -1607,7 +1607,7 @@ public sealed class W8MetadataConstructionContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.True(member.Value.Contains("draft", StringComparison.OrdinalIgnoreCase)));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

@@ -29,9 +29,9 @@ public sealed partial class IlMachine<TValue, TMemory>
     /// target body, or selected model. Opaque modeled leaves remain dormant until their exact call edge executes.
     /// </returns>
     /// <remarks>
-    /// This opt-in W4.5/W4.6 prototype path is mutually exclusive with legacy <see cref="ActivateRoot"/> execution on
+    /// This opt-in W4.5/W4.6 path is mutually exclusive with legacy <see cref="ActivateRoot"/> execution on
     /// the same machine. Interpreted edges push frames; pure-model edges invoke only the capability frozen into their
-    /// opaque leaf and publish a typed result in the caller without a frame. Public shape and policy remain draft-phase
+    /// opaque leaf and publish a typed result in the caller without a frame. Public shape and policy remain
     /// contracts subject to later product-facade refinement.
     /// </remarks>
     public MachineActivationResult<TValue, TMemory> ActivatePreparedGraph(
@@ -203,7 +203,7 @@ public sealed partial class IlMachine<TValue, TMemory>
     /// <exception cref="ArgumentNullException"><paramref name="budget"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">No prepared graph has been activated on this machine.</exception>
     /// <remarks>
-    /// This draft factory prevents product and test callers from reconstructing session policy out of band. The
+    /// This factory prevents product and test callers from reconstructing session policy out of band. The
     /// returned value remains immutable and every step revalidates it against the bound graph.
     /// </remarks>
     public MachineOperationalState CreatePreparedOperationalState(BudgetState budget)

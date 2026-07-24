@@ -156,7 +156,7 @@ public sealed class W8V2ScopedContextBindingTests
     }
 
     /// <summary>
-    /// Proves two same-level imports that name one identical physical type converge into exactly one draft group
+    /// Proves two same-level imports that name one identical physical type converge into exactly one group
     /// while retaining both contributing imports, and that two same-level imports naming distinct physical types are
     /// ambiguous no matter which physical ordinal comes first.
     /// </summary>
@@ -318,7 +318,7 @@ public sealed class W8V2ScopedContextBindingTests
 
     /// <summary>
     /// Proves a retained <c>using static</c> import projects its exact owner without contributing any contextual
-    /// candidate, and that every declared draft coverage boundary of this slice is emitted in ascending order.
+    /// candidate, and that every declared coverage boundary of this slice is emitted in ascending order.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -354,7 +354,7 @@ public sealed class W8V2ScopedContextBindingTests
     }
 
     /// <summary>
-    /// Proves the declared import-scope depth and import-fact count draft bounds stop projection at cap plus one
+    /// Proves the declared import-scope depth and import-fact count bounds stop projection at cap plus one
     /// without retaining any partial scope, namespace, or shadowing evidence.
     /// </summary>
     [Fact]
@@ -413,7 +413,7 @@ public sealed class W8V2ScopedContextBindingTests
     }
 
     /// <summary>
-    /// Proves the explicit <c>global::</c> route is rejected from the contextual draft entry point, that a
+    /// Proves the explicit <c>global::</c> route is rejected from the contextual entry point, that a
     /// bare-member-only descriptor stops, and that every scoped-context prerequisite contradiction is typed and
     /// prefix-free.
     /// </summary>
@@ -546,8 +546,8 @@ public sealed class W8V2ScopedContextBindingTests
     }
 
     /// <summary>
-    /// Proves canonical replay equality, defensive copies, guarded private issuance for every retained draft row,
-    /// the closed public issuer surface, and emitted draft XML documentation.
+    /// Proves canonical replay equality, defensive copies, guarded private issuance for every retained row,
+    /// the closed public issuer surface, and emitted XML documentation.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -890,7 +890,7 @@ public sealed class W8V2ScopedContextBindingTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -902,7 +902,7 @@ public sealed class W8V2ScopedContextBindingTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

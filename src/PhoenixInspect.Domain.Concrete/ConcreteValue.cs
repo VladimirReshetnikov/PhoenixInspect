@@ -3,7 +3,7 @@ using PhoenixInspect.Core.Abstractions;
 namespace PhoenixInspect.Domain.Concrete;
 
 /// <summary>
-/// Classifies values in the draft lifted-flat concrete domain.
+/// Classifies values in the lifted-flat concrete domain.
 /// </summary>
 public enum ConcreteValueKind
 {
@@ -38,7 +38,7 @@ public enum ConcreteValueKind
 }
 
 /// <summary>
-/// Represents a deeply immutable value in the draft concrete validation domain.
+/// Represents a deeply immutable value in the concrete validation domain.
 /// </summary>
 /// <remarks>
 /// The domain is "concrete" for known payloads but deliberately lifted with typed bottom and unknown elements so it
@@ -63,7 +63,7 @@ public sealed record ConcreteValue
     /// <summary>Gets the semantic payload classification.</summary>
     public ConcreteValueKind Kind { get; }
 
-    /// <summary>Gets the draft static CLI type associated with the value.</summary>
+    /// <summary>Gets the static CLI type associated with the value.</summary>
     public TypeSig StaticType { get; }
 
     internal object? Payload { get; }

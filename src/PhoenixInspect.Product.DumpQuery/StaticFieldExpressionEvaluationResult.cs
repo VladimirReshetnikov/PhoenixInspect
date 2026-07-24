@@ -90,7 +90,7 @@ public enum StaticFieldExpressionEvaluationStatus
 /// Retains the complete parse-to-value outcome of one W7 static-field expression without collapsing typed stops.
 /// </summary>
 /// <remarks>
-/// This draft result is an immutable replay envelope. It retains each exact prefix rather than forcing callers to
+/// This result is an immutable replay envelope. It retains each exact prefix rather than forcing callers to
 /// repeat parsing, metadata binding, runtime catalog correlation, or nullable layout discovery. Mapping evidence is
 /// kept as unrestricted metadata reads because those images can legitimately exceed the fixed value-decoder read
 /// cap. The result contains no live ClrMD object, parser tree, reader, stream, or exception.

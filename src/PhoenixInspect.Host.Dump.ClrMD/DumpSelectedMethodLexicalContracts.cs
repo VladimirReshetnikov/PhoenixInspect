@@ -9,7 +9,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 
 /// <summary>Declares physical acquisition limits for one selected method's complete lexical evidence.</summary>
 /// <remarks>
-/// These limits are draft adapter contracts rather than compatibility promises. The complete MethodDef and Param
+/// These limits are adapter contracts rather than compatibility promises. The complete MethodDef and Param
 /// catalogs are evidence used to prove source end and generated-name coverage; they are not display inventories.
 /// </remarks>
 public static class DumpSelectedMethodLexicalLimits
@@ -155,14 +155,14 @@ public static class DumpSelectedMethodLexicalLimits
     public static EvaluationDeterministicBound GeneratedLocalFunctionRowTraversalBound =>
         GeneratedLocalFunctionRowBound;
 
-    /// <summary>Gets a defensive, canonical-name-ordered copy of every draft physical acquisition bound.</summary>
+    /// <summary>Gets a defensive, canonical-name-ordered copy of every physical acquisition bound.</summary>
     public static ImmutableArray<EvaluationDeterministicBound> AllDeclaredBounds =>
         ImmutableArray.CreateRange(DeclaredBounds.OrderBy(static bound => bound.Name, StringComparer.Ordinal));
 }
 
 /// <summary>Records an ordered bounded source-end measurement trace for one selected-method lexical acquisition.</summary>
 /// <remarks>
-/// This draft evidence is produced only after bounded enumeration has either observed each source end or counted the
+/// This evidence is produced only after bounded enumeration has either observed each source end or counted the
 /// first item beyond a declared limit. Properties through that boundary are measurements, while later properties are
 /// absent and canonically zero. Keeping the trace separate from row arrays lets an over-limit observation discard every
 /// materialized prefix.
@@ -287,7 +287,7 @@ public sealed class DumpSelectedMethodLexicalSourceEnds : IEquatable<DumpSelecte
     /// <summary>Gets the measured raw-name-derived local-function candidate row count.</summary>
     public int GeneratedLocalFunctionRowCount { get; }
 
-    /// <summary>Gets a defensive copy of the canonical draft measurement bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical measurement bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -310,7 +310,7 @@ public sealed class DumpSelectedMethodLexicalSourceEnds : IEquatable<DumpSelecte
     /// <param name="maximumLocalConstantSignatureByteCount">Largest LocalConstant signature length.</param>
     /// <param name="aggregateLocalConstantSignatureByteCount">Aggregate LocalConstant signature length.</param>
     /// <param name="generatedLocalFunctionRowCount">Raw-name-derived candidate MethodDef count.</param>
-    /// <returns>An immutable draft source-end measurement.</returns>
+    /// <returns>An immutable source-end measurement.</returns>
     /// <remarks>
     /// Measurements are exact through the first boundary. The first over-limit source is saturated at cap plus one,
     /// and later operations remain absent as zero. Acquisition checks this ordered trace before reading any row array.
@@ -574,7 +574,7 @@ public sealed class DumpSelectedMethodLexicalSourceEnds : IEquatable<DumpSelecte
 
 /// <summary>Retains one exact physical Param row owned through a MethodDef ParamList interval.</summary>
 /// <remarks>
-/// This draft fact preserves an empty metadata name rather than treating it as row absence. Lexical completeness is a
+/// This fact preserves an empty metadata name rather than treating it as row absence. Lexical completeness is a
 /// later consumer decision; this type records the physical row without filling a missing name.
 /// </remarks>
 public sealed class DumpLexicalParameterRowFact : IEquatable<DumpLexicalParameterRowFact>
@@ -611,7 +611,7 @@ public sealed class DumpLexicalParameterRowFact : IEquatable<DumpLexicalParamete
     /// <summary>Gets the exact metadata name, including an observed empty name.</summary>
     public string Name { get; }
 
-    /// <summary>Gets a defensive copy of the draft canonical row bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -622,7 +622,7 @@ public sealed class DumpLexicalParameterRowFact : IEquatable<DumpLexicalParamete
     /// <param name="sequenceNumber">The unsigned physical sequence number.</param>
     /// <param name="attributes">The exact Param attribute bits.</param>
     /// <param name="name">The exact metadata name; empty is retained.</param>
-    /// <returns>An immutable draft Param-row fact.</returns>
+    /// <returns>An immutable Param-row fact.</returns>
     /// <remarks>No owner is accepted here because Param ownership is proven later by MethodDef ParamList intervals.</remarks>
     public static DumpLexicalParameterRowFact Create(
         int parameterToken,
@@ -663,7 +663,7 @@ public sealed class DumpLexicalParameterRowFact : IEquatable<DumpLexicalParamete
 
 /// <summary>Retains one exact GenericParam row for the selected declaring type or selected MethodDef.</summary>
 /// <remarks>
-/// The owner is an actual TypeDef or MethodDef token. This draft fact does not substitute a runtime generic argument
+/// The owner is an actual TypeDef or MethodDef token. This fact does not substitute a runtime generic argument
 /// and does not infer a source declaration absent from the row.
 /// </remarks>
 public sealed class DumpLexicalGenericParameterRowFact : IEquatable<DumpLexicalGenericParameterRowFact>
@@ -705,7 +705,7 @@ public sealed class DumpLexicalGenericParameterRowFact : IEquatable<DumpLexicalG
     /// <summary>Gets the exact metadata name, including an observed empty name.</summary>
     public string Name { get; }
 
-    /// <summary>Gets a defensive copy of the draft canonical row bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -717,7 +717,7 @@ public sealed class DumpLexicalGenericParameterRowFact : IEquatable<DumpLexicalG
     /// <param name="number">The zero-based physical parameter number.</param>
     /// <param name="attributes">The exact GenericParam attribute bits.</param>
     /// <param name="name">The exact metadata name; empty is retained.</param>
-    /// <returns>An immutable draft GenericParam-row fact.</returns>
+    /// <returns>An immutable GenericParam-row fact.</returns>
     public static DumpLexicalGenericParameterRowFact Create(
         int genericParameterToken,
         int ownerToken,
@@ -770,7 +770,7 @@ public sealed class DumpLexicalGenericParameterRowFact : IEquatable<DumpLexicalG
 
 /// <summary>Retains one exact MethodDef row plus the Param rows in its declared ParamList interval.</summary>
 /// <remarks>
-/// This draft physical fact preserves raw signature bytes and declaration order. Declaring-type ownership is an
+/// This physical fact preserves raw signature bytes and declaration order. Declaring-type ownership is an
 /// independently acquired relation; generated-name interpretation is performed only after the full catalog exists.
 /// </remarks>
 public sealed class DumpLexicalMethodDefinitionRowFact : IEquatable<DumpLexicalMethodDefinitionRowFact>
@@ -855,7 +855,7 @@ public sealed class DumpLexicalMethodDefinitionRowFact : IEquatable<DumpLexicalM
     /// <summary>Gets a defensive copy of exact owned Param rows in physical RID order.</summary>
     public ImmutableArray<DumpLexicalParameterRowFact> Parameters => CanonicalReplayEncoding.Copy(parameters);
 
-    /// <summary>Gets a defensive copy of the draft canonical row and owned-parameter bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical row and owned-parameter bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -872,7 +872,7 @@ public sealed class DumpLexicalMethodDefinitionRowFact : IEquatable<DumpLexicalM
     /// <param name="signatureParameterCount">The exact parameter count decoded from <paramref name="signature"/>.</param>
     /// <param name="parameterListStartRowId">The positive ParamList start RID, possibly one past the Param table.</param>
     /// <param name="parameters">An initialized physical set of Param rows claimed by this method.</param>
-    /// <returns>An immutable draft MethodDef-row fact.</returns>
+    /// <returns>An immutable MethodDef-row fact.</returns>
     /// <remarks>
     /// ParamList interval ownership is deliberately validated only by the complete catalog, where the next MethodDef
     /// and exact Param-table row count are available.
@@ -1000,7 +1000,7 @@ public sealed class DumpLexicalMethodDefinitionRowFact : IEquatable<DumpLexicalM
 
 /// <summary>Retains the complete StandAloneSig blob selected by one exact method body.</summary>
 /// <remarks>
-/// This draft fact structurally validates and fully consumes the complete local signature while retaining every byte.
+/// This fact structurally validates and fully consumes the complete local signature while retaining every byte.
 /// It does not bind referenced type tokens or substitute generic arguments; those remain separate metadata operations.
 /// </remarks>
 public sealed class DumpLexicalStandaloneSignatureFact : IEquatable<DumpLexicalStandaloneSignatureFact>
@@ -1047,7 +1047,7 @@ public sealed class DumpLexicalStandaloneSignatureFact : IEquatable<DumpLexicalS
     /// <summary>Gets a defensive copy of the complete StandAloneSig bytes.</summary>
     public ImmutableArray<byte> Signature => CanonicalReplayEncoding.Copy(signature);
 
-    /// <summary>Gets a defensive copy of the draft canonical signature fact bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical signature fact bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -1057,7 +1057,7 @@ public sealed class DumpLexicalStandaloneSignatureFact : IEquatable<DumpLexicalS
     /// <param name="standaloneSignatureToken">A non-nil StandAloneSig token.</param>
     /// <param name="localSlotCount">The exact non-negative slot count decoded by the metadata reader.</param>
     /// <param name="signature">The complete initialized StandAloneSig blob.</param>
-    /// <returns>An immutable draft local-signature fact.</returns>
+    /// <returns>An immutable local-signature fact.</returns>
     /// <remarks>
     /// The encoded count must be canonical and equal <paramref name="localSlotCount"/>. Every type node is validated
     /// structurally and the blob must be fully consumed; metadata token binding remains a later operation.
@@ -1116,7 +1116,7 @@ public sealed class DumpLexicalStandaloneSignatureFact : IEquatable<DumpLexicalS
 
 /// <summary>Retains one physical Portable-PDB LocalScope row and its half-open IL range.</summary>
 /// <remarks>
-/// LocalScope has no parent column. This draft fact therefore records no parent or nesting depth; active containment is
+/// LocalScope has no parent column. This fact therefore records no parent or nesting depth; active containment is
 /// derived later from ranges and the selected IL offset while disjoint and inactive rows remain present.
 /// </remarks>
 public sealed class DumpLexicalLocalScopeRowFact : IEquatable<DumpLexicalLocalScopeRowFact>
@@ -1171,7 +1171,7 @@ public sealed class DumpLexicalLocalScopeRowFact : IEquatable<DumpLexicalLocalSc
     /// <summary>Gets the physical LocalConstant-list start RID from this LocalScope row.</summary>
     public int ConstantListStartRowId { get; }
 
-    /// <summary>Gets a defensive copy of the draft canonical physical row bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical physical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -1191,7 +1191,7 @@ public sealed class DumpLexicalLocalScopeRowFact : IEquatable<DumpLexicalLocalSc
     /// The positive physical LocalConstant-list start RID. Its exclusive end is deliberately absent from this raw row
     /// and is derived only after the next complete physical LocalScope row or LocalConstant-table end is known.
     /// </param>
-    /// <returns>An immutable draft LocalScope-row fact.</returns>
+    /// <returns>An immutable LocalScope-row fact.</returns>
     public static DumpLexicalLocalScopeRowFact Create(
         int localScopeToken,
         int methodDefinitionToken,
@@ -1241,7 +1241,7 @@ public sealed class DumpLexicalLocalScopeRowFact : IEquatable<DumpLexicalLocalSc
     /// <summary>Determines whether the physical half-open range contains one IL offset.</summary>
     /// <param name="ilOffset">The IL offset to test.</param>
     /// <returns><see langword="true"/> when the offset lies in this row's range.</returns>
-    /// <remarks>This draft helper derives containment only; it does not infer scope ancestry.</remarks>
+    /// <remarks>This helper derives containment only; it does not infer scope ancestry.</remarks>
     public bool Contains(int ilOffset) => ilOffset >= StartOffset && ilOffset < EndOffset;
 
     /// <summary>Determines content equality from canonical physical row bytes.</summary>
@@ -1275,7 +1275,7 @@ public sealed class DumpLexicalLocalScopeRowFact : IEquatable<DumpLexicalLocalSc
 
 /// <summary>Retains one physical Portable-PDB LocalVariable row and its owning LocalScope row.</summary>
 /// <remarks>
-/// The LocalScope association comes from the exact row-list interval traversed by the producer. This draft fact keeps
+/// The LocalScope association comes from the exact row-list interval traversed by the producer. This fact keeps
 /// unnamed rows and slot reuse; active versus inactive disposition is derived only after scope selection.
 /// </remarks>
 public sealed class DumpLexicalLocalVariableRowFact : IEquatable<DumpLexicalLocalVariableRowFact>
@@ -1317,7 +1317,7 @@ public sealed class DumpLexicalLocalVariableRowFact : IEquatable<DumpLexicalLoca
     /// <summary>Gets the exact Portable-PDB name, including an observed empty name.</summary>
     public string Name { get; }
 
-    /// <summary>Gets a defensive copy of the draft canonical physical row bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical physical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -1329,7 +1329,7 @@ public sealed class DumpLexicalLocalVariableRowFact : IEquatable<DumpLexicalLoca
     /// <param name="slotIndex">The non-negative StandAloneSig slot index.</param>
     /// <param name="attributes">The exact LocalVariable attribute bits.</param>
     /// <param name="name">The exact Portable-PDB name; empty is retained.</param>
-    /// <returns>An immutable draft LocalVariable-row fact.</returns>
+    /// <returns>An immutable LocalVariable-row fact.</returns>
     public static DumpLexicalLocalVariableRowFact Create(
         int localVariableToken,
         int localScopeToken,
@@ -1377,7 +1377,7 @@ public sealed class DumpLexicalLocalVariableRowFact : IEquatable<DumpLexicalLoca
 
 /// <summary>Retains one physical Portable-PDB LocalConstant row and its complete signature blob.</summary>
 /// <remarks>
-/// The LocalScope association comes from the physical row-list interval. This draft fact does not decode or coerce the
+/// The LocalScope association comes from the physical row-list interval. This fact does not decode or coerce the
 /// constant value and preserves inactive rows alongside active rows.
 /// </remarks>
 public sealed class DumpLexicalLocalConstantRowFact : IEquatable<DumpLexicalLocalConstantRowFact>
@@ -1415,7 +1415,7 @@ public sealed class DumpLexicalLocalConstantRowFact : IEquatable<DumpLexicalLoca
     /// <summary>Gets a defensive copy of the complete LocalConstant signature blob.</summary>
     public ImmutableArray<byte> Signature => CanonicalReplayEncoding.Copy(signature);
 
-    /// <summary>Gets a defensive copy of the draft canonical physical row bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical physical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -1426,7 +1426,7 @@ public sealed class DumpLexicalLocalConstantRowFact : IEquatable<DumpLexicalLoca
     /// <param name="localScopeToken">The non-nil physically owning LocalScope token.</param>
     /// <param name="name">The exact Portable-PDB name; empty is retained.</param>
     /// <param name="signature">The complete initialized non-empty constant signature.</param>
-    /// <returns>An immutable draft LocalConstant-row fact.</returns>
+    /// <returns>An immutable LocalConstant-row fact.</returns>
     public static DumpLexicalLocalConstantRowFact Create(
         int localConstantToken,
         int localScopeToken,
@@ -1466,7 +1466,7 @@ public sealed class DumpLexicalLocalConstantRowFact : IEquatable<DumpLexicalLoca
 
 /// <summary>Retains one exact MethodDef row whose raw generated name has current local-function form.</summary>
 /// <remarks>
-/// This draft fact derives only name components and canonical ordinals from the raw MethodDef name. It deliberately
+/// This fact derives only name components and canonical ordinals from the raw MethodDef name. It deliberately
 /// exposes no parent MethodDef token, LocalScope token, or source-scope edge because metadata contains none of those
 /// relations for a generated local-function method.
 /// </remarks>
@@ -1538,7 +1538,7 @@ public sealed class DumpGeneratedLocalFunctionRowFact : IEquatable<DumpGenerated
     /// <summary>Gets the non-negative local-function generation; zero means the canonical suffix is absent.</summary>
     public int LocalFunctionGeneration { get; }
 
-    /// <summary>Gets a defensive copy of the draft canonical physical-and-derived fact bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical physical-and-derived fact bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -1590,7 +1590,7 @@ public sealed class DumpGeneratedLocalFunctionRowFact : IEquatable<DumpGenerated
 /// complete Portable-PDB lexical tables, and their selected-method projections.
 /// </summary>
 /// <remarks>
-/// This is a draft physical-evidence contract. Active scopes are derived from exact half-open IL ranges and must
+/// This is a physical-evidence contract. Active scopes are derived from exact half-open IL ranges and must
 /// reproduce the existing W7 active-scope projection. Inactive and disjoint rows remain observable. Generated local
 /// functions are raw-name-derived facts only and acquire no fabricated parent or source-scope relation.
 /// </remarks>
@@ -1758,7 +1758,7 @@ public sealed class DumpSelectedMethodLexicalFacts : IEquatable<DumpSelectedMeth
 
     /// <summary>Gets the complete physical Portable-PDB LocalScope table in RID order.</summary>
     /// <remarks>
-    /// This draft catalog includes other methods so the selected method's final list intervals are proved from the next
+    /// This catalog includes other methods so the selected method's final list intervals are proved from the next
     /// physical row rather than a selected-method-only boundary claim.
     /// </remarks>
     public ImmutableArray<DumpLexicalLocalScopeRowFact> LocalScopeTable =>
@@ -1814,7 +1814,7 @@ public sealed class DumpSelectedMethodLexicalFacts : IEquatable<DumpSelectedMeth
     /// final physical scope row.
     /// </returns>
     /// <remarks>
-    /// This draft query never accepts an independently supplied list end. Acquisition has already checked the derived
+    /// This query never accepts an independently supplied list end. Acquisition has already checked the derived
     /// interval against every complete physical LocalVariable row and its range-derived owner.
     /// </remarks>
     public int GetLocalVariableListEndRowIdExclusive(int localScopeToken) =>
@@ -1831,7 +1831,7 @@ public sealed class DumpSelectedMethodLexicalFacts : IEquatable<DumpSelectedMeth
     /// final physical scope row.
     /// </returns>
     /// <remarks>
-    /// This draft query never accepts an independently supplied list end. Acquisition has already checked the derived
+    /// This query never accepts an independently supplied list end. Acquisition has already checked the derived
     /// interval against every complete physical LocalConstant row and its range-derived owner.
     /// </remarks>
     public int GetLocalConstantListEndRowIdExclusive(int localScopeToken) =>
@@ -1853,7 +1853,7 @@ public sealed class DumpSelectedMethodLexicalFacts : IEquatable<DumpSelectedMeth
     public ImmutableArray<int> UnaccountedLocalSlotIndices =>
         CanonicalReplayEncoding.Copy(unaccountedLocalSlotIndices);
 
-    /// <summary>Gets a defensive copy of the complete draft canonical fact bytes.</summary>
+    /// <summary>Gets a defensive copy of the complete canonical fact bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -2503,7 +2503,7 @@ public sealed class DumpSelectedMethodLexicalFacts : IEquatable<DumpSelectedMeth
 
 /// <summary>Represents the complete disposition of bounded selected-method lexical acquisition.</summary>
 /// <remarks>
-/// This draft observation reuses the established context status vocabulary. Exact is the sole status carrying
+/// This observation reuses the established context status vocabulary. Exact is the sole status carrying
 /// <see cref="Facts"/>; every other status retains the selected frame, typed issue, and reached bounds with no row
 /// prefix exposed through the API.
 /// </remarks>
@@ -2570,7 +2570,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
     /// <summary>Gets a defensive canonical-name-ordered copy of bounds reached by this acquisition path.</summary>
     public ImmutableArray<EvaluationDeterministicBound> ReachedBounds => CanonicalReplayEncoding.Copy(reachedBounds);
 
-    /// <summary>Gets a defensive copy of the draft canonical observation bytes.</summary>
+    /// <summary>Gets a defensive copy of the canonical observation bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
     /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
@@ -2600,7 +2600,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
     /// a complete MethodDef/Param table or another supplied physical set exceeds its declared cap.
     /// </returns>
     /// <remarks>
-    /// This draft factory checks every independently observed source end before touching supplied row arrays. A
+    /// This factory checks every independently observed source end before touching supplied row arrays. A
     /// cap-plus-one source may therefore pass no prefix at all and cannot accidentally expose one. Within-cap complete
     /// catalogs must have contiguous RIDs, physical LocalScope tuple order, pairwise nested-or-disjoint ranges, and list
     /// starts whose next-row/table-end intervals account for every child row. Malformed caller facts are contract
@@ -2653,7 +2653,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
 
     /// <summary>Creates an exact observation carrying one complete selected-method lexical fact set.</summary>
     /// <param name="facts">The complete exact facts.</param>
-    /// <returns>An exact draft observation whose issue is <c>None</c>.</returns>
+    /// <returns>An exact observation whose issue is <c>None</c>.</returns>
     public static DumpSelectedMethodLexicalObservation Exact(DumpSelectedMethodLexicalFacts facts)
     {
         ArgumentNullException.ThrowIfNull(facts);
@@ -2675,7 +2675,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
     /// <param name="selectedFrame">The exact selected frame reached before incompleteness.</param>
     /// <param name="issue">A partial issue: <c>BoundReached</c> or <c>SourceIncomplete</c>.</param>
     /// <param name="reachedBounds">An initialized set containing only physically reached bounds.</param>
-    /// <returns>A factless partial draft observation.</returns>
+    /// <returns>A factless partial observation.</returns>
     public static DumpSelectedMethodLexicalObservation Partial(
         DumpSelectedFrameIdentity selectedFrame,
         DumpContextEvidenceIssue issue,
@@ -2686,7 +2686,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
     /// <param name="selectedFrame">The exact selected frame whose prerequisite was unavailable.</param>
     /// <param name="issue">An unavailable issue: <c>PrerequisiteUnavailable</c> or <c>ScopeUnavailable</c>.</param>
     /// <param name="reachedBounds">An initialized set containing only physically reached bounds.</param>
-    /// <returns>A factless unavailable draft observation.</returns>
+    /// <returns>A factless unavailable observation.</returns>
     public static DumpSelectedMethodLexicalObservation Unavailable(
         DumpSelectedFrameIdentity selectedFrame,
         DumpContextEvidenceIssue issue,
@@ -2697,7 +2697,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
     /// <param name="selectedFrame">The exact selected frame associated with the ambiguity.</param>
     /// <param name="issue">The required <c>ScopeAmbiguous</c> issue.</param>
     /// <param name="reachedBounds">An initialized set containing only physically reached bounds.</param>
-    /// <returns>A factless ambiguous draft observation.</returns>
+    /// <returns>A factless ambiguous observation.</returns>
     public static DumpSelectedMethodLexicalObservation Ambiguous(
         DumpSelectedFrameIdentity selectedFrame,
         DumpContextEvidenceIssue issue,
@@ -2708,7 +2708,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
     /// <param name="selectedFrame">The exact selected frame associated with the conflict.</param>
     /// <param name="issue">A snapshot or module identity conflict issue.</param>
     /// <param name="reachedBounds">An initialized set containing only physically reached bounds.</param>
-    /// <returns>A factless conflict draft observation.</returns>
+    /// <returns>A factless conflict observation.</returns>
     public static DumpSelectedMethodLexicalObservation Conflict(
         DumpSelectedFrameIdentity selectedFrame,
         DumpContextEvidenceIssue issue,
@@ -2719,7 +2719,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
     /// <param name="selectedFrame">The exact selected frame associated with the invalid source.</param>
     /// <param name="issue">An <c>InvalidFrame</c> or <c>InvalidScope</c> issue.</param>
     /// <param name="reachedBounds">An initialized set containing only physically reached bounds.</param>
-    /// <returns>A factless invalid draft observation.</returns>
+    /// <returns>A factless invalid observation.</returns>
     public static DumpSelectedMethodLexicalObservation Invalid(
         DumpSelectedFrameIdentity selectedFrame,
         DumpContextEvidenceIssue issue,
@@ -2730,7 +2730,7 @@ public sealed class DumpSelectedMethodLexicalObservation : IEquatable<DumpSelect
     /// <param name="selectedFrame">The exact selected frame associated with the unsupported representation.</param>
     /// <param name="issue">The required <c>UnsupportedScope</c> issue.</param>
     /// <param name="reachedBounds">An initialized set containing only physically reached bounds.</param>
-    /// <returns>A factless unsupported draft observation.</returns>
+    /// <returns>A factless unsupported observation.</returns>
     public static DumpSelectedMethodLexicalObservation Unsupported(
         DumpSelectedFrameIdentity selectedFrame,
         DumpContextEvidenceIssue issue,

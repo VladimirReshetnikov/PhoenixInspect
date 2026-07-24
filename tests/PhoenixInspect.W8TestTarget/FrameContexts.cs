@@ -4,7 +4,7 @@ namespace PhoenixInspect.W8TestTarget;
 
 /// <summary>Supplies a selected frame with both declaring-type and method generic arguments.</summary>
 /// <typeparam name="TType">The exact closed declaring-type argument retained in the frame.</typeparam>
-/// <remarks>This is a draft physical frame fixture and not a frame-value product contract.</remarks>
+/// <remarks>This is a physical frame fixture and not a frame-value product contract.</remarks>
 public sealed class GenericFrameOwner<TType>
 {
     private readonly TType ownerValue;

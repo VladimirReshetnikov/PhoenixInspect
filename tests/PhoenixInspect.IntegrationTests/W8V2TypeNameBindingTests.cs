@@ -159,7 +159,7 @@ public sealed class W8V2TypeNameBindingTests
     }
 
     /// <summary>
-    /// Proves a source arity that disagrees with the introduced physical arity produces a complete absent draft
+    /// Proves a source arity that disagrees with the introduced physical arity produces a complete absent
     /// answer with its typed rejection evidence retained rather than a stop.
     /// </summary>
     [Fact]
@@ -184,7 +184,7 @@ public sealed class W8V2TypeNameBindingTests
     }
 
     /// <summary>
-    /// Proves two modules that spell the same fully qualified name produce two distinct physical draft groups in
+    /// Proves two modules that spell the same fully qualified name produce two distinct physical groups in
     /// every partition instead of converging.
     /// </summary>
     [Fact]
@@ -334,7 +334,7 @@ public sealed class W8V2TypeNameBindingTests
     }
 
     /// <summary>
-    /// Proves the shared candidate-occurrence draft cap stops binding at cap plus one without retaining any partial
+    /// Proves the shared candidate-occurrence cap stops binding at cap plus one without retaining any partial
     /// partition evidence, and records why the grouped-candidate cap can never be reached before it.
     /// </summary>
     [Fact]
@@ -376,8 +376,8 @@ public sealed class W8V2TypeNameBindingTests
     }
 
     /// <summary>
-    /// Proves canonical replay equality, defensive copies, guarded private issuance for every retained draft row,
-    /// the closed public issuer surface, and emitted draft XML documentation.
+    /// Proves canonical replay equality, defensive copies, guarded private issuance for every retained row,
+    /// the closed public issuer surface, and emitted XML documentation.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -558,7 +558,7 @@ public sealed class W8V2TypeNameBindingTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -570,7 +570,7 @@ public sealed class W8V2TypeNameBindingTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

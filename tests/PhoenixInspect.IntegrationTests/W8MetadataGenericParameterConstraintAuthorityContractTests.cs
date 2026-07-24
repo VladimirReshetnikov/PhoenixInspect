@@ -8,7 +8,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises complete physical GenericParamConstraint draft authority without target-semantic resolution.</summary>
+/// <summary>Exercises complete physical GenericParamConstraint authority without target-semantic resolution.</summary>
 public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
 {
     private const string SnapshotDigest =
@@ -538,7 +538,7 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
             invalidAuthority.Sha256);
     }
 
-    /// <summary>Proves exact row issuance is private and every additive public draft API is documented.</summary>
+    /// <summary>Proves exact row issuance is private and every additive public API is documented.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Constraint_authority_issuers_are_guarded_and_public_surface_is_draft_documented()
@@ -615,7 +615,7 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.True(typeDocumentation.Value.Contains("draft", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -627,7 +627,7 @@ public sealed class W8MetadataGenericParameterConstraintAuthorityContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.True(member.Value.Contains("draft", StringComparison.OrdinalIgnoreCase)));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

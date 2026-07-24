@@ -6,10 +6,10 @@ namespace PhoenixInspect.Core.Execution;
 /// Freezes the caller boundary at which execution resumes after one interpreted callee frame returns.
 /// </summary>
 /// <remarks>
-/// This content-equal draft W4.5 value belongs only to non-root interpreted frames. It retains both the complete
+/// This content-equal W4.5 value belongs only to non-root interpreted frames. It retains both the complete
 /// structural call-site identity and the already-decoded caller resume offset, so a return transfer does not decode,
 /// resolve, or infer either fact again. Model-covered calls do not push frames and therefore do not create instances.
-/// Broader stepping statement identities and exception-continuation state remain outside this prototype contract.
+/// Broader stepping statement identities and exception-continuation state remain outside this implementation contract.
 /// </remarks>
 public sealed record FrameReturnSite
 {

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises the complete authority-joined FieldDef declaration-table draft projection.</summary>
+/// <summary>Exercises the complete authority-joined FieldDef declaration-table projection.</summary>
 public sealed class W8FieldDefinitionTableCatalogContractTests
 {
     private const int ModuleTypeRid = 1;
@@ -143,7 +143,7 @@ public sealed class W8FieldDefinitionTableCatalogContractTests
             catalog.RowsForDeclaringTypeOrEmpty(holderType).Select(static row => row.FieldDefinitionToken));
     }
 
-    /// <summary>Proves source count, RID order, and module identity remain prefix-free typed draft stops.</summary>
+    /// <summary>Proves source count, RID order, and module identity remain prefix-free typed stops.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Complete_source_physical_RID_order_and_module_identity_are_required()
@@ -192,7 +192,7 @@ public sealed class W8FieldDefinitionTableCatalogContractTests
             FieldToken(2));
     }
 
-    /// <summary>Proves the ownership join is complete and that contradictory ownership evidence stops the draft.</summary>
+    /// <summary>Proves the ownership join is complete and that contradictory ownership evidence stops the join.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Ownership_join_requires_exactly_one_declaring_TypeDef_for_every_FieldDef()
@@ -243,7 +243,7 @@ public sealed class W8FieldDefinitionTableCatalogContractTests
             duplicateAuthority.TypeDefinitionCatalog.MemberPointerCatalog.Issue);
     }
 
-    /// <summary>Proves non-exact and invalid authority prerequisites propagate without any derived draft prefix.</summary>
+    /// <summary>Proves non-exact and invalid authority prerequisites propagate without any derived prefix.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Definition_authority_prerequisite_stops_are_prefix_free()
@@ -292,7 +292,7 @@ public sealed class W8FieldDefinitionTableCatalogContractTests
         Assert.Equal(StaticFieldV2Limits.MaximumFieldDefinitionRowCount, overCap.ReachedBound.Value);
     }
 
-    /// <summary>Proves malformed, truncated, trailing, and over-deep signatures expose no derived draft prefix.</summary>
+    /// <summary>Proves malformed, truncated, trailing, and over-deep signatures expose no derived prefix.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Shared_grammar_FieldSig_consumption_is_typed_and_prefix_free()
@@ -348,7 +348,7 @@ public sealed class W8FieldDefinitionTableCatalogContractTests
         Assert.Equal([0x06, 0x1D, 0x0E], exact.Rows[1].SignatureBytes.ToArray());
     }
 
-    /// <summary>Proves exact catalog replay, canonical digests, and every defensive draft copy boundary.</summary>
+    /// <summary>Proves exact catalog replay, canonical digests, and every defensive copy boundary.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Exact_catalog_replays_canonically_and_copies_every_mutable_boundary()
@@ -414,7 +414,7 @@ public sealed class W8FieldDefinitionTableCatalogContractTests
         Assert.Equal("acbf1a2ed058309c1f8da68d8371ed52f085757994a0e182a7db05b51d5db78f", originalSha);
     }
 
-    /// <summary>Proves the new public draft surface is closed, guarded, validated, and fully documented.</summary>
+    /// <summary>Proves the new public surface is closed, guarded, validated, and fully documented.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void FieldDefinition_table_surface_has_draft_XML_and_guarded_exact_issuance()
@@ -509,7 +509,7 @@ public sealed class W8FieldDefinitionTableCatalogContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -522,7 +522,7 @@ public sealed class W8FieldDefinitionTableCatalogContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

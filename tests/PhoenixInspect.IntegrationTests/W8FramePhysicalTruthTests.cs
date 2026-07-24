@@ -18,7 +18,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// Probes selected-frame, variable-location, and closed generic-context evidence in real W8 full dumps.
 /// </summary>
 /// <remarks>
-/// This draft W8.1 gate is intentionally independent of product binding and evaluation. It selects frames by raw
+/// This W8.1 gate is intentionally independent of product binding and evaluation. It selects frames by raw
 /// module metadata and tokens, detaches native context bytes before closing ClrMD, and treats legacy frame/value
 /// interfaces only as an evidence probe. No result in this suite is a public frame-value contract.
 /// </remarks>
@@ -50,7 +50,7 @@ public sealed class W8FramePhysicalTruthTests
 
     private readonly ITestOutputHelper output;
 
-    /// <summary>Creates the draft physical-truth suite with a canonical, payload-bounded diagnostic channel.</summary>
+    /// <summary>Creates the physical-truth suite with a canonical, payload-bounded diagnostic channel.</summary>
     /// <param name="output">The xUnit output channel used for one canonical disposition matrix per profile.</param>
     public W8FramePhysicalTruthTests(ITestOutputHelper output) => this.output = output;
 
@@ -59,7 +59,7 @@ public sealed class W8FramePhysicalTruthTests
     /// freezes each legacy argument, local, declaring-type argument, method argument, and exact-token disposition.
     /// </summary>
     /// <remarks>
-    /// The draft caveat is material: a register location without a register identity, a zero/split location, a failed
+    /// The caveat is material: a register location without a register identity, a zero/split location, a failed
     /// token query, or a canonical/zero substitute is never promoted to exact evidence by this test.
     /// </remarks>
     [Fact]

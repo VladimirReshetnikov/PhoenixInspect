@@ -9,7 +9,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises normalized multi-module definition-compatibility draft portfolios.</summary>
+/// <summary>Exercises normalized multi-module definition-compatibility portfolios.</summary>
 public sealed class W8MetadataDefinitionCompatibilityPortfolioContractTests
 {
     private const int OuterTypeDefinitionRid = 2;
@@ -20,7 +20,7 @@ public sealed class W8MetadataDefinitionCompatibilityPortfolioContractTests
 
     /// <summary>
     /// Proves caller order is discarded, exact-module lookup works, one snapshot is retained, and compatible, absent,
-    /// and mismatched row outcomes remain owned by their original draft catalogs.
+    /// and mismatched row outcomes remain owned by their original catalogs.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -81,7 +81,7 @@ public sealed class W8MetadataDefinitionCompatibilityPortfolioContractTests
 
     /// <summary>
     /// Proves default and explicit-empty vectors remain distinct, exact-at-cap input stays complete, and cap-plus-one
-    /// stops before normalization while retaining only the shared draft bound.
+    /// stops before normalization while retaining only the shared bound.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -138,7 +138,7 @@ public sealed class W8MetadataDefinitionCompatibilityPortfolioContractTests
 
     /// <summary>
     /// Proves missing, non-exact, invalid, mixed-snapshot, and duplicate-module inputs produce deterministic typed
-    /// draft stops without an entry prefix, including prerequisite-bound propagation.
+    /// stops without an entry prefix, including prerequisite-bound propagation.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -219,7 +219,7 @@ public sealed class W8MetadataDefinitionCompatibilityPortfolioContractTests
     }
 
     /// <summary>
-    /// Proves immutable replay, fixed-size digest references, the draft golden digest, private entry issuance,
+    /// Proves immutable replay, fixed-size digest references, the golden digest, private entry issuance,
     /// reflection shape, and emitted XML documentation.
     /// </summary>
     [Fact]
@@ -534,7 +534,7 @@ public sealed class W8MetadataDefinitionCompatibilityPortfolioContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(method => !method.IsSpecialName))
@@ -546,7 +546,7 @@ public sealed class W8MetadataDefinitionCompatibilityPortfolioContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

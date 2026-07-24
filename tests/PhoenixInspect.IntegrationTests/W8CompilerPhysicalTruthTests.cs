@@ -19,7 +19,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// </summary>
 /// <remarks>
 /// The tests decode PE and Portable-PDB records through SRM primitives and deliberately do not call a product
-/// projection. The asserted shapes are draft physical evidence, not commitments for the eventual public API.
+/// projection. The asserted shapes are physical evidence, not commitments for the eventual public API.
 /// </remarks>
 public sealed class W8CompilerPhysicalTruthTests
 {
@@ -670,7 +670,7 @@ public sealed class W8CompilerPhysicalTruthTests
     /// <summary>
     /// Compiles independent synthetic source with Roslyn and proves one same-level namespace import converges through
     /// direct and forwarded metadata to the destination symbol, while two distinct same-level imports produce a
-    /// genuine ambiguity. This compiler-semantic oracle is draft evidence independent of the SRM row assertions.
+    /// genuine ambiguity. This compiler-semantic oracle is evidence independent of the SRM row assertions.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]

@@ -8,7 +8,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 /// reading dump evidence.
 /// </summary>
 /// <remarks>
-/// This draft product contract deliberately exposes only admission, stable diagnostics, and the deterministic bounds
+/// This product contract deliberately exposes only admission, stable diagnostics, and the deterministic bounds
 /// actually reached. It does not expose the parser's internal tree and does not widen the W2 grammar. A successful
 /// result says only that later W2 preparation may attempt evidence binding; it is not an evaluation result.
 /// </remarks>

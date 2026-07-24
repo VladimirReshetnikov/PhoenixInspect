@@ -31,7 +31,7 @@ internal static class Program
 }
 
 /// <summary>Holds the sole pause the workflow-shape target uses to signal dump readiness.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class WorkflowPause
 {
     /// <summary>Signals readiness and pauses so an external writer can capture one full dump.</summary>
@@ -51,7 +51,7 @@ public static class WorkflowPause
 }
 
 /// <summary>Materializes the workflow-shape object graph and enters the selected truth-gate profile.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class WorkflowShapeGate
 {
     private static AssemblyLoadContext? retainedSecondLoadContext;

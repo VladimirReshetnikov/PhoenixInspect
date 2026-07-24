@@ -4,7 +4,7 @@ using PhoenixInspect.Core.Abstractions;
 namespace PhoenixInspect.Core.Execution;
 
 /// <summary>
-/// Represents one activation frame for the admitted draft IL semantics slice.
+/// Represents one activation frame for the admitted IL semantics slice.
 /// </summary>
 /// <typeparam name="TValue">The domain value representation stored in frame slots.</typeparam>
 /// <param name="Method">The executing method definition.</param>
@@ -34,7 +34,7 @@ public sealed record FrameState<TValue>(
     /// </summary>
     /// <remarks>
     /// This init-only addition deliberately does not alter the original five-argument positional constructor or its
-    /// five-value deconstruction shape. The draft machine validates root/non-root placement and graph agreement at
+    /// five-value deconstruction shape. The machine validates root/non-root placement and graph agreement at
     /// executable boundaries because record <c>with</c> expressions can still materialize inconsistent diagnostics.
     /// </remarks>
     public FrameReturnSite? ReturnSite { get; init; }

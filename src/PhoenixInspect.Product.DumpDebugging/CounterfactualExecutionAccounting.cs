@@ -5,7 +5,7 @@ using PhoenixInspect.Core.Execution;
 namespace PhoenixInspect.Product.DumpDebugging;
 
 /// <summary>Classifies whether one deterministic execution bound applied on the represented path.</summary>
-/// <remarks>This draft W4 schema is closed and requires versioning before adding or reinterpreting a member.</remarks>
+/// <remarks>This W4 schema is closed and requires versioning before adding or reinterpreting a member.</remarks>
 public enum CounterfactualBoundStatus
 {
     /// <summary>The bound does not apply to this result origin or value.</summary>
@@ -28,7 +28,7 @@ public enum CounterfactualBoundStatus
 /// Nullable numeric facts are intentional. Inapplicable bounds carry no numbers; a not-reached bound may retain its
 /// configured limit but never fabricates used or remaining work. Traversal charges identify only actually consumed
 /// discovery units, and an exhausted traversal additionally identifies its first rejected unit.
-/// This is an unstable draft W4 projection rather than a committed public serialization contract.
+/// This is an unstable W4 projection rather than a committed public serialization contract.
 /// </remarks>
 public sealed class CounterfactualExecutionAccounting
 {

@@ -16,7 +16,7 @@ namespace PhoenixInspect.Core.Execution;
 /// Activation consumes no instruction budget and emits no execution event. Legacy activation resolves and freezes its
 /// complete method shape; prepared-graph activation consumes the already retained root plan without re-resolution.
 /// Both validate supplied receiver/argument values, derive local defaults, and fix IL offset zero plus an empty
-/// evaluation stack before exposing a state. The result shape is provisional during conceptual design.
+/// evaluation stack before exposing a state. The result shape is provisional during early development.
 /// </remarks>
 public sealed record MachineActivationResult<TValue, TMemory>(
     MachineState<TValue, TMemory>? State,

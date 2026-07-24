@@ -1,7 +1,7 @@
 namespace PhoenixInspect.Core.Abstractions;
 
 /// <summary>
-/// Classifies the structural type identities understood by the draft W3 execution contract.
+/// Classifies the structural type identities understood by the W3 execution contract.
 /// </summary>
 public enum TypeSigKind
 {
@@ -14,7 +14,7 @@ public enum TypeSigKind
     /// <summary>An exact metadata-defined reference type identified by module and TypeDef token.</summary>
     TypeDefinition,
 
-    /// <summary>A diagnostic-name identity admitted only by isolated prototype fixtures.</summary>
+    /// <summary>A diagnostic-name identity admitted only by isolated fixtures.</summary>
     Synthetic,
 
     /// <summary>A zero-based, one-dimensional array whose element type is structural.</summary>
@@ -48,7 +48,7 @@ public enum IntrinsicTypeKind
 /// <remarks>
 /// Metadata-defined types compare by content-derived module identity and non-nil TypeDef token. Their display
 /// names are diagnostic evidence only and deliberately do not participate in equality or hashing. The public
-/// string constructor creates a synthetic identity for isolated prototype laws; such identities are not admissible
+/// string constructor creates a synthetic identity for isolated laws; such identities are not admissible
 /// metadata identities and must never be used to join independently observed target types.
 /// </remarks>
 public sealed class TypeSig : IEquatable<TypeSig>
@@ -79,7 +79,7 @@ public sealed class TypeSig : IEquatable<TypeSig>
     public static TypeSig Object { get; } = CreateIntrinsic(IntrinsicTypeKind.Object, "System.Object");
 
     /// <summary>
-    /// Creates a bounded synthetic type identity for isolated prototype fixtures.
+    /// Creates a bounded synthetic type identity for isolated fixtures.
     /// </summary>
     /// <param name="displayName">
     /// A deterministic fixture identity and diagnostic name. Unlike metadata type display names, it participates in

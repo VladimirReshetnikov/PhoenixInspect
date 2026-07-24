@@ -18,7 +18,7 @@ public enum DumpObjectRuntimeTypeKind
 
 /// <summary>Identifies one exact dump object independently of how a caller selected it.</summary>
 /// <remarks>
-/// This draft W7 product identity deliberately excludes handles, host labels, expressions, fields, and static slots.
+/// This W7 product identity deliberately excludes handles, host labels, expressions, fields, and static slots.
 /// Equal physical objects selected through different sources therefore compare equal while their bindings do not.
 /// </remarks>
 public sealed class DumpObjectIdentity : IEquatable<DumpObjectIdentity>
@@ -1218,7 +1218,7 @@ public enum StaticFieldSymbolIdentityStatus
 
 /// <summary>Composes canonical product symbol identity with one matching physical host observation.</summary>
 /// <remarks>
-/// The draft bridge keeps product binding identity distinct from host declaration/storage evidence. Exact symbol
+/// The bridge keeps product binding identity distinct from host declaration/storage evidence. Exact symbol
 /// composition compares every shared snapshot/module/metadata/token/name/signature/value-shape fact once physical
 /// declaration mapping succeeds. It can also retain a typed non-exact Host prefix when exact product binding was
 /// followed by physical module/type/field mapping failure. Failed symbol composition never manufactures Host work.

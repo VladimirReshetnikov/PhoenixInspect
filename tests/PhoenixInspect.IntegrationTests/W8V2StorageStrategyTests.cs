@@ -43,7 +43,7 @@ public sealed class W8V2StorageStrategyTests
     private const int ConstantClass = 0x12;
 
     /// <summary>
-    /// Proves each of the four admitted draft strategies is classified from real physical FieldAttributes plus the
+    /// Proves each of the four admitted strategies is classified from real physical FieldAttributes plus the
     /// caller-supplied thread marker alone, and that a literal always wins over a field RVA.
     /// </summary>
     [Fact]
@@ -86,8 +86,8 @@ public sealed class W8V2StorageStrategyTests
     }
 
     /// <summary>
-    /// Proves the frozen per-capability requirement draft vector of every admitted strategy and of the two typed
-    /// non-admissions, which the later runtime draft slice must obey exactly.
+    /// Proves the frozen per-capability requirement vector of every admitted strategy and of the two typed
+    /// non-admissions, which the later runtime slice must obey exactly.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -153,7 +153,7 @@ public sealed class W8V2StorageStrategyTests
         }
     }
 
-    /// <summary>Proves an instance declaration is a typed draft non-admission that names no storage strategy.</summary>
+    /// <summary>Proves an instance declaration is a typed non-admission that names no storage strategy.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Instance_declaration_is_a_typed_non_admission()
@@ -171,7 +171,7 @@ public sealed class W8V2StorageStrategyTests
     }
 
     /// <summary>
-    /// Proves a caller-supplied context-relative marker produces the frozen W8.1 draft non-admission and that no
+    /// Proves a caller-supplied context-relative marker produces the frozen W8.1 non-admission and that no
     /// context-relative storage value exists anywhere in the public surface.
     /// </summary>
     [Fact]
@@ -388,7 +388,7 @@ public sealed class W8V2StorageStrategyTests
         Assert.Null(withoutEvidence.EnumDefinition);
     }
 
-    /// <summary>Proves the static-string draft cap is admitted exactly and cap plus one stops with its bound.</summary>
+    /// <summary>Proves the static-string cap is admitted exactly and cap plus one stops with its bound.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void String_projection_admits_the_cap_and_stops_at_cap_plus_one()
@@ -413,7 +413,7 @@ public sealed class W8V2StorageStrategyTests
         Assert.Equal(cap, overCap.ReachedBound.Value);
     }
 
-    /// <summary>Proves signature-versus-Constant disagreement and malformed blobs are typed invalid draft stops.</summary>
+    /// <summary>Proves signature-versus-Constant disagreement and malformed blobs are typed invalid stops.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Signature_disagreement_and_malformed_blobs_are_invalid()
@@ -444,7 +444,7 @@ public sealed class W8V2StorageStrategyTests
         AssertInvalidBlob(Project(world, "LitClass", ConstantClass, [0x00, 0x00, 0x00]));
     }
 
-    /// <summary>Proves unknown Constant codes and non-admitted signature forms are typed draft non-admissions.</summary>
+    /// <summary>Proves unknown Constant codes and non-admitted signature forms are typed non-admissions.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Unadmitted_constant_codes_and_signature_forms_are_unsupported()
@@ -560,8 +560,8 @@ public sealed class W8V2StorageStrategyTests
     }
 
     /// <summary>
-    /// Proves canonical replay, defensive draft copies, guarded private issuance, the closed public surface, and
-    /// emitted draft XML documentation for the whole storage-strategy and literal-projection surface.
+    /// Proves canonical replay, defensive copies, guarded private issuance, the closed public surface, and
+    /// emitted XML documentation for the whole storage-strategy and literal-projection surface.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -775,7 +775,7 @@ public sealed class W8V2StorageStrategyTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -787,7 +787,7 @@ public sealed class W8V2StorageStrategyTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

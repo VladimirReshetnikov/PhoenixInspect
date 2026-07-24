@@ -16,7 +16,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// Proves the W8.1 value, storage-family, and constructed-assignability branches from emitted artifacts and full dumps.
 /// </summary>
 /// <remarks>
-/// This draft physical gate introduces no product binder. Runtime APIs locate exact slots only after metadata-token and
+/// This physical gate introduces no product binder. Runtime APIs locate exact slots only after metadata-token and
 /// construction identity are fixed; copied raw bytes remain the value source, and high-level reads are late oracles.
 /// </remarks>
 public sealed class W8StoragePhysicalTruthTests
@@ -231,7 +231,7 @@ public sealed class W8StoragePhysicalTruthTests
     /// then rejects the first additional structural node before a recursive formatter can consume it.
     /// </summary>
     /// <remarks>
-    /// This is draft design evidence for cumulative accounting. It intentionally tests both a deeply nested vector
+    /// This is design evidence for cumulative accounting. It intentionally tests both a deeply nested vector
     /// signature and a broad generic instantiation so independent depth and node limits cannot mask one another.
     /// </remarks>
     [Fact]

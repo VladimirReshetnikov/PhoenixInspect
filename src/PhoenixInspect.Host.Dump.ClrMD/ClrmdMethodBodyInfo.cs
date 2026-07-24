@@ -11,7 +11,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// <remarks>
 /// Instances are created only for an exact <see cref="ClrmdEvidenceResult{T}"/>. Partial or unavailable reads retain
 /// their observed byte prefixes in the result evidence but never expose this type or an executable
-/// <see cref="MethodBody"/>. The normalized body remains a draft prototype shape and does not imply support for
+/// <see cref="MethodBody"/>. The normalized body remains a structural shape and does not imply support for
 /// executing locals or exception handlers.
 /// </remarks>
 public sealed class ClrmdMethodBodyInfo

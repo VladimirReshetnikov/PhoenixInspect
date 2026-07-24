@@ -154,7 +154,7 @@ public sealed class W8V2RuntimeConstructionTests
 
     /// <summary>
     /// Proves candidate presentation order never selects: the same candidate set in reversed order yields a byte
-    /// identical draft selection, and duplicate identical rows collapse into one group.
+    /// identical selection, and duplicate identical rows collapse into one group.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -463,7 +463,7 @@ public sealed class W8V2RuntimeConstructionTests
     }
 
     /// <summary>
-    /// Proves every admitted draft value shape decodes exactly from copied raw bytes with correct signedness, width,
+    /// Proves every admitted value shape decodes exactly from copied raw bytes with correct signedness, width,
     /// and target-width native integers supplied as a fact rather than assumed.
     /// </summary>
     [Fact]
@@ -695,7 +695,7 @@ public sealed class W8V2RuntimeConstructionTests
 
     /// <summary>
     /// Proves replay equality, defensive copies, guarded mint capability, and the frozen golden digest of one exact
-    /// constructed-slot draft outcome.
+    /// constructed-slot outcome.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -778,7 +778,7 @@ public sealed class W8V2RuntimeConstructionTests
         StaticFieldV2StorageStrategyOutcome BuildWorldStrategy() => Strategy(BuildWorld(), "PlainStatic");
     }
 
-    /// <summary>Proves the public draft surface stays closed, issuer-guarded, and documented as draft.</summary>
+    /// <summary>Proves the public surface stays closed, issuer-guarded, and documented.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Public_surface_is_closed_and_documented_as_draft()
@@ -911,7 +911,7 @@ public sealed class W8V2RuntimeConstructionTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -923,7 +923,7 @@ public sealed class W8V2RuntimeConstructionTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

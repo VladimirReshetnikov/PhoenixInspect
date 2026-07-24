@@ -9,7 +9,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// Schema version one is domain-separated, uses big-endian fixed-width numbers, length-prefixed variable bytes,
 /// raw 32-byte digests, presence tags for nullable facts, and explicit closed tags for every enum. Runtime object
 /// identity, dictionary order, display-only method names, capabilities, memory, and cancellation tokens are absent.
-/// This codec is a draft W4 prototype contract; schema evolution must use a new version rather than silently changing
+/// This codec is a W4 contract; schema evolution must use a new version rather than silently changing
 /// version-one bytes.
 /// </remarks>
 public static class CounterfactualExecutionCanonicalCodec

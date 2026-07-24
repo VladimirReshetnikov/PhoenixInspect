@@ -15,7 +15,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// Generates the real full dumps of the W8 truth-gate target and shares them across the runtime-acquisition gates.
 /// </summary>
 /// <remarks>
-/// The fixture is draft physical scaffolding. Dump generation is hidden and headless exactly like the W8.1 oracles.
+/// The fixture is physical scaffolding. Dump generation is hidden and headless exactly like the W8.1 oracles.
 /// The <c>generic-frame</c> profile is the truth-gate profile whose selected frame carries a receiver, reference and
 /// value parameters, and active named locals; the <c>slot-reuse-frame</c> profile is the truth-gate profile whose
 /// selected frame carries one same-method local that is lexically dead at the paused instruction offset.
@@ -29,13 +29,13 @@ public sealed class W8V2RuntimeAcquisitionFixture : IDisposable
         SlotReuseDumpPath = WriteProfileDump("slot-reuse-frame");
     }
 
-    /// <summary>Gets the complete path of the generated <c>generic-frame</c> draft dump.</summary>
+    /// <summary>Gets the complete path of the generated <c>generic-frame</c> dump.</summary>
     public string DumpPath { get; }
 
-    /// <summary>Gets the complete path of the generated <c>slot-reuse-frame</c> draft dump.</summary>
+    /// <summary>Gets the complete path of the generated <c>slot-reuse-frame</c> dump.</summary>
     public string SlotReuseDumpPath { get; }
 
-    /// <summary>Deletes every generated draft dump.</summary>
+    /// <summary>Deletes every generated dump.</summary>
     public void Dispose()
     {
         foreach (var path in new[] { DumpPath, SlotReuseDumpPath })
@@ -69,7 +69,7 @@ public sealed class W8V2RuntimeAcquisitionFixture : IDisposable
 /// Every runtime construction is selected by definition module, TypeDef token, and ordered closed arguments projected
 /// through the landed metadata authority. The metadata authority is composed from the real produced target module plus
 /// one synthetic core module carrying the real <c>System.Runtime</c> assembly identity, because the pinned corelib is
-/// rejected by the shared bounded ECMA signature grammar. These assertions are draft physical evidence.
+/// rejected by the shared bounded ECMA signature grammar. These assertions are physical evidence.
 /// </remarks>
 public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcquisitionFixture>
 {
@@ -78,7 +78,7 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
 
     private readonly W8V2RuntimeAcquisitionFixture fixture;
 
-    /// <summary>Initializes the gate with the shared generated draft dump.</summary>
+    /// <summary>Initializes the gate with the shared generated dump.</summary>
     /// <param name="fixture">The shared dump fixture.</param>
     public W8V2RuntimeAcquisitionTests(W8V2RuntimeAcquisitionFixture fixture) => this.fixture = fixture;
 
@@ -679,7 +679,7 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
 
     /// <summary>
     /// Proves closing the session, reopening the same dump, and rebinding the same frame-value root produces one
-    /// byte-identical canonical draft outcome.
+    /// byte-identical canonical outcome.
     /// </summary>
     [Fact]
     [Trait("Category", "Dump")]
@@ -826,7 +826,7 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
 
     /// <summary>
     /// Proves closing the session, reopening the same dump, and rebinding the same expression produces byte-identical
-    /// canonical construction, slot, and value draft outcomes.
+    /// canonical construction, slot, and value outcomes.
     /// </summary>
     [Fact]
     [Trait("Category", "Dump")]
@@ -882,14 +882,14 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
     }
 }
 
-/// <summary>Carries the three draft answers and the probe ledger of one acquired static field.</summary>
-/// <remarks>This is draft physical scaffolding and not a product contract.</remarks>
+/// <summary>Carries the three answers and the probe ledger of one acquired static field.</summary>
+/// <remarks>This is physical scaffolding and not a product contract.</remarks>
 internal sealed record AcquiredFrameRoot(
     StaticFieldV2FrameValueRootOutcome Outcome,
     ExpressionV2CapabilityProbeSet Probes);
 
-/// <summary>Carries the three draft answers and the probe ledger of one acquired static field.</summary>
-/// <remarks>This is draft physical scaffolding and not a product contract.</remarks>
+/// <summary>Carries the three answers and the probe ledger of one acquired static field.</summary>
+/// <remarks>This is physical scaffolding and not a product contract.</remarks>
 internal sealed record AcquiredStaticField(
     StaticFieldV2RuntimeConstructionAcquisitionOutcome Construction,
     StaticFieldV2StaticSlotAcquisitionOutcome? Slot,
@@ -900,7 +900,7 @@ internal sealed record AcquiredStaticField(
 /// <remarks>
 /// The real target and named-RVA modules are produced from the metadata images copied out of the dump itself. The core
 /// module is synthetic and carries the real <c>System.Runtime</c> assembly identity read from the shared framework, so
-/// the target's real AssemblyRef resolves without fabricating any runtime fact. This is draft physical scaffolding.
+/// the target's real AssemblyRef resolves without fabricating any runtime fact. This is physical scaffolding.
 /// </remarks>
 internal sealed class W8V2RuntimeAcquisitionWorld : IDisposable
 {

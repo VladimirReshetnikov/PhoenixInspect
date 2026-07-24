@@ -596,7 +596,7 @@ public sealed class W8V2SyntaxProjectionTests
             FrameValueV1ExpressionParser.Parse("(").Sha256);
     }
 
-    /// <summary>Proves both public projector types and their Parse members carry draft XML documentation.</summary>
+    /// <summary>Proves both public projector types and their Parse members carry XML documentation.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Projector_types_carry_draft_xml_documentation()
@@ -608,7 +608,7 @@ public sealed class W8V2SyntaxProjectionTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -620,7 +620,7 @@ public sealed class W8V2SyntaxProjectionTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

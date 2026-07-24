@@ -6,10 +6,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>
-/// Projects the sole complete Roslyn parse into the detached draft <c>FrameValueExpressionV1</c> syntax contracts.
+/// Projects the sole complete Roslyn parse into the detached <c>FrameValueExpressionV1</c> syntax contracts.
 /// </summary>
 /// <remarks>
-/// This draft projector is a pure function from expression text to one typed frame-value syntax outcome. It obtains
+/// This projector is a pure function from expression text to one typed frame-value syntax outcome. It obtains
 /// its tree only through the shared <see cref="CSharpExpressionFrontEnd.ParseCompleteExpression"/> front end and
 /// performs no frame, PDB, metadata, runtime, or memory call. The admitted grammar is exactly a <see langword="this"/>
 /// or identifier root, zero through two trailing identifier members over direct or conditional access, and one
@@ -21,7 +21,7 @@ public static class FrameValueV1ExpressionParser
     /// <summary>Parses and classifies one complete frame-value expression exactly once.</summary>
     /// <param name="expressionText">The complete expression text, including source trivia and escaped spellings.</param>
     /// <remarks>
-    /// This draft operation is deterministic and bounded. Valid C# outside the closed frame-value grammar becomes a
+    /// This operation is deterministic and bounded. Valid C# outside the closed frame-value grammar becomes a
     /// typed unsupported stop, integrity and bound crossings become typed invalid stops, and no stop retains a prefix
     /// descriptor. Replaying the same text produces a content-equal outcome.
     /// </remarks>

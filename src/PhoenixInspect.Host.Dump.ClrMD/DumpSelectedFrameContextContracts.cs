@@ -7,7 +7,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// Classifies the precision of one independently acquired debugger binding-context source.
 /// </summary>
 /// <remarks>
-/// Numeric values are an explicit draft replay contract. An exact observation is the only status that may expose a
+/// Numeric values are an explicit replay contract. An exact observation is the only status that may expose a
 /// candidate-producing payload; every other status retains source identity and reached bounds without a candidate.
 /// </remarks>
 public enum DumpContextEvidenceStatus : byte
@@ -206,7 +206,7 @@ public sealed class DumpSelectedFrameSelector : IEquatable<DumpSelectedFrameSele
 /// Identifies one exact native-instruction-pointer to IL-offset correlation for a selected managed frame.
 /// </summary>
 /// <remarks>
-/// This draft value never substitutes a nearest sequence point, a method-start fallback, or a decompiler estimate.
+/// This value never substitutes a nearest sequence point, a method-start fallback, or a decompiler estimate.
 /// Absence of one exact mapping is represented by a non-exact frame observation rather than an approximate instance.
 /// </remarks>
 public sealed class DumpInstructionLocation : IEquatable<DumpInstructionLocation>

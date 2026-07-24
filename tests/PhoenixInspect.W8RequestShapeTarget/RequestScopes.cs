@@ -8,7 +8,7 @@ namespace PhoenixInspect.W8RequestShapeTarget.Inner
     using ScopedRequestSlot = PhoenixInspect.W8RequestShapeTarget.Inner.InnerScopedSlot;
 
     /// <summary>Owns the inner-scope declaration that the innermost alias must reach.</summary>
-    /// <remarks>This emitted draft fixture type is a physical oracle, not a product contract.</remarks>
+    /// <remarks>This emitted fixture type is a physical oracle, not a product contract.</remarks>
     public static class InnerScopedSlot
     {
         /// <summary>Stores the inner-scope sentinel selected by the innermost alias declaration.</summary>
@@ -16,7 +16,7 @@ namespace PhoenixInspect.W8RequestShapeTarget.Inner
     }
 
     /// <summary>Pauses inside an inner alias scope whose alias shadows an identically spelled outer alias.</summary>
-    /// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+    /// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
     public static class InnerAliasProbe
     {
         /// <summary>Enters the inner alias scope and pauses for the full dump.</summary>
@@ -34,7 +34,7 @@ namespace PhoenixInspect.W8RequestShapeTarget.Inner
 namespace PhoenixInspect.W8RequestShapeTarget.Outer
 {
     /// <summary>Pauses inside a scope whose only alias for the shared spelling is the outer declaration.</summary>
-    /// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+    /// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
     public static class OuterAliasProbe
     {
         /// <summary>Enters the outer alias scope and pauses for the full dump.</summary>

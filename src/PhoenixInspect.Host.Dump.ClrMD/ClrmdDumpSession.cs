@@ -13,7 +13,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// Owns a ClrMD dump lifetime and projects bounded, provenance-bearing runtime and memory evidence.
 /// </summary>
 /// <remarks>
-/// This remains a draft walking-skeleton adapter. It supports one CLR runtime per dump, same-toolchain CoreCLR layout
+/// This remains a walking-skeleton adapter. It supports one CLR runtime per dump, same-toolchain CoreCLR layout
 /// evidence, strong-handle object selection, primitive field locations, string-field reads, and counted IL bodies.
 /// ClrMD objects do not escape this boundary. Loading hashes and parses the same read-only file stream, which remains
 /// open for the session lifetime so path replacement cannot silently change the source behind its content identity.
@@ -154,7 +154,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
     /// caller owns and must dispose the session carried by an exact result.
     /// </returns>
     /// <remarks>
-    /// Caveat: this prototype supports only the explicitly validated fixture and input shapes. Other incident dumps
+    /// Caveat: this implementation supports only the explicitly validated fixture and input shapes. Other incident dumps
     /// remain outside the supported product contract.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="dumpPath"/> is empty or whitespace.</exception>
@@ -684,7 +684,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
     /// </returns>
     /// <remarks>
     /// The adapter scans at most <c>4096</c> projected fields and rejects duplicate ordinal names. Caveat: this bound
-    /// covers only project-owned traversal; other input shapes remain outside the validated prototype contract.
+    /// covers only project-owned traversal; other input shapes remain outside the validated contract.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="obj"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="fieldName"/> is empty or whitespace.</exception>
@@ -863,7 +863,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
     /// <param name="obj">The validated non-root target that owns <paramref name="field"/>.</param>
     /// <param name="field">The descriptor derived from a frozen relative terminal layout.</param>
     /// <returns>
-    /// An exact integer or typed non-exact observation retaining only counted storage evidence. This draft W6 overload
+    /// An exact integer or typed non-exact observation retaining only counted storage evidence. This W6 overload
     /// performs no field or type-catalog lookup.
     /// </returns>
     /// <exception cref="ArgumentNullException">
@@ -1002,7 +1002,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
     /// <param name="obj">The validated non-root target that owns <paramref name="field"/>.</param>
     /// <param name="field">The descriptor carrying the frozen nullable child layout.</param>
     /// <returns>
-    /// An exact present integer, exact null, or typed non-exact observation. This draft W6 overload reads only the
+    /// An exact present integer, exact null, or typed non-exact observation. This W6 overload reads only the
     /// frozen discriminant and, when present, payload ranges.
     /// </returns>
     /// <exception cref="ArgumentNullException">
@@ -1234,7 +1234,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
     /// <param name="field">The descriptor derived from a frozen relative terminal layout.</param>
     /// <param name="maximumCharacters">Caller observation cap. Values above the adapter hard cap remain bounded.</param>
     /// <returns>
-    /// An exact string/null observation or typed prefix/unavailable/conflict/invalid evidence. This draft W6 overload
+    /// An exact string/null observation or typed prefix/unavailable/conflict/invalid evidence. This W6 overload
     /// performs no field or type-catalog lookup and never invokes a certified getter.
     /// </returns>
     /// <exception cref="ArgumentNullException">

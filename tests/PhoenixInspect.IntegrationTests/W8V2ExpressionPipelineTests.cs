@@ -93,7 +93,7 @@ public sealed class W8V2ExpressionPipelineTests
 
     /// <summary>
     /// Proves an extern-alias contextual route reaches the identical owner and field identity as the fully qualified
-    /// spelling of the same declaration while retaining materially different draft provenance.
+    /// spelling of the same declaration while retaining materially different provenance.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -452,8 +452,8 @@ public sealed class W8V2ExpressionPipelineTests
     }
 
     /// <summary>
-    /// Proves canonical replay across two independently built worlds, defensive draft copies, the closed public
-    /// surface, the frozen result digest, and emitted draft XML documentation.
+    /// Proves canonical replay across two independently built worlds, defensive copies, the closed public
+    /// surface, the frozen result digest, and emitted XML documentation.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -619,7 +619,7 @@ public sealed class W8V2ExpressionPipelineTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -631,7 +631,7 @@ public sealed class W8V2ExpressionPipelineTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

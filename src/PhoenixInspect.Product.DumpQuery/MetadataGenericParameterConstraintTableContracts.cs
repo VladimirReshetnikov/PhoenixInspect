@@ -3,9 +3,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one complete physical GenericParamConstraint-table draft proof.</summary>
+/// <summary>Classifies one complete physical GenericParamConstraint-table proof.</summary>
 /// <remarks>
-/// This draft result describes physical table authority only. Even an exact result retains the Constraint column as
+/// This result describes physical table authority only. Even an exact result retains the Constraint column as
 /// an unresolved TypeDefOrRef token and makes no target-semantic claim.
 /// </remarks>
 public enum MetadataGenericParameterConstraintPhysicalTableResultKind
@@ -20,7 +20,7 @@ public enum MetadataGenericParameterConstraintPhysicalTableResultKind
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed disposition of a physical GenericParamConstraint-table draft proof.</summary>
+/// <summary>Identifies the typed disposition of a physical GenericParamConstraint-table proof.</summary>
 /// <remarks>Every non-exact or invalid result is prefix-free and exposes no derived exact row.</remarks>
 public enum MetadataGenericParameterConstraintPhysicalTableIssue
 {
@@ -75,7 +75,7 @@ public enum MetadataGenericParameterConstraintPhysicalTableIssue
 
 /// <summary>Freezes only the three physical columns observed from one GenericParamConstraint row.</summary>
 /// <remarks>
-/// This sealed draft observation contains no caller-created GenericParam owner, owner group, declaring type, or
+/// This sealed observation contains no caller-created GenericParam owner, owner group, declaring type, or
 /// resolved target. The catalog alone may join its raw Owner token to exact GenericParam authority.
 /// </remarks>
 public sealed class MetadataGenericParameterConstraintRowObservationIdentity :
@@ -117,13 +117,13 @@ public sealed class MetadataGenericParameterConstraintRowObservationIdentity :
     /// <summary>Gets the unchanged raw Constraint-column TypeDefOrRef token.</summary>
     public int ConstraintMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one physical-column-only GenericParamConstraint row draft observation.</summary>
+    /// <summary>Creates one physical-column-only GenericParamConstraint row observation.</summary>
     /// <param name="metadataModule">The exact metadata module containing the physical row.</param>
     /// <param name="genericParameterConstraintToken">The exact non-nil GenericParamConstraint row token.</param>
     /// <param name="ownerGenericParameterToken">
@@ -151,26 +151,26 @@ public sealed class MetadataGenericParameterConstraintRowObservationIdentity :
             constraintMetadataToken);
     }
 
-    /// <summary>Tests canonical equality between two physical GenericParamConstraint draft observations.</summary>
-    /// <param name="other">The other physical draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical physical-column draft content.</returns>
+    /// <summary>Tests canonical equality between two physical GenericParamConstraint observations.</summary>
+    /// <param name="other">The other physical observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical physical-column content.</returns>
     public bool Equals(MetadataGenericParameterConstraintRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical GenericParamConstraint draft equality against an arbitrary object.</summary>
+    /// <summary>Tests physical GenericParamConstraint equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataGenericParameterConstraintRowObservationIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable physical-column draft content.</summary>
+    /// <summary>Computes a deterministic hash code from immutable physical-column content.</summary>
     /// <returns>A hash code for this physical GenericParamConstraint observation.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one GenericParamConstraint row after complete source and GenericParam-authority validation.</summary>
 /// <remarks>
-/// This sealed draft identity has no public issuer. It retains the authority-issued GenericParam row and owner group,
+/// This sealed identity has no public issuer. It retains the authority-issued GenericParam row and owner group,
 /// but deliberately leaves the Constraint column as an unresolved physical TypeDefOrRef token. Canonical authority
 /// references are fixed-size SHA-256 values so row size does not grow with an owner's arity or the authority catalog.
 /// </remarks>
@@ -222,24 +222,24 @@ public sealed class MetadataGenericParameterConstraintTableRowIdentity :
     /// <summary>Gets the validated but deliberately unresolved physical TypeDefOrRef Constraint token.</summary>
     public int ConstraintMetadataToken => Observation.ConstraintMetadataToken;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two exact GenericParamConstraint table-row draft identities.</summary>
-    /// <param name="other">The other exact draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two exact GenericParamConstraint table-row identities.</summary>
+    /// <param name="other">The other exact row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterConstraintTableRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
     /// <summary>Tests exact GenericParamConstraint row equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterConstraintTableRowIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable exact row draft content.</summary>
+    /// <summary>Computes a deterministic hash code from immutable exact row content.</summary>
     /// <returns>A hash code for this exact GenericParamConstraint row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
@@ -271,7 +271,7 @@ public sealed class MetadataGenericParameterConstraintTableRowIdentity :
 
 /// <summary>Freezes one complete source-anchored physical GenericParamConstraint table.</summary>
 /// <remarks>
-/// This sealed draft catalog resolves every physical Owner token exclusively through one exact
+/// This sealed catalog resolves every physical Owner token exclusively through one exact
 /// <see cref="MetadataGenericParameterAuthorityCatalogIdentity"/>. It validates TypeDefOrRef token kind and source
 /// range without resolving target semantics. Non-exact and invalid outcomes retain no derived row prefix.
 /// </remarks>
@@ -317,10 +317,10 @@ public sealed class MetadataGenericParameterConstraintPhysicalTableCatalogIdenti
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this complete physical-table draft is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this complete physical table is exact, non-exact, or invalid.</summary>
     public MetadataGenericParameterConstraintPhysicalTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft table issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed table issue, or none for an exact result.</summary>
     public MetadataGenericParameterConstraintPhysicalTableIssue Issue { get; }
 
     /// <summary>Gets the exact metadata source ends governing the complete physical table.</summary>
@@ -339,13 +339,13 @@ public sealed class MetadataGenericParameterConstraintPhysicalTableCatalogIdenti
     /// <summary>Gets the issue-related supplied, prerequisite, or cap-plus-one row count, otherwise zero.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete source-anchored physical GenericParamConstraint-table draft proof.</summary>
+    /// <summary>Creates one complete source-anchored physical GenericParamConstraint-table proof.</summary>
     /// <param name="sourceEnds">The exact complete-table ends for the metadata source.</param>
     /// <param name="genericParameterAuthority">
     /// The authority-owned GenericParam catalog that alone may resolve physical Owner tokens.
@@ -353,7 +353,7 @@ public sealed class MetadataGenericParameterConstraintPhysicalTableCatalogIdenti
     /// <param name="observations">
     /// Every physical GenericParamConstraint row in RID order; default denotes unavailable complete acquisition.
     /// </param>
-    /// <returns>An exact complete table, a prefix-free non-exact stop, or a factless invalid draft result.</returns>
+    /// <returns>An exact complete table, a prefix-free non-exact stop, or a factless invalid result.</returns>
     public static MetadataGenericParameterConstraintPhysicalTableCatalogIdentity Create(
         MetadataSourceEndIdentity sourceEnds,
         MetadataGenericParameterAuthorityCatalogIdentity genericParameterAuthority,
@@ -574,7 +574,7 @@ public sealed class MetadataGenericParameterConstraintPhysicalTableCatalogIdenti
             0);
     }
 
-    /// <summary>Gets exact draft constraint rows for one exact authority-issued GenericParam row.</summary>
+    /// <summary>Gets exact constraint rows for one exact authority-issued GenericParam row.</summary>
     /// <param name="ownerParameter">The exact authority-issued GenericParam row whose constraints are requested.</param>
     /// <returns>
     /// A defensive physical-order row copy, or an initialized empty array when the catalog is not exact, the parameter
@@ -600,19 +600,19 @@ public sealed class MetadataGenericParameterConstraintPhysicalTableCatalogIdenti
             : ImmutableArray<MetadataGenericParameterConstraintTableRowIdentity>.Empty;
     }
 
-    /// <summary>Tests canonical equality between two complete GenericParamConstraint-table draft proofs.</summary>
-    /// <param name="other">The other complete physical draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete GenericParamConstraint-table proofs.</summary>
+    /// <param name="other">The other complete physical catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterConstraintPhysicalTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete GenericParamConstraint-table draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete GenericParamConstraint-table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataGenericParameterConstraintPhysicalTableCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable complete-table draft content.</summary>
+    /// <summary>Computes a deterministic hash code from immutable complete-table content.</summary>
     /// <returns>A hash code for this complete physical GenericParamConstraint catalog.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 

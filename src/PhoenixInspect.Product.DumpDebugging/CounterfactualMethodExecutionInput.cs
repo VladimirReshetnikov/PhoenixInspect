@@ -11,7 +11,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// </summary>
 /// <typeparam name="TMemory">The persistent memory-snapshot type used by the bound memory model.</typeparam>
 /// <remarks>
-/// This is a draft W4.8 product boundary, not a general interpreter activation API. Public construction admits only
+/// This is a W4.8 product boundary, not a general interpreter activation API. Public construction admits only
 /// synthetic evidence, one exact non-null receiver, and the request's evidence-declared arguments. Argument domain
 /// values are intentionally absent: the runner materializes exact or explained-unknown arguments from the canonical
 /// request in its own provenance domain. Resolver, domain, memory, registry, and target-memory objects are retained

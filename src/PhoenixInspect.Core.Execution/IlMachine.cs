@@ -25,7 +25,7 @@ public sealed partial class IlMachine<TValue, TMemory>
     where TMemory : IPersistentMemoryState<TMemory>
 {
     /// <summary>
-    /// Gets the largest argument, local, or evaluation-stack vector inspected by the bounded prototype machine.
+    /// Gets the largest argument, local, or evaluation-stack vector inspected by the bounded machine.
     /// </summary>
     public const int MaximumFrameSlotCount = ExecutionLimits.MaximumFrameSlotCount;
 
@@ -39,7 +39,7 @@ public sealed partial class IlMachine<TValue, TMemory>
     private Lazy<PlanPreparationResult>? _sessionPlan;
 
     /// <summary>
-    /// Creates a draft IL machine over explicit value, metadata, memory, and budget capabilities.
+    /// Creates an IL machine over explicit value, metadata, memory, and budget capabilities.
     /// </summary>
     /// <param name="domain">The value lattice, primitive operations, and deterministic default provider.</param>
     /// <param name="resolver">The atomic method-definition and contextual field resolver.</param>

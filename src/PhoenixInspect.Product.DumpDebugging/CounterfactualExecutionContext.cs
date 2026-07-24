@@ -12,7 +12,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// memory model, persistent memory object, machine state, issuer token, or cancellation source. Rooted instances are
 /// issued only from one canonical plan, so callers cannot independently substitute request, plan, accounting, or
 /// structural projections. Standalone and pre-plan facade-rejection instances remain explicitly identity-free.
-/// This is an unstable draft W4 projection and requires a schema revision before its admitted facts change.
+/// This is an unstable W4 projection and requires a schema revision before its admitted facts change.
 /// </remarks>
 public sealed class CounterfactualExecutionContext
 {

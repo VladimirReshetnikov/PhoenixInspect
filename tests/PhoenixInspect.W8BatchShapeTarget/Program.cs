@@ -30,7 +30,7 @@ internal static class Program
 }
 
 /// <summary>Holds the sole pause the batch-shape target uses to signal dump readiness.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class BatchPause
 {
     /// <summary>Signals readiness and pauses so an external writer can capture one full dump.</summary>
@@ -50,7 +50,7 @@ public static class BatchPause
 }
 
 /// <summary>Materializes the batch-shape object graph and enters the selected truth-gate profile.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class BatchShapeGate
 {
     /// <summary>Initializes the batch-shape physical fixture and enters the selected profile.</summary>

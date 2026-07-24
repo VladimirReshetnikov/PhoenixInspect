@@ -20,7 +20,7 @@ internal interface IClrmdObjectIdentity
 /// Carries only the intrinsic identity and validated extent of one exact non-root object within a dump snapshot.
 /// </summary>
 /// <remarks>
-/// This draft W6 identity deliberately excludes the parent field and pointer read. Two alias paths to the same object
+/// This W6 identity deliberately excludes the parent field and pointer read. Two alias paths to the same object
 /// therefore have equal canonical intrinsic identities while their enclosing observations remain distinct. It has no
 /// root slot, root kind, or independent-root claim.
 /// </remarks>
@@ -68,7 +68,7 @@ public sealed class ClrmdReferencedObjectIdentity : IClrmdObjectIdentity
     public ClrmdModuleInfo Module { get; }
 
     /// <summary>Produces the path-independent canonical identity and extent projection.</summary>
-    /// <returns>A deterministic length-delimited draft representation containing no selection provenance.</returns>
+    /// <returns>A deterministic length-delimited representation containing no selection provenance.</returns>
     public string ToCanonicalReplayProjection()
     {
         var builder = new StringBuilder();
@@ -99,7 +99,7 @@ public sealed class ClrmdReferencedObjectIdentity : IClrmdObjectIdentity
 /// Carries exact non-root object identity and extent derived from one outer reference observation.
 /// </summary>
 /// <remarks>
-/// This draft W6 descriptor deliberately has no root address, root kind, or claim that the object was independently
+/// This W6 descriptor deliberately has no root address, root kind, or claim that the object was independently
 /// rooted. Selection provenance remains the outer field and pointer read. Instances contain no live ClrMD object.
 /// </remarks>
 public sealed class ClrmdReferencedObjectInfo : IClrmdObjectIdentity
@@ -160,7 +160,7 @@ public sealed class ClrmdReferencedObjectInfo : IClrmdObjectIdentity
     public ImmutableArray<MemoryReadResult> Evidence { get; }
 
     /// <summary>Produces the canonical non-root object and selection-provenance replay projection.</summary>
-    /// <returns>A deterministic length-delimited draft representation.</returns>
+    /// <returns>A deterministic length-delimited representation.</returns>
     public string ToCanonicalReplayProjection()
     {
         var builder = new StringBuilder();

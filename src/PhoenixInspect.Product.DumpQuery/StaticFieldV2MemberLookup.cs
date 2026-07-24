@@ -3,9 +3,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Selects how one draft static-field member lookup admits or refuses a physical declaration.</summary>
+/// <summary>Selects how one static-field member lookup admits or refuses a physical declaration.</summary>
 /// <remarks>
-/// The draft mode is a caller-declared certificate rather than a derived fact. Qualified inspection deliberately
+/// The mode is a caller-declared certificate rather than a derived fact. Qualified inspection deliberately
 /// bypasses every accessibility rule so that a dump inspector can name any physical declaration, while the use-site
 /// certificate reproduces the subset of ECMA-335 accessibility that a definition-only phase can honestly decide.
 /// </remarks>
@@ -18,10 +18,10 @@ public enum StaticFieldV2AccessibilityMode
     UseSiteCertificate = 2,
 }
 
-/// <summary>Classifies one definition-side static-field member-lookup draft answer.</summary>
+/// <summary>Classifies one definition-side static-field member-lookup answer.</summary>
 /// <remarks>
 /// <see cref="Exact"/>, <see cref="Absent"/>, <see cref="Ambiguous"/>, <see cref="Partial"/>, and
-/// <see cref="HiddenByUnsupportedMember"/> are complete derived draft answers that retain their per-level evidence.
+/// <see cref="HiddenByUnsupportedMember"/> are complete derived answers that retain their per-level evidence.
 /// <see cref="NonExact"/>, <see cref="Invalid"/>, and <see cref="Unsupported"/> are prefix-free stops that retain no
 /// level evidence, no candidate, and no ancestry terminal.
 /// </remarks>
@@ -39,24 +39,24 @@ public enum StaticFieldV2MemberLookupResultKind
     /// <summary>The reached levels declared no such name and the base chain could not prove absence.</summary>
     Partial = 4,
 
-    /// <summary>The nearest level declaring the name declared it as a member this draft profile does not own.</summary>
+    /// <summary>The nearest level declaring the name declared it as a member this profile does not own.</summary>
     HiddenByUnsupportedMember = 5,
 
-    /// <summary>A prerequisite or a declared draft bound prevented any complete answer.</summary>
+    /// <summary>A prerequisite or a declared bound prevented any complete answer.</summary>
     NonExact = 6,
 
-    /// <summary>Complete supplied draft evidence contradicted the ancestry portfolio or itself.</summary>
+    /// <summary>Complete supplied evidence contradicted the ancestry portfolio or itself.</summary>
     Invalid = 7,
 
-    /// <summary>The requested owner selects a later draft route that this definition-side binder does not own.</summary>
+    /// <summary>The requested owner selects a later route that this definition-side binder does not own.</summary>
     Unsupported = 8,
 }
 
-/// <summary>Identifies the deterministic issue for one static-field member-lookup draft outcome.</summary>
-/// <remarks>This draft issue catalog keeps prerequisite, vector-shape, owner, bound, and derived answers distinct.</remarks>
+/// <summary>Identifies the deterministic issue for one static-field member-lookup outcome.</summary>
+/// <remarks>This issue catalog keeps prerequisite, vector-shape, owner, bound, and derived answers distinct.</remarks>
 public enum StaticFieldV2MemberLookupIssue
 {
-    /// <summary>No issue applies to an exact draft outcome.</summary>
+    /// <summary>No issue applies to an exact outcome.</summary>
     None = 0,
 
     /// <summary>The ancestry authority portfolio prerequisite was non-exact.</summary>
@@ -68,7 +68,7 @@ public enum StaticFieldV2MemberLookupIssue
     /// <summary>The supplied FieldDef catalog vector was default rather than explicitly initialized.</summary>
     FieldCatalogVectorUninitialized = 3,
 
-    /// <summary>The supplied FieldDef catalog vector reached the shared module draft bound plus one.</summary>
+    /// <summary>The supplied FieldDef catalog vector reached the shared module bound plus one.</summary>
     FieldCatalogModuleCountBoundReached = 4,
 
     /// <summary>The supplied FieldDef catalog vector was shorter than the exact ancestry portfolio.</summary>
@@ -107,7 +107,7 @@ public enum StaticFieldV2MemberLookupIssue
     /// <summary>The requested owner is the ECMA module pseudo-type, which declares no source-addressable member.</summary>
     ModulePseudoTypeOwner = 16,
 
-    /// <summary>The accessibility decision count reached the declared draft cap plus one.</summary>
+    /// <summary>The accessibility decision count reached the declared cap plus one.</summary>
     AccessibilityCheckBoundReached = 17,
 
     /// <summary>Every reached level declared no such name and the bounded base chain was incomplete.</summary>
@@ -116,7 +116,7 @@ public enum StaticFieldV2MemberLookupIssue
     /// <summary>Every level of one complete bounded base chain declared no such name.</summary>
     DeclarationAbsent = 19,
 
-    /// <summary>The nearest declaring level declared the name as a method this draft profile does not own.</summary>
+    /// <summary>The nearest declaring level declared the name as a method this profile does not own.</summary>
     HiddenByDeclaredMethod = 20,
 
     /// <summary>The nearest declaring level declared the name as an instance field rather than a static field.</summary>
@@ -132,8 +132,8 @@ public enum StaticFieldV2MemberLookupIssue
     InterfaceImplementationPortfolioInvalid = 24,
 }
 
-/// <summary>Classifies the physical storage shape of one selected static-field draft declaration.</summary>
-/// <remarks>The draft shape is a pure FieldAttributes decoding and asserts nothing about runtime storage.</remarks>
+/// <summary>Classifies the physical storage shape of one selected static-field declaration.</summary>
+/// <remarks>The shape is a pure FieldAttributes decoding and asserts nothing about runtime storage.</remarks>
 public enum StaticFieldV2FieldStorageShape
 {
     /// <summary>The declaration is an ordinary stored static slot with no literal value and no field RVA.</summary>
@@ -146,9 +146,9 @@ public enum StaticFieldV2FieldStorageShape
     ModuleRvaCandidate = 3,
 }
 
-/// <summary>Identifies one declared coverage boundary retained by a static-field member-lookup draft outcome.</summary>
+/// <summary>Identifies one declared coverage boundary retained by a static-field member-lookup outcome.</summary>
 /// <remarks>
-/// Every boundary is an informational draft fact rather than an error. A boundary states what this definition-side
+/// Every boundary is an informational fact rather than an error. A boundary states what this definition-side
 /// phase deliberately does not model, so a consumer can never mistake a silent gap for a proven negative.
 /// </remarks>
 public enum StaticFieldV2MemberLookupCoverageBoundary
@@ -166,9 +166,9 @@ public enum StaticFieldV2MemberLookupCoverageBoundary
     AccessibilityBypassApplied = 4,
 }
 
-/// <summary>Freezes one caller-supplied friend-assembly grant of a single defining assembly draft identity.</summary>
+/// <summary>Freezes one caller-supplied friend-assembly grant of a single defining assembly identity.</summary>
 /// <remarks>
-/// The physical InternalsVisibleTo CustomAttribute table is not modeled by this draft slice, so friendship is a
+/// The physical InternalsVisibleTo CustomAttribute table is not modeled by this slice, so friendship is a
 /// caller-supplied certificate: one defining assembly plus the ordered assembly definitions it declares as friends.
 /// The grant asserts nothing about strong-name keys, because no public-key comparison is performed here.
 /// </remarks>
@@ -198,25 +198,25 @@ public sealed class StaticFieldV2FriendAssemblyGrantIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact defining assembly whose declared friendships this draft grant carries.</summary>
+    /// <summary>Gets the exact defining assembly whose declared friendships this grant carries.</summary>
     public StaticFieldContainingAssemblyIdentity DefiningAssembly { get; }
 
     /// <summary>Gets a defensive declaration-order copy of the assemblies this defining assembly befriends.</summary>
     public ImmutableArray<StaticFieldAssemblyDefinitionIdentity> DeclaredFriendAssemblies =>
         ExpressionV2ContractEncoding.Copy(declaredFriendAssemblies);
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft grant bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical grant bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft grant.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical grant.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one caller-supplied friend-assembly draft grant for a single defining assembly.</summary>
+    /// <summary>Creates one caller-supplied friend-assembly grant for a single defining assembly.</summary>
     /// <param name="definingAssembly">The exact defining assembly that declares the friendships.</param>
     /// <param name="declaredFriendAssemblies">
-    /// The ordered assembly definitions declared as friends, bounded by the shared friend-declaration draft cap.
+    /// The ordered assembly definitions declared as friends, bounded by the shared friend-declaration cap.
     /// </param>
-    /// <returns>A sealed immutable draft grant with defensively copied declarations.</returns>
+    /// <returns>A sealed immutable grant with defensively copied declarations.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="definingAssembly"/> is null.</exception>
     /// <exception cref="ArgumentException">The declaration array is default, over cap, or contains nulls.</exception>
     public static StaticFieldV2FriendAssemblyGrantIdentity Create(
@@ -231,9 +231,9 @@ public sealed class StaticFieldV2FriendAssemblyGrantIdentity :
         return new StaticFieldV2FriendAssemblyGrantIdentity(definingAssembly, copied);
     }
 
-    /// <summary>Tests whether this draft grant befriends one exact assembly definition.</summary>
+    /// <summary>Tests whether this grant befriends one exact assembly definition.</summary>
     /// <param name="candidate">The candidate requesting assembly definition.</param>
-    /// <returns><see langword="true"/> only when the draft grant declares that exact assembly definition.</returns>
+    /// <returns><see langword="true"/> only when the grant declares that exact assembly definition.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="candidate"/> is null.</exception>
     public bool Declares(StaticFieldAssemblyDefinitionIdentity candidate)
     {
@@ -248,23 +248,23 @@ public sealed class StaticFieldV2FriendAssemblyGrantIdentity :
         return false;
     }
 
-    /// <summary>Tests canonical equality between two friend-assembly draft grants.</summary>
-    /// <param name="other">The other draft grant.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two friend-assembly grants.</summary>
+    /// <param name="other">The other grant.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2FriendAssemblyGrantIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests friend-assembly draft grant equality against an arbitrary object.</summary>
+    /// <summary>Tests friend-assembly grant equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a grant with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a grant with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2FriendAssemblyGrantIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft grant content.</summary>
-    /// <returns>A hash code for this canonical draft grant.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical grant content.</summary>
+    /// <returns>A hash code for this canonical grant.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one examined same-name static or instance field draft candidate.</summary>
+/// <summary>Freezes one examined same-name static or instance field candidate.</summary>
 /// <remarks>
 /// The candidate is minted only by <see cref="StaticFieldV2MemberLookupOutcome"/>. It retains the physical FieldDef
 /// row, the authority-issued declaring TypeDef, the zero-based base-chain level that declared it, and the complete
@@ -302,49 +302,49 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact physical FieldDef draft row this candidate names.</summary>
+    /// <summary>Gets the exact physical FieldDef row this candidate names.</summary>
     public MetadataFieldDefinitionTableRowIdentity FieldRow { get; }
 
-    /// <summary>Gets the authority-issued TypeDef that physically declared this draft candidate.</summary>
+    /// <summary>Gets the authority-issued TypeDef that physically declared this candidate.</summary>
     public MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition { get; }
 
-    /// <summary>Gets the zero-based bounded base-chain level that declared this draft candidate.</summary>
+    /// <summary>Gets the zero-based bounded base-chain level that declared this candidate.</summary>
     public int LevelIndex { get; }
 
-    /// <summary>Gets whether the requested draft accessibility mode admitted this candidate.</summary>
+    /// <summary>Gets whether the requested accessibility mode admitted this candidate.</summary>
     public bool IsAccessible { get; }
 
     /// <summary>Gets the effective accessibility decided from the field and its declaring nested-type chain.</summary>
     public MetadataFieldAccessibility EffectiveAccessibility { get; }
 
-    /// <summary>Gets the physical storage shape decoded from this draft candidate's FieldAttributes.</summary>
+    /// <summary>Gets the physical storage shape decoded from this candidate's FieldAttributes.</summary>
     public StaticFieldV2FieldStorageShape StorageShape { get; }
 
-    /// <summary>Gets the exact physical FieldDef token of this draft candidate.</summary>
+    /// <summary>Gets the exact physical FieldDef token of this candidate.</summary>
     public int FieldDefinitionToken => FieldRow.FieldDefinitionToken;
 
-    /// <summary>Gets whether the physical draft row carries FieldAttributes.Static.</summary>
+    /// <summary>Gets whether the physical row carries FieldAttributes.Static.</summary>
     public bool IsStatic => FieldRow.IsStatic;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft candidate bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical candidate bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft candidate.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical candidate.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two examined member draft candidates.</summary>
-    /// <param name="other">The other draft candidate.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two examined member candidates.</summary>
+    /// <param name="other">The other candidate.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2MemberCandidateIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests examined member draft candidate equality against an arbitrary object.</summary>
+    /// <summary>Tests examined member candidate equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a candidate with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a candidate with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2MemberCandidateIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft candidate content.</summary>
-    /// <returns>A hash code for this canonical draft candidate.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical candidate content.</summary>
+    /// <returns>A hash code for this canonical candidate.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2MemberCandidateIdentity Create(
@@ -385,7 +385,7 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
     }
 }
 
-/// <summary>Freezes one consulted bounded base-chain level of a static-field member-lookup draft answer.</summary>
+/// <summary>Freezes one consulted bounded base-chain level of a static-field member-lookup answer.</summary>
 /// <remarks>
 /// The level is minted only by <see cref="StaticFieldV2MemberLookupOutcome"/>. It proves which physical declaring
 /// type was consulted and how many declared FieldDef and MethodDef rows were examined there, so provenance can
@@ -423,40 +423,40 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
     /// <summary>Gets the zero-based level index, where zero is the requested owner itself.</summary>
     public int LevelIndex { get; }
 
-    /// <summary>Gets the authority-issued TypeDef consulted at this bounded base-chain draft level.</summary>
+    /// <summary>Gets the authority-issued TypeDef consulted at this bounded base-chain level.</summary>
     public MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition { get; }
 
-    /// <summary>Gets the count of declared FieldDef rows examined at this draft level.</summary>
+    /// <summary>Gets the count of declared FieldDef rows examined at this level.</summary>
     public int ExaminedFieldCount { get; }
 
-    /// <summary>Gets the count of declared MethodDef rows examined at this draft level.</summary>
+    /// <summary>Gets the count of declared MethodDef rows examined at this level.</summary>
     public int ExaminedMethodCount { get; }
 
     /// <summary>Gets the count of accessible same-name field and method declarations found at this level.</summary>
     public int AccessibleCandidateCount { get; }
 
-    /// <summary>Gets the exact TypeDef token of the declaring type consulted at this draft level.</summary>
+    /// <summary>Gets the exact TypeDef token of the declaring type consulted at this level.</summary>
     public int DeclaringTypeDefinitionToken => DeclaringTypeDefinition.TypeDefinitionToken;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft level bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical level bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft level.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical level.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two consulted draft levels.</summary>
-    /// <param name="other">The other draft level.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two consulted levels.</summary>
+    /// <param name="other">The other level.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2MemberLookupLevelIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests consulted draft level equality against an arbitrary object.</summary>
+    /// <summary>Tests consulted level equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a level with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a level with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2MemberLookupLevelIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft level content.</summary>
-    /// <returns>A hash code for this canonical draft level.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical level content.</summary>
+    /// <returns>A hash code for this canonical level.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2MemberLookupLevelIdentity Create(
@@ -488,11 +488,11 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
     }
 }
 
-/// <summary>Freezes one complete definition-side static-field member-lookup draft request.</summary>
+/// <summary>Freezes one complete definition-side static-field member-lookup request.</summary>
 /// <remarks>
 /// The request names one owner module, one owner TypeDef token, one decoded field identifier, one exact ancestry
-/// draft portfolio, one FieldDef catalog per ancestry-portfolio module, the caller-declared accessibility
-/// certificate, and an optional interface-implementation draft portfolio. It carries no runtime, no storage, no
+/// portfolio, one FieldDef catalog per ancestry-portfolio module, the caller-declared accessibility
+/// certificate, and an optional interface-implementation portfolio. It carries no runtime, no storage, no
 /// scoped evaluation context, and no PDB evidence, and it constructs no generic instantiation: substitution onto a
 /// closed construction is a separately owned later slice.
 /// <para>
@@ -565,7 +565,7 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// <summary>Gets the decoded field identifier compared ordinally against physical FieldDef names.</summary>
     public DumpExpressionIdentifier FieldName { get; }
 
-    /// <summary>Gets the ancestry authority draft portfolio supplying classification and bounded base chains.</summary>
+    /// <summary>Gets the ancestry authority portfolio supplying classification and bounded base chains.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
 
     /// <summary>Gets a defensive copy of the supplied per-module FieldDef catalog vector, default when absent.</summary>
@@ -581,27 +581,27 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// <summary>Gets the requesting assembly for the use-site certificate, or null for qualified inspection.</summary>
     public StaticFieldContainingAssemblyIdentity? RequestingAssembly { get; }
 
-    /// <summary>Gets a defensive declaration-order copy of the caller-supplied friend-assembly draft grants.</summary>
+    /// <summary>Gets a defensive declaration-order copy of the caller-supplied friend-assembly grants.</summary>
     public ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> FriendAssemblyGrants =>
         ExpressionV2ContractEncoding.Copy(friendAssemblyGrants);
 
-    /// <summary>Gets the optional interface-implementation draft portfolio, or null when none was supplied.</summary>
+    /// <summary>Gets the optional interface-implementation portfolio, or null when none was supplied.</summary>
     public MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementationPortfolio { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft request.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical request.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete definition-side static-field member-lookup draft request.</summary>
+    /// <summary>Creates one complete definition-side static-field member-lookup request.</summary>
     /// <param name="ownerModule">The exact metadata module owning the requested TypeDef.</param>
     /// <param name="ownerTypeDefinitionToken">The exact non-nil owner TypeDef token.</param>
     /// <param name="fieldName">The decoded identifier compared ordinally against physical FieldDef names.</param>
-    /// <param name="ancestryPortfolio">The ancestry authority draft portfolio prerequisite.</param>
+    /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
     /// <param name="fieldCatalogs">
     /// Exactly one FieldDef catalog per ancestry-portfolio module in any order. A default array is admitted here and
-    /// becomes a typed vector-shape draft stop rather than an exception, so callers can replay malformed input.
+    /// becomes a typed vector-shape stop rather than an exception, so callers can replay malformed input.
     /// </param>
     /// <param name="accessibilityMode">The caller-declared accessibility certificate.</param>
     /// <param name="requestingAssembly">
@@ -611,11 +611,11 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// The caller-supplied friend grants, admitted only for the use-site certificate and bounded by the shared cap.
     /// </param>
     /// <param name="interfaceImplementationPortfolio">
-    /// The optional interface-implementation draft portfolio. Omitting it keeps the declared interface-ancestry
+    /// The optional interface-implementation portfolio. Omitting it keeps the declared interface-ancestry
     /// coverage boundary and makes an interface owner examine only itself; supplying it walks the owner's bounded
     /// transitive interface closure after the owner itself.
     /// </param>
-    /// <returns>A sealed immutable draft request with defensively copied evidence.</returns>
+    /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The owner token is not a TypeDef token or the mode is undefined.</exception>
     /// <exception cref="ArgumentException">The requesting assembly or grants disagree with the declared mode.</exception>
@@ -672,19 +672,19 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
             interfaceImplementationPortfolio);
     }
 
-    /// <summary>Tests canonical equality between two member-lookup draft requests.</summary>
-    /// <param name="other">The other draft request.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two member-lookup requests.</summary>
+    /// <param name="other">The other request.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2MemberLookupRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests member-lookup draft request equality against an arbitrary object.</summary>
+    /// <summary>Tests member-lookup request equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a request with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a request with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2MemberLookupRequest);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft request content.</summary>
-    /// <returns>A hash code for this canonical draft request.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical request content.</summary>
+    /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogsCore => fieldCatalogs;
@@ -693,9 +693,9 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         friendAssemblyGrants;
 }
 
-/// <summary>Freezes the complete draft outcome of one definition-side static-field member lookup.</summary>
+/// <summary>Freezes the complete outcome of one definition-side static-field member lookup.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of every examined candidate and consulted level it retains. The
+/// This sealed outcome is the sole issuer of every examined candidate and consulted level it retains. The
 /// selection walks the owner's bounded base chain most-derived-first, applies the declared accessibility certificate
 /// before hiding is decided, and stops at the first level that declares an accessible same-name member.
 /// <para>
@@ -712,13 +712,13 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
 /// </para>
 /// <para>
 /// Declared coverage boundaries are informational facts retained by every outcome. The physical Property and Event
-/// tables are not modeled by this draft slice, so a same-name property or event can never block a field here; the
+/// tables are not modeled by this slice, so a same-name property or event can never block a field here; the
 /// physical InternalsVisibleTo CustomAttribute table is likewise not modeled, so friendship is caller-supplied.
 /// </para>
 /// </remarks>
 public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2MemberLookupOutcome>
 {
-    /// <summary>Gets the shared accessibility-decision draft cap applied by one complete lookup.</summary>
+    /// <summary>Gets the shared accessibility-decision cap applied by one complete lookup.</summary>
     public const int MaximumAccessibilityCheckCount = StaticFieldV2Limits.MaximumAccessibilityCheckCount;
 
     private const string CanonicalDomain = "static-field-v2-member-lookup-outcome";
@@ -782,64 +782,64 @@ public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2M
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft lookup is exact, absent, ambiguous, partial, hidden, or a typed stop.</summary>
+    /// <summary>Gets whether this lookup is exact, absent, ambiguous, partial, hidden, or a typed stop.</summary>
     public StaticFieldV2MemberLookupResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft lookup issue, or none for an exact outcome.</summary>
+    /// <summary>Gets the typed lookup issue, or none for an exact outcome.</summary>
     public StaticFieldV2MemberLookupIssue Issue { get; }
 
-    /// <summary>Gets the complete draft request that produced this outcome.</summary>
+    /// <summary>Gets the complete request that produced this outcome.</summary>
     public StaticFieldV2MemberLookupRequest Request { get; }
 
-    /// <summary>Gets the single selected static-field draft candidate, or null for anything but an exact answer.</summary>
+    /// <summary>Gets the single selected static-field candidate, or null for anything but an exact answer.</summary>
     public StaticFieldV2MemberCandidateIdentity? SelectedCandidate { get; }
 
-    /// <summary>Gets a defensive most-derived-first copy of every consulted draft level, empty for a stop.</summary>
+    /// <summary>Gets a defensive most-derived-first copy of every consulted level, empty for a stop.</summary>
     public ImmutableArray<StaticFieldV2MemberLookupLevelIdentity> Levels =>
         ExpressionV2ContractEncoding.Copy(levels);
 
-    /// <summary>Gets a defensive examination-order copy of every examined but unselected draft candidate.</summary>
+    /// <summary>Gets a defensive examination-order copy of every examined but unselected candidate.</summary>
     public ImmutableArray<StaticFieldV2MemberCandidateIdentity> RejectedCandidates =>
         ExpressionV2ContractEncoding.Copy(rejectedCandidates);
 
     /// <summary>Gets the bounded ancestry terminal of the consulted chain, or null for a prefix-free stop.</summary>
     public MetadataAncestryChainTerminalKind? AncestryTerminal { get; }
 
-    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this draft answer.</summary>
+    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this answer.</summary>
     public ImmutableArray<StaticFieldV2MemberLookupCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>
-    /// Gets the count of same-name FieldDef and MethodDef declarations examined for a complete draft answer, or the
+    /// Gets the count of same-name FieldDef and MethodDef declarations examined for a complete answer, or the
     /// propagated prerequisite, supplied, or cap-plus-one observation for a typed stop.
     /// </summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets the metadata token related to this draft answer or stop, otherwise null.</summary>
+    /// <summary>Gets the metadata token related to this answer or stop, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two member-lookup draft outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two member-lookup outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2MemberLookupOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests member-lookup draft outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests member-lookup outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2MemberLookupOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -923,11 +923,11 @@ public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2M
 
 /// <summary>Selects one static-field declaration over an owner's bounded base chain from definitions alone.</summary>
 /// <remarks>
-/// This draft binder owns definition-kind-specific member lookup only. It walks the owner's bounded ancestry chain
+/// This binder owns definition-kind-specific member lookup only. It walks the owner's bounded ancestry chain
 /// most-derived-first, applies the declared accessibility certificate before hiding is decided, refuses to skip a
 /// blocking same-name method or instance field, and never claims absence over an incomplete chain.
 /// <para>
-/// Declared coverage boundaries of this draft slice: the physical Property and Event tables are not modeled, so a
+/// Declared coverage boundaries of this slice: the physical Property and Event tables are not modeled, so a
 /// same-name property or event cannot block a field here; and the physical InternalsVisibleTo CustomAttribute table
 /// is not modeled, so friend grants are caller-supplied certificates. Interface ancestry is not a class base chain:
 /// an interface owner walks its bounded transitive interface closure when the request supplies an
@@ -947,14 +947,14 @@ public static class StaticFieldV2MemberLookup
     private const int MemberAccessMask = 0x0000_0007;
 
     /// <summary>Selects exactly one static field declaration for one owner TypeDef and one field identifier.</summary>
-    /// <param name="request">The complete definition-side member-lookup draft request.</param>
+    /// <param name="request">The complete definition-side member-lookup request.</param>
     /// <remarks>
     /// The walk is exhaustive within each consulted level: every declared FieldDef and MethodDef row of the level's
     /// declaring type is examined before any answer is formed, so no first-match heuristic can influence the result.
     /// A level that declares only inaccessible same-name members hides nothing under the use-site certificate, while
     /// qualified inspection makes every such declaration accessible and therefore hiding.
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome that is either one complete answer or one prefix-free typed stop.</returns>
+    /// <returns>A sealed immutable outcome that is either one complete answer or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2MemberLookupOutcome SelectStaticField(StaticFieldV2MemberLookupRequest request)
     {

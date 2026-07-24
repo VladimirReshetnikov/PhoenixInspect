@@ -988,7 +988,7 @@ public sealed class W8V2ContractFoundationTests
         Assert.All(checkpointTypes.Where(static type => type.IsClass && !type.IsAbstract), static type => Assert.True(type.IsSealed));
 
         // The W8.6c physical-acquisition seams are a live dump session, its fault, and one enumerated module
-        // observation. None of the three is a canonical replayable draft identity, so none declares a canonical domain.
+        // observation. None of the three is a canonical replayable identity, so none declares a canonical domain.
         var domainFields = checkpointTypes
             .Where(static type => type.IsClass && !type.IsAbstract)
             .Where(static type => type.Name is not (
@@ -1010,7 +1010,7 @@ public sealed class W8V2ContractFoundationTests
             var typeName = $"T:{type.FullName}";
             var typeDocumentation = Assert.Single(members,
                 member => string.Equals((string?)member.Attribute("name"), typeName, StringComparison.Ordinal));
-            Assert.True(typeDocumentation.Value.Contains("draft", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var factory in type.GetMethods(
                          System.Reflection.BindingFlags.Public |
@@ -1023,7 +1023,7 @@ public sealed class W8V2ContractFoundationTests
                     ((string?)member.Attribute("name")) is { } name &&
                     (string.Equals(name, methodPrefix, StringComparison.Ordinal) ||
                      name.StartsWith($"{methodPrefix}(", StringComparison.Ordinal)));
-                Assert.True(methodDocumentation.Value.Contains("draft", StringComparison.OrdinalIgnoreCase));
+                Assert.False(string.IsNullOrWhiteSpace(methodDocumentation.Value));
             }
         }
     }

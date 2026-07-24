@@ -3,9 +3,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one draft closed-construction answer derived for a bound owner name.</summary>
+/// <summary>Classifies one closed-construction answer derived for a bound owner name.</summary>
 /// <remarks>
-/// <see cref="Exact"/> is the only complete derived draft answer; it alone retains the owner construction, the ordered
+/// <see cref="Exact"/> is the only complete derived answer; it alone retains the owner construction, the ordered
 /// flattened argument vector, and the per-parameter constraint dispositions. <see cref="NonExact"/>,
 /// <see cref="Invalid"/>, and <see cref="Unsupported"/> are prefix-free typed stops that retain no partial
 /// construction.
@@ -15,24 +15,24 @@ public enum StaticFieldV2ClosedConstructionResultKind
     /// <summary>One exact closed metadata construction was derived and every constraint was proven satisfied.</summary>
     Exact = 1,
 
-    /// <summary>A prerequisite, a declared draft bound, or an unprovable obligation prevented a complete answer.</summary>
+    /// <summary>A prerequisite, a declared bound, or an unprovable obligation prevented a complete answer.</summary>
     NonExact = 2,
 
-    /// <summary>A complete draft prerequisite contradicted itself or a hard constraint was violated.</summary>
+    /// <summary>A complete prerequisite contradicted itself or a hard constraint was violated.</summary>
     Invalid = 3,
 
-    /// <summary>The construction selects a later draft route that this owner-construction binder does not own.</summary>
+    /// <summary>The construction selects a later route that this owner-construction binder does not own.</summary>
     Unsupported = 4,
 }
 
-/// <summary>Identifies the deterministic issue for one draft closed-construction outcome.</summary>
+/// <summary>Identifies the deterministic issue for one closed-construction outcome.</summary>
 /// <remarks>
-/// This draft-phase issue catalog keeps prerequisite, syntax-route, name-resolution, bound, and constraint answers
+/// This issue catalog keeps prerequisite, syntax-route, name-resolution, bound, and constraint answers
 /// distinct so no consumer has to re-derive why a construction stopped.
 /// </remarks>
 public enum StaticFieldV2ClosedConstructionIssue
 {
-    /// <summary>No issue applies to an exact draft outcome.</summary>
+    /// <summary>No issue applies to an exact outcome.</summary>
     None = 0,
 
     /// <summary>The owner name binding was non-exact, invalid, or unsupported.</summary>
@@ -74,7 +74,7 @@ public enum StaticFieldV2ClosedConstructionIssue
     /// <summary>A named type argument matched no authority-issued chain.</summary>
     TypeArgumentAbsent = 13,
 
-    /// <summary>A named type argument matched two or more distinct physical draft candidates.</summary>
+    /// <summary>A named type argument matched two or more distinct physical candidates.</summary>
     TypeArgumentAmbiguous = 14,
 
     /// <summary>A nullable construction was requested over an element that is not a non-nullable value type.</summary>
@@ -83,28 +83,28 @@ public enum StaticFieldV2ClosedConstructionIssue
     /// <summary>No exact <c>System.Nullable`1</c> definition exists in the exact core module.</summary>
     NullableDefinitionAbsent = 16,
 
-    /// <summary>A multidimensional-array rank was below two or above the declared draft cap.</summary>
+    /// <summary>A multidimensional-array rank was below two or above the declared cap.</summary>
     ArrayRankInvalid = 17,
 
-    /// <summary>The closed-type topology depth reached the declared draft cap plus one.</summary>
+    /// <summary>The closed-type topology depth reached the declared cap plus one.</summary>
     TopologyDepthBoundReached = 18,
 
-    /// <summary>The cumulative closed-type node count reached the declared draft cap plus one.</summary>
+    /// <summary>The cumulative closed-type node count reached the declared cap plus one.</summary>
     TopologyNodeCountBoundReached = 19,
 
-    /// <summary>The cumulative closed generic-argument count reached the declared draft cap plus one.</summary>
+    /// <summary>The cumulative closed generic-argument count reached the declared cap plus one.</summary>
     ArgumentCountBoundReached = 20,
 
-    /// <summary>The cumulative constraint-check count reached the declared draft cap plus one.</summary>
+    /// <summary>The cumulative constraint-check count reached the declared cap plus one.</summary>
     ConstraintCheckBoundReached = 21,
 
-    /// <summary>The examined default-constructor candidate count reached the declared draft cap plus one.</summary>
+    /// <summary>The examined default-constructor candidate count reached the declared cap plus one.</summary>
     DefaultConstructorSearchBoundReached = 22,
 
     /// <summary>One hard generic constraint was proven violated by its substituted argument.</summary>
     ConstraintViolated = 23,
 
-    /// <summary>One generic constraint cannot be proven by the authorities this draft slice owns.</summary>
+    /// <summary>One generic constraint cannot be proven by the authorities this slice owns.</summary>
     ConstraintUnprovable = 24,
 
     /// <summary>The supplied interface-implementation authority portfolio prerequisite was non-exact.</summary>
@@ -114,10 +114,10 @@ public enum StaticFieldV2ClosedConstructionIssue
     InterfaceImplementationPortfolioInvalid = 26,
 }
 
-/// <summary>Classifies the draft disposition of one substituted generic-constraint obligation.</summary>
+/// <summary>Classifies the disposition of one substituted generic-constraint obligation.</summary>
 /// <remarks>
 /// <see cref="Satisfied"/> and <see cref="Violated"/> are proofs. <see cref="Unprovable"/> records that the obligation
-/// is real but lies outside the authorities this draft slice consumes, which is never treated as a violation.
+/// is real but lies outside the authorities this slice consumes, which is never treated as a violation.
 /// </remarks>
 public enum StaticFieldV2ConstraintDisposition
 {
@@ -127,16 +127,16 @@ public enum StaticFieldV2ConstraintDisposition
     /// <summary>The substituted argument was proven to violate the obligation.</summary>
     Violated = 2,
 
-    /// <summary>The obligation cannot be proven or refuted from the authorities this draft slice owns.</summary>
+    /// <summary>The obligation cannot be proven or refuted from the authorities this slice owns.</summary>
     Unprovable = 3,
 }
 
-/// <summary>Freezes one draft check of one substituted generic-parameter obligation.</summary>
+/// <summary>Freezes one check of one substituted generic-parameter obligation.</summary>
 /// <remarks>
 /// The check is minted only by <see cref="StaticFieldV2ClosedConstructionOutcome"/>. It retains the authority-issued
 /// GenericParam row, the exact substituted closed argument, the typed disposition, the optional constraint target that
 /// created the obligation, and one optional stable reason name. An unconstrained parameter still produces one
-/// satisfied draft check so every parameter has a disposition.
+/// satisfied check so every parameter has a disposition.
 /// </remarks>
 public sealed class StaticFieldV2ConstraintCheckIdentity : IEquatable<StaticFieldV2ConstraintCheckIdentity>
 {
@@ -167,16 +167,16 @@ public sealed class StaticFieldV2ConstraintCheckIdentity : IEquatable<StaticFiel
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the authority-issued GenericParam draft row whose obligation was checked.</summary>
+    /// <summary>Gets the authority-issued GenericParam row whose obligation was checked.</summary>
     public MetadataGenericParameterTableRowIdentity Parameter { get; }
 
-    /// <summary>Gets the exact closed draft type substituted for the checked parameter.</summary>
+    /// <summary>Gets the exact closed type substituted for the checked parameter.</summary>
     public MetadataClosedTypeIdentity Argument { get; }
 
-    /// <summary>Gets the typed draft disposition proven for this obligation.</summary>
+    /// <summary>Gets the typed disposition proven for this obligation.</summary>
     public StaticFieldV2ConstraintDisposition Disposition { get; }
 
-    /// <summary>Gets the constraint-target draft row that created this obligation, or null for a flag obligation.</summary>
+    /// <summary>Gets the constraint-target row that created this obligation, or null for a flag obligation.</summary>
     public MetadataConstraintTargetResolutionIdentity? ConstraintTarget { get; }
 
     /// <summary>Gets the stable lowercase reason name, or null when no reason applies.</summary>
@@ -185,25 +185,25 @@ public sealed class StaticFieldV2ConstraintCheckIdentity : IEquatable<StaticFiel
     /// <summary>Gets the flattened zero-based parameter position within the owner construction.</summary>
     public int ParameterNumber => Parameter.Number;
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft check.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical check.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft check.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical check.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two draft constraint checks.</summary>
-    /// <param name="other">The other draft check.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two constraint checks.</summary>
+    /// <param name="other">The other check.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ConstraintCheckIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft constraint-check equality against an arbitrary object.</summary>
+    /// <summary>Tests constraint-check equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a check with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a check with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ConstraintCheckIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft check content.</summary>
-    /// <returns>A hash code for this canonical draft check.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical check content.</summary>
+    /// <returns>A hash code for this canonical check.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2ConstraintCheckIdentity Create(
@@ -238,14 +238,14 @@ public sealed class StaticFieldV2ConstraintCheckIdentity : IEquatable<StaticFiel
     }
 }
 
-/// <summary>Freezes the complete draft outcome of owner closed-construction binding.</summary>
+/// <summary>Freezes the complete outcome of owner closed-construction binding.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of every constraint check it retains. It turns one exact bound owner
+/// This sealed outcome is the sole issuer of every constraint check it retains. It turns one exact bound owner
 /// name plus that name's per-segment V2 type-argument syntax into one exact closed metadata construction, or into one
 /// prefix-free typed stop. It looks up no member, reads no runtime storage, and consults no context or PDB.
 /// <para>
 /// An exact outcome retains the owner construction, the canonical outer-to-inner flattened argument vector, and one
-/// satisfied draft check per generic-parameter obligation. A stop retains no construction and no argument vector. The
+/// satisfied check per generic-parameter obligation. A stop retains no construction and no argument vector. The
 /// two constraint stops retain exactly the one decisive check that produced them, which is a complete typed fact
 /// rather than a truncated derivation prefix.
 /// </para>
@@ -311,41 +311,41 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the maximum closed-type topology depth admitted by this draft construction.</summary>
+    /// <summary>Gets the maximum closed-type topology depth admitted by this construction.</summary>
     public const int MaximumClosedTypeTopologyDepth = StaticFieldV2Limits.MaximumClosedTypeTopologyDepth;
 
-    /// <summary>Gets the maximum cumulative closed-type node count admitted by this draft construction.</summary>
+    /// <summary>Gets the maximum cumulative closed-type node count admitted by this construction.</summary>
     public const int MaximumClosedTypeTopologyNodeCount = StaticFieldV2Limits.MaximumClosedTypeTopologyNodeCount;
 
-    /// <summary>Gets the maximum cumulative closed generic-argument count admitted by this draft construction.</summary>
+    /// <summary>Gets the maximum cumulative closed generic-argument count admitted by this construction.</summary>
     public const int MaximumClosedArgumentCount = StaticFieldV2Limits.MaximumTypeSpecificationArgumentCount;
 
-    /// <summary>Gets the maximum multidimensional-array rank admitted by this draft construction.</summary>
+    /// <summary>Gets the maximum multidimensional-array rank admitted by this construction.</summary>
     public const int MaximumArrayRank = StaticFieldV2Limits.MaximumArrayRank;
 
-    /// <summary>Gets the maximum constraint-check count retained by this draft construction.</summary>
+    /// <summary>Gets the maximum constraint-check count retained by this construction.</summary>
     public const int MaximumConstraintCheckCount = StaticFieldV2Limits.MaximumGenericConstraintCount;
 
-    /// <summary>Gets the maximum default-constructor candidate count examined for one draft obligation.</summary>
+    /// <summary>Gets the maximum default-constructor candidate count examined for one obligation.</summary>
     public const int MaximumDefaultConstructorSearchCount =
         StaticFieldV2Limits.MaximumDefaultConstructorSearchCount;
 
-    /// <summary>Gets whether this draft construction is exact, non-exact, invalid, or unsupported.</summary>
+    /// <summary>Gets whether this construction is exact, non-exact, invalid, or unsupported.</summary>
     public StaticFieldV2ClosedConstructionResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft construction issue, or none for an exact outcome.</summary>
+    /// <summary>Gets the typed construction issue, or none for an exact outcome.</summary>
     public StaticFieldV2ClosedConstructionIssue Issue { get; }
 
-    /// <summary>Gets the retained owner name-binding draft outcome that supplied the owner head.</summary>
+    /// <summary>Gets the retained owner name-binding outcome that supplied the owner head.</summary>
     public StaticFieldV2TypeNameBindingOutcome NameBinding { get; }
 
-    /// <summary>Gets the retained ancestry authority draft portfolio prerequisite.</summary>
+    /// <summary>Gets the retained ancestry authority portfolio prerequisite.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
 
-    /// <summary>Gets the retained constraint-target resolution draft portfolio prerequisite.</summary>
+    /// <summary>Gets the retained constraint-target resolution portfolio prerequisite.</summary>
     public MetadataConstraintTargetResolutionPortfolioIdentity ConstraintPortfolio { get; }
 
-    /// <summary>Gets the retained optional interface-implementation draft portfolio, otherwise null.</summary>
+    /// <summary>Gets the retained optional interface-implementation portfolio, otherwise null.</summary>
     public MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementationPortfolio { get; }
 
     /// <summary>Gets the exact closed owner construction, or null for any typed stop.</summary>
@@ -355,7 +355,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
     public ImmutableArray<MetadataClosedTypeIdentity> FlattenedArguments =>
         ExpressionV2ContractEncoding.Copy(flattenedArguments);
 
-    /// <summary>Gets a defensive copy of the retained per-obligation draft constraint checks.</summary>
+    /// <summary>Gets a defensive copy of the retained per-obligation constraint checks.</summary>
     public ImmutableArray<StaticFieldV2ConstraintCheckIdentity> ConstraintChecks =>
         ExpressionV2ContractEncoding.Copy(constraintChecks);
 
@@ -363,7 +363,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
     public StaticFieldMetadataModuleIdentity? SourceModule =>
         NameBinding.SelectedCandidate?.SourceModule;
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the propagated prerequisite count or the cap-plus-one observation.</summary>
@@ -372,25 +372,25 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
     /// <summary>Gets the issue-related metadata token, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two draft closed-construction outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two closed-construction outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ClosedConstructionOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft closed-construction outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests closed-construction outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ClosedConstructionOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -462,9 +462,9 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
             relatedMetadataToken);
 }
 
-/// <summary>Turns one bound owner name plus its type-argument syntax into an exact closed draft construction.</summary>
+/// <summary>Turns one bound owner name plus its type-argument syntax into an exact closed construction.</summary>
 /// <remarks>
-/// This draft binder owns exactly one step: closed construction and substituted generic-constraint validation. It
+/// This binder owns exactly one step: closed construction and substituted generic-constraint validation. It
 /// consumes one exact name binding, one exact ancestry authority portfolio, and one exact constraint-target
 /// resolution portfolio, and produces either one exact closed owner construction or one prefix-free typed stop.
 /// <para>
@@ -507,22 +507,22 @@ public static class StaticFieldV2ClosedConstructionBinder
     private const string TargetClassificationAbsentReason = "constraint.target-classification-absent";
     private const string NonNamedArgumentReason = "constraint.non-named-argument-deferred";
 
-    /// <summary>Binds one exact owner name and its type-argument syntax to an exact closed draft construction.</summary>
-    /// <param name="nameBinding">The owner name-binding draft outcome produced by the preceding draft slice.</param>
-    /// <param name="ancestryPortfolio">The exact ancestry authority draft portfolio for every examined module.</param>
-    /// <param name="constraintPortfolio">The exact constraint-target resolution draft portfolio.</param>
+    /// <summary>Binds one exact owner name and its type-argument syntax to an exact closed construction.</summary>
+    /// <param name="nameBinding">The owner name-binding outcome produced by the preceding slice.</param>
+    /// <param name="ancestryPortfolio">The exact ancestry authority portfolio for every examined module.</param>
+    /// <param name="constraintPortfolio">The exact constraint-target resolution portfolio.</param>
     /// <param name="interfaceImplementationPortfolio">
-    /// The optional interface-implementation draft portfolio. Omitting it leaves every interface constraint target
+    /// The optional interface-implementation portfolio. Omitting it leaves every interface constraint target
     /// deferred and unprovable; supplying it decides the obligation from the argument's bounded transitive interface
     /// closure and never reports an incomplete closure as a violation.
     /// </param>
     /// <remarks>
-    /// Every prerequisite is checked before any construction begins, every declared draft topology bound is checked
+    /// Every prerequisite is checked before any construction begins, every declared topology bound is checked
     /// before a construction factory is called so a crossing yields cap-plus-one evidence rather than an exception,
     /// and every constraint obligation of every chain segment is examined before an answer is formed.
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome that is one exact construction or one prefix-free typed stop.</returns>
-    /// <exception cref="ArgumentNullException">Any required supplied draft argument is null.</exception>
+    /// <returns>A sealed immutable outcome that is one exact construction or one prefix-free typed stop.</returns>
+    /// <exception cref="ArgumentNullException">Any required supplied argument is null.</exception>
     public static StaticFieldV2ClosedConstructionOutcome BindOwnerConstruction(
         StaticFieldV2TypeNameBindingOutcome nameBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,

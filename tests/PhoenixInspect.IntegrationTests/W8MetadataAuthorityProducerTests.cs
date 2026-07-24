@@ -15,12 +15,12 @@ namespace PhoenixInspect.IntegrationTests;
 /// </summary>
 /// <remarks>
 /// Every catalog under test is issued from physical PE metadata rows rather than synthetic rows. The asserted shapes
-/// are draft physical evidence and are not commitments for the eventual public API.
+/// are physical evidence and are not commitments for the eventual public API.
 /// </remarks>
 public sealed class W8MetadataAuthorityProducerTests
 {
     /// <remarks>
-    /// The produced modules share the draft snapshot digest used by the synthetic W8 world builders so a produced
+    /// The produced modules share the snapshot digest used by the synthetic W8 world builders so a produced
     /// catalog and a synthetic one can be composed into the same portfolio.
     /// </remarks>
     private const string SnapshotDigest =
@@ -378,8 +378,8 @@ public sealed class W8MetadataAuthorityProducerTests
     }
 
     /// <summary>
-    /// Proves every public producer type and public non-property member emits draft-marked XML documentation, matching
-    /// the prototype documentation convention the surrounding W8 contracts already observe.
+    /// Proves every public producer type and public non-property member emits XML documentation, matching
+    /// the implementation documentation convention the surrounding W8 contracts already observe.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -405,7 +405,7 @@ public sealed class W8MetadataAuthorityProducerTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -417,7 +417,7 @@ public sealed class W8MetadataAuthorityProducerTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

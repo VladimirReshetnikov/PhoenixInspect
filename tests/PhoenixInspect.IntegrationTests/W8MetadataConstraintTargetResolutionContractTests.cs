@@ -7,7 +7,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises the multi-module authority-derived constraint-target draft resolution portfolio.</summary>
+/// <summary>Exercises the multi-module authority-derived constraint-target resolution portfolio.</summary>
 public sealed class W8MetadataConstraintTargetResolutionContractTests
 {
     private const int OuterTypeRid = 2;
@@ -86,7 +86,7 @@ public sealed class W8MetadataConstraintTargetResolutionContractTests
 
     /// <summary>
     /// Proves prerequisite, vector-shape, catalog, module-correlation, and source-lineage contradictions produce
-    /// deterministic prefix-free typed draft stops.
+    /// deterministic prefix-free typed stops.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -197,7 +197,7 @@ public sealed class W8MetadataConstraintTargetResolutionContractTests
     }
 
     /// <summary>
-    /// Proves defensive copies, private guarded issuance, the closed public issuer surface, and emitted draft XML
+    /// Proves defensive copies, private guarded issuance, the closed public issuer surface, and emitted XML
     /// documentation for the constraint-target contract family.
     /// </summary>
     [Fact]
@@ -439,7 +439,7 @@ public sealed class W8MetadataConstraintTargetResolutionContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -451,7 +451,7 @@ public sealed class W8MetadataConstraintTargetResolutionContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

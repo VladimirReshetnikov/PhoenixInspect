@@ -7,7 +7,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// <remarks>
 /// The origin is part of canonical identity. A rooted facade result carries request and plan facts, while a
 /// standalone target-outcome projection deliberately does not manufacture those facts.
-/// This draft W4 vocabulary requires a new schema version before members or meanings change.
+/// This W4 vocabulary requires a new schema version before members or meanings change.
 /// </remarks>
 public enum CounterfactualExecutionOriginKind
 {
@@ -22,7 +22,7 @@ public enum CounterfactualExecutionOriginKind
 }
 
 /// <summary>Classifies the closed value projection carried by a counterfactual execution result.</summary>
-/// <remarks>This draft W4 vocabulary requires a new schema version before members or meanings change.</remarks>
+/// <remarks>This W4 vocabulary requires a new schema version before members or meanings change.</remarks>
 public enum CounterfactualExecutionValueKind
 {
     /// <summary>A completed execution returned one exact structural <see cref="int"/>.</summary>
@@ -42,10 +42,10 @@ public enum CounterfactualExecutionValueKind
 /// Carries one immutable inspect-only value projection without exposing a domain value, machine state, or memory.
 /// </summary>
 /// <remarks>
-/// This is a draft W4 product union. Exact and unknown returns are currently restricted to structural
+/// This is a W4 product union. Exact and unknown returns are currently restricted to structural
 /// <see cref="TypeSig.Int32"/>. Target exceptions nest the unchanged W4.7 fragment; an execution prefix has no
 /// payload because partially executed machine state is intentionally not a product value.
-/// The union remains an unstable draft and requires a schema revision before its admitted shapes change.
+/// The union remains unstable and requires a schema revision before its admitted shapes change.
 /// </remarks>
 public sealed class CounterfactualExecutionValue
 {

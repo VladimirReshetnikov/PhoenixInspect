@@ -152,7 +152,7 @@ public sealed class CounterfactualMethodRequest
     /// <summary>Gets the canonical request schema version.</summary>
     public const int CanonicalSchemaVersion = 1;
 
-    /// <summary>Gets the hard logical-depth ceiling accepted by the prototype request.</summary>
+    /// <summary>Gets the hard logical-depth ceiling accepted by the implementation request.</summary>
     public const int MaximumLogicalCallDepth = 64;
 
     /// <summary>
@@ -161,7 +161,7 @@ public sealed class CounterfactualMethodRequest
     /// </summary>
     public const int MaximumExplicitRootArguments = 1_023;
 
-    /// <summary>Gets the hard preparation-traversal ceiling accepted by the prototype request.</summary>
+    /// <summary>Gets the hard preparation-traversal ceiling accepted by the implementation request.</summary>
     public const int MaximumTraversalUnits = MethodGraphPlanner.MaximumConfigurableTraversalUnits;
 
     private readonly ImmutableArray<CounterfactualInputEvidence> arguments;

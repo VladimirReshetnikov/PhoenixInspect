@@ -4,27 +4,27 @@ namespace PhoenixInspect.W8TestTarget;
 
 /// <summary>Defines an invariant constructed interface for W8 runtime-identity comparisons.</summary>
 /// <typeparam name="T">The exact invariant argument retained in emitted metadata.</typeparam>
-/// <remarks>This draft fixture interface is physical evidence, not a product type contract.</remarks>
+/// <remarks>This fixture interface is physical evidence, not a product type contract.</remarks>
 public interface IInvariantNode<T>
 {
 }
 
 /// <summary>Defines a covariant constructed interface for W8 runtime-identity comparisons.</summary>
 /// <typeparam name="T">The exact covariant result argument retained in emitted metadata.</typeparam>
-/// <remarks>This draft fixture interface is physical evidence, not a product type contract.</remarks>
+/// <remarks>This fixture interface is physical evidence, not a product type contract.</remarks>
 public interface ICovariantNode<out T>
 {
 }
 
 /// <summary>Defines a contravariant constructed interface for W8 runtime-identity comparisons.</summary>
 /// <typeparam name="T">The exact contravariant input argument retained in emitted metadata.</typeparam>
-/// <remarks>This draft fixture interface is physical evidence, not a product type contract.</remarks>
+/// <remarks>This fixture interface is physical evidence, not a product type contract.</remarks>
 public interface IContravariantNode<in T>
 {
 }
 
 /// <summary>Supplies the base-class identity used by the W8 constructed-assignability fixture.</summary>
-/// <remarks>This draft fixture class is physical evidence, not a product type contract.</remarks>
+/// <remarks>This fixture class is physical evidence, not a product type contract.</remarks>
 public class AssignabilityBaseNode
 {
     /// <summary>Initializes the base node with its deterministic marker.</summary>
@@ -36,7 +36,7 @@ public class AssignabilityBaseNode
 }
 
 /// <summary>Supplies the derived-class identity used by the W8 constructed-assignability fixture.</summary>
-/// <remarks>This draft fixture class is physical evidence, not a product type contract.</remarks>
+/// <remarks>This fixture class is physical evidence, not a product type contract.</remarks>
 public sealed class AssignabilityDerivedNode : AssignabilityBaseNode
 {
     /// <summary>Initializes the derived node with its deterministic marker.</summary>
@@ -49,7 +49,7 @@ public sealed class AssignabilityDerivedNode : AssignabilityBaseNode
 
 /// <summary>Implements the invariant and both variant interface definitions at one exact argument.</summary>
 /// <typeparam name="T">The exact constructed argument represented by this carrier.</typeparam>
-/// <remarks>This draft fixture class is physical evidence, not a product type contract.</remarks>
+/// <remarks>This fixture class is physical evidence, not a product type contract.</remarks>
 public sealed class AssignabilityCarrier<T> :
     IInvariantNode<T>,
     ICovariantNode<T>,
@@ -67,7 +67,7 @@ public sealed class AssignabilityCarrier<T> :
 /// Roots one object through exact base, interface, variant-interface, and array views for dump-time comparison.
 /// </summary>
 /// <remarks>
-/// Every member is a draft W8.1 physical witness. The field set intentionally exposes aliasing between slots so the
+/// Every member is a W8.1 physical witness. The field set intentionally exposes aliasing between slots so the
 /// dump oracle can compare raw object addresses only after independently decoding each declared constructed type.
 /// </remarks>
 public static class ConstructedAssignabilityStorage
@@ -147,7 +147,7 @@ public static class ConstructedAssignabilityStorage
     }
 
     /// <summary>Forces every assignability witness to be initialized before the full dump is written.</summary>
-    /// <remarks>This draft fixture method performs target setup only; the evaluator never invokes it.</remarks>
+    /// <remarks>This fixture method performs target setup only; the evaluator never invokes it.</remarks>
     public static void Materialize()
     {
         GC.KeepAlive(DirectDerived);

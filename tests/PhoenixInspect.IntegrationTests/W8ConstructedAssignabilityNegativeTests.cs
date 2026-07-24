@@ -15,7 +15,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// constructed-reference assignability from one target artifact, an isolated runtime load, and the pinned compiler.
 /// </summary>
 /// <remarks>
-/// This draft W8.1 oracle is deliberately test-only. It freezes physical evidence for the later product contract;
+/// This W8.1 oracle is deliberately test-only. It freezes physical evidence for the later product contract;
 /// it is not itself a public evaluator API or a substitute for dump-backed reference validation.
 /// </remarks>
 public sealed class W8ConstructedAssignabilityNegativeTests

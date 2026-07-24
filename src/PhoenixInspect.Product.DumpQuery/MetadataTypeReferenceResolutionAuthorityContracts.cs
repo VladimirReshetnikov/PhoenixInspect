@@ -3,9 +3,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Bundles the six complete physical draft reference tables for one metadata module.</summary>
+/// <summary>Bundles the six complete physical reference tables for one metadata module.</summary>
 /// <remarks>
-/// The set retains guarded catalogs only. It proves that every member catalog names the same exact draft reference
+/// The set retains guarded catalogs only. It proves that every member catalog names the same exact reference
 /// source ends; member exactness stays a portfolio-level disposition rather than a bundling precondition.
 /// </remarks>
 public sealed class MetadataModuleReferenceTableSetIdentity :
@@ -44,31 +44,31 @@ public sealed class MetadataModuleReferenceTableSetIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact draft reference source ends shared by every member catalog.</summary>
+    /// <summary>Gets the exact reference source ends shared by every member catalog.</summary>
     public MetadataReferenceSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the exact metadata module shared by every member draft catalog.</summary>
+    /// <summary>Gets the exact metadata module shared by every member catalog.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => SourceEnds.SourceModule;
 
-    /// <summary>Gets the complete physical TypeRef draft table.</summary>
+    /// <summary>Gets the complete physical TypeRef table.</summary>
     public MetadataTypeReferencePhysicalTableCatalogIdentity TypeReferences { get; }
 
-    /// <summary>Gets the complete physical ModuleRef draft table.</summary>
+    /// <summary>Gets the complete physical ModuleRef table.</summary>
     public MetadataModuleReferencePhysicalTableCatalogIdentity ModuleReferences { get; }
 
-    /// <summary>Gets the complete physical TypeSpec draft table.</summary>
+    /// <summary>Gets the complete physical TypeSpec table.</summary>
     public MetadataTypeSpecificationPhysicalTableCatalogIdentity TypeSpecifications { get; }
 
-    /// <summary>Gets the complete physical AssemblyRef draft table.</summary>
+    /// <summary>Gets the complete physical AssemblyRef table.</summary>
     public MetadataAssemblyReferencePhysicalTableCatalogIdentity AssemblyReferences { get; }
 
-    /// <summary>Gets the complete physical File draft table.</summary>
+    /// <summary>Gets the complete physical File table.</summary>
     public MetadataAssemblyFilePhysicalTableCatalogIdentity Files { get; }
 
-    /// <summary>Gets the complete physical ExportedType draft table.</summary>
+    /// <summary>Gets the complete physical ExportedType table.</summary>
     public MetadataExportedTypePhysicalTableCatalogIdentity ExportedTypes { get; }
 
-    /// <summary>Gets whether all six member draft catalogs are exact.</summary>
+    /// <summary>Gets whether all six member catalogs are exact.</summary>
     public bool AllTablesExact =>
         TypeReferences.ResultKind == MetadataReferencePhysicalTableResultKind.Exact &&
         ModuleReferences.ResultKind == MetadataReferencePhysicalTableResultKind.Exact &&
@@ -77,7 +77,7 @@ public sealed class MetadataModuleReferenceTableSetIdentity :
         Files.ResultKind == MetadataReferencePhysicalTableResultKind.Exact &&
         ExportedTypes.ResultKind == MetadataReferencePhysicalTableResultKind.Exact;
 
-    /// <summary>Gets whether any member draft catalog retained contradictory evidence.</summary>
+    /// <summary>Gets whether any member catalog retained contradictory evidence.</summary>
     public bool AnyTableInvalid =>
         TypeReferences.ResultKind == MetadataReferencePhysicalTableResultKind.Invalid ||
         ModuleReferences.ResultKind == MetadataReferencePhysicalTableResultKind.Invalid ||
@@ -86,21 +86,21 @@ public sealed class MetadataModuleReferenceTableSetIdentity :
         Files.ResultKind == MetadataReferencePhysicalTableResultKind.Invalid ||
         ExportedTypes.ResultKind == MetadataReferencePhysicalTableResultKind.Invalid;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft set bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical set bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft set bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical set bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete same-source draft reference-table set.</summary>
-    /// <param name="sourceEnds">The exact draft reference source ends every member catalog must name.</param>
+    /// <summary>Creates one complete same-source reference-table set.</summary>
+    /// <param name="sourceEnds">The exact reference source ends every member catalog must name.</param>
     /// <param name="typeReferences">The complete physical TypeRef table for the same source ends.</param>
     /// <param name="moduleReferences">The complete physical ModuleRef table for the same source ends.</param>
     /// <param name="typeSpecifications">The complete physical TypeSpec table for the same source ends.</param>
     /// <param name="assemblyReferences">The complete physical AssemblyRef table for the same source ends.</param>
     /// <param name="files">The complete physical File table for the same source ends.</param>
     /// <param name="exportedTypes">The complete physical ExportedType table for the same source ends.</param>
-    /// <returns>A fixed-reference draft set whose members all name one exact source.</returns>
+    /// <returns>A fixed-reference set whose members all name one exact source.</returns>
     public static MetadataModuleReferenceTableSetIdentity Create(
         MetadataReferenceSourceEndIdentity sourceEnds,
         MetadataTypeReferencePhysicalTableCatalogIdentity typeReferences,
@@ -125,7 +125,7 @@ public sealed class MetadataModuleReferenceTableSetIdentity :
             !exportedTypes.SourceEnds.Equals(sourceEnds))
         {
             throw new ArgumentException(
-                "A draft reference-table set requires all six catalogs to name one exact source-end identity.",
+                "A reference-table set requires all six catalogs to name one exact source-end identity.",
                 nameof(sourceEnds));
         }
 
@@ -139,23 +139,23 @@ public sealed class MetadataModuleReferenceTableSetIdentity :
             exportedTypes);
     }
 
-    /// <summary>Tests canonical equality between two draft reference-table sets.</summary>
-    /// <param name="other">The other draft set.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two reference-table sets.</summary>
+    /// <param name="other">The other set.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataModuleReferenceTableSetIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft reference-table set equality against an arbitrary object.</summary>
+    /// <summary>Tests reference-table set equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a set with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a set with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataModuleReferenceTableSetIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this draft reference-table set.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this reference-table set.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Classifies one complete per-row TypeRef draft resolution disposition.</summary>
+/// <summary>Classifies one complete per-row TypeRef resolution disposition.</summary>
 /// <remarks>
 /// Every value is a complete derived row fact. A catalog containing non-resolved rows remains an exact complete
 /// projection; only cross-input contradictions stop the issuing portfolio.
@@ -193,11 +193,11 @@ public enum MetadataTypeReferenceResolutionDispositionKind
     ParentReferenceUnresolved = 10,
 }
 
-/// <summary>Freezes one guarded authority-derived TypeRef draft resolution row.</summary>
+/// <summary>Freezes one guarded authority-derived TypeRef resolution row.</summary>
 /// <remarks>
 /// A resolved row retains the exact target module and authority-issued TypeDef plus every traversed forwarder row.
 /// A non-resolved row retains its typed disposition and related evidence; no display-name or first-match fact enters
-/// the draft result.
+/// the result.
 /// </remarks>
 public sealed class MetadataTypeReferenceResolutionIdentity :
     IEquatable<MetadataTypeReferenceResolutionIdentity>
@@ -243,13 +243,13 @@ public sealed class MetadataTypeReferenceResolutionIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the unchanged guarded physical TypeRef draft row being resolved.</summary>
+    /// <summary>Gets the unchanged guarded physical TypeRef row being resolved.</summary>
     public MetadataTypeReferencePhysicalRowIdentity ReferenceRow { get; }
 
     /// <summary>Gets the exact non-nil physical TypeRef token.</summary>
     public int TypeReferenceToken => ReferenceRow.TypeReferenceToken;
 
-    /// <summary>Gets the complete typed draft resolution disposition for this row.</summary>
+    /// <summary>Gets the complete typed resolution disposition for this row.</summary>
     public MetadataTypeReferenceResolutionDispositionKind Disposition { get; }
 
     /// <summary>Gets the exact target metadata module, or null for a non-resolved row.</summary>
@@ -258,7 +258,7 @@ public sealed class MetadataTypeReferenceResolutionIdentity :
     /// <summary>Gets the exact authority-issued target TypeDef, or null for a non-resolved row.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? TargetTypeDefinition { get; }
 
-    /// <summary>Gets a defensive ordered copy of every traversed top-level forwarder draft row.</summary>
+    /// <summary>Gets a defensive ordered copy of every traversed top-level forwarder row.</summary>
     public ImmutableArray<MetadataExportedTypePhysicalRowIdentity> TraversedForwarders =>
         ExpressionV2ContractEncoding.Copy(traversedForwarders);
 
@@ -271,25 +271,25 @@ public sealed class MetadataTypeReferenceResolutionIdentity :
     /// <summary>Gets the disposition-related metadata token, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft resolution bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical resolution bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft resolution bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical resolution bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two TypeRef draft resolution rows.</summary>
-    /// <param name="other">The other draft resolution row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two TypeRef resolution rows.</summary>
+    /// <param name="other">The other resolution row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeReferenceResolutionIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests TypeRef draft resolution equality against an arbitrary object.</summary>
+    /// <summary>Tests TypeRef resolution equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a resolution with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a resolution with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeReferenceResolutionIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this TypeRef draft resolution row.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this TypeRef resolution row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataTypeReferenceResolutionIdentity Create(
@@ -329,7 +329,7 @@ public sealed class MetadataTypeReferenceResolutionIdentity :
     }
 }
 
-/// <summary>Freezes one guarded per-module entry of the TypeRef draft resolution portfolio.</summary>
+/// <summary>Freezes one guarded per-module entry of the TypeRef resolution portfolio.</summary>
 /// <remarks>The entry retains its module's chain-portfolio lineage and one complete RID-ordered resolution vector.</remarks>
 public sealed class MetadataTypeReferenceResolutionModuleIdentity :
     IEquatable<MetadataTypeReferenceResolutionModuleIdentity>
@@ -363,25 +363,25 @@ public sealed class MetadataTypeReferenceResolutionModuleIdentity :
     /// <summary>Gets the exact named-TypeDef-chain portfolio entry retained as module lineage.</summary>
     public MetadataNamedTypeDefinitionChainPortfolioEntryIdentity ChainEntry { get; }
 
-    /// <summary>Gets the complete draft reference-table set consumed for this module.</summary>
+    /// <summary>Gets the complete reference-table set consumed for this module.</summary>
     public MetadataModuleReferenceTableSetIdentity ReferenceTables { get; }
 
     /// <summary>Gets the exact metadata module owning every resolved TypeRef row.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => ReferenceTables.SourceModule;
 
-    /// <summary>Gets a defensive RID-order copy of every complete draft resolution row.</summary>
+    /// <summary>Gets a defensive RID-order copy of every complete resolution row.</summary>
     public ImmutableArray<MetadataTypeReferenceResolutionIdentity> Resolutions =>
         ExpressionV2ContractEncoding.Copy(resolutions);
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft entry bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical entry bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft entry bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical entry bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Finds one complete TypeRef draft resolution row by token.</summary>
+    /// <summary>Finds one complete TypeRef resolution row by token.</summary>
     /// <param name="typeReferenceToken">The non-nil physical TypeRef token.</param>
-    /// <returns>The complete draft row, or null when the token is not an issued TypeRef.</returns>
+    /// <returns>The complete row, or null when the token is not an issued TypeRef.</returns>
     public MetadataTypeReferenceResolutionIdentity? FindResolution(int typeReferenceToken)
     {
         if (!CanonicalReplayEncoding.IsMetadataTokenForTable(typeReferenceToken, 0x01))
@@ -392,19 +392,19 @@ public sealed class MetadataTypeReferenceResolutionModuleIdentity :
         return rowId > 0 && rowId <= resolutions.Length ? resolutions[rowId - 1] : null;
     }
 
-    /// <summary>Tests canonical equality between two per-module draft resolution entries.</summary>
-    /// <param name="other">The other draft entry.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two per-module resolution entries.</summary>
+    /// <param name="other">The other entry.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeReferenceResolutionModuleIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests per-module draft resolution entry equality against an arbitrary object.</summary>
+    /// <summary>Tests per-module resolution entry equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an entry with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an entry with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeReferenceResolutionModuleIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this per-module draft resolution entry.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this per-module resolution entry.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataTypeReferenceResolutionModuleIdentity Create(
@@ -423,7 +423,7 @@ public sealed class MetadataTypeReferenceResolutionModuleIdentity :
     }
 }
 
-/// <summary>Classifies one normalized multi-module TypeRef draft resolution portfolio.</summary>
+/// <summary>Classifies one normalized multi-module TypeRef resolution portfolio.</summary>
 /// <remarks>Every stop is prefix-free; exact entries use the chain portfolio's deterministic module order.</remarks>
 public enum MetadataTypeReferenceResolutionPortfolioResultKind
 {
@@ -433,15 +433,15 @@ public enum MetadataTypeReferenceResolutionPortfolioResultKind
     /// <summary>A prerequisite, missing vector slot, or non-exact member table prevented complete resolution.</summary>
     NonExact = 2,
 
-    /// <summary>Complete draft inputs contradicted the chain portfolio or one another.</summary>
+    /// <summary>Complete inputs contradicted the chain portfolio or one another.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the deterministic issue for one TypeRef draft resolution portfolio.</summary>
+/// <summary>Identifies the deterministic issue for one TypeRef resolution portfolio.</summary>
 /// <remarks>The issue values keep prerequisite, vector-shape, member-table, and module-correlation stops distinct.</remarks>
 public enum MetadataTypeReferenceResolutionPortfolioIssue
 {
-    /// <summary>No issue applies to an exact draft portfolio.</summary>
+    /// <summary>No issue applies to an exact portfolio.</summary>
     None = 0,
 
     /// <summary>The named-TypeDef-chain portfolio prerequisite was non-exact.</summary>
@@ -481,9 +481,9 @@ public enum MetadataTypeReferenceResolutionPortfolioIssue
     ReferenceSourceEndsMismatch = 12,
 }
 
-/// <summary>Resolves every physical TypeRef row across one exact named-TypeDef-chain draft portfolio.</summary>
+/// <summary>Resolves every physical TypeRef row across one exact named-TypeDef-chain portfolio.</summary>
 /// <remarks>
-/// The portfolio is the sole issuer of draft resolution rows. Same-module lookup follows the exact Module scope,
+/// The portfolio is the sole issuer of resolution rows. Same-module lookup follows the exact Module scope,
 /// nested lookup follows resolved TypeRef parents, and cross-module lookup matches AssemblyRef identity against
 /// portfolio assembly definitions before following top-level AssemblyRef-implemented forwarders. Display names,
 /// enumeration order, and first matches never select a target.
@@ -491,10 +491,10 @@ public enum MetadataTypeReferenceResolutionPortfolioIssue
 public sealed class MetadataTypeReferenceResolutionPortfolioIdentity :
     IEquatable<MetadataTypeReferenceResolutionPortfolioIdentity>
 {
-    /// <summary>Gets the shared module-count draft cap.</summary>
+    /// <summary>Gets the shared module-count cap.</summary>
     public const int MaximumModuleCount = ExpressionV2ContractLimits.MaximumModuleCount;
 
-    /// <summary>Gets the shared combined nested-parent and forwarder traversal draft cap.</summary>
+    /// <summary>Gets the shared combined nested-parent and forwarder traversal cap.</summary>
     public const int MaximumResolutionDepth = ExpressionV2ContractLimits.MaximumTypeReferenceResolutionDepth;
 
     private const string CanonicalDomain = "metadata-v2-typeref-resolution-portfolio";
@@ -536,13 +536,13 @@ public sealed class MetadataTypeReferenceResolutionPortfolioIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this normalized draft resolution portfolio is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this normalized resolution portfolio is exact, non-exact, or invalid.</summary>
     public MetadataTypeReferenceResolutionPortfolioResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft portfolio issue, or none for an exact portfolio.</summary>
+    /// <summary>Gets the typed portfolio issue, or none for an exact portfolio.</summary>
     public MetadataTypeReferenceResolutionPortfolioIssue Issue { get; }
 
-    /// <summary>Gets the retained named-TypeDef-chain draft portfolio prerequisite.</summary>
+    /// <summary>Gets the retained named-TypeDef-chain portfolio prerequisite.</summary>
     public MetadataNamedTypeDefinitionChainPortfolioIdentity ChainPortfolio { get; }
 
     /// <summary>Gets the exact portfolio snapshot digest, or null for an empty portfolio or any stop.</summary>
@@ -551,11 +551,11 @@ public sealed class MetadataTypeReferenceResolutionPortfolioIdentity :
             ? ChainPortfolio.SnapshotSha256
             : null;
 
-    /// <summary>Gets a defensive module-order copy of exact draft entries, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive module-order copy of exact entries, or an empty array for a stop.</summary>
     public ImmutableArray<MetadataTypeReferenceResolutionModuleIdentity> Entries =>
         ExpressionV2ContractEncoding.Copy(entries);
 
-    /// <summary>Gets the propagated or module-count draft bound, otherwise null.</summary>
+    /// <summary>Gets the propagated or module-count bound, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the issue-related supplied, prerequisite, or cap-plus-one observation count.</summary>
@@ -564,16 +564,16 @@ public sealed class MetadataTypeReferenceResolutionPortfolioIdentity :
     /// <summary>Gets the issue-related metadata-module digest, otherwise null.</summary>
     public string? RelatedModuleSha256 { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft portfolio.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical portfolio.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft portfolio.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical portfolio.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one normalized multi-module TypeRef draft resolution portfolio.</summary>
+    /// <summary>Creates one normalized multi-module TypeRef resolution portfolio.</summary>
     /// <param name="chainPortfolio">The exact named-TypeDef-chain portfolio defining modules and authority.</param>
     /// <param name="referenceTableSets">One initialized reference-table set for every chain-portfolio module.</param>
-    /// <returns>An exact complete draft portfolio or a prefix-free typed stop.</returns>
+    /// <returns>An exact complete portfolio or a prefix-free typed stop.</returns>
     public static MetadataTypeReferenceResolutionPortfolioIdentity Create(
         MetadataNamedTypeDefinitionChainPortfolioIdentity chainPortfolio,
         ImmutableArray<MetadataModuleReferenceTableSetIdentity> referenceTableSets)
@@ -736,10 +736,10 @@ public sealed class MetadataTypeReferenceResolutionPortfolioIdentity :
         return Exact(chainPortfolio, entries.MoveToImmutable());
     }
 
-    /// <summary>Looks up one complete draft resolution row by metadata module and non-nil TypeRef token.</summary>
+    /// <summary>Looks up one complete resolution row by metadata module and non-nil TypeRef token.</summary>
     /// <param name="sourceModule">The exact loaded metadata module.</param>
     /// <param name="typeReferenceToken">The exact TypeRef token within that module.</param>
-    /// <returns>The complete draft row, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
+    /// <returns>The complete row, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
     public MetadataTypeReferenceResolutionIdentity? ExactResolutionOrDefault(
         StaticFieldMetadataModuleIdentity sourceModule,
         int typeReferenceToken)
@@ -753,19 +753,19 @@ public sealed class MetadataTypeReferenceResolutionPortfolioIdentity :
         return entry?.FindResolution(typeReferenceToken);
     }
 
-    /// <summary>Tests canonical equality between two TypeRef draft resolution portfolios.</summary>
-    /// <param name="other">The other draft portfolio.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two TypeRef resolution portfolios.</summary>
+    /// <param name="other">The other portfolio.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeReferenceResolutionPortfolioIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests TypeRef draft resolution portfolio equality against an arbitrary object.</summary>
+    /// <summary>Tests TypeRef resolution portfolio equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a portfolio with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a portfolio with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeReferenceResolutionPortfolioIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable draft portfolio content.</summary>
-    /// <returns>A hash code for this canonical draft portfolio.</returns>
+    /// <summary>Computes a deterministic hash code from immutable portfolio content.</summary>
+    /// <returns>A hash code for this canonical portfolio.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);

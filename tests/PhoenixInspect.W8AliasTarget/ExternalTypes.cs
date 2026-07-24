@@ -8,7 +8,7 @@ namespace PhoenixInspect.W8AliasTarget;
 /// Supplies a distinct assembly-owned type argument for W8 extern-alias and AssemblyRef evidence.
 /// </summary>
 /// <remarks>
-/// This emitted fixture type is a draft physical oracle. It is not a product contract.
+/// This emitted fixture type is a physical oracle. It is not a product contract.
 /// </remarks>
 public sealed class ExternalRequestContext
 {
@@ -27,7 +27,7 @@ public sealed class ExternalRequestContext
 /// Supplies the external half of a same-simple-name, cross-assembly lookup pair.
 /// </summary>
 /// <remarks>
-/// This draft fixture type is intentionally distinct from the target assembly's equally named definition.
+/// This fixture type is intentionally distinct from the target assembly's equally named definition.
 /// </remarks>
 public sealed class SharedSpelling
 {
@@ -89,7 +89,7 @@ public sealed class ForwardedRequestContext
 /// Supplies public and non-public external members for emitted accessibility evidence.
 /// </summary>
 /// <remarks>
-/// These members are draft compiler/metadata fixtures and do not define a reusable accessibility surface.
+/// These members are compiler/metadata fixtures and do not define a reusable accessibility surface.
 /// </remarks>
 public class ExternalAccessibilityBase
 {

@@ -1,7 +1,7 @@
 namespace PhoenixInspect.W8CoordinatorShapeTarget.Values;
 
 /// <summary>Names the closed value-type argument reached through a namespace alias.</summary>
-/// <remarks>This emitted draft fixture type is a physical oracle, not a product contract.</remarks>
+/// <remarks>This emitted fixture type is a physical oracle, not a product contract.</remarks>
 public readonly struct RegionCode : IEquatable<RegionCode>
 {
     /// <summary>Initializes the value-type argument witness.</summary>

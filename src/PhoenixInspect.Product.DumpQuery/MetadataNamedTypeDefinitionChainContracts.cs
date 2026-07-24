@@ -3,28 +3,28 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one authority-derived named-TypeDef-chain draft catalog.</summary>
+/// <summary>Classifies one authority-derived named-TypeDef-chain catalog.</summary>
 /// <remarks>Every non-exact or invalid result is prefix-free and exposes no chain identities.</remarks>
 public enum MetadataNamedTypeDefinitionChainCatalogResultKind
 {
-    /// <summary>Every authority TypeDef has one complete outer-to-inner draft chain.</summary>
+    /// <summary>Every authority TypeDef has one complete outer-to-inner chain.</summary>
     Exact = 1,
 
-    /// <summary>A prerequisite or declared draft bound prevented complete issuance.</summary>
+    /// <summary>A prerequisite or declared bound prevented complete issuance.</summary>
     NonExact = 2,
 
-    /// <summary>Complete draft inputs contradicted one another.</summary>
+    /// <summary>Complete inputs contradicted one another.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the deterministic issue for one named-TypeDef-chain draft catalog.</summary>
+/// <summary>Identifies the deterministic issue for one named-TypeDef-chain catalog.</summary>
 /// <remarks>
 /// Compiler spelling and C# addressability dispositions are retained row facts, not catalog failures. The issue
 /// values describe missing prerequisites, cross-catalog disagreement, or an impossible authority graph.
 /// </remarks>
 public enum MetadataNamedTypeDefinitionChainCatalogIssue
 {
-    /// <summary>No issue applies to an exact draft catalog.</summary>
+    /// <summary>No issue applies to an exact catalog.</summary>
     None = 0,
 
     /// <summary>The retained W7 compatibility-catalog prerequisite was non-exact.</summary>
@@ -64,9 +64,9 @@ public enum MetadataNamedTypeDefinitionChainCatalogIssue
     CompilerMappingAuthorityMismatch = 12,
 }
 
-/// <summary>Freezes one authority and compiler-name segment of a named-TypeDef draft chain.</summary>
+/// <summary>Freezes one authority and compiler-name segment of a named-TypeDef chain.</summary>
 /// <remarks>
-/// This guarded draft identity retains physical namespace and metadata-name text even when its compiler projection is
+/// This guarded identity retains physical namespace and metadata-name text even when its compiler projection is
 /// noncanonical, not addressable, or non-exact. Its canonical form contains fixed SHA-256 references to the source
 /// authority and mapping rows rather than recursively embedding them.
 /// </remarks>
@@ -91,10 +91,10 @@ public sealed class MetadataNamedTypeDefinitionChainSegmentIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact authority-issued TypeDef retained by this draft chain segment.</summary>
+    /// <summary>Gets the exact authority-issued TypeDef retained by this chain segment.</summary>
     public MetadataTypeDefinitionAuthorityIdentity TypeDefinition { get; }
 
-    /// <summary>Gets the exact token-correlated compiler-name draft mapping retained by this segment.</summary>
+    /// <summary>Gets the exact token-correlated compiler-name mapping retained by this segment.</summary>
     public MetadataCompilerNameMappingIdentity CompilerNameMapping { get; }
 
     /// <summary>Gets the exact metadata source ends shared by the segment's authority and mapping rows.</summary>
@@ -132,33 +132,33 @@ public sealed class MetadataNamedTypeDefinitionChainSegmentIdentity :
     public bool IsModulePseudoType => TypeDefinitionToken == 0x0200_0001;
 
     /// <summary>
-    /// Gets whether this non-module draft segment has an exact ordinary C# simple-name spelling.
+    /// Gets whether this non-module segment has an exact ordinary C# simple-name spelling.
     /// </summary>
     public bool CanAppearInCSharpNamedType =>
         !IsModulePseudoType &&
         CompilerNameMapping.ResultKind == MetadataCompilerNameMappingResultKind.Exact &&
         CSharpAddressability?.IsAddressable == true;
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft segment.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical segment.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft segment.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical segment.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two named-TypeDef-chain draft segments.</summary>
-    /// <param name="other">The other draft segment.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two named-TypeDef-chain segments.</summary>
+    /// <param name="other">The other segment.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataNamedTypeDefinitionChainSegmentIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests named-TypeDef-chain draft segment equality against an arbitrary object.</summary>
+    /// <summary>Tests named-TypeDef-chain segment equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a segment with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a segment with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataNamedTypeDefinitionChainSegmentIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable named-TypeDef-chain draft segment content.</summary>
-    /// <returns>A hash code for this canonical draft segment.</returns>
+    /// <summary>Computes a deterministic hash code from immutable named-TypeDef-chain segment content.</summary>
+    /// <returns>A hash code for this canonical segment.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataNamedTypeDefinitionChainSegmentIdentity Create(
@@ -187,7 +187,7 @@ public sealed class MetadataNamedTypeDefinitionChainSegmentIdentity :
     }
 }
 
-/// <summary>Freezes one complete outer-to-inner named-TypeDef draft chain.</summary>
+/// <summary>Freezes one complete outer-to-inner named-TypeDef chain.</summary>
 /// <remarks>
 /// The chain is issued only by a complete catalog. Segment order, parent relations, arities, and the final TypeDef are
 /// all authority-derived. The caller supplies none of those scalar claims.
@@ -216,11 +216,11 @@ public sealed class MetadataNamedTypeDefinitionChainIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets a defensive outer-to-inner copy of all authority-derived draft segments.</summary>
+    /// <summary>Gets a defensive outer-to-inner copy of all authority-derived segments.</summary>
     public ImmutableArray<MetadataNamedTypeDefinitionChainSegmentIdentity> Segments =>
         ExpressionV2ContractEncoding.Copy(segments);
 
-    /// <summary>Gets the innermost draft segment, which determines the catalog lookup key.</summary>
+    /// <summary>Gets the innermost segment, which determines the catalog lookup key.</summary>
     public MetadataNamedTypeDefinitionChainSegmentIdentity FinalSegment { get; }
 
     /// <summary>Gets the final authority-issued TypeDef derived from the last segment.</summary>
@@ -239,25 +239,25 @@ public sealed class MetadataNamedTypeDefinitionChainIdentity :
     public bool CanAppearInCSharpNamedType =>
         !IsModulePseudoType && segments.All(static segment => segment.CanAppearInCSharpNamedType);
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft chain.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical chain.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft chain.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical chain.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two complete named-TypeDef draft chains.</summary>
-    /// <param name="other">The other draft chain.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete named-TypeDef chains.</summary>
+    /// <param name="other">The other chain.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataNamedTypeDefinitionChainIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete named-TypeDef draft chain equality against an arbitrary object.</summary>
+    /// <summary>Tests complete named-TypeDef chain equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a chain with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a chain with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataNamedTypeDefinitionChainIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable named-TypeDef draft chain content.</summary>
-    /// <returns>A hash code for this canonical draft chain.</returns>
+    /// <summary>Computes a deterministic hash code from immutable named-TypeDef chain content.</summary>
+    /// <returns>A hash code for this canonical chain.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataNamedTypeDefinitionChainIdentity Create(
@@ -294,7 +294,7 @@ public sealed class MetadataNamedTypeDefinitionChainIdentity :
     }
 }
 
-/// <summary>Freezes all authority-derived named-TypeDef draft chains for one metadata module.</summary>
+/// <summary>Freezes all authority-derived named-TypeDef chains for one metadata module.</summary>
 /// <remarks>
 /// The exact catalog retains W7 row comparison outcomes only as lineage. Candidate-absent and mismatch outcomes do
 /// not override physical authority. Compiler mapping rows are selected by the catalog from the same exact authority.
@@ -345,30 +345,30 @@ public sealed class MetadataNamedTypeDefinitionChainCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this complete named-TypeDef-chain draft catalog is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this complete named-TypeDef-chain catalog is exact, non-exact, or invalid.</summary>
     public MetadataNamedTypeDefinitionChainCatalogResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft catalog issue, or none for an exact catalog.</summary>
+    /// <summary>Gets the typed catalog issue, or none for an exact catalog.</summary>
     public MetadataNamedTypeDefinitionChainCatalogIssue Issue { get; }
 
-    /// <summary>Gets the retained per-TypeDef W7 comparison draft lineage.</summary>
+    /// <summary>Gets the retained per-TypeDef W7 comparison lineage.</summary>
     public MetadataW7TypeDefinitionCompatibilityCatalogIdentity CompatibilityCatalog { get; }
 
-    /// <summary>Gets the retained authority-bound compiler-name draft mapping catalog.</summary>
+    /// <summary>Gets the retained authority-bound compiler-name mapping catalog.</summary>
     public MetadataCompilerNameMappingCatalogIdentity CompilerNameMappingCatalog { get; }
 
-    /// <summary>Gets the definition authority shared by both exact draft prerequisites.</summary>
+    /// <summary>Gets the definition authority shared by both exact prerequisites.</summary>
     public MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority =>
         CompatibilityCatalog.DefinitionAuthority;
 
     /// <summary>Gets the exact metadata source ends retained by the definition authority.</summary>
     public MetadataSourceEndIdentity SourceEnds => DefinitionAuthority.SourceEnds;
 
-    /// <summary>Gets a defensive TypeDef-RID-order copy of all exact draft chains, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive TypeDef-RID-order copy of all exact chains, or an empty array for a stop.</summary>
     public ImmutableArray<MetadataNamedTypeDefinitionChainIdentity> Chains =>
         ExpressionV2ContractEncoding.Copy(chains);
 
-    /// <summary>Gets the exact one-segment module pseudo-type draft chain, or null for a stopped catalog.</summary>
+    /// <summary>Gets the exact one-segment module pseudo-type chain, or null for a stopped catalog.</summary>
     public MetadataNamedTypeDefinitionChainIdentity? ModulePseudoTypeChain =>
         ResultKind == MetadataNamedTypeDefinitionChainCatalogResultKind.Exact && !chains.IsEmpty
             ? chains[0]
@@ -377,22 +377,22 @@ public sealed class MetadataNamedTypeDefinitionChainCatalogIdentity :
     /// <summary>Gets the declared depth bound only when a defensive traversal reached cap plus one.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the issue-related draft row, chain-depth, or prerequisite observation count.</summary>
+    /// <summary>Gets the issue-related row, chain-depth, or prerequisite observation count.</summary>
     public int ObservedCount { get; }
 
     /// <summary>Gets the issue-related TypeDef token, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft catalog.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical catalog.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft catalog.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical catalog.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates every outer-to-inner named-TypeDef draft chain for one exact authority.</summary>
+    /// <summary>Creates every outer-to-inner named-TypeDef chain for one exact authority.</summary>
     /// <param name="compatibilityCatalog">The exact W7 comparison catalog retained only as lineage.</param>
     /// <param name="compilerNameMappingCatalog">The complete compiler-name mappings for the same authority.</param>
-    /// <returns>An exact complete draft catalog or a prefix-free typed stop.</returns>
+    /// <returns>An exact complete catalog or a prefix-free typed stop.</returns>
     public static MetadataNamedTypeDefinitionChainCatalogIdentity Create(
         MetadataW7TypeDefinitionCompatibilityCatalogIdentity compatibilityCatalog,
         MetadataCompilerNameMappingCatalogIdentity compilerNameMappingCatalog)
@@ -407,7 +407,7 @@ public sealed class MetadataNamedTypeDefinitionChainCatalogIdentity :
         return CreateCore(compatibilityCatalog, compilerNameMappingCatalog, nodes);
     }
 
-    /// <summary>Looks up one exact named-TypeDef draft chain by its non-nil TypeDef token.</summary>
+    /// <summary>Looks up one exact named-TypeDef chain by its non-nil TypeDef token.</summary>
     /// <param name="typeDefinitionToken">The exact TypeDef token in this catalog's module.</param>
     /// <returns>The exact chain, or null when the catalog stopped or the token is not an issued TypeDef.</returns>
     public MetadataNamedTypeDefinitionChainIdentity? ExactChainOrDefault(int typeDefinitionToken)
@@ -422,19 +422,19 @@ public sealed class MetadataNamedTypeDefinitionChainCatalogIdentity :
         return rowId > 0 && rowId <= chains.Length ? chains[rowId - 1] : null;
     }
 
-    /// <summary>Tests canonical equality between two named-TypeDef-chain draft catalogs.</summary>
-    /// <param name="other">The other draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two named-TypeDef-chain catalogs.</summary>
+    /// <param name="other">The other catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataNamedTypeDefinitionChainCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests named-TypeDef-chain draft catalog equality against an arbitrary object.</summary>
+    /// <summary>Tests named-TypeDef-chain catalog equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataNamedTypeDefinitionChainCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable named-TypeDef-chain draft catalog content.</summary>
-    /// <returns>A hash code for this canonical draft catalog.</returns>
+    /// <summary>Computes a deterministic hash code from immutable named-TypeDef-chain catalog content.</summary>
+    /// <returns>A hash code for this canonical catalog.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataNamedTypeDefinitionChainCatalogIdentity CreateWithAuthorityNodes(
@@ -703,25 +703,25 @@ public sealed class MetadataNamedTypeDefinitionChainCatalogIdentity :
             relatedMetadataToken);
 }
 
-/// <summary>Classifies one normalized multi-module named-TypeDef-chain draft portfolio.</summary>
+/// <summary>Classifies one normalized multi-module named-TypeDef-chain portfolio.</summary>
 /// <remarks>Every stop is prefix-free; exact entries use the compatibility portfolio's module order.</remarks>
 public enum MetadataNamedTypeDefinitionChainPortfolioResultKind
 {
-    /// <summary>Every compatibility-portfolio module has one exact draft chain catalog.</summary>
+    /// <summary>Every compatibility-portfolio module has one exact chain catalog.</summary>
     Exact = 1,
 
-    /// <summary>A prerequisite, missing vector slot, or declared draft bound prevented normalization.</summary>
+    /// <summary>A prerequisite, missing vector slot, or declared bound prevented normalization.</summary>
     NonExact = 2,
 
-    /// <summary>Complete draft inputs contradicted the compatibility portfolio.</summary>
+    /// <summary>Complete inputs contradicted the compatibility portfolio.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the deterministic issue for one named-TypeDef-chain draft portfolio.</summary>
+/// <summary>Identifies the deterministic issue for one named-TypeDef-chain portfolio.</summary>
 /// <remarks>The issue values keep prerequisite, vector-shape, module, and lineage failures distinct.</remarks>
 public enum MetadataNamedTypeDefinitionChainPortfolioIssue
 {
-    /// <summary>No issue applies to an exact draft portfolio.</summary>
+    /// <summary>No issue applies to an exact portfolio.</summary>
     None = 0,
 
     /// <summary>The definition-compatibility portfolio prerequisite was non-exact.</summary>
@@ -761,7 +761,7 @@ public enum MetadataNamedTypeDefinitionChainPortfolioIssue
     CompatibilityCatalogMismatch = 12,
 }
 
-/// <summary>Freezes one guarded fixed-reference entry in a named-TypeDef-chain draft portfolio.</summary>
+/// <summary>Freezes one guarded fixed-reference entry in a named-TypeDef-chain portfolio.</summary>
 /// <remarks>The entry is issued only after exact module and compatibility-lineage correlation.</remarks>
 public sealed class MetadataNamedTypeDefinitionChainPortfolioEntryIdentity :
     IEquatable<MetadataNamedTypeDefinitionChainPortfolioEntryIdentity>
@@ -784,35 +784,35 @@ public sealed class MetadataNamedTypeDefinitionChainPortfolioEntryIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact normalized compatibility draft entry retained as module lineage.</summary>
+    /// <summary>Gets the exact normalized compatibility entry retained as module lineage.</summary>
     public MetadataDefinitionCompatibilityPortfolioEntryIdentity CompatibilityEntry { get; }
 
-    /// <summary>Gets the exact complete named-TypeDef-chain draft catalog for this module.</summary>
+    /// <summary>Gets the exact complete named-TypeDef-chain catalog for this module.</summary>
     public MetadataNamedTypeDefinitionChainCatalogIdentity ChainCatalog { get; }
 
-    /// <summary>Gets the exact metadata module used as the normalized draft portfolio key.</summary>
+    /// <summary>Gets the exact metadata module used as the normalized portfolio key.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => CompatibilityEntry.SourceModule;
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft entry.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical entry.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft entry.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical entry.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two named-TypeDef-chain draft portfolio entries.</summary>
-    /// <param name="other">The other draft entry.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two named-TypeDef-chain portfolio entries.</summary>
+    /// <param name="other">The other entry.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataNamedTypeDefinitionChainPortfolioEntryIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests named-TypeDef-chain draft portfolio-entry equality against an arbitrary object.</summary>
+    /// <summary>Tests named-TypeDef-chain portfolio-entry equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an entry with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an entry with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataNamedTypeDefinitionChainPortfolioEntryIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable named-TypeDef-chain draft entry content.</summary>
-    /// <returns>A hash code for this canonical draft entry.</returns>
+    /// <summary>Computes a deterministic hash code from immutable named-TypeDef-chain entry content.</summary>
+    /// <returns>A hash code for this canonical entry.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataNamedTypeDefinitionChainPortfolioEntryIdentity Create(
@@ -841,7 +841,7 @@ public sealed class MetadataNamedTypeDefinitionChainPortfolioEntryIdentity :
     }
 }
 
-/// <summary>Normalizes per-module named-TypeDef-chain catalogs across one exact compatibility draft portfolio.</summary>
+/// <summary>Normalizes per-module named-TypeDef-chain catalogs across one exact compatibility portfolio.</summary>
 /// <remarks>
 /// Caller order is discarded. Exact entries follow the compatibility portfolio's deterministic module order and each
 /// retained chain catalog keeps TypeDef RID order. Default and explicit-empty vectors remain distinct.
@@ -891,16 +891,16 @@ public sealed class MetadataNamedTypeDefinitionChainPortfolioIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the shared module-count draft cap.</summary>
+    /// <summary>Gets the shared module-count cap.</summary>
     public const int MaximumModuleCount = ExpressionV2ContractLimits.MaximumModuleCount;
 
-    /// <summary>Gets whether this normalized named-TypeDef-chain draft portfolio is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this normalized named-TypeDef-chain portfolio is exact, non-exact, or invalid.</summary>
     public MetadataNamedTypeDefinitionChainPortfolioResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft portfolio issue, or none for an exact portfolio.</summary>
+    /// <summary>Gets the typed portfolio issue, or none for an exact portfolio.</summary>
     public MetadataNamedTypeDefinitionChainPortfolioIssue Issue { get; }
 
-    /// <summary>Gets the retained definition-compatibility draft portfolio prerequisite.</summary>
+    /// <summary>Gets the retained definition-compatibility portfolio prerequisite.</summary>
     public MetadataDefinitionCompatibilityPortfolioIdentity CompatibilityPortfolio { get; }
 
     /// <summary>Gets the exact portfolio snapshot digest, or null for an empty portfolio or any stop.</summary>
@@ -909,11 +909,11 @@ public sealed class MetadataNamedTypeDefinitionChainPortfolioIdentity :
             ? CompatibilityPortfolio.SnapshotSha256
             : null;
 
-    /// <summary>Gets a defensive module-order copy of exact draft entries, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive module-order copy of exact entries, or an empty array for a stop.</summary>
     public ImmutableArray<MetadataNamedTypeDefinitionChainPortfolioEntryIdentity> Entries =>
         ExpressionV2ContractEncoding.Copy(entries);
 
-    /// <summary>Gets the propagated or module-count draft bound, otherwise null.</summary>
+    /// <summary>Gets the propagated or module-count bound, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the issue-related supplied, prerequisite, or cap-plus-one observation count.</summary>
@@ -925,16 +925,16 @@ public sealed class MetadataNamedTypeDefinitionChainPortfolioIdentity :
     /// <summary>Gets the issue-related metadata-module digest, otherwise null.</summary>
     public string? RelatedModuleSha256 { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft portfolio.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical portfolio.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft portfolio.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical portfolio.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one normalized multi-module named-TypeDef-chain draft portfolio.</summary>
+    /// <summary>Creates one normalized multi-module named-TypeDef-chain portfolio.</summary>
     /// <param name="compatibilityPortfolio">The normalized compatibility portfolio that defines exact module lineage.</param>
     /// <param name="chainCatalogs">One initialized exact chain catalog for every compatibility-portfolio module.</param>
-    /// <returns>An exact normalized draft portfolio or a prefix-free typed stop.</returns>
+    /// <returns>An exact normalized portfolio or a prefix-free typed stop.</returns>
     public static MetadataNamedTypeDefinitionChainPortfolioIdentity Create(
         MetadataDefinitionCompatibilityPortfolioIdentity compatibilityPortfolio,
         ImmutableArray<MetadataNamedTypeDefinitionChainCatalogIdentity> chainCatalogs)
@@ -1084,10 +1084,10 @@ public sealed class MetadataNamedTypeDefinitionChainPortfolioIdentity :
         return Exact(compatibilityPortfolio, entries.MoveToImmutable());
     }
 
-    /// <summary>Looks up one exact draft chain by metadata module and non-nil TypeDef token.</summary>
+    /// <summary>Looks up one exact chain by metadata module and non-nil TypeDef token.</summary>
     /// <param name="sourceModule">The exact loaded metadata module.</param>
     /// <param name="typeDefinitionToken">The exact TypeDef token within that module.</param>
-    /// <returns>The exact draft chain, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
+    /// <returns>The exact chain, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
     public MetadataNamedTypeDefinitionChainIdentity? ExactChainOrDefault(
         StaticFieldMetadataModuleIdentity sourceModule,
         int typeDefinitionToken)
@@ -1102,19 +1102,19 @@ public sealed class MetadataNamedTypeDefinitionChainPortfolioIdentity :
         return entry?.ChainCatalog.ExactChainOrDefault(typeDefinitionToken);
     }
 
-    /// <summary>Tests canonical equality between two named-TypeDef-chain draft portfolios.</summary>
-    /// <param name="other">The other draft portfolio.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two named-TypeDef-chain portfolios.</summary>
+    /// <param name="other">The other portfolio.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataNamedTypeDefinitionChainPortfolioIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests named-TypeDef-chain draft portfolio equality against an arbitrary object.</summary>
+    /// <summary>Tests named-TypeDef-chain portfolio equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a portfolio with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a portfolio with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataNamedTypeDefinitionChainPortfolioIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable named-TypeDef-chain draft portfolio content.</summary>
-    /// <returns>A hash code for this canonical draft portfolio.</returns>
+    /// <summary>Computes a deterministic hash code from immutable named-TypeDef-chain portfolio content.</summary>
+    /// <returns>A hash code for this canonical portfolio.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsEntryMintCapability(object? capability) =>

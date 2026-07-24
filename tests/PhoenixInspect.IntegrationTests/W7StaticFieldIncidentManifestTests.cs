@@ -251,7 +251,7 @@ public sealed class W7StaticFieldIncidentManifestTests
     }
 
     /// <summary>
-    /// Executes a dump-free, capability-injected draft pipeline to prove each typed boundary stops before every later
+    /// Executes a dump-free, capability-injected pipeline to prove each typed boundary stops before every later
     /// capability and that a fully qualified request never consults poisoned frame/PDB/import capabilities.
     /// </summary>
     [Fact]
@@ -328,7 +328,7 @@ public sealed class W7StaticFieldIncidentManifestTests
             }
         }
 
-        throw new InvalidOperationException("The draft pipeline did not produce a terminal outcome.");
+        throw new InvalidOperationException("The pipeline did not produce a terminal outcome.");
     }
 
     private static void AssertExpectedShape(JsonElement expected)

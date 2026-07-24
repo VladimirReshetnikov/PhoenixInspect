@@ -11,7 +11,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// Projection requires every exact core-issued outcome from activation through the first terminal transition. The
 /// sequence may end there or include one certified idempotent re-step of that latch. Publicly constructible machine
 /// records, naked terminal states, and caller-authored event transcripts are insufficient evidence. Prepared-graph
-/// execution and every non-null-reference target outcome remain outside this draft conformance-only surface.
+/// execution and every non-null-reference target outcome remain outside this conformance-only surface.
 /// </remarks>
 public static class CounterfactualTargetOutcomeProjector
 {

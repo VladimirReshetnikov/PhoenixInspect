@@ -253,7 +253,7 @@ public sealed class W6EmittedShapeFixtureTests
     }
 
     /// <summary>
-    /// Verifies that the W6.1 scenario draft freezes twenty-four unique target invocations across four materially
+    /// Verifies that the W6.1 scenario freezes twenty-four unique target invocations across four materially
     /// different graph families before any W6 evaluator or report schema exists.
     /// </summary>
     [Fact]
@@ -456,7 +456,7 @@ public sealed class W6EmittedShapeFixtureTests
         "BatchPipeline" => "--synthetic-batch-pipeline",
         "CoordinatorPipeline" => "--synthetic-coordinator-pipeline",
         "WorkflowDispatch" => "--synthetic-workflow-dispatch",
-        _ => throw new InvalidOperationException("The scenario draft contains an unknown graph family."),
+        _ => throw new InvalidOperationException("The scenario contains an unknown graph family."),
     };
 
     private static string ExpectedRootType(string shape) => shape switch
@@ -465,7 +465,7 @@ public sealed class W6EmittedShapeFixtureTests
         "BatchPipeline" => "SyntheticBatchPipelineProbe",
         "CoordinatorPipeline" => "SyntheticCoordinatorPipelineProbe",
         "WorkflowDispatch" => "SyntheticWorkflowDispatchProbe",
-        _ => throw new InvalidOperationException("The scenario draft contains an unknown graph family."),
+        _ => throw new InvalidOperationException("The scenario contains an unknown graph family."),
     };
 
     private static string ResolveTargetAssemblyPath() =>

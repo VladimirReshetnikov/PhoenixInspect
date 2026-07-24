@@ -16,7 +16,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// Exercises the W7 static-slot physical truth gate against the unchanged optimized Release fixture.
 /// </summary>
 /// <remarks>
-/// This draft gate proves the physical metadata-to-slot chain before any W7 product behavior is introduced. ClrMD
+/// This gate proves the physical metadata-to-slot chain before any W7 product behavior is introduced. ClrMD
 /// convenience reads and heap enumeration occur only after project-owned raw reads establish the pointer and target
 /// method table.
 /// </remarks>

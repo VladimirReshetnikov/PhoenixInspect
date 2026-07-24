@@ -9,7 +9,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 /// The complete Roslyn-derived descriptor is consumed without reparsing. Literal <c>global::</c> expressions bypass
 /// all frame and PDB evidence. Bare type names may use an exact declaring namespace and exact active namespace/type
 /// aliases; namespace-qualified spellings retain their independent dot interpretation while an exact matching
-/// namespace alias contributes another explicit interpretation. Caveat: this draft binder implements only the W7
+/// namespace alias contributes another explicit interpretation. Caveat: this binder implements only the W7
 /// name-expansion rules and declaration shapes, not general C# semantic binding or overload resolution.
 /// </remarks>
 public static class StaticFieldContextualBinder

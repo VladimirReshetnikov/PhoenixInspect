@@ -4,9 +4,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Freezes the public storage discriminator of one selected static-field draft declaration.</summary>
+/// <summary>Freezes the public storage discriminator of one selected static-field declaration.</summary>
 /// <remarks>
-/// The draft discriminator contains exactly the four storage branches W8.1 admitted for a static field. Context-relative
+/// The discriminator contains exactly the four storage branches W8.1 admitted for a static field. Context-relative
 /// storage is non-admitted: the pinned runtime exposes one ordinary static slot and no attributable context identity, so
 /// no <c>ContextRelativeSlot</c> value exists here and a caller-supplied context marker becomes a typed non-admission
 /// rather than a strategy.
@@ -26,8 +26,8 @@ public enum StaticFieldV2StorageStrategy
     MetadataLiteral = 4,
 }
 
-/// <summary>Names one physical capability that a static-field draft storage strategy may require.</summary>
-/// <remarks>The draft capability catalog is the vocabulary of the frozen per-strategy requirement vectors.</remarks>
+/// <summary>Names one physical capability that a static-field storage strategy may require.</summary>
+/// <remarks>The capability catalog is the vocabulary of the frozen per-strategy requirement vectors.</remarks>
 public enum StaticFieldV2StorageCapability
 {
     /// <summary>Acquisition of one exact runtime construction for the declaring type.</summary>
@@ -46,8 +46,8 @@ public enum StaticFieldV2StorageCapability
     MemoryRead = 5,
 }
 
-/// <summary>Classifies whether one capability is required by a static-field draft storage strategy.</summary>
-/// <remarks>The draft requirement is a frozen contract fact, not an observation of any performed call.</remarks>
+/// <summary>Classifies whether one capability is required by a static-field storage strategy.</summary>
+/// <remarks>The requirement is a frozen contract fact, not an observation of any performed call.</remarks>
 public enum StaticFieldV2CapabilityRequirement
 {
     /// <summary>The strategy provably never needs the capability.</summary>
@@ -57,9 +57,9 @@ public enum StaticFieldV2CapabilityRequirement
     Required = 2,
 }
 
-/// <summary>Classifies one static-field storage-strategy draft classification answer.</summary>
+/// <summary>Classifies one static-field storage-strategy classification answer.</summary>
 /// <remarks>
-/// <see cref="Exact"/> is the only draft answer that exposes a strategy. <see cref="Unsupported"/> is a prefix-free
+/// <see cref="Exact"/> is the only answer that exposes a strategy. <see cref="Unsupported"/> is a prefix-free
 /// stop that exposes no strategy and marks every capability as not required.
 /// </remarks>
 public enum StaticFieldV2StorageStrategyResultKind
@@ -67,15 +67,15 @@ public enum StaticFieldV2StorageStrategyResultKind
     /// <summary>Exactly one admitted storage strategy was classified from physical flags.</summary>
     Exact = 1,
 
-    /// <summary>The declaration selects a route this draft discriminator does not admit.</summary>
+    /// <summary>The declaration selects a route this discriminator does not admit.</summary>
     Unsupported = 2,
 }
 
-/// <summary>Identifies the deterministic issue of one storage-strategy draft classification.</summary>
-/// <remarks>This draft issue catalog keeps the two non-admitted declarations distinct from every admitted branch.</remarks>
+/// <summary>Identifies the deterministic issue of one storage-strategy classification.</summary>
+/// <remarks>This issue catalog keeps the two non-admitted declarations distinct from every admitted branch.</remarks>
 public enum StaticFieldV2StorageStrategyIssue
 {
-    /// <summary>No issue applies to an exact draft classification.</summary>
+    /// <summary>No issue applies to an exact classification.</summary>
     None = 0,
 
     /// <summary>The supplied FieldDef row is an instance declaration rather than a static declaration.</summary>
@@ -85,14 +85,14 @@ public enum StaticFieldV2StorageStrategyIssue
     ContextRelativeStorageNotAdmitted = 2,
 }
 
-/// <summary>Identifies one declared coverage boundary retained by a static-field storage draft outcome.</summary>
+/// <summary>Identifies one declared coverage boundary retained by a static-field storage outcome.</summary>
 /// <remarks>
-/// Every boundary is an informational draft fact rather than an error. A boundary states what this metadata-only phase
+/// Every boundary is an informational fact rather than an error. A boundary states what this metadata-only phase
 /// deliberately does not model, so a consumer can never mistake a silent gap for a proven negative.
 /// </remarks>
 public enum StaticFieldV2StorageCoverageBoundary
 {
-    /// <summary>The physical CustomAttribute table is not modeled by this draft slice.</summary>
+    /// <summary>The physical CustomAttribute table is not modeled by this slice.</summary>
     CustomAttributeTableNotModeled = 1,
 
     /// <summary>The thread-relative marker was a caller-supplied decoded fact rather than a decoded row.</summary>
@@ -108,8 +108,8 @@ public enum StaticFieldV2StorageCoverageBoundary
     EnumUnderlyingDerivedFromInstanceValueField = 5,
 }
 
-/// <summary>Classifies one exact static-field metadata-literal draft value.</summary>
-/// <remarks>The draft kind names the decoded Constant encoding; <c>decimal</c> deliberately has no member here.</remarks>
+/// <summary>Classifies one exact static-field metadata-literal value.</summary>
+/// <remarks>The kind names the decoded Constant encoding; <c>decimal</c> deliberately has no member here.</remarks>
 public enum StaticFieldV2LiteralValueKind
 {
     /// <summary>One CLI <c>bool</c> encoded as a single zero or one byte.</summary>
@@ -155,14 +155,14 @@ public enum StaticFieldV2LiteralValueKind
     Null = 14,
 }
 
-/// <summary>Classifies one static-field metadata-literal draft projection answer.</summary>
-/// <remarks>Only <see cref="Exact"/> exposes a decoded value; every other alternative is a prefix-free draft stop.</remarks>
+/// <summary>Classifies one static-field metadata-literal projection answer.</summary>
+/// <remarks>Only <see cref="Exact"/> exposes a decoded value; every other alternative is a prefix-free stop.</remarks>
 public enum StaticFieldV2LiteralValueResultKind
 {
     /// <summary>One admitted literal encoding was decoded exactly from metadata alone.</summary>
     Exact = 1,
 
-    /// <summary>A declared draft bound or a missing prerequisite prevented an exact decode.</summary>
+    /// <summary>A declared bound or a missing prerequisite prevented an exact decode.</summary>
     NonExact = 2,
 
     /// <summary>Complete supplied evidence contradicted the signature or the Constant encoding.</summary>
@@ -172,17 +172,17 @@ public enum StaticFieldV2LiteralValueResultKind
     Unsupported = 4,
 }
 
-/// <summary>Identifies the deterministic issue of one metadata-literal draft projection.</summary>
-/// <remarks>This draft issue catalog separates disagreement, malformed bytes, bounds, and non-admitted encodings.</remarks>
+/// <summary>Identifies the deterministic issue of one metadata-literal projection.</summary>
+/// <remarks>This issue catalog separates disagreement, malformed bytes, bounds, and non-admitted encodings.</remarks>
 public enum StaticFieldV2LiteralValueIssue
 {
-    /// <summary>No issue applies to an exact draft projection.</summary>
+    /// <summary>No issue applies to an exact projection.</summary>
     None = 0,
 
     /// <summary>The supplied FieldDef row does not carry FieldAttributes.Literal.</summary>
     FieldNotLiteral = 1,
 
-    /// <summary>The complete FieldDef signature failed the shared bounded Core draft grammar.</summary>
+    /// <summary>The complete FieldDef signature failed the shared bounded Core grammar.</summary>
     SignatureInvalid = 2,
 
     /// <summary>The signature type and the physical Constant type code name different types.</summary>
@@ -194,7 +194,7 @@ public enum StaticFieldV2LiteralValueIssue
     /// <summary>The Constant type code or the signature form is not an admitted literal encoding.</summary>
     LiteralEncodingUnsupported = 5,
 
-    /// <summary>The decoded string reached the declared static-string draft cap plus one.</summary>
+    /// <summary>The decoded string reached the declared static-string cap plus one.</summary>
     StringCharacterCountBoundReached = 6,
 
     /// <summary>No exact evidence established the named signature type's underlying literal encoding.</summary>
@@ -204,10 +204,10 @@ public enum StaticFieldV2LiteralValueIssue
     AttributeEncodedLiteralNotModeled = 8,
 }
 
-/// <summary>Freezes the per-capability requirement vector of one static-field storage draft strategy.</summary>
+/// <summary>Freezes the per-capability requirement vector of one static-field storage strategy.</summary>
 /// <remarks>
 /// The vector is minted only by <see cref="StaticFieldV2StorageStrategyOutcome"/>. It is the frozen contract the later
-/// runtime draft slice must obey: a capability marked <see cref="StaticFieldV2CapabilityRequirement.NotRequired"/> may
+/// runtime slice must obey: a capability marked <see cref="StaticFieldV2CapabilityRequirement.NotRequired"/> may
 /// never be acquired for that strategy, and a prefix-free stop marks every capability as not required.
 /// </remarks>
 public sealed class StaticFieldV2CapabilityRequirementVector :
@@ -240,22 +240,22 @@ public sealed class StaticFieldV2CapabilityRequirementVector :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the draft requirement for acquiring one exact runtime construction.</summary>
+    /// <summary>Gets the requirement for acquiring one exact runtime construction.</summary>
     public StaticFieldV2CapabilityRequirement RuntimeConstruction { get; }
 
-    /// <summary>Gets the draft requirement for acquiring one exact selected-thread identity.</summary>
+    /// <summary>Gets the requirement for acquiring one exact selected-thread identity.</summary>
     public StaticFieldV2CapabilityRequirement ThreadIdentity { get; }
 
-    /// <summary>Gets the draft requirement for acquiring exact module content and image geometry.</summary>
+    /// <summary>Gets the requirement for acquiring exact module content and image geometry.</summary>
     public StaticFieldV2CapabilityRequirement ModuleContent { get; }
 
-    /// <summary>Gets the draft requirement for acquiring one exact static storage slot address.</summary>
+    /// <summary>Gets the requirement for acquiring one exact static storage slot address.</summary>
     public StaticFieldV2CapabilityRequirement StaticSlotAcquisition { get; }
 
-    /// <summary>Gets the draft requirement for performing one counted raw memory read.</summary>
+    /// <summary>Gets the requirement for performing one counted raw memory read.</summary>
     public StaticFieldV2CapabilityRequirement MemoryRead { get; }
 
-    /// <summary>Gets a defensive ascending copy of every capability this draft strategy requires.</summary>
+    /// <summary>Gets a defensive ascending copy of every capability this strategy requires.</summary>
     public ImmutableArray<StaticFieldV2StorageCapability> RequiredCapabilities
     {
         get
@@ -272,10 +272,10 @@ public sealed class StaticFieldV2CapabilityRequirementVector :
         }
     }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft vector bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical vector bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft vector.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical vector.</summary>
     public string Sha256 { get; }
 
     internal static ImmutableArray<StaticFieldV2StorageCapability> AllCapabilities =>
@@ -287,9 +287,9 @@ public sealed class StaticFieldV2CapabilityRequirementVector :
         StaticFieldV2StorageCapability.MemoryRead,
     ];
 
-    /// <summary>Projects the draft requirement of one named capability.</summary>
-    /// <param name="capability">The capability whose draft requirement is requested.</param>
-    /// <returns>The frozen draft requirement recorded for that capability.</returns>
+    /// <summary>Projects the requirement of one named capability.</summary>
+    /// <param name="capability">The capability whose requirement is requested.</param>
+    /// <returns>The frozen requirement recorded for that capability.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capability"/> is not a declared value.</exception>
     public StaticFieldV2CapabilityRequirement For(StaticFieldV2StorageCapability capability) => capability switch
     {
@@ -298,22 +298,22 @@ public sealed class StaticFieldV2CapabilityRequirementVector :
         StaticFieldV2StorageCapability.ModuleContent => ModuleContent,
         StaticFieldV2StorageCapability.StaticSlotAcquisition => StaticSlotAcquisition,
         StaticFieldV2StorageCapability.MemoryRead => MemoryRead,
-        _ => throw new ArgumentOutOfRangeException(nameof(capability), "A declared draft capability is required."),
+        _ => throw new ArgumentOutOfRangeException(nameof(capability), "A declared capability is required."),
     };
 
-    /// <summary>Tests canonical equality between two capability-requirement draft vectors.</summary>
-    /// <param name="other">The other draft vector.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two capability-requirement vectors.</summary>
+    /// <param name="other">The other vector.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2CapabilityRequirementVector? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests capability-requirement draft vector equality against an arbitrary object.</summary>
+    /// <summary>Tests capability-requirement vector equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a vector with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a vector with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2CapabilityRequirementVector);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft vector content.</summary>
-    /// <returns>A hash code for this canonical draft vector.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical vector content.</summary>
+    /// <returns>A hash code for this canonical vector.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2CapabilityRequirementVector Create(
@@ -345,7 +345,7 @@ public sealed class StaticFieldV2CapabilityRequirementVector :
     }
 }
 
-/// <summary>Counts capability calls performed while producing one static-field draft value.</summary>
+/// <summary>Counts capability calls performed while producing one static-field value.</summary>
 /// <remarks>
 /// The ledger is minted only by <see cref="StaticFieldV2LiteralValueOutcome"/>. Metadata-literal projection performs no
 /// runtime, thread, module-content, slot, or memory call, so every counter is zero. When the caller supplies a
@@ -381,22 +381,22 @@ public sealed class StaticFieldV2CapabilityCallLedger : IEquatable<StaticFieldV2
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the counted runtime-construction acquisitions of this draft projection.</summary>
+    /// <summary>Gets the counted runtime-construction acquisitions of this projection.</summary>
     public int RuntimeConstructionCallCount { get; }
 
-    /// <summary>Gets the counted selected-thread acquisitions of this draft projection.</summary>
+    /// <summary>Gets the counted selected-thread acquisitions of this projection.</summary>
     public int ThreadIdentityCallCount { get; }
 
-    /// <summary>Gets the counted module-content acquisitions of this draft projection.</summary>
+    /// <summary>Gets the counted module-content acquisitions of this projection.</summary>
     public int ModuleContentCallCount { get; }
 
-    /// <summary>Gets the counted static-slot acquisitions of this draft projection.</summary>
+    /// <summary>Gets the counted static-slot acquisitions of this projection.</summary>
     public int StaticSlotAcquisitionCallCount { get; }
 
-    /// <summary>Gets the counted raw memory reads of this draft projection.</summary>
+    /// <summary>Gets the counted raw memory reads of this projection.</summary>
     public int MemoryReadCallCount { get; }
 
-    /// <summary>Gets the summed counted capability calls of this draft projection.</summary>
+    /// <summary>Gets the summed counted capability calls of this projection.</summary>
     public int TotalCallCount =>
         RuntimeConstructionCallCount +
         ThreadIdentityCallCount +
@@ -404,17 +404,17 @@ public sealed class StaticFieldV2CapabilityCallLedger : IEquatable<StaticFieldV2
         StaticSlotAcquisitionCallCount +
         MemoryReadCallCount;
 
-    /// <summary>Gets whether this draft projection performed no capability call at all.</summary>
+    /// <summary>Gets whether this projection performed no capability call at all.</summary>
     public bool IsZero => TotalCallCount == 0;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft ledger bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical ledger bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft ledger.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical ledger.</summary>
     public string Sha256 { get; }
 
     /// <summary>Projects the counted calls of one named capability.</summary>
-    /// <param name="capability">The capability whose counted draft calls are requested.</param>
+    /// <param name="capability">The capability whose counted calls are requested.</param>
     /// <returns>The counted calls recorded for that capability.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capability"/> is not a declared value.</exception>
     public int CallCount(StaticFieldV2StorageCapability capability) => capability switch
@@ -424,22 +424,22 @@ public sealed class StaticFieldV2CapabilityCallLedger : IEquatable<StaticFieldV2
         StaticFieldV2StorageCapability.ModuleContent => ModuleContentCallCount,
         StaticFieldV2StorageCapability.StaticSlotAcquisition => StaticSlotAcquisitionCallCount,
         StaticFieldV2StorageCapability.MemoryRead => MemoryReadCallCount,
-        _ => throw new ArgumentOutOfRangeException(nameof(capability), "A declared draft capability is required."),
+        _ => throw new ArgumentOutOfRangeException(nameof(capability), "A declared capability is required."),
     };
 
-    /// <summary>Tests canonical equality between two capability-call draft ledgers.</summary>
-    /// <param name="other">The other draft ledger.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two capability-call ledgers.</summary>
+    /// <param name="other">The other ledger.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2CapabilityCallLedger? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests capability-call draft ledger equality against an arbitrary object.</summary>
+    /// <summary>Tests capability-call ledger equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a ledger with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a ledger with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2CapabilityCallLedger);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft ledger content.</summary>
-    /// <returns>A hash code for this canonical draft ledger.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical ledger content.</summary>
+    /// <returns>A hash code for this canonical ledger.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2CapabilityCallLedger Create(
@@ -471,9 +471,9 @@ public sealed class StaticFieldV2CapabilityCallLedger : IEquatable<StaticFieldV2
     }
 }
 
-/// <summary>Carries caller-owned capability probes that a draft projection would call if it needed them.</summary>
+/// <summary>Carries caller-owned capability probes that a projection would call if it needed them.</summary>
 /// <remarks>
-/// The probe set is a deliberately mutable accounting instrument and therefore takes no part in canonical draft
+/// The probe set is a deliberately mutable accounting instrument and therefore takes no part in canonical
 /// identity beyond its presence. Every call routed through <see cref="Invoke"/> increments the corresponding counter
 /// before the caller-owned delegate runs, so a probe set whose delegates throw proves non-invocation executably.
 /// </remarks>
@@ -504,22 +504,22 @@ public sealed class ExpressionV2CapabilityProbeSet
         this.memoryRead = memoryRead;
     }
 
-    /// <summary>Gets the counted runtime-construction acquisitions routed through this draft probe set.</summary>
+    /// <summary>Gets the counted runtime-construction acquisitions routed through this probe set.</summary>
     public int RuntimeConstructionCallCount => runtimeConstructionCallCount;
 
-    /// <summary>Gets the counted selected-thread acquisitions routed through this draft probe set.</summary>
+    /// <summary>Gets the counted selected-thread acquisitions routed through this probe set.</summary>
     public int ThreadIdentityCallCount => threadIdentityCallCount;
 
-    /// <summary>Gets the counted module-content acquisitions routed through this draft probe set.</summary>
+    /// <summary>Gets the counted module-content acquisitions routed through this probe set.</summary>
     public int ModuleContentCallCount => moduleContentCallCount;
 
-    /// <summary>Gets the counted static-slot acquisitions routed through this draft probe set.</summary>
+    /// <summary>Gets the counted static-slot acquisitions routed through this probe set.</summary>
     public int StaticSlotAcquisitionCallCount => staticSlotAcquisitionCallCount;
 
-    /// <summary>Gets the counted raw memory reads routed through this draft probe set.</summary>
+    /// <summary>Gets the counted raw memory reads routed through this probe set.</summary>
     public int MemoryReadCallCount => memoryReadCallCount;
 
-    /// <summary>Gets the summed counted capability calls routed through this draft probe set.</summary>
+    /// <summary>Gets the summed counted capability calls routed through this probe set.</summary>
     public int TotalCallCount =>
         runtimeConstructionCallCount +
         threadIdentityCallCount +
@@ -527,13 +527,13 @@ public sealed class ExpressionV2CapabilityProbeSet
         staticSlotAcquisitionCallCount +
         memoryReadCallCount;
 
-    /// <summary>Creates one caller-owned draft probe set with an optional delegate per capability.</summary>
+    /// <summary>Creates one caller-owned probe set with an optional delegate per capability.</summary>
     /// <param name="runtimeConstruction">The runtime-construction probe, or null for no delegate.</param>
     /// <param name="threadIdentity">The selected-thread probe, or null for no delegate.</param>
     /// <param name="moduleContent">The module-content probe, or null for no delegate.</param>
     /// <param name="staticSlotAcquisition">The static-slot probe, or null for no delegate.</param>
     /// <param name="memoryRead">The raw memory-read probe, or null for no delegate.</param>
-    /// <returns>A draft probe set whose counters all start at zero.</returns>
+    /// <returns>A probe set whose counters all start at zero.</returns>
     public static ExpressionV2CapabilityProbeSet Create(
         Action? runtimeConstruction = null,
         Action? threadIdentity = null,
@@ -542,7 +542,7 @@ public sealed class ExpressionV2CapabilityProbeSet
         Action? memoryRead = null) =>
         new(runtimeConstruction, threadIdentity, moduleContent, staticSlotAcquisition, memoryRead);
 
-    /// <summary>Counts and performs one capability call of this draft probe set.</summary>
+    /// <summary>Counts and performs one capability call of this probe set.</summary>
     /// <param name="capability">The capability being acquired.</param>
     /// <remarks>The counter advances before the caller-owned delegate runs, so a throwing probe is still counted.</remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capability"/> is not a declared value.</exception>
@@ -573,12 +573,12 @@ public sealed class ExpressionV2CapabilityProbeSet
             default:
                 throw new ArgumentOutOfRangeException(
                     nameof(capability),
-                    "A declared draft capability is required.");
+                    "A declared capability is required.");
         }
     }
 
-    /// <summary>Projects the counted calls of one named capability of this draft probe set.</summary>
-    /// <param name="capability">The capability whose counted draft calls are requested.</param>
+    /// <summary>Projects the counted calls of one named capability of this probe set.</summary>
+    /// <param name="capability">The capability whose counted calls are requested.</param>
     /// <returns>The counted calls routed through this probe set for that capability.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capability"/> is not a declared value.</exception>
     public int CallCount(StaticFieldV2StorageCapability capability) => capability switch
@@ -588,14 +588,14 @@ public sealed class ExpressionV2CapabilityProbeSet
         StaticFieldV2StorageCapability.ModuleContent => moduleContentCallCount,
         StaticFieldV2StorageCapability.StaticSlotAcquisition => staticSlotAcquisitionCallCount,
         StaticFieldV2StorageCapability.MemoryRead => memoryReadCallCount,
-        _ => throw new ArgumentOutOfRangeException(nameof(capability), "A declared draft capability is required."),
+        _ => throw new ArgumentOutOfRangeException(nameof(capability), "A declared capability is required."),
     };
 }
 
-/// <summary>Freezes one complete static-field storage-strategy draft classification request.</summary>
+/// <summary>Freezes one complete static-field storage-strategy classification request.</summary>
 /// <remarks>
 /// The request names one physical FieldDef row, its authority-issued declaring TypeDef, and the two caller-supplied
-/// decoded storage markers. The physical CustomAttribute table is not modeled by this draft slice, so the
+/// decoded storage markers. The physical CustomAttribute table is not modeled by this slice, so the
 /// thread-relative and context-relative markers are explicit caller-declared boolean facts rather than decoded rows.
 /// </remarks>
 public sealed class StaticFieldV2StorageStrategyRequest : IEquatable<StaticFieldV2StorageStrategyRequest>
@@ -624,25 +624,25 @@ public sealed class StaticFieldV2StorageStrategyRequest : IEquatable<StaticField
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact physical FieldDef draft row whose storage strategy is classified.</summary>
+    /// <summary>Gets the exact physical FieldDef row whose storage strategy is classified.</summary>
     public MetadataFieldDefinitionTableRowIdentity FieldRow { get; }
 
-    /// <summary>Gets the authority-issued TypeDef that physically declared the draft row.</summary>
+    /// <summary>Gets the authority-issued TypeDef that physically declared the row.</summary>
     public MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition { get; }
 
-    /// <summary>Gets the caller-supplied decoded thread-relative custom-attribute presence draft fact.</summary>
+    /// <summary>Gets the caller-supplied decoded thread-relative custom-attribute presence fact.</summary>
     public bool ThreadStaticAttributeSuppliedByCaller { get; }
 
-    /// <summary>Gets the caller-supplied decoded context-relative custom-attribute presence draft fact.</summary>
+    /// <summary>Gets the caller-supplied decoded context-relative custom-attribute presence fact.</summary>
     public bool ContextStaticAttributeSuppliedByCaller { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft request.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical request.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete static-field storage-strategy draft classification request.</summary>
+    /// <summary>Creates one complete static-field storage-strategy classification request.</summary>
     /// <param name="fieldRow">The exact physical FieldDef row selected by definition-side member lookup.</param>
     /// <param name="declaringTypeDefinition">The authority-issued TypeDef that physically declared the row.</param>
     /// <param name="threadStaticAttributeSuppliedByCaller">
@@ -653,7 +653,7 @@ public sealed class StaticFieldV2StorageStrategyRequest : IEquatable<StaticField
     /// The caller-decoded presence of the context-relative marker custom attribute. W8.1 did not admit context-relative
     /// storage, so a true value produces a typed non-admission rather than any strategy.
     /// </param>
-    /// <returns>A sealed immutable draft request.</returns>
+    /// <returns>A sealed immutable request.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentException">The declaring TypeDef is not the row's physical declaring type.</exception>
     public static StaticFieldV2StorageStrategyRequest Create(
@@ -678,34 +678,34 @@ public sealed class StaticFieldV2StorageStrategyRequest : IEquatable<StaticField
             contextStaticAttributeSuppliedByCaller);
     }
 
-    /// <summary>Tests canonical equality between two storage-strategy draft requests.</summary>
-    /// <param name="other">The other draft request.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two storage-strategy requests.</summary>
+    /// <param name="other">The other request.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2StorageStrategyRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests storage-strategy draft request equality against an arbitrary object.</summary>
+    /// <summary>Tests storage-strategy request equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a request with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a request with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2StorageStrategyRequest);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft request content.</summary>
-    /// <returns>A hash code for this canonical draft request.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical request content.</summary>
+    /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes the complete draft outcome of one static-field storage-strategy classification.</summary>
+/// <summary>Freezes the complete outcome of one static-field storage-strategy classification.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of the capability-requirement vector it retains. An exact answer names
+/// This sealed outcome is the sole issuer of the capability-requirement vector it retains. An exact answer names
 /// exactly one admitted strategy and its frozen requirement vector; a typed non-admission names no strategy, marks
 /// every capability as not required, and retains the frozen diagnostic code of the refused branch.
 /// </remarks>
 public sealed class StaticFieldV2StorageStrategyOutcome : IEquatable<StaticFieldV2StorageStrategyOutcome>
 {
-    /// <summary>Gets the frozen diagnostic code retained by a context-relative draft non-admission.</summary>
+    /// <summary>Gets the frozen diagnostic code retained by a context-relative non-admission.</summary>
     public const string ContextIdentityNotAttributableCode = "W8_CONTEXT_IDENTITY_NOT_ATTRIBUTABLE";
 
-    /// <summary>Gets the frozen diagnostic code retained by an instance-declaration draft non-admission.</summary>
+    /// <summary>Gets the frozen diagnostic code retained by an instance-declaration non-admission.</summary>
     public const string InstanceFieldNotStaticCode = "W8_STATIC_FIELD_INSTANCE_DECLARATION";
 
     private const string CanonicalDomain = "static-field-v2-storage-strategy-outcome";
@@ -747,50 +747,50 @@ public sealed class StaticFieldV2StorageStrategyOutcome : IEquatable<StaticField
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft classification is exact or a typed non-admission.</summary>
+    /// <summary>Gets whether this classification is exact or a typed non-admission.</summary>
     public StaticFieldV2StorageStrategyResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft classification issue, or none for an exact outcome.</summary>
+    /// <summary>Gets the typed classification issue, or none for an exact outcome.</summary>
     public StaticFieldV2StorageStrategyIssue Issue { get; }
 
-    /// <summary>Gets the complete draft request that produced this outcome.</summary>
+    /// <summary>Gets the complete request that produced this outcome.</summary>
     public StaticFieldV2StorageStrategyRequest Request { get; }
 
-    /// <summary>Gets the single admitted draft storage strategy, or null for a typed non-admission.</summary>
+    /// <summary>Gets the single admitted storage strategy, or null for a typed non-admission.</summary>
     public StaticFieldV2StorageStrategy? Strategy { get; }
 
-    /// <summary>Gets the frozen per-capability requirement draft vector of this outcome.</summary>
+    /// <summary>Gets the frozen per-capability requirement vector of this outcome.</summary>
     public StaticFieldV2CapabilityRequirementVector CapabilityRequirements { get; }
 
-    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this draft answer.</summary>
+    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this answer.</summary>
     public ImmutableArray<StaticFieldV2StorageCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
 
     /// <summary>Gets the frozen diagnostic code of a typed non-admission, otherwise null.</summary>
     public string? DiagnosticCode { get; }
 
-    /// <summary>Gets the exact physical FieldDef token this draft outcome classified.</summary>
+    /// <summary>Gets the exact physical FieldDef token this outcome classified.</summary>
     public int FieldDefinitionToken => Request.FieldRow.FieldDefinitionToken;
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two storage-strategy draft outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two storage-strategy outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2StorageStrategyOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests storage-strategy draft outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests storage-strategy outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2StorageStrategyOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -843,16 +843,16 @@ public sealed class StaticFieldV2StorageStrategyOutcome : IEquatable<StaticField
     }
 }
 
-/// <summary>Freezes one complete static-field metadata-literal draft projection request.</summary>
+/// <summary>Freezes one complete static-field metadata-literal projection request.</summary>
 /// <remarks>
 /// The request names one physical FieldDef row and the physical Constant row supplied as a type code plus a raw value
-/// blob. The Constant table is not modeled by this draft slice, so the row is a caller-supplied physical fact retained
+/// blob. The Constant table is not modeled by this slice, so the row is a caller-supplied physical fact retained
 /// as a declared coverage boundary. An optional FieldDef catalog supplies the evidence needed to derive an enum's
 /// underlying primitive from that enum's declared instance <c>value__</c> field.
 /// </remarks>
 public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFieldV2LiteralProjectionRequest>
 {
-    /// <summary>Gets the maximum admitted Constant value blob byte count of one draft projection request.</summary>
+    /// <summary>Gets the maximum admitted Constant value blob byte count of one projection request.</summary>
     public const int MaximumConstantValueByteCount = 2 * (StaticFieldV2Limits.MaximumStringCharacterCount + 1);
 
     private const string CanonicalDomain = "static-field-v2-literal-projection-request";
@@ -883,28 +883,28 @@ public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFie
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact physical FieldDef draft row whose literal value is projected.</summary>
+    /// <summary>Gets the exact physical FieldDef row whose literal value is projected.</summary>
     public MetadataFieldDefinitionTableRowIdentity FieldRow { get; }
 
-    /// <summary>Gets the physical Constant table type code supplied for the draft row.</summary>
+    /// <summary>Gets the physical Constant table type code supplied for the row.</summary>
     public int ConstantTypeCode { get; }
 
-    /// <summary>Gets a defensive copy of the raw physical Constant value blob of the draft row.</summary>
+    /// <summary>Gets a defensive copy of the raw physical Constant value blob of the row.</summary>
     public ImmutableArray<byte> ConstantValueBlob => ExpressionV2ContractEncoding.Copy(constantValueBlob);
 
-    /// <summary>Gets the FieldDef catalog supplying named-type draft evidence, or null when none was supplied.</summary>
+    /// <summary>Gets the FieldDef catalog supplying named-type evidence, or null when none was supplied.</summary>
     public MetadataFieldDefinitionTableCatalogIdentity? NamedLiteralTypeCatalog { get; }
 
-    /// <summary>Gets the caller-owned capability probes this draft projection must never invoke.</summary>
+    /// <summary>Gets the caller-owned capability probes this projection must never invoke.</summary>
     public ExpressionV2CapabilityProbeSet? CapabilityProbes { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft request.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical request.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete static-field metadata-literal draft projection request.</summary>
+    /// <summary>Creates one complete static-field metadata-literal projection request.</summary>
     /// <param name="fieldRow">The exact physical FieldDef row selected by definition-side member lookup.</param>
     /// <param name="constantTypeCode">The physical Constant table type code, an unsigned eight-bit value.</param>
     /// <param name="constantValueBlob">The raw physical Constant value blob, bounded by the admitted byte count.</param>
@@ -915,7 +915,7 @@ public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFie
     /// <param name="capabilityProbes">
     /// Caller-owned probes that this metadata-only projection never invokes; their counters become the outcome ledger.
     /// </param>
-    /// <returns>A sealed immutable draft request with a defensively copied Constant blob.</returns>
+    /// <returns>A sealed immutable request with a defensively copied Constant blob.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="fieldRow"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The Constant type code is outside its physical byte column.</exception>
     /// <exception cref="ArgumentException">The Constant value blob is default or over the admitted byte count.</exception>
@@ -948,33 +948,33 @@ public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFie
             capabilityProbes);
     }
 
-    /// <summary>Tests canonical equality between two metadata-literal draft projection requests.</summary>
-    /// <param name="other">The other draft request.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two metadata-literal projection requests.</summary>
+    /// <param name="other">The other request.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2LiteralProjectionRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests metadata-literal draft projection request equality against an arbitrary object.</summary>
+    /// <summary>Tests metadata-literal projection request equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a request with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a request with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2LiteralProjectionRequest);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft request content.</summary>
-    /// <returns>A hash code for this canonical draft request.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical request content.</summary>
+    /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<byte> ConstantValueBlobCore => constantValueBlob;
 }
 
-/// <summary>Freezes the complete draft outcome of one static-field metadata-literal projection.</summary>
+/// <summary>Freezes the complete outcome of one static-field metadata-literal projection.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of the capability-call ledger it retains. An exact answer decodes one
+/// This sealed outcome is the sole issuer of the capability-call ledger it retains. An exact answer decodes one
 /// admitted Constant encoding from metadata alone and retains the enum definition whenever the signature named an enum;
 /// every other alternative is a prefix-free stop that exposes no decoded value.
 /// </remarks>
 public sealed class StaticFieldV2LiteralValueOutcome : IEquatable<StaticFieldV2LiteralValueOutcome>
 {
-    /// <summary>Gets the shared static-string draft cap applied by one complete literal projection.</summary>
+    /// <summary>Gets the shared static-string cap applied by one complete literal projection.</summary>
     public const int MaximumStringCharacterCount = StaticFieldV2Limits.MaximumStringCharacterCount;
 
     private const string CanonicalDomain = "static-field-v2-literal-value-outcome";
@@ -1034,78 +1034,78 @@ public sealed class StaticFieldV2LiteralValueOutcome : IEquatable<StaticFieldV2L
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft projection is exact, non-exact, invalid, or a typed non-admission.</summary>
+    /// <summary>Gets whether this projection is exact, non-exact, invalid, or a typed non-admission.</summary>
     public StaticFieldV2LiteralValueResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft projection issue, or none for an exact outcome.</summary>
+    /// <summary>Gets the typed projection issue, or none for an exact outcome.</summary>
     public StaticFieldV2LiteralValueIssue Issue { get; }
 
-    /// <summary>Gets the complete draft request that produced this outcome.</summary>
+    /// <summary>Gets the complete request that produced this outcome.</summary>
     public StaticFieldV2LiteralProjectionRequest Request { get; }
 
-    /// <summary>Gets the decoded draft literal kind, or null for every stop.</summary>
+    /// <summary>Gets the decoded literal kind, or null for every stop.</summary>
     public StaticFieldV2LiteralValueKind? ValueKind { get; }
 
-    /// <summary>Gets the enum TypeDef named by the draft signature, or null when the signature named no enum.</summary>
+    /// <summary>Gets the enum TypeDef named by the signature, or null when the signature named no enum.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? EnumDefinition { get; }
 
-    /// <summary>Gets whether this exact draft value is one enum's decoded underlying value.</summary>
+    /// <summary>Gets whether this exact value is one enum's decoded underlying value.</summary>
     public bool IsEnumUnderlyingValue => EnumDefinition is not null;
 
-    /// <summary>Gets the decoded signed draft value for a signed integer kind, otherwise null.</summary>
+    /// <summary>Gets the decoded signed value for a signed integer kind, otherwise null.</summary>
     public long? SignedValue { get; }
 
-    /// <summary>Gets the decoded unsigned draft value for an unsigned, char, or boolean kind, otherwise null.</summary>
+    /// <summary>Gets the decoded unsigned value for an unsigned, char, or boolean kind, otherwise null.</summary>
     public ulong? UnsignedValue { get; }
 
-    /// <summary>Gets the exact floating draft bit pattern for a single or double kind, otherwise null.</summary>
+    /// <summary>Gets the exact floating bit pattern for a single or double kind, otherwise null.</summary>
     public ulong? FloatingBitPattern { get; }
 
-    /// <summary>Gets the decoded single-precision draft value reinterpreted from its exact bit pattern.</summary>
+    /// <summary>Gets the decoded single-precision value reinterpreted from its exact bit pattern.</summary>
     public float? SingleValue => ValueKind == StaticFieldV2LiteralValueKind.Single && FloatingBitPattern is { } bits
         ? BitConverter.UInt32BitsToSingle((uint)bits)
         : null;
 
-    /// <summary>Gets the decoded double-precision draft value reinterpreted from its exact bit pattern.</summary>
+    /// <summary>Gets the decoded double-precision value reinterpreted from its exact bit pattern.</summary>
     public double? DoubleValue => ValueKind == StaticFieldV2LiteralValueKind.Double && FloatingBitPattern is { } bits
         ? BitConverter.UInt64BitsToDouble(bits)
         : null;
 
-    /// <summary>Gets the decoded draft string payload for a string kind, otherwise null.</summary>
+    /// <summary>Gets the decoded string payload for a string kind, otherwise null.</summary>
     public string? StringValue { get; }
 
-    /// <summary>Gets the capability-call draft ledger proving which capability calls this projection performed.</summary>
+    /// <summary>Gets the capability-call ledger proving which capability calls this projection performed.</summary>
     public StaticFieldV2CapabilityCallLedger CapabilityCallLedger { get; }
 
-    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this draft answer.</summary>
+    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this answer.</summary>
     public ImmutableArray<StaticFieldV2StorageCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the decoded draft character count, supplied byte count, or cap-plus-one observation.</summary>
+    /// <summary>Gets the decoded character count, supplied byte count, or cap-plus-one observation.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two metadata-literal draft outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two metadata-literal outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2LiteralValueOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests metadata-literal draft outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests metadata-literal outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2LiteralValueOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -1172,22 +1172,22 @@ public sealed class StaticFieldV2LiteralValueOutcome : IEquatable<StaticFieldV2L
 
 /// <summary>Classifies static-field storage and projects exact metadata literals from definitions alone.</summary>
 /// <remarks>
-/// This draft binder owns the frozen public storage discriminator and the one storage branch that needs no address:
+/// This binder owns the frozen public storage discriminator and the one storage branch that needs no address:
 /// <see cref="StaticFieldV2StorageStrategy.MetadataLiteral"/>. The three address-backed branches are classified here
 /// together with their frozen per-capability requirement facts, but their acquisition belongs to the later runtime
-/// draft slice.
+/// slice.
 /// <para>
-/// Declared coverage boundaries of this draft slice: the physical CustomAttribute table is not modeled, so the
+/// Declared coverage boundaries of this slice: the physical CustomAttribute table is not modeled, so the
 /// thread-relative and context-relative markers are caller-supplied decoded facts; the physical Constant table is not
 /// modeled, so the literal row is a caller-supplied physical fact; and an enum's underlying primitive is derived from
 /// its declared instance <c>value__</c> field alone rather than from a verified <c>System.Enum</c> base chain.
 /// </para>
 /// <para>
-/// W8.1 froze context-relative storage as non-admitted, so no <c>ContextRelativeSlot</c> exists in any draft surface
+/// W8.1 froze context-relative storage as non-admitted, so no <c>ContextRelativeSlot</c> exists in any surface
 /// here and a caller-supplied context marker becomes a typed non-admission carrying
 /// <see cref="StaticFieldV2StorageStrategyOutcome.ContextIdentityNotAttributableCode"/>. W8.1 likewise froze
 /// <c>decimal</c> as a compiler-emitted attribute encoding rather than a Constant-table type, so <c>decimal</c> has no
-/// literal draft kind, no <see cref="MetadataPrimitiveTypeKind"/>, and no admitted Constant type code; a named value
+/// literal kind, no <see cref="MetadataPrimitiveTypeKind"/>, and no admitted Constant type code; a named value
 /// type without a declared instance <c>value__</c> field therefore stops as attribute-encoded rather than decoding.
 /// </para>
 /// </remarks>
@@ -1221,13 +1221,13 @@ public static class StaticFieldV2StorageStrategyBinder
         StaticFieldV2Limits.MaximumArrayRank);
 
     /// <summary>Classifies the storage strategy and frozen capability requirements of one selected declaration.</summary>
-    /// <param name="request">The complete storage-strategy draft classification request.</param>
+    /// <param name="request">The complete storage-strategy classification request.</param>
     /// <remarks>
     /// The decision reads physical FieldAttributes plus the two caller-supplied markers only. A non-static declaration
     /// and a context-relative marker are the two typed non-admissions; among admitted branches a literal wins over a
     /// field RVA, which wins over a thread-relative marker, which wins over an ordinary constructed slot.
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome that is either one admitted strategy or one typed non-admission.</returns>
+    /// <returns>A sealed immutable outcome that is either one admitted strategy or one typed non-admission.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2StorageStrategyOutcome ClassifyStrategy(StaticFieldV2StorageStrategyRequest request)
     {
@@ -1269,15 +1269,15 @@ public static class StaticFieldV2StorageStrategyBinder
     }
 
     /// <summary>Projects one exact static-field literal value from metadata alone.</summary>
-    /// <param name="request">The complete metadata-literal draft projection request.</param>
+    /// <param name="request">The complete metadata-literal projection request.</param>
     /// <remarks>
-    /// The projection decodes the FieldDef signature with the shared bounded Core draft grammar, requires the signature
+    /// The projection decodes the FieldDef signature with the shared bounded Core grammar, requires the signature
     /// type and the physical Constant type code to name the same type, and decodes the raw blob with exact width and
     /// signedness. Floating values are reinterpreted from their exact bit patterns and never from text. The exact null
     /// encoding is ECMA's Constant type <c>CLASS</c> with an all-zero four-byte value. No runtime, thread,
-    /// module-content, slot, or memory capability is consulted, which the retained draft ledger records.
+    /// module-content, slot, or memory capability is consulted, which the retained ledger records.
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome that is either one decoded value or one prefix-free typed stop.</returns>
+    /// <returns>A sealed immutable outcome that is either one decoded value or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2LiteralValueOutcome ProjectLiteral(StaticFieldV2LiteralProjectionRequest request)
     {

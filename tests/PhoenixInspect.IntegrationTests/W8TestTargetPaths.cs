@@ -6,7 +6,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// Resolves the optimized W8 compiler-fixture artifacts produced alongside the integration test build.
 /// </summary>
 /// <remarks>
-/// These paths identify draft physical-oracle artifacts. They are not product discovery rules.
+/// These paths identify physical-oracle artifacts. They are not product discovery rules.
 /// </remarks>
 internal static class W8TestTargetPaths
 {

@@ -5,7 +5,7 @@ namespace PhoenixInspect.W8TestTarget.ScopeEvidence
 {
 
 /// <summary>Supplies an outer alias and frame for nested ImportScope evidence.</summary>
-/// <remarks>This is a draft Portable-PDB fixture, not a binding contract.</remarks>
+/// <remarks>This is a Portable-PDB fixture, not a binding contract.</remarks>
 public static class OuterScopeProbe
 {
     /// <summary>Calls the inner scope while retaining the outer alias target.</summary>
@@ -34,7 +34,7 @@ namespace InnerScope
     using RequestSlot = PhoenixInspect.W8TestTarget.GenericSlot<PhoenixInspect.W8TestTarget.BatchContext>;
 
     /// <summary>Supplies an inner same-name alias and complete lexical-name catalog.</summary>
-    /// <remarks>This is a draft Portable-PDB fixture, not a binding contract.</remarks>
+    /// <remarks>This is a Portable-PDB fixture, not a binding contract.</remarks>
     public static class InnerScopeProbe
     {
         /// <summary>Pauses with active locals after using the inner alias.</summary>

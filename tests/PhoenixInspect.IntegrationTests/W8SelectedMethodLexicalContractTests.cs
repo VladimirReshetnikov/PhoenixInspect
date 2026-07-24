@@ -8,9 +8,9 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises the draft selected-method lexical evidence contracts with complex synthetic physical rows.</summary>
+/// <summary>Exercises the selected-method lexical evidence contracts with complex synthetic physical rows.</summary>
 /// <remarks>
-/// These headless tests freeze prototype invariants, canonical replay behavior, and bounded source-end semantics; they
+/// These headless tests freeze invariants, canonical replay behavior, and bounded source-end semantics; they
 /// do not present the W8 contracts as a final compatibility surface.
 /// </remarks>
 public sealed class W8SelectedMethodLexicalContractTests

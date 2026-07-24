@@ -7,7 +7,7 @@ namespace PhoenixInspect.Core.Abstractions;
 /// </summary>
 /// <typeparam name="TValue">The domain value representation.</typeparam>
 /// <remarks>
-/// The execution core probes for this draft W4.5 capability only after a direct call has been structurally admitted,
+/// The execution core probes for this W4.5 capability only after a direct call has been structurally admitted,
 /// its metadata-ordered argument vector has been validated, and instruction/depth invariants have succeeded. Exact
 /// <c>Int32</c> values pass through unchanged. Each explained-unknown argument receives a parameter-indexed call
 /// transform, and an explained-unknown callee result receives one interpreted-return transform. Lineage remains an

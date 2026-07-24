@@ -11,12 +11,12 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// The ordinary evaluation axes remain independent and explicit, but only truthful cross-axis rows are issuable. This
 /// non-generic envelope exposes no runtime value or capability: its closed value union contains only an exact integer,
 /// a canonical explained-unknown integer lineage, an unchanged W4.7 target fragment, or a payload-free execution
-/// prefix. Construction is assembly-owned during this unstable draft W4 phase; changing an admitted row or canonical
+/// prefix. Construction is assembly-owned during this unstable W4 phase; changing an admitted row or canonical
 /// field requires a new schema version.
 /// </remarks>
 public sealed class CounterfactualExecutionResult
 {
-    /// <summary>Gets the only canonical schema version emitted by the draft W4 execution facade.</summary>
+    /// <summary>Gets the only canonical schema version emitted by the W4 execution facade.</summary>
     public const int CanonicalSchemaVersion = 1;
 
     private readonly ImmutableArray<EvaluationProvenance> provenance;

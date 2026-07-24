@@ -6,7 +6,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// Represents either one validated counterfactual target-exception fragment or one stable projection failure.
 /// </summary>
 /// <remarks>
-/// This draft discriminated result prevents callers from mistaking an arbitrary terminal-looking machine value for
+/// This discriminated result prevents callers from mistaking an arbitrary terminal-looking machine value for
 /// a product outcome. A successful value exists only after the projector validates the complete prior-to-terminal
 /// transition and its bounded event transcript.
 /// </remarks>

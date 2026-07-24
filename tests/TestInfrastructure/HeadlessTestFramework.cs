@@ -6,7 +6,7 @@ namespace PhoenixInspect.Tests.Infrastructure;
 
 /// <summary>
 /// Supplies an execution hook that reasserts the test host's non-interactive Windows failure policy immediately before
-/// xUnit schedules test cases. This draft test-infrastructure framework complements the earlier process-wrapper and
+/// xUnit schedules test cases. This test-infrastructure framework complements the earlier process-wrapper and
 /// module-initializer controls; it is not a product execution contract.
 /// </summary>
 public sealed class HeadlessTestFramework : XunitTestFramework
@@ -23,7 +23,7 @@ public sealed class HeadlessTestFramework : XunitTestFramework
     internal static bool IsExecutionPolicyInitialized { get; private set; }
 
     /// <summary>
-    /// Creates the draft execution-stage adapter that reapplies and verifies the headless process policy immediately
+    /// Creates the execution-stage adapter that reapplies and verifies the headless process policy immediately
     /// before the supplied test cases are scheduled.
     /// </summary>
     /// <param name="assemblyName">The identity of the test assembly that xUnit will execute.</param>

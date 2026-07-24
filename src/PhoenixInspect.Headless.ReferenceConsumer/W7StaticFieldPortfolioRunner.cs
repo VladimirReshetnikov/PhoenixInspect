@@ -11,7 +11,7 @@ internal static class W7StaticFieldPortfolioRunner
     private const int ReportSchemaVersion = 1;
     private const string PortfolioId = "interpreter-w7-static-field-incidents-v1";
     private const string EvidenceCaveat =
-        "Designed synthetic incidents validate prototype behavior and design decisions only; they are not external observations or field-readiness evidence.";
+        "Designed synthetic incidents validate implemented behavior and design decisions only; they are not external observations or field-readiness evidence.";
 
     internal static bool IsRequested(string[] args) =>
         args.Contains("--w7-portfolio-manifest", StringComparer.Ordinal);

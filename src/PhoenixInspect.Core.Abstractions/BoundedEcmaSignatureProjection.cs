@@ -217,7 +217,7 @@ internal readonly record struct BoundedEcmaSignatureDecodeOutcome(
 /// Performs bounded, byte-only structural validation of ECMA-335 type, field, MethodDef, and local signatures.
 /// </summary>
 /// <remarks>
-/// This draft reader deliberately validates signature structure without resolving referenced metadata rows. It accepts
+/// This reader deliberately validates signature structure without resolving referenced metadata rows. It accepts
 /// the runtime's documented signature augmentations: TypeSpec tokens in custom modifiers, custom modifiers at recursive
 /// type positions, and the modern unmanaged function-pointer calling convention. Named CLASS/VALUETYPE nodes still
 /// require TypeDef or TypeRef coded indices. Every entry point requires complete input consumption and applies explicit

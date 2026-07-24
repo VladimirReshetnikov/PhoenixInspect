@@ -17,7 +17,7 @@ namespace PhoenixInspect.Core.Abstractions;
 /// diagnostic display names and process-local object identity. Construction copies the supplied byte span, and
 /// equality compares canonical content rather than object identity.
 ///
-/// This is a draft-phase contract. It admits only the W4 ordinary instance <c>Int32</c> field profile and must be
+/// This is a contract. It admits only the W4 ordinary instance <c>Int32</c> field profile and must be
 /// versioned before its canonical encoding or admitted field shape changes.
 /// </remarks>
 public sealed class FieldLoadEvidence : IEquatable<FieldLoadEvidence>

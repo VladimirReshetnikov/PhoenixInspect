@@ -617,8 +617,8 @@ public sealed class W8V2LexicalCompletenessTests
     }
 
     /// <summary>
-    /// Proves canonical replay, defensive draft copies, guarded private issuance, the closed public surface, and
-    /// emitted draft XML documentation for the whole lexical-completeness surface.
+    /// Proves canonical replay, defensive copies, guarded private issuance, the closed public surface, and
+    /// emitted XML documentation for the whole lexical-completeness surface.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -842,7 +842,7 @@ public sealed class W8V2LexicalCompletenessTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -854,7 +854,7 @@ public sealed class W8V2LexicalCompletenessTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

@@ -14,7 +14,7 @@ using Xunit;
 namespace PhoenixInspect.Tests;
 
 /// <summary>
-/// Differentially executes real optimized C# compiler output projected by SRM through the prototype and CoreCLR.
+/// Differentially executes real optimized C# compiler output projected by SRM through the implementation and CoreCLR.
 /// </summary>
 public sealed class CompilerEmittedDifferentialTests
 {

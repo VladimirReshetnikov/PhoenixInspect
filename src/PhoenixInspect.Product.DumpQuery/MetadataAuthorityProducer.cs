@@ -5,9 +5,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one draft physical-metadata acquisition outcome for a single module.</summary>
+/// <summary>Classifies one physical-metadata acquisition outcome for a single module.</summary>
 /// <remarks>
-/// The draft producer never repairs, defaults, or fabricates a row. Every non-exact or invalid outcome mirrors the
+/// The producer never repairs, defaults, or fabricates a row. Every non-exact or invalid outcome mirrors the
 /// disposition of the already-declared catalog that stopped, or names the physical read that could not be completed.
 /// </remarks>
 public enum MetadataModuleAcquisitionResultKind
@@ -22,14 +22,14 @@ public enum MetadataModuleAcquisitionResultKind
     Invalid = 3,
 }
 
-/// <summary>Names the exact draft acquisition step that produced a non-exact or invalid module outcome.</summary>
+/// <summary>Names the exact acquisition step that produced a non-exact or invalid module outcome.</summary>
 /// <remarks>
 /// The stage identifies WHICH catalog or physical table stopped. It is deliberately one-to-one with the catalogs the
-/// draft producer issues, so a later host never has to infer the stop site from a message.
+/// producer issues, so a later host never has to infer the stop site from a message.
 /// </remarks>
 public enum MetadataModuleAcquisitionStage
 {
-    /// <summary>No stage applies to an exact draft acquisition.</summary>
+    /// <summary>No stage applies to an exact acquisition.</summary>
     None = 0,
 
     /// <summary>The caller-supplied metadata reader seam could not surface a readable metadata image.</summary>
@@ -99,14 +99,14 @@ public enum MetadataModuleAcquisitionStage
     ModuleReferenceTableSet = 22,
 }
 
-/// <summary>Identifies why one draft module acquisition stopped at its named stage.</summary>
+/// <summary>Identifies why one module acquisition stopped at its named stage.</summary>
 /// <remarks>
 /// The values stay prefix-free: an unreadable image, a physically rejected row, and a catalog-declared stop are three
 /// distinct dispositions and never overlap.
 /// </remarks>
 public enum MetadataModuleAcquisitionIssue
 {
-    /// <summary>No issue applies to an exact draft acquisition.</summary>
+    /// <summary>No issue applies to an exact acquisition.</summary>
     None = 0,
 
     /// <summary>The reader seam threw a physical image fault before any row could be observed.</summary>
@@ -115,14 +115,14 @@ public enum MetadataModuleAcquisitionIssue
     /// <summary>An already-declared physical row contract rejected the exact bytes read from the module.</summary>
     PhysicalRowRejected = 2,
 
-    /// <summary>The named catalog returned its own non-exact draft disposition.</summary>
+    /// <summary>The named catalog returned its own non-exact disposition.</summary>
     CatalogNonExact = 3,
 
-    /// <summary>The named catalog returned its own invalid draft disposition.</summary>
+    /// <summary>The named catalog returned its own invalid disposition.</summary>
     CatalogInvalid = 4,
 }
 
-/// <summary>Classifies one draft multi-module authority portfolio acquisition outcome.</summary>
+/// <summary>Classifies one multi-module authority portfolio acquisition outcome.</summary>
 /// <remarks>The portfolio outcome never invents a module; it mirrors the first composed portfolio that stopped.</remarks>
 public enum MetadataAuthorityPortfolioResultKind
 {
@@ -132,15 +132,15 @@ public enum MetadataAuthorityPortfolioResultKind
     /// <summary>A module acquisition or a composed portfolio stopped before an exact result.</summary>
     NonExact = 2,
 
-    /// <summary>A module acquisition or a composed portfolio retained contradictory draft evidence.</summary>
+    /// <summary>A module acquisition or a composed portfolio retained contradictory evidence.</summary>
     Invalid = 3,
 }
 
-/// <summary>Names the exact draft composition step that produced a non-exact or invalid portfolio outcome.</summary>
+/// <summary>Names the exact composition step that produced a non-exact or invalid portfolio outcome.</summary>
 /// <remarks>The stage is one-to-one with the already-declared portfolio contracts the producer composes.</remarks>
 public enum MetadataAuthorityPortfolioStage
 {
-    /// <summary>No stage applies to an exact draft portfolio.</summary>
+    /// <summary>No stage applies to an exact portfolio.</summary>
     None = 0,
 
     /// <summary>One requested module stopped during its own per-module acquisition.</summary>
@@ -162,11 +162,11 @@ public enum MetadataAuthorityPortfolioStage
     ConstraintTargetResolutionPortfolio = 6,
 }
 
-/// <summary>Identifies why one draft authority portfolio stopped at its named stage.</summary>
+/// <summary>Identifies why one authority portfolio stopped at its named stage.</summary>
 /// <remarks>The values stay prefix-free across request-shape faults, module stops, and portfolio dispositions.</remarks>
 public enum MetadataAuthorityPortfolioIssue
 {
-    /// <summary>No issue applies to an exact draft portfolio.</summary>
+    /// <summary>No issue applies to an exact portfolio.</summary>
     None = 0,
 
     /// <summary>The supplied request vector was default rather than explicitly initialized.</summary>
@@ -181,17 +181,17 @@ public enum MetadataAuthorityPortfolioIssue
     /// <summary>One requested module stopped during acquisition, so no portfolio was composed.</summary>
     ModuleAcquisitionStopped = 4,
 
-    /// <summary>The named portfolio returned its own non-exact draft disposition.</summary>
+    /// <summary>The named portfolio returned its own non-exact disposition.</summary>
     PortfolioNonExact = 5,
 
-    /// <summary>The named portfolio returned its own invalid draft disposition.</summary>
+    /// <summary>The named portfolio returned its own invalid disposition.</summary>
     PortfolioInvalid = 6,
 }
 
-/// <summary>Identifies one module whose physical metadata tables the draft producer should acquire.</summary>
+/// <summary>Identifies one module whose physical metadata tables the producer should acquire.</summary>
 /// <remarks>
 /// The request pairs one already-established metadata-module identity with a caller-supplied reader seam. The seam is
-/// a delegate rather than a path so a host can drive the draft producer from an open image, a mapped dump range, or a
+/// a delegate rather than a path so a host can drive the producer from an open image, a mapped dump range, or a
 /// file on disk without this contract owning artifact discovery, file lifetime, or disposal.
 /// </remarks>
 public sealed class MetadataModuleAcquisitionRequest
@@ -210,17 +210,17 @@ public sealed class MetadataModuleAcquisitionRequest
     /// <summary>Gets the caller-owned seam returning a reader over that module's complete metadata image.</summary>
     public Func<MetadataReader> MetadataReaderAccessor { get; }
 
-    /// <summary>Creates one draft single-module acquisition request.</summary>
+    /// <summary>Creates one single-module acquisition request.</summary>
     /// <param name="metadataModule">
     /// The exact metadata module identity, including its complete counted metadata content, Module row, and containing
-    /// assembly. The draft producer does not re-derive this identity and never mutates it.
+    /// assembly. The producer does not re-derive this identity and never mutates it.
     /// </param>
     /// <param name="metadataReaderAccessor">
     /// A caller-owned delegate returning a reader over exactly the metadata image named by
     /// <paramref name="metadataModule"/>. The delegate is invoked once per acquisition and may throw; a throwing seam
     /// becomes an image-unreadable typed stop rather than an exception escaping the producer.
     /// </param>
-    /// <returns>A sealed immutable draft request.</returns>
+    /// <returns>A sealed immutable request.</returns>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     public static MetadataModuleAcquisitionRequest Create(
         StaticFieldMetadataModuleIdentity metadataModule,
@@ -232,10 +232,10 @@ public sealed class MetadataModuleAcquisitionRequest
     }
 }
 
-/// <summary>Freezes the draft per-module result of acquiring every W8.2 authority catalog from physical tables.</summary>
+/// <summary>Freezes the per-module result of acquiring every W8.2 authority catalog from physical tables.</summary>
 /// <remarks>
-/// This sealed draft outcome retains only already-declared catalog identities. It holds no row vector of its own, so
-/// every stop is prefix-free by construction: the catalogs reached before the stop are complete draft identities, the
+/// This sealed outcome retains only already-declared catalog identities. It holds no row vector of its own, so
+/// every stop is prefix-free by construction: the catalogs reached before the stop are complete identities, the
 /// stopping catalog carries its own typed issue, and every later slot is null rather than defaulted.
 /// </remarks>
 public sealed class MetadataModuleAcquisitionOutcome : IEquatable<MetadataModuleAcquisitionOutcome>
@@ -307,16 +307,16 @@ public sealed class MetadataModuleAcquisitionOutcome : IEquatable<MetadataModule
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft per-module acquisition is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this per-module acquisition is exact, non-exact, or invalid.</summary>
     public MetadataModuleAcquisitionResultKind ResultKind { get; }
 
-    /// <summary>Gets the draft acquisition stage that stopped, or none for an exact acquisition.</summary>
+    /// <summary>Gets the acquisition stage that stopped, or none for an exact acquisition.</summary>
     public MetadataModuleAcquisitionStage Stage { get; }
 
-    /// <summary>Gets the typed draft acquisition issue, or none for an exact acquisition.</summary>
+    /// <summary>Gets the typed acquisition issue, or none for an exact acquisition.</summary>
     public MetadataModuleAcquisitionIssue Issue { get; }
 
-    /// <summary>Gets the exact metadata module named by the originating draft request.</summary>
+    /// <summary>Gets the exact metadata module named by the originating request.</summary>
     public StaticFieldMetadataModuleIdentity MetadataModule { get; }
 
     /// <summary>Gets the physically derived source ends, or null when acquisition stopped earlier.</summary>
@@ -385,25 +385,25 @@ public sealed class MetadataModuleAcquisitionOutcome : IEquatable<MetadataModule
     /// <summary>Gets whether every per-module catalog was issued exactly.</summary>
     public bool IsExact => ResultKind == MetadataModuleAcquisitionResultKind.Exact;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two draft per-module acquisition outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two per-module acquisition outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataModuleAcquisitionOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft per-module acquisition equality against an arbitrary object.</summary>
+    /// <summary>Tests per-module acquisition equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataModuleAcquisitionOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataModuleAcquisitionOutcome Create(
@@ -454,7 +454,7 @@ public sealed class MetadataModuleAcquisitionOutcome : IEquatable<MetadataModule
     }
 }
 
-/// <summary>Freezes the draft multi-module result of composing every W8.2 authority portfolio from real modules.</summary>
+/// <summary>Freezes the multi-module result of composing every W8.2 authority portfolio from real modules.</summary>
 /// <remarks>
 /// The outcome retains one per-module acquisition outcome for every request plus the already-declared portfolio
 /// identities in composition order. Ancestry and constraint-target resolution are siblings over the same exact TypeRef
@@ -509,16 +509,16 @@ public sealed class MetadataAuthorityPortfolioOutcome : IEquatable<MetadataAutho
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft multi-module acquisition is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this multi-module acquisition is exact, non-exact, or invalid.</summary>
     public MetadataAuthorityPortfolioResultKind ResultKind { get; }
 
-    /// <summary>Gets the draft composition stage that stopped, or none for an exact portfolio.</summary>
+    /// <summary>Gets the composition stage that stopped, or none for an exact portfolio.</summary>
     public MetadataAuthorityPortfolioStage Stage { get; }
 
-    /// <summary>Gets the typed draft composition issue, or none for an exact portfolio.</summary>
+    /// <summary>Gets the typed composition issue, or none for an exact portfolio.</summary>
     public MetadataAuthorityPortfolioIssue Issue { get; }
 
-    /// <summary>Gets a defensive request-order copy of every per-module draft acquisition outcome.</summary>
+    /// <summary>Gets a defensive request-order copy of every per-module acquisition outcome.</summary>
     public ImmutableArray<MetadataModuleAcquisitionOutcome> ModuleOutcomes =>
         ExpressionV2ContractEncoding.Copy(moduleOutcomes);
 
@@ -543,25 +543,25 @@ public sealed class MetadataAuthorityPortfolioOutcome : IEquatable<MetadataAutho
     /// <summary>Gets whether every module and every composed portfolio is exact.</summary>
     public bool IsExact => ResultKind == MetadataAuthorityPortfolioResultKind.Exact;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft portfolio-outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical portfolio-outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft portfolio-outcome bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical portfolio-outcome bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two draft multi-module portfolio outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two multi-module portfolio outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAuthorityPortfolioOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft multi-module portfolio equality against an arbitrary object.</summary>
+    /// <summary>Tests multi-module portfolio equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAuthorityPortfolioOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft portfolio content.</summary>
-    /// <returns>A hash code for this canonical draft portfolio outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical portfolio content.</summary>
+    /// <returns>A hash code for this canonical portfolio outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataAuthorityPortfolioOutcome Create(
@@ -597,10 +597,10 @@ public sealed class MetadataAuthorityPortfolioOutcome : IEquatable<MetadataAutho
     }
 }
 
-/// <summary>Issues every draft W8.2 authority catalog for real modules straight from their physical metadata tables.</summary>
+/// <summary>Issues every W8.2 authority catalog for real modules straight from their physical metadata tables.</summary>
 /// <remarks>
 /// <para>
-/// This draft producer is an acquisition seam and nothing else. It reads exact table row counts from a
+/// This producer is an acquisition seam and nothing else. It reads exact table row counts from a
 /// <see cref="MetadataReader"/>, emits one physical observation per RID in physical order, converts every ECMA coded
 /// index back to its raw metadata token, and hands the vectors to the already-declared guarded <c>Create</c> entry
 /// points. It performs no binding, no name interpretation, no ancestry walking, and no runtime construction; every
@@ -622,12 +622,12 @@ public sealed class MetadataAuthorityPortfolioOutcome : IEquatable<MetadataAutho
 /// </remarks>
 public static class MetadataAuthorityProducer
 {
-    /// <summary>Acquires every per-module draft authority catalog for one real module.</summary>
+    /// <summary>Acquires every per-module authority catalog for one real module.</summary>
     /// <param name="request">
-    /// The draft request naming the exact metadata module and the caller-owned reader seam over its metadata image.
+    /// The request naming the exact metadata module and the caller-owned reader seam over its metadata image.
     /// </param>
     /// <returns>
-    /// An exact per-module draft outcome retaining every catalog, or the first typed stop naming the stage that could
+    /// An exact per-module outcome retaining every catalog, or the first typed stop naming the stage that could
     /// not be completed exactly.
     /// </returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
@@ -686,13 +686,13 @@ public static class MetadataAuthorityProducer
         }
     }
 
-    /// <summary>Acquires every requested module and composes every multi-module draft authority portfolio.</summary>
+    /// <summary>Acquires every requested module and composes every multi-module authority portfolio.</summary>
     /// <param name="requests">
     /// The explicitly initialized request vector. Each entry names one distinct exact metadata module; the composition
     /// order of every portfolio follows this vector.
     /// </param>
     /// <returns>
-    /// An exact draft portfolio outcome retaining the compatibility, chain, resolution, ancestry, and constraint-target
+    /// An exact portfolio outcome retaining the compatibility, chain, resolution, ancestry, and constraint-target
     /// portfolios plus every per-module outcome, or the first typed stop naming the stage that could not be composed.
     /// </returns>
     public static MetadataAuthorityPortfolioOutcome AcquirePortfolio(
@@ -856,10 +856,10 @@ public static class MetadataAuthorityProducer
             constraintTargetPortfolio);
     }
 
-    /// <summary>Acquires one draft manifest metadata-module identity from physical Module and Assembly rows.</summary>
+    /// <summary>Acquires one manifest metadata-module identity from physical Module and Assembly rows.</summary>
     /// <param name="moduleInstance">
     /// The caller-owned physical placement of the loaded module. A file on disk carries no runtime placement, so the
-    /// draft producer never invents one.
+    /// producer never invents one.
     /// </param>
     /// <param name="metadataReader">A reader over exactly the metadata image described by the placement.</param>
     /// <param name="metadataImageBytes">

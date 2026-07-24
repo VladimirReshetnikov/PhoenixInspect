@@ -10,7 +10,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// <remarks>
 /// The value is content-equal and canonical. It retains read geometry for every evidence disposition while exposing a
 /// scalar only for exactly four exact little-endian bytes. Partial and unavailable observations additionally retain
-/// the Core evidence value required by the future execution memory adapter. This draft schema is deliberately limited
+/// the Core evidence value required by the future execution memory adapter. This schema is deliberately limited
 /// to W4's ordinary instance <c>Int32</c> profile.
 /// </remarks>
 public sealed class CounterfactualFieldObservation : IEquatable<CounterfactualFieldObservation>

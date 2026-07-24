@@ -44,7 +44,7 @@ internal static class Program
 }
 
 /// <summary>Materializes every mandatory W8.1 construction and value before the full dump is written.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class W8TruthGate
 {
     private static AssemblyLoadContext? retainedCollectibleLoadContext;
@@ -186,7 +186,7 @@ public static class W8TruthGate
 }
 
 /// <summary>Supplies a public parameterless-constructor constraint witness.</summary>
-/// <remarks>This is a draft emitted fixture type, not a product contract.</remarks>
+/// <remarks>This is an emitted fixture type, not a product contract.</remarks>
 public sealed class ConstructibleContext
 {
     /// <summary>Initializes the constraint witness.</summary>
@@ -196,7 +196,7 @@ public sealed class ConstructibleContext
 }
 
 /// <summary>Supplies selected generic-type, generic-method, parameter, local, and import evidence.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class W8FrameProbe
 {
     /// <summary>Pauses inside one generic method after retaining all named values.</summary>

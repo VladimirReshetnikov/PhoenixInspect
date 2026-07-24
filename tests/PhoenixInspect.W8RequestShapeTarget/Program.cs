@@ -29,7 +29,7 @@ internal static class Program
 }
 
 /// <summary>Holds the sole pause the request-shape target uses to signal dump readiness.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class RequestPause
 {
     /// <summary>Signals readiness and pauses so an external writer can capture one full dump.</summary>
@@ -49,7 +49,7 @@ public static class RequestPause
 }
 
 /// <summary>Materializes the request-shape object graph and enters the selected truth-gate profile.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class RequestShapeGate
 {
     /// <summary>Initializes the request-shape physical fixture and enters the selected profile.</summary>
@@ -89,7 +89,7 @@ public static class RequestShapeGate
 }
 
 /// <summary>Parks one alternative worker thread with its own thread-relative sentinel before the main pause.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class RequestThreadWorker
 {
     /// <summary>Stores the distinct sentinel the parked worker writes into its own thread-relative slot.</summary>
@@ -126,7 +126,7 @@ public static class RequestThreadWorker
 }
 
 /// <summary>Pauses where the bare imported spelling has no higher-precedence blocker.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class BareImportProbe
 {
     /// <summary>Reads the bare imported sentinel and pauses for the full dump.</summary>
@@ -137,7 +137,7 @@ public static class BareImportProbe
 }
 
 /// <summary>Pauses where an active local shadows the identically spelled imported static field.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class LocalShadowProbe
 {
     /// <summary>Declares the shadowing local and pauses for the full dump.</summary>

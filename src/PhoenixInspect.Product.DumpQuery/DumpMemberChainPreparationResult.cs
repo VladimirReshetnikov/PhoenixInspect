@@ -7,7 +7,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Retains one typed stopping boundary when W6 preparation cannot issue a complete member-chain plan.</summary>
 /// <remarks>
-/// This draft value carries no partial plan and no target-derived value. Later product projection can preserve its
+/// This value carries no partial plan and no target-derived value. Later product projection can preserve its
 /// independent evidence status, issue, reads, bounds, stable code, and explanation.
 /// </remarks>
 public sealed class DumpMemberChainPreparationFailure
@@ -72,7 +72,7 @@ public sealed class DumpMemberChainPreparationFailure
 }
 
 /// <summary>Contains either one complete immutable W6 member-chain plan or one typed value-free failure.</summary>
-/// <remarks>This draft result never exposes a partial plan.</remarks>
+/// <remarks>This result never exposes a partial plan.</remarks>
 public sealed class DumpMemberChainPreparationResult
 {
     private DumpMemberChainPreparationResult(

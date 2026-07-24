@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>
-/// Performs the sole complete Roslyn parse for the draft W7 static-field expression profile and detaches the admitted
+/// Performs the sole complete Roslyn parse for the W7 static-field expression profile and detaches the admitted
 /// tree into project-owned immutable syntax contracts.
 /// </summary>
 /// <remarks>
@@ -61,7 +61,7 @@ public static class StaticFieldExpressionParser
     /// outcome. Rejections never expose a partial descriptor.
     /// </returns>
     /// <remarks>
-    /// The draft operation is deterministic and bounded. It performs no frame/PDB lookup, metadata traversal, module
+    /// The operation is deterministic and bounded. It performs no frame/PDB lookup, metadata traversal, module
     /// lookup, static storage operation, memory read, heap scan, or target-code execution.
     /// </remarks>
     public static StaticFieldSyntaxOutcome Parse(string? expression)

@@ -10,13 +10,13 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// </summary>
 /// <typeparam name="TMemory">The persistent memory-snapshot type proposed by the host binding.</typeparam>
 /// <remarks>
-/// This draft W4.8 boundary deliberately performs no semantic or capability validation. Default arrays, null
+/// This W4.8 boundary deliberately performs no semantic or capability validation. Default arrays, null
 /// elements, invalid structural handles, incompatible receiver roles, invalid limits, and missing operational
 /// bindings remain representable so <see cref="CounterfactualMethodRunner{TMemory}.Prepare"/> can turn ordinary host
 /// mistakes into stable multi-axis failures. Initialized arrays are snapshotted defensively without normalizing a
 /// default array to empty. Public construction remains synthetic-only; dump candidates are reserved for an internal
 /// evidence adapter that has already established the validated dump-input boundary. Caveat: other input shapes are
-/// outside this prototype contract.
+/// outside this implementation contract.
 /// </remarks>
 public sealed class CounterfactualMethodPreparationCandidate<TMemory>
     where TMemory : IPersistentMemoryState<TMemory>

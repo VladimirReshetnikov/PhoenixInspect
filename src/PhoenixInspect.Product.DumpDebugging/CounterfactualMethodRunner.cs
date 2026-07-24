@@ -10,7 +10,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// </summary>
 /// <typeparam name="TMemory">The persistent memory snapshot type privately retained by successful plans.</typeparam>
 /// <remarks>
-/// The current draft validates raw host data without throwing for ordinary malformed inputs, invokes graph preparation
+/// The current runner validates raw host data without throwing for ordinary malformed inputs, invokes graph preparation
 /// exactly once, and executes only a complete privately issued plan. Execution uses a fresh machine, the plan's frozen
 /// runtime domain and memory binding, deterministic instruction accounting, and a resolver that rejects any accidental
 /// execution-time resolution. Plans are privately stamped by this runner instance so null and foreign inputs are
@@ -242,7 +242,7 @@ public sealed class CounterfactualMethodRunner<TMemory>
     /// and diagnostics rather than exposing exception-controlled payload.
     /// </returns>
     /// <remarks>
-    /// This is a draft W4 product facade, not a general-purpose machine host. The run is read-only, branchless, finite,
+    /// This is a W4 product facade, not a general-purpose machine host. The run is read-only, branchless, finite,
     /// and bound to the exact graph, evidence, model capabilities, and provenance domain frozen during preparation.
     /// Its public and canonical shape remains unstable until the conceptual-design phase closes.
     /// </remarks>

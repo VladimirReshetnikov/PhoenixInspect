@@ -7,7 +7,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises guarded authority-to-W7 TypeDef draft compatibility with synthetic metadata catalogs.</summary>
+/// <summary>Exercises guarded authority-to-W7 TypeDef compatibility with synthetic metadata catalogs.</summary>
 public sealed class W8W7TypeDefinitionCompatibilityContractTests
 {
     private const int OuterTypeRid = 2;
@@ -144,9 +144,9 @@ public sealed class W8W7TypeDefinitionCompatibilityContractTests
             methodPointerCertificate.Candidate.MethodListEndExclusiveRowId);
     }
 
-    /// <summary>Proves each scalar authority field reports a stable first draft mismatch.</summary>
+    /// <summary>Proves each scalar authority field reports a stable first mismatch.</summary>
     /// <param name="mutation">The one candidate scalar changed from the exact authority row.</param>
-    /// <param name="expectedIssue">The expected first typed draft mismatch.</param>
+    /// <param name="expectedIssue">The expected first typed mismatch.</param>
     [Theory]
     [InlineData(CandidateMutation.Source, MetadataW7TypeDefinitionCompatibilityIssue.SourceMismatch)]
     [InlineData(CandidateMutation.Token, MetadataW7TypeDefinitionCompatibilityIssue.TypeDefinitionTokenMismatch)]
@@ -297,7 +297,7 @@ public sealed class W8W7TypeDefinitionCompatibilityContractTests
 
     /// <summary>
     /// Proves canonical replay, defensive copies, fixed-size row references, and private certificate issuance for the
-    /// draft catalog family.
+    /// catalog family.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -369,7 +369,7 @@ public sealed class W8W7TypeDefinitionCompatibilityContractTests
             createParameters[1].ParameterType);
     }
 
-    /// <summary>Proves every public compatibility-catalog draft type and method has emitted XML documentation.</summary>
+    /// <summary>Proves every public compatibility-catalog type and method has emitted XML documentation.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Compatibility_public_surface_has_draft_XML()
@@ -392,7 +392,7 @@ public sealed class W8W7TypeDefinitionCompatibilityContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -405,7 +405,7 @@ public sealed class W8W7TypeDefinitionCompatibilityContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
 
             Assert.Empty(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
@@ -539,7 +539,7 @@ public sealed class W8W7TypeDefinitionCompatibilityContractTests
 
     private static int MethodToken(int rowId) => 0x06000000 | rowId;
 
-    /// <summary>Identifies the one W7 candidate scalar changed by a synthetic draft comparison case.</summary>
+    /// <summary>Identifies the one W7 candidate scalar changed by a synthetic comparison case.</summary>
     public enum CandidateMutation
     {
         /// <summary>Changes the exact metadata module.</summary>

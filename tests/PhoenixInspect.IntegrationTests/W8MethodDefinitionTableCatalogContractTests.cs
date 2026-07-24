@@ -8,13 +8,13 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises complete pointer-aware MethodDef ownership and shared-grammar declaration draft projection.</summary>
+/// <summary>Exercises complete pointer-aware MethodDef ownership and shared-grammar declaration projection.</summary>
 public sealed class W8MethodDefinitionTableCatalogContractTests
 {
     private const string SnapshotDigest =
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
-    /// <summary>Proves direct and reordered MethodPtr ownership cover all four receiver and generic draft forms.</summary>
+    /// <summary>Proves direct and reordered MethodPtr ownership cover all four receiver and generic forms.</summary>
     /// <param name="useMethodPointers">Whether ownership follows the synthetic reordered MethodPtr table.</param>
     [Theory]
     [InlineData(false)]
@@ -133,7 +133,7 @@ public sealed class W8MethodDefinitionTableCatalogContractTests
         Assert.InRange(catalog.CanonicalBytes.Length, componentLength, componentLength + 1024);
     }
 
-    /// <summary>Proves missing and duplicate ownership dependencies become typed prefix-free invalid draft results.</summary>
+    /// <summary>Proves missing and duplicate ownership dependencies become typed prefix-free invalid results.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Ownership_requires_one_derived_TypeDef_for_every_MethodDef()
@@ -203,7 +203,7 @@ public sealed class W8MethodDefinitionTableCatalogContractTests
         AssertInvalid(wrongTable, MetadataMethodDefinitionTableIssue.OwnershipTargetOutOfRange);
     }
 
-    /// <summary>Proves malformed, trailing, and receiver-contradictory signatures expose no derived draft prefix.</summary>
+    /// <summary>Proves malformed, trailing, and receiver-contradictory signatures expose no derived prefix.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Signature_and_receiver_contradictions_are_typed_and_prefix_free()
@@ -238,7 +238,7 @@ public sealed class W8MethodDefinitionTableCatalogContractTests
         AssertInvalid(explicitReceiver, MetadataMethodDefinitionTableIssue.SignatureInvalid, 0x06000002);
     }
 
-    /// <summary>Proves source count, RID order, module identity, and dependency stops remain prefix-free draft facts.</summary>
+    /// <summary>Proves source count, RID order, module identity, and dependency stops remain prefix-free facts.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Complete_source_and_physical_RID_order_are_required()
@@ -295,7 +295,7 @@ public sealed class W8MethodDefinitionTableCatalogContractTests
         Assert.Equal(StaticFieldV2Limits.MaximumMethodDefinitionRowCount, stopped.ReachedBound.Value);
     }
 
-    /// <summary>Proves byte, depth, generic-argument, parameter, and array-rank draft caps retain cap-plus-one facts.</summary>
+    /// <summary>Proves byte, depth, generic-argument, parameter, and array-rank caps retain cap-plus-one facts.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Shared_signature_grammar_reports_each_reachable_MethodDef_bound()
@@ -391,7 +391,7 @@ public sealed class W8MethodDefinitionTableCatalogContractTests
             StaticFieldV2Limits.MaximumArrayRank + 1);
     }
 
-    /// <summary>Proves input aliases, returned arrays, signatures, and canonical draft bytes cannot change replay.</summary>
+    /// <summary>Proves input aliases, returned arrays, signatures, and canonical bytes cannot change replay.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Exact_catalog_replays_canonically_and_copies_every_mutable_boundary()
@@ -448,7 +448,7 @@ public sealed class W8MethodDefinitionTableCatalogContractTests
         Assert.NotEqual(returnedCatalogBytes[0], catalog.CanonicalBytes[0]);
     }
 
-    /// <summary>Proves the new public draft surface exposes physical observations and catalog-only derived rows.</summary>
+    /// <summary>Proves the new public surface exposes physical observations and catalog-only derived rows.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void MethodDefinition_table_surface_has_draft_XML_and_guarded_exact_issuance()
@@ -571,7 +571,7 @@ public sealed class W8MethodDefinitionTableCatalogContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -584,7 +584,7 @@ public sealed class W8MethodDefinitionTableCatalogContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

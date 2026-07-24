@@ -3,7 +3,7 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies the physical form of one authority-derived immediate-base draft edge.</summary>
+/// <summary>Classifies the physical form of one authority-derived immediate-base edge.</summary>
 /// <remarks>Every value is a complete derived row fact rather than a catalog failure.</remarks>
 public enum MetadataImmediateBaseEdgeKind
 {
@@ -23,7 +23,7 @@ public enum MetadataImmediateBaseEdgeKind
     TypeSpecification = 5,
 }
 
-/// <summary>Freezes one guarded authority-derived immediate-base draft edge.</summary>
+/// <summary>Freezes one guarded authority-derived immediate-base edge.</summary>
 /// <remarks>
 /// The edge is derived from the exact physical Extends column and the resolution portfolio only. A generic TypeSpec
 /// base retains its complete signature row without decoding; role semantics never flow through it.
@@ -67,46 +67,46 @@ public sealed class MetadataImmediateBaseEdgeAuthorityIdentity :
     /// <summary>Gets the exact metadata module owning the physical Extends column.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule { get; }
 
-    /// <summary>Gets the authority-issued TypeDef owning this draft edge.</summary>
+    /// <summary>Gets the authority-issued TypeDef owning this edge.</summary>
     public MetadataTypeDefinitionAuthorityIdentity Owner { get; }
 
-    /// <summary>Gets the complete typed physical form of this draft edge.</summary>
+    /// <summary>Gets the complete typed physical form of this edge.</summary>
     public MetadataImmediateBaseEdgeKind Kind { get; }
 
     /// <summary>Gets the exact raw Extends token, or null for a nil column.</summary>
     public int? ExtendsMetadataToken => Owner.TableRow.Observation.ExtendsMetadataToken;
 
-    /// <summary>Gets the exact base target module for a named resolved draft edge, otherwise null.</summary>
+    /// <summary>Gets the exact base target module for a named resolved edge, otherwise null.</summary>
     public StaticFieldMetadataModuleIdentity? TargetModule { get; }
 
-    /// <summary>Gets the exact authority-issued base TypeDef for a named resolved draft edge, otherwise null.</summary>
+    /// <summary>Gets the exact authority-issued base TypeDef for a named resolved edge, otherwise null.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? TargetTypeDefinition { get; }
 
-    /// <summary>Gets the retained TypeRef draft resolution row for a reference-formed edge, otherwise null.</summary>
+    /// <summary>Gets the retained TypeRef resolution row for a reference-formed edge, otherwise null.</summary>
     public MetadataTypeReferenceResolutionIdentity? ReferenceResolution { get; }
 
-    /// <summary>Gets the retained physical TypeSpec draft row for a generic base, otherwise null.</summary>
+    /// <summary>Gets the retained physical TypeSpec row for a generic base, otherwise null.</summary>
     public MetadataTypeSpecificationPhysicalRowIdentity? GenericBaseRow { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft edge bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical edge bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft edge bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical edge bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two immediate-base draft edges.</summary>
-    /// <param name="other">The other draft edge.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two immediate-base edges.</summary>
+    /// <param name="other">The other edge.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataImmediateBaseEdgeAuthorityIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests immediate-base draft edge equality against an arbitrary object.</summary>
+    /// <summary>Tests immediate-base edge equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an edge with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an edge with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataImmediateBaseEdgeAuthorityIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this immediate-base draft edge.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this immediate-base edge.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataImmediateBaseEdgeAuthorityIdentity Create(
@@ -144,11 +144,11 @@ public sealed class MetadataImmediateBaseEdgeAuthorityIdentity :
     }
 }
 
-/// <summary>Classifies one prerequisite stop or completion state for the core-role draft selection.</summary>
+/// <summary>Classifies one prerequisite stop or completion state for the core-role selection.</summary>
 /// <remarks>Selection issues stop the issuing portfolio because later role semantics depend on them.</remarks>
 public enum MetadataCoreRoleSelectionIssue
 {
-    /// <summary>No issue applies to an exact core-role draft selection.</summary>
+    /// <summary>No issue applies to an exact core-role selection.</summary>
     None = 0,
 
     /// <summary>No portfolio module defines a nil-extends non-interface top-level System.Object.</summary>
@@ -167,7 +167,7 @@ public enum MetadataCoreRoleSelectionIssue
     RoleBaseEdgeMismatch = 5,
 }
 
-/// <summary>Freezes the exact runtime core-role draft selection for one resolution portfolio.</summary>
+/// <summary>Freezes the exact runtime core-role selection for one resolution portfolio.</summary>
 /// <remarks>
 /// The five role definitions are physical selections: exactly one top-level System.Object with a nil Extends column,
 /// and exactly one System.ValueType, System.Enum, System.Delegate, and System.MulticastDelegate whose immediate bases
@@ -210,31 +210,31 @@ public sealed class MetadataCoreRoleSelectionIdentity :
     /// <summary>Gets the exact metadata module defining every selected core role.</summary>
     public StaticFieldMetadataModuleIdentity CoreModule { get; }
 
-    /// <summary>Gets the exact authority-issued System.Object draft definition.</summary>
+    /// <summary>Gets the exact authority-issued System.Object definition.</summary>
     public MetadataTypeDefinitionAuthorityIdentity SystemObject { get; }
 
-    /// <summary>Gets the exact authority-issued System.ValueType draft definition.</summary>
+    /// <summary>Gets the exact authority-issued System.ValueType definition.</summary>
     public MetadataTypeDefinitionAuthorityIdentity SystemValueType { get; }
 
-    /// <summary>Gets the exact authority-issued System.Enum draft definition.</summary>
+    /// <summary>Gets the exact authority-issued System.Enum definition.</summary>
     public MetadataTypeDefinitionAuthorityIdentity SystemEnum { get; }
 
-    /// <summary>Gets the exact authority-issued System.Delegate draft definition.</summary>
+    /// <summary>Gets the exact authority-issued System.Delegate definition.</summary>
     public MetadataTypeDefinitionAuthorityIdentity SystemDelegate { get; }
 
-    /// <summary>Gets the exact authority-issued System.MulticastDelegate draft definition.</summary>
+    /// <summary>Gets the exact authority-issued System.MulticastDelegate definition.</summary>
     public MetadataTypeDefinitionAuthorityIdentity SystemMulticastDelegate { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft selection bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical selection bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft selection bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical selection bytes.</summary>
     public string Sha256 { get; }
 
     /// <summary>Tests whether one authority TypeDef in one module is one of the five selected role definitions.</summary>
     /// <param name="module">The exact module containing the candidate definition.</param>
     /// <param name="typeDefinition">The authority-issued candidate definition.</param>
-    /// <returns><see langword="true"/> only for the exact selected core-role draft definitions.</returns>
+    /// <returns><see langword="true"/> only for the exact selected core-role definitions.</returns>
     public bool IsRoleDefinition(
         StaticFieldMetadataModuleIdentity module,
         MetadataTypeDefinitionAuthorityIdentity typeDefinition)
@@ -249,19 +249,19 @@ public sealed class MetadataCoreRoleSelectionIdentity :
              typeDefinition.Equals(SystemMulticastDelegate));
     }
 
-    /// <summary>Tests canonical equality between two core-role draft selections.</summary>
-    /// <param name="other">The other draft selection.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two core-role selections.</summary>
+    /// <param name="other">The other selection.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataCoreRoleSelectionIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests core-role draft selection equality against an arbitrary object.</summary>
+    /// <summary>Tests core-role selection equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a selection with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a selection with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataCoreRoleSelectionIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this core-role draft selection.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this core-role selection.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataCoreRoleSelectionIdentity Create(
@@ -289,7 +289,7 @@ public sealed class MetadataCoreRoleSelectionIdentity :
     }
 }
 
-/// <summary>Classifies the authority-derived semantic role of one TypeDef draft row.</summary>
+/// <summary>Classifies the authority-derived semantic role of one TypeDef row.</summary>
 /// <remarks>
 /// Value-type, enum, and delegate semantics come only from an exact immediate base-role edge. The selected role
 /// definitions themselves are classes, and no role is derived through an intermediate base.
@@ -315,7 +315,7 @@ public enum MetadataTypeDefinitionSemanticRole
     Delegate = 6,
 }
 
-/// <summary>Identifies the complete typed disposition of one semantic-classification draft row.</summary>
+/// <summary>Identifies the complete typed disposition of one semantic-classification row.</summary>
 /// <remarks>Row-level stops are retained facts; the issuing portfolio remains an exact complete projection.</remarks>
 public enum MetadataSemanticClassificationIssue
 {
@@ -332,8 +332,8 @@ public enum MetadataSemanticClassificationIssue
     InterfaceExtendsInvalid = 3,
 }
 
-/// <summary>Freezes one guarded authority-derived semantic-classification draft row.</summary>
-/// <remarks>The row retains its immediate-base draft edge so no consumer re-derives role semantics from names.</remarks>
+/// <summary>Freezes one guarded authority-derived semantic-classification row.</summary>
+/// <remarks>The row retains its immediate-base edge so no consumer re-derives role semantics from names.</remarks>
 public sealed class MetadataTypeDefinitionSemanticClassificationIdentity :
     IEquatable<MetadataTypeDefinitionSemanticClassificationIdentity>
 {
@@ -358,41 +358,41 @@ public sealed class MetadataTypeDefinitionSemanticClassificationIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the retained immediate-base draft edge this classification consumed.</summary>
+    /// <summary>Gets the retained immediate-base edge this classification consumed.</summary>
     public MetadataImmediateBaseEdgeAuthorityIdentity BaseEdge { get; }
 
     /// <summary>Gets the exact metadata module owning the classified row.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => BaseEdge.SourceModule;
 
-    /// <summary>Gets the authority-issued TypeDef this draft row classifies.</summary>
+    /// <summary>Gets the authority-issued TypeDef this row classifies.</summary>
     public MetadataTypeDefinitionAuthorityIdentity TypeDefinition => BaseEdge.Owner;
 
     /// <summary>Gets the exact semantic role, or null when the typed issue prevented classification.</summary>
     public MetadataTypeDefinitionSemanticRole? Role { get; }
 
-    /// <summary>Gets the complete typed draft classification issue for this row.</summary>
+    /// <summary>Gets the complete typed classification issue for this row.</summary>
     public MetadataSemanticClassificationIssue Issue { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two semantic-classification draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two semantic-classification rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeDefinitionSemanticClassificationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests semantic-classification draft row equality against an arbitrary object.</summary>
+    /// <summary>Tests semantic-classification row equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataTypeDefinitionSemanticClassificationIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this semantic-classification draft row.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this semantic-classification row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataTypeDefinitionSemanticClassificationIdentity Create(
@@ -417,7 +417,7 @@ public sealed class MetadataTypeDefinitionSemanticClassificationIdentity :
     }
 }
 
-/// <summary>Classifies the terminal of one bounded authority-derived ancestry draft chain.</summary>
+/// <summary>Classifies the terminal of one bounded authority-derived ancestry chain.</summary>
 /// <remarks>Every terminal is a complete derived row fact including cycles and reached bounds.</remarks>
 public enum MetadataAncestryChainTerminalKind
 {
@@ -446,7 +446,7 @@ public enum MetadataAncestryChainTerminalKind
     DepthBoundReached = 8,
 }
 
-/// <summary>Freezes one guarded bounded authority-derived ancestry draft chain.</summary>
+/// <summary>Freezes one guarded bounded authority-derived ancestry chain.</summary>
 /// <remarks>
 /// The chain follows resolved named immediate-base edges across modules from the subject toward System.Object and
 /// stops at the first typed terminal. It performs no generic substitution; a TypeSpec base is a terminal fact.
@@ -486,20 +486,20 @@ public sealed class MetadataTypeDefinitionAncestryChainIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the subject's own immediate-base draft edge.</summary>
+    /// <summary>Gets the subject's own immediate-base edge.</summary>
     public MetadataImmediateBaseEdgeAuthorityIdentity SubjectEdge { get; }
 
     /// <summary>Gets the exact metadata module owning the subject row.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => SubjectEdge.SourceModule;
 
-    /// <summary>Gets the authority-issued subject TypeDef of this draft chain.</summary>
+    /// <summary>Gets the authority-issued subject TypeDef of this chain.</summary>
     public MetadataTypeDefinitionAuthorityIdentity Subject => SubjectEdge.Owner;
 
-    /// <summary>Gets a defensive subject-to-root copy of the traversed immediate-base draft edges.</summary>
+    /// <summary>Gets a defensive subject-to-root copy of the traversed immediate-base edges.</summary>
     public ImmutableArray<MetadataImmediateBaseEdgeAuthorityIdentity> Edges =>
         ExpressionV2ContractEncoding.Copy(edges);
 
-    /// <summary>Gets the complete typed terminal of this bounded draft chain.</summary>
+    /// <summary>Gets the complete typed terminal of this bounded chain.</summary>
     public MetadataAncestryChainTerminalKind TerminalKind { get; }
 
     /// <summary>Gets the declared ancestry depth bound only after a cap-plus-one traversal.</summary>
@@ -508,25 +508,25 @@ public sealed class MetadataTypeDefinitionAncestryChainIdentity :
     /// <summary>Gets the terminal-related metadata token, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft chain bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical chain bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft chain bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical chain bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two ancestry draft chains.</summary>
-    /// <param name="other">The other draft chain.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two ancestry chains.</summary>
+    /// <param name="other">The other chain.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeDefinitionAncestryChainIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests ancestry draft chain equality against an arbitrary object.</summary>
+    /// <summary>Tests ancestry chain equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a chain with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a chain with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeDefinitionAncestryChainIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this ancestry draft chain.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this ancestry chain.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataTypeDefinitionAncestryChainIdentity Create(
@@ -552,7 +552,7 @@ public sealed class MetadataTypeDefinitionAncestryChainIdentity :
     }
 }
 
-/// <summary>Freezes one guarded per-module entry of the ancestry draft portfolio.</summary>
+/// <summary>Freezes one guarded per-module entry of the ancestry portfolio.</summary>
 /// <remarks>The entry retains RID-ordered base edges, semantic classifications, and bounded ancestry chains.</remarks>
 public sealed class MetadataAncestryAuthorityModuleIdentity :
     IEquatable<MetadataAncestryAuthorityModuleIdentity>
@@ -596,61 +596,61 @@ public sealed class MetadataAncestryAuthorityModuleIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the retained per-module TypeRef draft resolution entry lineage.</summary>
+    /// <summary>Gets the retained per-module TypeRef resolution entry lineage.</summary>
     public MetadataTypeReferenceResolutionModuleIdentity ResolutionEntry { get; }
 
-    /// <summary>Gets the exact metadata module owning every row in this draft entry.</summary>
+    /// <summary>Gets the exact metadata module owning every row in this entry.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => ResolutionEntry.SourceModule;
 
-    /// <summary>Gets a defensive RID-order copy of every immediate-base draft edge.</summary>
+    /// <summary>Gets a defensive RID-order copy of every immediate-base edge.</summary>
     public ImmutableArray<MetadataImmediateBaseEdgeAuthorityIdentity> BaseEdges =>
         ExpressionV2ContractEncoding.Copy(baseEdges);
 
-    /// <summary>Gets a defensive RID-order copy of every semantic-classification draft row.</summary>
+    /// <summary>Gets a defensive RID-order copy of every semantic-classification row.</summary>
     public ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> Classifications =>
         ExpressionV2ContractEncoding.Copy(classifications);
 
-    /// <summary>Gets a defensive RID-order copy of every bounded ancestry draft chain.</summary>
+    /// <summary>Gets a defensive RID-order copy of every bounded ancestry chain.</summary>
     public ImmutableArray<MetadataTypeDefinitionAncestryChainIdentity> AncestryChains =>
         ExpressionV2ContractEncoding.Copy(ancestryChains);
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft entry bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical entry bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft entry bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical entry bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Finds one immediate-base draft edge by TypeDef token.</summary>
+    /// <summary>Finds one immediate-base edge by TypeDef token.</summary>
     /// <param name="typeDefinitionToken">The non-nil TypeDef token.</param>
-    /// <returns>The complete draft edge, or null when the token is not an issued TypeDef.</returns>
+    /// <returns>The complete edge, or null when the token is not an issued TypeDef.</returns>
     public MetadataImmediateBaseEdgeAuthorityIdentity? FindBaseEdge(int typeDefinitionToken) =>
         FindRow(baseEdges, typeDefinitionToken);
 
-    /// <summary>Finds one semantic-classification draft row by TypeDef token.</summary>
+    /// <summary>Finds one semantic-classification row by TypeDef token.</summary>
     /// <param name="typeDefinitionToken">The non-nil TypeDef token.</param>
-    /// <returns>The complete draft row, or null when the token is not an issued TypeDef.</returns>
+    /// <returns>The complete row, or null when the token is not an issued TypeDef.</returns>
     public MetadataTypeDefinitionSemanticClassificationIdentity? FindClassification(int typeDefinitionToken) =>
         FindRow(classifications, typeDefinitionToken);
 
-    /// <summary>Finds one bounded ancestry draft chain by TypeDef token.</summary>
+    /// <summary>Finds one bounded ancestry chain by TypeDef token.</summary>
     /// <param name="typeDefinitionToken">The non-nil TypeDef token.</param>
-    /// <returns>The complete draft chain, or null when the token is not an issued TypeDef.</returns>
+    /// <returns>The complete chain, or null when the token is not an issued TypeDef.</returns>
     public MetadataTypeDefinitionAncestryChainIdentity? FindAncestryChain(int typeDefinitionToken) =>
         FindRow(ancestryChains, typeDefinitionToken);
 
-    /// <summary>Tests canonical equality between two per-module ancestry draft entries.</summary>
-    /// <param name="other">The other draft entry.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two per-module ancestry entries.</summary>
+    /// <param name="other">The other entry.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAncestryAuthorityModuleIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests per-module ancestry draft entry equality against an arbitrary object.</summary>
+    /// <summary>Tests per-module ancestry entry equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an entry with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an entry with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAncestryAuthorityModuleIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this per-module ancestry draft entry.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this per-module ancestry entry.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataAncestryAuthorityModuleIdentity Create(
@@ -685,7 +685,7 @@ public sealed class MetadataAncestryAuthorityModuleIdentity :
     }
 }
 
-/// <summary>Classifies one normalized multi-module ancestry draft portfolio.</summary>
+/// <summary>Classifies one normalized multi-module ancestry portfolio.</summary>
 /// <remarks>Every stop is prefix-free; exact entries use the resolution portfolio's module order.</remarks>
 public enum MetadataAncestryAuthorityPortfolioResultKind
 {
@@ -695,15 +695,15 @@ public enum MetadataAncestryAuthorityPortfolioResultKind
     /// <summary>A prerequisite or core-role selection prevented complete derivation.</summary>
     NonExact = 2,
 
-    /// <summary>Complete draft inputs contradicted the resolution portfolio or the core-role shape.</summary>
+    /// <summary>Complete inputs contradicted the resolution portfolio or the core-role shape.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the deterministic issue for one ancestry draft portfolio.</summary>
+/// <summary>Identifies the deterministic issue for one ancestry portfolio.</summary>
 /// <remarks>The issue values keep prerequisite and core-role selection stops distinct.</remarks>
 public enum MetadataAncestryAuthorityPortfolioIssue
 {
-    /// <summary>No issue applies to an exact draft portfolio.</summary>
+    /// <summary>No issue applies to an exact portfolio.</summary>
     None = 0,
 
     /// <summary>The TypeRef resolution portfolio prerequisite was non-exact.</summary>
@@ -730,7 +730,7 @@ public enum MetadataAncestryAuthorityPortfolioIssue
 
 /// <summary>Derives immediate-base edges, core roles, semantic classification, and bounded ancestry.</summary>
 /// <remarks>
-/// The portfolio is the sole issuer of ancestry draft rows. It consumes one exact TypeRef resolution portfolio,
+/// The portfolio is the sole issuer of ancestry rows. It consumes one exact TypeRef resolution portfolio,
 /// selects the exact runtime core roles, derives every module's RID-ordered immediate-base edges from physical
 /// Extends columns, classifies each TypeDef only from its exact immediate base-role edge, and walks bounded
 /// cross-module ancestry chains without generic substitution. Names never confer role semantics.
@@ -738,7 +738,7 @@ public enum MetadataAncestryAuthorityPortfolioIssue
 public sealed class MetadataAncestryAuthorityPortfolioIdentity :
     IEquatable<MetadataAncestryAuthorityPortfolioIdentity>
 {
-    /// <summary>Gets the shared bounded ancestry depth draft cap.</summary>
+    /// <summary>Gets the shared bounded ancestry depth cap.</summary>
     public const int MaximumAncestryDepth = ExpressionV2ContractLimits.MaximumConstructedAncestryDepth;
 
     private const string CanonicalDomain = "metadata-v2-ancestry-portfolio";
@@ -782,16 +782,16 @@ public sealed class MetadataAncestryAuthorityPortfolioIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this normalized ancestry draft portfolio is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this normalized ancestry portfolio is exact, non-exact, or invalid.</summary>
     public MetadataAncestryAuthorityPortfolioResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft portfolio issue, or none for an exact portfolio.</summary>
+    /// <summary>Gets the typed portfolio issue, or none for an exact portfolio.</summary>
     public MetadataAncestryAuthorityPortfolioIssue Issue { get; }
 
-    /// <summary>Gets the retained TypeRef draft resolution portfolio prerequisite.</summary>
+    /// <summary>Gets the retained TypeRef resolution portfolio prerequisite.</summary>
     public MetadataTypeReferenceResolutionPortfolioIdentity ResolutionPortfolio { get; }
 
-    /// <summary>Gets the exact core-role draft selection, or null for any stop.</summary>
+    /// <summary>Gets the exact core-role selection, or null for any stop.</summary>
     public MetadataCoreRoleSelectionIdentity? CoreRoles { get; }
 
     /// <summary>Gets the exact portfolio snapshot digest, or null for an empty portfolio or any stop.</summary>
@@ -800,7 +800,7 @@ public sealed class MetadataAncestryAuthorityPortfolioIdentity :
             ? ResolutionPortfolio.SnapshotSha256
             : null;
 
-    /// <summary>Gets a defensive module-order copy of exact draft entries, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive module-order copy of exact entries, or an empty array for a stop.</summary>
     public ImmutableArray<MetadataAncestryAuthorityModuleIdentity> Entries =>
         ExpressionV2ContractEncoding.Copy(entries);
 
@@ -810,15 +810,15 @@ public sealed class MetadataAncestryAuthorityPortfolioIdentity :
     /// <summary>Gets the issue-related metadata-module digest, otherwise null.</summary>
     public string? RelatedModuleSha256 { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft portfolio.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical portfolio.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft portfolio.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical portfolio.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one normalized multi-module ancestry draft portfolio.</summary>
+    /// <summary>Creates one normalized multi-module ancestry portfolio.</summary>
     /// <param name="resolutionPortfolio">The exact TypeRef resolution portfolio supplying all inputs.</param>
-    /// <returns>An exact complete draft portfolio or a prefix-free typed stop.</returns>
+    /// <returns>An exact complete portfolio or a prefix-free typed stop.</returns>
     public static MetadataAncestryAuthorityPortfolioIdentity Create(
         MetadataTypeReferenceResolutionPortfolioIdentity resolutionPortfolio)
     {
@@ -904,10 +904,10 @@ public sealed class MetadataAncestryAuthorityPortfolioIdentity :
             null);
     }
 
-    /// <summary>Looks up one semantic-classification draft row by module and non-nil TypeDef token.</summary>
+    /// <summary>Looks up one semantic-classification row by module and non-nil TypeDef token.</summary>
     /// <param name="sourceModule">The exact loaded metadata module.</param>
     /// <param name="typeDefinitionToken">The exact TypeDef token within that module.</param>
-    /// <returns>The complete draft row, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
+    /// <returns>The complete row, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
     public MetadataTypeDefinitionSemanticClassificationIdentity? ExactClassificationOrDefault(
         StaticFieldMetadataModuleIdentity sourceModule,
         int typeDefinitionToken)
@@ -916,10 +916,10 @@ public sealed class MetadataAncestryAuthorityPortfolioIdentity :
         return ExactEntryOrDefault(sourceModule)?.FindClassification(typeDefinitionToken);
     }
 
-    /// <summary>Looks up one immediate-base draft edge by module and non-nil TypeDef token.</summary>
+    /// <summary>Looks up one immediate-base edge by module and non-nil TypeDef token.</summary>
     /// <param name="sourceModule">The exact loaded metadata module.</param>
     /// <param name="typeDefinitionToken">The exact TypeDef token within that module.</param>
-    /// <returns>The complete draft edge, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
+    /// <returns>The complete edge, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
     public MetadataImmediateBaseEdgeAuthorityIdentity? ExactBaseEdgeOrDefault(
         StaticFieldMetadataModuleIdentity sourceModule,
         int typeDefinitionToken)
@@ -928,10 +928,10 @@ public sealed class MetadataAncestryAuthorityPortfolioIdentity :
         return ExactEntryOrDefault(sourceModule)?.FindBaseEdge(typeDefinitionToken);
     }
 
-    /// <summary>Looks up one bounded ancestry draft chain by module and non-nil TypeDef token.</summary>
+    /// <summary>Looks up one bounded ancestry chain by module and non-nil TypeDef token.</summary>
     /// <param name="sourceModule">The exact loaded metadata module.</param>
     /// <param name="typeDefinitionToken">The exact TypeDef token within that module.</param>
-    /// <returns>The complete draft chain, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
+    /// <returns>The complete chain, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
     public MetadataTypeDefinitionAncestryChainIdentity? ExactAncestryChainOrDefault(
         StaticFieldMetadataModuleIdentity sourceModule,
         int typeDefinitionToken)
@@ -940,19 +940,19 @@ public sealed class MetadataAncestryAuthorityPortfolioIdentity :
         return ExactEntryOrDefault(sourceModule)?.FindAncestryChain(typeDefinitionToken);
     }
 
-    /// <summary>Tests canonical equality between two ancestry draft portfolios.</summary>
-    /// <param name="other">The other draft portfolio.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two ancestry portfolios.</summary>
+    /// <param name="other">The other portfolio.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataAncestryAuthorityPortfolioIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests ancestry draft portfolio equality against an arbitrary object.</summary>
+    /// <summary>Tests ancestry portfolio equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a portfolio with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a portfolio with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataAncestryAuthorityPortfolioIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable draft portfolio content.</summary>
-    /// <returns>A hash code for this canonical draft portfolio.</returns>
+    /// <summary>Computes a deterministic hash code from immutable portfolio content.</summary>
+    /// <returns>A hash code for this canonical portfolio.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);

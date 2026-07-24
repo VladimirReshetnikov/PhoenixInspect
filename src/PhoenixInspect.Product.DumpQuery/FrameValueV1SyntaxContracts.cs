@@ -5,7 +5,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Identifies the first syntax boundary that prevented a frame-value descriptor.</summary>
 /// <remarks>
-/// This additive draft enumeration belongs only to <see cref="DumpExpressionProfileKind.FrameValueExpressionV1"/>.
+/// This additive enumeration belongs only to <see cref="DumpExpressionProfileKind.FrameValueExpressionV1"/>.
 /// It does not permit a stopped frame request to be reinterpreted by the static-field profile.
 /// </remarks>
 public enum FrameValueV1SyntaxIssue
@@ -49,7 +49,7 @@ public enum FrameValueV1SyntaxIssue
 
 /// <summary>Classifies the only two root shapes admitted by the frame-value profile.</summary>
 /// <remarks>
-/// This draft discriminator intentionally has no static-member, literal, register, or inferred-root branch.
+/// This discriminator intentionally has no static-member, literal, register, or inferred-root branch.
 /// </remarks>
 public enum FrameValueV1RootKind
 {
@@ -62,7 +62,7 @@ public enum FrameValueV1RootKind
 
 /// <summary>Records exact parser and projection counters for one frame-value syntax outcome.</summary>
 /// <remarks>
-/// This sealed draft counter set permits only saturated cap-plus-one observations. It never represents an arbitrary
+/// This sealed counter set permits only saturated cap-plus-one observations. It never represents an arbitrary
 /// prefix count after a boundary is crossed.
 /// </remarks>
 public sealed class FrameValueV1ParserCounts : IEquatable<FrameValueV1ParserCounts>
@@ -122,10 +122,10 @@ public sealed class FrameValueV1ParserCounts : IEquatable<FrameValueV1ParserCoun
     /// <param name="maximumDecodedIdentifierLength">The greatest decoded identifier length reached.</param>
     /// <param name="maximumDecodedFallbackStringLength">The greatest decoded fallback-string length reached.</param>
     /// <remarks>
-    /// This draft factory validates counter geometry only. W8.3 remains responsible for producing the counters from
+    /// This factory validates counter geometry only. W8.3 remains responsible for producing the counters from
     /// the sole complete Roslyn parse.
     /// </remarks>
-    /// <returns>A sealed immutable draft counter set.</returns>
+    /// <returns>A sealed immutable counter set.</returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// A count is negative or exceeds its declared cap-plus-one observation.
     /// </exception>
@@ -187,7 +187,7 @@ public sealed class FrameValueV1ParserCounts : IEquatable<FrameValueV1ParserCoun
 
 /// <summary>Freezes one admitted frame-value root and its unchanged detached suffix.</summary>
 /// <remarks>
-/// This sealed additive draft descriptor selects <see cref="DumpExpressionProfileKind.FrameValueExpressionV1"/>
+/// This sealed additive descriptor selects <see cref="DumpExpressionProfileKind.FrameValueExpressionV1"/>
 /// before attribution. It carries no static-owner candidate, no physical location, and no fallback route.
 /// </remarks>
 public sealed class FrameValueV1ExpressionDescriptor : IEquatable<FrameValueV1ExpressionDescriptor>
@@ -264,10 +264,10 @@ public sealed class FrameValueV1ExpressionDescriptor : IEquatable<FrameValueV1Ex
     /// <param name="parserCounts">Exact parser and projection counters.</param>
     /// <param name="reachedBounds">Every exact declared syntax bound reached by the complete projection.</param>
     /// <remarks>
-    /// This draft factory freezes detached syntax only. It neither attributes a frame symbol nor permits another
+    /// This factory freezes detached syntax only. It neither attributes a frame symbol nor permits another
     /// expression profile when attribution later fails.
     /// </remarks>
-    /// <returns>A sealed immutable draft descriptor.</returns>
+    /// <returns>A sealed immutable descriptor.</returns>
     /// <exception cref="ArgumentException">The root, counters, suffix, or reached-bound set is inconsistent.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="rootKind"/> is undefined.</exception>
     public static FrameValueV1ExpressionDescriptor Create(
@@ -388,7 +388,7 @@ public sealed class FrameValueV1ExpressionDescriptor : IEquatable<FrameValueV1Ex
 
 /// <summary>Freezes an admitted frame descriptor or one typed invalid/unsupported syntax stop.</summary>
 /// <remarks>
-/// This sealed draft outcome never carries a prefix descriptor after cap-plus-one and never redirects a stopped
+/// This sealed outcome never carries a prefix descriptor after cap-plus-one and never redirects a stopped
 /// frame request to static binding.
 /// </remarks>
 public sealed class FrameValueV1SyntaxOutcome : IEquatable<FrameValueV1SyntaxOutcome>
@@ -471,8 +471,8 @@ public sealed class FrameValueV1SyntaxOutcome : IEquatable<FrameValueV1SyntaxOut
     /// <summary>Creates one admitted frame-value syntax outcome.</summary>
     /// <param name="descriptor">The complete admitted frame descriptor.</param>
     /// <param name="diagnostics">Optional non-error Parse or Projection diagnostics.</param>
-    /// <remarks>This draft factory preserves the already-selected frame profile and creates no fallback route.</remarks>
-    /// <returns>A sealed immutable draft admitted outcome.</returns>
+    /// <remarks>This factory preserves the already-selected frame profile and creates no fallback route.</remarks>
+    /// <returns>A sealed immutable admitted outcome.</returns>
     /// <exception cref="ArgumentException">A diagnostic is an error or belongs to another stage.</exception>
     public static FrameValueV1SyntaxOutcome Admitted(
         FrameValueV1ExpressionDescriptor descriptor,
@@ -501,8 +501,8 @@ public sealed class FrameValueV1SyntaxOutcome : IEquatable<FrameValueV1SyntaxOut
     /// <param name="parserCounts">Exact-or-saturated counters reached before the stop.</param>
     /// <param name="diagnostics">Stable diagnostics including a Parse-stage error.</param>
     /// <param name="reachedBounds">Every exact declared bound reached before the stop.</param>
-    /// <remarks>This draft stop cannot trigger the static profile.</remarks>
-    /// <returns>A sealed immutable draft invalid outcome with no prefix descriptor.</returns>
+    /// <remarks>This stop cannot trigger the static profile.</remarks>
+    /// <returns>A sealed immutable invalid outcome with no prefix descriptor.</returns>
     public static FrameValueV1SyntaxOutcome Invalid(
         string rawExpression,
         FrameValueV1SyntaxIssue issue,
@@ -523,8 +523,8 @@ public sealed class FrameValueV1SyntaxOutcome : IEquatable<FrameValueV1SyntaxOut
     /// <param name="parserCounts">Exact-or-saturated counters reached before the stop.</param>
     /// <param name="diagnostics">Stable diagnostics including a Projection-stage error.</param>
     /// <param name="reachedBounds">Every exact declared bound reached before the stop.</param>
-    /// <remarks>This draft stop cannot trigger the static profile.</remarks>
-    /// <returns>A sealed immutable draft unsupported outcome with no prefix descriptor.</returns>
+    /// <remarks>This stop cannot trigger the static profile.</remarks>
+    /// <returns>A sealed immutable unsupported outcome with no prefix descriptor.</returns>
     public static FrameValueV1SyntaxOutcome Unsupported(
         string rawExpression,
         FrameValueV1SyntaxIssue issue,

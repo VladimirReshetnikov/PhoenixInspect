@@ -13,7 +13,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// Proves W8 construction identity from one real full dump without interpreting runtime display names.
 /// </summary>
 /// <remarks>
-/// This draft W8.1 gate uses an SRM metadata oracle only for expected tokens. The runtime candidates originate from
+/// This W8.1 gate uses an SRM metadata oracle only for expected tokens. The runtime candidates originate from
 /// the module's descriptor-driven available-type table and remain keyed by exact type-handle address.
 /// </remarks>
 public sealed class W8ConstructedRuntimeIdentityTests

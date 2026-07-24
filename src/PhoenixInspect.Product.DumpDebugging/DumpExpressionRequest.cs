@@ -30,7 +30,7 @@ public enum DumpExpressionKind
 
 /// <summary>Chooses the versioned expression-admission profile applied after one complete C# expression parse.</summary>
 /// <remarks>
-/// This draft prototype choice is explicit so the frozen W5 language remains unchanged while W6 callers opt into
+/// This choice is explicit so the frozen W5 language remains unchanged while W6 callers opt into
 /// fixed-depth member chains. It does not imply that binding or evaluation supports arbitrary C# parse trees.
 /// </remarks>
 public enum DumpExpressionLanguageProfile
@@ -44,7 +44,7 @@ public enum DumpExpressionLanguageProfile
 
 /// <summary>Publishes the frozen, project-owned identity of the complete C# expression front-end profile.</summary>
 /// <remarks>
-/// These draft constants describe parsing and structural work bounds only. They do not widen the product's admitted
+/// These constants describe parsing and structural work bounds only. They do not widen the product's admitted
 /// binding or evaluation semantics, and no compiler object is exposed through this surface.
 /// </remarks>
 public static class DumpCSharpExpressionProfile
@@ -95,7 +95,7 @@ public enum DumpExpressionClassificationStatus
 /// the unchanged W2 query path and therefore do not consume the method-specific limits.
 /// </summary>
 /// <remarks>
-/// This is a draft closed product policy, not an extensible policy bag. Its stable W4 policy/catalog identities,
+/// This is a closed product policy, not an extensible policy bag. Its stable W4 policy/catalog identities,
 /// versions, and assumptions are fixed here so a host supplies only the bounded choice that the implementation can
 /// honestly honor. Canonical identity distinguishes interpreted and modeled execution even before either is reached.
 /// </remarks>
@@ -263,7 +263,7 @@ public sealed class DumpMethodExpressionIdentity
 /// Freezes one opt-in W6 fixed-depth member-chain descriptor independently of metadata binding and value reads.
 /// </summary>
 /// <remarks>
-/// This draft identity contains only bounded raw text and project-owned decoded scalars. It deliberately contains no
+/// This identity contains only bounded raw text and project-owned decoded scalars. It deliberately contains no
 /// compiler syntax object, symbol, diagnostic, metadata member, runtime address, or evaluation claim.
 /// </remarks>
 public sealed class DumpMemberChainExpressionIdentity
@@ -736,7 +736,7 @@ public static class DumpExpressionClassifier
     /// <exception cref="ArgumentNullException"><paramref name="rootBinding"/> or <paramref name="policy"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="languageProfile"/> is not defined.</exception>
     /// <remarks>
-    /// This draft W6 overload performs exactly one complete Roslyn expression parse. It creates no compilation or
+    /// This W6 overload performs exactly one complete Roslyn expression parse. It creates no compilation or
     /// semantic model, performs no metadata lookup or memory read, and exposes no compiler object.
     /// </remarks>
     public static DumpExpressionClassification Classify(

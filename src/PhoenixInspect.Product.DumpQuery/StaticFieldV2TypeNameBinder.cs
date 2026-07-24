@@ -3,9 +3,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Identifies why one examined draft chain did not match a partition's owner name segments.</summary>
+/// <summary>Identifies why one examined chain did not match a partition's owner name segments.</summary>
 /// <remarks>
-/// Every value is a retained per-occurrence draft fact rather than a binding failure. The reasons are ordered by how
+/// Every value is a retained per-occurrence fact rather than a binding failure. The reasons are ordered by how
 /// far the examined chain progressed through the fixed comparison sequence: shape, module pseudo-type, namespace
 /// text, exact compiler mapping, projected simple name, introduced arity, and ordinary C# addressability.
 /// </remarks>
@@ -33,38 +33,38 @@ public enum StaticFieldV2TypeNameRejectionReason
     SegmentCountMismatch = 7,
 }
 
-/// <summary>Classifies one draft namespace/type name-binding answer for a partition or a complete expression.</summary>
+/// <summary>Classifies one namespace/type name-binding answer for a partition or a complete expression.</summary>
 /// <remarks>
-/// <see cref="Exact"/>, <see cref="Absent"/>, and <see cref="Ambiguous"/> are complete derived draft answers that
+/// <see cref="Exact"/>, <see cref="Absent"/>, and <see cref="Ambiguous"/> are complete derived answers that
 /// retain their per-partition evidence. <see cref="NonExact"/>, <see cref="Invalid"/>, and <see cref="Unsupported"/>
 /// are prefix-free stops that retain no partition evidence and no selected candidate.
 /// </remarks>
 public enum StaticFieldV2TypeNameBindingResultKind
 {
-    /// <summary>Exactly one physical draft candidate group was derived.</summary>
+    /// <summary>Exactly one physical candidate group was derived.</summary>
     Exact = 1,
 
-    /// <summary>Every examined draft occurrence was rejected, so no candidate exists.</summary>
+    /// <summary>Every examined occurrence was rejected, so no candidate exists.</summary>
     Absent = 2,
 
-    /// <summary>Two or more distinct physical draft candidate groups were derived.</summary>
+    /// <summary>Two or more distinct physical candidate groups were derived.</summary>
     Ambiguous = 3,
 
-    /// <summary>A prerequisite or a declared draft bound prevented a complete answer.</summary>
+    /// <summary>A prerequisite or a declared bound prevented a complete answer.</summary>
     NonExact = 4,
 
-    /// <summary>A complete draft prerequisite contradicted itself.</summary>
+    /// <summary>A complete prerequisite contradicted itself.</summary>
     Invalid = 5,
 
-    /// <summary>The expression selects a later draft route that this explicit-route binder does not own.</summary>
+    /// <summary>The expression selects a later route that this explicit-route binder does not own.</summary>
     Unsupported = 6,
 }
 
-/// <summary>Identifies the deterministic issue for one draft namespace/type name-binding outcome.</summary>
-/// <remarks>This draft-phase issue catalog keeps prerequisite, route, bound, and derived answers distinct.</remarks>
+/// <summary>Identifies the deterministic issue for one namespace/type name-binding outcome.</summary>
+/// <remarks>This issue catalog keeps prerequisite, route, bound, and derived answers distinct.</remarks>
 public enum StaticFieldV2TypeNameBindingIssue
 {
-    /// <summary>No issue applies to an exact draft outcome.</summary>
+    /// <summary>No issue applies to an exact outcome.</summary>
     None = 0,
 
     /// <summary>The named-TypeDef-chain portfolio prerequisite was non-exact.</summary>
@@ -73,33 +73,33 @@ public enum StaticFieldV2TypeNameBindingIssue
     /// <summary>The named-TypeDef-chain portfolio prerequisite was invalid.</summary>
     ChainPortfolioInvalid = 2,
 
-    /// <summary>The examined candidate-occurrence count reached the declared draft cap plus one.</summary>
+    /// <summary>The examined candidate-occurrence count reached the declared cap plus one.</summary>
     CandidateOccurrenceBoundReached = 3,
 
-    /// <summary>The grouped physical-candidate count reached the declared draft cap plus one.</summary>
+    /// <summary>The grouped physical-candidate count reached the declared cap plus one.</summary>
     CandidateGroupBoundReached = 4,
 
-    /// <summary>A named alias qualifier requires the separately owned scoped-context draft route.</summary>
+    /// <summary>A named alias qualifier requires the separately owned scoped-context route.</summary>
     ContextRouteNotSupported = 5,
 
-    /// <summary>The descriptor retained no qualified-owner partition for the explicit draft route.</summary>
+    /// <summary>The descriptor retained no qualified-owner partition for the explicit route.</summary>
     NoQualifiedOwnerPartition = 6,
 
-    /// <summary>Two or more partitions derived different physical draft candidate groups.</summary>
+    /// <summary>Two or more partitions derived different physical candidate groups.</summary>
     AmbiguousAcrossPartitions = 7,
 
-    /// <summary>One partition derived two or more physical draft candidate groups.</summary>
+    /// <summary>One partition derived two or more physical candidate groups.</summary>
     AmbiguousWithinPartition = 8,
 
-    /// <summary>Every examined draft occurrence was rejected in every qualified-owner partition.</summary>
+    /// <summary>Every examined occurrence was rejected in every qualified-owner partition.</summary>
     CandidateAbsent = 9,
 }
 
-/// <summary>Freezes one accepted draft match between a partition's owner name and an authority-issued chain.</summary>
+/// <summary>Freezes one accepted match between a partition's owner name and an authority-issued chain.</summary>
 /// <remarks>
 /// The occurrence is minted only by <see cref="StaticFieldV2TypeNameBindingOutcome"/>. It retains the exact metadata
-/// module, the exact draft chain, the examined namespace split, and the descriptor partition that produced it. No
-/// type argument is constructed and no member is looked up by this draft row.
+/// module, the exact chain, the examined namespace split, and the descriptor partition that produced it. No
+/// type argument is constructed and no member is looked up by this row.
 /// </remarks>
 public sealed class StaticFieldV2TypeNameCandidateOccurrence : IEquatable<StaticFieldV2TypeNameCandidateOccurrence>
 {
@@ -127,10 +127,10 @@ public sealed class StaticFieldV2TypeNameCandidateOccurrence : IEquatable<Static
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata module whose draft chain catalog produced this occurrence.</summary>
+    /// <summary>Gets the exact metadata module whose chain catalog produced this occurrence.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule { get; }
 
-    /// <summary>Gets the exact authority-derived outer-to-inner named-TypeDef draft chain that matched.</summary>
+    /// <summary>Gets the exact authority-derived outer-to-inner named-TypeDef chain that matched.</summary>
     public MetadataNamedTypeDefinitionChainIdentity Chain { get; }
 
     /// <summary>Gets the leading owner-segment count interpreted as namespace text by this occurrence.</summary>
@@ -139,31 +139,31 @@ public sealed class StaticFieldV2TypeNameCandidateOccurrence : IEquatable<Static
     /// <summary>Gets the zero-based descriptor partition index that produced this occurrence.</summary>
     public int PartitionIndex { get; }
 
-    /// <summary>Gets the final authority-issued TypeDef named by the matched draft chain.</summary>
+    /// <summary>Gets the final authority-issued TypeDef named by the matched chain.</summary>
     public MetadataTypeDefinitionAuthorityIdentity FinalTypeDefinition => Chain.FinalTypeDefinition;
 
-    /// <summary>Gets the non-nil final TypeDef token used as half of the physical draft group key.</summary>
+    /// <summary>Gets the non-nil final TypeDef token used as half of the physical group key.</summary>
     public int FinalTypeDefinitionToken => Chain.FinalTypeDefinitionToken;
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft occurrence.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical occurrence.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft occurrence.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical occurrence.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two draft candidate occurrences.</summary>
-    /// <param name="other">The other draft occurrence.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two candidate occurrences.</summary>
+    /// <param name="other">The other occurrence.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2TypeNameCandidateOccurrence? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft candidate-occurrence equality against an arbitrary object.</summary>
+    /// <summary>Tests candidate-occurrence equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an occurrence with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an occurrence with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2TypeNameCandidateOccurrence);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft occurrence content.</summary>
-    /// <returns>A hash code for this canonical draft occurrence.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical occurrence content.</summary>
+    /// <returns>A hash code for this canonical occurrence.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2TypeNameCandidateOccurrence Create(
@@ -199,7 +199,7 @@ public sealed class StaticFieldV2TypeNameCandidateOccurrence : IEquatable<Static
     }
 }
 
-/// <summary>Freezes one physical draft candidate: a metadata module and one final authority TypeDef.</summary>
+/// <summary>Freezes one physical candidate: a metadata module and one final authority TypeDef.</summary>
 /// <remarks>
 /// Occurrences that name the same physical pair converge into exactly one group. Distinct pairs remain distinct
 /// groups even when their spelled source names are identical, which is what makes cross-module ambiguity visible.
@@ -232,38 +232,38 @@ public sealed class StaticFieldV2TypeNameCandidateGroup : IEquatable<StaticField
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata module that owns this physical draft candidate.</summary>
+    /// <summary>Gets the exact metadata module that owns this physical candidate.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule { get; }
 
-    /// <summary>Gets the exact final authority-issued TypeDef of this physical draft candidate.</summary>
+    /// <summary>Gets the exact final authority-issued TypeDef of this physical candidate.</summary>
     public MetadataTypeDefinitionAuthorityIdentity FinalTypeDefinition { get; }
 
-    /// <summary>Gets the non-nil final TypeDef token of this physical draft candidate.</summary>
+    /// <summary>Gets the non-nil final TypeDef token of this physical candidate.</summary>
     public int FinalTypeDefinitionToken => FinalTypeDefinition.TypeDefinitionToken;
 
-    /// <summary>Gets a defensive copy of every converged draft occurrence in examination order.</summary>
+    /// <summary>Gets a defensive copy of every converged occurrence in examination order.</summary>
     public ImmutableArray<StaticFieldV2TypeNameCandidateOccurrence> Occurrences =>
         ExpressionV2ContractEncoding.Copy(occurrences);
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft group.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical group.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft group.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical group.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two physical draft candidate groups.</summary>
-    /// <param name="other">The other draft group.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical candidate groups.</summary>
+    /// <param name="other">The other group.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2TypeNameCandidateGroup? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical draft candidate-group equality against an arbitrary object.</summary>
+    /// <summary>Tests physical candidate-group equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a group with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a group with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2TypeNameCandidateGroup);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft group content.</summary>
-    /// <returns>A hash code for this canonical draft group.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical group content.</summary>
+    /// <returns>A hash code for this canonical group.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2TypeNameCandidateGroup Create(
@@ -304,9 +304,9 @@ public sealed class StaticFieldV2TypeNameCandidateGroup : IEquatable<StaticField
     }
 }
 
-/// <summary>Freezes the complete draft name-binding answer derived for one qualified-owner partition.</summary>
+/// <summary>Freezes the complete name-binding answer derived for one qualified-owner partition.</summary>
 /// <remarks>
-/// The result retains every physical draft group derived by the exhaustive namespace-versus-nested enumeration, the
+/// The result retains every physical group derived by the exhaustive namespace-versus-nested enumeration, the
 /// count of occurrences examined for this partition, and one typed rejection reason retained as evidence. The
 /// retained reason is the first reason observed among the occurrences that progressed furthest through the fixed
 /// comparison sequence, so a mere shape disagreement never hides real name evidence.
@@ -351,19 +351,19 @@ public sealed class StaticFieldV2TypeNamePartitionResult : IEquatable<StaticFiel
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the zero-based descriptor partition index described by this draft result.</summary>
+    /// <summary>Gets the zero-based descriptor partition index described by this result.</summary>
     public int PartitionIndex { get; }
 
-    /// <summary>Gets the descriptor candidate kind, which is always a qualified owner for this draft route.</summary>
+    /// <summary>Gets the descriptor candidate kind, which is always a qualified owner for this route.</summary>
     public StaticFieldV2CandidateKind CandidateKind { get; }
 
     /// <summary>Gets the count of leading expression segments interpreted as the owner name.</summary>
     public int OwnerSegmentCount { get; }
 
-    /// <summary>Gets whether this partition derived exactly one, no, or several physical draft candidates.</summary>
+    /// <summary>Gets whether this partition derived exactly one, no, or several physical candidates.</summary>
     public StaticFieldV2TypeNameBindingResultKind ResultKind { get; }
 
-    /// <summary>Gets a defensive copy of every physical draft group derived for this partition.</summary>
+    /// <summary>Gets a defensive copy of every physical group derived for this partition.</summary>
     public ImmutableArray<StaticFieldV2TypeNameCandidateGroup> Groups =>
         ExpressionV2ContractEncoding.Copy(groups);
 
@@ -373,25 +373,25 @@ public sealed class StaticFieldV2TypeNamePartitionResult : IEquatable<StaticFiel
     /// <summary>Gets the retained typed rejection reason, or null when nothing was rejected.</summary>
     public StaticFieldV2TypeNameRejectionReason? FirstRejectionReason { get; }
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft partition result.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical partition result.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft partition result.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical partition result.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two draft partition results.</summary>
-    /// <param name="other">The other draft partition result.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two partition results.</summary>
+    /// <param name="other">The other partition result.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2TypeNamePartitionResult? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft partition-result equality against an arbitrary object.</summary>
+    /// <summary>Tests partition-result equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a partition result with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a partition result with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2TypeNamePartitionResult);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft partition-result content.</summary>
-    /// <returns>A hash code for this canonical draft partition result.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical partition-result content.</summary>
+    /// <returns>A hash code for this canonical partition result.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2TypeNamePartitionResult Create(
@@ -448,9 +448,9 @@ public sealed class StaticFieldV2TypeNamePartitionResult : IEquatable<StaticFiel
     }
 }
 
-/// <summary>Freezes the complete draft outcome of explicit-route namespace/type name binding.</summary>
+/// <summary>Freezes the complete outcome of explicit-route namespace/type name binding.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of every candidate occurrence, physical candidate group, and
+/// This sealed outcome is the sole issuer of every candidate occurrence, physical candidate group, and
 /// partition result it retains. Binding is exhaustive: every qualified-owner partition is examined and every
 /// namespace-versus-nested split of that partition's owner name is examined, so no first-match heuristic and no
 /// longest-prefix preference can influence the answer.
@@ -509,57 +509,57 @@ public sealed class StaticFieldV2TypeNameBindingOutcome : IEquatable<StaticField
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the maximum examined namespace/type candidate-occurrence draft count.</summary>
+    /// <summary>Gets the maximum examined namespace/type candidate-occurrence count.</summary>
     public const int MaximumCandidateOccurrenceCount = StaticFieldV2Limits.MaximumNameCandidateOccurrenceCount;
 
-    /// <summary>Gets the maximum grouped physical-candidate draft count.</summary>
+    /// <summary>Gets the maximum grouped physical-candidate count.</summary>
     public const int MaximumGroupedPhysicalCandidateCount =
         StaticFieldV2Limits.MaximumGroupedPhysicalCandidateCount;
 
-    /// <summary>Gets whether this draft binding is exact, absent, ambiguous, non-exact, invalid, or unsupported.</summary>
+    /// <summary>Gets whether this binding is exact, absent, ambiguous, non-exact, invalid, or unsupported.</summary>
     public StaticFieldV2TypeNameBindingResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft binding issue, or none for an exact outcome.</summary>
+    /// <summary>Gets the typed binding issue, or none for an exact outcome.</summary>
     public StaticFieldV2TypeNameBindingIssue Issue { get; }
 
-    /// <summary>Gets the admitted detached V2 syntax draft descriptor that was bound.</summary>
+    /// <summary>Gets the admitted detached V2 syntax descriptor that was bound.</summary>
     public StaticFieldV2ExpressionDescriptor Expression { get; }
 
-    /// <summary>Gets the named-TypeDef-chain draft portfolio that supplied every examined chain.</summary>
+    /// <summary>Gets the named-TypeDef-chain portfolio that supplied every examined chain.</summary>
     public MetadataNamedTypeDefinitionChainPortfolioIdentity ChainPortfolio { get; }
 
-    /// <summary>Gets a defensive copy of the per-partition draft results, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive copy of the per-partition results, or an empty array for a stop.</summary>
     public ImmutableArray<StaticFieldV2TypeNamePartitionResult> PartitionResults =>
         ExpressionV2ContractEncoding.Copy(partitionResults);
 
-    /// <summary>Gets the single converged physical draft candidate, or null for anything but an exact outcome.</summary>
+    /// <summary>Gets the single converged physical candidate, or null for anything but an exact outcome.</summary>
     public StaticFieldV2TypeNameCandidateGroup? SelectedCandidate { get; }
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the examined-occurrence total, the propagated prerequisite count, or the cap-plus-one observation.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two draft name-binding outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two name-binding outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2TypeNameBindingOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft name-binding outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests name-binding outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2TypeNameBindingOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -645,25 +645,25 @@ public sealed class StaticFieldV2TypeNameBindingOutcome : IEquatable<StaticField
             observedCount);
 }
 
-/// <summary>Binds the detached V2 owner name segments to authority-issued draft TypeDef heads.</summary>
+/// <summary>Binds the detached V2 owner name segments to authority-issued TypeDef heads.</summary>
 /// <remarks>
-/// This draft binder owns the explicit route only: an absent qualifier or the exact <c>global::</c> qualifier. A
+/// This binder owns the explicit route only: an absent qualifier or the exact <c>global::</c> qualifier. A
 /// named alias qualifier and a bare-member-only descriptor both stop with a typed unsupported disposition because
 /// they require the separately owned scoped-context route. The binder performs name binding only; it constructs no
 /// type argument, looks up no member, reads no runtime, and consults no context or PDB.
 /// </remarks>
 public static class StaticFieldV2TypeNameBinder
 {
-    /// <summary>Binds every qualified-owner partition of one admitted draft descriptor exhaustively.</summary>
-    /// <param name="expression">The admitted detached V2 syntax draft descriptor.</param>
-    /// <param name="chainPortfolio">The exact multi-module named-TypeDef-chain draft portfolio.</param>
+    /// <summary>Binds every qualified-owner partition of one admitted descriptor exhaustively.</summary>
+    /// <param name="expression">The admitted detached V2 syntax descriptor.</param>
+    /// <param name="chainPortfolio">The exact multi-module named-TypeDef-chain portfolio.</param>
     /// <remarks>
-    /// Every qualified-owner partition contributes its own complete draft answer, and every namespace-versus-nested
+    /// Every qualified-owner partition contributes its own complete answer, and every namespace-versus-nested
     /// split of that partition's owner name is examined before any answer is formed. Partitions whose exact answers
     /// name the same physical module and TypeDef converge; partitions whose exact answers name different physical
     /// pairs are ambiguous rather than resolved by prefix length or partition order.
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome that is either one complete answer or one prefix-free typed stop.</returns>
+    /// <returns>A sealed immutable outcome that is either one complete answer or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> or <paramref name="chainPortfolio"/> is null.</exception>
     public static StaticFieldV2TypeNameBindingOutcome BindExplicitRoute(
         StaticFieldV2ExpressionDescriptor expression,

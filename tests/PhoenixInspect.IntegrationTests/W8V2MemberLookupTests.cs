@@ -149,7 +149,7 @@ public sealed class W8V2MemberLookupTests
     }
 
     /// <summary>
-    /// Proves the field-only draft profile stops truthfully on a same-name method or instance field instead of
+    /// Proves the field-only profile stops truthfully on a same-name method or instance field instead of
     /// skipping past it to a farther static declaration.
     /// </summary>
     [Fact]
@@ -191,7 +191,7 @@ public sealed class W8V2MemberLookupTests
     }
 
     /// <summary>
-    /// Proves the interface, value-type, and module pseudo-type definition kinds each get their own draft treatment
+    /// Proves the interface, value-type, and module pseudo-type definition kinds each get their own treatment
     /// and that the interface owner records its declared ancestry boundary.
     /// </summary>
     [Fact]
@@ -297,7 +297,7 @@ public sealed class W8V2MemberLookupTests
 
     /// <summary>
     /// Proves a supplied interface-implementation portfolio that itself stopped propagates as a typed prefix-free
-    /// draft stop rather than silently degrading to a self-only interface search.
+    /// stop rather than silently degrading to a self-only interface search.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -323,7 +323,7 @@ public sealed class W8V2MemberLookupTests
 
     /// <summary>
     /// Proves absence is claimed only over a complete bounded chain and that every incomplete terminal produces a
-    /// partial draft answer instead.
+    /// partial answer instead.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -508,7 +508,7 @@ public sealed class W8V2MemberLookupTests
         Assert.Equal(StaticFieldV2MemberLookupResultKind.Absent, wrongGrantOwner.ResultKind);
     }
 
-    /// <summary>Proves every prerequisite, catalog-vector, and owner draft stop is typed and prefix-free.</summary>
+    /// <summary>Proves every prerequisite, catalog-vector, and owner stop is typed and prefix-free.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Prerequisite_and_catalog_vector_stops_are_typed_and_prefix_free()
@@ -604,8 +604,8 @@ public sealed class W8V2MemberLookupTests
     }
 
     /// <summary>
-    /// Proves canonical replay, defensive draft copies, guarded private issuance, the closed public surface, and
-    /// emitted draft XML documentation for the whole member-lookup surface.
+    /// Proves canonical replay, defensive copies, guarded private issuance, the closed public surface, and
+    /// emitted XML documentation for the whole member-lookup surface.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -812,7 +812,7 @@ public sealed class W8V2MemberLookupTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -824,7 +824,7 @@ public sealed class W8V2MemberLookupTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

@@ -9,7 +9,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// Binds one already-admitted W6 member-chain request to a complete immutable declaration plan.
 /// </summary>
 /// <remarks>
-/// This draft facade is capability-separated from evaluation: its source can certify declarations but cannot read an
+/// This facade is capability-separated from evaluation: its source can certify declarations but cannot read an
 /// outer reference or terminal value. The request was already parsed once by the pinned complete C# front end and only
 /// its project-owned admitted identity reaches this stage.
 /// </remarks>

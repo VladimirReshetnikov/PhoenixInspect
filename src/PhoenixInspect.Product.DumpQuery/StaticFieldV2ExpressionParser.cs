@@ -6,10 +6,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>
-/// Projects the sole complete Roslyn parse into the detached draft <c>StaticFieldExpressionV2</c> syntax contracts.
+/// Projects the sole complete Roslyn parse into the detached <c>StaticFieldExpressionV2</c> syntax contracts.
 /// </summary>
 /// <remarks>
-/// This draft projector is a pure function from expression text to one typed syntax outcome. It obtains its tree only
+/// This projector is a pure function from expression text to one typed syntax outcome. It obtains its tree only
 /// through the shared <see cref="CSharpExpressionFrontEnd.ParseCompleteExpression"/> front end, performs no metadata,
 /// context, runtime, or memory call, and stops at the first crossed boundary in the declared deterministic order:
 /// expression characters, parse, parser diagnostics, parser integrity, node/token count, syntax depth, decoded
@@ -21,7 +21,7 @@ public static class StaticFieldV2ExpressionParser
     /// <summary>Parses and classifies one complete V2 static-field expression exactly once.</summary>
     /// <param name="expressionText">The complete expression text, including source trivia and escaped spellings.</param>
     /// <remarks>
-    /// This draft operation is deterministic and bounded. Valid C# outside the closed V2 grammar becomes a typed
+    /// This operation is deterministic and bounded. Valid C# outside the closed V2 grammar becomes a typed
     /// unsupported stop, integrity and bound crossings become typed invalid stops, and no stop retains a prefix
     /// descriptor. Replaying the same text produces a content-equal outcome.
     /// </remarks>

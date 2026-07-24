@@ -2,7 +2,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 
 /// <summary>Projects independently certified result fragments into the common counterfactual product envelope.</summary>
 /// <remarks>
-/// This draft W4 bridge accepts only issuer-certified canonical fragments and deliberately cannot synthesize rooted
+/// This W4 bridge accepts only issuer-certified canonical fragments and deliberately cannot synthesize rooted
 /// request, plan, graph, or evidence identities.
 /// </remarks>
 public static class CounterfactualExecutionProjector

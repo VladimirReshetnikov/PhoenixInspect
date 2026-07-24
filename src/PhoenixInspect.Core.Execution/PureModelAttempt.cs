@@ -8,8 +8,8 @@ namespace PhoenixInspect.Core.Execution;
 /// <remarks>
 /// These values describe an invocation attempt, not a semantic machine event. Exact and unknown outcomes may either
 /// complete the caller transfer or fail during engine-owned result materialization. Blocked, invalid, capability-
-/// failure, and malformed outcomes never complete a transfer. This draft W4.6 contract remains subject to refinement
-/// when the prototype grows beyond its closed two-<see cref="int"/> pure-model profile.
+/// failure, and malformed outcomes never complete a transfer. This W4.6 contract remains subject to refinement
+/// when the implementation grows beyond its closed two-<see cref="int"/> pure-model profile.
 /// </remarks>
 public enum PureModelAttemptOutcomeKind
 {
@@ -41,7 +41,7 @@ public enum PureModelAttemptOutcomeKind
 /// semantic state, persistent memory, budget, events, and active-frame high water unchanged. The record carries no
 /// model return payload, exception text, domain value, memory reference, registry, resolver, or target body.
 ///
-/// This is provisional prototype evidence rather than a stable diagnostic-output or serialization API. Consumers should
+/// This is provisional early-development evidence rather than a stable diagnostic-output or serialization API. Consumers should
 /// treat the complete ordered vector on <see cref="MachineOperationalState"/> as part of deterministic replay.
 /// </remarks>
 public sealed record PureModelAttempt

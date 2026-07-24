@@ -8,7 +8,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises authority-derived named-TypeDef draft chains and their normalized multi-module portfolio.</summary>
+/// <summary>Exercises authority-derived named-TypeDef chains and their normalized multi-module portfolio.</summary>
 public sealed class W8MetadataNamedTypeDefinitionChainContractTests
 {
     private const int ModuleTypeRid = 1;
@@ -20,7 +20,7 @@ public sealed class W8MetadataNamedTypeDefinitionChainContractTests
     private const int EarlierBacktickTypeRid = 11;
 
     /// <summary>
-    /// Proves one exact direct or pointer authority yields RID-ordered outer-to-inner draft chains whose segments,
+    /// Proves one exact direct or pointer authority yields RID-ordered outer-to-inner chains whose segments,
     /// parents, depths, arities, and C# spellability are all authority-derived, including non-exact mapping rows.
     /// </summary>
     /// <param name="usePointers">Whether TypeDef ownership uses complete reordered FieldPtr and MethodPtr rows.</param>
@@ -108,7 +108,7 @@ public sealed class W8MetadataNamedTypeDefinitionChainContractTests
 
     /// <summary>
     /// Proves non-exact and invalid compatibility or mapping prerequisites and cross-catalog authority disagreement
-    /// stop the draft chain catalog deterministically without a chain prefix.
+    /// stop the chain catalog deterministically without a chain prefix.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -173,7 +173,7 @@ public sealed class W8MetadataNamedTypeDefinitionChainContractTests
 
     /// <summary>
     /// Proves a fabricated authority view cannot smuggle shape, parent, cycle, depth, or relation claims past the
-    /// catalog: each contradiction has one deterministic prefix-free typed draft stop, and the authority-consistent
+    /// catalog: each contradiction has one deterministic prefix-free typed stop, and the authority-consistent
     /// view reproduces the public result exactly.
     /// </summary>
     [Fact]
@@ -282,7 +282,7 @@ public sealed class W8MetadataNamedTypeDefinitionChainContractTests
     }
 
     /// <summary>
-    /// Proves the normalized multi-module draft portfolio discards caller order, keys exact lookup by module and
+    /// Proves the normalized multi-module portfolio discards caller order, keys exact lookup by module and
     /// token, keeps default and explicit-empty vectors distinct, and stops deterministically for prerequisite,
     /// vector-shape, module-mismatch, and lineage contradictions.
     /// </summary>
@@ -445,7 +445,7 @@ public sealed class W8MetadataNamedTypeDefinitionChainContractTests
 
     /// <summary>
     /// Proves defensive copies, private segment, chain, and entry issuance, the closed public issuer surface, and
-    /// emitted draft XML documentation for the named-TypeDef chain contract family.
+    /// emitted XML documentation for the named-TypeDef chain contract family.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -687,7 +687,7 @@ public sealed class W8MetadataNamedTypeDefinitionChainContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -699,7 +699,7 @@ public sealed class W8MetadataNamedTypeDefinitionChainContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

@@ -13,7 +13,7 @@ public interface IMemoryModel<TValue, TMem>
 
     /// <summary>Allocates an object in a derived persistent snapshot.</summary>
     /// <param name="mem">The immutable ancestor snapshot.</param>
-    /// <param name="type">The exact draft type of the new object.</param>
+    /// <param name="type">The exact type of the new object.</param>
     /// <returns>The new reference and a descendant snapshot; <paramref name="mem"/> remains unchanged.</returns>
     (TValue objRef, TMem mem) NewObject(TMem mem, TypeSig type);
 

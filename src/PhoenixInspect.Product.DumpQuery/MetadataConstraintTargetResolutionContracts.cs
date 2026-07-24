@@ -3,7 +3,7 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies the physical form of one resolved constraint-target draft row.</summary>
+/// <summary>Classifies the physical form of one resolved constraint-target row.</summary>
 /// <remarks>Every value is a complete derived row fact rather than a catalog failure.</remarks>
 public enum MetadataConstraintTargetKind
 {
@@ -20,7 +20,7 @@ public enum MetadataConstraintTargetKind
     TypeSpecification = 4,
 }
 
-/// <summary>Freezes one guarded authority-derived constraint-target draft row.</summary>
+/// <summary>Freezes one guarded authority-derived constraint-target row.</summary>
 /// <remarks>
 /// The row joins one authority-issued GenericParamConstraint row to its exact named target or retained TypeSpec.
 /// It performs no constraint semantics; substituted validation stays with the later constructed-constraint work.
@@ -58,7 +58,7 @@ public sealed class MetadataConstraintTargetResolutionIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the unchanged authority-issued GenericParamConstraint draft row.</summary>
+    /// <summary>Gets the unchanged authority-issued GenericParamConstraint row.</summary>
     public MetadataGenericParameterConstraintTableRowIdentity ConstraintRow { get; }
 
     /// <summary>Gets the exact GenericParamConstraint row token.</summary>
@@ -67,40 +67,40 @@ public sealed class MetadataConstraintTargetResolutionIdentity :
     /// <summary>Gets the validated raw physical TypeDefOrRef Constraint token.</summary>
     public int ConstraintMetadataToken => ConstraintRow.ConstraintMetadataToken;
 
-    /// <summary>Gets the complete typed physical form of this draft target.</summary>
+    /// <summary>Gets the complete typed physical form of this target.</summary>
     public MetadataConstraintTargetKind Kind { get; }
 
-    /// <summary>Gets the exact target module for a named resolved draft target, otherwise null.</summary>
+    /// <summary>Gets the exact target module for a named resolved target, otherwise null.</summary>
     public StaticFieldMetadataModuleIdentity? TargetModule { get; }
 
-    /// <summary>Gets the exact authority-issued target TypeDef for a named resolved draft target, otherwise null.</summary>
+    /// <summary>Gets the exact authority-issued target TypeDef for a named resolved target, otherwise null.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? TargetTypeDefinition { get; }
 
-    /// <summary>Gets the retained TypeRef draft resolution row for a reference-formed target, otherwise null.</summary>
+    /// <summary>Gets the retained TypeRef resolution row for a reference-formed target, otherwise null.</summary>
     public MetadataTypeReferenceResolutionIdentity? ReferenceResolution { get; }
 
-    /// <summary>Gets the retained physical TypeSpec draft row for a signature-formed target, otherwise null.</summary>
+    /// <summary>Gets the retained physical TypeSpec row for a signature-formed target, otherwise null.</summary>
     public MetadataTypeSpecificationPhysicalRowIdentity? TypeSpecificationRow { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two constraint-target draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two constraint-target rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataConstraintTargetResolutionIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests constraint-target draft row equality against an arbitrary object.</summary>
+    /// <summary>Tests constraint-target row equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataConstraintTargetResolutionIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this constraint-target draft row.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this constraint-target row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataConstraintTargetResolutionIdentity Create(
@@ -135,7 +135,7 @@ public sealed class MetadataConstraintTargetResolutionIdentity :
     }
 }
 
-/// <summary>Freezes one guarded per-module entry of the constraint-target draft portfolio.</summary>
+/// <summary>Freezes one guarded per-module entry of the constraint-target portfolio.</summary>
 /// <remarks>The entry retains its complete constraint-catalog lineage and one RID-ordered target vector.</remarks>
 public sealed class MetadataConstraintTargetResolutionModuleIdentity :
     IEquatable<MetadataConstraintTargetResolutionModuleIdentity>
@@ -166,28 +166,28 @@ public sealed class MetadataConstraintTargetResolutionModuleIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the retained complete physical GenericParamConstraint draft catalog.</summary>
+    /// <summary>Gets the retained complete physical GenericParamConstraint catalog.</summary>
     public MetadataGenericParameterConstraintPhysicalTableCatalogIdentity ConstraintCatalog { get; }
 
-    /// <summary>Gets the retained per-module TypeRef draft resolution entry lineage.</summary>
+    /// <summary>Gets the retained per-module TypeRef resolution entry lineage.</summary>
     public MetadataTypeReferenceResolutionModuleIdentity ResolutionEntry { get; }
 
-    /// <summary>Gets the exact metadata module owning every constraint row in this draft entry.</summary>
+    /// <summary>Gets the exact metadata module owning every constraint row in this entry.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => ResolutionEntry.SourceModule;
 
-    /// <summary>Gets a defensive RID-order copy of every constraint-target draft row.</summary>
+    /// <summary>Gets a defensive RID-order copy of every constraint-target row.</summary>
     public ImmutableArray<MetadataConstraintTargetResolutionIdentity> Targets =>
         ExpressionV2ContractEncoding.Copy(targets);
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft entry bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical entry bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft entry bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical entry bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Finds one constraint-target draft row by GenericParamConstraint token.</summary>
+    /// <summary>Finds one constraint-target row by GenericParamConstraint token.</summary>
     /// <param name="genericParameterConstraintToken">The non-nil GenericParamConstraint token.</param>
-    /// <returns>The complete draft row, or null when the token is not an issued constraint row.</returns>
+    /// <returns>The complete row, or null when the token is not an issued constraint row.</returns>
     public MetadataConstraintTargetResolutionIdentity? FindTarget(int genericParameterConstraintToken)
     {
         if (!CanonicalReplayEncoding.IsMetadataTokenForTable(genericParameterConstraintToken, 0x2C))
@@ -198,19 +198,19 @@ public sealed class MetadataConstraintTargetResolutionModuleIdentity :
         return rowId > 0 && rowId <= targets.Length ? targets[rowId - 1] : null;
     }
 
-    /// <summary>Tests canonical equality between two per-module constraint-target draft entries.</summary>
-    /// <param name="other">The other draft entry.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two per-module constraint-target entries.</summary>
+    /// <param name="other">The other entry.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataConstraintTargetResolutionModuleIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests per-module constraint-target draft entry equality against an arbitrary object.</summary>
+    /// <summary>Tests per-module constraint-target entry equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an entry with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an entry with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataConstraintTargetResolutionModuleIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this per-module constraint-target draft entry.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this per-module constraint-target entry.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataConstraintTargetResolutionModuleIdentity Create(
@@ -229,7 +229,7 @@ public sealed class MetadataConstraintTargetResolutionModuleIdentity :
     }
 }
 
-/// <summary>Classifies one normalized multi-module constraint-target draft portfolio.</summary>
+/// <summary>Classifies one normalized multi-module constraint-target portfolio.</summary>
 /// <remarks>Every stop is prefix-free; exact entries use the resolution portfolio's module order.</remarks>
 public enum MetadataConstraintTargetResolutionPortfolioResultKind
 {
@@ -239,15 +239,15 @@ public enum MetadataConstraintTargetResolutionPortfolioResultKind
     /// <summary>A prerequisite, missing vector slot, or non-exact constraint catalog prevented completion.</summary>
     NonExact = 2,
 
-    /// <summary>Complete draft inputs contradicted the resolution portfolio or one another.</summary>
+    /// <summary>Complete inputs contradicted the resolution portfolio or one another.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the deterministic issue for one constraint-target draft portfolio.</summary>
+/// <summary>Identifies the deterministic issue for one constraint-target portfolio.</summary>
 /// <remarks>The issue values keep prerequisite, vector-shape, catalog, and lineage stops distinct.</remarks>
 public enum MetadataConstraintTargetResolutionPortfolioIssue
 {
-    /// <summary>No issue applies to an exact draft portfolio.</summary>
+    /// <summary>No issue applies to an exact portfolio.</summary>
     None = 0,
 
     /// <summary>The TypeRef resolution portfolio prerequisite was non-exact.</summary>
@@ -289,14 +289,14 @@ public enum MetadataConstraintTargetResolutionPortfolioIssue
 
 /// <summary>Joins every authority-issued constraint row to its exact named target or retained TypeSpec.</summary>
 /// <remarks>
-/// The portfolio is the sole issuer of constraint-target draft rows. Same-module TypeDef targets select their
+/// The portfolio is the sole issuer of constraint-target rows. Same-module TypeDef targets select their
 /// authority row directly, TypeRef targets consume the exact resolution portfolio, and TypeSpec targets retain the
 /// guarded signature row for the later constructed-constraint substitution work.
 /// </remarks>
 public sealed class MetadataConstraintTargetResolutionPortfolioIdentity :
     IEquatable<MetadataConstraintTargetResolutionPortfolioIdentity>
 {
-    /// <summary>Gets the shared module-count draft cap.</summary>
+    /// <summary>Gets the shared module-count cap.</summary>
     public const int MaximumModuleCount = ExpressionV2ContractLimits.MaximumModuleCount;
 
     private const string CanonicalDomain = "metadata-v2-constraint-target-portfolio";
@@ -338,13 +338,13 @@ public sealed class MetadataConstraintTargetResolutionPortfolioIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this normalized constraint-target draft portfolio is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this normalized constraint-target portfolio is exact, non-exact, or invalid.</summary>
     public MetadataConstraintTargetResolutionPortfolioResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft portfolio issue, or none for an exact portfolio.</summary>
+    /// <summary>Gets the typed portfolio issue, or none for an exact portfolio.</summary>
     public MetadataConstraintTargetResolutionPortfolioIssue Issue { get; }
 
-    /// <summary>Gets the retained TypeRef draft resolution portfolio prerequisite.</summary>
+    /// <summary>Gets the retained TypeRef resolution portfolio prerequisite.</summary>
     public MetadataTypeReferenceResolutionPortfolioIdentity ResolutionPortfolio { get; }
 
     /// <summary>Gets the exact portfolio snapshot digest, or null for an empty portfolio or any stop.</summary>
@@ -353,11 +353,11 @@ public sealed class MetadataConstraintTargetResolutionPortfolioIdentity :
             ? ResolutionPortfolio.SnapshotSha256
             : null;
 
-    /// <summary>Gets a defensive module-order copy of exact draft entries, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive module-order copy of exact entries, or an empty array for a stop.</summary>
     public ImmutableArray<MetadataConstraintTargetResolutionModuleIdentity> Entries =>
         ExpressionV2ContractEncoding.Copy(entries);
 
-    /// <summary>Gets the propagated or module-count draft bound, otherwise null.</summary>
+    /// <summary>Gets the propagated or module-count bound, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the issue-related supplied, prerequisite, or cap-plus-one observation count.</summary>
@@ -366,16 +366,16 @@ public sealed class MetadataConstraintTargetResolutionPortfolioIdentity :
     /// <summary>Gets the issue-related metadata-module digest, otherwise null.</summary>
     public string? RelatedModuleSha256 { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft portfolio.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical portfolio.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft portfolio.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical portfolio.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one normalized multi-module constraint-target draft portfolio.</summary>
+    /// <summary>Creates one normalized multi-module constraint-target portfolio.</summary>
     /// <param name="resolutionPortfolio">The exact TypeRef resolution portfolio defining modules and authority.</param>
     /// <param name="constraintCatalogs">One complete constraint catalog for every resolution-portfolio module.</param>
-    /// <returns>An exact complete draft portfolio or a prefix-free typed stop.</returns>
+    /// <returns>An exact complete portfolio or a prefix-free typed stop.</returns>
     public static MetadataConstraintTargetResolutionPortfolioIdentity Create(
         MetadataTypeReferenceResolutionPortfolioIdentity resolutionPortfolio,
         ImmutableArray<MetadataGenericParameterConstraintPhysicalTableCatalogIdentity> constraintCatalogs)
@@ -541,10 +541,10 @@ public sealed class MetadataConstraintTargetResolutionPortfolioIdentity :
         return Exact(resolutionPortfolio, entries.MoveToImmutable());
     }
 
-    /// <summary>Looks up one constraint-target draft row by module and non-nil GenericParamConstraint token.</summary>
+    /// <summary>Looks up one constraint-target row by module and non-nil GenericParamConstraint token.</summary>
     /// <param name="sourceModule">The exact loaded metadata module.</param>
     /// <param name="genericParameterConstraintToken">The exact GenericParamConstraint token within that module.</param>
-    /// <returns>The complete draft row, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
+    /// <returns>The complete row, or null when the portfolio stopped, module is absent, or token was not issued.</returns>
     public MetadataConstraintTargetResolutionIdentity? ExactTargetOrDefault(
         StaticFieldMetadataModuleIdentity sourceModule,
         int genericParameterConstraintToken)
@@ -558,19 +558,19 @@ public sealed class MetadataConstraintTargetResolutionPortfolioIdentity :
         return entry?.FindTarget(genericParameterConstraintToken);
     }
 
-    /// <summary>Tests canonical equality between two constraint-target draft portfolios.</summary>
-    /// <param name="other">The other draft portfolio.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two constraint-target portfolios.</summary>
+    /// <param name="other">The other portfolio.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataConstraintTargetResolutionPortfolioIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests constraint-target draft portfolio equality against an arbitrary object.</summary>
+    /// <summary>Tests constraint-target portfolio equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a portfolio with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a portfolio with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataConstraintTargetResolutionPortfolioIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable draft portfolio content.</summary>
-    /// <returns>A hash code for this canonical draft portfolio.</returns>
+    /// <summary>Computes a deterministic hash code from immutable portfolio content.</summary>
+    /// <returns>A hash code for this canonical portfolio.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);

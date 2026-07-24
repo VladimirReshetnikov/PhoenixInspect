@@ -3,8 +3,8 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one physical member-pointer table represented by a draft row observation.</summary>
-/// <remarks>The draft discriminator follows the metadata table numbers and is not a compatibility commitment.</remarks>
+/// <summary>Classifies one physical member-pointer table represented by a row observation.</summary>
+/// <remarks>The discriminator follows the metadata table numbers and is not a compatibility commitment.</remarks>
 public enum MetadataMemberPointerTableKind
 {
     /// <summary>The FieldPtr table whose rows redirect TypeDef.FieldList entries to FieldDef rows.</summary>
@@ -14,8 +14,8 @@ public enum MetadataMemberPointerTableKind
     Method = 5,
 }
 
-/// <summary>Classifies one complete source-anchored member-pointer catalog draft proof.</summary>
-/// <remarks>The draft result is prefix-free whenever complete exact mapping evidence is unavailable.</remarks>
+/// <summary>Classifies one complete source-anchored member-pointer catalog proof.</summary>
+/// <remarks>The result is prefix-free whenever complete exact mapping evidence is unavailable.</remarks>
 public enum MetadataMemberPointerTableResultKind
 {
     /// <summary>Both pointer domains are exact, including direct domains represented by absent pointer tables.</summary>
@@ -28,8 +28,8 @@ public enum MetadataMemberPointerTableResultKind
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed disposition of one complete member-pointer catalog draft proof.</summary>
-/// <remarks>Every non-exact or invalid draft result retains no pointer-row prefix.</remarks>
+/// <summary>Identifies the typed disposition of one complete member-pointer catalog proof.</summary>
+/// <remarks>Every non-exact or invalid result retains no pointer-row prefix.</remarks>
 public enum MetadataMemberPointerTableIssue
 {
     /// <summary>No issue applies to an exact complete catalog.</summary>
@@ -92,7 +92,7 @@ public enum MetadataMemberPointerTableIssue
 
 /// <summary>Freezes the two physical columns observed from one member-pointer row.</summary>
 /// <remarks>
-/// This sealed draft observation records source identity and raw tokens only. Complete-table permutation evidence is
+/// This sealed observation records source identity and raw tokens only. Complete-table permutation evidence is
 /// represented by a catalog-issued row identity rather than asserted through this physical observation.
 /// </remarks>
 public sealed class MetadataMemberPointerRowObservationIdentity :
@@ -134,19 +134,19 @@ public sealed class MetadataMemberPointerRowObservationIdentity :
     /// <summary>Gets the raw target metadata token retained for complete-catalog validation.</summary>
     public int TargetDefinitionMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one physical member-pointer row draft observation.</summary>
+    /// <summary>Creates one physical member-pointer row observation.</summary>
     /// <param name="metadataModule">The exact metadata module containing the row.</param>
     /// <param name="pointerMetadataToken">The exact non-nil FieldPtr or MethodPtr token.</param>
     /// <param name="targetDefinitionMetadataToken">
     /// The raw target token; its table and exact source range are checked only by the complete catalog.
     /// </param>
-    /// <returns>A sealed immutable physical-row draft observation with no caller-asserted permutation fact.</returns>
+    /// <returns>A sealed immutable physical-row observation with no caller-asserted permutation fact.</returns>
     public static MetadataMemberPointerRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity metadataModule,
         int pointerMetadataToken,
@@ -169,24 +169,24 @@ public sealed class MetadataMemberPointerRowObservationIdentity :
             targetDefinitionMetadataToken);
     }
 
-    /// <summary>Tests canonical equality between two physical member-pointer draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical member-pointer observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataMemberPointerRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataMemberPointerRowObservationIdentity);
 
-    /// <summary>Computes a hash code from the immutable physical-row draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable physical-row bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one member-pointer row after complete permutation validation.</summary>
-/// <remarks>This sealed draft identity can be minted only by the complete source-anchored pointer catalog.</remarks>
+/// <remarks>This sealed identity can be minted only by the complete source-anchored pointer catalog.</remarks>
 public sealed class MetadataMemberPointerTableRowIdentity :
     IEquatable<MetadataMemberPointerTableRowIdentity>
 {
@@ -223,25 +223,25 @@ public sealed class MetadataMemberPointerTableRowIdentity :
     /// <summary>Gets the exact resolved FieldDef or MethodDef target token.</summary>
     public int TargetDefinitionMetadataToken => Observation.TargetDefinitionMetadataToken;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two complete-table-derived pointer draft rows.</summary>
-    /// <param name="other">The other derived draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete-table-derived pointer rows.</summary>
+    /// <param name="other">The other derived row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataMemberPointerTableRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete-table-derived pointer draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete-table-derived pointer equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataMemberPointerTableRowIdentity);
 
-    /// <summary>Computes a hash code from the immutable complete-table-derived pointer draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable complete-table-derived pointer bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataMemberPointerTableRowIdentity Create(
@@ -264,7 +264,7 @@ public sealed class MetadataMemberPointerTableRowIdentity :
 
 /// <summary>Freezes complete source-anchored FieldPtr and MethodPtr table mappings.</summary>
 /// <remarks>
-/// This sealed draft catalog proves every present pointer table is a complete permutation of its definition table.
+/// This sealed catalog proves every present pointer table is a complete permutation of its definition table.
 /// An absent pointer table is an exact direct list domain. Every other result is prefix-free and exposes no rows.
 /// </remarks>
 public sealed class MetadataMemberPointerTableCatalogIdentity :
@@ -309,7 +309,7 @@ public sealed class MetadataMemberPointerTableCatalogIdentity :
     /// <summary>Gets whether both member-pointer table domains are exact, non-exact, or invalid.</summary>
     public MetadataMemberPointerTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft catalog issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed catalog issue, or none for an exact result.</summary>
     public MetadataMemberPointerTableIssue Issue { get; }
 
     /// <summary>Gets the exact metadata source ends governing both member-pointer tables.</summary>
@@ -329,13 +329,13 @@ public sealed class MetadataMemberPointerTableCatalogIdentity :
     /// <summary>Gets the issue-related supplied, exact-source, or cap-plus-one row count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete source-anchored member-pointer catalog draft proof.</summary>
+    /// <summary>Creates one complete source-anchored member-pointer catalog proof.</summary>
     /// <param name="sourceEnds">The exact source ends for the metadata module.</param>
     /// <param name="fieldObservations">
     /// Every physical FieldPtr row in RID order; default denotes unavailable acquisition when the table is present.
@@ -343,7 +343,7 @@ public sealed class MetadataMemberPointerTableCatalogIdentity :
     /// <param name="methodObservations">
     /// Every physical MethodPtr row in RID order; default denotes unavailable acquisition when the table is present.
     /// </param>
-    /// <returns>An exact catalog, a prefix-free non-exact stop, or a factless invalid draft result.</returns>
+    /// <returns>An exact catalog, a prefix-free non-exact stop, or a factless invalid result.</returns>
     public static MetadataMemberPointerTableCatalogIdentity Create(
         MetadataSourceEndIdentity sourceEnds,
         ImmutableArray<MetadataMemberPointerRowObservationIdentity> fieldObservations,
@@ -454,19 +454,19 @@ public sealed class MetadataMemberPointerTableCatalogIdentity :
             0);
     }
 
-    /// <summary>Tests canonical equality between two complete member-pointer catalog draft proofs.</summary>
-    /// <param name="other">The other draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete member-pointer catalog proofs.</summary>
+    /// <param name="other">The other catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataMemberPointerTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete member-pointer catalog draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete member-pointer catalog equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataMemberPointerTableCatalogIdentity);
 
-    /// <summary>Computes a hash code from immutable complete member-pointer catalog draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable complete member-pointer catalog bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<int> ResolveFieldDefinitionTokens(int startRowId, int endExclusiveRowId) =>

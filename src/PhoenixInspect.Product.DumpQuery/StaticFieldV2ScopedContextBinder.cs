@@ -4,9 +4,9 @@ using PhoenixInspect.Host.Dump.ClrMD;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one physical Portable-PDB import definition projected into the scoped draft view.</summary>
+/// <summary>Classifies one physical Portable-PDB import definition projected into the scoped view.</summary>
 /// <remarks>
-/// The draft categories mirror the retained W7 import facts one to one. A category states only what the physical
+/// The categories mirror the retained W7 import facts one to one. A category states only what the physical
 /// import row is; whether the import can contribute a bound head is a separate retained target disposition.
 /// </remarks>
 public enum StaticFieldV2ScopedImportKind
@@ -26,15 +26,15 @@ public enum StaticFieldV2ScopedImportKind
     /// <summary>An extern alias naming one AssemblyRef row.</summary>
     ExternAlias = 5,
 
-    /// <summary>A raw import payload whose kind this draft slice does not interpret.</summary>
+    /// <summary>A raw import payload whose kind this slice does not interpret.</summary>
     UnsupportedRaw = 6,
 }
 
-/// <summary>Identifies how one projected draft import's physical target was or was not resolved.</summary>
+/// <summary>Identifies how one projected import's physical target was or was not resolved.</summary>
 /// <remarks>
 /// Only <see cref="NotApplicable"/>, <see cref="TypeDefinitionResolved"/>, <see cref="TypeReferenceResolved"/>, and
 /// <see cref="AssemblyReferenceResolved"/> are exact. Every other value keeps the physical import retained as typed
-/// non-exact evidence, so a retained import can never silently vanish from the draft projection.
+/// non-exact evidence, so a retained import can never silently vanish from the projection.
 /// </remarks>
 public enum StaticFieldV2ScopedImportTargetDisposition
 {
@@ -50,7 +50,7 @@ public enum StaticFieldV2ScopedImportTargetDisposition
     /// <summary>A TypeRef target token did not resolve to one authority-issued TypeDef.</summary>
     TypeReferenceUnresolved = 4,
 
-    /// <summary>A TypeSpec target row is retained physically and deliberately not decoded by this draft slice.</summary>
+    /// <summary>A TypeSpec target row is retained physically and deliberately not decoded by this slice.</summary>
     TypeSpecificationNotDecoded = 5,
 
     /// <summary>A TypeDef target token names no authority-issued chain in the selected module.</summary>
@@ -59,7 +59,7 @@ public enum StaticFieldV2ScopedImportTargetDisposition
     /// <summary>An AssemblyRef target row exists and identity-binds exactly one portfolio module.</summary>
     AssemblyReferenceResolved = 7,
 
-    /// <summary>The import form names no AssemblyRef row this draft slice can retain.</summary>
+    /// <summary>The import form names no AssemblyRef row this slice can retain.</summary>
     AssemblyReferenceRowAbsent = 8,
 
     /// <summary>No portfolio module's assembly definition identity-binds the named AssemblyRef row.</summary>
@@ -72,43 +72,43 @@ public enum StaticFieldV2ScopedImportTargetDisposition
     RawImportNotInterpreted = 11,
 }
 
-/// <summary>Classifies one projected scoped-context draft view.</summary>
+/// <summary>Classifies one projected scoped-context view.</summary>
 /// <remarks>Every stop is prefix-free and retains neither scope levels nor namespace levels.</remarks>
 public enum StaticFieldV2ScopedContextResultKind
 {
     /// <summary>The complete active import chain and namespace levels were projected.</summary>
     Exact = 1,
 
-    /// <summary>A prerequisite or a declared draft bound prevented a complete projection.</summary>
+    /// <summary>A prerequisite or a declared bound prevented a complete projection.</summary>
     NonExact = 2,
 
-    /// <summary>Complete draft inputs contradicted one another.</summary>
+    /// <summary>Complete inputs contradicted one another.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the deterministic issue for one scoped-context draft projection.</summary>
+/// <summary>Identifies the deterministic issue for one scoped-context projection.</summary>
 /// <remarks>The values keep prerequisite, correlation, chain-shape, and bound stops distinct.</remarks>
 public enum StaticFieldV2ScopedContextIssue
 {
-    /// <summary>No issue applies to an exact draft projection.</summary>
+    /// <summary>No issue applies to an exact projection.</summary>
     None = 0,
 
-    /// <summary>The ancestry authority draft portfolio prerequisite was non-exact.</summary>
+    /// <summary>The ancestry authority portfolio prerequisite was non-exact.</summary>
     AncestryPortfolioNonExact = 1,
 
-    /// <summary>The ancestry authority draft portfolio prerequisite was invalid.</summary>
+    /// <summary>The ancestry authority portfolio prerequisite was invalid.</summary>
     AncestryPortfolioInvalid = 2,
 
-    /// <summary>The TypeRef resolution draft portfolio prerequisite was non-exact.</summary>
+    /// <summary>The TypeRef resolution portfolio prerequisite was non-exact.</summary>
     ResolutionPortfolioNonExact = 3,
 
-    /// <summary>The TypeRef resolution draft portfolio prerequisite was invalid.</summary>
+    /// <summary>The TypeRef resolution portfolio prerequisite was invalid.</summary>
     ResolutionPortfolioInvalid = 4,
 
     /// <summary>The supplied resolution portfolio is not the one the ancestry portfolio consumed.</summary>
     ResolutionPortfolioMismatch = 5,
 
-    /// <summary>The selected metadata module is absent from the exact draft portfolio.</summary>
+    /// <summary>The selected metadata module is absent from the exact portfolio.</summary>
     SelectedModuleNotInPortfolio = 6,
 
     /// <summary>The selected declaring TypeDef has no authority-issued chain in the selected module.</summary>
@@ -120,43 +120,43 @@ public enum StaticFieldV2ScopedContextIssue
     /// <summary>The supplied import scopes are not one contiguous outer-to-inner parent chain.</summary>
     ImportScopeChainNotOuterToInner = 9,
 
-    /// <summary>The active import-scope depth reached the declared draft cap plus one.</summary>
+    /// <summary>The active import-scope depth reached the declared cap plus one.</summary>
     ImportScopeDepthBoundReached = 10,
 
-    /// <summary>The cumulative import-fact count reached the declared draft cap plus one.</summary>
+    /// <summary>The cumulative import-fact count reached the declared cap plus one.</summary>
     ImportFactCountBoundReached = 11,
 
-    /// <summary>The derived namespace-declaration level count reached the declared draft cap plus one.</summary>
+    /// <summary>The derived namespace-declaration level count reached the declared cap plus one.</summary>
     NamespaceLevelCountBoundReached = 12,
 }
 
-/// <summary>Identifies one declared coverage boundary retained by a scoped-context draft projection.</summary>
+/// <summary>Identifies one declared coverage boundary retained by a scoped-context projection.</summary>
 /// <remarks>
-/// Every boundary is an informational draft fact rather than an error. A boundary states what this scoped-context
+/// Every boundary is an informational fact rather than an error. A boundary states what this scoped-context
 /// phase deliberately does not model, so a consumer can never mistake a silent gap for a proven negative.
 /// </remarks>
 public enum StaticFieldV2ScopedContextCoverageBoundary
 {
-    /// <summary>A TypeSpec alias target is retained physically and never becomes a bound head in this draft slice.</summary>
+    /// <summary>A TypeSpec alias target is retained physically and never becomes a bound head in this slice.</summary>
     AliasTypeSpecTargetNotDecoded = 1,
 
-    /// <summary>Retained <c>using static</c> imports are consumed by the separately owned bare-member draft slice.</summary>
+    /// <summary>Retained <c>using static</c> imports are consumed by the separately owned bare-member slice.</summary>
     UsingStaticConsumedByLaterSlice = 2,
 
     /// <summary>At least one malformed or unsupported raw import payload is retained without interpretation.</summary>
     RetainedUnsupportedImport = 3,
 
-    /// <summary>Route selection between the metadata-global and contextual routes belongs to a later draft slice.</summary>
+    /// <summary>Route selection between the metadata-global and contextual routes belongs to a later slice.</summary>
     MetadataGlobalRouteSelectionDeferred = 4,
 
-    /// <summary>Import scopes pair with namespace-declaration levels innermost-first by declared draft convention.</summary>
+    /// <summary>Import scopes pair with namespace-declaration levels innermost-first by declared convention.</summary>
     ImportScopeToNamespaceLevelPairingDeclared = 5,
 
     /// <summary>At least one retained import target did not resolve to one exact physical head.</summary>
     UnresolvedImportTargetRetained = 6,
 }
 
-/// <summary>Identifies which scoped draft source contributed one contextual candidate.</summary>
+/// <summary>Identifies which scoped source contributed one contextual candidate.</summary>
 /// <remarks>The source is retained per candidate so import order can be proven never to select an answer.</remarks>
 public enum StaticFieldV2ContextualCandidateSource
 {
@@ -176,10 +176,10 @@ public enum StaticFieldV2ContextualCandidateSource
     ExternAlias = 5,
 }
 
-/// <summary>Identifies why one examined draft chain did not match a contextual owner name.</summary>
+/// <summary>Identifies why one examined chain did not match a contextual owner name.</summary>
 /// <remarks>
 /// The reasons are ordered by how far the examined chain progressed through the fixed comparison sequence, so a mere
-/// shape disagreement never hides real name evidence. Every value is a retained per-level draft fact.
+/// shape disagreement never hides real name evidence. Every value is a retained per-level fact.
 /// </remarks>
 public enum StaticFieldV2ContextualRejectionReason
 {
@@ -207,90 +207,90 @@ public enum StaticFieldV2ContextualRejectionReason
     /// <summary>One segment has no ordinary C# simple-name spelling.</summary>
     NotCSharpAddressable = 8,
 
-    /// <summary>A matching alias was found but its retained target can never become a bound draft head.</summary>
+    /// <summary>A matching alias was found but its retained target can never become a bound head.</summary>
     AliasTargetNotBindable = 9,
 }
 
-/// <summary>Classifies one examined declaration level of the contextual draft search.</summary>
+/// <summary>Classifies one examined declaration level of the contextual search.</summary>
 /// <remarks>The disposition proves that the first viable level stops the outward search.</remarks>
 public enum StaticFieldV2ContextualLevelDisposition
 {
-    /// <summary>The level produced a viable non-empty candidate set and stopped the outward draft search.</summary>
+    /// <summary>The level produced a viable non-empty candidate set and stopped the outward search.</summary>
     Selected = 1,
 
-    /// <summary>The level produced no candidate, so the draft search continued outward.</summary>
+    /// <summary>The level produced no candidate, so the search continued outward.</summary>
     NoCandidateAtLevel = 2,
 }
 
-/// <summary>Classifies one draft contextual owner-name binding answer.</summary>
+/// <summary>Classifies one contextual owner-name binding answer.</summary>
 /// <remarks>
-/// <see cref="Exact"/>, <see cref="Absent"/>, and <see cref="Ambiguous"/> are complete derived draft answers that
+/// <see cref="Exact"/>, <see cref="Absent"/>, and <see cref="Ambiguous"/> are complete derived answers that
 /// retain their per-partition level evidence. <see cref="NonExact"/>, <see cref="Invalid"/>, and
 /// <see cref="Unsupported"/> are prefix-free stops that retain no partition evidence and no selected candidate.
 /// </remarks>
 public enum StaticFieldV2ContextualBindingResultKind
 {
-    /// <summary>Exactly one physical draft candidate group was derived.</summary>
+    /// <summary>Exactly one physical candidate group was derived.</summary>
     Exact = 1,
 
-    /// <summary>Every examined level rejected every occurrence over an exhaustive draft context.</summary>
+    /// <summary>Every examined level rejected every occurrence over an exhaustive context.</summary>
     Absent = 2,
 
-    /// <summary>Two or more distinct physical draft candidate groups were derived.</summary>
+    /// <summary>Two or more distinct physical candidate groups were derived.</summary>
     Ambiguous = 3,
 
-    /// <summary>A prerequisite, a declared draft bound, or retained non-exact evidence prevented an answer.</summary>
+    /// <summary>A prerequisite, a declared bound, or retained non-exact evidence prevented an answer.</summary>
     NonExact = 4,
 
-    /// <summary>A complete draft prerequisite contradicted itself.</summary>
+    /// <summary>A complete prerequisite contradicted itself.</summary>
     Invalid = 5,
 
-    /// <summary>The expression selects the separately owned explicit draft route.</summary>
+    /// <summary>The expression selects the separately owned explicit route.</summary>
     Unsupported = 6,
 }
 
-/// <summary>Identifies the deterministic issue for one contextual owner-name binding draft outcome.</summary>
-/// <remarks>This draft-phase issue catalog keeps prerequisite, route, bound, and derived answers distinct.</remarks>
+/// <summary>Identifies the deterministic issue for one contextual owner-name binding outcome.</summary>
+/// <remarks>This issue catalog keeps prerequisite, route, bound, and derived answers distinct.</remarks>
 public enum StaticFieldV2ContextualBindingIssue
 {
-    /// <summary>No issue applies to an exact draft outcome.</summary>
+    /// <summary>No issue applies to an exact outcome.</summary>
     None = 0,
 
-    /// <summary>The scoped-context draft projection prerequisite was non-exact.</summary>
+    /// <summary>The scoped-context projection prerequisite was non-exact.</summary>
     ContextNonExact = 1,
 
-    /// <summary>The scoped-context draft projection prerequisite was invalid.</summary>
+    /// <summary>The scoped-context projection prerequisite was invalid.</summary>
     ContextInvalid = 2,
 
-    /// <summary>A <c>global::</c> or metadata-global spelling belongs to the explicit draft route.</summary>
+    /// <summary>A <c>global::</c> or metadata-global spelling belongs to the explicit route.</summary>
     ExplicitRouteNotSupported = 3,
 
-    /// <summary>The descriptor retained no qualified-owner partition for the contextual draft route.</summary>
+    /// <summary>The descriptor retained no qualified-owner partition for the contextual route.</summary>
     NoQualifiedOwnerPartition = 4,
 
-    /// <summary>The alias qualifier names no alias declared by the projected draft context.</summary>
+    /// <summary>The alias qualifier names no alias declared by the projected context.</summary>
     NamedAliasAbsent = 5,
 
-    /// <summary>One winning level derived two or more physical draft candidate groups.</summary>
+    /// <summary>One winning level derived two or more physical candidate groups.</summary>
     AmbiguousWithinLevel = 6,
 
-    /// <summary>Two or more partitions derived different physical draft candidate groups.</summary>
+    /// <summary>Two or more partitions derived different physical candidate groups.</summary>
     AmbiguousAcrossPartitions = 7,
 
-    /// <summary>Every examined level rejected every occurrence over an exhaustive draft context.</summary>
+    /// <summary>Every examined level rejected every occurrence over an exhaustive context.</summary>
     CandidateAbsent = 8,
 
-    /// <summary>Retained non-exact import evidence forbids claiming a complete absent draft answer.</summary>
+    /// <summary>Retained non-exact import evidence forbids claiming a complete absent answer.</summary>
     AbsenceNotClaimableOverRetainedEvidence = 9,
 
-    /// <summary>The examined candidate-occurrence count reached the declared draft cap plus one.</summary>
+    /// <summary>The examined candidate-occurrence count reached the declared cap plus one.</summary>
     CandidateOccurrenceBoundReached = 10,
 
-    /// <summary>The grouped physical-candidate count reached the declared draft cap plus one.</summary>
+    /// <summary>The grouped physical-candidate count reached the declared cap plus one.</summary>
     CandidateGroupBoundReached = 11,
 }
 
-/// <summary>Freezes one physical Portable-PDB import definition projected into the scoped draft view.</summary>
+/// <summary>Freezes one physical Portable-PDB import definition projected into the scoped view.</summary>
 /// <remarks>
 /// The projection is minted only by <see cref="StaticFieldV2ScopedContextOutcome"/>. It retains the unchanged W7
 /// import fact, the scope level that declared it, the typed target disposition, and every exactly resolved target.
@@ -341,68 +341,68 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the unchanged exact W7 Portable-PDB import draft fact behind this projection.</summary>
+    /// <summary>Gets the unchanged exact W7 Portable-PDB import fact behind this projection.</summary>
     public DumpPortablePdbImportFact Fact { get; }
 
-    /// <summary>Gets the zero-based outer-to-inner scope level that declared this draft import.</summary>
+    /// <summary>Gets the zero-based outer-to-inner scope level that declared this import.</summary>
     public int ScopeLevelIndex { get; }
 
-    /// <summary>Gets the projected draft import category.</summary>
+    /// <summary>Gets the projected import category.</summary>
     public StaticFieldV2ScopedImportKind Kind { get; }
 
-    /// <summary>Gets the typed physical target disposition of this draft import.</summary>
+    /// <summary>Gets the typed physical target disposition of this import.</summary>
     public StaticFieldV2ScopedImportTargetDisposition TargetDisposition { get; }
 
     /// <summary>Gets the metadata module owning the resolved target TypeDef, otherwise null.</summary>
     public StaticFieldMetadataModuleIdentity? TargetTypeModule { get; }
 
-    /// <summary>Gets the authority-issued target TypeDef of a type-bearing draft import, otherwise null.</summary>
+    /// <summary>Gets the authority-issued target TypeDef of a type-bearing import, otherwise null.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? TargetTypeDefinition { get; }
 
     /// <summary>Gets the retained undecoded physical TypeSpec target row, otherwise null.</summary>
     public MetadataTypeSpecificationPhysicalRowIdentity? TargetTypeSpecificationRow { get; }
 
-    /// <summary>Gets the exact physical AssemblyRef row this draft import names, otherwise null.</summary>
+    /// <summary>Gets the exact physical AssemblyRef row this import names, otherwise null.</summary>
     public MetadataAssemblyReferencePhysicalRowIdentity? AssemblyReferenceRow { get; }
 
     /// <summary>Gets the single portfolio module the named AssemblyRef identity-binds, otherwise null.</summary>
     public StaticFieldMetadataModuleIdentity? AssemblyReferenceTargetModule { get; }
 
-    /// <summary>Gets whether an inner same-name alias hides this retained outer draft alias.</summary>
+    /// <summary>Gets whether an inner same-name alias hides this retained outer alias.</summary>
     public bool IsShadowed { get; }
 
-    /// <summary>Gets the decoded simple alias of this draft import, otherwise null.</summary>
+    /// <summary>Gets the decoded simple alias of this import, otherwise null.</summary>
     public string? Alias => Fact.Alias;
 
-    /// <summary>Gets the decoded namespace or type target text of this draft import, otherwise null.</summary>
+    /// <summary>Gets the decoded namespace or type target text of this import, otherwise null.</summary>
     public string? Target => Fact.Target;
 
-    /// <summary>Gets whether this draft import's target resolved exactly.</summary>
+    /// <summary>Gets whether this import's target resolved exactly.</summary>
     public bool IsTargetExact =>
         TargetDisposition is StaticFieldV2ScopedImportTargetDisposition.NotApplicable or
             StaticFieldV2ScopedImportTargetDisposition.TypeDefinitionResolved or
             StaticFieldV2ScopedImportTargetDisposition.TypeReferenceResolved or
             StaticFieldV2ScopedImportTargetDisposition.AssemblyReferenceResolved;
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft projection.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical projection.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft projection.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical projection.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two projected draft imports.</summary>
-    /// <param name="other">The other draft projection.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two projected imports.</summary>
+    /// <param name="other">The other projection.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ScopedImportProjection? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests projected draft import equality against an arbitrary object.</summary>
+    /// <summary>Tests projected import equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a projection with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a projection with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ScopedImportProjection);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft projection content.</summary>
-    /// <returns>A hash code for this canonical draft projection.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical projection content.</summary>
+    /// <returns>A hash code for this canonical projection.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2ScopedImportProjection Create(
@@ -450,7 +450,7 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
     }
 }
 
-/// <summary>Freezes one retained draft fact that an inner alias hides an outer same-name alias.</summary>
+/// <summary>Freezes one retained fact that an inner alias hides an outer same-name alias.</summary>
 /// <remarks>
 /// The row is minted only by <see cref="StaticFieldV2ScopedContextOutcome"/>. Both declarations remain retained in
 /// their own scope levels; this row states which one hides which so provenance shows the hiding rather than losing
@@ -480,40 +480,40 @@ public sealed class StaticFieldV2ScopedAliasShadowingIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact decoded alias name declared by both retained draft imports.</summary>
+    /// <summary>Gets the exact decoded alias name declared by both retained imports.</summary>
     public string AliasName { get; }
 
-    /// <summary>Gets the inner draft import whose alias declaration hides the outer one.</summary>
+    /// <summary>Gets the inner import whose alias declaration hides the outer one.</summary>
     public StaticFieldV2ScopedImportProjection HidingImport { get; }
 
-    /// <summary>Gets the retained outer draft import whose alias declaration is hidden.</summary>
+    /// <summary>Gets the retained outer import whose alias declaration is hidden.</summary>
     public StaticFieldV2ScopedImportProjection ShadowedImport { get; }
 
-    /// <summary>Gets the zero-based scope level of the hiding draft declaration.</summary>
+    /// <summary>Gets the zero-based scope level of the hiding declaration.</summary>
     public int HidingScopeLevelIndex => HidingImport.ScopeLevelIndex;
 
-    /// <summary>Gets the zero-based scope level of the shadowed draft declaration.</summary>
+    /// <summary>Gets the zero-based scope level of the shadowed declaration.</summary>
     public int ShadowedScopeLevelIndex => ShadowedImport.ScopeLevelIndex;
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft shadowing row.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical shadowing row.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft shadowing row.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical shadowing row.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two draft alias-shadowing rows.</summary>
-    /// <param name="other">The other draft shadowing row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two alias-shadowing rows.</summary>
+    /// <param name="other">The other shadowing row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ScopedAliasShadowingIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft alias-shadowing equality against an arbitrary object.</summary>
+    /// <summary>Tests alias-shadowing equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ScopedAliasShadowingIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft shadowing content.</summary>
-    /// <returns>A hash code for this canonical draft shadowing row.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical shadowing content.</summary>
+    /// <returns>A hash code for this canonical shadowing row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2ScopedAliasShadowingIdentity Create(
@@ -546,7 +546,7 @@ public sealed class StaticFieldV2ScopedAliasShadowingIdentity :
     }
 }
 
-/// <summary>Freezes one projected active ImportScope draft level and its own projected imports.</summary>
+/// <summary>Freezes one projected active ImportScope level and its own projected imports.</summary>
 /// <remarks>
 /// The row is minted only by <see cref="StaticFieldV2ScopedContextOutcome"/>. Level zero is the outermost active
 /// scope. Imports contribute candidates only at their own level, so this row is the complete import evidence of one
@@ -580,38 +580,38 @@ public sealed class StaticFieldV2ScopedScopeLevelIdentity : IEquatable<StaticFie
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the zero-based outer-to-inner draft level index of this active scope.</summary>
+    /// <summary>Gets the zero-based outer-to-inner level index of this active scope.</summary>
     public int LevelIndex { get; }
 
-    /// <summary>Gets the unchanged exact active ImportScope draft row projected by this level.</summary>
+    /// <summary>Gets the unchanged exact active ImportScope row projected by this level.</summary>
     public DumpPortablePdbImportScopeIdentity Scope { get; }
 
-    /// <summary>Gets the non-nil ImportScope token of this draft level.</summary>
+    /// <summary>Gets the non-nil ImportScope token of this level.</summary>
     public int ImportScopeToken => Scope.ImportScopeToken;
 
-    /// <summary>Gets a defensive physical-ordinal copy of every draft import declared at this level.</summary>
+    /// <summary>Gets a defensive physical-ordinal copy of every import declared at this level.</summary>
     public ImmutableArray<StaticFieldV2ScopedImportProjection> Imports =>
         ExpressionV2ContractEncoding.Copy(imports);
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft scope level.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical scope level.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft scope level.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical scope level.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two projected draft scope levels.</summary>
-    /// <param name="other">The other draft scope level.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two projected scope levels.</summary>
+    /// <param name="other">The other scope level.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ScopedScopeLevelIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests projected draft scope-level equality against an arbitrary object.</summary>
+    /// <summary>Tests projected scope-level equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a level with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a level with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ScopedScopeLevelIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft scope-level content.</summary>
-    /// <returns>A hash code for this canonical draft scope level.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical scope-level content.</summary>
+    /// <returns>A hash code for this canonical scope level.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<StaticFieldV2ScopedImportProjection> ImportsCore => imports;
@@ -639,7 +639,7 @@ public sealed class StaticFieldV2ScopedScopeLevelIdentity : IEquatable<StaticFie
     }
 }
 
-/// <summary>Freezes one derived namespace-declaration draft level of the selected declaring type.</summary>
+/// <summary>Freezes one derived namespace-declaration level of the selected declaring type.</summary>
 /// <remarks>
 /// The row is minted only by <see cref="StaticFieldV2ScopedContextOutcome"/>. Level zero is the innermost declared
 /// namespace and the final level is always the global namespace, spelled as empty text.
@@ -663,34 +663,34 @@ public sealed class StaticFieldV2ScopedNamespaceLevelIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the zero-based innermost-first draft level index of this namespace declaration.</summary>
+    /// <summary>Gets the zero-based innermost-first level index of this namespace declaration.</summary>
     public int LevelIndex { get; }
 
-    /// <summary>Gets the exact namespace text of this draft level, empty for the global namespace.</summary>
+    /// <summary>Gets the exact namespace text of this level, empty for the global namespace.</summary>
     public string NamespaceName { get; }
 
-    /// <summary>Gets whether this draft level is the global namespace.</summary>
+    /// <summary>Gets whether this level is the global namespace.</summary>
     public bool IsGlobalNamespace => NamespaceName.Length == 0;
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft namespace level.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical namespace level.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft namespace level.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical namespace level.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two derived draft namespace levels.</summary>
-    /// <param name="other">The other draft namespace level.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two derived namespace levels.</summary>
+    /// <param name="other">The other namespace level.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ScopedNamespaceLevelIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests derived draft namespace-level equality against an arbitrary object.</summary>
+    /// <summary>Tests derived namespace-level equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a level with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a level with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ScopedNamespaceLevelIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft namespace-level content.</summary>
-    /// <returns>A hash code for this canonical draft namespace level.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical namespace-level content.</summary>
+    /// <returns>A hash code for this canonical namespace level.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2ScopedNamespaceLevelIdentity Create(
@@ -715,10 +715,10 @@ public sealed class StaticFieldV2ScopedNamespaceLevelIdentity :
     }
 }
 
-/// <summary>Freezes one complete scoped-context draft projection request.</summary>
+/// <summary>Freezes one complete scoped-context projection request.</summary>
 /// <remarks>
 /// The request names one selected metadata module, the exact ordered outer-to-inner active ImportScope chain, the
-/// selected declaring type's authority TypeDef, and the exact ancestry and TypeRef resolution draft portfolios. It
+/// selected declaring type's authority TypeDef, and the exact ancestry and TypeRef resolution portfolios. It
 /// carries no runtime, no storage, no expression, and no member evidence.
 /// </remarks>
 public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2ScopedContextRequest>
@@ -758,7 +758,7 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact selected metadata module whose scoped draft context is projected.</summary>
+    /// <summary>Gets the exact selected metadata module whose scoped context is projected.</summary>
     public StaticFieldMetadataModuleIdentity SelectedModule { get; }
 
     /// <summary>Gets a defensive outer-to-inner copy of the supplied ImportScope chain, default when absent.</summary>
@@ -768,31 +768,31 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
     /// <summary>Gets whether the supplied ImportScope chain vector was explicitly initialized.</summary>
     public bool IsImportScopeChainInitialized => !importScopes.IsDefault;
 
-    /// <summary>Gets the selected declaring type's authority-issued draft TypeDef.</summary>
+    /// <summary>Gets the selected declaring type's authority-issued TypeDef.</summary>
     public MetadataTypeDefinitionAuthorityIdentity SelectedTypeDefinition { get; }
 
-    /// <summary>Gets the ancestry authority draft portfolio prerequisite.</summary>
+    /// <summary>Gets the ancestry authority portfolio prerequisite.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
 
-    /// <summary>Gets the TypeRef resolution draft portfolio used to resolve import target tokens.</summary>
+    /// <summary>Gets the TypeRef resolution portfolio used to resolve import target tokens.</summary>
     public MetadataTypeReferenceResolutionPortfolioIdentity ResolutionPortfolio { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft request.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical request.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete scoped-context draft projection request.</summary>
+    /// <summary>Creates one complete scoped-context projection request.</summary>
     /// <param name="selectedModule">The exact selected metadata module.</param>
     /// <param name="importScopes">
     /// The exact active ImportScope chain in outer-to-inner order. A default array is admitted here and becomes a
-    /// typed draft stop rather than an exception, so a caller can replay malformed input.
+    /// typed stop rather than an exception, so a caller can replay malformed input.
     /// </param>
-    /// <param name="selectedTypeDefinition">The selected declaring type's authority-issued draft TypeDef.</param>
-    /// <param name="ancestryPortfolio">The ancestry authority draft portfolio prerequisite.</param>
-    /// <param name="resolutionPortfolio">The TypeRef resolution draft portfolio prerequisite.</param>
-    /// <returns>A sealed immutable draft request with defensively copied evidence.</returns>
+    /// <param name="selectedTypeDefinition">The selected declaring type's authority-issued TypeDef.</param>
+    /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
+    /// <param name="resolutionPortfolio">The TypeRef resolution portfolio prerequisite.</param>
+    /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentException">An initialized scope vector contains a null entry.</exception>
     public static StaticFieldV2ScopedContextRequest Create(
@@ -830,44 +830,44 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
             resolutionPortfolio);
     }
 
-    /// <summary>Tests canonical equality between two scoped-context draft requests.</summary>
-    /// <param name="other">The other draft request.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two scoped-context requests.</summary>
+    /// <param name="other">The other request.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ScopedContextRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests scoped-context draft request equality against an arbitrary object.</summary>
+    /// <summary>Tests scoped-context request equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a request with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a request with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ScopedContextRequest);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft request content.</summary>
-    /// <returns>A hash code for this canonical draft request.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical request content.</summary>
+    /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<DumpPortablePdbImportScopeIdentity> ImportScopesCore => importScopes;
 }
 
-/// <summary>Freezes the complete draft projection of one exact active ImportScope chain into a scoped view.</summary>
+/// <summary>Freezes the complete projection of one exact active ImportScope chain into a scoped view.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of every import projection, alias-shadowing row, scope level, and
+/// This sealed outcome is the sole issuer of every import projection, alias-shadowing row, scope level, and
 /// namespace level it retains. An exact projection retains the complete ordered semantic view; a stop is prefix-free
 /// and retains nothing, because a partial projection is not evidence about the active context.
 /// <para>
 /// Declaration levels pair innermost-first: declaration level zero pairs the innermost namespace level with the
-/// innermost active import scope. That pairing is a declared draft convention recorded through
+/// innermost active import scope. That pairing is a declared convention recorded through
 /// <see cref="StaticFieldV2ScopedContextCoverageBoundary.ImportScopeToNamespaceLevelPairingDeclared"/>.
 /// </para>
 /// </remarks>
 public sealed class StaticFieldV2ScopedContextOutcome : IEquatable<StaticFieldV2ScopedContextOutcome>
 {
-    /// <summary>Gets the maximum active import-scope draft depth.</summary>
+    /// <summary>Gets the maximum active import-scope depth.</summary>
     public const int MaximumImportScopeDepth = StaticFieldV2Limits.MaximumImportScopeDepth;
 
-    /// <summary>Gets the maximum cumulative import-fact draft count.</summary>
+    /// <summary>Gets the maximum cumulative import-fact count.</summary>
     public const int MaximumImportFactCount = StaticFieldV2Limits.MaximumImportFactCount;
 
-    /// <summary>Gets the maximum semantic namespace-level draft count.</summary>
+    /// <summary>Gets the maximum semantic namespace-level count.</summary>
     public const int MaximumNamespaceLevelCount = StaticFieldV2Limits.MaximumNamespaceLevelCount;
 
     private const string CanonicalDomain = "static-field-v2-scoped-context-outcome";
@@ -933,57 +933,57 @@ public sealed class StaticFieldV2ScopedContextOutcome : IEquatable<StaticFieldV2
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft projection is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this projection is exact, non-exact, or invalid.</summary>
     public StaticFieldV2ScopedContextResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft projection issue, or none for an exact projection.</summary>
+    /// <summary>Gets the typed projection issue, or none for an exact projection.</summary>
     public StaticFieldV2ScopedContextIssue Issue { get; }
 
-    /// <summary>Gets the complete scoped-context draft request that was projected.</summary>
+    /// <summary>Gets the complete scoped-context request that was projected.</summary>
     public StaticFieldV2ScopedContextRequest Request { get; }
 
-    /// <summary>Gets a defensive outer-to-inner copy of projected draft scope levels, empty for a stop.</summary>
+    /// <summary>Gets a defensive outer-to-inner copy of projected scope levels, empty for a stop.</summary>
     public ImmutableArray<StaticFieldV2ScopedScopeLevelIdentity> ScopeLevels =>
         ExpressionV2ContractEncoding.Copy(scopeLevels);
 
-    /// <summary>Gets a defensive innermost-first copy of derived draft namespace levels, empty for a stop.</summary>
+    /// <summary>Gets a defensive innermost-first copy of derived namespace levels, empty for a stop.</summary>
     public ImmutableArray<StaticFieldV2ScopedNamespaceLevelIdentity> NamespaceLevels =>
         ExpressionV2ContractEncoding.Copy(namespaceLevels);
 
-    /// <summary>Gets a defensive copy of every retained draft alias-shadowing row.</summary>
+    /// <summary>Gets a defensive copy of every retained alias-shadowing row.</summary>
     public ImmutableArray<StaticFieldV2ScopedAliasShadowingIdentity> AliasShadowings =>
         ExpressionV2ContractEncoding.Copy(aliasShadowings);
 
-    /// <summary>Gets a defensive ascending copy of every declared draft coverage boundary.</summary>
+    /// <summary>Gets a defensive ascending copy of every declared coverage boundary.</summary>
     public ImmutableArray<StaticFieldV2ScopedContextCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
 
-    /// <summary>Gets whether every retained draft import projected an exact physical target.</summary>
+    /// <summary>Gets whether every retained import projected an exact physical target.</summary>
     public bool IsExhaustive { get; }
 
-    /// <summary>Gets the count of declaration levels searched by the contextual draft route.</summary>
+    /// <summary>Gets the count of declaration levels searched by the contextual route.</summary>
     public int DeclarationLevelCount => Math.Max(scopeLevels.Length, namespaceLevels.Length);
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the issue-related or cap-plus-one draft observation count.</summary>
+    /// <summary>Gets the issue-related or cap-plus-one observation count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Gets every active non-shadowed draft alias declaration for one decoded alias name.</summary>
+    /// <summary>Gets every active non-shadowed alias declaration for one decoded alias name.</summary>
     /// <param name="aliasName">The exact decoded alias name to look up.</param>
     /// <remarks>
     /// Only the innermost scope level that declares the name contributes; outer declarations remain retained but are
-    /// marked shadowed. Two active declarations at the same level are returned together so the contextual draft route
+    /// marked shadowed. Two active declarations at the same level are returned together so the contextual route
     /// can report ambiguity instead of choosing by import order.
     /// </remarks>
-    /// <returns>A defensive ordered draft array, empty when no active declaration exists.</returns>
+    /// <returns>A defensive ordered array, empty when no active declaration exists.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="aliasName"/> is null.</exception>
     public ImmutableArray<StaticFieldV2ScopedImportProjection> ActiveAliasProjections(string aliasName)
     {
@@ -1004,19 +1004,19 @@ public sealed class StaticFieldV2ScopedContextOutcome : IEquatable<StaticFieldV2
         return matches.ToImmutable();
     }
 
-    /// <summary>Tests canonical equality between two scoped-context draft projections.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two scoped-context projections.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ScopedContextOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests scoped-context draft projection equality against an arbitrary object.</summary>
+    /// <summary>Tests scoped-context projection equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ScopedContextOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -1111,7 +1111,7 @@ public sealed class StaticFieldV2ScopedContextOutcome : IEquatable<StaticFieldV2
             observedCount);
 }
 
-/// <summary>Freezes one accepted contextual draft match between an owner name and an authority-issued chain.</summary>
+/// <summary>Freezes one accepted contextual match between an owner name and an authority-issued chain.</summary>
 /// <remarks>
 /// The candidate is minted only by <see cref="StaticFieldV2ContextualBindingOutcome"/>. It retains the declaration
 /// level that produced it, which scoped source contributed it, and the exact import projection responsible when one
@@ -1153,16 +1153,16 @@ public sealed class StaticFieldV2ContextualCandidateIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata module whose draft chain catalog produced this candidate.</summary>
+    /// <summary>Gets the exact metadata module whose chain catalog produced this candidate.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule { get; }
 
-    /// <summary>Gets the exact authority-derived outer-to-inner named-TypeDef draft chain that matched.</summary>
+    /// <summary>Gets the exact authority-derived outer-to-inner named-TypeDef chain that matched.</summary>
     public MetadataNamedTypeDefinitionChainIdentity Chain { get; }
 
     /// <summary>Gets the zero-based innermost-first declaration level that produced this candidate.</summary>
     public int LevelIndex { get; }
 
-    /// <summary>Gets which scoped draft source contributed this candidate at that level.</summary>
+    /// <summary>Gets which scoped source contributed this candidate at that level.</summary>
     public StaticFieldV2ContextualCandidateSource Source { get; }
 
     /// <summary>Gets the exact import projection that contributed this candidate, otherwise null.</summary>
@@ -1174,31 +1174,31 @@ public sealed class StaticFieldV2ContextualCandidateIdentity :
     /// <summary>Gets the zero-based descriptor partition index that produced this candidate.</summary>
     public int PartitionIndex { get; }
 
-    /// <summary>Gets the final authority-issued TypeDef named by the matched draft chain.</summary>
+    /// <summary>Gets the final authority-issued TypeDef named by the matched chain.</summary>
     public MetadataTypeDefinitionAuthorityIdentity FinalTypeDefinition => Chain.FinalTypeDefinition;
 
-    /// <summary>Gets the non-nil final TypeDef token used as half of the physical draft group key.</summary>
+    /// <summary>Gets the non-nil final TypeDef token used as half of the physical group key.</summary>
     public int FinalTypeDefinitionToken => Chain.FinalTypeDefinitionToken;
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft candidate.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical candidate.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft candidate.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical candidate.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two contextual draft candidates.</summary>
-    /// <param name="other">The other draft candidate.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two contextual candidates.</summary>
+    /// <param name="other">The other candidate.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ContextualCandidateIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests contextual draft candidate equality against an arbitrary object.</summary>
+    /// <summary>Tests contextual candidate equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a candidate with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a candidate with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ContextualCandidateIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft candidate content.</summary>
-    /// <returns>A hash code for this canonical draft candidate.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical candidate content.</summary>
+    /// <returns>A hash code for this canonical candidate.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2ContextualCandidateIdentity Create(
@@ -1242,7 +1242,7 @@ public sealed class StaticFieldV2ContextualCandidateIdentity :
     }
 }
 
-/// <summary>Freezes one physical contextual draft candidate: a metadata module and one final authority TypeDef.</summary>
+/// <summary>Freezes one physical contextual candidate: a metadata module and one final authority TypeDef.</summary>
 /// <remarks>
 /// Candidates that name the same physical pair converge into exactly one group even when different scoped sources
 /// contributed them, which is what proves that import order never selects an answer. Distinct pairs remain distinct
@@ -1276,38 +1276,38 @@ public sealed class StaticFieldV2ContextualCandidateGroup : IEquatable<StaticFie
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata module that owns this physical draft candidate.</summary>
+    /// <summary>Gets the exact metadata module that owns this physical candidate.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule { get; }
 
-    /// <summary>Gets the exact final authority-issued TypeDef of this physical draft candidate.</summary>
+    /// <summary>Gets the exact final authority-issued TypeDef of this physical candidate.</summary>
     public MetadataTypeDefinitionAuthorityIdentity FinalTypeDefinition { get; }
 
-    /// <summary>Gets the non-nil final TypeDef token of this physical draft candidate.</summary>
+    /// <summary>Gets the non-nil final TypeDef token of this physical candidate.</summary>
     public int FinalTypeDefinitionToken => FinalTypeDefinition.TypeDefinitionToken;
 
-    /// <summary>Gets a defensive copy of every converged draft candidate in examination order.</summary>
+    /// <summary>Gets a defensive copy of every converged candidate in examination order.</summary>
     public ImmutableArray<StaticFieldV2ContextualCandidateIdentity> Candidates =>
         ExpressionV2ContractEncoding.Copy(candidates);
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft group.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical group.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft group.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical group.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two physical contextual draft groups.</summary>
-    /// <param name="other">The other draft group.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical contextual groups.</summary>
+    /// <param name="other">The other group.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ContextualCandidateGroup? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical contextual draft group equality against an arbitrary object.</summary>
+    /// <summary>Tests physical contextual group equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a group with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a group with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ContextualCandidateGroup);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft group content.</summary>
-    /// <returns>A hash code for this canonical draft group.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical group content.</summary>
+    /// <returns>A hash code for this canonical group.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2ContextualCandidateGroup Create(
@@ -1348,7 +1348,7 @@ public sealed class StaticFieldV2ContextualCandidateGroup : IEquatable<StaticFie
     }
 }
 
-/// <summary>Freezes one examined declaration level of the contextual draft search for one partition.</summary>
+/// <summary>Freezes one examined declaration level of the contextual search for one partition.</summary>
 /// <remarks>
 /// The row is minted only by <see cref="StaticFieldV2ContextualBindingOutcome"/>. Every level examined before the
 /// winning one is retained with its own typed rejection evidence, so the first-viable-level rule is visible rather
@@ -1397,50 +1397,50 @@ public sealed class StaticFieldV2ContextualLevelResult : IEquatable<StaticFieldV
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the zero-based innermost-first declaration level index examined by this draft row.</summary>
+    /// <summary>Gets the zero-based innermost-first declaration level index examined by this row.</summary>
     public int LevelIndex { get; }
 
-    /// <summary>Gets the namespace text searched at this draft level, empty for the global namespace.</summary>
+    /// <summary>Gets the namespace text searched at this level, empty for the global namespace.</summary>
     public string NamespaceName { get; }
 
-    /// <summary>Gets whether this draft level pairs with a derived namespace-declaration level.</summary>
+    /// <summary>Gets whether this level pairs with a derived namespace-declaration level.</summary>
     public bool HasNamespaceLevel { get; }
 
-    /// <summary>Gets the outer-to-inner scope level paired with this draft level, otherwise null.</summary>
+    /// <summary>Gets the outer-to-inner scope level paired with this level, otherwise null.</summary>
     public int? ScopeLevelIndex { get; }
 
-    /// <summary>Gets whether this draft level was selected or produced no candidate.</summary>
+    /// <summary>Gets whether this level was selected or produced no candidate.</summary>
     public StaticFieldV2ContextualLevelDisposition Disposition { get; }
 
-    /// <summary>Gets a defensive copy of every candidate this draft level produced.</summary>
+    /// <summary>Gets a defensive copy of every candidate this level produced.</summary>
     public ImmutableArray<StaticFieldV2ContextualCandidateIdentity> Candidates =>
         ExpressionV2ContractEncoding.Copy(candidates);
 
-    /// <summary>Gets the exact count of chain occurrences examined at this draft level.</summary>
+    /// <summary>Gets the exact count of chain occurrences examined at this level.</summary>
     public int ExaminedOccurrenceCount { get; }
 
-    /// <summary>Gets the retained typed draft rejection reason, or null when nothing was rejected.</summary>
+    /// <summary>Gets the retained typed rejection reason, or null when nothing was rejected.</summary>
     public StaticFieldV2ContextualRejectionReason? FirstRejectionReason { get; }
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft level result.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical level result.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft level result.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical level result.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two contextual draft level results.</summary>
-    /// <param name="other">The other draft level result.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two contextual level results.</summary>
+    /// <param name="other">The other level result.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ContextualLevelResult? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests contextual draft level-result equality against an arbitrary object.</summary>
+    /// <summary>Tests contextual level-result equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a level result with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a level result with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ContextualLevelResult);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft level-result content.</summary>
-    /// <returns>A hash code for this canonical draft level result.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical level-result content.</summary>
+    /// <returns>A hash code for this canonical level result.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2ContextualLevelResult Create(
@@ -1500,7 +1500,7 @@ public sealed class StaticFieldV2ContextualLevelResult : IEquatable<StaticFieldV
     }
 }
 
-/// <summary>Freezes the complete contextual draft answer derived for one qualified-owner partition.</summary>
+/// <summary>Freezes the complete contextual answer derived for one qualified-owner partition.</summary>
 /// <remarks>
 /// The row is minted only by <see cref="StaticFieldV2ContextualBindingOutcome"/>. It retains every examined level in
 /// innermost-to-outermost order, the winning level index when one exists, and the physical groups derived from that
@@ -1551,16 +1551,16 @@ public sealed class StaticFieldV2ContextualPartitionResult : IEquatable<StaticFi
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the zero-based descriptor partition index described by this draft result.</summary>
+    /// <summary>Gets the zero-based descriptor partition index described by this result.</summary>
     public int PartitionIndex { get; }
 
-    /// <summary>Gets the descriptor candidate kind, which is always a qualified owner for this draft route.</summary>
+    /// <summary>Gets the descriptor candidate kind, which is always a qualified owner for this route.</summary>
     public StaticFieldV2CandidateKind CandidateKind { get; }
 
     /// <summary>Gets the count of leading expression segments interpreted as the owner name.</summary>
     public int OwnerSegmentCount { get; }
 
-    /// <summary>Gets whether this partition derived exactly one, no, or several physical draft candidates.</summary>
+    /// <summary>Gets whether this partition derived exactly one, no, or several physical candidates.</summary>
     public StaticFieldV2ContextualBindingResultKind ResultKind { get; }
 
     /// <summary>Gets a defensive innermost-first copy of every declaration level examined for this partition.</summary>
@@ -1570,29 +1570,29 @@ public sealed class StaticFieldV2ContextualPartitionResult : IEquatable<StaticFi
     /// <summary>Gets the winning declaration level index, or null when no level produced a candidate.</summary>
     public int? SelectedLevelIndex { get; }
 
-    /// <summary>Gets a defensive copy of every physical draft group derived from the winning level.</summary>
+    /// <summary>Gets a defensive copy of every physical group derived from the winning level.</summary>
     public ImmutableArray<StaticFieldV2ContextualCandidateGroup> Groups =>
         ExpressionV2ContractEncoding.Copy(groups);
 
-    /// <summary>Gets a defensive copy of this fixed-reference canonical draft partition result.</summary>
+    /// <summary>Gets a defensive copy of this fixed-reference canonical partition result.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft partition result.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical partition result.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two contextual draft partition results.</summary>
-    /// <param name="other">The other draft partition result.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two contextual partition results.</summary>
+    /// <param name="other">The other partition result.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ContextualPartitionResult? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests contextual draft partition-result equality against an arbitrary object.</summary>
+    /// <summary>Tests contextual partition-result equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a partition result with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a partition result with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ContextualPartitionResult);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft partition-result content.</summary>
-    /// <returns>A hash code for this canonical draft partition result.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical partition-result content.</summary>
+    /// <returns>A hash code for this canonical partition result.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2ContextualPartitionResult Create(
@@ -1658,9 +1658,9 @@ public sealed class StaticFieldV2ContextualPartitionResult : IEquatable<StaticFi
     }
 }
 
-/// <summary>Freezes the complete draft outcome of contextual owner-name binding through a scoped view.</summary>
+/// <summary>Freezes the complete outcome of contextual owner-name binding through a scoped view.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of every candidate, physical group, level result, and partition
+/// This sealed outcome is the sole issuer of every candidate, physical group, level result, and partition
 /// result it retains. A complete derived answer - <see cref="StaticFieldV2ContextualBindingResultKind.Exact"/>,
 /// <see cref="StaticFieldV2ContextualBindingResultKind.Absent"/>, or
 /// <see cref="StaticFieldV2ContextualBindingResultKind.Ambiguous"/> - retains its partition and level evidence
@@ -1672,10 +1672,10 @@ public sealed class StaticFieldV2ContextualPartitionResult : IEquatable<StaticFi
 /// </remarks>
 public sealed class StaticFieldV2ContextualBindingOutcome : IEquatable<StaticFieldV2ContextualBindingOutcome>
 {
-    /// <summary>Gets the maximum examined contextual candidate-occurrence draft count.</summary>
+    /// <summary>Gets the maximum examined contextual candidate-occurrence count.</summary>
     public const int MaximumCandidateOccurrenceCount = StaticFieldV2Limits.MaximumNameCandidateOccurrenceCount;
 
-    /// <summary>Gets the maximum grouped physical-candidate draft count.</summary>
+    /// <summary>Gets the maximum grouped physical-candidate count.</summary>
     public const int MaximumGroupedPhysicalCandidateCount =
         StaticFieldV2Limits.MaximumGroupedPhysicalCandidateCount;
 
@@ -1721,50 +1721,50 @@ public sealed class StaticFieldV2ContextualBindingOutcome : IEquatable<StaticFie
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft binding is exact, absent, ambiguous, non-exact, invalid, or unsupported.</summary>
+    /// <summary>Gets whether this binding is exact, absent, ambiguous, non-exact, invalid, or unsupported.</summary>
     public StaticFieldV2ContextualBindingResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed contextual draft binding issue, or none for an exact outcome.</summary>
+    /// <summary>Gets the typed contextual binding issue, or none for an exact outcome.</summary>
     public StaticFieldV2ContextualBindingIssue Issue { get; }
 
-    /// <summary>Gets the admitted detached V2 syntax draft descriptor that was bound.</summary>
+    /// <summary>Gets the admitted detached V2 syntax descriptor that was bound.</summary>
     public StaticFieldV2ExpressionDescriptor Expression { get; }
 
-    /// <summary>Gets the projected scoped-context draft view every level was searched through.</summary>
+    /// <summary>Gets the projected scoped-context view every level was searched through.</summary>
     public StaticFieldV2ScopedContextOutcome Context { get; }
 
-    /// <summary>Gets a defensive copy of the per-partition draft results, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive copy of the per-partition results, or an empty array for a stop.</summary>
     public ImmutableArray<StaticFieldV2ContextualPartitionResult> PartitionResults =>
         ExpressionV2ContractEncoding.Copy(partitionResults);
 
-    /// <summary>Gets the single converged physical draft candidate, or null for anything but an exact outcome.</summary>
+    /// <summary>Gets the single converged physical candidate, or null for anything but an exact outcome.</summary>
     public StaticFieldV2ContextualCandidateGroup? SelectedCandidate { get; }
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the examined-occurrence total, the propagated prerequisite count, or the cap-plus-one count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two contextual draft binding outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two contextual binding outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ContextualBindingOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests contextual draft binding outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests contextual binding outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ContextualBindingOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -1879,7 +1879,7 @@ public sealed class StaticFieldV2ContextualBindingOutcome : IEquatable<StaticFie
 
 /// <summary>Projects one exact active ImportScope chain and binds contextual owner names through it.</summary>
 /// <remarks>
-/// This draft binder owns the contextual route only: an absent alias qualifier or a named alias qualifier. The exact
+/// This binder owns the contextual route only: an absent alias qualifier or a named alias qualifier. The exact
 /// <c>global::</c> qualifier stops with a typed unsupported disposition because the explicit route is separately
 /// owned and must remain lazy - a metadata-global spelling never consults this projection at all.
 /// <para>
@@ -1889,7 +1889,7 @@ public sealed class StaticFieldV2ContextualBindingOutcome : IEquatable<StaticFie
 /// </para>
 /// <para>
 /// Retained <c>using static</c> imports are projected with their resolved owners but are consumed by the separately
-/// owned bare-member draft slice; this binder never derives a member from them. A TypeSpec alias target is retained
+/// owned bare-member slice; this binder never derives a member from them. A TypeSpec alias target is retained
 /// physically and never decoded, so it can never become a bound head here.
 /// </para>
 /// </remarks>
@@ -1899,14 +1899,14 @@ public static class StaticFieldV2ScopedContextBinder
     private const byte TypeDefinitionTable = 0x02;
     private const byte TypeSpecificationTable = 0x1B;
 
-    /// <summary>Projects one physical active ImportScope chain into the ordered scoped semantic draft view.</summary>
-    /// <param name="request">The complete scoped-context draft projection request.</param>
+    /// <summary>Projects one physical active ImportScope chain into the ordered scoped semantic view.</summary>
+    /// <param name="request">The complete scoped-context projection request.</param>
     /// <remarks>
     /// Every retained import is projected, including malformed, unsupported, and unresolvable ones, so a retained
     /// import can never silently vanish. Namespace levels are derived innermost-first from the selected declaring
     /// type's outermost enclosing namespace text and always end with the global namespace.
     /// </remarks>
-    /// <returns>A sealed immutable draft projection that is either exact or one prefix-free typed stop.</returns>
+    /// <returns>A sealed immutable projection that is either exact or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2ScopedContextOutcome ProjectContext(StaticFieldV2ScopedContextRequest request)
     {
@@ -2204,18 +2204,18 @@ public static class StaticFieldV2ScopedContextBinder
             totalFactCount);
     }
 
-    /// <summary>Binds every qualified-owner partition of one descriptor through the scoped draft context.</summary>
-    /// <param name="expression">The admitted detached V2 syntax draft descriptor.</param>
-    /// <param name="context">The exact scoped-context draft projection to search.</param>
+    /// <summary>Binds every qualified-owner partition of one descriptor through the scoped context.</summary>
+    /// <param name="expression">The admitted detached V2 syntax descriptor.</param>
+    /// <param name="context">The exact scoped-context projection to search.</param>
     /// <remarks>
     /// A named alias qualifier consults only the named alias or extern alias path. An ordinary spelling evaluates
     /// declaration levels innermost to outermost and, at each level, examines aliases declared at that level, then
     /// declarations in that level's namespace, then candidates contributed by namespace imports declared at that
-    /// level. The first level that produces a viable non-empty candidate set stops the outward draft search even
+    /// level. The first level that produces a viable non-empty candidate set stops the outward search even
     /// when an outer level would also match; imports accumulate only among imports at that same level, equal
     /// physical candidates converge, and distinct surviving candidates are ambiguous rather than ordered.
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome that is either one complete answer or one prefix-free typed stop.</returns>
+    /// <returns>A sealed immutable outcome that is either one complete answer or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> or <paramref name="context"/> is null.</exception>
     public static StaticFieldV2ContextualBindingOutcome BindContextualRoute(
         StaticFieldV2ExpressionDescriptor expression,

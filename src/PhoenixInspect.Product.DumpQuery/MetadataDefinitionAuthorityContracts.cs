@@ -6,7 +6,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Classifies one complete W8 definition-authority join.</summary>
 /// <remarks>
-/// This draft discriminator separates a complete cross-catalog result from a prerequisite stop and contradictory
+/// This discriminator separates a complete cross-catalog result from a prerequisite stop and contradictory
 /// complete evidence. Every result other than <see cref="Exact"/> exposes no authority row prefix.
 /// </remarks>
 public enum MetadataDefinitionAuthorityResultKind
@@ -23,7 +23,7 @@ public enum MetadataDefinitionAuthorityResultKind
 
 /// <summary>Identifies the typed disposition of one W8 definition-authority join.</summary>
 /// <remarks>
-/// The draft issue remains explicit when no authority rows are exposed. The values describe physical definition
+/// The issue remains explicit when no authority rows are exposed. The values describe physical definition
 /// composition only; compiler-name projection and evaluator admission are separate later contracts.
 /// </remarks>
 public enum MetadataDefinitionAuthorityIssue
@@ -97,7 +97,7 @@ public enum MetadataDefinitionAuthorityIssue
 
 /// <summary>Freezes one TypeDef after complete cross-catalog physical-authority composition.</summary>
 /// <remarks>
-/// This sealed draft identity can be minted only by an exact <see cref="MetadataDefinitionAuthorityCatalogIdentity"/>.
+/// This sealed identity can be minted only by an exact <see cref="MetadataDefinitionAuthorityCatalogIdentity"/>.
 /// It retains physical ownership, parent, depth, and total GenericParam arity facts. It makes no compiler-name,
 /// source-addressability, semantic-kind, or evaluator-admission assertion.
 /// </remarks>
@@ -135,7 +135,7 @@ public sealed class MetadataTypeDefinitionAuthorityIdentity :
     /// <summary>Gets the exact complete-table TypeDef row from which this authority identity was composed.</summary>
     public MetadataTypeDefinitionTableRowIdentity TableRow { get; }
 
-    /// <summary>Gets the exact source ends shared by every prerequisite used to compose this draft identity.</summary>
+    /// <summary>Gets the exact source ends shared by every prerequisite used to compose this identity.</summary>
     public MetadataSourceEndIdentity SourceEnds => TableRow.SourceEnds;
 
     /// <summary>Gets the exact non-nil TypeDef token.</summary>
@@ -171,25 +171,25 @@ public sealed class MetadataTypeDefinitionAuthorityIdentity :
     /// <summary>Gets a defensive ownership-order copy of exact MethodDef tokens owned by this TypeDef.</summary>
     public ImmutableArray<int> MethodDefinitionTokens => TableRow.MethodDefinitionTokens;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two authority-issued TypeDef draft identities.</summary>
-    /// <param name="other">The other authority-issued TypeDef draft identity.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two authority-issued TypeDef identities.</summary>
+    /// <param name="other">The other authority-issued TypeDef identity.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeDefinitionAuthorityIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests authority-issued TypeDef draft equality against an arbitrary object.</summary>
+    /// <summary>Tests authority-issued TypeDef equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an identity with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an identity with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeDefinitionAuthorityIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft content.</summary>
-    /// <returns>A hash code for this authority-issued TypeDef draft identity.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical content.</summary>
+    /// <returns>A hash code for this authority-issued TypeDef identity.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataTypeDefinitionAuthorityIdentity Create(
@@ -237,7 +237,7 @@ public sealed class MetadataTypeDefinitionAuthorityIdentity :
 
 /// <summary>Freezes one MethodDef after complete cross-catalog physical-authority composition.</summary>
 /// <remarks>
-/// This sealed draft identity can be minted only by an exact <see cref="MetadataDefinitionAuthorityCatalogIdentity"/>.
+/// This sealed identity can be minted only by an exact <see cref="MetadataDefinitionAuthorityCatalogIdentity"/>.
 /// The declaring TypeDef comes from pointer-aware ownership, while GenericParam positions must agree exactly with the
 /// shared-grammar signature arity. It makes no method-body or evaluator-admission assertion.
 /// </remarks>
@@ -275,7 +275,7 @@ public sealed class MetadataMethodDefinitionAuthorityIdentity :
     /// <summary>Gets the authority-issued TypeDef that owns this exact MethodDef.</summary>
     public MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition { get; }
 
-    /// <summary>Gets the exact source ends shared by every prerequisite used to compose this draft identity.</summary>
+    /// <summary>Gets the exact source ends shared by every prerequisite used to compose this identity.</summary>
     public MetadataSourceEndIdentity SourceEnds => TableRow.SourceEnds;
 
     /// <summary>Gets the exact non-nil MethodDef token.</summary>
@@ -291,25 +291,25 @@ public sealed class MetadataMethodDefinitionAuthorityIdentity :
     /// <summary>Gets the exact generic arity jointly proven by signature and physical GenericParam rows.</summary>
     public int DeclaredGenericArity => TableRow.DeclaredGenericArity;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two authority-issued MethodDef draft identities.</summary>
-    /// <param name="other">The other authority-issued MethodDef draft identity.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two authority-issued MethodDef identities.</summary>
+    /// <param name="other">The other authority-issued MethodDef identity.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataMethodDefinitionAuthorityIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests authority-issued MethodDef draft equality against an arbitrary object.</summary>
+    /// <summary>Tests authority-issued MethodDef equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an identity with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an identity with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataMethodDefinitionAuthorityIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft content.</summary>
-    /// <returns>A hash code for this authority-issued MethodDef draft identity.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical content.</summary>
+    /// <returns>A hash code for this authority-issued MethodDef identity.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataMethodDefinitionAuthorityIdentity Create(
@@ -347,7 +347,7 @@ public sealed class MetadataMethodDefinitionAuthorityIdentity :
 
 /// <summary>Freezes the complete W8 cross-catalog physical definition authority for one metadata source.</summary>
 /// <remarks>
-/// This sealed draft catalog is the only issuer of TypeDef and MethodDef authority rows in this contract family. It
+/// This sealed catalog is the only issuer of TypeDef and MethodDef authority rows in this contract family. It
 /// composes complete TypeDef ownership, NestedClass parents, physical GenericParam owners, and MethodDef signatures
 /// from identical source ends. Every prerequisite and global invariant is checked before any issued row is retained.
 /// Compiler-name mapping and evaluator admission remain separate later contracts.
@@ -410,10 +410,10 @@ public sealed class MetadataDefinitionAuthorityCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete draft authority join is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether the complete authority join is exact, non-exact, or invalid.</summary>
     public MetadataDefinitionAuthorityResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft authority issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed authority issue, or none for an exact result.</summary>
     public MetadataDefinitionAuthorityIssue Issue { get; }
 
     /// <summary>Gets the complete TypeDef ownership prerequisite retained by this outcome.</summary>
@@ -462,13 +462,13 @@ public sealed class MetadataDefinitionAuthorityCatalogIdentity :
     /// <summary>Gets the TypeDef, MethodDef, or GenericParam-owner token related to the issue, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete cross-catalog physical definition-authority draft result.</summary>
+    /// <summary>Creates one complete cross-catalog physical definition-authority result.</summary>
     /// <param name="typeDefinitionCatalog">The complete pointer-aware TypeDef ownership prerequisite.</param>
     /// <param name="nestedClassCatalog">The complete TypeDef-correlated NestedClass parent-map prerequisite.</param>
     /// <param name="genericParameterCatalog">The complete token-only physical GenericParam prerequisite.</param>
@@ -729,19 +729,19 @@ public sealed class MetadataDefinitionAuthorityCatalogIdentity :
             null);
     }
 
-    /// <summary>Tests canonical equality between two complete definition-authority draft results.</summary>
-    /// <param name="other">The other complete draft result.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete definition-authority results.</summary>
+    /// <param name="other">The other complete result.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataDefinitionAuthorityCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete definition-authority draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete definition-authority equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a result with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a result with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataDefinitionAuthorityCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft content.</summary>
-    /// <returns>A hash code for this complete definition-authority draft result.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical content.</summary>
+    /// <returns>A hash code for this complete definition-authority result.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsTypeRowMintCapability(object? capability) =>

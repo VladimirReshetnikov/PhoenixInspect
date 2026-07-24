@@ -214,7 +214,7 @@ public sealed class W8MetadataSourceCatalogContractTests
             static bound => bound.Name == ExpressionV2ContractLimits.NestedClassRowCountBoundName);
     }
 
-    /// <summary>Proves new draft source-catalog types document public static and instance methods in emitted XML.</summary>
+    /// <summary>Proves new source-catalog types document public static and instance methods in emitted XML.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Source_catalog_public_method_surface_has_emitted_draft_documentation()
@@ -233,7 +233,7 @@ public sealed class W8MetadataSourceCatalogContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.True(typeDocumentation.Value.Contains("draft", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -246,7 +246,7 @@ public sealed class W8MetadataSourceCatalogContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.True(member.Value.Contains("draft", StringComparison.OrdinalIgnoreCase)));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

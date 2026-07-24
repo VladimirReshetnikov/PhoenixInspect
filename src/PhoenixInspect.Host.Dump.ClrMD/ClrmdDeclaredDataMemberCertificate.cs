@@ -9,7 +9,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// Identifies the existing W2 decoder that can interpret one certified terminal storage field.
 /// </summary>
 /// <remarks>
-/// This is a draft W6 admission value. It deliberately contains only decoder kinds already implemented by W2 and
+/// This is a W6 admission value. It deliberately contains only decoder kinds already implemented by W2 and
 /// does not imply support for arbitrary CLI signatures or conversions.
 /// </remarks>
 public enum ClrmdTerminalDecoderKind
@@ -27,7 +27,7 @@ public enum ClrmdTerminalDecoderKind
 /// <summary>
 /// Identifies whether a terminal name denotes storage directly or a property certified as an exact storage projection.
 /// </summary>
-/// <remarks>This draft W6 discriminator does not admit behavior-bearing properties.</remarks>
+/// <remarks>This W6 discriminator does not admit behavior-bearing properties.</remarks>
 public enum ClrmdTerminalMemberKind
 {
     /// <summary>The public terminal identity and physical storage are the same FieldDef.</summary>
@@ -41,7 +41,7 @@ public enum ClrmdTerminalMemberKind
 /// Freezes one declared intermediate TypeDef projected from complete counted dump metadata.
 /// </summary>
 /// <remarks>
-/// This draft value is meaningful only together with its snapshot-scoped runtime module and complete metadata-content
+/// This value is meaningful only together with its snapshot-scoped runtime module and complete metadata-content
 /// identity. It represents exact declaration identity, not assignability or a future runtime object's exact type.
 /// </remarks>
 public sealed record ClrmdDeclaredTypeInfo
@@ -75,7 +75,7 @@ public sealed record ClrmdDeclaredTypeInfo
 /// Freezes target-object-relative storage for one directly declared terminal FieldDef.
 /// </summary>
 /// <remarks>
-/// This draft descriptor contains no target object address and cannot read a value. A later evaluator must validate an
+/// This descriptor contains no target object address and cannot read a value. A later evaluator must validate an
 /// exact target object and combine its address with <see cref="OffsetFromObject"/> without repeating member lookup.
 /// </remarks>
 public sealed record ClrmdRelativeFieldInfo
@@ -130,7 +130,7 @@ public sealed record ClrmdRelativeFieldInfo
     /// Gets the nested nullable discriminant/payload layout, or <see langword="null"/> for another decoder kind.
     /// </summary>
     /// <remarks>
-    /// The draft layout is frozen during preparation so later evaluation does not repeat nested runtime-field lookup.
+    /// The layout is frozen during preparation so later evaluation does not repeat nested runtime-field lookup.
     /// </remarks>
     public ClrmdRelativeNullableInt32Layout? NullableInt32Layout { get; }
 }
@@ -139,7 +139,7 @@ public sealed record ClrmdRelativeFieldInfo
 /// Freezes the two target-field-relative storage ranges needed by the existing nullable Int32 decoder.
 /// </summary>
 /// <remarks>
-/// This draft W6 value contains no absolute address. Offsets are relative to the containing terminal FieldDef storage
+/// This W6 value contains no absolute address. Offsets are relative to the containing terminal FieldDef storage
 /// and are validated as distinct complete ranges before a certificate is issued.
 /// </remarks>
 public sealed record ClrmdRelativeNullableInt32Layout
@@ -183,7 +183,7 @@ public sealed record ClrmdRelativeNullableInt32Layout
 /// Proves that one directly declared PropertyDef is exactly a projection of one directly declared backing FieldDef.
 /// </summary>
 /// <remarks>
-/// The draft certificate retains the physical getter evidence but never invokes the getter. Admission requires the
+/// The certificate retains the physical getter evidence but never invokes the getter. Admission requires the
 /// complete body <c>ldarg.0; ldfld &lt;backing FieldDef&gt;; ret</c> and rejects every other body shape.
 /// </remarks>
 public sealed record ClrmdDataPropertyCertificate
@@ -225,7 +225,7 @@ public sealed record ClrmdDataPropertyCertificate
     public int? SetterToken { get; }
 
     /// <summary>Gets every non-getter/non-setter method-semantics MethodDef token in metadata order.</summary>
-    /// <remarks>W6 does not execute or otherwise interpret these draft non-participating associations.</remarks>
+    /// <remarks>W6 does not execute or otherwise interpret these non-participating associations.</remarks>
     public ImmutableArray<int> OtherAccessorTokens { get; }
 
     /// <summary>Gets the complete counted physical getter body whose exact instruction sequence was certified.</summary>
@@ -236,7 +236,7 @@ public sealed record ClrmdDataPropertyCertificate
 /// Freezes all W6.3 declaration and storage facts for one root reference field and one terminal data member.
 /// </summary>
 /// <remarks>
-/// This immutable draft certificate is preparation evidence only. Construction reads complete module metadata and,
+/// This immutable certificate is preparation evidence only. Construction reads complete module metadata and,
 /// for a property, its physical getter body; it never reads the outer reference, a referenced object, or terminal
 /// storage. A later W6 checkpoint will consume the frozen identities during counted evaluation.
 /// </remarks>
@@ -308,7 +308,7 @@ public sealed class ClrmdDeclaredDataMemberCertificate
     /// </summary>
     /// <returns>A deterministic length-delimited replay projection containing no display-only path.</returns>
     /// <remarks>
-    /// The draft projection contains target addresses and metadata bytes. It is replay material, not diagnostic text.
+    /// The projection contains target addresses and metadata bytes. It is replay material, not diagnostic text.
     /// </remarks>
     public string ToCanonicalReplayProjection()
     {

@@ -16,7 +16,7 @@ public sealed partial class ClrmdDumpSession
     /// the sole pointer-width read. Missing pointer suffix bytes are never interpreted as zero.
     /// </returns>
     /// <remarks>
-    /// This draft W6 operation reads only the outer field slot. It performs no target validation, member lookup, or
+    /// This W6 operation reads only the outer field slot. It performs no target validation, member lookup, or
     /// terminal read; callers must separately validate an exact non-null target.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
@@ -69,7 +69,7 @@ public sealed partial class ClrmdDumpSession
     /// internally consistent different exact runtime type is unsupported; contradictory method-table facts conflict.
     /// </returns>
     /// <remarks>
-    /// The draft descriptor deliberately gains no root handle facts. This operation performs no terminal member
+    /// The descriptor deliberately gains no root handle facts. This operation performs no terminal member
     /// lookup and no terminal value read.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
@@ -241,7 +241,7 @@ public sealed partial class ClrmdDumpSession
     /// <param name="target">The exact declared non-root target selected through the certificate's outer field.</param>
     /// <returns>An exact ordinary field descriptor, or conflict/invalid evidence with no partial descriptor.</returns>
     /// <remarks>
-    /// This draft W6 operation performs no memory read and no ClrMD field/type catalog lookup. All address additions
+    /// This W6 operation performs no memory read and no ClrMD field/type catalog lookup. All address additions
     /// and outer/nested ranges are checked before a descriptor is issued.
     /// </remarks>
     /// <exception cref="ArgumentNullException">

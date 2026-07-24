@@ -15,7 +15,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// Proves that one pinned complete C# expression parse feeds narrow project-owned W2, W5, and opt-in W6 recognizers.
 /// </summary>
 /// <remarks>
-/// These are draft W6.2 front-end tests only. Admission neither binds a metadata member nor reads target memory.
+/// These are W6.2 front-end tests only. Admission neither binds a metadata member nor reads target memory.
 /// </remarks>
 public sealed class W6RoslynExpressionFrontEndTests
 {

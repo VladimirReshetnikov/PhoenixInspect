@@ -9,7 +9,7 @@ namespace PhoenixInspect.W8ForwarderTarget;
 /// Supplies cross-assembly member-access flags from an assembly that grants the consumer no friend visibility.
 /// </summary>
 /// <remarks>
-/// This draft metadata fixture keeps public, family, combined-family, assembly, and private rows on one owner.
+/// This metadata fixture keeps public, family, combined-family, assembly, and private rows on one owner.
 /// </remarks>
 public class NonFriendAccessibilityOwner
 {

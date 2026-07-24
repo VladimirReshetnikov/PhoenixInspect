@@ -8,7 +8,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises authority-issued W8 GenericParam owner-group and binding draft proofs.</summary>
+/// <summary>Exercises authority-issued W8 GenericParam owner-group and binding proofs.</summary>
 public sealed class W8MetadataGenericParameterProofContractTests
 {
     private const string SnapshotDigest =
@@ -198,7 +198,7 @@ public sealed class W8MetadataGenericParameterProofContractTests
     }
 
     /// <summary>
-    /// Proves authority catalog prerequisite stops, guarded issuance, defensive copies, replay, and canonical draft
+    /// Proves authority catalog prerequisite stops, guarded issuance, defensive copies, replay, and canonical
     /// digests for exact, non-exact, invalid, and binding outcomes.
     /// </summary>
     [Fact]
@@ -292,7 +292,7 @@ public sealed class W8MetadataGenericParameterProofContractTests
         Assert.Equal("e07ac71ae7681dcc35c97a25a88a2a44fd7cb356e1ebe39b603de43062ca524f", boundLedger.Sha256);
     }
 
-    /// <summary>Proves the new sealed draft surface documents public static and instance methods and has no source-less factories.</summary>
+    /// <summary>Proves the new sealed surface documents public static and instance methods and has no source-less factories.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Generic_parameter_proof_public_surface_is_sealed_and_draft_documented()
@@ -319,7 +319,7 @@ public sealed class W8MetadataGenericParameterProofContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.True(typeDocumentation.Value.Contains("draft", StringComparison.OrdinalIgnoreCase));
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -331,7 +331,7 @@ public sealed class W8MetadataGenericParameterProofContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.True(member.Value.Contains("draft", StringComparison.OrdinalIgnoreCase)));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

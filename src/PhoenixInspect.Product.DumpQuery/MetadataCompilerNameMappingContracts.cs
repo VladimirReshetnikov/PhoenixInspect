@@ -5,10 +5,10 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies the outcome of one draft compiler-name mapping derivation.</summary>
+/// <summary>Classifies the outcome of one compiler-name mapping derivation.</summary>
 /// <remarks>
 /// The discriminator keeps an exact name projection separate from a coherent physical input for which no complete
-/// compiler mapping can be derived. This draft contract is additive and is not yet a compatibility commitment.
+/// compiler mapping can be derived. This contract is additive and is not yet a compatibility commitment.
 /// </remarks>
 public enum MetadataCompilerNameMappingResultKind
 {
@@ -19,18 +19,18 @@ public enum MetadataCompilerNameMappingResultKind
     NonExact = 2,
 }
 
-/// <summary>Identifies the typed issue carried by one draft compiler-name mapping.</summary>
+/// <summary>Identifies the typed issue carried by one compiler-name mapping.</summary>
 /// <remarks>The issue does not overload CLS, Roslyn, source-name, or evaluator dispositions.</remarks>
 public enum MetadataCompilerNameMappingIssue
 {
-    /// <summary>No issue applies to an exact draft mapping.</summary>
+    /// <summary>No issue applies to an exact mapping.</summary>
     None = 0,
 
     /// <summary>A nested type's total physical arity was less than its enclosing type's total physical arity.</summary>
     NestedTotalArityUnderflow = 1,
 }
 
-/// <summary>Classifies strict CLS generic-arity spelling for one draft metadata name.</summary>
+/// <summary>Classifies strict CLS generic-arity spelling for one metadata name.</summary>
 /// <remarks>
 /// This status describes only the terminal arity convention. It does not classify the rest of the name as a CLS
 /// identifier and does not imply C# source-name addressability.
@@ -44,7 +44,7 @@ public enum MetadataClsAritySpellingStatus
     NonCanonical = 2,
 }
 
-/// <summary>Classifies the pinned Roslyn-compatible projection of one draft metadata name.</summary>
+/// <summary>Classifies the pinned Roslyn-compatible projection of one metadata name.</summary>
 /// <remarks>This status is independent of CLS spelling and evaluator admission.</remarks>
 public enum MetadataRoslynNameProjectionStatus
 {
@@ -55,7 +55,7 @@ public enum MetadataRoslynNameProjectionStatus
     RawMetadataNameRetained = 2,
 }
 
-/// <summary>Classifies whether one projected draft name can be written as an ordinary C# simple name.</summary>
+/// <summary>Classifies whether one projected name can be written as an ordinary C# simple name.</summary>
 /// <remarks>
 /// Reserved keywords may remain addressable through a verbatim identifier. This status does not perform namespace or
 /// member binding and is not a claim that a complete qualified type is unambiguous.
@@ -69,7 +69,7 @@ public enum MetadataCSharpSimpleNameAddressabilityStatus
     NotAddressable = 2,
 }
 
-/// <summary>Classifies the current evaluator generic-arity admission of one exact draft mapping.</summary>
+/// <summary>Classifies the current evaluator generic-arity admission of one exact mapping.</summary>
 /// <remarks>The disposition is an operation bound and is not a physical metadata validity rule.</remarks>
 public enum MetadataEvaluatorGenericArityAdmissionStatus
 {
@@ -80,7 +80,7 @@ public enum MetadataEvaluatorGenericArityAdmissionStatus
     TotalArityLimitExceeded = 2,
 }
 
-/// <summary>Freezes the authority-issued physical input to one draft compiler-name mapping derivation.</summary>
+/// <summary>Freezes the authority-issued physical input to one compiler-name mapping derivation.</summary>
 /// <remarks>
 /// The input retains the exact TypeDef authority row and its optional immediate enclosing authority row. Its decoded
 /// name and physical arities are derived views of those rows rather than independently supplied claims. It accepts no
@@ -113,10 +113,10 @@ public sealed class MetadataCompilerNameMappingInputIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact authority-issued TypeDef row classified by this draft input.</summary>
+    /// <summary>Gets the exact authority-issued TypeDef row classified by this input.</summary>
     public MetadataTypeDefinitionAuthorityIdentity TypeDefinition { get; }
 
-    /// <summary>Gets the exact immediate enclosing authority row, or null for a top-level draft TypeDef.</summary>
+    /// <summary>Gets the exact immediate enclosing authority row, or null for a top-level TypeDef.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? EnclosingTypeDefinition { get; }
 
     /// <summary>Gets the exact decoded metadata name before any compiler-style interpretation.</summary>
@@ -128,28 +128,28 @@ public sealed class MetadataCompilerNameMappingInputIdentity :
     /// <summary>Gets the enclosing TypeDef's complete physical arity, or null for a top-level TypeDef.</summary>
     public int? EnclosingTotalGenericArity => EnclosingTypeDefinition?.TotalGenericArity;
 
-    /// <summary>Gets whether this draft input represents a nested TypeDef segment.</summary>
+    /// <summary>Gets whether this input represents a nested TypeDef segment.</summary>
     public bool IsNested => TypeDefinition.IsNested;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two physical compiler-name draft inputs.</summary>
-    /// <param name="other">The other draft input.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical compiler-name inputs.</summary>
+    /// <param name="other">The other input.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataCompilerNameMappingInputIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical compiler-name draft input equality against an arbitrary object.</summary>
+    /// <summary>Tests physical compiler-name input equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an input with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an input with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataCompilerNameMappingInputIdentity);
 
-    /// <summary>Computes a hash code from the immutable physical compiler-name draft input.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable physical compiler-name input.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataCompilerNameMappingInputIdentity Create(
@@ -187,7 +187,7 @@ public sealed class MetadataCompilerNameMappingInputIdentity :
     }
 }
 
-/// <summary>Freezes strict CLS arity-spelling facts for one exact draft mapping.</summary>
+/// <summary>Freezes strict CLS arity-spelling facts for one exact mapping.</summary>
 /// <remarks>
 /// The fact is minted only with the mapping aggregate's private capability. A valid terminal arity is retained for
 /// explanation even when it differs from the introduced physical arity.
@@ -218,10 +218,10 @@ public sealed class MetadataClsAritySpellingIdentity : IEquatable<MetadataClsAri
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the unchanged physical input retained by this draft spelling fact.</summary>
+    /// <summary>Gets the unchanged physical input retained by this spelling fact.</summary>
     public MetadataCompilerNameMappingInputIdentity Input { get; }
 
-    /// <summary>Gets the exact parent-relative generic arity classified by this draft spelling fact.</summary>
+    /// <summary>Gets the exact parent-relative generic arity classified by this spelling fact.</summary>
     public int IntroducedGenericArity { get; }
 
     /// <summary>Gets the strict CLS arity-spelling disposition.</summary>
@@ -233,25 +233,25 @@ public sealed class MetadataClsAritySpellingIdentity : IEquatable<MetadataClsAri
     /// <summary>Gets whether the raw name has canonical CLS arity spelling.</summary>
     public bool IsCanonical => Status == MetadataClsAritySpellingStatus.Canonical;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two CLS arity-spelling draft facts.</summary>
-    /// <param name="other">The other draft fact.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two CLS arity-spelling facts.</summary>
+    /// <param name="other">The other fact.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataClsAritySpellingIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests CLS arity-spelling draft equality against an arbitrary object.</summary>
+    /// <summary>Tests CLS arity-spelling equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a fact with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a fact with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataClsAritySpellingIdentity);
 
-    /// <summary>Computes a hash code from immutable CLS arity-spelling draft content.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable CLS arity-spelling content.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataClsAritySpellingIdentity Create(
@@ -291,7 +291,7 @@ public sealed class MetadataClsAritySpellingIdentity : IEquatable<MetadataClsAri
     }
 }
 
-/// <summary>Freezes one pinned Roslyn-compatible metadata-name projection for an exact draft mapping.</summary>
+/// <summary>Freezes one pinned Roslyn-compatible metadata-name projection for an exact mapping.</summary>
 /// <remarks>
 /// The projection examines only the final backtick. It removes a valid positive suffix only when that suffix equals
 /// the exact introduced arity; otherwise the complete raw name remains visible.
@@ -322,7 +322,7 @@ public sealed class MetadataRoslynNameProjectionIdentity : IEquatable<MetadataRo
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the unchanged physical input retained by this draft Roslyn projection.</summary>
+    /// <summary>Gets the unchanged physical input retained by this Roslyn projection.</summary>
     public MetadataCompilerNameMappingInputIdentity Input { get; }
 
     /// <summary>Gets the exact parent-relative generic arity used by the projection.</summary>
@@ -338,25 +338,25 @@ public sealed class MetadataRoslynNameProjectionIdentity : IEquatable<MetadataRo
     public bool WasTerminalAritySuffixRemoved =>
         Status == MetadataRoslynNameProjectionStatus.TerminalAritySuffixRemoved;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two Roslyn name-projection draft facts.</summary>
-    /// <param name="other">The other draft fact.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two Roslyn name-projection facts.</summary>
+    /// <param name="other">The other fact.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataRoslynNameProjectionIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests Roslyn name-projection draft equality against an arbitrary object.</summary>
+    /// <summary>Tests Roslyn name-projection equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a fact with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a fact with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataRoslynNameProjectionIdentity);
 
-    /// <summary>Computes a hash code from immutable Roslyn name-projection draft content.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable Roslyn name-projection content.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataRoslynNameProjectionIdentity Create(
@@ -395,7 +395,7 @@ public sealed class MetadataRoslynNameProjectionIdentity : IEquatable<MetadataRo
     }
 }
 
-/// <summary>Freezes ordinary C# simple-name addressability for one exact draft Roslyn projection.</summary>
+/// <summary>Freezes ordinary C# simple-name addressability for one exact Roslyn projection.</summary>
 /// <remarks>
 /// The fact uses the pinned Roslyn lexical rules. It records verbatim escaping separately so addressable keyword
 /// values are not confused with names that have no ordinary source spelling.
@@ -427,7 +427,7 @@ public sealed class MetadataCSharpSimpleNameAddressabilityIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact Roslyn projection classified by this draft addressability fact.</summary>
+    /// <summary>Gets the exact Roslyn projection classified by this addressability fact.</summary>
     public MetadataRoslynNameProjectionIdentity Projection { get; }
 
     /// <summary>Gets the ordinary C# simple-name addressability disposition.</summary>
@@ -442,25 +442,25 @@ public sealed class MetadataCSharpSimpleNameAddressabilityIdentity :
     /// <summary>Gets whether the projected simple name has an ordinary C# source spelling.</summary>
     public bool IsAddressable => Status == MetadataCSharpSimpleNameAddressabilityStatus.Addressable;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two C# simple-name addressability draft facts.</summary>
-    /// <param name="other">The other draft fact.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two C# simple-name addressability facts.</summary>
+    /// <param name="other">The other fact.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataCSharpSimpleNameAddressabilityIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests C# simple-name addressability draft equality against an arbitrary object.</summary>
+    /// <summary>Tests C# simple-name addressability equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a fact with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a fact with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataCSharpSimpleNameAddressabilityIdentity);
 
-    /// <summary>Computes a hash code from immutable C# simple-name addressability draft content.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable C# simple-name addressability content.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataCSharpSimpleNameAddressabilityIdentity Create(
@@ -497,7 +497,7 @@ public sealed class MetadataCSharpSimpleNameAddressabilityIdentity :
     }
 }
 
-/// <summary>Freezes the evaluator generic-arity admission for one exact draft mapping.</summary>
+/// <summary>Freezes the evaluator generic-arity admission for one exact mapping.</summary>
 /// <remarks>
 /// The fact retains the physical total arity and the current operation ceiling. Exceeding the ceiling does not make
 /// the physical input, CLS spelling, Roslyn projection, or C# addressability non-exact.
@@ -524,7 +524,7 @@ public sealed class MetadataEvaluatorGenericArityAdmissionIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the unchanged physical input classified by this draft admission fact.</summary>
+    /// <summary>Gets the unchanged physical input classified by this admission fact.</summary>
     public MetadataCompilerNameMappingInputIdentity Input { get; }
 
     /// <summary>Gets the evaluator generic-arity admission disposition.</summary>
@@ -539,25 +539,25 @@ public sealed class MetadataEvaluatorGenericArityAdmissionIdentity :
     /// <summary>Gets whether the exact mapping is admitted by the evaluator's current arity ceiling.</summary>
     public bool IsAdmitted => Status == MetadataEvaluatorGenericArityAdmissionStatus.Admitted;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two evaluator generic-arity admission draft facts.</summary>
-    /// <param name="other">The other draft fact.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two evaluator generic-arity admission facts.</summary>
+    /// <param name="other">The other fact.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataEvaluatorGenericArityAdmissionIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests evaluator generic-arity admission draft equality against an arbitrary object.</summary>
+    /// <summary>Tests evaluator generic-arity admission equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a fact with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a fact with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataEvaluatorGenericArityAdmissionIdentity);
 
-    /// <summary>Computes a hash code from immutable evaluator generic-arity admission draft content.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable evaluator generic-arity admission content.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataEvaluatorGenericArityAdmissionIdentity Create(
@@ -580,7 +580,7 @@ public sealed class MetadataEvaluatorGenericArityAdmissionIdentity :
     }
 }
 
-/// <summary>Freezes all non-conflated compiler-name facts derived from one authority-issued draft TypeDef.</summary>
+/// <summary>Freezes all non-conflated compiler-name facts derived from one authority-issued TypeDef.</summary>
 /// <remarks>
 /// Exact outcomes retain separate CLS, Roslyn, C# source-name, and evaluator-admission facts. Nested arity underflow
 /// retains the authority-bound physical input alone and exposes no semantic projection prefix. Only a complete
@@ -626,55 +626,55 @@ public sealed class MetadataCompilerNameMappingIdentity : IEquatable<MetadataCom
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete draft mapping is exact or stopped without a semantic projection.</summary>
+    /// <summary>Gets whether the complete mapping is exact or stopped without a semantic projection.</summary>
     public MetadataCompilerNameMappingResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed mapping issue, or none for an exact draft mapping.</summary>
+    /// <summary>Gets the typed mapping issue, or none for an exact mapping.</summary>
     public MetadataCompilerNameMappingIssue Issue { get; }
 
-    /// <summary>Gets the unchanged physical input retained by every draft outcome.</summary>
+    /// <summary>Gets the unchanged physical input retained by every outcome.</summary>
     public MetadataCompilerNameMappingInputIdentity Input { get; }
 
-    /// <summary>Gets the exact authority-issued TypeDef row classified by this draft mapping.</summary>
+    /// <summary>Gets the exact authority-issued TypeDef row classified by this mapping.</summary>
     public MetadataTypeDefinitionAuthorityIdentity TypeDefinition => Input.TypeDefinition;
 
-    /// <summary>Gets the exact immediate enclosing authority row, or null for a top-level draft TypeDef.</summary>
+    /// <summary>Gets the exact immediate enclosing authority row, or null for a top-level TypeDef.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? EnclosingTypeDefinition => Input.EnclosingTypeDefinition;
 
     /// <summary>Gets the derived parent-relative arity, or null when nested physical arities underflow.</summary>
     public int? IntroducedGenericArity { get; }
 
-    /// <summary>Gets the strict CLS arity-spelling fact, or null for a non-exact draft mapping.</summary>
+    /// <summary>Gets the strict CLS arity-spelling fact, or null for a non-exact mapping.</summary>
     public MetadataClsAritySpellingIdentity? ClsAritySpelling { get; }
 
-    /// <summary>Gets the pinned Roslyn name projection, or null for a non-exact draft mapping.</summary>
+    /// <summary>Gets the pinned Roslyn name projection, or null for a non-exact mapping.</summary>
     public MetadataRoslynNameProjectionIdentity? RoslynProjection { get; }
 
-    /// <summary>Gets ordinary C# simple-name addressability, or null for a non-exact draft mapping.</summary>
+    /// <summary>Gets ordinary C# simple-name addressability, or null for a non-exact mapping.</summary>
     public MetadataCSharpSimpleNameAddressabilityIdentity? CSharpAddressability { get; }
 
-    /// <summary>Gets evaluator generic-arity admission, or null for a non-exact draft mapping.</summary>
+    /// <summary>Gets evaluator generic-arity admission, or null for a non-exact mapping.</summary>
     public MetadataEvaluatorGenericArityAdmissionIdentity? EvaluatorAdmission { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two complete compiler-name draft mappings.</summary>
-    /// <param name="other">The other draft mapping.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete compiler-name mappings.</summary>
+    /// <param name="other">The other mapping.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataCompilerNameMappingIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete compiler-name draft mapping equality against an arbitrary object.</summary>
+    /// <summary>Tests complete compiler-name mapping equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a mapping with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a mapping with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataCompilerNameMappingIdentity);
 
-    /// <summary>Computes a hash code from immutable compiler-name draft mapping content.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable compiler-name mapping content.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataCompilerNameMappingIdentity Create(

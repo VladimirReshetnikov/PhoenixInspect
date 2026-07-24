@@ -40,7 +40,7 @@ public sealed partial class ClrmdDumpSession
     /// result retaining every counted read completed before failure.
     /// </returns>
     /// <remarks>
-    /// This draft W6.3 operation never reads the value of the outer reference, validates a referenced object, reads
+    /// This W6.3 operation never reads the value of the outer reference, validates a referenced object, reads
     /// terminal storage, or invokes a getter. It reads the complete module metadata image and, only for a property,
     /// the complete physical getter body. Member and catalog limits are deterministic and reported only when reached.
     /// </remarks>
@@ -318,7 +318,7 @@ public sealed partial class ClrmdDumpSession
     /// An exact counted physical body, or a typed unavailable, partial, conflicting, or invalid evidence result.
     /// </returns>
     /// <remarks>
-    /// This draft overload supports W6 property certification for getters that have never executed and therefore may
+    /// This overload supports W6 property certification for getters that have never executed and therefore may
     /// have no ClrMD runtime-method projection. It performs no name lookup or invocation; identity comes solely from
     /// the selected module, complete counted metadata, MethodDef token, RVA, and mapped target bytes.
     /// </remarks>

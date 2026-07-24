@@ -23,7 +23,7 @@ public enum ClrmdStaticRuntimeTypeIdentityKind
 /// Freezes one detached ClrMD runtime-type projection used to correlate counted metadata with runtime static fields.
 /// </summary>
 /// <remarks>
-/// This draft W7 identity records either physical TypeDef coordinates or a TypeDef-less array topology without
+/// This W7 identity records either physical TypeDef coordinates or a TypeDef-less array topology without
 /// retaining a live ClrMD object. A TypeDef method table remains optional evidence. An array method table is required,
 /// and its recursively bounded component, base, and interface graph prevents callers from fabricating module or
 /// TypeDef content for a runtime shape that does not own such metadata.
@@ -1068,7 +1068,7 @@ public sealed class ClrmdStaticRuntimeFieldIdentity : IEquatable<ClrmdStaticRunt
 
 /// <summary>Records exact bounded ClrMD scans and retained matches for one runtime declaration mapping.</summary>
 /// <remarks>
-/// This draft identity is the physical runtime-to-metadata mapping traversal, not product symbol search. Its factory
+/// This identity is the physical runtime-to-metadata mapping traversal, not product symbol search. Its factory
 /// creates only a successful unique mapping: both complete catalogs were exhausted under cap, both scan counts are
 /// positive, and each retained-match count is exactly one. The four fixed declared bounds are embedded in canonical
 /// bytes so replay cannot silently change a traversal cap or reinterpret an early prefix as uniqueness.
@@ -1263,7 +1263,7 @@ public sealed class ClrmdStaticRuntimeDeclarationMappingCounters :
 
 /// <summary>Correlates one uniquely selected runtime declaring type with one directly owned runtime static field.</summary>
 /// <remarks>
-/// This draft identity is deliberately detached from live ClrMD objects. It is an exact physical mapping witness,
+/// This identity is deliberately detached from live ClrMD objects. It is an exact physical mapping witness,
 /// not a declaration search result or a static-slot/value observation. Later stages may compose it with independently
 /// validated metadata and storage evidence without repeating or weakening the runtime selection boundary.
 /// </remarks>

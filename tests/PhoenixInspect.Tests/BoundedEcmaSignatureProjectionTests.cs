@@ -7,7 +7,7 @@ namespace PhoenixInspect.Tests;
 /// Exercises complete bounded MethodDef and local-variable signature decoding with complex synthetic ECMA-335 blobs.
 /// </summary>
 /// <remarks>
-/// These headless tests freeze the draft byte-only structural contract. Metadata-row existence and generic-context
+/// These headless tests freeze the byte-only structural contract. Metadata-row existence and generic-context
 /// cardinality remain separate resolver responsibilities.
 /// </remarks>
 public sealed class BoundedEcmaSignatureProjectionTests

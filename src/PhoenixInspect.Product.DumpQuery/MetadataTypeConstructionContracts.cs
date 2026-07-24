@@ -4,7 +4,7 @@ using PhoenixInspect.Core.Abstractions;
 namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Identifies each primitive type represented directly by one CLI signature element.</summary>
-/// <remarks>The draft catalog intentionally excludes topology represented by another contract node.</remarks>
+/// <remarks>The catalog intentionally excludes topology represented by another contract node.</remarks>
 public enum MetadataPrimitiveTypeKind
 {
     /// <summary>Boolean.</summary>
@@ -42,7 +42,7 @@ public enum MetadataPrimitiveTypeKind
 }
 
 /// <summary>Classifies one complete pre-substitution metadata signature node.</summary>
-/// <remarks>This draft syntax tree retains admitted and typed non-admitted physical forms without flattening them.</remarks>
+/// <remarks>This syntax tree retains admitted and typed non-admitted physical forms without flattening them.</remarks>
 public enum MetadataTypeSignatureNodeKind
 {
     /// <summary>A primitive signature element.</summary>
@@ -78,7 +78,7 @@ public enum MetadataTypeSignatureNodeKind
 }
 
 /// <summary>Retains the raw CLASS or VALUETYPE code preceding one named signature head.</summary>
-/// <remarks>The draft fact remains separate from resolved TypeDef classification and is checked only against exact proof.</remarks>
+/// <remarks>The fact remains separate from resolved TypeDef classification and is checked only against exact proof.</remarks>
 public enum MetadataNamedSignatureHeadKind
 {
     /// <summary>The physical signature encoded CLASS.</summary>
@@ -88,7 +88,7 @@ public enum MetadataNamedSignatureHeadKind
 }
 
 /// <summary>Classifies the exact owner-table alternative of one GenericParam row.</summary>
-/// <remarks>The draft union admits both TypeDef-owned VAR and MethodDef-owned MVAR rows.</remarks>
+/// <remarks>The union admits both TypeDef-owned VAR and MethodDef-owned MVAR rows.</remarks>
 public enum MetadataGenericParameterOwnerKind
 {
     /// <summary>The GenericParam Owner coded index names a TypeDef.</summary>
@@ -98,7 +98,7 @@ public enum MetadataGenericParameterOwnerKind
 }
 
 /// <summary>Classifies one bounded signature decode operation.</summary>
-/// <remarks>A non-exact draft outcome retains the physical owner and reached bound but never a prefix tree.</remarks>
+/// <remarks>A non-exact outcome retains the physical owner and reached bound but never a prefix tree.</remarks>
 public enum MetadataSignatureDecodeResultKind
 {
     /// <summary>The decoder consumed the complete source and produced one complete tree.</summary>
@@ -110,7 +110,7 @@ public enum MetadataSignatureDecodeResultKind
 }
 
 /// <summary>Classifies acquisition of one bounded metadata signature token-resolution catalog.</summary>
-/// <remarks>The draft non-exact form retains source ends and cap-plus-one evidence but no usable map prefix.</remarks>
+/// <remarks>The non-exact form retains source ends and cap-plus-one evidence but no usable map prefix.</remarks>
 public enum MetadataSignatureTokenResolutionCatalogResultKind
 {
     /// <summary>Every retained map entry is within the exact source table ends and below the operation cap.</summary>
@@ -120,7 +120,7 @@ public enum MetadataSignatureTokenResolutionCatalogResultKind
 }
 
 /// <summary>Classifies complete traversal of a detached TypeSpec row-reference graph.</summary>
-/// <remarks>The draft graph distinguishes exact source-end closure, bounded non-exact traversal, and invalid cycles/rows.</remarks>
+/// <remarks>The graph distinguishes exact source-end closure, bounded non-exact traversal, and invalid cycles/rows.</remarks>
 public enum MetadataTypeSpecificationGraphResultKind
 {
     /// <summary>Every reachable row decoded exactly and traversal reached all source ends within bounds.</summary>
@@ -132,7 +132,7 @@ public enum MetadataTypeSpecificationGraphResultKind
 }
 
 /// <summary>Identifies one metadata role applying a decoded type signature.</summary>
-/// <remarks>The draft use role supplies contextual validity without changing physical row or decode identity.</remarks>
+/// <remarks>The use role supplies contextual validity without changing physical row or decode identity.</remarks>
 public enum MetadataTypeUseRole
 {
     /// <summary>A role-neutral TypeSpec row.</summary>
@@ -150,7 +150,7 @@ public enum MetadataTypeUseRole
 }
 
 /// <summary>Classifies role-specific application of one complete decoded type.</summary>
-/// <remarks>The draft outcome remains distinct from role-neutral decode and closed semantic construction.</remarks>
+/// <remarks>The outcome remains distinct from role-neutral decode and closed semantic construction.</remarks>
 public enum MetadataTypeUseResultKind
 {
     /// <summary>The role admits one exact closed semantic type.</summary>
@@ -166,7 +166,7 @@ public enum MetadataTypeUseResultKind
 }
 
 /// <summary>Identifies the physical TypeDefOrRef target form stored in a metadata edge.</summary>
-/// <remarks>The draft alternatives preserve row and module identity instead of equating equal decoded type names.</remarks>
+/// <remarks>The alternatives preserve row and module identity instead of equating equal decoded type names.</remarks>
 public enum MetadataTypeDefOrRefTargetKind
 {
     /// <summary>A direct TypeDef in the source module.</summary>
@@ -178,7 +178,7 @@ public enum MetadataTypeDefOrRefTargetKind
 }
 
 /// <summary>Classifies validation of one ordered physical metadata-edge row aggregate.</summary>
-/// <remarks>The draft aggregate preserves every row in source order even when duplicate physical facts make it invalid.</remarks>
+/// <remarks>The aggregate preserves every row in source order even when duplicate physical facts make it invalid.</remarks>
 public enum MetadataEdgeAggregateResultKind
 {
     /// <summary>The complete physical source table was observed and the selected owner projection is exact.</summary>
@@ -190,7 +190,7 @@ public enum MetadataEdgeAggregateResultKind
 }
 
 /// <summary>Classifies the first typed disposition of one physical metadata-edge table projection.</summary>
-/// <remarks>The draft issue remains independent from exact row payloads and deterministic reached-bound identity.</remarks>
+/// <remarks>The issue remains independent from exact row payloads and deterministic reached-bound identity.</remarks>
 public enum MetadataEdgeAggregateIssue
 {
     /// <summary>The complete table and selected-owner projection are exact.</summary>
@@ -214,7 +214,7 @@ public enum MetadataEdgeAggregateIssue
 }
 
 /// <summary>Classifies one completely closed metadata type topology.</summary>
-/// <remarks>This draft topology preserves nested construction groups and the SZ-array distinction.</remarks>
+/// <remarks>This topology preserves nested construction groups and the SZ-array distinction.</remarks>
 public enum MetadataClosedTypeKind
 {
     /// <summary>A primitive identity.</summary>
@@ -230,7 +230,7 @@ public enum MetadataClosedTypeKind
 }
 
 /// <summary>Classifies projection of one signature into the closed-type model.</summary>
-/// <remarks>The draft result distinguishes open and non-admitted input from an exact construction.</remarks>
+/// <remarks>The result distinguishes open and non-admitted input from an exact construction.</remarks>
 public enum MetadataTypeConstructionResultKind
 {
     /// <summary>The complete signature projects to one exact closed type.</summary>
@@ -247,7 +247,7 @@ public enum MetadataTypeConstructionResultKind
 
 /// <summary>Identifies the exact metadata source supplying an admitted generic substitution.</summary>
 /// <remarks>
-/// The current draft admits only a source-anchored FieldDef signature. Other metadata uses require their own exact
+/// The current design admits only a source-anchored FieldDef signature. Other metadata uses require their own exact
 /// physical-row and complete-catalog identities before they can extend this closed set.
 /// </remarks>
 public enum MetadataTypeSubstitutionContextKind
@@ -257,7 +257,7 @@ public enum MetadataTypeSubstitutionContextKind
 }
 
 /// <summary>Classifies the complete result of an explicit recursive substitution.</summary>
-/// <remarks>This draft outcome never supplies missing generic arguments from another observation source.</remarks>
+/// <remarks>This outcome never supplies missing generic arguments from another observation source.</remarks>
 public enum MetadataTypeSubstitutionResultKind
 {
     /// <summary>Every variable was replaced and the result is one admitted closed type.</summary>
@@ -273,7 +273,7 @@ public enum MetadataTypeSubstitutionResultKind
 }
 
 /// <summary>Freezes a lightweight source-module/TypeSpec-token row reference.</summary>
-/// <remarks>The sealed draft reference can participate in cyclic graphs without recursively embedding decoded rows.</remarks>
+/// <remarks>The sealed reference can participate in cyclic graphs without recursively embedding decoded rows.</remarks>
 public sealed class MetadataTypeSpecificationRowReferenceIdentity : IEquatable<MetadataTypeSpecificationRowReferenceIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-typespec-row-reference-identity";
@@ -297,15 +297,15 @@ public sealed class MetadataTypeSpecificationRowReferenceIdentity : IEquatable<M
     public StaticFieldMetadataModuleIdentity MetadataModule { get; }
     /// <summary>Gets the exact non-nil TypeSpec token.</summary>
     public int TypeSpecificationToken { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one lightweight TypeSpec-row draft reference.</summary>
+    /// <summary>Creates one lightweight TypeSpec-row reference.</summary>
     /// <param name="metadataModule">The exact source metadata module.</param>
     /// <param name="typeSpecificationToken">The exact non-nil TypeSpec token.</param>
-    /// <returns>A sealed immutable draft row reference suitable for graph edges.</returns>
+    /// <returns>A sealed immutable row reference suitable for graph edges.</returns>
     public static MetadataTypeSpecificationRowReferenceIdentity Create(
         StaticFieldMetadataModuleIdentity metadataModule,
         int typeSpecificationToken)
@@ -315,22 +315,22 @@ public sealed class MetadataTypeSpecificationRowReferenceIdentity : IEquatable<M
         return new MetadataTypeSpecificationRowReferenceIdentity(metadataModule, typeSpecificationToken);
     }
 
-    /// <summary>Tests canonical equality between two lightweight draft TypeSpec references.</summary>
-    /// <param name="other">The other draft reference.</param>
+    /// <summary>Tests canonical equality between two lightweight TypeSpec references.</summary>
+    /// <param name="other">The other reference.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSpecificationRowReferenceIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSpecificationRowReferenceIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one exact physical TypeSpec row and its complete bounded blob.</summary>
-/// <remarks>This sealed draft layer contains no decoded tree, construction, or use-site classification.</remarks>
+/// <remarks>This sealed layer contains no decoded tree, construction, or use-site classification.</remarks>
 public sealed class MetadataTypeSpecificationRowIdentity : IEquatable<MetadataTypeSpecificationRowIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-typespec-row-identity";
@@ -355,15 +355,15 @@ public sealed class MetadataTypeSpecificationRowIdentity : IEquatable<MetadataTy
     public MetadataTypeSpecificationRowReferenceIdentity Reference { get; }
     /// <summary>Gets a defensive copy of the complete original TypeSpec blob.</summary>
     public ImmutableArray<byte> SignatureBytes => ExpressionV2ContractEncoding.Copy(signatureBytes);
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the physical row's canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the physical row's canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one exact physical bounded TypeSpec-row draft identity.</summary>
+    /// <summary>Creates one exact physical bounded TypeSpec-row identity.</summary>
     /// <param name="reference">The exact source module and TypeSpec token.</param>
     /// <param name="signatureBytes">The complete original blob within the exact-operation byte cap.</param>
-    /// <returns>A sealed immutable physical draft row with no derived analysis.</returns>
+    /// <returns>A sealed immutable physical row with no derived analysis.</returns>
     public static MetadataTypeSpecificationRowIdentity Create(
         MetadataTypeSpecificationRowReferenceIdentity reference,
         ImmutableArray<byte> signatureBytes)
@@ -377,22 +377,22 @@ public sealed class MetadataTypeSpecificationRowIdentity : IEquatable<MetadataTy
         return new MetadataTypeSpecificationRowIdentity(reference, ExpressionV2ContractEncoding.Copy(signatureBytes));
     }
 
-    /// <summary>Tests canonical equality between two physical draft TypeSpec rows.</summary>
-    /// <param name="other">The other draft row.</param>
+    /// <summary>Tests canonical equality between two physical TypeSpec rows.</summary>
+    /// <param name="other">The other row.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSpecificationRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSpecificationRowIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes full-consumption provenance tying one complete blob to one complete decoded tree.</summary>
-/// <remarks>The sealed draft certificate is decoder evidence; it is not itself a physical metadata row identity.</remarks>
+/// <remarks>The sealed certificate is decoder evidence; it is not itself a physical metadata row identity.</remarks>
 public sealed class MetadataSignatureDecodeCertificate : IEquatable<MetadataSignatureDecodeCertificate>
 {
     private const string CanonicalDomain = "metadata-v2-signature-decode-certificate";
@@ -444,9 +444,9 @@ public sealed class MetadataSignatureDecodeCertificate : IEquatable<MetadataSign
     public int CumulativeGenericArgumentCount { get; }
     /// <summary>Gets the explicit source-end observation retained by every exact certificate.</summary>
     public bool SourceEndObserved => true;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
     internal static MetadataSignatureDecodeCertificate CreateFromDecoder(
@@ -470,23 +470,23 @@ public sealed class MetadataSignatureDecodeCertificate : IEquatable<MetadataSign
             root.CumulativeGenericArgumentCount);
     }
 
-    /// <summary>Tests canonical equality between two full-consumption draft certificates.</summary>
-    /// <param name="other">The other draft certificate.</param>
+    /// <summary>Tests canonical equality between two full-consumption certificates.</summary>
+    /// <param name="other">The other certificate.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataSignatureDecodeCertificate? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataSignatureDecodeCertificate);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one exact, incomplete, bound-stopped, or malformed metadata-signature decode operation.</summary>
 /// <remarks>
-/// The sealed draft outcome retains physical row evidence for exact, incomplete-resolution, and invalid results. A
+/// The sealed outcome retains physical row evidence for exact, incomplete-resolution, and invalid results. A
 /// cap-plus-one result keeps the row reference and reached bound but has no source prefix, certificate, or tree.
 /// </remarks>
 public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatureDecodeOutcome>
@@ -572,12 +572,12 @@ public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatur
     public string? NonExactCode { get; }
     /// <summary>Gets the stable invalid-decode code only for a malformed outcome.</summary>
     public string? InvalidCode { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one full-consumption exact draft decode outcome.</summary>
+    /// <summary>Creates one full-consumption exact decode outcome.</summary>
     /// <param name="row">The exact physical TypeSpec row and complete blob.</param>
     /// <param name="root">The complete projected raw signature tree.</param>
     /// <param name="certificate">The full-consumption decoder certificate tied to row bytes and root.</param>
@@ -585,7 +585,7 @@ public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatur
     /// <param name="cumulativeByteCount">The exact cumulative complete-source byte count.</param>
     /// <param name="cumulativeRawNodeCount">The exact cumulative raw signature-node count.</param>
     /// <param name="cumulativeGenericArgumentCount">The exact cumulative generic-argument count.</param>
-    /// <returns>A sealed immutable exact draft decode outcome.</returns>
+    /// <returns>A sealed immutable exact decode outcome.</returns>
     internal static MetadataSignatureDecodeOutcome Exact(
         MetadataTypeSpecificationRowIdentity row,
         MetadataTypeSignatureNode root,
@@ -636,11 +636,11 @@ public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatur
             null);
     }
 
-    /// <summary>Creates one cap-plus-one draft decode outcome with no prefix tree or bytes.</summary>
+    /// <summary>Creates one cap-plus-one decode outcome with no prefix tree or bytes.</summary>
     /// <param name="reference">The exact physical source row reference.</param>
     /// <param name="reachedBound">The exact signature or TypeSpec-graph operation bound reached.</param>
     /// <param name="observedCount">Exactly the bound limit plus one.</param>
-    /// <returns>A sealed immutable non-exact draft outcome retaining no prefix candidate.</returns>
+    /// <returns>A sealed immutable non-exact outcome retaining no prefix candidate.</returns>
     internal static MetadataSignatureDecodeOutcome BoundReached(
         MetadataTypeSpecificationRowReferenceIdentity reference,
         EvaluationDeterministicBound reachedBound,
@@ -680,10 +680,10 @@ public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatur
             null);
     }
 
-    /// <summary>Creates one incomplete-resolution draft outcome with no projected tree.</summary>
+    /// <summary>Creates one incomplete-resolution outcome with no projected tree.</summary>
     /// <param name="row">The complete physical TypeSpec row whose required in-range token was unresolved.</param>
     /// <param name="nonExactCode">A stable uppercase W8 incomplete-evidence code.</param>
-    /// <returns>A sealed immutable non-exact draft outcome retaining no projected prefix tree.</returns>
+    /// <returns>A sealed immutable non-exact outcome retaining no projected prefix tree.</returns>
     internal static MetadataSignatureDecodeOutcome Incomplete(
         MetadataTypeSpecificationRowIdentity row,
         string nonExactCode)
@@ -706,10 +706,10 @@ public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatur
             null);
     }
 
-    /// <summary>Creates one malformed complete-source draft decode outcome with no projected tree.</summary>
+    /// <summary>Creates one malformed complete-source decode outcome with no projected tree.</summary>
     /// <param name="row">The exact physical TypeSpec row and retained complete bytes.</param>
     /// <param name="invalidCode">A stable uppercase W8 invalid-decode code.</param>
-    /// <returns>A sealed immutable invalid draft outcome retaining row bytes but no prefix tree.</returns>
+    /// <returns>A sealed immutable invalid outcome retaining row bytes but no prefix tree.</returns>
     internal static MetadataSignatureDecodeOutcome Invalid(
         MetadataTypeSpecificationRowIdentity row,
         string invalidCode)
@@ -732,17 +732,17 @@ public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatur
             invalidCode);
     }
 
-    /// <summary>Tests canonical equality between two typed draft decode outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
+    /// <summary>Tests canonical equality between two typed decode outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataSignatureDecodeOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataSignatureDecodeOutcome);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     private static void WriteOptional(CanonicalReplayEncoding.Writer writer, ImmutableArray<byte>? bytes)
@@ -757,7 +757,7 @@ public sealed class MetadataSignatureDecodeOutcome : IEquatable<MetadataSignatur
 
 /// <summary>Freezes one exact physical TypeDefOrRef target without erasing its source row form.</summary>
 /// <remarks>
-/// The sealed draft union carries authority-issued semantic-classification rows for its named alternatives and the
+/// The sealed union carries authority-issued semantic-classification rows for its named alternatives and the
 /// complete authority TypeRef resolution for a reference target. Only its TypeSpec alternative carries a signature
 /// blob, so a direct TypeDef or TypeRef can never acquire invented TypeSpec bytes.
 /// </remarks>
@@ -805,7 +805,7 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
         MetadataTypeDefOrRefTargetKind.TypeDefinition => DirectClassification!.SourceModule,
         MetadataTypeDefOrRefTargetKind.TypeReference => ReferenceResolution!.ReferenceRow.Observation.SourceModule,
         MetadataTypeDefOrRefTargetKind.TypeSpecification => TypeSpecification!.Reference.MetadataModule,
-        _ => throw new InvalidOperationException("The target kind is outside the closed draft union."),
+        _ => throw new InvalidOperationException("The target kind is outside the closed union."),
     };
     /// <summary>Gets the exact decoded TypeDef, TypeRef, or TypeSpec source token.</summary>
     public int SourceMetadataToken => Kind switch
@@ -813,7 +813,7 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
         MetadataTypeDefOrRefTargetKind.TypeDefinition => DirectClassification!.TypeDefinition.TypeDefinitionToken,
         MetadataTypeDefOrRefTargetKind.TypeReference => ReferenceResolution!.TypeReferenceToken,
         MetadataTypeDefOrRefTargetKind.TypeSpecification => TypeSpecification!.Reference.TypeSpecificationToken,
-        _ => throw new InvalidOperationException("The target kind is outside the closed draft union."),
+        _ => throw new InvalidOperationException("The target kind is outside the closed union."),
     };
     /// <summary>Gets the authority-issued classification of the named target when the target has one, otherwise null.</summary>
     public MetadataTypeDefinitionSemanticClassificationIdentity? ResolvedClassification => Kind switch
@@ -823,14 +823,14 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
         MetadataTypeDefOrRefTargetKind.TypeSpecification => null,
         _ => null,
     };
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates a direct-TypeDef draft target in the classification's exact source module.</summary>
+    /// <summary>Creates a direct-TypeDef target in the classification's exact source module.</summary>
     /// <param name="classification">The authority-issued semantic classification of the exact TypeDef row.</param>
-    /// <returns>A sealed immutable draft target carrying no signature blob.</returns>
+    /// <returns>A sealed immutable target carrying no signature blob.</returns>
     public static MetadataTypeDefOrRefTargetIdentity FromTypeDefinition(
         MetadataTypeDefinitionSemanticClassificationIdentity classification)
     {
@@ -843,10 +843,10 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
             null);
     }
 
-    /// <summary>Creates a TypeRef draft target from one complete authority resolution row.</summary>
+    /// <summary>Creates a TypeRef target from one complete authority resolution row.</summary>
     /// <param name="resolution">The exact resolved authority TypeRef row, target module, and target TypeDef.</param>
     /// <param name="resolvedClassification">The authority-issued classification of the same exact resolved TypeDef.</param>
-    /// <returns>A sealed immutable draft target carrying no signature blob.</returns>
+    /// <returns>A sealed immutable target carrying no signature blob.</returns>
     public static MetadataTypeDefOrRefTargetIdentity FromTypeReference(
         MetadataTypeReferenceResolutionIdentity resolution,
         MetadataTypeDefinitionSemanticClassificationIdentity resolvedClassification)
@@ -871,9 +871,9 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
             null);
     }
 
-    /// <summary>Creates a TypeSpec draft target retaining its exact source module, row token, and bytes.</summary>
+    /// <summary>Creates a TypeSpec target retaining its exact source module, row token, and bytes.</summary>
     /// <param name="typeSpecification">The exact non-recursive TypeSpec identity.</param>
-    /// <returns>A sealed immutable draft target distinct from equal-byte rows at other tokens.</returns>
+    /// <returns>A sealed immutable target distinct from equal-byte rows at other tokens.</returns>
     public static MetadataTypeDefOrRefTargetIdentity FromTypeSpecification(
         MetadataTypeSpecificationRowIdentity typeSpecification)
     {
@@ -886,17 +886,17 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
             typeSpecification);
     }
 
-    /// <summary>Tests canonical equality between two draft TypeDefOrRef targets.</summary>
-    /// <param name="other">The other draft target.</param>
+    /// <summary>Tests canonical equality between two TypeDefOrRef targets.</summary>
+    /// <param name="other">The other target.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeDefOrRefTargetIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeDefOrRefTargetIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     private static void WriteOptional(CanonicalReplayEncoding.Writer writer, ImmutableArray<byte>? bytes)
@@ -911,7 +911,7 @@ public sealed class MetadataTypeDefOrRefTargetIdentity : IEquatable<MetadataType
 
 /// <summary>Freezes exact physical row ends for every metadata table consumed by the W8 type contracts.</summary>
 /// <remarks>
-/// This sealed draft identity is derived only from one exact module-search fact for the same module and content. Row
+/// This sealed identity is derived only from one exact module-search fact for the same module and content. Row
 /// end zero denotes an empty table; a positive end is the greatest physical row identifier in that table.
 /// </remarks>
 public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIdentity>
@@ -1004,17 +1004,17 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
     public int InterfaceImplementationRowCount { get; }
     /// <summary>Gets the exact GenericParamConstraint table row end, or zero for an empty table.</summary>
     public int GenericParameterConstraintRowCount { get; }
-    /// <summary>Gets the explicit source-end observation retained by every exact draft identity.</summary>
+    /// <summary>Gets the explicit source-end observation retained by every exact identity.</summary>
     public bool SourceEndObserved => true;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
     /// <summary>Derives exact physical table ends from one exact module-search fact.</summary>
     /// <param name="sourceModule">The exact metadata module containing every covered table.</param>
     /// <param name="sourceModuleFact">The exact exhaustive fact for the same module and metadata content.</param>
-    /// <returns>A sealed immutable draft identity covering every required metadata source end.</returns>
+    /// <returns>A sealed immutable identity covering every required metadata source end.</returns>
     public static MetadataSourceEndIdentity Create(
         StaticFieldMetadataModuleIdentity sourceModule,
         StaticFieldModuleSearchFact sourceModuleFact)
@@ -1086,16 +1086,16 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
     }
 
     /// <summary>Tests canonical equality between two exact metadata source-end identities.</summary>
-    /// <param name="other">The other draft identity.</param>
+    /// <param name="other">The other identity.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataSourceEndIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataSourceEndIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal bool ContainsTypeDefOrRefToken(int token)
@@ -1136,7 +1136,7 @@ public sealed class MetadataSourceEndIdentity : IEquatable<MetadataSourceEndIden
 }
 
 /// <summary>Resolves one source-module TypeDefOrRef token occurrence for deterministic signature decoding.</summary>
-/// <remarks>The sealed draft entry carries either a complete named resolution or a lightweight TypeSpec graph edge.</remarks>
+/// <remarks>The sealed entry carries either a complete named resolution or a lightweight TypeSpec graph edge.</remarks>
 public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataSignatureTokenResolutionEntry>
 {
     private const string CanonicalDomain = "metadata-v2-signature-token-resolution-entry";
@@ -1180,15 +1180,15 @@ public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataS
         ExpressionV2ContractEncoding.Copy(definitionChain);
     /// <summary>Gets a lightweight TypeSpec row reference only for a TypeSpec occurrence.</summary>
     public MetadataTypeSpecificationRowReferenceIdentity? TypeSpecificationReference { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete named TypeDef-or-TypeRef token-resolution draft entry.</summary>
+    /// <summary>Creates one complete named TypeDef-or-TypeRef token-resolution entry.</summary>
     /// <param name="target">The exact direct target in the decoder's source module.</param>
     /// <param name="definitionChain">The complete resolved outer-to-inner authority classification chain.</param>
-    /// <returns>A sealed immutable draft token-resolution entry.</returns>
+    /// <returns>A sealed immutable token-resolution entry.</returns>
     public static MetadataSignatureTokenResolutionEntry Named(
         MetadataTypeDefOrRefTargetIdentity target,
         ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain)
@@ -1213,9 +1213,9 @@ public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataS
             null);
     }
 
-    /// <summary>Creates one lightweight TypeSpec-token graph-edge draft entry.</summary>
+    /// <summary>Creates one lightweight TypeSpec-token graph-edge entry.</summary>
     /// <param name="reference">The exact source module and TypeSpec token.</param>
-    /// <returns>A sealed immutable draft entry containing no recursively decoded row.</returns>
+    /// <returns>A sealed immutable entry containing no recursively decoded row.</returns>
     public static MetadataSignatureTokenResolutionEntry TypeSpecification(
         MetadataTypeSpecificationRowReferenceIdentity reference)
     {
@@ -1227,23 +1227,23 @@ public sealed class MetadataSignatureTokenResolutionEntry : IEquatable<MetadataS
             reference);
     }
 
-    /// <summary>Tests canonical equality between two draft token-resolution entries.</summary>
-    /// <param name="other">The other draft entry.</param>
+    /// <summary>Tests canonical equality between two token-resolution entries.</summary>
+    /// <param name="other">The other entry.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataSignatureTokenResolutionEntry? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataSignatureTokenResolutionEntry);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes a detached unique token-resolution catalog for one source metadata module.</summary>
 /// <remarks>
-/// The sealed draft catalog is immutable decoder input. Exact entries are canonicalized by physical token. A bounded
+/// The sealed catalog is immutable decoder input. Exact entries are canonicalized by physical token. A bounded
 /// non-exact catalog retains exact source ends and cap-plus-one evidence but deliberately exposes no usable prefix.
 /// </remarks>
 public sealed class MetadataSignatureTokenResolutionCatalog : IEquatable<MetadataSignatureTokenResolutionCatalog>
@@ -1280,11 +1280,11 @@ public sealed class MetadataSignatureTokenResolutionCatalog : IEquatable<Metadat
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact source-end identity governing every token in this draft catalog.</summary>
+    /// <summary>Gets the exact source-end identity governing every token in this catalog.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
     /// <summary>Gets the exact source metadata module whose token domain is resolved.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => SourceEnds.SourceModule;
-    /// <summary>Gets whether the draft catalog is exact or stopped at cap-plus-one.</summary>
+    /// <summary>Gets whether the catalog is exact or stopped at cap-plus-one.</summary>
     public MetadataSignatureTokenResolutionCatalogResultKind ResultKind { get; }
     /// <summary>Gets a defensive copy of exact unique token-resolution entries in physical token order.</summary>
     public ImmutableArray<MetadataSignatureTokenResolutionEntry> Entries =>
@@ -1293,15 +1293,15 @@ public sealed class MetadataSignatureTokenResolutionCatalog : IEquatable<Metadat
     public EvaluationDeterministicBound? ReachedBound { get; }
     /// <summary>Gets the exact cap-plus-one observation count, otherwise zero.</summary>
     public int ObservedCount { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one detached source-module token-resolution draft catalog.</summary>
+    /// <summary>Creates one detached source-module token-resolution catalog.</summary>
     /// <param name="sourceEnds">The exact table ends for the module containing every decoded token occurrence.</param>
     /// <param name="entries">The initialized resolution map entries acquired before source end or cap-plus-one.</param>
-    /// <returns>An exact canonical map, or a typed non-exact draft catalog with no usable prefix.</returns>
+    /// <returns>An exact canonical map, or a typed non-exact catalog with no usable prefix.</returns>
     public static MetadataSignatureTokenResolutionCatalog Create(
         MetadataSourceEndIdentity sourceEnds,
         ImmutableArray<MetadataSignatureTokenResolutionEntry> entries)
@@ -1356,17 +1356,17 @@ public sealed class MetadataSignatureTokenResolutionCatalog : IEquatable<Metadat
             0);
     }
 
-    /// <summary>Tests canonical equality between two detached draft token catalogs.</summary>
-    /// <param name="other">The other draft catalog.</param>
+    /// <summary>Tests canonical equality between two detached token catalogs.</summary>
+    /// <param name="other">The other catalog.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataSignatureTokenResolutionCatalog? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataSignatureTokenResolutionCatalog);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal MetadataSignatureTokenResolutionEntry? Resolve(int token) =>
@@ -1379,7 +1379,7 @@ public sealed class MetadataSignatureTokenResolutionCatalog : IEquatable<Metadat
 
 /// <summary>Freezes one bounded, complete pre-substitution metadata signature node.</summary>
 /// <remarks>
-/// This sealed draft tree retains VAR/MVAR, ordered custom modifiers, exact ARRAY shape vectors, and lossless bytes for
+/// This sealed tree retains VAR/MVAR, ordered custom modifiers, exact ARRAY shape vectors, and lossless bytes for
 /// function pointers. Only the explicitly admitted projection can become a <see cref="MetadataClosedTypeIdentity"/>.
 /// </remarks>
 public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignatureNode>
@@ -1532,7 +1532,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     public bool ContainsOpenDefinition =>
         Kind == MetadataTypeSignatureNodeKind.Named && NamedClassification!.TypeDefinition.TotalGenericArity > 0 ||
         children.Any(static child => child.ContainsOpenDefinition);
-    /// <summary>Gets whether a named draft chain cannot partition its flattened arguments across nested names.</summary>
+    /// <summary>Gets whether a named chain cannot partition its flattened arguments across nested names.</summary>
     /// <remarks>
     /// The partition is derived only from the authority-carried flattened arities: a chain whose inner definition
     /// declares fewer physical GenericParam rows than its enclosing definition has no exact nested slicing.
@@ -1544,7 +1544,7 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
     public bool ContainsUnclassifiedTypeDefinition =>
         namedDefinitionChain.Any(static classification => classification.Role is null) ||
         children.Any(static child => child.ContainsUnclassifiedTypeDefinition);
-    /// <summary>Gets whether this subtree contains topology outside the admitted closed draft grammar.</summary>
+    /// <summary>Gets whether this subtree contains topology outside the admitted closed grammar.</summary>
     public bool ContainsUnsupportedClosedShape =>
         Kind is MetadataTypeSignatureNodeKind.RequiredModifier or
             MetadataTypeSignatureNodeKind.OptionalModifier or
@@ -1555,17 +1555,17 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             MetadataTypeSignatureNodeKind.Void or
             MetadataTypeSignatureNodeKind.TypedByReference ||
         children.Any(static child => child.ContainsUnsupportedClosedShape);
-    /// <summary>Gets whether the complete draft signature is variable-free and contains no open generic definition.</summary>
+    /// <summary>Gets whether the complete signature is variable-free and contains no open generic definition.</summary>
     public bool IsFullyGround =>
         !ContainsOwnerTypeParameter && !ContainsMethodTypeParameter && !ContainsOpenDefinition;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one primitive draft signature node.</summary>
+    /// <summary>Creates one primitive signature node.</summary>
     /// <param name="kind">The exact primitive kind.</param>
-    /// <returns>A sealed immutable draft node.</returns>
+    /// <returns>A sealed immutable node.</returns>
     internal static MetadataTypeSignatureNode Primitive(MetadataPrimitiveTypeKind kind)
     {
         ExpressionV2ContractEncoding.RequireDefined(kind, nameof(kind));
@@ -1585,11 +1585,11 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             0);
     }
 
-    /// <summary>Creates one resolved direct-TypeDef-or-TypeRef named draft node.</summary>
+    /// <summary>Creates one resolved direct-TypeDef-or-TypeRef named node.</summary>
     /// <param name="headKind">The exact raw CLASS or VALUETYPE element code.</param>
     /// <param name="target">The exact direct target; TypeSpec is rejected to avoid recursive self-containment.</param>
     /// <param name="definitionChain">Every authority classification from outermost through the target definition.</param>
-    /// <returns>A sealed immutable draft node that remains open when the final definition has nonzero arity.</returns>
+    /// <returns>A sealed immutable node that remains open when the final definition has nonzero arity.</returns>
     internal static MetadataTypeSignatureNode Named(
         MetadataNamedSignatureHeadKind headKind,
         MetadataTypeDefOrRefTargetIdentity target,
@@ -1633,32 +1633,32 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             0);
     }
 
-    /// <summary>Creates one owner-VAR draft signature node.</summary>
+    /// <summary>Creates one owner-VAR signature node.</summary>
     /// <param name="index">The zero-based owner generic-parameter index.</param>
-    /// <returns>A sealed immutable draft node.</returns>
+    /// <returns>A sealed immutable node.</returns>
     internal static MetadataTypeSignatureNode OwnerTypeParameter(int index) =>
         Variable(MetadataTypeSignatureNodeKind.OwnerTypeParameter, index);
 
-    /// <summary>Creates one method-MVAR draft signature node.</summary>
+    /// <summary>Creates one method-MVAR signature node.</summary>
     /// <param name="index">The zero-based method generic-parameter index.</param>
-    /// <returns>A sealed immutable draft node whose later use remains context-checked.</returns>
+    /// <returns>A sealed immutable node whose later use remains context-checked.</returns>
     internal static MetadataTypeSignatureNode MethodTypeParameter(int index) =>
         Variable(MetadataTypeSignatureNodeKind.MethodTypeParameter, index);
 
-    /// <summary>Creates one physical VOID draft signature node for role-aware use and <c>void*</c>.</summary>
-    /// <returns>A sealed immutable draft node retained outside closed evaluation.</returns>
+    /// <summary>Creates one physical VOID signature node for role-aware use and <c>void*</c>.</summary>
+    /// <returns>A sealed immutable node retained outside closed evaluation.</returns>
     internal static MetadataTypeSignatureNode Void() =>
         CreateLeaf(MetadataTypeSignatureNodeKind.Void);
 
-    /// <summary>Creates one physical TYPEDBYREF draft signature node for role-aware use.</summary>
-    /// <returns>A sealed immutable draft node retained outside closed evaluation.</returns>
+    /// <summary>Creates one physical TYPEDBYREF signature node for role-aware use.</summary>
+    /// <returns>A sealed immutable node retained outside closed evaluation.</returns>
     internal static MetadataTypeSignatureNode TypedByReference() =>
         CreateLeaf(MetadataTypeSignatureNodeKind.TypedByReference);
 
-    /// <summary>Creates one generic-instantiation draft node with exact flattened arguments.</summary>
+    /// <summary>Creates one generic-instantiation node with exact flattened arguments.</summary>
     /// <param name="namedHead">A resolved named leaf whose final TypeDef owns the flattened arity.</param>
     /// <param name="arguments">The exact ordered pre-substitution arguments.</param>
-    /// <returns>A sealed immutable draft node retaining the complete nested definition chain.</returns>
+    /// <returns>A sealed immutable node retaining the complete nested definition chain.</returns>
     internal static MetadataTypeSignatureNode GenericInstantiation(
         MetadataTypeSignatureNode namedHead,
         ImmutableArray<MetadataTypeSignatureNode> arguments)
@@ -1694,19 +1694,19 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             copied.Length);
     }
 
-    /// <summary>Creates one SZARRAY draft signature node.</summary>
+    /// <summary>Creates one SZARRAY signature node.</summary>
     /// <param name="element">The complete pre-substitution element node.</param>
-    /// <returns>A sealed immutable draft node distinct from every ARRAY node.</returns>
+    /// <returns>A sealed immutable node distinct from every ARRAY node.</returns>
     internal static MetadataTypeSignatureNode SzArray(MetadataTypeSignatureNode element) =>
         Unary(MetadataTypeSignatureNodeKind.SzArray, element, 1,
             ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
 
-    /// <summary>Creates one exact ARRAY draft signature node, including metadata-only rank one.</summary>
+    /// <summary>Creates one exact ARRAY signature node, including metadata-only rank one.</summary>
     /// <param name="element">The complete pre-substitution element node.</param>
     /// <param name="rank">The exact rank from one through thirty-two.</param>
     /// <param name="sizes">The ordered non-negative sizes for the encoded leading dimensions.</param>
     /// <param name="lowerBounds">The ordered signed lower bounds for the encoded leading dimensions.</param>
-    /// <returns>A sealed immutable draft ARRAY node preserving rank, sizes, and lower bounds.</returns>
+    /// <returns>A sealed immutable ARRAY node preserving rank, sizes, and lower bounds.</returns>
     internal static MetadataTypeSignatureNode MultidimensionalArray(
         MetadataTypeSignatureNode element,
         int rank,
@@ -1722,52 +1722,52 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             copiedLowerBounds);
     }
 
-    /// <summary>Creates one ordered required-modifier draft node.</summary>
+    /// <summary>Creates one ordered required-modifier node.</summary>
     /// <param name="modifierType">The exact direct TypeDef-or-TypeRef modifier target.</param>
     /// <param name="unmodifiedType">The complete retained underlying type.</param>
-    /// <returns>A sealed immutable draft node retained as typed non-admitted evidence.</returns>
+    /// <returns>A sealed immutable node retained as typed non-admitted evidence.</returns>
     internal static MetadataTypeSignatureNode RequiredModifier(
         MetadataTypeDefOrRefTargetIdentity modifierType,
         MetadataTypeSignatureNode unmodifiedType) =>
         Modifier(MetadataTypeSignatureNodeKind.RequiredModifier, modifierType, unmodifiedType);
 
-    /// <summary>Creates one ordered required-modifier draft node with a lightweight TypeSpec token edge.</summary>
+    /// <summary>Creates one ordered required-modifier node with a lightweight TypeSpec token edge.</summary>
     /// <param name="modifierType">The source-module/TypeSpec-token graph edge.</param>
     /// <param name="unmodifiedType">The complete retained underlying type.</param>
-    /// <returns>A sealed immutable draft node whose TypeSpec decode belongs to a separate graph ledger.</returns>
+    /// <returns>A sealed immutable node whose TypeSpec decode belongs to a separate graph ledger.</returns>
     internal static MetadataTypeSignatureNode RequiredModifier(
         MetadataTypeSpecificationRowReferenceIdentity modifierType,
         MetadataTypeSignatureNode unmodifiedType) =>
         Modifier(MetadataTypeSignatureNodeKind.RequiredModifier, modifierType, unmodifiedType);
 
-    /// <summary>Creates one ordered optional-modifier draft node.</summary>
+    /// <summary>Creates one ordered optional-modifier node.</summary>
     /// <param name="modifierType">The exact direct TypeDef-or-TypeRef modifier target.</param>
     /// <param name="unmodifiedType">The complete retained underlying type.</param>
-    /// <returns>A sealed immutable draft node retained as typed non-admitted evidence.</returns>
+    /// <returns>A sealed immutable node retained as typed non-admitted evidence.</returns>
     internal static MetadataTypeSignatureNode OptionalModifier(
         MetadataTypeDefOrRefTargetIdentity modifierType,
         MetadataTypeSignatureNode unmodifiedType) =>
         Modifier(MetadataTypeSignatureNodeKind.OptionalModifier, modifierType, unmodifiedType);
 
-    /// <summary>Creates one ordered optional-modifier draft node with a lightweight TypeSpec token edge.</summary>
+    /// <summary>Creates one ordered optional-modifier node with a lightweight TypeSpec token edge.</summary>
     /// <param name="modifierType">The source-module/TypeSpec-token graph edge.</param>
     /// <param name="unmodifiedType">The complete retained underlying type.</param>
-    /// <returns>A sealed immutable draft node whose TypeSpec decode belongs to a separate graph ledger.</returns>
+    /// <returns>A sealed immutable node whose TypeSpec decode belongs to a separate graph ledger.</returns>
     internal static MetadataTypeSignatureNode OptionalModifier(
         MetadataTypeSpecificationRowReferenceIdentity modifierType,
         MetadataTypeSignatureNode unmodifiedType) =>
         Modifier(MetadataTypeSignatureNodeKind.OptionalModifier, modifierType, unmodifiedType);
 
-    /// <summary>Creates one pointer draft node retained outside closed construction.</summary>
+    /// <summary>Creates one pointer node retained outside closed construction.</summary>
     /// <param name="element">The complete pointed-to type.</param>
-    /// <returns>A sealed immutable draft typed non-admission.</returns>
+    /// <returns>A sealed immutable typed non-admission.</returns>
     internal static MetadataTypeSignatureNode Pointer(MetadataTypeSignatureNode element) =>
         Unary(MetadataTypeSignatureNodeKind.Pointer, element, null,
             ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
 
-    /// <summary>Creates one managed-by-reference draft node retained outside closed construction.</summary>
+    /// <summary>Creates one managed-by-reference node retained outside closed construction.</summary>
     /// <param name="element">The complete referenced type.</param>
-    /// <returns>A sealed immutable draft typed non-admission.</returns>
+    /// <returns>A sealed immutable typed non-admission.</returns>
     internal static MetadataTypeSignatureNode ByReference(MetadataTypeSignatureNode element) =>
         Unary(MetadataTypeSignatureNodeKind.ByReference, element, null,
             ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
@@ -1804,9 +1804,9 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             requiredParameterCount);
     }
 
-    /// <summary>Creates one non-recursive TypeSpec indirection draft node retained outside closed construction.</summary>
+    /// <summary>Creates one non-recursive TypeSpec indirection node retained outside closed construction.</summary>
     /// <param name="typeSpecificationToken">The exact non-nil referenced TypeSpec token.</param>
-    /// <returns>A sealed immutable draft typed non-admission; the containing TypeSpec rejects a direct self-cycle.</returns>
+    /// <returns>A sealed immutable typed non-admission; the containing TypeSpec rejects a direct self-cycle.</returns>
     internal static MetadataTypeSignatureNode TypeSpecificationIndirection(int typeSpecificationToken)
     {
         CanonicalReplayEncoding.ValidateMetadataToken(
@@ -1829,17 +1829,17 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
             0);
     }
 
-    /// <summary>Tests canonical equality between two draft signature nodes.</summary>
-    /// <param name="other">The other draft node.</param>
+    /// <summary>Tests canonical equality between two signature nodes.</summary>
+    /// <param name="other">The other node.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSignatureNode? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSignatureNode);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal IEnumerable<MetadataTypeDefOrRefTargetIdentity> EnumerateNamedTargets()
@@ -2138,17 +2138,17 @@ public sealed class MetadataTypeSignatureNode : IEquatable<MetadataTypeSignature
 
 /// <summary>Deterministically decodes complete ECMA metadata type signatures from detached bytes and token facts.</summary>
 /// <remarks>
-/// This draft decoder is the only certificate issuer. It consumes the complete source, resolves every token through an
+/// This decoder is the only certificate issuer. It consumes the complete source, resolves every token through an
 /// immutable catalog, retains structured FNPTR content, and returns typed invalid or cap-plus-one outcomes without a
 /// prefix tree.
 /// </remarks>
 public static class MetadataTypeSignatureDecoder
 {
-    /// <summary>Decodes one complete physical TypeSpec row under the bounded draft grammar.</summary>
+    /// <summary>Decodes one complete physical TypeSpec row under the bounded grammar.</summary>
     /// <param name="reference">The exact source module and TypeSpec token.</param>
     /// <param name="signatureBytes">The complete raw TypeSpec blob bytes.</param>
     /// <param name="tokenCatalog">The detached bounded token-resolution catalog for the same exact source module.</param>
-    /// <returns>An exact, incomplete-resolution, malformed, or cap-plus-one draft outcome with no partial tree.</returns>
+    /// <returns>An exact, incomplete-resolution, malformed, or cap-plus-one outcome with no partial tree.</returns>
     public static MetadataSignatureDecodeOutcome DecodeTypeSpecification(
         MetadataTypeSpecificationRowReferenceIdentity reference,
         ImmutableArray<byte> signatureBytes,
@@ -2207,7 +2207,7 @@ public static class MetadataTypeSignatureDecoder
 }
 
 /// <summary>Composes one exact physical TypeSpec row, real decode outcome, and role-neutral construction classification.</summary>
-/// <remarks>The sealed draft composite keeps the physical row's canonical identity separate from derived analysis layers.</remarks>
+/// <remarks>The sealed composite keeps the physical row's canonical identity separate from derived analysis layers.</remarks>
 public sealed class MetadataTypeSpecificationIdentity : IEquatable<MetadataTypeSpecificationIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-type-specification-identity";
@@ -2239,18 +2239,18 @@ public sealed class MetadataTypeSpecificationIdentity : IEquatable<MetadataTypeS
     public ImmutableArray<byte> OriginalBytes => Row.SignatureBytes;
     /// <summary>Gets the complete bounded projected signature tree.</summary>
     public MetadataTypeSignatureNode Root => Decode.Root!;
-    /// <summary>Gets the typed draft construction result for the complete original signature.</summary>
+    /// <summary>Gets the typed construction result for the complete original signature.</summary>
     public MetadataTypeConstructionResult Construction { get; }
     /// <summary>Gets whether this TypeSpec projects to one exact closed construction.</summary>
     public bool IsFullyGround => Construction.Kind == MetadataTypeConstructionResultKind.Exact;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one TypeSpec draft composite only from a real full-consumption exact decode.</summary>
+    /// <summary>Creates one TypeSpec composite only from a real full-consumption exact decode.</summary>
     /// <param name="decode">The exact physical-row-addressed decoder outcome.</param>
-    /// <returns>A sealed immutable draft composite with separate row, decode, and construction layers.</returns>
+    /// <returns>A sealed immutable composite with separate row, decode, and construction layers.</returns>
     public static MetadataTypeSpecificationIdentity FromDecodeOutcome(MetadataSignatureDecodeOutcome decode)
     {
         ArgumentNullException.ThrowIfNull(decode);
@@ -2263,24 +2263,24 @@ public sealed class MetadataTypeSpecificationIdentity : IEquatable<MetadataTypeS
         return new MetadataTypeSpecificationIdentity(decode, construction);
     }
 
-    /// <summary>Tests canonical equality between two row-addressed draft TypeSpec identities.</summary>
-    /// <param name="other">The other draft identity.</param>
+    /// <summary>Tests canonical equality between two row-addressed TypeSpec identities.</summary>
+    /// <param name="other">The other identity.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSpecificationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSpecificationIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
 }
 
 /// <summary>Freezes the detached input catalog supplied to one or more TypeSpec graph traversals.</summary>
 /// <remarks>
-/// This sealed draft identity normalizes caller order by physical TypeSpec token, retains duplicate row keys for typed
+/// This sealed identity normalizes caller order by physical TypeSpec token, retains duplicate row keys for typed
 /// invalid classification, and deliberately permits equal signature blobs at distinct physical rows.
 /// </remarks>
 public sealed class MetadataTypeSpecificationGraphCatalogIdentity :
@@ -2320,15 +2320,15 @@ public sealed class MetadataTypeSpecificationGraphCatalogIdentity :
     /// <summary>Gets a sorted defensive copy of physical TypeSpec tokens supplied more than once.</summary>
     public ImmutableArray<int> DuplicateTypeSpecificationTokens =>
         ExpressionV2ContractEncoding.Copy(duplicateTypeSpecificationTokens);
-    /// <summary>Gets a defensive copy of the complete versioned draft canonical bytes.</summary>
+    /// <summary>Gets a defensive copy of the complete versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
     /// <summary>Creates one normalized detached TypeSpec graph input catalog.</summary>
     /// <param name="sourceModule">The exact module containing every referenced TypeSpec row.</param>
     /// <param name="outcomes">Initialized decoder outcomes, capped at one observable row beyond traversal limit.</param>
-    /// <returns>An immutable draft input identity that retains duplicate row-key evidence.</returns>
+    /// <returns>An immutable input identity that retains duplicate row-key evidence.</returns>
     public static MetadataTypeSpecificationGraphCatalogIdentity Create(
         StaticFieldMetadataModuleIdentity sourceModule,
         ImmutableArray<MetadataSignatureDecodeOutcome> outcomes)
@@ -2358,23 +2358,23 @@ public sealed class MetadataTypeSpecificationGraphCatalogIdentity :
         return new MetadataTypeSpecificationGraphCatalogIdentity(sourceModule, normalized, duplicates);
     }
 
-    /// <summary>Tests canonical equality between two normalized draft input catalogs.</summary>
+    /// <summary>Tests canonical equality between two normalized input catalogs.</summary>
     /// <param name="other">The other input catalog.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSpecificationGraphCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSpecificationGraphCatalogIdentity);
-    /// <summary>Computes a hash code from immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes complete traversal of a row-keyed TypeSpec reference/decode graph.</summary>
 /// <remarks>
-/// The sealed draft graph keeps normalized input evidence separate from usable exact outcomes. A missing row,
+/// The sealed graph keeps normalized input evidence separate from usable exact outcomes. A missing row,
 /// decoder stop, or cumulative cap produces no usable prefix and zero committed counters; the first observed cap is
 /// saturated at exactly limit plus one. Equal blobs at distinct physical TypeSpec rows remain independent valid facts.
 /// </remarks>
@@ -2448,12 +2448,12 @@ public sealed class MetadataTypeSpecificationGraphIdentity : IEquatable<Metadata
     public int CumulativeRawNodeCount { get; }
     /// <summary>Gets cumulative generic arguments only for an exact result; otherwise zero.</summary>
     public int CumulativeGenericArgumentCount { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates and completely traverses one detached row-keyed TypeSpec draft graph.</summary>
+    /// <summary>Creates and completely traverses one detached row-keyed TypeSpec graph.</summary>
     /// <param name="rootReference">The exact root TypeSpec row reference.</param>
     /// <param name="decodeOutcomes">Every available decoder outcome in arbitrary caller order.</param>
     /// <returns>A sealed immutable graph with exact, prefix-free non-exact, or invalid status.</returns>
@@ -2470,7 +2470,7 @@ public sealed class MetadataTypeSpecificationGraphIdentity : IEquatable<Metadata
     /// <summary>Traverses one exact root through a pre-normalized detached TypeSpec input catalog.</summary>
     /// <param name="rootReference">The exact root TypeSpec row reference.</param>
     /// <param name="inputCatalog">The immutable complete input catalog for the root module.</param>
-    /// <returns>A sealed immutable draft graph that never exposes a usable prefix after a non-exact observation.</returns>
+    /// <returns>A sealed immutable graph that never exposes a usable prefix after a non-exact observation.</returns>
     public static MetadataTypeSpecificationGraphIdentity Create(
         MetadataTypeSpecificationRowReferenceIdentity rootReference,
         MetadataTypeSpecificationGraphCatalogIdentity inputCatalog)
@@ -2619,22 +2619,22 @@ public sealed class MetadataTypeSpecificationGraphIdentity : IEquatable<Metadata
         }
     }
 
-    /// <summary>Tests canonical equality between two detached draft TypeSpec graphs.</summary>
-    /// <param name="other">The other draft graph.</param>
+    /// <summary>Tests canonical equality between two detached TypeSpec graphs.</summary>
+    /// <param name="other">The other graph.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSpecificationGraphIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSpecificationGraphIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one role-specific use classification over separate TypeSpec decode and graph evidence.</summary>
-/// <remarks>The sealed draft result never changes physical row or decoder identity when use-site rules evolve.</remarks>
+/// <remarks>The sealed result never changes physical row or decoder identity when use-site rules evolve.</remarks>
 public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
 {
     private const string CanonicalDomain = "metadata-v2-type-use-result";
@@ -2692,9 +2692,9 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
     public MetadataSourceEndIdentity? ConstraintSourceEnds => ConstraintRow?.SourceEnds;
     /// <summary>Gets the unresolved physical TypeDefOrRef constraint token, otherwise null.</summary>
     public int? ConstraintMetadataToken => ConstraintRow?.ConstraintMetadataToken;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
     /// <summary>Classifies one decoded TypeSpec under a specific metadata role.</summary>
@@ -2705,7 +2705,7 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
     /// The exact catalog-issued physical GenericParamConstraint row only for a constraint role. Its unresolved
     /// Constraint token must identify this exact TypeSpec occurrence in the same source.
     /// </param>
-    /// <returns>A sealed immutable role-specific draft result.</returns>
+    /// <returns>A sealed immutable role-specific result.</returns>
     public static MetadataTypeUseResult Classify(
         MetadataTypeUseRole role,
         MetadataTypeSpecificationIdentity typeSpecification,
@@ -2775,17 +2775,17 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
         return new MetadataTypeUseResult(role, kind, typeSpecification, graph, constraintRow);
     }
 
-    /// <summary>Tests canonical equality between two role-specific draft type-use results.</summary>
-    /// <param name="other">The other draft use result.</param>
+    /// <summary>Tests canonical equality between two role-specific type-use results.</summary>
+    /// <param name="other">The other use result.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeUseResult? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeUseResult);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     private static bool ContainsVoidOutsidePointer(MetadataTypeSignatureNode node, bool pointerTarget)
@@ -2802,7 +2802,7 @@ public sealed class MetadataTypeUseResult : IEquatable<MetadataTypeUseResult>
 }
 
 /// <summary>Freezes one exact InterfaceImpl row and its complete TypeDefOrRef interface target.</summary>
-/// <remarks>The sealed draft edge retains its InterfaceImpl row token instead of substituting a target TypeSpec token.</remarks>
+/// <remarks>The sealed edge retains its InterfaceImpl row token instead of substituting a target TypeSpec token.</remarks>
 public sealed class MetadataInterfaceImplementationEdgeIdentity : IEquatable<MetadataInterfaceImplementationEdgeIdentity>
 {
     private const string CanonicalDomain = "metadata-v2-interface-implementation-edge-identity";
@@ -2831,16 +2831,16 @@ public sealed class MetadataInterfaceImplementationEdgeIdentity : IEquatable<Met
     public MetadataTypeDefinitionSemanticClassificationIdentity OwnerClassification { get; }
     /// <summary>Gets the exact Interface-column TypeDefOrRef target.</summary>
     public MetadataTypeDefOrRefTargetIdentity Target { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one exact InterfaceImpl-row draft edge.</summary>
+    /// <summary>Creates one exact InterfaceImpl-row edge.</summary>
     /// <param name="interfaceImplementationToken">The exact non-nil InterfaceImpl token.</param>
     /// <param name="ownerClassification">The authority-issued Class-column owner classification.</param>
     /// <param name="target">The exact Interface-column TypeDefOrRef target.</param>
-    /// <returns>A sealed immutable draft edge preserving owner and target row identities.</returns>
+    /// <returns>A sealed immutable edge preserving owner and target row identities.</returns>
     public static MetadataInterfaceImplementationEdgeIdentity Create(
         int interfaceImplementationToken,
         MetadataTypeDefinitionSemanticClassificationIdentity ownerClassification,
@@ -2859,23 +2859,23 @@ public sealed class MetadataInterfaceImplementationEdgeIdentity : IEquatable<Met
         return new MetadataInterfaceImplementationEdgeIdentity(interfaceImplementationToken, ownerClassification, target);
     }
 
-    /// <summary>Tests canonical equality between two draft InterfaceImpl edges.</summary>
-    /// <param name="other">The other draft edge.</param>
+    /// <summary>Tests canonical equality between two InterfaceImpl edges.</summary>
+    /// <param name="other">The other edge.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationEdgeIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataInterfaceImplementationEdgeIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Projects one exact physical GenericParamConstraint row into an owner-authoritative consumer edge.</summary>
 /// <remarks>
-/// This sealed draft edge has no public issuer and accepts no caller-selected owner, declaration, or semantic target.
+/// This sealed edge has no public issuer and accepts no caller-selected owner, declaration, or semantic target.
 /// Its guarded physical row supplies the authority-issued GenericParam owner and declaration. The Constraint column
 /// remains only an unresolved physical TypeDefOrRef token until a later dedicated authority resolves it.
 /// </remarks>
@@ -2895,7 +2895,7 @@ public sealed class MetadataGenericParameterConstraintEdgeIdentity : IEquatable<
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the guarded exact physical GenericParamConstraint row projected by this draft edge.</summary>
+    /// <summary>Gets the guarded exact physical GenericParamConstraint row projected by this edge.</summary>
     public MetadataGenericParameterConstraintTableRowIdentity ConstraintRow { get; }
     /// <summary>Gets the exact source ends inherited from the guarded physical row.</summary>
     public MetadataSourceEndIdentity SourceEnds => ConstraintRow.SourceEnds;
@@ -2912,9 +2912,9 @@ public sealed class MetadataGenericParameterConstraintEdgeIdentity : IEquatable<
     public MetadataMethodDefinitionAuthorityIdentity? DeclaringMethodDefinition => OwnerGroup.MethodDefinition;
     /// <summary>Gets the validated but deliberately unresolved physical TypeDefOrRef Constraint token.</summary>
     public int ConstraintMetadataToken => ConstraintRow.ConstraintMetadataToken;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
     internal static MetadataGenericParameterConstraintEdgeIdentity FromPhysicalRow(
@@ -2924,23 +2924,23 @@ public sealed class MetadataGenericParameterConstraintEdgeIdentity : IEquatable<
         return new MetadataGenericParameterConstraintEdgeIdentity(constraintRow);
     }
 
-    /// <summary>Tests canonical equality between two draft GenericParamConstraint edges.</summary>
-    /// <param name="other">The other draft edge.</param>
+    /// <summary>Tests canonical equality between two GenericParamConstraint edges.</summary>
+    /// <param name="other">The other edge.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterConstraintEdgeIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterConstraintEdgeIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes a complete InterfaceImpl table and one exact TypeDef-owner projection.</summary>
 /// <remarks>
-/// This sealed draft aggregate validates the complete physical table before selecting rows for
+/// This sealed aggregate validates the complete physical table before selecting rows for
 /// <see cref="OwnerClassification"/>. A bounded or incomplete source retains no table prefix or selected row. Other
 /// owners may occur only in the explicit complete-table evidence and can never leak into <see cref="Rows"/>.
 /// </remarks>
@@ -3014,16 +3014,16 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
     /// <summary>Gets sorted later-row tokens whose Class-plus-Interface pair duplicates an earlier row.</summary>
     public ImmutableArray<int> DuplicateSemanticRowTokens =>
         ExpressionV2ContractEncoding.Copy(duplicateSemanticRowTokens);
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
     /// <summary>Validates a complete InterfaceImpl table and projects exactly one owner.</summary>
     /// <param name="sourceEnds">Exact unsaturated metadata table source ends for the source module.</param>
     /// <param name="ownerClassification">The authority-issued owner classification to project after validation.</param>
     /// <param name="allRows">Every physical InterfaceImpl row in RID order, or no prefix after a source stop.</param>
-    /// <returns>An immutable exact, factless non-exact, or typed invalid draft aggregate.</returns>
+    /// <returns>An immutable exact, factless non-exact, or typed invalid aggregate.</returns>
     public static MetadataInterfaceImplementationSetIdentity Create(
         MetadataSourceEndIdentity sourceEnds,
         MetadataTypeDefinitionSemanticClassificationIdentity ownerClassification,
@@ -3138,17 +3138,17 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
             duplicateSemanticTokens);
     }
 
-    /// <summary>Tests canonical equality between two InterfaceImpl draft aggregates.</summary>
-    /// <param name="other">The other draft aggregate.</param>
+    /// <summary>Tests canonical equality between two InterfaceImpl aggregates.</summary>
+    /// <param name="other">The other aggregate.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationSetIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataInterfaceImplementationSetIdentity);
-    /// <summary>Computes a hash code from immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     private static ImmutableArray<int> FindDuplicateInterfaceSemanticRows(
@@ -3179,7 +3179,7 @@ public sealed class MetadataInterfaceImplementationSetIdentity : IEquatable<Meta
 
 /// <summary>Projects one authority-issued GenericParam owner from a complete physical constraint catalog.</summary>
 /// <remarks>
-/// The sealed draft aggregate accepts no caller-supplied owner claim, declaring definition, or target-semantic edge.
+/// The sealed aggregate accepts no caller-supplied owner claim, declaring definition, or target-semantic edge.
 /// It selects one guarded GenericParam row through the catalog's exact authority and derives every edge directly from
 /// the complete physical table. Constraint targets remain unresolved TypeDefOrRef tokens. A non-exact or invalid
 /// physical table exposes no edge prefix.
@@ -3227,7 +3227,7 @@ public sealed class MetadataGenericParameterConstraintSetIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the complete physical constraint catalog from which this draft projection was derived.</summary>
+    /// <summary>Gets the complete physical constraint catalog from which this projection was derived.</summary>
     public MetadataGenericParameterConstraintPhysicalTableCatalogIdentity ConstraintCatalog { get; }
     /// <summary>Gets exact metadata-table source ends inherited from the complete physical catalog.</summary>
     public MetadataSourceEndIdentity SourceEnds => ConstraintCatalog.SourceEnds;
@@ -3257,19 +3257,19 @@ public sealed class MetadataGenericParameterConstraintSetIdentity :
     public EvaluationDeterministicBound? ReachedBound { get; }
     /// <summary>Gets exactly cap plus one only for a reached-bound result; otherwise zero.</summary>
     public int ObservedCount { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Projects exactly one authority-issued GenericParam owner from a complete physical table draft.</summary>
+    /// <summary>Projects exactly one authority-issued GenericParam owner from a complete physical table.</summary>
     /// <param name="constraintCatalog">
     /// The complete physical GenericParamConstraint catalog that alone supplies rows and owner authority.
     /// </param>
     /// <param name="ownerParameter">
     /// An exact GenericParam row issued by that catalog's authority; another source or authority is rejected.
     /// </param>
-    /// <returns>An immutable exact, factless non-exact, or typed invalid draft aggregate.</returns>
+    /// <returns>An immutable exact, factless non-exact, or typed invalid aggregate.</returns>
     public static MetadataGenericParameterConstraintSetIdentity Create(
         MetadataGenericParameterConstraintPhysicalTableCatalogIdentity constraintCatalog,
         MetadataGenericParameterTableRowIdentity ownerParameter)
@@ -3348,17 +3348,17 @@ public sealed class MetadataGenericParameterConstraintSetIdentity :
             0);
     }
 
-    /// <summary>Tests canonical equality between two GenericParamConstraint draft aggregates.</summary>
-    /// <param name="other">The other draft aggregate.</param>
+    /// <summary>Tests canonical equality between two GenericParamConstraint aggregates.</summary>
+    /// <param name="other">The other aggregate.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterConstraintSetIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterConstraintSetIdentity);
-    /// <summary>Computes a hash code from immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     private static MetadataEdgeAggregateIssue MapCatalogIssue(
@@ -3394,7 +3394,7 @@ public sealed class MetadataGenericParameterConstraintSetIdentity :
 }
 
 /// <summary>Freezes one nested named-construction segment and its segment-local closed arguments.</summary>
-/// <remarks>The sealed draft segment proves how one flattened vector is partitioned across metadata names.</remarks>
+/// <remarks>The sealed segment proves how one flattened vector is partitioned across metadata names.</remarks>
 public sealed class MetadataTypeConstructionSegment : IEquatable<MetadataTypeConstructionSegment>
 {
     private const string CanonicalDomain = "metadata-v2-type-construction-segment";
@@ -3432,16 +3432,16 @@ public sealed class MetadataTypeConstructionSegment : IEquatable<MetadataTypeCon
     public int LocalArgumentCount => localArguments.Length;
     /// <summary>Gets the exclusive flattened argument end after overflow-checked validation.</summary>
     public int FlattenedArgumentEndExclusive => FlattenedArgumentOffset + localArguments.Length;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one overflow-checked nested construction draft segment.</summary>
+    /// <summary>Creates one overflow-checked nested construction segment.</summary>
     /// <param name="classification">The authority-issued classification of the exact TypeDef for this segment.</param>
     /// <param name="flattenedArgumentOffset">The non-negative start in the complete flattened vector.</param>
     /// <param name="localArguments">Exactly the arguments introduced by this metadata name.</param>
-    /// <returns>A sealed immutable draft segment.</returns>
+    /// <returns>A sealed immutable segment.</returns>
     public static MetadataTypeConstructionSegment Create(
         MetadataTypeDefinitionSemanticClassificationIdentity classification,
         int flattenedArgumentOffset,
@@ -3472,23 +3472,23 @@ public sealed class MetadataTypeConstructionSegment : IEquatable<MetadataTypeCon
         return new MetadataTypeConstructionSegment(classification, flattenedArgumentOffset, copied);
     }
 
-    /// <summary>Tests canonical equality between two draft construction segments.</summary>
-    /// <param name="other">The other draft segment.</param>
+    /// <summary>Tests canonical equality between two construction segments.</summary>
+    /// <param name="other">The other segment.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeConstructionSegment? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeConstructionSegment);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one exact fully closed metadata type topology.</summary>
 /// <remarks>
-/// The sealed draft identity preserves nested local-argument groups, the exact Nullable metadata head, ARRAY
+/// The sealed identity preserves nested local-argument groups, the exact Nullable metadata head, ARRAY
 /// sizes/lower bounds, and rank-one ARRAY as distinct from SZARRAY. It never contains VAR, MVAR, or a bare generic
 /// definition.
 /// </remarks>
@@ -3592,14 +3592,14 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
             MetadataTypeDefinitionSemanticRole.Enum,
         _ => false,
     };
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one primitive closed draft identity.</summary>
+    /// <summary>Creates one primitive closed identity.</summary>
     /// <param name="kind">The exact primitive kind.</param>
-    /// <returns>A sealed immutable draft closed identity.</returns>
+    /// <returns>A sealed immutable closed identity.</returns>
     internal static MetadataClosedTypeIdentity Primitive(MetadataPrimitiveTypeKind kind)
     {
         ExpressionV2ContractEncoding.RequireDefined(kind, nameof(kind));
@@ -3614,9 +3614,9 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
             ImmutableArray<int>.Empty);
     }
 
-    /// <summary>Creates one top-level or nested named closed draft construction.</summary>
+    /// <summary>Creates one top-level or nested named closed construction.</summary>
     /// <param name="segments">Every outer-to-inner named segment with exact local argument slices.</param>
-    /// <returns>A sealed immutable draft closed identity.</returns>
+    /// <returns>A sealed immutable closed identity.</returns>
     internal static MetadataClosedTypeIdentity Named(ImmutableArray<MetadataTypeConstructionSegment> segments)
     {
         var copied = ExpressionV2ContractEncoding.CopyRequired(
@@ -3680,15 +3680,15 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
             ImmutableArray<int>.Empty);
     }
 
-    /// <summary>Creates one nullable closed draft identity over its exact metadata head and value-type argument.</summary>
+    /// <summary>Creates one nullable closed identity over its exact metadata head and value-type argument.</summary>
     /// <remarks>
-    /// The draft Nullable head is proven only by the authority classification: its ValueType role is derived by the
+    /// The Nullable head is proven only by the authority classification: its ValueType role is derived by the
     /// ancestry portfolio exclusively from the exact immediate System.ValueType base edge, so the exact
     /// System/Nullable`1/arity-one spelling plus that role remains authority-proven without a separate corelib proof.
     /// </remarks>
     /// <param name="segments">The exact System.Nullable`1 construction segment.</param>
     /// <param name="elementType">The exact non-nullable value-type element.</param>
-    /// <returns>A sealed immutable draft closed identity.</returns>
+    /// <returns>A sealed immutable closed identity.</returns>
     internal static MetadataClosedTypeIdentity Nullable(
         ImmutableArray<MetadataTypeConstructionSegment> segments,
         MetadataClosedTypeIdentity elementType)
@@ -3722,9 +3722,9 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
             ImmutableArray<int>.Empty);
     }
 
-    /// <summary>Creates one SZARRAY closed draft identity.</summary>
+    /// <summary>Creates one SZARRAY closed identity.</summary>
     /// <param name="elementType">The exact closed element type.</param>
-    /// <returns>A sealed immutable draft identity distinct from rank-one ARRAY.</returns>
+    /// <returns>A sealed immutable identity distinct from rank-one ARRAY.</returns>
     internal static MetadataClosedTypeIdentity SzArray(MetadataClosedTypeIdentity elementType)
     {
         ArgumentNullException.ThrowIfNull(elementType);
@@ -3739,12 +3739,12 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
             ImmutableArray<int>.Empty);
     }
 
-    /// <summary>Creates one exact ARRAY closed draft identity, including metadata-only rank one.</summary>
+    /// <summary>Creates one exact ARRAY closed identity, including metadata-only rank one.</summary>
     /// <param name="elementType">The exact closed element type.</param>
     /// <param name="rank">The exact rank from one through thirty-two.</param>
     /// <param name="sizes">The ordered non-negative sizes for encoded leading dimensions.</param>
     /// <param name="lowerBounds">The ordered signed lower bounds for encoded leading dimensions.</param>
-    /// <returns>A sealed immutable draft identity preserving rank and both ordered shape vectors.</returns>
+    /// <returns>A sealed immutable identity preserving rank and both ordered shape vectors.</returns>
     internal static MetadataClosedTypeIdentity MultidimensionalArray(
         MetadataClosedTypeIdentity elementType,
         int rank,
@@ -3764,17 +3764,17 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
             copiedLowerBounds);
     }
 
-    /// <summary>Tests canonical equality between two closed draft type identities.</summary>
-    /// <param name="other">The other draft identity.</param>
+    /// <summary>Tests canonical equality between two closed type identities.</summary>
+    /// <param name="other">The other identity.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataClosedTypeIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataClosedTypeIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataClosedTypeIdentity FromGroundSignature(MetadataTypeSignatureNode node)
@@ -3946,7 +3946,7 @@ internal sealed class MetadataClosedTypeBoundException : Exception
     internal EvaluationDeterministicBound Bound { get; }
 }
 
-/// <summary>Freezes the typed draft projection of one complete signature into the closed-type model.</summary>
+/// <summary>Freezes the typed projection of one complete signature into the closed-type model.</summary>
 /// <remarks>An exact result alone carries a closed identity; open, non-admitted, and invalid results retain the source tree.</remarks>
 public sealed class MetadataTypeConstructionResult : IEquatable<MetadataTypeConstructionResult>
 {
@@ -3984,20 +3984,20 @@ public sealed class MetadataTypeConstructionResult : IEquatable<MetadataTypeCons
 
     /// <summary>Gets the exact typed construction result kind.</summary>
     public MetadataTypeConstructionResultKind Kind { get; }
-    /// <summary>Gets the complete source signature tree retained by the draft result.</summary>
+    /// <summary>Gets the complete source signature tree retained by the result.</summary>
     public MetadataTypeSignatureNode Root { get; }
     /// <summary>Gets the exact closed type only for <see cref="MetadataTypeConstructionResultKind.Exact"/>.</summary>
     public MetadataClosedTypeIdentity? ClosedType { get; }
     /// <summary>Gets the reached construction bound when that, rather than provisional classification, caused NonExact.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Classifies one complete signature under the draft closed-construction grammar.</summary>
+    /// <summary>Classifies one complete signature under the closed-construction grammar.</summary>
     /// <param name="root">The complete bounded pre-substitution signature tree.</param>
-    /// <returns>A sealed immutable typed draft result with an exact closed identity only when derivable.</returns>
+    /// <returns>A sealed immutable typed result with an exact closed identity only when derivable.</returns>
     internal static MetadataTypeConstructionResult Classify(MetadataTypeSignatureNode root)
     {
         ArgumentNullException.ThrowIfNull(root);
@@ -4039,17 +4039,17 @@ public sealed class MetadataTypeConstructionResult : IEquatable<MetadataTypeCons
         }
     }
 
-    /// <summary>Tests canonical equality between two typed draft construction results.</summary>
-    /// <param name="other">The other draft result.</param>
+    /// <summary>Tests canonical equality between two typed construction results.</summary>
+    /// <param name="other">The other result.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeConstructionResult? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeConstructionResult);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataTypeConstructionResult Invalid(MetadataTypeSignatureNode root) =>
@@ -4058,7 +4058,7 @@ public sealed class MetadataTypeConstructionResult : IEquatable<MetadataTypeCons
 
 /// <summary>Freezes one exact FieldSig source and its declaring-TypeDef binding proof for recursive substitution.</summary>
 /// <remarks>
-/// The sealed draft request derives its root only from <see cref="MetadataFieldSignatureIdentity"/> and retains the
+/// The sealed request derives its root only from <see cref="MetadataFieldSignatureIdentity"/> and retains the
 /// complete <see cref="MetadataGenericParameterAuthorityBindingLedgerIdentity"/> plus one compatible guarded W7
 /// bridge certificate. It has no raw-tree, raw-array, method-ledger, or frame-discovery input.
 /// </remarks>
@@ -4107,12 +4107,12 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
     public EvaluationDeterministicBound? ReachedBound => DeclaringTypeBindings.ReachedBound;
     /// <summary>Gets the binding proof's cap-plus-one or incomplete observation count, otherwise zero.</summary>
     public int BindingProofObservedCount => DeclaringTypeBindings.ObservedCount;
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one source-anchored FieldDef recursive-substitution draft request.</summary>
+    /// <summary>Creates one source-anchored FieldDef recursive-substitution request.</summary>
     /// <param name="fieldSignature">The exact FieldDef-owned, fully consumed FieldSig identity supplying the root.</param>
     /// <param name="declaringTypeCompatibility">
     /// One compatible guarded bridge from the FieldSig's W7 declaring TypeDef to the ledger's authority TypeDef.
@@ -4122,7 +4122,7 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
     /// ledger is required for a non-generic declaring type; absence never denotes zero arity.
     /// </param>
     /// <returns>
-    /// A sealed immutable draft request. A matching non-exact or invalid proof is retained so execution can stop
+    /// A sealed immutable request. A matching non-exact or invalid proof is retained so execution can stop
     /// before applying any binding; mismatched source ends or owner rows cannot form a request.
     /// </returns>
     public static MetadataTypeSubstitutionRequest ForFieldDefinition(
@@ -4182,17 +4182,17 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
             declaringTypeBindings);
     }
 
-    /// <summary>Tests canonical equality between two row-addressed draft substitution requests.</summary>
-    /// <param name="other">The other draft request.</param>
+    /// <summary>Tests canonical equality between two row-addressed substitution requests.</summary>
+    /// <param name="other">The other request.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSubstitutionRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSubstitutionRequest);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal MetadataGenericParameterAuthorityBindingIdentity? FindOwner(int index) =>
@@ -4204,7 +4204,7 @@ public sealed class MetadataTypeSubstitutionRequest : IEquatable<MetadataTypeSub
 
 /// <summary>Freezes one node in the complete recursively substituted signature tree.</summary>
 /// <remarks>
-/// This sealed draft identity retains the original syntax node, every recursively processed child, and the exact
+/// This sealed identity retains the original syntax node, every recursively processed child, and the exact
 /// GenericParam-row binding applied at a VAR or MVAR leaf. A closed replacement is present only for an exact binding.
 /// </remarks>
 public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSubstitutedTypeNodeIdentity>
@@ -4250,22 +4250,22 @@ public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSub
     /// <summary>Gets a defensive copy of all recursively substituted children in source order.</summary>
     public ImmutableArray<MetadataSubstitutedTypeNodeIdentity> Children =>
         ExpressionV2ContractEncoding.Copy(children);
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two recursively substituted draft nodes.</summary>
-    /// <param name="other">The other draft node.</param>
+    /// <summary>Tests canonical equality between two recursively substituted nodes.</summary>
+    /// <param name="other">The other node.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataSubstitutedTypeNodeIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataSubstitutedTypeNodeIdentity);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataSubstitutedTypeNodeIdentity Create(
@@ -4314,7 +4314,7 @@ public sealed class MetadataSubstitutedTypeNodeIdentity : IEquatable<MetadataSub
 
 /// <summary>Freezes one complete typed result of source-anchored FieldSig owner-VAR substitution.</summary>
 /// <remarks>
-/// The sealed draft result retains the exact FieldSig request, recursively substituted tree, distinct unavailable and
+/// The sealed result retains the exact FieldSig request, recursively substituted tree, distinct unavailable and
 /// undeclared indices, and an exact closed identity only when the complete declaring-TypeDef proof and every recursive
 /// node are admitted. A non-exact or invalid proof applies no binding prefix.
 /// </remarks>
@@ -4377,7 +4377,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
     public MetadataTypeSubstitutionResultKind Kind { get; }
     /// <summary>Gets the complete original pre-substitution signature tree.</summary>
     public MetadataTypeSignatureNode Root { get; }
-    /// <summary>Gets the explicit immutable draft row-addressed substitution request.</summary>
+    /// <summary>Gets the explicit immutable row-addressed substitution request.</summary>
     public MetadataTypeSubstitutionRequest Request { get; }
     /// <summary>Gets whether the complete declaring-TypeDef binding proof is exact, non-exact, or invalid.</summary>
     public MetadataGenericParameterProofResultKind BindingProofResultKind => Request.BindingProofResultKind;
@@ -4405,9 +4405,9 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
     public MetadataClosedTypeIdentity? ClosedType { get; }
     /// <summary>Gets the reached bound when that, rather than provisional classification, caused NonExact.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
     /// <summary>Recursively substitutes the exact row-addressed owner VAR bindings in one exact FieldSig request.</summary>
@@ -4416,7 +4416,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
     /// ledger for a non-generic owner.
     /// </param>
     /// <returns>
-    /// A sealed immutable typed draft result. Non-exact or invalid binding proofs stop before any binding is applied
+    /// A sealed immutable typed result. Non-exact or invalid binding proofs stop before any binding is applied
     /// and cannot produce a closed result.
     /// </returns>
     public static MetadataTypeSubstitutionResult Substitute(MetadataTypeSubstitutionRequest request)
@@ -4492,17 +4492,17 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
             evaluation.ReachedBound);
     }
 
-    /// <summary>Tests canonical equality between two recursive draft substitution results.</summary>
-    /// <param name="other">The other draft result.</param>
+    /// <summary>Tests canonical equality between two recursive substitution results.</summary>
+    /// <param name="other">The other result.</param>
     /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeSubstitutionResult? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only when the object has identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only when the object has identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeSubstitutionResult);
-    /// <summary>Computes a hash code from the immutable draft canonical bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable canonical bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     private static bool CollectFieldContextInvalidity(
@@ -4733,7 +4733,7 @@ public sealed class MetadataTypeSubstitutionResult : IEquatable<MetadataTypeSubs
             MetadataTypeSubstitutionResultKind.Unsupported => SubstitutionEvaluation.Unsupported(tree),
             MetadataTypeSubstitutionResultKind.Invalid => SubstitutionEvaluation.Invalid(tree),
             MetadataTypeSubstitutionResultKind.NonExact => SubstitutionEvaluation.NonExact(tree, bound),
-            _ => throw new InvalidOperationException("The child disposition is outside the closed draft set."),
+            _ => throw new InvalidOperationException("The child disposition is outside the closed set."),
         };
 
     private static MetadataTypeSubstitutionResultKind Merge(

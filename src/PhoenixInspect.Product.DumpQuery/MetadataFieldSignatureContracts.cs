@@ -3,9 +3,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Freezes the shared Core Field-form certificate projected into the public draft metadata contract.</summary>
+/// <summary>Freezes the shared Core Field-form certificate projected into the public metadata contract.</summary>
 /// <remarks>
-/// This sealed draft identity binds full FieldSig consumption, the exact source bytes, the projected root, and every
+/// This sealed identity binds full FieldSig consumption, the exact source bytes, the projected root, and every
 /// Core counter needed to audit which bounded grammar form produced the result.
 /// </remarks>
 public sealed class MetadataFieldSignatureCertificateIdentity :
@@ -57,46 +57,46 @@ public sealed class MetadataFieldSignatureCertificateIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the SHA-256 digest of the complete draft FieldSig bytes.</summary>
+    /// <summary>Gets the SHA-256 digest of the complete FieldSig bytes.</summary>
     public string SignatureBytesSha256 { get; }
 
-    /// <summary>Gets the canonical digest of the complete draft projected root.</summary>
+    /// <summary>Gets the canonical digest of the complete projected root.</summary>
     public string RootSha256 { get; }
 
-    /// <summary>Gets the exact complete draft FieldSig byte count.</summary>
+    /// <summary>Gets the exact complete FieldSig byte count.</summary>
     public int SignatureByteCount { get; }
 
-    /// <summary>Gets the exact Core Field-form draft header, always <c>0x06</c>.</summary>
+    /// <summary>Gets the exact Core Field-form header, always <c>0x06</c>.</summary>
     public int Header { get; }
 
-    /// <summary>Gets the complete Core aggregate draft type-node count.</summary>
+    /// <summary>Gets the complete Core aggregate type-node count.</summary>
     public int AggregateTypeCount { get; }
 
-    /// <summary>Gets the complete Core aggregate draft generic-argument count.</summary>
+    /// <summary>Gets the complete Core aggregate generic-argument count.</summary>
     public int AggregateGenericArgumentCount { get; }
 
-    /// <summary>Gets the greatest Core recursive draft type depth observed.</summary>
+    /// <summary>Gets the greatest Core recursive type depth observed.</summary>
     public int MaximumObservedDepth { get; }
 
-    /// <summary>Gets the complete Core draft event-node count, including ARRAY shape events.</summary>
+    /// <summary>Gets the complete Core event-node count, including ARRAY shape events.</summary>
     public int ProjectedNodeCount { get; }
 
-    /// <summary>Gets the greatest draft function-pointer generic-parameter count declared in the FieldSig.</summary>
+    /// <summary>Gets the greatest function-pointer generic-parameter count declared in the FieldSig.</summary>
     public int MaximumDeclaredGenericParameterCount { get; }
 
-    /// <summary>Gets the greatest draft function-pointer parameter count declared in the FieldSig.</summary>
+    /// <summary>Gets the greatest function-pointer parameter count declared in the FieldSig.</summary>
     public int MaximumDeclaredParameterCount { get; }
 
-    /// <summary>Gets the greatest draft multidimensional-array rank declared in the FieldSig.</summary>
+    /// <summary>Gets the greatest multidimensional-array rank declared in the FieldSig.</summary>
     public int MaximumDeclaredArrayRank { get; }
 
-    /// <summary>Gets the explicit full-source-end observation retained by this exact draft certificate.</summary>
+    /// <summary>Gets the explicit full-source-end observation retained by this exact certificate.</summary>
     public bool SourceEndObserved => true;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft certificate bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical certificate bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft certificate.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical certificate.</summary>
     public string Sha256 { get; }
 
     internal static MetadataFieldSignatureCertificateIdentity Create(
@@ -119,7 +119,7 @@ public sealed class MetadataFieldSignatureCertificateIdentity :
             certificate.Counters.MaximumDeclaredParameterCount is < 0 or > StaticFieldV2Limits.MaximumParameterCount ||
             certificate.Counters.MaximumDeclaredArrayRank is < 0 or > StaticFieldV2Limits.MaximumArrayRank)
         {
-            throw new ArgumentException("A complete exact Core Field-form draft certificate is required.", nameof(certificate));
+            throw new ArgumentException("A complete exact Core Field-form certificate is required.", nameof(certificate));
         }
 
         return new MetadataFieldSignatureCertificateIdentity(
@@ -136,25 +136,25 @@ public sealed class MetadataFieldSignatureCertificateIdentity :
             certificate.Counters.MaximumDeclaredArrayRank);
     }
 
-    /// <summary>Tests whether another public draft certificate has identical canonical content.</summary>
-    /// <param name="other">The other draft certificate.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests whether another public certificate has identical canonical content.</summary>
+    /// <param name="other">The other certificate.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataFieldSignatureCertificateIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests an arbitrary object for canonical equality with this public draft certificate.</summary>
+    /// <summary>Tests an arbitrary object for canonical equality with this public certificate.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for the same canonical draft certificate.</returns>
+    /// <returns><see langword="true"/> only for the same canonical certificate.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataFieldSignatureCertificateIdentity);
 
-    /// <summary>Computes a deterministic hash code from the canonical draft certificate bytes.</summary>
-    /// <returns>A deterministic draft hash code.</returns>
+    /// <summary>Computes a deterministic hash code from the canonical certificate bytes.</summary>
+    /// <returns>A deterministic hash code.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Anchors one exact fully consumed FieldSig projection to its FieldDef and source-end draft identities.</summary>
+/// <summary>Anchors one exact fully consumed FieldSig projection to its FieldDef and source-end identities.</summary>
 /// <remarks>
-/// The sealed canonical draft identity exists only after shared Core Field-form validation and exact resolution of
+/// The sealed canonical identity exists only after shared Core Field-form validation and exact resolution of
 /// every referenced token. It never represents a retained prefix.
 /// </remarks>
 public sealed class MetadataFieldSignatureIdentity : IEquatable<MetadataFieldSignatureIdentity>
@@ -188,28 +188,28 @@ public sealed class MetadataFieldSignatureIdentity : IEquatable<MetadataFieldSig
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact FieldDef draft identity that owns the signature.</summary>
+    /// <summary>Gets the exact FieldDef identity that owns the signature.</summary>
     public StaticFieldDefinitionIdentity FieldDefinition { get; }
 
-    /// <summary>Gets the exact metadata-table source-end draft identity used for every row check.</summary>
+    /// <summary>Gets the exact metadata-table source-end identity used for every row check.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets a defensive copy of the complete exact draft FieldSig bytes.</summary>
+    /// <summary>Gets a defensive copy of the complete exact FieldSig bytes.</summary>
     public ImmutableArray<byte> SignatureBytes => ExpressionV2ContractEncoding.Copy(signatureBytes);
 
-    /// <summary>Gets the exact shared-Core Field-form draft certificate.</summary>
+    /// <summary>Gets the exact shared-Core Field-form certificate.</summary>
     public MetadataFieldSignatureCertificateIdentity Certificate { get; }
 
-    /// <summary>Gets the complete resolved draft type-signature root.</summary>
+    /// <summary>Gets the complete resolved type-signature root.</summary>
     public MetadataTypeSignatureNode Root { get; }
 
-    /// <summary>Gets the explicit source-end observation retained by this exact draft identity.</summary>
+    /// <summary>Gets the explicit source-end observation retained by this exact identity.</summary>
     public bool SourceEndObserved => true;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft field-signature identity.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical field-signature identity.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft field-signature identity.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical field-signature identity.</summary>
     public string Sha256 { get; }
 
     internal static MetadataFieldSignatureIdentity Create(
@@ -235,7 +235,7 @@ public sealed class MetadataFieldSignatureIdentity : IEquatable<MetadataFieldSig
                 StringComparison.Ordinal) ||
             !string.Equals(certificate.RootSha256, root.Sha256, StringComparison.Ordinal))
         {
-            throw new ArgumentException("The exact draft FieldSig anchors do not identify one complete source row and projection.");
+            throw new ArgumentException("The exact FieldSig anchors do not identify one complete source row and projection.");
         }
         return new MetadataFieldSignatureIdentity(
             fieldDefinition,
@@ -245,25 +245,25 @@ public sealed class MetadataFieldSignatureIdentity : IEquatable<MetadataFieldSig
             root);
     }
 
-    /// <summary>Tests whether another exact draft FieldSig identity has identical canonical content.</summary>
-    /// <param name="other">The other draft identity.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests whether another exact FieldSig identity has identical canonical content.</summary>
+    /// <param name="other">The other identity.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataFieldSignatureIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests an arbitrary object for canonical equality with this exact draft FieldSig identity.</summary>
+    /// <summary>Tests an arbitrary object for canonical equality with this exact FieldSig identity.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for the same canonical draft identity.</returns>
+    /// <returns><see langword="true"/> only for the same canonical identity.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataFieldSignatureIdentity);
 
-    /// <summary>Computes a deterministic hash code from the canonical exact draft FieldSig bytes.</summary>
-    /// <returns>A deterministic draft hash code.</returns>
+    /// <summary>Computes a deterministic hash code from the canonical exact FieldSig bytes.</summary>
+    /// <returns>A deterministic hash code.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes an exact, incomplete, bounded, or invalid FieldSig decode as one prefix-free public draft outcome.</summary>
+/// <summary>Freezes an exact, incomplete, bounded, or invalid FieldSig decode as one prefix-free public outcome.</summary>
 /// <remarks>
-/// The sealed canonical draft outcome always anchors the requested FieldDef and source ends. Only its exact alternative
+/// The sealed canonical outcome always anchors the requested FieldDef and source ends. Only its exact alternative
 /// exposes a <see cref="MetadataFieldSignatureIdentity"/>; every other alternative exposes no tree or certificate.
 /// </remarks>
 public sealed class MetadataFieldSignatureDecodeOutcome : IEquatable<MetadataFieldSignatureDecodeOutcome>
@@ -313,48 +313,48 @@ public sealed class MetadataFieldSignatureDecodeOutcome : IEquatable<MetadataFie
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact closed draft outcome kind.</summary>
+    /// <summary>Gets the exact closed outcome kind.</summary>
     public MetadataSignatureDecodeResultKind Kind { get; }
 
-    /// <summary>Gets the requested exact physical FieldDef draft identity.</summary>
+    /// <summary>Gets the requested exact physical FieldDef identity.</summary>
     public StaticFieldDefinitionIdentity FieldDefinition { get; }
 
-    /// <summary>Gets the exact metadata source-end draft identity governing the operation.</summary>
+    /// <summary>Gets the exact metadata source-end identity governing the operation.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the complete exact draft identity, or null for every stop.</summary>
+    /// <summary>Gets the complete exact identity, or null for every stop.</summary>
     public MetadataFieldSignatureIdentity? Identity { get; }
 
-    /// <summary>Gets the projected draft root only for an exact result.</summary>
+    /// <summary>Gets the projected root only for an exact result.</summary>
     public MetadataTypeSignatureNode? Root => Identity?.Root;
 
-    /// <summary>Gets the Core Field-form draft certificate only for an exact result.</summary>
+    /// <summary>Gets the Core Field-form certificate only for an exact result.</summary>
     public MetadataFieldSignatureCertificateIdentity? Certificate => Identity?.Certificate;
 
-    /// <summary>Gets the reached draft operation bound only for a cap-plus-one result.</summary>
+    /// <summary>Gets the reached operation bound only for a cap-plus-one result.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets exactly the draft bound limit plus one, otherwise zero.</summary>
+    /// <summary>Gets exactly the bound limit plus one, otherwise zero.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets the stable draft incomplete-evidence code only for a non-bound non-exact result.</summary>
+    /// <summary>Gets the stable incomplete-evidence code only for a non-bound non-exact result.</summary>
     public string? NonExactCode { get; }
 
-    /// <summary>Gets the stable draft invalid-decode code only for an invalid result.</summary>
+    /// <summary>Gets the stable invalid-decode code only for an invalid result.</summary>
     public string? InvalidCode { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Decodes one exact FieldDef's complete FieldSig under the shared bounded Core draft grammar.</summary>
-    /// <param name="fieldDefinition">The exact FieldDef draft identity and complete signature bytes.</param>
-    /// <param name="sourceEnds">The exact draft source ends that must contain the physical FieldDef row.</param>
-    /// <param name="tokenCatalog">The detached draft token-resolution catalog for the same source ends.</param>
+    /// <summary>Decodes one exact FieldDef's complete FieldSig under the shared bounded Core grammar.</summary>
+    /// <param name="fieldDefinition">The exact FieldDef identity and complete signature bytes.</param>
+    /// <param name="sourceEnds">The exact source ends that must contain the physical FieldDef row.</param>
+    /// <param name="tokenCatalog">The detached token-resolution catalog for the same source ends.</param>
     /// <returns>
-    /// A canonical prefix-free draft result. Exact results alone expose an identity, certificate, and projected root;
+    /// A canonical prefix-free result. Exact results alone expose an identity, certificate, and projected root;
     /// incomplete, bounded, and invalid results retain none of those derived objects.
     /// </returns>
     public static MetadataFieldSignatureDecodeOutcome Decode(
@@ -368,7 +368,7 @@ public sealed class MetadataFieldSignatureDecodeOutcome : IEquatable<MetadataFie
         if (!fieldDefinition.DeclaringType.MetadataModule.Equals(sourceEnds.SourceModule) ||
             !tokenCatalog.SourceEnds.Equals(sourceEnds))
         {
-            throw new ArgumentException("FieldSig draft anchors and token facts must belong to the same exact source ends.");
+            throw new ArgumentException("FieldSig anchors and token facts must belong to the same exact source ends.");
         }
 
         var rowId = fieldDefinition.FieldDefinitionToken & 0x00FF_FFFF;
@@ -431,7 +431,7 @@ public sealed class MetadataFieldSignatureDecodeOutcome : IEquatable<MetadataFie
     {
         if (reachedBound.Value >= int.MaxValue || observedCount != reachedBound.Value + 1)
         {
-            throw new ArgumentException("A declared draft FieldSig bound and its cap-plus-one observation are required.");
+            throw new ArgumentException("A declared FieldSig bound and its cap-plus-one observation are required.");
         }
         return new MetadataFieldSignatureDecodeOutcome(
             MetadataSignatureDecodeResultKind.NonExact,
@@ -478,18 +478,18 @@ public sealed class MetadataFieldSignatureDecodeOutcome : IEquatable<MetadataFie
             code);
     }
 
-    /// <summary>Tests whether another public draft FieldSig outcome has identical canonical content.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests whether another public FieldSig outcome has identical canonical content.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataFieldSignatureDecodeOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests an arbitrary object for canonical equality with this public draft FieldSig outcome.</summary>
+    /// <summary>Tests an arbitrary object for canonical equality with this public FieldSig outcome.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for the same canonical draft outcome.</returns>
+    /// <returns><see langword="true"/> only for the same canonical outcome.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataFieldSignatureDecodeOutcome);
 
-    /// <summary>Computes a deterministic hash code from the canonical public draft outcome bytes.</summary>
-    /// <returns>A deterministic draft hash code.</returns>
+    /// <summary>Computes a deterministic hash code from the canonical public outcome bytes.</summary>
+    /// <returns>A deterministic hash code.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }

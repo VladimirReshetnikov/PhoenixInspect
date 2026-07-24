@@ -3,9 +3,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one complete authority-joined InterfaceImpl-table draft proof.</summary>
+/// <summary>Classifies one complete authority-joined InterfaceImpl-table proof.</summary>
 /// <remarks>
-/// This draft discriminator separates a complete exact physical table from an acquisition stop and contradictory
+/// This discriminator separates a complete exact physical table from an acquisition stop and contradictory
 /// physical evidence. Even an exact result retains the Interface column as an unresolved TypeDefOrRef token and makes
 /// no interface-semantic claim.
 /// </remarks>
@@ -21,14 +21,14 @@ public enum MetadataInterfaceImplementationTableResultKind
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed disposition of one InterfaceImpl-table draft proof.</summary>
+/// <summary>Identifies the typed disposition of one InterfaceImpl-table proof.</summary>
 /// <remarks>
-/// The draft issue remains explicit when no row prefix is exposed, so later composition never has to infer why the
+/// The issue remains explicit when no row prefix is exposed, so later composition never has to infer why the
 /// complete implementation table was unavailable.
 /// </remarks>
 public enum MetadataInterfaceImplementationTableIssue
 {
-    /// <summary>No issue applies to an exact complete draft catalog.</summary>
+    /// <summary>No issue applies to an exact complete catalog.</summary>
     None = 0,
 
     /// <summary>The exact source InterfaceImpl table end crossed the admitted complete row count.</summary>
@@ -64,7 +64,7 @@ public enum MetadataInterfaceImplementationTableIssue
 
 /// <summary>Freezes only the three physical columns observed from one InterfaceImpl table row.</summary>
 /// <remarks>
-/// This sealed draft observation carries the source module, the physical row token, the raw Class-column TypeDef
+/// This sealed observation carries the source module, the physical row token, the raw Class-column TypeDef
 /// token, and the raw Interface-column TypeDefOrRef token. It contains no caller-asserted authority row, resolved
 /// interface target, decoded signature, or transitive implementation claim.
 /// </remarks>
@@ -95,32 +95,32 @@ public sealed class MetadataInterfaceImplementationRowObservationIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata module containing the observed physical draft row.</summary>
+    /// <summary>Gets the exact metadata module containing the observed physical row.</summary>
     public StaticFieldMetadataModuleIdentity MetadataModule { get; }
 
-    /// <summary>Gets the exact non-nil InterfaceImpl token identifying the physical draft row.</summary>
+    /// <summary>Gets the exact non-nil InterfaceImpl token identifying the physical row.</summary>
     public int InterfaceImplementationToken { get; }
 
-    /// <summary>Gets the unchanged raw Class-column TypeDef token of the physical draft row.</summary>
+    /// <summary>Gets the unchanged raw Class-column TypeDef token of the physical row.</summary>
     public int ImplementingTypeDefinitionToken { get; }
 
-    /// <summary>Gets the unchanged raw Interface-column TypeDefOrRef token of the physical draft row.</summary>
+    /// <summary>Gets the unchanged raw Interface-column TypeDefOrRef token of the physical row.</summary>
     public int InterfaceMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one physical-column-only InterfaceImpl row draft observation.</summary>
-    /// <param name="metadataModule">The exact metadata module containing the physical draft row.</param>
+    /// <summary>Creates one physical-column-only InterfaceImpl row observation.</summary>
+    /// <param name="metadataModule">The exact metadata module containing the physical row.</param>
     /// <param name="interfaceImplementationToken">The exact non-nil InterfaceImpl table token and RID.</param>
     /// <param name="implementingTypeDefinitionToken">The raw Class-column TypeDef token, retained unresolved.</param>
     /// <param name="interfaceMetadataToken">
     /// The raw Interface-column TypeDefOrRef token, retained without resolving its target.
     /// </param>
-    /// <returns>A sealed immutable draft observation containing no derived owner or target fact.</returns>
+    /// <returns>A sealed immutable observation containing no derived owner or target fact.</returns>
     public static MetadataInterfaceImplementationRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity metadataModule,
         int interfaceImplementationToken,
@@ -143,26 +143,26 @@ public sealed class MetadataInterfaceImplementationRowObservationIdentity :
             interfaceMetadataToken);
     }
 
-    /// <summary>Tests canonical equality between two physical InterfaceImpl draft observations.</summary>
-    /// <param name="other">The other physical draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical InterfaceImpl observations.</summary>
+    /// <param name="other">The other physical observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical InterfaceImpl draft equality against an arbitrary object.</summary>
+    /// <summary>Tests physical InterfaceImpl equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataInterfaceImplementationRowObservationIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable physical-column draft content.</summary>
-    /// <returns>A hash code for this physical InterfaceImpl draft observation.</returns>
+    /// <summary>Computes a deterministic hash code from immutable physical-column content.</summary>
+    /// <returns>A hash code for this physical InterfaceImpl observation.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one InterfaceImpl row after complete source and definition-authority validation.</summary>
 /// <remarks>
-/// This sealed draft identity has no public issuer. It retains the authority-issued implementing TypeDef, but
+/// This sealed identity has no public issuer. It retains the authority-issued implementing TypeDef, but
 /// deliberately leaves the Interface column as an unresolved physical TypeDefOrRef token. Canonical authority
 /// references are fixed-size SHA-256 values so row size never grows with the authority catalog.
 /// </remarks>
@@ -190,19 +190,19 @@ public sealed class MetadataInterfaceImplementationTableRowIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact source ends against which this complete draft row was validated.</summary>
+    /// <summary>Gets the exact source ends against which this complete row was validated.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the unchanged physical-column-only draft observation.</summary>
+    /// <summary>Gets the unchanged physical-column-only observation.</summary>
     public MetadataInterfaceImplementationRowObservationIdentity Observation { get; }
 
     /// <summary>Gets the exact authority-issued TypeDef selected by the physical Class column.</summary>
     public MetadataTypeDefinitionAuthorityIdentity ImplementingTypeDefinition { get; }
 
-    /// <summary>Gets the exact metadata module owning this complete draft row.</summary>
+    /// <summary>Gets the exact metadata module owning this complete row.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => Observation.MetadataModule;
 
-    /// <summary>Gets the exact InterfaceImpl row token forwarded from the physical draft observation.</summary>
+    /// <summary>Gets the exact InterfaceImpl row token forwarded from the physical observation.</summary>
     public int InterfaceImplementationToken => Observation.InterfaceImplementationToken;
 
     /// <summary>Gets the exact authority-resolved implementing TypeDef token.</summary>
@@ -211,25 +211,25 @@ public sealed class MetadataInterfaceImplementationTableRowIdentity :
     /// <summary>Gets the validated but deliberately unresolved physical TypeDefOrRef Interface token.</summary>
     public int InterfaceMetadataToken => Observation.InterfaceMetadataToken;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two exact InterfaceImpl table-row draft identities.</summary>
-    /// <param name="other">The other exact draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two exact InterfaceImpl table-row identities.</summary>
+    /// <param name="other">The other exact row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationTableRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests exact InterfaceImpl row draft equality against an arbitrary object.</summary>
+    /// <summary>Tests exact InterfaceImpl row equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataInterfaceImplementationTableRowIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable exact row draft content.</summary>
-    /// <returns>A hash code for this exact InterfaceImpl draft row.</returns>
+    /// <summary>Computes a deterministic hash code from immutable exact row content.</summary>
+    /// <returns>A hash code for this exact InterfaceImpl row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataInterfaceImplementationTableRowIdentity Create(
@@ -262,12 +262,12 @@ public sealed class MetadataInterfaceImplementationTableRowIdentity :
     }
 }
 
-/// <summary>Freezes one complete source-anchored physical InterfaceImpl table draft projection.</summary>
+/// <summary>Freezes one complete source-anchored physical InterfaceImpl table projection.</summary>
 /// <remarks>
-/// This sealed draft catalog resolves every physical Class column exclusively through one exact
+/// This sealed catalog resolves every physical Class column exclusively through one exact
 /// <see cref="MetadataDefinitionAuthorityCatalogIdentity"/>. It validates Interface-column token kind and source range
 /// and rejects a repeated implementing-TypeDef and Interface-token pair without resolving any target semantics.
-/// Non-exact and invalid draft outcomes retain no derived row prefix.
+/// Non-exact and invalid outcomes retain no derived row prefix.
 /// </remarks>
 public sealed class MetadataInterfaceImplementationTableCatalogIdentity :
     IEquatable<MetadataInterfaceImplementationTableCatalogIdentity>
@@ -312,43 +312,43 @@ public sealed class MetadataInterfaceImplementationTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this complete physical-table draft is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this complete physical table is exact, non-exact, or invalid.</summary>
     public MetadataInterfaceImplementationTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft table issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed table issue, or none for an exact result.</summary>
     public MetadataInterfaceImplementationTableIssue Issue { get; }
 
-    /// <summary>Gets the complete physical definition-authority draft catalog supplying every implementing owner.</summary>
+    /// <summary>Gets the complete physical definition-authority catalog supplying every implementing owner.</summary>
     public MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority { get; }
 
-    /// <summary>Gets the exact source ends inherited from the physical definition-authority draft catalog.</summary>
+    /// <summary>Gets the exact source ends inherited from the physical definition-authority catalog.</summary>
     public MetadataSourceEndIdentity SourceEnds => DefinitionAuthority.SourceEnds;
 
-    /// <summary>Gets a defensive RID-order copy of exact derived draft rows, or an initialized empty array otherwise.</summary>
+    /// <summary>Gets a defensive RID-order copy of exact derived rows, or an initialized empty array otherwise.</summary>
     public ImmutableArray<MetadataInterfaceImplementationTableRowIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
 
-    /// <summary>Gets the propagated or complete-table draft bound only for a prefix-free non-exact result.</summary>
+    /// <summary>Gets the propagated or complete-table bound only for a prefix-free non-exact result.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the issue-related supplied, prerequisite, or cap-plus-one draft row count.</summary>
+    /// <summary>Gets the issue-related supplied, prerequisite, or cap-plus-one row count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets the InterfaceImpl or prerequisite token related to the draft issue, otherwise null.</summary>
+    /// <summary>Gets the InterfaceImpl or prerequisite token related to the issue, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft catalog bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical catalog bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft catalog bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical catalog bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete authority-joined physical InterfaceImpl-table draft projection.</summary>
-    /// <param name="definitionAuthority">The complete physical definition-authority draft prerequisite.</param>
+    /// <summary>Creates one complete authority-joined physical InterfaceImpl-table projection.</summary>
+    /// <param name="definitionAuthority">The complete physical definition-authority prerequisite.</param>
     /// <param name="observations">
     /// Every physical InterfaceImpl row in RID order; a default array denotes unavailable complete acquisition.
     /// </param>
-    /// <returns>An exact complete draft catalog, a prefix-free non-exact stop, or a factless invalid draft result.</returns>
+    /// <returns>An exact complete catalog, a prefix-free non-exact stop, or a factless invalid result.</returns>
     public static MetadataInterfaceImplementationTableCatalogIdentity Create(
         MetadataDefinitionAuthorityCatalogIdentity definitionAuthority,
         ImmutableArray<MetadataInterfaceImplementationRowObservationIdentity> observations)
@@ -500,9 +500,9 @@ public sealed class MetadataInterfaceImplementationTableCatalogIdentity :
             null);
     }
 
-    /// <summary>Finds the exact derived draft row for one physical InterfaceImpl token.</summary>
+    /// <summary>Finds the exact derived row for one physical InterfaceImpl token.</summary>
     /// <param name="interfaceImplementationToken">The physical InterfaceImpl token to look up.</param>
-    /// <returns>The exact derived draft row, or null for a non-exact catalog or an unknown token.</returns>
+    /// <returns>The exact derived row, or null for a non-exact catalog or an unknown token.</returns>
     public MetadataInterfaceImplementationTableRowIdentity? FindRow(int interfaceImplementationToken)
     {
         if (ResultKind != MetadataInterfaceImplementationTableResultKind.Exact ||
@@ -515,10 +515,10 @@ public sealed class MetadataInterfaceImplementationTableCatalogIdentity :
         return rowId > 0 && rowId <= rows.Length ? rows[rowId - 1] : null;
     }
 
-    /// <summary>Projects the exact derived draft rows declared by one authority-issued implementing TypeDef.</summary>
-    /// <param name="implementingType">The authority-issued TypeDef whose InterfaceImpl draft rows are requested.</param>
+    /// <summary>Projects the exact derived rows declared by one authority-issued implementing TypeDef.</summary>
+    /// <param name="implementingType">The authority-issued TypeDef whose InterfaceImpl rows are requested.</param>
     /// <returns>
-    /// The derived draft rows in physical RID order, or an initialized empty array for a non-exact catalog, a TypeDef
+    /// The derived rows in physical RID order, or an initialized empty array for a non-exact catalog, a TypeDef
     /// this catalog's own definition authority did not issue, or an owner with no physical InterfaceImpl row.
     /// </returns>
     public ImmutableArray<MetadataInterfaceImplementationTableRowIdentity> RowsForImplementingTypeOrEmpty(
@@ -540,19 +540,19 @@ public sealed class MetadataInterfaceImplementationTableCatalogIdentity :
             : ImmutableArray<MetadataInterfaceImplementationTableRowIdentity>.Empty;
     }
 
-    /// <summary>Tests canonical equality between two complete InterfaceImpl-table draft catalogs.</summary>
-    /// <param name="other">The other complete physical draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete InterfaceImpl-table catalogs.</summary>
+    /// <param name="other">The other complete physical catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete InterfaceImpl-table draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete InterfaceImpl-table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataInterfaceImplementationTableCatalogIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable complete-table draft content.</summary>
-    /// <returns>A hash code for this complete physical InterfaceImpl draft catalog.</returns>
+    /// <summary>Computes a deterministic hash code from immutable complete-table content.</summary>
+    /// <returns>A hash code for this complete physical InterfaceImpl catalog.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);
@@ -593,10 +593,10 @@ public sealed class MetadataInterfaceImplementationTableCatalogIdentity :
         int InterfaceMetadataToken);
 }
 
-/// <summary>Classifies the physical form of one resolved InterfaceImpl draft edge.</summary>
+/// <summary>Classifies the physical form of one resolved InterfaceImpl edge.</summary>
 /// <remarks>
 /// The values mirror <see cref="MetadataImmediateBaseEdgeKind"/> without its nil form, because the physical Interface
-/// column is never nil. Every value is a complete derived draft row fact rather than a portfolio failure.
+/// column is never nil. Every value is a complete derived row fact rather than a portfolio failure.
 /// </remarks>
 public enum MetadataInterfaceImplementationEdgeKind
 {
@@ -613,9 +613,9 @@ public enum MetadataInterfaceImplementationEdgeKind
     TypeSpecification = 4,
 }
 
-/// <summary>Freezes one guarded authority-derived resolved InterfaceImpl draft edge.</summary>
+/// <summary>Freezes one guarded authority-derived resolved InterfaceImpl edge.</summary>
 /// <remarks>
-/// The draft edge joins one authority-issued InterfaceImpl row to its exact named interface target or to a retained
+/// The edge joins one authority-issued InterfaceImpl row to its exact named interface target or to a retained
 /// unresolved TypeRef or undecoded TypeSpec row. Decoding a generic interface instantiation belongs to the later
 /// construction work and never happens here.
 /// </remarks>
@@ -652,57 +652,57 @@ public sealed class MetadataInterfaceImplementationEdgeAuthorityIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the unchanged authority-issued InterfaceImpl draft row.</summary>
+    /// <summary>Gets the unchanged authority-issued InterfaceImpl row.</summary>
     public MetadataInterfaceImplementationTableRowIdentity ImplementationRow { get; }
 
     /// <summary>Gets the exact metadata module owning the physical Interface column.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => ImplementationRow.SourceModule;
 
-    /// <summary>Gets the authority-issued TypeDef declaring this draft edge.</summary>
+    /// <summary>Gets the authority-issued TypeDef declaring this edge.</summary>
     public MetadataTypeDefinitionAuthorityIdentity ImplementingTypeDefinition =>
         ImplementationRow.ImplementingTypeDefinition;
 
-    /// <summary>Gets the exact InterfaceImpl row token forwarded from the draft row.</summary>
+    /// <summary>Gets the exact InterfaceImpl row token forwarded from the row.</summary>
     public int InterfaceImplementationToken => ImplementationRow.InterfaceImplementationToken;
 
     /// <summary>Gets the validated raw physical TypeDefOrRef Interface token.</summary>
     public int InterfaceMetadataToken => ImplementationRow.InterfaceMetadataToken;
 
-    /// <summary>Gets the complete typed physical form of this draft edge.</summary>
+    /// <summary>Gets the complete typed physical form of this edge.</summary>
     public MetadataInterfaceImplementationEdgeKind Kind { get; }
 
-    /// <summary>Gets the exact interface target module for a named resolved draft edge, otherwise null.</summary>
+    /// <summary>Gets the exact interface target module for a named resolved edge, otherwise null.</summary>
     public StaticFieldMetadataModuleIdentity? TargetModule { get; }
 
-    /// <summary>Gets the exact authority-issued interface TypeDef for a named resolved draft edge, otherwise null.</summary>
+    /// <summary>Gets the exact authority-issued interface TypeDef for a named resolved edge, otherwise null.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? TargetTypeDefinition { get; }
 
-    /// <summary>Gets the retained TypeRef draft resolution row for a reference-formed edge, otherwise null.</summary>
+    /// <summary>Gets the retained TypeRef resolution row for a reference-formed edge, otherwise null.</summary>
     public MetadataTypeReferenceResolutionIdentity? ReferenceResolution { get; }
 
-    /// <summary>Gets the retained undecoded physical TypeSpec draft row for a generic interface, otherwise null.</summary>
+    /// <summary>Gets the retained undecoded physical TypeSpec row for a generic interface, otherwise null.</summary>
     public MetadataTypeSpecificationPhysicalRowIdentity? GenericInterfaceRow { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft edge bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical edge bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft edge bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical edge bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two resolved InterfaceImpl draft edges.</summary>
-    /// <param name="other">The other draft edge.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two resolved InterfaceImpl edges.</summary>
+    /// <param name="other">The other edge.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationEdgeAuthorityIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests resolved InterfaceImpl draft edge equality against an arbitrary object.</summary>
+    /// <summary>Tests resolved InterfaceImpl edge equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an edge with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an edge with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataInterfaceImplementationEdgeAuthorityIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this resolved InterfaceImpl draft edge.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this resolved InterfaceImpl edge.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataInterfaceImplementationEdgeAuthorityIdentity Create(
@@ -741,9 +741,9 @@ public sealed class MetadataInterfaceImplementationEdgeAuthorityIdentity :
     }
 }
 
-/// <summary>Classifies the terminal of one bounded transitive interface draft closure.</summary>
+/// <summary>Classifies the terminal of one bounded transitive interface closure.</summary>
 /// <remarks>
-/// Every terminal is a complete derived draft fact including retained generic interfaces, cycles, and reached bounds.
+/// Every terminal is a complete derived fact including retained generic interfaces, cycles, and reached bounds.
 /// Only <see cref="Complete"/> proves the closure enumerated every implemented interface.
 /// </remarks>
 public enum MetadataInterfaceImplementationClosureTerminalKind
@@ -764,10 +764,10 @@ public enum MetadataInterfaceImplementationClosureTerminalKind
     DepthBoundReached = 5,
 }
 
-/// <summary>Freezes one guarded bounded transitive interface draft closure for a single TypeDef.</summary>
+/// <summary>Freezes one guarded bounded transitive interface closure for a single TypeDef.</summary>
 /// <remarks>
-/// The draft closure unions the subject's direct InterfaceImpl edges, the edges of every interface it transitively
-/// extends, and the edges of every type on the subject's bounded ancestry draft chain. It performs no generic
+/// The closure unions the subject's direct InterfaceImpl edges, the edges of every interface it transitively
+/// extends, and the edges of every type on the subject's bounded ancestry chain. It performs no generic
 /// substitution and stops contributing at the first typed terminal it records.
 /// </remarks>
 public sealed class MetadataInterfaceImplementationClosureIdentity :
@@ -808,38 +808,38 @@ public sealed class MetadataInterfaceImplementationClosureIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata module owning the subject of this draft closure.</summary>
+    /// <summary>Gets the exact metadata module owning the subject of this closure.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule { get; }
 
-    /// <summary>Gets the authority-issued subject TypeDef of this draft closure.</summary>
+    /// <summary>Gets the authority-issued subject TypeDef of this closure.</summary>
     public MetadataTypeDefinitionAuthorityIdentity Subject { get; }
 
-    /// <summary>Gets the exact subject TypeDef token of this draft closure.</summary>
+    /// <summary>Gets the exact subject TypeDef token of this closure.</summary>
     public int SubjectTypeDefinitionToken => Subject.TypeDefinitionToken;
 
-    /// <summary>Gets a defensive discovery-order copy of one draft edge per distinct resolved interface.</summary>
+    /// <summary>Gets a defensive discovery-order copy of one edge per distinct resolved interface.</summary>
     public ImmutableArray<MetadataInterfaceImplementationEdgeAuthorityIdentity> InterfaceEdges =>
         ExpressionV2ContractEncoding.Copy(interfaceEdges);
 
-    /// <summary>Gets the complete typed terminal of this bounded draft closure.</summary>
+    /// <summary>Gets the complete typed terminal of this bounded closure.</summary>
     public MetadataInterfaceImplementationClosureTerminalKind TerminalKind { get; }
 
-    /// <summary>Gets the declared ancestry depth bound only after a cap-plus-one draft traversal.</summary>
+    /// <summary>Gets the declared ancestry depth bound only after a cap-plus-one traversal.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the terminal-related metadata token, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft closure bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical closure bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft closure bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical closure bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests whether this draft closure proved one named interface coordinate.</summary>
+    /// <summary>Tests whether this closure proved one named interface coordinate.</summary>
     /// <param name="interfaceModule">The exact metadata module defining the candidate interface.</param>
     /// <param name="interfaceTypeDefinitionToken">The candidate interface TypeDef token in that module.</param>
-    /// <returns><see langword="true"/> only when a resolved draft edge names that exact coordinate.</returns>
+    /// <returns><see langword="true"/> only when a resolved edge names that exact coordinate.</returns>
     public bool ContainsInterface(
         StaticFieldMetadataModuleIdentity interfaceModule,
         int interfaceTypeDefinitionToken)
@@ -858,19 +858,19 @@ public sealed class MetadataInterfaceImplementationClosureIdentity :
         return false;
     }
 
-    /// <summary>Tests canonical equality between two bounded interface draft closures.</summary>
-    /// <param name="other">The other draft closure.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two bounded interface closures.</summary>
+    /// <param name="other">The other closure.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationClosureIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests bounded interface draft closure equality against an arbitrary object.</summary>
+    /// <summary>Tests bounded interface closure equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a closure with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a closure with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataInterfaceImplementationClosureIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this bounded interface draft closure.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this bounded interface closure.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataInterfaceImplementationClosureIdentity Create(
@@ -908,26 +908,26 @@ public sealed class MetadataInterfaceImplementationClosureIdentity :
     }
 }
 
-/// <summary>Classifies one three-valued draft answer to a bounded interface-implementation question.</summary>
+/// <summary>Classifies one three-valued answer to a bounded interface-implementation question.</summary>
 /// <remarks>
-/// <see cref="No"/> is returned only over a complete draft closure. Every incomplete closure answers
+/// <see cref="No"/> is returned only over a complete closure. Every incomplete closure answers
 /// <see cref="Unprovable"/> so no consumer can read an acquisition stop as a proved negative.
 /// </remarks>
 public enum MetadataInterfaceImplementationAnswer
 {
-    /// <summary>The bounded draft closure proved the named interface coordinate.</summary>
+    /// <summary>The bounded closure proved the named interface coordinate.</summary>
     Yes = 1,
 
-    /// <summary>The complete bounded draft closure proved the named interface coordinate absent.</summary>
+    /// <summary>The complete bounded closure proved the named interface coordinate absent.</summary>
     No = 2,
 
-    /// <summary>The draft portfolio stopped or the bounded closure was incomplete.</summary>
+    /// <summary>The portfolio stopped or the bounded closure was incomplete.</summary>
     Unprovable = 3,
 }
 
-/// <summary>Freezes one guarded per-module entry of the interface-implementation draft portfolio.</summary>
+/// <summary>Freezes one guarded per-module entry of the interface-implementation portfolio.</summary>
 /// <remarks>
-/// The draft entry retains its complete InterfaceImpl catalog and ancestry lineage, one RID-ordered resolved edge per
+/// The entry retains its complete InterfaceImpl catalog and ancestry lineage, one RID-ordered resolved edge per
 /// physical row, and one bounded transitive closure per authority-issued TypeDef.
 /// </remarks>
 public sealed class MetadataInterfaceImplementationPortfolioModuleIdentity :
@@ -967,32 +967,32 @@ public sealed class MetadataInterfaceImplementationPortfolioModuleIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the retained complete physical InterfaceImpl draft catalog for this module.</summary>
+    /// <summary>Gets the retained complete physical InterfaceImpl catalog for this module.</summary>
     public MetadataInterfaceImplementationTableCatalogIdentity ImplementationCatalog { get; }
 
-    /// <summary>Gets the retained per-module ancestry draft entry lineage.</summary>
+    /// <summary>Gets the retained per-module ancestry entry lineage.</summary>
     public MetadataAncestryAuthorityModuleIdentity AncestryEntry { get; }
 
-    /// <summary>Gets the exact metadata module owning every draft row in this entry.</summary>
+    /// <summary>Gets the exact metadata module owning every row in this entry.</summary>
     public StaticFieldMetadataModuleIdentity SourceModule => AncestryEntry.SourceModule;
 
-    /// <summary>Gets a defensive RID-order copy of every resolved InterfaceImpl draft edge.</summary>
+    /// <summary>Gets a defensive RID-order copy of every resolved InterfaceImpl edge.</summary>
     public ImmutableArray<MetadataInterfaceImplementationEdgeAuthorityIdentity> Edges =>
         ExpressionV2ContractEncoding.Copy(edges);
 
-    /// <summary>Gets a defensive RID-order copy of every bounded transitive interface draft closure.</summary>
+    /// <summary>Gets a defensive RID-order copy of every bounded transitive interface closure.</summary>
     public ImmutableArray<MetadataInterfaceImplementationClosureIdentity> Closures =>
         ExpressionV2ContractEncoding.Copy(closures);
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft entry bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical entry bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft entry bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical entry bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Finds one resolved InterfaceImpl draft edge by physical row token.</summary>
+    /// <summary>Finds one resolved InterfaceImpl edge by physical row token.</summary>
     /// <param name="interfaceImplementationToken">The non-nil physical InterfaceImpl token.</param>
-    /// <returns>The complete draft edge, or null when the token is not an issued InterfaceImpl row.</returns>
+    /// <returns>The complete edge, or null when the token is not an issued InterfaceImpl row.</returns>
     public MetadataInterfaceImplementationEdgeAuthorityIdentity? FindEdge(int interfaceImplementationToken)
     {
         if (!CanonicalReplayEncoding.IsMetadataTokenForTable(interfaceImplementationToken, 0x09))
@@ -1003,9 +1003,9 @@ public sealed class MetadataInterfaceImplementationPortfolioModuleIdentity :
         return rowId > 0 && rowId <= edges.Length ? edges[rowId - 1] : null;
     }
 
-    /// <summary>Finds one bounded transitive interface draft closure by TypeDef token.</summary>
+    /// <summary>Finds one bounded transitive interface closure by TypeDef token.</summary>
     /// <param name="typeDefinitionToken">The non-nil TypeDef token.</param>
-    /// <returns>The complete draft closure, or null when the token is not an issued TypeDef.</returns>
+    /// <returns>The complete closure, or null when the token is not an issued TypeDef.</returns>
     public MetadataInterfaceImplementationClosureIdentity? FindClosure(int typeDefinitionToken)
     {
         if (!CanonicalReplayEncoding.IsMetadataTokenForTable(typeDefinitionToken, 0x02))
@@ -1016,20 +1016,20 @@ public sealed class MetadataInterfaceImplementationPortfolioModuleIdentity :
         return rowId > 0 && rowId <= closures.Length ? closures[rowId - 1] : null;
     }
 
-    /// <summary>Tests canonical equality between two per-module interface-implementation draft entries.</summary>
-    /// <param name="other">The other draft entry.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two per-module interface-implementation entries.</summary>
+    /// <param name="other">The other entry.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationPortfolioModuleIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests per-module interface-implementation draft entry equality against an arbitrary object.</summary>
+    /// <summary>Tests per-module interface-implementation entry equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an entry with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an entry with identical canonical content.</returns>
     public override bool Equals(object? obj) =>
         Equals(obj as MetadataInterfaceImplementationPortfolioModuleIdentity);
 
-    /// <summary>Computes a deterministic hash code from fixed-reference canonical draft content.</summary>
-    /// <returns>A hash code for this per-module interface-implementation draft entry.</returns>
+    /// <summary>Computes a deterministic hash code from fixed-reference canonical content.</summary>
+    /// <returns>A hash code for this per-module interface-implementation entry.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataInterfaceImplementationPortfolioModuleIdentity Create(
@@ -1053,8 +1053,8 @@ public sealed class MetadataInterfaceImplementationPortfolioModuleIdentity :
     }
 }
 
-/// <summary>Classifies one normalized multi-module interface-implementation draft portfolio.</summary>
-/// <remarks>Every stop is prefix-free; exact draft entries use the ancestry portfolio's module order.</remarks>
+/// <summary>Classifies one normalized multi-module interface-implementation portfolio.</summary>
+/// <remarks>Every stop is prefix-free; exact entries use the ancestry portfolio's module order.</remarks>
 public enum MetadataInterfaceImplementationPortfolioResultKind
 {
     /// <summary>Every module has one complete RID-ordered edge vector and one closure per TypeDef.</summary>
@@ -1063,15 +1063,15 @@ public enum MetadataInterfaceImplementationPortfolioResultKind
     /// <summary>A prerequisite, missing vector slot, or non-exact InterfaceImpl catalog prevented completion.</summary>
     NonExact = 2,
 
-    /// <summary>Complete draft inputs contradicted the ancestry portfolio or one another.</summary>
+    /// <summary>Complete inputs contradicted the ancestry portfolio or one another.</summary>
     Invalid = 3,
 }
 
-/// <summary>Identifies the deterministic issue for one interface-implementation draft portfolio.</summary>
-/// <remarks>The draft issue values keep prerequisite, vector-shape, catalog, and lineage stops distinct.</remarks>
+/// <summary>Identifies the deterministic issue for one interface-implementation portfolio.</summary>
+/// <remarks>The issue values keep prerequisite, vector-shape, catalog, and lineage stops distinct.</remarks>
 public enum MetadataInterfaceImplementationPortfolioIssue
 {
-    /// <summary>No issue applies to an exact draft portfolio.</summary>
+    /// <summary>No issue applies to an exact portfolio.</summary>
     None = 0,
 
     /// <summary>The ancestry authority portfolio prerequisite was non-exact.</summary>
@@ -1111,21 +1111,21 @@ public enum MetadataInterfaceImplementationPortfolioIssue
     ImplementationSourceEndsMismatch = 12,
 }
 
-/// <summary>Resolves every InterfaceImpl row and derives bounded transitive interface draft closures.</summary>
+/// <summary>Resolves every InterfaceImpl row and derives bounded transitive interface closures.</summary>
 /// <remarks>
-/// The portfolio is the sole issuer of interface-implementation draft rows. Same-module TypeDef interfaces select
+/// The portfolio is the sole issuer of interface-implementation rows. Same-module TypeDef interfaces select
 /// their authority row directly, TypeRef interfaces consume the exact resolution portfolio carried by the ancestry
 /// portfolio, and TypeSpec interfaces retain their guarded signature row undecoded. Each closure unions the subject's
 /// own edges, the edges of every interface it transitively extends, and the edges of every type on the subject's
-/// bounded ancestry draft chain; the traversal is bounded and its terminal is a complete typed draft fact.
+/// bounded ancestry chain; the traversal is bounded and its terminal is a complete typed fact.
 /// </remarks>
 public sealed class MetadataInterfaceImplementationPortfolioIdentity :
     IEquatable<MetadataInterfaceImplementationPortfolioIdentity>
 {
-    /// <summary>Gets the shared module-count draft cap.</summary>
+    /// <summary>Gets the shared module-count cap.</summary>
     public const int MaximumModuleCount = ExpressionV2ContractLimits.MaximumModuleCount;
 
-    /// <summary>Gets the shared bounded interface-traversal depth draft cap.</summary>
+    /// <summary>Gets the shared bounded interface-traversal depth cap.</summary>
     public const int MaximumClosureDepth = ExpressionV2ContractLimits.MaximumConstructedAncestryDepth;
 
     private const string CanonicalDomain = "metadata-v2-interfaceimpl-portfolio";
@@ -1167,13 +1167,13 @@ public sealed class MetadataInterfaceImplementationPortfolioIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this normalized interface-implementation draft portfolio is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether this normalized interface-implementation portfolio is exact, non-exact, or invalid.</summary>
     public MetadataInterfaceImplementationPortfolioResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft portfolio issue, or none for an exact portfolio.</summary>
+    /// <summary>Gets the typed portfolio issue, or none for an exact portfolio.</summary>
     public MetadataInterfaceImplementationPortfolioIssue Issue { get; }
 
-    /// <summary>Gets the retained ancestry authority draft portfolio prerequisite.</summary>
+    /// <summary>Gets the retained ancestry authority portfolio prerequisite.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
 
     /// <summary>Gets the exact portfolio snapshot digest, or null for an empty portfolio or any stop.</summary>
@@ -1182,29 +1182,29 @@ public sealed class MetadataInterfaceImplementationPortfolioIdentity :
             ? AncestryPortfolio.SnapshotSha256
             : null;
 
-    /// <summary>Gets a defensive module-order copy of exact draft entries, or an empty array for a stop.</summary>
+    /// <summary>Gets a defensive module-order copy of exact entries, or an empty array for a stop.</summary>
     public ImmutableArray<MetadataInterfaceImplementationPortfolioModuleIdentity> Entries =>
         ExpressionV2ContractEncoding.Copy(entries);
 
-    /// <summary>Gets the propagated or module-count draft bound, otherwise null.</summary>
+    /// <summary>Gets the propagated or module-count bound, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the issue-related supplied, prerequisite, or cap-plus-one draft observation count.</summary>
+    /// <summary>Gets the issue-related supplied, prerequisite, or cap-plus-one observation count.</summary>
     public int ObservedCount { get; }
 
     /// <summary>Gets the issue-related metadata-module digest, otherwise null.</summary>
     public string? RelatedModuleSha256 { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft portfolio bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical portfolio bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft portfolio bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical portfolio bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one normalized multi-module interface-implementation draft portfolio.</summary>
+    /// <summary>Creates one normalized multi-module interface-implementation portfolio.</summary>
     /// <param name="ancestryPortfolio">The exact ancestry portfolio defining modules, authority, and base chains.</param>
     /// <param name="implementationCatalogs">One complete InterfaceImpl catalog for every ancestry-portfolio module.</param>
-    /// <returns>An exact complete draft portfolio or a prefix-free typed draft stop.</returns>
+    /// <returns>An exact complete portfolio or a prefix-free typed stop.</returns>
     public static MetadataInterfaceImplementationPortfolioIdentity Create(
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         ImmutableArray<MetadataInterfaceImplementationTableCatalogIdentity> implementationCatalogs)
@@ -1390,10 +1390,10 @@ public sealed class MetadataInterfaceImplementationPortfolioIdentity :
         return Exact(ancestryPortfolio, entries.MoveToImmutable());
     }
 
-    /// <summary>Looks up one bounded transitive interface draft closure by module and non-nil TypeDef token.</summary>
+    /// <summary>Looks up one bounded transitive interface closure by module and non-nil TypeDef token.</summary>
     /// <param name="sourceModule">The exact loaded metadata module.</param>
     /// <param name="typeDefinitionToken">The exact TypeDef token within that module.</param>
-    /// <returns>The complete draft closure, or null when the portfolio stopped, the module is absent, or the token was not issued.</returns>
+    /// <returns>The complete closure, or null when the portfolio stopped, the module is absent, or the token was not issued.</returns>
     public MetadataInterfaceImplementationClosureIdentity? ExactImplementedInterfacesOrDefault(
         StaticFieldMetadataModuleIdentity sourceModule,
         int typeDefinitionToken)
@@ -1407,13 +1407,13 @@ public sealed class MetadataInterfaceImplementationPortfolioIdentity :
         return entry?.FindClosure(typeDefinitionToken);
     }
 
-    /// <summary>Answers whether one TypeDef implements one named interface over a bounded draft closure.</summary>
+    /// <summary>Answers whether one TypeDef implements one named interface over a bounded closure.</summary>
     /// <param name="sourceModule">The exact metadata module defining the subject TypeDef.</param>
     /// <param name="typeDefinitionToken">The exact subject TypeDef token within that module.</param>
     /// <param name="interfaceModule">The exact metadata module defining the candidate interface.</param>
     /// <param name="interfaceTypeDefinitionToken">The candidate interface TypeDef token within that module.</param>
     /// <returns>
-    /// A typed three-valued draft answer; <see cref="MetadataInterfaceImplementationAnswer.No"/> only over a complete
+    /// A typed three-valued answer; <see cref="MetadataInterfaceImplementationAnswer.No"/> only over a complete
     /// bounded closure, and <see cref="MetadataInterfaceImplementationAnswer.Unprovable"/> for every stop.
     /// </returns>
     public MetadataInterfaceImplementationAnswer Implements(
@@ -1437,19 +1437,19 @@ public sealed class MetadataInterfaceImplementationPortfolioIdentity :
             : MetadataInterfaceImplementationAnswer.Unprovable;
     }
 
-    /// <summary>Tests canonical equality between two interface-implementation draft portfolios.</summary>
-    /// <param name="other">The other draft portfolio.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two interface-implementation portfolios.</summary>
+    /// <param name="other">The other portfolio.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataInterfaceImplementationPortfolioIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests interface-implementation draft portfolio equality against an arbitrary object.</summary>
+    /// <summary>Tests interface-implementation portfolio equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a portfolio with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a portfolio with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataInterfaceImplementationPortfolioIdentity);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft portfolio content.</summary>
-    /// <returns>A hash code for this canonical interface-implementation draft portfolio.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical portfolio content.</summary>
+    /// <returns>A hash code for this canonical interface-implementation portfolio.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) => ReferenceEquals(capability, RowMintCapability);

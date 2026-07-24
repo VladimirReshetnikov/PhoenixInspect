@@ -5,7 +5,7 @@ using GroundStageAlias = PhoenixInspect.W8WorkflowShapeTarget.StageMarkers<Phoen
 namespace PhoenixInspect.W8WorkflowShapeTarget;
 
 /// <summary>Pauses where two competing aliases survive for one short workflow spelling.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class AmbiguousAliasProbe
 {
     /// <summary>Reads one competing alias and pauses for the full dump.</summary>
@@ -16,7 +16,7 @@ public static class AmbiguousAliasProbe
 }
 
 /// <summary>Pauses inside a generic method whose ground alias names a metadata-only literal.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class GroundLiteralProbe
 {
     /// <summary>Enters a generic method, reads the ground literal, and pauses for the full dump.</summary>
@@ -35,7 +35,7 @@ public static class GroundLiteralProbe
 }
 
 /// <summary>Pauses with one exact memory-homed local as the selected frame-value root.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class FrameValueProbe
 {
     /// <summary>Homes one named local in frame memory and pauses for the full dump.</summary>

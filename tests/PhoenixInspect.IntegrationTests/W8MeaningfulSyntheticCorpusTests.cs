@@ -907,7 +907,7 @@ internal readonly record struct W8CorpusEvaluation(StaticFieldV2ExpressionResult
 /// The authority is composed from every produced module the shape's incidents reference plus one synthetic core module
 /// carrying the real <c>System.Runtime</c> assembly identity, because the pinned corelib is rejected by the shared
 /// bounded ECMA signature grammar. The batch shape additionally binds the referenced named-RVA module that owns the
-/// module-RVA storage. This scaffolding is draft physical evidence, not a product discovery rule.
+/// module-RVA storage. This scaffolding is physical evidence, not a product discovery rule.
 /// </remarks>
 internal sealed class W8CorpusEvaluationWorld : IDisposable
 {
@@ -1658,7 +1658,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         MetadataFieldDefinitionTableCatalogIdentity FieldCatalog);
 
     /// <summary>Produces the composed metadata authority of one real module observed in the dump.</summary>
-    /// <remarks>This is draft physical scaffolding and not a product contract.</remarks>
+    /// <remarks>This is physical scaffolding and not a product contract.</remarks>
     private sealed class ProducedModule : IDisposable
     {
         private readonly MetadataReaderProvider provider;

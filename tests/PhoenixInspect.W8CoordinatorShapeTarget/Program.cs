@@ -30,7 +30,7 @@ internal static class Program
 }
 
 /// <summary>Holds the sole pause the coordinator-shape target uses to signal dump readiness.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class CoordinatorPause
 {
     /// <summary>Signals readiness and pauses so an external writer can capture one full dump.</summary>
@@ -50,7 +50,7 @@ public static class CoordinatorPause
 }
 
 /// <summary>Materializes the coordinator-shape object graph and enters the selected truth-gate profile.</summary>
-/// <remarks>This is a draft target entry point and not a product API.</remarks>
+/// <remarks>This is a target entry point and not a product API.</remarks>
 public static class CoordinatorShapeGate
 {
     /// <summary>Initializes the coordinator-shape physical fixture and enters the selected profile.</summary>
@@ -91,7 +91,7 @@ public static class CoordinatorShapeGate
 }
 
 /// <summary>Pauses where one type argument is spelled through a namespace alias.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class AliasArgumentProbe
 {
     /// <summary>Reads the aliased-argument construction and pauses for the full dump.</summary>
@@ -103,7 +103,7 @@ public static class AliasArgumentProbe
 }
 
 /// <summary>Pauses where a property owns the bare spelling a declared static field does not.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class PropertyNameProbe
 {
     /// <summary>Reads the bare property spelling and pauses for the full dump.</summary>

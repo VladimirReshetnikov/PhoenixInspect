@@ -17,7 +17,7 @@ internal static class UsefulnessPortfolioRunner
     private const string GeneratedCaveat =
         "Generated routing rows exercise the runner only; they do not count toward meaningful synthetic validation.";
     private const string SyntheticCaveat =
-        "Designed synthetic incidents validate prototype behavior and design decisions only; they are not external observations or field-readiness evidence.";
+        "Designed synthetic incidents validate implemented behavior and design decisions only; they are not external observations or field-readiness evidence.";
     private const string RepresentativeCaveat =
         "Representative designation is supplied by the predeclared portfolio; the runner does not independently verify provenance.";
 
@@ -494,7 +494,7 @@ internal static class UsefulnessPortfolioRunner
                 ? NextDecisionStatus.SelectedSyntheticDesignDecision
                 : NextDecisionStatus.SelectedRepresentativeDecision,
             selected,
-            "The selection follows independent-incident frequency, decision impact, usefulness, exact-evidence availability, then stable category order; a synthetic selection advances prototype design only.",
+            "The selection follows independent-incident frequency, decision impact, usefulness, exact-evidence availability, then stable category order; a synthetic selection advances design only.",
             rankings);
     }
 

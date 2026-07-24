@@ -5,7 +5,7 @@ namespace PhoenixInspect.Core.Abstractions;
 /// </summary>
 /// <remarks>
 /// The identity is content-equal across independently materialized plans and sessions: it combines the exact caller
-/// MethodDef, the call opcode's byte offset, and the exact callee MethodDef. The current draft W4.5 slice admits only
+/// MethodDef, the call opcode's byte offset, and the exact callee MethodDef. The current W4.5 slice admits only
 /// same-module direct <c>call</c> edges; virtual, interface, generic, cross-module, and name-resolved calls remain
 /// outside this contract. Signature and body facts stay in the frozen method graph and are deliberately not copied
 /// into this boundary identity.

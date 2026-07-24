@@ -8,7 +8,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises the six complete physical draft reference-table catalogs and their shared source ends.</summary>
+/// <summary>Exercises the six complete physical reference-table catalogs and their shared source ends.</summary>
 public sealed class W8MetadataReferencePhysicalTableContractTests
 {
     private const int TypeReferenceRowCount = 2;
@@ -20,7 +20,7 @@ public sealed class W8MetadataReferencePhysicalTableContractTests
     private const int ForwarderTypeAttribute = 0x0020_0000;
 
     /// <summary>
-    /// Proves the draft reference source ends extend one exact definition source end with all six reference tables,
+    /// Proves the reference source ends extend one exact definition source end with all six reference tables,
     /// classify in-range and out-of-range tokens per table, and replay canonically.
     /// </summary>
     [Fact]
@@ -67,7 +67,7 @@ public sealed class W8MetadataReferencePhysicalTableContractTests
     }
 
     /// <summary>
-    /// Proves all six complete draft reference tables issue guarded RID-ordered rows over one exact source end,
+    /// Proves all six complete reference tables issue guarded RID-ordered rows over one exact source end,
     /// including Module, TypeRef, ModuleRef, and AssemblyRef ResolutionScopes, File and AssemblyRef and enclosing
     /// ExportedType Implementation forms, exact token lookup, W7 candidate comparison, and canonical replay.
     /// </summary>
@@ -174,7 +174,7 @@ public sealed class W8MetadataReferencePhysicalTableContractTests
 
     /// <summary>
     /// Proves incomplete, conflicting, misordered, foreign-source, out-of-range, and cap-crossing inputs produce
-    /// deterministic prefix-free typed draft stops while default and explicit-empty vectors remain distinct.
+    /// deterministic prefix-free typed stops while default and explicit-empty vectors remain distinct.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -283,7 +283,7 @@ public sealed class W8MetadataReferencePhysicalTableContractTests
     }
 
     /// <summary>
-    /// Proves defensive copies, private guarded row issuance, the closed public issuer surface, and emitted draft XML
+    /// Proves defensive copies, private guarded row issuance, the closed public issuer surface, and emitted XML
     /// documentation across all six physical reference-table families.
     /// </summary>
     [Fact]
@@ -540,7 +540,7 @@ public sealed class W8MetadataReferencePhysicalTableContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -552,7 +552,7 @@ public sealed class W8MetadataReferencePhysicalTableContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

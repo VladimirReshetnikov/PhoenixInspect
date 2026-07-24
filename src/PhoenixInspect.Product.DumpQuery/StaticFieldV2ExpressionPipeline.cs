@@ -4,30 +4,30 @@ using PhoenixInspect.Host.Dump.ClrMD;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Names the single route one composed static-field draft evaluation selected and never revisited.</summary>
+/// <summary>Names the single route one composed static-field evaluation selected and never revisited.</summary>
 /// <remarks>
-/// The route is decided exactly once, at draft step five of the frozen operation order, from the detached syntax
-/// descriptor and the presence of a caller-supplied scoped-context seam. No later draft step may widen, retry, or
+/// The route is decided exactly once, at step five of the frozen operation order, from the detached syntax
+/// descriptor and the presence of a caller-supplied scoped-context seam. No later step may widen, retry, or
 /// replace it.
 /// </remarks>
 public enum StaticFieldV2ExpressionRoute
 {
-    /// <summary>No route was selected because the draft evaluation stopped at syntax.</summary>
+    /// <summary>No route was selected because the evaluation stopped at syntax.</summary>
     NotSelected = 1,
 
     /// <summary>A <c>global::</c> or metadata-global dot-qualified spelling that consults no context at all.</summary>
     ExplicitMetadataGlobal = 2,
 
-    /// <summary>A named-alias or ordinary contextual spelling resolved through the scoped draft context.</summary>
+    /// <summary>A named-alias or ordinary contextual spelling resolved through the scoped context.</summary>
     Contextual = 3,
 
     /// <summary>A bare single-identifier root resolved through lexical completeness and <c>using static</c>.</summary>
     BareStaticMember = 4,
 }
 
-/// <summary>Names one caller-supplied evidence seam this composed draft pipeline can call.</summary>
+/// <summary>Names one caller-supplied evidence seam this composed pipeline can call.</summary>
 /// <remarks>
-/// Every seam call is metered so a fully qualified draft answer can prove the absence of frame and PDB calls with
+/// Every seam call is metered so a fully qualified answer can prove the absence of frame and PDB calls with
 /// zero counters rather than by omitting successful values.
 /// </remarks>
 public enum StaticFieldV2PipelineEvidenceKind
@@ -57,9 +57,9 @@ public enum StaticFieldV2PipelineEvidenceKind
     FrameRootEvaluation = 8,
 }
 
-/// <summary>Identifies one declared coverage boundary retained by every composed draft evaluation.</summary>
+/// <summary>Identifies one declared coverage boundary retained by every composed evaluation.</summary>
 /// <remarks>
-/// Each boundary is an informational draft fact naming what this composition deliberately does not own, so no
+/// Each boundary is an informational fact naming what this composition deliberately does not own, so no
 /// consumer can mistake a deferred stage for a proven negative.
 /// </remarks>
 public enum StaticFieldV2PipelineCoverageBoundary
@@ -73,10 +73,10 @@ public enum StaticFieldV2PipelineCoverageBoundary
     /// <summary>The metadata Constant row of a literal declaration is supplied by the caller through one seam.</summary>
     MetadataConstantRowSuppliedByCallerSeam = 3,
 
-    /// <summary>The declared field type is derived only from a ground primitive FieldSig in this draft.</summary>
+    /// <summary>The declared field type is derived only from a ground primitive FieldSig.</summary>
     DeclaredFieldTypeLimitedToGroundPrimitiveSignature = 4,
 
-    /// <summary>A contextual or bare route binds an owner definition rather than a closed draft construction.</summary>
+    /// <summary>A contextual or bare route binds an owner definition rather than a closed construction.</summary>
     ContextualRouteClosedConstructionDeferred = 5,
 
     /// <summary>The unchanged W2/W6 suffix evaluator is rooted at the resolved reference through one caller seam.</summary>
@@ -92,10 +92,10 @@ public enum StaticFieldV2PipelineCoverageBoundary
     FrameRootEvidenceSuppliedByCallerSeam = 9,
 }
 
-/// <summary>Freezes how many times each caller-supplied evidence seam was called by one draft evaluation.</summary>
+/// <summary>Freezes how many times each caller-supplied evidence seam was called by one evaluation.</summary>
 /// <remarks>
-/// The ledger is the positive proof a fully qualified draft route demands: an explicit route retains zero context
-/// counters, and a metadata-literal draft answer retains zero runtime counters.
+/// The ledger is the positive proof a fully qualified route demands: an explicit route retains zero context
+/// counters, and a metadata-literal answer retains zero runtime counters.
 /// </remarks>
 public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticFieldV2PipelineEvidenceLedger>
 {
@@ -141,54 +141,54 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets how many times the scoped-context projection draft seam was called.</summary>
+    /// <summary>Gets how many times the scoped-context projection seam was called.</summary>
     public int ScopedContextProjectionCallCount { get; }
 
-    /// <summary>Gets how many times the lexical envelope draft seam was called.</summary>
+    /// <summary>Gets how many times the lexical envelope seam was called.</summary>
     public int LexicalEnvelopeCallCount { get; }
 
-    /// <summary>Gets how many times the metadata Constant-row draft seam was called.</summary>
+    /// <summary>Gets how many times the metadata Constant-row seam was called.</summary>
     public int MetadataConstantRowCallCount { get; }
 
-    /// <summary>Gets how many times the runtime construction candidate draft seam was called.</summary>
+    /// <summary>Gets how many times the runtime construction candidate seam was called.</summary>
     public int RuntimeConstructionCandidatesCallCount { get; }
 
-    /// <summary>Gets how many times the static-slot geometry draft seam was called.</summary>
+    /// <summary>Gets how many times the static-slot geometry seam was called.</summary>
     public int RuntimeSlotFactsCallCount { get; }
 
-    /// <summary>Gets how many times the raw dump memory read draft seam was called.</summary>
+    /// <summary>Gets how many times the raw dump memory read seam was called.</summary>
     public int RawMemoryReadCallCount { get; }
 
-    /// <summary>Gets how many times the unchanged W2/W6 detached-suffix evaluation draft seam was called.</summary>
+    /// <summary>Gets how many times the unchanged W2/W6 detached-suffix evaluation seam was called.</summary>
     public int SuffixChainEvaluationCallCount { get; }
 
-    /// <summary>Gets how many times the caller-supplied frame-root evaluation draft seam was called.</summary>
+    /// <summary>Gets how many times the caller-supplied frame-root evaluation seam was called.</summary>
     public int FrameRootEvaluationCallCount { get; }
 
-    /// <summary>Gets the total frame, PDB, and import context draft calls this evaluation performed.</summary>
+    /// <summary>Gets the total frame, PDB, and import context calls this evaluation performed.</summary>
     public int ContextCallCount => ScopedContextProjectionCallCount + LexicalEnvelopeCallCount;
 
-    /// <summary>Gets the total runtime, slot, and memory draft calls this evaluation performed.</summary>
+    /// <summary>Gets the total runtime, slot, and memory calls this evaluation performed.</summary>
     public int RuntimeCallCount =>
         RuntimeConstructionCandidatesCallCount + RuntimeSlotFactsCallCount + RawMemoryReadCallCount;
 
-    /// <summary>Gets the total draft seam calls this evaluation performed.</summary>
+    /// <summary>Gets the total seam calls this evaluation performed.</summary>
     public int TotalCallCount =>
         ContextCallCount + MetadataConstantRowCallCount + RuntimeCallCount + SuffixChainEvaluationCallCount +
         FrameRootEvaluationCallCount;
 
-    /// <summary>Gets whether this draft evaluation called no caller-supplied seam at all.</summary>
+    /// <summary>Gets whether this evaluation called no caller-supplied seam at all.</summary>
     public bool IsZero => TotalCallCount == 0;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft ledger bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical ledger bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft ledger.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical ledger.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Gets the draft call count of one named evidence seam.</summary>
-    /// <param name="kind">The evidence seam whose draft call count is requested.</param>
-    /// <returns>The counted draft calls of that seam.</returns>
+    /// <summary>Gets the call count of one named evidence seam.</summary>
+    /// <param name="kind">The evidence seam whose call count is requested.</param>
+    /// <returns>The counted calls of that seam.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="kind"/> is undefined.</exception>
     public int CallCount(StaticFieldV2PipelineEvidenceKind kind) => kind switch
     {
@@ -203,19 +203,19 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
-    /// <summary>Tests canonical equality between two draft evidence ledgers.</summary>
-    /// <param name="other">The other draft ledger.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two evidence ledgers.</summary>
+    /// <param name="other">The other ledger.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2PipelineEvidenceLedger? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft evidence ledger equality against an arbitrary object.</summary>
+    /// <summary>Tests evidence ledger equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a ledger with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a ledger with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2PipelineEvidenceLedger);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft ledger content.</summary>
-    /// <returns>A hash code for this canonical draft ledger.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical ledger content.</summary>
+    /// <returns>A hash code for this canonical ledger.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2PipelineEvidenceLedger Issue(
@@ -238,9 +238,9 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
             frameRootEvaluation);
 }
 
-/// <summary>Freezes one caller-supplied scoped-context draft seam that this composition never acquires itself.</summary>
+/// <summary>Freezes one caller-supplied scoped-context seam that this composition never acquires itself.</summary>
 /// <remarks>
-/// The seam is a pair of caller-owned delegates rather than eager data, so an explicit draft route can prove it never
+/// The seam is a pair of caller-owned delegates rather than eager data, so an explicit route can prove it never
 /// touched frame or PDB evidence by holding a poisoned seam that throws whenever it is invoked.
 /// </remarks>
 public sealed class StaticFieldV2ScopedContextSource
@@ -257,13 +257,13 @@ public sealed class StaticFieldV2ScopedContextSource
         this.lexicalEnvelope = lexicalEnvelope;
     }
 
-    /// <summary>Gets whether this draft seam can supply a selected-method lexical envelope.</summary>
+    /// <summary>Gets whether this seam can supply a selected-method lexical envelope.</summary>
     public bool SuppliesLexicalEnvelope => lexicalEnvelope is not null;
 
-    /// <summary>Creates one caller-owned scoped-context draft seam.</summary>
-    /// <param name="scopedContextRequest">Produces the complete scoped-context projection draft request.</param>
-    /// <param name="lexicalEnvelope">Produces the selected-method lexical draft envelope, or null when absent.</param>
-    /// <returns>A sealed draft seam whose calls this composition meters.</returns>
+    /// <summary>Creates one caller-owned scoped-context seam.</summary>
+    /// <param name="scopedContextRequest">Produces the complete scoped-context projection request.</param>
+    /// <param name="lexicalEnvelope">Produces the selected-method lexical envelope, or null when absent.</param>
+    /// <returns>A sealed seam whose calls this composition meters.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="scopedContextRequest"/> is null.</exception>
     public static StaticFieldV2ScopedContextSource Create(
         Func<StaticFieldV2ScopedContextRequest> scopedContextRequest,
@@ -278,10 +278,10 @@ public sealed class StaticFieldV2ScopedContextSource
     internal DumpSelectedMethodLexicalObservation? AcquireLexicalEnvelope() => lexicalEnvelope?.Invoke();
 }
 
-/// <summary>Freezes one caller-supplied static-slot geometry draft fact set for an address-backed strategy.</summary>
+/// <summary>Freezes one caller-supplied static-slot geometry fact set for an address-backed strategy.</summary>
 /// <remarks>
 /// The facts carry exactly what the frozen per-strategy slot requirements consume. Supplying a fact a strategy is
-/// forbidden to carry remains a typed draft slot stop rather than a silently ignored value.
+/// forbidden to carry remains a typed slot stop rather than a silently ignored value.
 /// </remarks>
 public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2RuntimeSlotFacts>
 {
@@ -326,13 +326,13 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the positive counted read width in bytes of the draft slot's value.</summary>
+    /// <summary>Gets the positive counted read width in bytes of the slot's value.</summary>
     public int ReadWidth { get; }
 
     /// <summary>Gets the supplied exact static slot address, or null when none was supplied.</summary>
     public ulong? SlotAddress { get; }
 
-    /// <summary>Gets the supplied exact selected-thread draft identity, or null when none was supplied.</summary>
+    /// <summary>Gets the supplied exact selected-thread identity, or null when none was supplied.</summary>
     public StaticFieldV2SelectedThreadIdentity? SelectedThread { get; }
 
     /// <summary>Gets the supplied exact module content identity, or null when none was supplied.</summary>
@@ -347,13 +347,13 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
     /// <summary>Gets the supplied exact mapped image address, or null when none was supplied.</summary>
     public ulong? MappedAddress { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft fact bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical fact bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft facts.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical facts.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one caller-supplied static-slot geometry draft fact set.</summary>
+    /// <summary>Creates one caller-supplied static-slot geometry fact set.</summary>
     /// <param name="readWidth">The positive counted read width in bytes of the slot's value.</param>
     /// <param name="slotAddress">The supplied exact static slot address, or null.</param>
     /// <param name="selectedThread">The supplied exact selected-thread identity, or null.</param>
@@ -361,8 +361,8 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
     /// <param name="fieldRvaRowToken">The supplied exact FieldRVA row token, or null.</param>
     /// <param name="mappedRelativeVirtualAddress">The supplied exact mapped relative virtual address, or null.</param>
     /// <param name="mappedAddress">The supplied exact mapped image address, or null.</param>
-    /// <returns>A sealed immutable draft fact set.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The read width is outside the admitted draft range.</exception>
+    /// <returns>A sealed immutable fact set.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The read width is outside the admitted range.</exception>
     public static StaticFieldV2RuntimeSlotFacts Create(
         int readWidth,
         ulong? slotAddress = null,
@@ -389,25 +389,25 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
             mappedAddress);
     }
 
-    /// <summary>Tests canonical equality between two static-slot geometry draft fact sets.</summary>
-    /// <param name="other">The other draft fact set.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two static-slot geometry fact sets.</summary>
+    /// <param name="other">The other fact set.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2RuntimeSlotFacts? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests static-slot geometry draft fact equality against an arbitrary object.</summary>
+    /// <summary>Tests static-slot geometry fact equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for facts with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for facts with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2RuntimeSlotFacts);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft fact content.</summary>
-    /// <returns>A hash code for this canonical draft fact set.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical fact content.</summary>
+    /// <returns>A hash code for this canonical fact set.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one caller-supplied metadata Constant-row draft fact for a literal declaration.</summary>
+/// <summary>Freezes one caller-supplied metadata Constant-row fact for a literal declaration.</summary>
 /// <remarks>
-/// Metadata remains the sole literal draft value source. The physical Constant table is not modeled by the landed
+/// Metadata remains the sole literal value source. The physical Constant table is not modeled by the landed
 /// catalogs, so the exact row is admitted here as a caller-supplied metadata fact and never as a runtime read.
 /// </remarks>
 public sealed class StaticFieldV2LiteralConstantFact : IEquatable<StaticFieldV2LiteralConstantFact>
@@ -429,22 +429,22 @@ public sealed class StaticFieldV2LiteralConstantFact : IEquatable<StaticFieldV2L
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact ECMA Constant type code of the retained draft row.</summary>
+    /// <summary>Gets the exact ECMA Constant type code of the retained row.</summary>
     public int ConstantTypeCode { get; }
 
-    /// <summary>Gets a defensive copy of the exact Constant value blob of the retained draft row.</summary>
+    /// <summary>Gets a defensive copy of the exact Constant value blob of the retained row.</summary>
     public ImmutableArray<byte> ConstantValueBlob => ExpressionV2ContractEncoding.Copy(constantValueBlob);
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft fact bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical fact bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft fact.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical fact.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one caller-supplied metadata Constant-row draft fact.</summary>
+    /// <summary>Creates one caller-supplied metadata Constant-row fact.</summary>
     /// <param name="constantTypeCode">The exact ECMA Constant type code of the physical row.</param>
     /// <param name="constantValueBlob">The exact initialized Constant value blob of the physical row.</param>
-    /// <returns>A sealed immutable draft fact with a defensively copied blob.</returns>
+    /// <returns>A sealed immutable fact with a defensively copied blob.</returns>
     /// <exception cref="ArgumentException">The supplied blob is not initialized.</exception>
     public static StaticFieldV2LiteralConstantFact Create(int constantTypeCode, ImmutableArray<byte> constantValueBlob)
     {
@@ -458,26 +458,26 @@ public sealed class StaticFieldV2LiteralConstantFact : IEquatable<StaticFieldV2L
             ExpressionV2ContractEncoding.Copy(constantValueBlob));
     }
 
-    /// <summary>Tests canonical equality between two metadata Constant-row draft facts.</summary>
-    /// <param name="other">The other draft fact.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two metadata Constant-row facts.</summary>
+    /// <param name="other">The other fact.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2LiteralConstantFact? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests metadata Constant-row draft fact equality against an arbitrary object.</summary>
+    /// <summary>Tests metadata Constant-row fact equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a fact with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a fact with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2LiteralConstantFact);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft fact content.</summary>
-    /// <returns>A hash code for this canonical draft fact.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical fact content.</summary>
+    /// <returns>A hash code for this canonical fact.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one caller-supplied runtime-evidence draft seam this composition never acquires itself.</summary>
+/// <summary>Freezes one caller-supplied runtime-evidence seam this composition never acquires itself.</summary>
 /// <remarks>
 /// The seam keeps every constructed-runtime, slot geometry, and raw byte fact behind caller-owned delegates, so this
-/// composition needs no dump host dependency and a metadata-literal draft answer can prove it called none of them.
+/// composition needs no dump host dependency and a metadata-literal answer can prove it called none of them.
 /// </remarks>
 public sealed class StaticFieldV2RuntimeEvidenceSource
 {
@@ -511,11 +511,11 @@ public sealed class StaticFieldV2RuntimeEvidenceSource
         this.rawMemoryRead = rawMemoryRead;
     }
 
-    /// <summary>Creates one caller-owned runtime-evidence draft seam.</summary>
+    /// <summary>Creates one caller-owned runtime-evidence seam.</summary>
     /// <param name="constructionCandidates">Produces every bounded same-TypeDef runtime construction candidate.</param>
-    /// <param name="slotFacts">Produces the exact static-slot geometry of the classified draft strategy.</param>
+    /// <param name="slotFacts">Produces the exact static-slot geometry of the classified strategy.</param>
     /// <param name="rawMemoryRead">Copies the counted raw bytes at one exact address out of the dump.</param>
-    /// <returns>A sealed draft seam whose calls this composition meters.</returns>
+    /// <returns>A sealed seam whose calls this composition meters.</returns>
     public static StaticFieldV2RuntimeEvidenceSource Create(
         Func<
             StaticFieldV2ClosedConstructionOutcome,
@@ -551,7 +551,7 @@ public sealed class StaticFieldV2RuntimeEvidenceSource
 /// <remarks>
 /// The request names only the exact non-null managed reference address the composition resolved and the unchanged
 /// W2/W6 suffix descriptor the parser froze. A caller-owned seam roots the unchanged member-chain evaluator at that
-/// reference; this draft request carries no ClrMD object so the composition acquires no dump host dependency itself.
+/// reference; this request carries no ClrMD object so the composition acquires no dump host dependency itself.
 /// </remarks>
 public sealed class StaticFieldV2SuffixEvaluationRequest
 {
@@ -570,12 +570,12 @@ public sealed class StaticFieldV2SuffixEvaluationRequest
     public DumpExpressionSuffixDescriptor Suffix { get; }
 }
 
-/// <summary>Freezes one caller-supplied unchanged W2/W6 suffix-evaluation draft seam this composition never owns.</summary>
+/// <summary>Freezes one caller-supplied unchanged W2/W6 suffix-evaluation seam this composition never owns.</summary>
 /// <remarks>
 /// The seam keeps the unchanged member-chain evaluator behind one caller-owned delegate, mirroring the runtime-evidence
 /// seam. Fast callers supply a synthetic delegate; the real dump host roots <see cref="DumpMemberChainEngine"/> at the
 /// resolved reference and returns its <see cref="EvaluationResult{DumpQueryValue}"/>. The composition meters every call
-/// so a suffix-free or exact-null-short-circuited draft answer can prove it invoked the seam zero times.
+/// so a suffix-free or exact-null-short-circuited answer can prove it invoked the seam zero times.
 /// </remarks>
 public sealed class StaticFieldV2SuffixEvaluationSource
 {
@@ -587,9 +587,9 @@ public sealed class StaticFieldV2SuffixEvaluationSource
         Func<StaticFieldV2SuffixEvaluationRequest, EvaluationResult<DumpQueryValue>> evaluate) =>
         this.evaluate = evaluate;
 
-    /// <summary>Creates one caller-owned unchanged W2/W6 suffix-evaluation draft seam.</summary>
+    /// <summary>Creates one caller-owned unchanged W2/W6 suffix-evaluation seam.</summary>
     /// <param name="evaluate">Roots the unchanged member chain at the resolved reference and evaluates it.</param>
-    /// <returns>A sealed draft seam whose calls this composition meters.</returns>
+    /// <returns>A sealed seam whose calls this composition meters.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="evaluate"/> is null.</exception>
     public static StaticFieldV2SuffixEvaluationSource Create(
         Func<StaticFieldV2SuffixEvaluationRequest, EvaluationResult<DumpQueryValue>> evaluate)
@@ -602,10 +602,10 @@ public sealed class StaticFieldV2SuffixEvaluationSource
         evaluate(request);
 }
 
-/// <summary>Classifies one pipeline-level frame-root evaluation draft answer returned by the caller-owned seam.</summary>
+/// <summary>Classifies one pipeline-level frame-root evaluation answer returned by the caller-owned seam.</summary>
 /// <remarks>
 /// Only <see cref="Exact"/> exposes an attributed memory home and a decoded value. Every other disposition is a
-/// prefix-free typed draft stop. The two frozen W8.1 non-admissions, a register home and a selected frame's own generic
+/// prefix-free typed stop. The two frozen W8.1 non-admissions, a register home and a selected frame's own generic
 /// arguments, keep their own dispositions and surface their frozen diagnostic codes rather than an absent gap.
 /// </remarks>
 public enum StaticFieldV2FrameRootDisposition
@@ -638,9 +638,9 @@ public enum StaticFieldV2FrameRootDisposition
     GenericArgumentNotAdmitted = 9,
 }
 
-/// <summary>Freezes one pipeline-level frame-root draft request projected from the detached frame descriptor.</summary>
+/// <summary>Freezes one pipeline-level frame-root request projected from the detached frame descriptor.</summary>
 /// <remarks>
-/// The draft request names only the projected root the composition attributed: the <see langword="this"/>-or-identifier
+/// The request names only the projected root the composition attributed: the <see langword="this"/>-or-identifier
 /// root kind and, for an identifier root, its decoded value. It carries no physical thread, frame ordinal, or
 /// Portable-PDB row; the caller-owned seam supplies that frame evidence itself, mirroring how the suffix seam owns the
 /// member chain.
@@ -664,12 +664,12 @@ public sealed class StaticFieldV2FrameRootEvaluationRequest
     public DumpExpressionIdentifier? Identifier { get; }
 }
 
-/// <summary>Freezes one pipeline-level frame-root evaluation draft result the caller-owned seam returns.</summary>
+/// <summary>Freezes one pipeline-level frame-root evaluation result the caller-owned seam returns.</summary>
 /// <remarks>
-/// An exact draft result exposes the attributed memory home (its address, counted width, and copied bytes), the
+/// An exact result exposes the attributed memory home (its address, counted width, and copied bytes), the
 /// resolved root family, and one decoded value from the bounded dump-query domain. A non-null managed reference
 /// additionally exposes the reference address so the composition can root the unchanged W2/W6 suffix at it. Every
-/// non-exact disposition is a prefix-free typed draft stop that exposes no home, no value, and no reference, and a
+/// non-exact disposition is a prefix-free typed stop that exposes no home, no value, and no reference, and a
 /// non-admission retains its frozen code.
 /// </remarks>
 public sealed class StaticFieldV2FrameRootEvaluationResult : IEquatable<StaticFieldV2FrameRootEvaluationResult>
@@ -749,7 +749,7 @@ public sealed class StaticFieldV2FrameRootEvaluationResult : IEquatable<StaticFi
     /// <summary>Gets the lowercase SHA-256 digest of the canonical result.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one exact frame-root evaluation draft result carrying an attributed memory home and value.</summary>
+    /// <summary>Creates one exact frame-root evaluation result carrying an attributed memory home and value.</summary>
     /// <param name="rootKind">The resolved <see langword="this"/>, parameter, or local root family.</param>
     /// <param name="memoryHomeAddress">The exact attributed memory-home address.</param>
     /// <param name="readWidth">The exact counted read width in bytes.</param>
@@ -797,7 +797,7 @@ public sealed class StaticFieldV2FrameRootEvaluationResult : IEquatable<StaticFi
             null);
     }
 
-    /// <summary>Creates one typed non-exact frame-root evaluation draft stop with no attributed home or value.</summary>
+    /// <summary>Creates one typed non-exact frame-root evaluation stop with no attributed home or value.</summary>
     /// <param name="disposition">One non-exact disposition.</param>
     /// <param name="diagnosticCode">The frozen non-admission code, required exactly for a frozen non-admission.</param>
     /// <returns>A sealed immutable prefix-free typed stop.</returns>
@@ -851,7 +851,7 @@ public sealed class StaticFieldV2FrameRootEvaluationResult : IEquatable<StaticFi
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one caller-supplied frame-root evaluation draft seam this composition never owns.</summary>
+/// <summary>Freezes one caller-supplied frame-root evaluation seam this composition never owns.</summary>
 /// <remarks>
 /// The seam keeps the frame-value acquisition behind one caller-owned delegate, mirroring the runtime-evidence and
 /// suffix seams. Fast callers supply a synthetic delegate; the real dump host roots the seam at the pinned runtime's
@@ -868,9 +868,9 @@ public sealed class StaticFieldV2FrameRootEvaluationSource
         Func<StaticFieldV2FrameRootEvaluationRequest, StaticFieldV2FrameRootEvaluationResult> evaluate) =>
         this.evaluate = evaluate;
 
-    /// <summary>Creates one caller-owned frame-root evaluation draft seam.</summary>
+    /// <summary>Creates one caller-owned frame-root evaluation seam.</summary>
     /// <param name="evaluate">Attributes the projected frame root and decodes its exact memory-homed value.</param>
-    /// <returns>A sealed draft seam whose calls this composition meters.</returns>
+    /// <returns>A sealed seam whose calls this composition meters.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="evaluate"/> is null.</exception>
     public static StaticFieldV2FrameRootEvaluationSource Create(
         Func<StaticFieldV2FrameRootEvaluationRequest, StaticFieldV2FrameRootEvaluationResult> evaluate)
@@ -883,10 +883,10 @@ public sealed class StaticFieldV2FrameRootEvaluationSource
         evaluate(request);
 }
 
-/// <summary>Freezes one complete composed static-field draft evaluation request.</summary>
+/// <summary>Freezes one complete composed static-field evaluation request.</summary>
 /// <remarks>
 /// The request names the raw expression, the explicitly selected profile, every metadata authority portfolio, the two
-/// optional caller-owned evidence seams, and the capability probe set whose counters become the retained draft proof.
+/// optional caller-owned evidence seams, and the capability probe set whose counters become the retained proof.
 /// A caller must select the profile explicitly; nothing in the request lets one profile fall through to another.
 /// </remarks>
 public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2ExpressionRequest>
@@ -970,22 +970,22 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact raw expression text this draft evaluation parses exactly once.</summary>
+    /// <summary>Gets the exact raw expression text this evaluation parses exactly once.</summary>
     public string? ExpressionText { get; }
 
-    /// <summary>Gets the profile the caller selected explicitly for this draft evaluation.</summary>
+    /// <summary>Gets the profile the caller selected explicitly for this evaluation.</summary>
     public DumpExpressionProfileKind Profile { get; }
 
-    /// <summary>Gets the ancestry authority draft portfolio supplying every metadata authority.</summary>
+    /// <summary>Gets the ancestry authority portfolio supplying every metadata authority.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
 
-    /// <summary>Gets the constraint-target resolution draft portfolio consumed by owner construction.</summary>
+    /// <summary>Gets the constraint-target resolution portfolio consumed by owner construction.</summary>
     public MetadataConstraintTargetResolutionPortfolioIdentity ConstraintPortfolio { get; }
 
-    /// <summary>Gets the optional interface-implementation draft portfolio, or null when none was supplied.</summary>
+    /// <summary>Gets the optional interface-implementation portfolio, or null when none was supplied.</summary>
     public MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementationPortfolio { get; }
 
-    /// <summary>Gets a defensive copy of the supplied per-module FieldDef catalog draft vector.</summary>
+    /// <summary>Gets a defensive copy of the supplied per-module FieldDef catalog vector.</summary>
     public ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs =>
         fieldCatalogs.IsDefault ? default : ExpressionV2ContractEncoding.Copy(fieldCatalogs);
 
@@ -995,34 +995,34 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <summary>Gets the requesting assembly for the use-site certificate, or null for qualified inspection.</summary>
     public StaticFieldContainingAssemblyIdentity? RequestingAssembly { get; }
 
-    /// <summary>Gets a defensive declaration-order copy of the caller-supplied friend-assembly draft grants.</summary>
+    /// <summary>Gets a defensive declaration-order copy of the caller-supplied friend-assembly grants.</summary>
     public ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> FriendAssemblyGrants =>
         ExpressionV2ContractEncoding.Copy(friendAssemblyGrants);
 
-    /// <summary>Gets the optional caller-owned scoped-context draft seam, or null when none was supplied.</summary>
+    /// <summary>Gets the optional caller-owned scoped-context seam, or null when none was supplied.</summary>
     public StaticFieldV2ScopedContextSource? ScopedContext { get; }
 
-    /// <summary>Gets the optional caller-owned runtime-evidence draft seam, or null when none was supplied.</summary>
+    /// <summary>Gets the optional caller-owned runtime-evidence seam, or null when none was supplied.</summary>
     public StaticFieldV2RuntimeEvidenceSource? RuntimeEvidence { get; }
 
-    /// <summary>Gets the optional caller-owned unchanged W2/W6 suffix-evaluation draft seam, or null when absent.</summary>
+    /// <summary>Gets the optional caller-owned unchanged W2/W6 suffix-evaluation seam, or null when absent.</summary>
     public StaticFieldV2SuffixEvaluationSource? SuffixEvaluation { get; }
 
-    /// <summary>Gets the optional caller-owned metadata Constant-row draft seam, or null when none was supplied.</summary>
+    /// <summary>Gets the optional caller-owned metadata Constant-row seam, or null when none was supplied.</summary>
     public Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? LiteralConstantSource
     {
         get;
     }
 
-    /// <summary>Gets whether this draft request supplies a reference-target type for assignability validation.</summary>
+    /// <summary>Gets whether this request supplies a reference-target type for assignability validation.</summary>
     public bool SuppliesReferenceTargetType => ReferenceTargetType is not null;
 
     internal MetadataClosedTypeIdentity? ReferenceTargetType { get; }
 
-    /// <summary>Gets the caller-owned capability probes every acquisition of this draft evaluation routes through.</summary>
+    /// <summary>Gets the caller-owned capability probes every acquisition of this evaluation routes through.</summary>
     public ExpressionV2CapabilityProbeSet? CapabilityProbes { get; }
 
-    /// <summary>Gets the optional caller-owned frame-root evaluation draft seam, or null when none was supplied.</summary>
+    /// <summary>Gets the optional caller-owned frame-root evaluation seam, or null when none was supplied.</summary>
     /// <remarks>
     /// The frame-value entry point engages its composed binder only when this seam is present. A frame-profiled request
     /// that supplies no frame-root seam is declined as an unsupported profile exactly as before, so no frame request can
@@ -1030,30 +1030,30 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// </remarks>
     public StaticFieldV2FrameRootEvaluationSource? FrameRootEvaluation { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft request.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical request.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete composed static-field draft evaluation request.</summary>
+    /// <summary>Creates one complete composed static-field evaluation request.</summary>
     /// <param name="expressionText">The exact raw expression text, parsed exactly once.</param>
     /// <param name="profile">The explicitly selected product language profile.</param>
-    /// <param name="ancestryPortfolio">The ancestry authority draft portfolio prerequisite.</param>
-    /// <param name="constraintPortfolio">The constraint-target resolution draft portfolio prerequisite.</param>
+    /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
+    /// <param name="constraintPortfolio">The constraint-target resolution portfolio prerequisite.</param>
     /// <param name="fieldCatalogs">One FieldDef catalog per ancestry-portfolio module, in any order.</param>
-    /// <param name="interfaceImplementationPortfolio">The optional interface-implementation draft portfolio.</param>
+    /// <param name="interfaceImplementationPortfolio">The optional interface-implementation portfolio.</param>
     /// <param name="accessibilityMode">The caller-declared accessibility certificate.</param>
     /// <param name="requestingAssembly">The requesting assembly, required exactly for the use-site certificate.</param>
     /// <param name="friendAssemblyGrants">The caller-supplied friend grants, admitted only for the use-site mode.</param>
-    /// <param name="scopedContext">The optional caller-owned scoped-context draft seam.</param>
-    /// <param name="runtimeEvidence">The optional caller-owned runtime-evidence draft seam.</param>
-    /// <param name="suffixEvaluation">The optional caller-owned unchanged W2/W6 suffix-evaluation draft seam.</param>
-    /// <param name="literalConstantSource">The optional caller-owned metadata Constant-row draft seam.</param>
-    /// <param name="referenceTargetType">The optional exact target type of reference-target draft validation.</param>
-    /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained draft ledger.</param>
-    /// <param name="frameRootEvaluation">The optional caller-owned frame-root evaluation draft seam.</param>
-    /// <returns>A sealed immutable draft request with defensively copied evidence.</returns>
+    /// <param name="scopedContext">The optional caller-owned scoped-context seam.</param>
+    /// <param name="runtimeEvidence">The optional caller-owned runtime-evidence seam.</param>
+    /// <param name="suffixEvaluation">The optional caller-owned unchanged W2/W6 suffix-evaluation seam.</param>
+    /// <param name="literalConstantSource">The optional caller-owned metadata Constant-row seam.</param>
+    /// <param name="referenceTargetType">The optional exact target type of reference-target validation.</param>
+    /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained ledger.</param>
+    /// <param name="frameRootEvaluation">The optional caller-owned frame-root evaluation seam.</param>
+    /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An enum argument is undefined.</exception>
     /// <exception cref="ArgumentException">The accessibility mode and its companions disagree.</exception>
@@ -1121,19 +1121,19 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             frameRootEvaluation);
     }
 
-    /// <summary>Tests canonical equality between two composed draft evaluation requests.</summary>
-    /// <param name="other">The other draft request.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two composed evaluation requests.</summary>
+    /// <param name="other">The other request.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ExpressionRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests composed draft evaluation request equality against an arbitrary object.</summary>
+    /// <summary>Tests composed evaluation request equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a request with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a request with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ExpressionRequest);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft request content.</summary>
-    /// <returns>A hash code for this canonical draft request.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical request content.</summary>
+    /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogsCore => fieldCatalogs;
@@ -1142,10 +1142,10 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         friendAssemblyGrants;
 }
 
-/// <summary>Retains only the evidence one composed static-field draft evaluation actually consulted.</summary>
+/// <summary>Retains only the evidence one composed static-field evaluation actually consulted.</summary>
 /// <remarks>
 /// A stage that never ran contributes nothing at all, so an absent value is proof of an absent call rather than a
-/// discarded success. The metered draft evidence ledger completes that proof by naming the exact seam call counts.
+/// discarded success. The metered evidence ledger completes that proof by naming the exact seam call counts.
 /// </remarks>
 public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2ExpressionProvenance>
 {
@@ -1258,108 +1258,108 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact raw expression text this draft evaluation consumed.</summary>
+    /// <summary>Gets the exact raw expression text this evaluation consumed.</summary>
     public string? RawExpression { get; }
 
-    /// <summary>Gets the explicitly selected product profile of this draft evaluation.</summary>
+    /// <summary>Gets the explicitly selected product profile of this evaluation.</summary>
     public DumpExpressionProfileKind Profile { get; }
 
-    /// <summary>Gets the detached syntax draft outcome, or null when the profile stopped before any parse.</summary>
+    /// <summary>Gets the detached syntax outcome, or null when the profile stopped before any parse.</summary>
     public StaticFieldV2SyntaxOutcome? Syntax { get; }
 
-    /// <summary>Gets the single route this draft evaluation selected and never revisited.</summary>
+    /// <summary>Gets the single route this evaluation selected and never revisited.</summary>
     public StaticFieldV2ExpressionRoute Route { get; }
 
-    /// <summary>Gets the projected scoped-context draft outcome, or null when no context was consulted.</summary>
+    /// <summary>Gets the projected scoped-context outcome, or null when no context was consulted.</summary>
     public StaticFieldV2ScopedContextOutcome? ScopedContext { get; }
 
-    /// <summary>Gets the contextual name-binding draft outcome, or null when that route was not taken.</summary>
+    /// <summary>Gets the contextual name-binding outcome, or null when that route was not taken.</summary>
     public StaticFieldV2ContextualBindingOutcome? ContextualBinding { get; }
 
-    /// <summary>Gets the explicit name-binding draft outcome, or null when that route was not taken.</summary>
+    /// <summary>Gets the explicit name-binding outcome, or null when that route was not taken.</summary>
     public StaticFieldV2TypeNameBindingOutcome? ExplicitNameBinding { get; }
 
-    /// <summary>Gets the closed owner-construction draft outcome, or null when none was bound.</summary>
+    /// <summary>Gets the closed owner-construction outcome, or null when none was bound.</summary>
     public StaticFieldV2ClosedConstructionOutcome? OwnerConstruction { get; }
 
-    /// <summary>Gets the lexical-completeness certificate draft outcome, or null when none was certified.</summary>
+    /// <summary>Gets the lexical-completeness certificate outcome, or null when none was certified.</summary>
     public StaticFieldV2LexicalCertificateOutcome? LexicalCertificate { get; }
 
-    /// <summary>Gets the bare static-root draft outcome, or null when that route was not taken.</summary>
+    /// <summary>Gets the bare static-root outcome, or null when that route was not taken.</summary>
     public StaticFieldV2BareRootOutcome? BareRoot { get; }
 
-    /// <summary>Gets the qualified member-lookup draft outcome, or null when none was performed.</summary>
+    /// <summary>Gets the qualified member-lookup outcome, or null when none was performed.</summary>
     public StaticFieldV2MemberLookupOutcome? MemberLookup { get; }
 
-    /// <summary>Gets the classified storage-strategy draft outcome, or null when none was classified.</summary>
+    /// <summary>Gets the classified storage-strategy outcome, or null when none was classified.</summary>
     public StaticFieldV2StorageStrategyOutcome? StorageStrategy { get; }
 
-    /// <summary>Gets the constructed-runtime draft selection, or null when none was required.</summary>
+    /// <summary>Gets the constructed-runtime selection, or null when none was required.</summary>
     public StaticFieldV2RuntimeConstructionSelection? RuntimeConstruction { get; }
 
-    /// <summary>Gets the static-slot draft acquisition, or null when none was required.</summary>
+    /// <summary>Gets the static-slot acquisition, or null when none was required.</summary>
     public StaticFieldV2StaticSlotOutcome? StaticSlot { get; }
 
     /// <summary>Gets a defensive copy of the raw bytes copied out of the dump, default when none were read.</summary>
     public ImmutableArray<byte> RawValueBytes =>
         rawValueBytes.IsDefault ? default : ExpressionV2ContractEncoding.Copy(rawValueBytes);
 
-    /// <summary>Gets the consulted metadata Constant-row draft fact, or null when none was consulted.</summary>
+    /// <summary>Gets the consulted metadata Constant-row fact, or null when none was consulted.</summary>
     public StaticFieldV2LiteralConstantFact? LiteralConstant { get; }
 
-    /// <summary>Gets the projected metadata-literal draft value, or null when none was projected.</summary>
+    /// <summary>Gets the projected metadata-literal value, or null when none was projected.</summary>
     public StaticFieldV2LiteralValueOutcome? LiteralValue { get; }
 
-    /// <summary>Gets the decoded runtime draft value, or null when none was decoded.</summary>
+    /// <summary>Gets the decoded runtime value, or null when none was decoded.</summary>
     public StaticFieldV2RuntimeValueOutcome? RuntimeValue { get; }
 
-    /// <summary>Gets the reference-target assignability draft decision, or null when none was required.</summary>
+    /// <summary>Gets the reference-target assignability decision, or null when none was required.</summary>
     public StaticFieldV2AssignabilityOutcome? ReferenceTargetValidation { get; }
 
-    /// <summary>Gets the frozen detached W2/W6 suffix draft descriptor, or null before syntax projection.</summary>
+    /// <summary>Gets the frozen detached W2/W6 suffix descriptor, or null before syntax projection.</summary>
     public DumpExpressionSuffixDescriptor? Suffix { get; }
 
-    /// <summary>Gets the decoded W2/W6 suffix draft value retained on a completed suffix, or null when none.</summary>
+    /// <summary>Gets the decoded W2/W6 suffix value retained on a completed suffix, or null when none.</summary>
     public DumpQueryValue? SuffixValue { get; }
 
-    /// <summary>Gets the metered caller-supplied evidence draft ledger of this evaluation.</summary>
+    /// <summary>Gets the metered caller-supplied evidence ledger of this evaluation.</summary>
     public StaticFieldV2PipelineEvidenceLedger EvidenceLedger { get; }
 
-    /// <summary>Gets the retained capability-call draft ledger of the deciding stage, or null when none ran.</summary>
+    /// <summary>Gets the retained capability-call ledger of the deciding stage, or null when none ran.</summary>
     public StaticFieldV2CapabilityCallLedger? CapabilityCallLedger { get; }
 
     /// <summary>Gets the retained frame-root memory home and value, or null when no frame root was attributed.</summary>
     public StaticFieldV2FrameRootEvaluationResult? FrameRoot { get; }
 
-    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this draft answer.</summary>
+    /// <summary>Gets a defensive ascending copy of every declared coverage boundary of this answer.</summary>
     public ImmutableArray<StaticFieldV2PipelineCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft provenance bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical provenance bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft provenance.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical provenance.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two retained draft provenance records.</summary>
-    /// <param name="other">The other draft provenance record.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two retained provenance records.</summary>
+    /// <param name="other">The other provenance record.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ExpressionProvenance? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests retained draft provenance equality against an arbitrary object.</summary>
+    /// <summary>Tests retained provenance equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for provenance with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for provenance with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ExpressionProvenance);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft provenance content.</summary>
-    /// <returns>A hash code for this canonical draft provenance.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical provenance content.</summary>
+    /// <returns>A hash code for this canonical provenance.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes the single canonical draft result of one composed static-field expression evaluation.</summary>
+/// <summary>Freezes the single canonical result of one composed static-field expression evaluation.</summary>
 /// <remarks>
-/// The result carries the twelve independent draft outcome axes, the single selected route, and only the evidence
+/// The result carries the twelve independent outcome axes, the single selected route, and only the evidence
 /// actually consulted. Every stop is prefix-free: the first typed stage stop forces every later axis to
 /// <c>NotReached</c> and overall completeness to <c>NoAnswer</c>, and no partial plan is exposed.
 /// </remarks>
@@ -1389,31 +1389,31 @@ public sealed class StaticFieldV2ExpressionResult : IEquatable<StaticFieldV2Expr
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the complete draft request that produced this result.</summary>
+    /// <summary>Gets the complete request that produced this result.</summary>
     public StaticFieldV2ExpressionRequest Request { get; }
 
-    /// <summary>Gets the twelve independent draft outcome axes of this evaluation.</summary>
+    /// <summary>Gets the twelve independent outcome axes of this evaluation.</summary>
     public DumpExpressionV2OutcomeAxes Axes { get; }
 
-    /// <summary>Gets the single route this draft evaluation selected and never revisited.</summary>
+    /// <summary>Gets the single route this evaluation selected and never revisited.</summary>
     public StaticFieldV2ExpressionRoute Route { get; }
 
-    /// <summary>Gets the retained draft provenance holding only the evidence actually consulted.</summary>
+    /// <summary>Gets the retained provenance holding only the evidence actually consulted.</summary>
     public StaticFieldV2ExpressionProvenance Provenance { get; }
 
-    /// <summary>Gets whether this draft evaluation produced one complete exact answer.</summary>
+    /// <summary>Gets whether this evaluation produced one complete exact answer.</summary>
     public bool IsComplete => Axes.Completeness == DumpExpressionCompletenessOutcome.Complete;
 
-    /// <summary>Gets the decoded signed draft value, or null when none was decoded.</summary>
+    /// <summary>Gets the decoded signed value, or null when none was decoded.</summary>
     public long? SignedValue =>
         Provenance.LiteralValue?.SignedValue ??
         Provenance.RuntimeValue?.SignedValue ??
         (FrameValue is { Kind: DumpQueryValueKind.Int32, Int32Value: { } frameInt } ? frameInt : null);
 
-    /// <summary>Gets the decoded unsigned draft value, or null when none was decoded.</summary>
+    /// <summary>Gets the decoded unsigned value, or null when none was decoded.</summary>
     public ulong? UnsignedValue => Provenance.LiteralValue?.UnsignedValue ?? Provenance.RuntimeValue?.UnsignedValue;
 
-    /// <summary>Gets the decoded literal string draft value, or null when none was decoded.</summary>
+    /// <summary>Gets the decoded literal string value, or null when none was decoded.</summary>
     public string? StringValue =>
         Provenance.LiteralValue?.StringValue ??
         (FrameValue is { Kind: DumpQueryValueKind.String } frameString ? frameString.StringValue : null);
@@ -1424,46 +1424,46 @@ public sealed class StaticFieldV2ExpressionResult : IEquatable<StaticFieldV2Expr
     /// <summary>Gets the decoded frame-root value retained on an exact frame answer, or null when none.</summary>
     public DumpQueryValue? FrameValue => Provenance.FrameRoot?.Value;
 
-    /// <summary>Gets the decoded W2/W6 suffix draft value retained on a completed suffix, or null when none.</summary>
+    /// <summary>Gets the decoded W2/W6 suffix value retained on a completed suffix, or null when none.</summary>
     public DumpQueryValue? SuffixValue => Provenance.SuffixValue;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft result bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical result bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft result.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical result.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two composed draft evaluation results.</summary>
-    /// <param name="other">The other draft result.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two composed evaluation results.</summary>
+    /// <param name="other">The other result.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2ExpressionResult? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests composed draft evaluation result equality against an arbitrary object.</summary>
+    /// <summary>Tests composed evaluation result equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a result with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a result with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ExpressionResult);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft result content.</summary>
-    /// <returns>A hash code for this canonical draft result.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical result content.</summary>
+    /// <returns>A hash code for this canonical result.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Composes every landed static-field V2 draft stage into one frozen no-fallback operation order.</summary>
+/// <summary>Composes every landed static-field V2 stage into one frozen no-fallback operation order.</summary>
 /// <remarks>
 /// <para>
-/// This draft composition executes the sixteen-step order exactly once per evaluation. A private step cursor makes the
+/// This composition executes the sixteen-step order exactly once per evaluation. A private step cursor makes the
 /// order structural: every stage announces its own step number, the cursor refuses a repeated or out-of-order step, and
 /// no stage may reparse, retry with a broader profile, or rebuild an earlier candidate universe.
 /// </para>
 /// <para>
 /// Profiles never fall through. <see cref="Evaluate"/> owns <c>StaticFieldExpressionV2</c> alone and rejects the frame
-/// profile with a typed unsupported syntax draft stop; <see cref="EvaluateFrameValue"/> owns
+/// profile with a typed unsupported syntax stop; <see cref="EvaluateFrameValue"/> owns
 /// <c>FrameValueExpressionV1</c> alone and rejects the static profile the same way. Neither entry point can call the
 /// other, so a V1 or V2 failure can never reach a second binder.
 /// </para>
 /// <para>
-/// Declared draft coverage boundaries: the scoped-context, runtime, and metadata Constant-row evidence are caller-owned
+/// Declared coverage boundaries: the scoped-context, runtime, and metadata Constant-row evidence are caller-owned
 /// seams; the declared field type is derived only from a ground primitive FieldSig; a contextual or bare route binds an
 /// owner definition rather than a closed construction, so a type-argument-bearing contextual spelling is a typed
 /// unsupported construction; the unchanged W2/W6 suffix evaluator is wired by a later checkpoint; and reference-target
@@ -1474,9 +1474,9 @@ public static class StaticFieldV2ExpressionPipeline
 {
     private const byte FieldSignatureCallingConvention = 0x06;
 
-    /// <summary>Evaluates one explicitly selected <c>StaticFieldExpressionV2</c> draft request end to end.</summary>
-    /// <param name="request">The complete composed draft evaluation request.</param>
-    /// <returns>One sealed canonical draft result carrying the twelve independent axes and its retained provenance.</returns>
+    /// <summary>Evaluates one explicitly selected <c>StaticFieldExpressionV2</c> request end to end.</summary>
+    /// <param name="request">The complete composed evaluation request.</param>
+    /// <returns>One sealed canonical result carrying the twelve independent axes and its retained provenance.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2ExpressionResult Evaluate(StaticFieldV2ExpressionRequest request)
     {
@@ -1484,14 +1484,14 @@ public static class StaticFieldV2ExpressionPipeline
         return new Execution(request).Run(DumpExpressionProfileKind.StaticFieldExpressionV2);
     }
 
-    /// <summary>Evaluates one explicitly selected <c>FrameValueExpressionV1</c> draft request in isolation.</summary>
-    /// <param name="request">The complete composed draft evaluation request.</param>
+    /// <summary>Evaluates one explicitly selected <c>FrameValueExpressionV1</c> request in isolation.</summary>
+    /// <param name="request">The complete composed evaluation request.</param>
     /// <remarks>
-    /// This separate entry point exists so a static draft request can never fall through to a frame answer and a frame
-    /// draft request can never fall through to static lookup. The admitted frame-value binder itself is wired by a later
-    /// checkpoint, so an actually frame-profiled request stops with a typed unsupported syntax draft disposition.
+    /// This separate entry point exists so a static request can never fall through to a frame answer and a frame
+    /// request can never fall through to static lookup. The admitted frame-value binder itself is wired by a later
+    /// checkpoint, so an actually frame-profiled request stops with a typed unsupported syntax disposition.
     /// </remarks>
-    /// <returns>One sealed canonical draft result carrying the twelve independent axes and its retained provenance.</returns>
+    /// <returns>One sealed canonical result carrying the twelve independent axes and its retained provenance.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2ExpressionResult EvaluateFrameValue(StaticFieldV2ExpressionRequest request)
     {

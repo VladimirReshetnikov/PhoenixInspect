@@ -256,7 +256,7 @@ public sealed class W8DefinitionAuthorityCatalogContractTests
         Assert.All(new[] { typeIdentity, methodIdentity, catalogIdentity }, static type => Assert.True(type.IsSealed));
     }
 
-    /// <summary>Proves every new public authority draft type and method has emitted XML documentation.</summary>
+    /// <summary>Proves every new public authority type and method has emitted XML documentation.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Definition_authority_public_surface_has_draft_XML()
@@ -277,7 +277,7 @@ public sealed class W8DefinitionAuthorityCatalogContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -290,7 +290,7 @@ public sealed class W8DefinitionAuthorityCatalogContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }
@@ -611,7 +611,7 @@ public sealed class W8DefinitionAuthorityCatalogContractTests
 
     private static int MethodToken(int rowId) => 0x06000000 | rowId;
 
-    /// <summary>Identifies one synthetic essential module-row profile mutation used by the draft contract tests.</summary>
+    /// <summary>Identifies one synthetic essential module-row profile mutation used by the contract tests.</summary>
     public enum ModuleMutation
     {
         /// <summary>Leaves the essential module-row profile unchanged.</summary>

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises complete source-anchored FieldPtr and MethodPtr draft catalogs with synthetic table layouts.</summary>
+/// <summary>Exercises complete source-anchored FieldPtr and MethodPtr catalogs with synthetic table layouts.</summary>
 public sealed class W8MemberPointerTableCatalogContractTests
 {
     private const string SnapshotDigest =
@@ -445,7 +445,7 @@ public sealed class W8MemberPointerTableCatalogContractTests
         Assert.Equal([0x04000003, 0x04000001, 0x04000002], types.Rows[1].FieldDefinitionTokens.ToArray());
     }
 
-    /// <summary>Proves exact pointer rows and resolved TypeDef token arrays have guarded draft issuer surfaces.</summary>
+    /// <summary>Proves exact pointer rows and resolved TypeDef token arrays have guarded issuer surfaces.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Derived_pointer_and_TypeDef_ownership_facts_cannot_be_caller_authored()
@@ -496,7 +496,7 @@ public sealed class W8MemberPointerTableCatalogContractTests
         Assert.Equal(2, CanonicalSchemaVersion(typeof(MetadataTypeDefinitionTableCatalogIdentity)));
     }
 
-    /// <summary>Proves every new public pointer draft type and method has emitted XML documentation.</summary>
+    /// <summary>Proves every new public pointer type and method has emitted XML documentation.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Member_pointer_public_surface_has_draft_XML_documentation()
@@ -518,7 +518,7 @@ public sealed class W8MemberPointerTableCatalogContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -531,7 +531,7 @@ public sealed class W8MemberPointerTableCatalogContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

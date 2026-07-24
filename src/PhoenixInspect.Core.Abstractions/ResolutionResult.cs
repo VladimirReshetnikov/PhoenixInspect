@@ -8,7 +8,7 @@ public enum ResolutionFailureKind
     /// <summary>The requested evidence was not captured or is otherwise unavailable.</summary>
     Unavailable,
 
-    /// <summary>The active prototype backend does not implement the requested capability.</summary>
+    /// <summary>The active backend does not implement the requested capability.</summary>
     Unsupported,
 
     /// <summary>The request or underlying metadata is structurally invalid.</summary>
@@ -66,7 +66,7 @@ public sealed record ResolutionFailure
 /// <typeparam name="T">The resolved value type.</typeparam>
 /// <remarks>
 /// This result replaces boolean <c>Try*</c> contracts at the VM/metadata seam so unavailable evidence,
-/// unsupported prototype surface, malformed input, and conflicting evidence remain distinguishable. The default
+/// unsupported surface, malformed input, and conflicting evidence remain distinguishable. The default
 /// value is an invalid result and should not be produced intentionally.
 /// </remarks>
 public readonly struct ResolutionResult<T>

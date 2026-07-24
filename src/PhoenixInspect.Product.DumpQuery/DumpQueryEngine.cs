@@ -11,7 +11,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 /// Prepares and evaluates one bounded, read-only root-field query against an immutable ClrMD dump session.
 /// </summary>
 /// <remarks>
-/// This is a draft W2 product slice, not a general expression evaluator. Its grammar is exactly one ordinal,
+/// This is a W2 product slice, not a general expression evaluator. Its grammar is exactly one ordinal,
 /// case-sensitive root identifier, <c>.</c>, one instance-field identifier, and optionally <c>??</c> followed by
 /// a null, Int32, or bounded string literal. Preparation selects the root and field once into an immutable plan;
 /// evaluation decodes that selected field without repeating member binding. Every product query is classified as

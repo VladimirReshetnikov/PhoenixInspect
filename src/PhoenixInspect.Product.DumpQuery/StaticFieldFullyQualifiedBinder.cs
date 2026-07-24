@@ -12,12 +12,12 @@ namespace PhoenixInspect.Product.DumpQuery;
 /// expressions against complete metadata images read from every managed module in one dump snapshot.
 /// </summary>
 /// <remarks>
-/// This draft W7 binder consumes the immutable output of <see cref="StaticFieldExpressionParser"/> and never
+/// This W7 binder consumes the immutable output of <see cref="StaticFieldExpressionParser"/> and never
 /// reparses expression text. It retains every admitted syntax split, searches the bounded module catalog
 /// exhaustively, and selects a declaration only when one complete declaration-and-shape interpretation remains.
 /// Bare <c>Type.Field</c> spellings require selected-frame/import context and are intentionally left to the
 /// contextual binder. Manifest modules and netmodules joined by the exact runtime assembly-address relation are
-/// admitted. Caveat: this prototype admits the field signature shapes represented by
+/// admitted. Caveat: this implementation admits the field signature shapes represented by
 /// <see cref="StaticFieldDeclaredValueKind"/>; a located competing shape outside that set produces a typed
 /// unsupported result rather than a speculative selection.
 /// </remarks>

@@ -3,8 +3,8 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one complete physical GenericParam-table draft proof.</summary>
-/// <remarks>The draft result is prefix-free unless every source row is coherently represented.</remarks>
+/// <summary>Classifies one complete physical GenericParam-table proof.</summary>
+/// <remarks>The result is prefix-free unless every source row is coherently represented.</remarks>
 public enum MetadataGenericParameterPhysicalTableResultKind
 {
     /// <summary>The complete physical table and every owner group are exact.</summary>
@@ -17,8 +17,8 @@ public enum MetadataGenericParameterPhysicalTableResultKind
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed disposition of one physical GenericParam-table draft proof.</summary>
-/// <remarks>Each non-exact or invalid draft result exposes no row or owner prefix.</remarks>
+/// <summary>Identifies the typed disposition of one physical GenericParam-table proof.</summary>
+/// <remarks>Each non-exact or invalid result exposes no row or owner prefix.</remarks>
 public enum MetadataGenericParameterPhysicalTableIssue
 {
     /// <summary>No issue applies to an exact complete table.</summary>
@@ -61,8 +61,8 @@ public enum MetadataGenericParameterPhysicalTableIssue
     DuplicateOwnerName = 12,
 }
 
-/// <summary>Records the physical Owner/Number ordering profile of an exact GenericParam-table draft proof.</summary>
-/// <remarks>The draft profile records noncanonical order without rejecting otherwise coherent complete evidence.</remarks>
+/// <summary>Records the physical Owner/Number ordering profile of an exact GenericParam-table proof.</summary>
+/// <remarks>The profile records noncanonical order without rejecting otherwise coherent complete evidence.</remarks>
 public enum MetadataGenericParameterPhysicalOrderProfile
 {
     /// <summary>No ordering profile is available because the table proof is not exact.</summary>
@@ -77,7 +77,7 @@ public enum MetadataGenericParameterPhysicalOrderProfile
 
 /// <summary>Freezes one exact source-module, owner-kind, and owner-token tuple.</summary>
 /// <remarks>
-/// This sealed draft identity contains no legacy TypeDef or MethodDef object. It can be minted only while a complete
+/// This sealed identity contains no legacy TypeDef or MethodDef object. It can be minted only while a complete
 /// physical GenericParam catalog validates the owner token against exact source ends.
 /// </remarks>
 public sealed class MetadataGenericParameterOwnerTokenIdentity :
@@ -113,25 +113,25 @@ public sealed class MetadataGenericParameterOwnerTokenIdentity :
     /// <summary>Gets the exact non-nil TypeDef or MethodDef owner token.</summary>
     public int OwnerMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two exact owner-token draft identities.</summary>
-    /// <param name="other">The other draft identity.</param>
+    /// <summary>Tests canonical equality between two exact owner-token identities.</summary>
+    /// <param name="other">The other identity.</param>
     /// <returns><see langword="true"/> only for byte-identical source, kind, and token content.</returns>
     public bool Equals(MetadataGenericParameterOwnerTokenIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests exact owner-token draft equality against an arbitrary object.</summary>
+    /// <summary>Tests exact owner-token equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an identity with byte-identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an identity with byte-identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterOwnerTokenIdentity);
 
-    /// <summary>Computes a hash code from the immutable exact owner-token draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable exact owner-token bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataGenericParameterOwnerTokenIdentity Create(
@@ -154,7 +154,7 @@ public sealed class MetadataGenericParameterOwnerTokenIdentity :
 
 /// <summary>Freezes only the physical columns observed from one GenericParam row.</summary>
 /// <remarks>
-/// This sealed draft observation carries no legacy owner object, derived owner group, declared arity, or argument
+/// This sealed observation carries no legacy owner object, derived owner group, declared arity, or argument
 /// binding. The raw Number and flags are retained exactly for complete-table validation and later interpretation.
 /// </remarks>
 public sealed class MetadataGenericParameterRowObservationIdentity :
@@ -208,20 +208,20 @@ public sealed class MetadataGenericParameterRowObservationIdentity :
     /// <summary>Gets the decoded name, including empty when heap-index provenance cannot distinguish its origin.</summary>
     public string Name { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one physical-column-only GenericParam row draft observation.</summary>
+    /// <summary>Creates one physical-column-only GenericParam row observation.</summary>
     /// <param name="metadataModule">The exact metadata module containing the row.</param>
     /// <param name="genericParameterToken">The exact non-nil GenericParam token.</param>
     /// <param name="number">The raw unsigned 16-bit Number column.</param>
     /// <param name="flags">The raw unsigned 16-bit flags column.</param>
     /// <param name="ownerMetadataToken">The raw decoded owner token retained for catalog validation.</param>
     /// <param name="name">The decoded name; empty is retained without inferring the original heap index.</param>
-    /// <returns>A sealed immutable physical-row draft observation with no derived owner fact.</returns>
+    /// <returns>A sealed immutable physical-row observation with no derived owner fact.</returns>
     public static MetadataGenericParameterRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity metadataModule,
         int genericParameterToken,
@@ -258,24 +258,24 @@ public sealed class MetadataGenericParameterRowObservationIdentity :
             name);
     }
 
-    /// <summary>Tests canonical equality between two physical GenericParam draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical physical-column draft content.</returns>
+    /// <summary>Tests canonical equality between two physical GenericParam observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical physical-column content.</returns>
     public bool Equals(MetadataGenericParameterRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical GenericParam draft equality against an arbitrary object.</summary>
+    /// <summary>Tests physical GenericParam equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterRowObservationIdentity);
 
-    /// <summary>Computes a hash code from the immutable physical-row draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable physical-row bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one GenericParam row after complete source, owner, and group validation.</summary>
-/// <remarks>This sealed draft identity can be minted only by an exact physical-table catalog.</remarks>
+/// <remarks>This sealed identity can be minted only by an exact physical-table catalog.</remarks>
 public sealed class MetadataGenericParameterTableRowIdentity :
     IEquatable<MetadataGenericParameterTableRowIdentity>
 {
@@ -321,25 +321,25 @@ public sealed class MetadataGenericParameterTableRowIdentity :
     /// <summary>Gets the exact decoded name, including empty.</summary>
     public string Name => Observation.Name;
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two exact GenericParam table-row draft identities.</summary>
-    /// <param name="other">The other exact draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two exact GenericParam table-row identities.</summary>
+    /// <param name="other">The other exact row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterTableRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests exact GenericParam table-row draft equality against an arbitrary object.</summary>
+    /// <summary>Tests exact GenericParam table-row equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterTableRowIdentity);
 
-    /// <summary>Computes a hash code from immutable exact GenericParam table-row draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable exact GenericParam table-row bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataGenericParameterTableRowIdentity Create(
@@ -364,7 +364,7 @@ public sealed class MetadataGenericParameterTableRowIdentity :
 
 /// <summary>Freezes a complete source-anchored physical GenericParam table and its exact owner groups.</summary>
 /// <remarks>
-/// This sealed draft catalog validates complete physical RID coverage, groups all rows by exact owner tuple, and
+/// This sealed catalog validates complete physical RID coverage, groups all rows by exact owner tuple, and
 /// proves Number coverage independently of physical adjacency. Unsorted coherent tables remain exact and record that
 /// profile. Global table size is bounded; no per-owner semantic arity cap is applied at this physical layer.
 /// </remarks>
@@ -414,10 +414,10 @@ public sealed class MetadataGenericParameterPhysicalTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete physical-table draft proof is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether the complete physical-table proof is exact, non-exact, or invalid.</summary>
     public MetadataGenericParameterPhysicalTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed physical-table draft issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed physical-table issue, or none for an exact result.</summary>
     public MetadataGenericParameterPhysicalTableIssue Issue { get; }
 
     /// <summary>Gets the exact metadata source ends governing the complete GenericParam table.</summary>
@@ -440,18 +440,18 @@ public sealed class MetadataGenericParameterPhysicalTableCatalogIdentity :
     /// <summary>Gets the issue-related supplied or cap-plus-one row count, otherwise zero.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete source-anchored physical GenericParam-table draft proof.</summary>
+    /// <summary>Creates one complete source-anchored physical GenericParam-table proof.</summary>
     /// <param name="sourceEnds">The exact source ends for the metadata module.</param>
     /// <param name="observations">
     /// Every physical GenericParam row in RID order; default denotes unavailable acquisition for a non-empty table.
     /// </param>
-    /// <returns>An exact catalog, a prefix-free non-exact stop, or a factless invalid draft result.</returns>
+    /// <returns>An exact catalog, a prefix-free non-exact stop, or a factless invalid result.</returns>
     public static MetadataGenericParameterPhysicalTableCatalogIdentity Create(
         MetadataSourceEndIdentity sourceEnds,
         ImmutableArray<MetadataGenericParameterRowObservationIdentity> observations)
@@ -658,7 +658,7 @@ public sealed class MetadataGenericParameterPhysicalTableCatalogIdentity :
     /// <param name="kind">Whether the owner token denotes TypeDef or MethodDef.</param>
     /// <param name="ownerMetadataToken">The non-nil owner token within this catalog's exact source end.</param>
     /// <returns>
-    /// A defensive row-array copy for an owner present in an exact draft catalog; otherwise an initialized empty array.
+    /// A defensive row-array copy for an owner present in an exact catalog; otherwise an initialized empty array.
     /// </returns>
     public ImmutableArray<MetadataGenericParameterTableRowIdentity> RowsForOwnerOrEmpty(
         MetadataGenericParameterOwnerKind kind,
@@ -688,19 +688,19 @@ public sealed class MetadataGenericParameterPhysicalTableCatalogIdentity :
             : ImmutableArray<MetadataGenericParameterTableRowIdentity>.Empty;
     }
 
-    /// <summary>Tests canonical equality between two physical GenericParam-table draft proofs.</summary>
-    /// <param name="other">The other draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical GenericParam-table proofs.</summary>
+    /// <param name="other">The other catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataGenericParameterPhysicalTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical GenericParam-table draft equality against an arbitrary object.</summary>
+    /// <summary>Tests physical GenericParam-table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataGenericParameterPhysicalTableCatalogIdentity);
 
-    /// <summary>Computes a hash code from immutable physical GenericParam-table draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from immutable physical GenericParam-table bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsOwnerMintCapability(object? capability) =>

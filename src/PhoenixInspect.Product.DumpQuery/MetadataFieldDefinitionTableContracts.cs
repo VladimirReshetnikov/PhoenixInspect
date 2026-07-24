@@ -6,7 +6,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Classifies the physical FieldDef accessibility encoded by the low three FieldAttributes bits.</summary>
 /// <remarks>
-/// The draft discriminator is a pure physical decoding of the reserved three-bit field-access mask. It makes no
+/// The discriminator is a pure physical decoding of the reserved three-bit field-access mask. It makes no
 /// compiler-visibility, evaluator-admission, or source-addressability assertion.
 /// </remarks>
 public enum MetadataFieldAccessibility
@@ -33,8 +33,8 @@ public enum MetadataFieldAccessibility
     Public = 6,
 }
 
-/// <summary>Classifies one complete authority-joined FieldDef declaration-table draft proof.</summary>
-/// <remarks>Every non-exact or invalid draft result exposes no derived FieldDef row prefix.</remarks>
+/// <summary>Classifies one complete authority-joined FieldDef declaration-table proof.</summary>
+/// <remarks>Every non-exact or invalid result exposes no derived FieldDef row prefix.</remarks>
 public enum MetadataFieldDefinitionTableResultKind
 {
     /// <summary>Every physical FieldDef row, declaring owner, and signature grammar fact is exact.</summary>
@@ -47,8 +47,8 @@ public enum MetadataFieldDefinitionTableResultKind
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed disposition of one FieldDef declaration-table draft proof.</summary>
-/// <remarks>The draft issue remains available without retaining any derived row candidate.</remarks>
+/// <summary>Identifies the typed disposition of one FieldDef declaration-table proof.</summary>
+/// <remarks>The issue remains available without retaining any derived row candidate.</remarks>
 public enum MetadataFieldDefinitionTableIssue
 {
     /// <summary>No issue applies to an exact complete catalog.</summary>
@@ -88,9 +88,9 @@ public enum MetadataFieldDefinitionTableIssue
     SignatureBoundReached = 11,
 }
 
-/// <summary>Freezes physical columns needed for one FieldDef declaration draft projection.</summary>
+/// <summary>Freezes physical columns needed for one FieldDef declaration projection.</summary>
 /// <remarks>
-/// This sealed draft observation retains every physical FieldDef table column after heap decoding, including the
+/// This sealed observation retains every physical FieldDef table column after heap decoding, including the
 /// complete field-signature blob. It carries no caller-authored declaring TypeDef; ownership is derived only from the
 /// complete physical definition authority. It makes no constant, layout, marshalling, or RVA-content assertion.
 /// </remarks>
@@ -127,30 +127,30 @@ public sealed class MetadataFieldDefinitionRowObservationIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact metadata module containing the physical draft FieldDef row.</summary>
+    /// <summary>Gets the exact metadata module containing the physical FieldDef row.</summary>
     public StaticFieldMetadataModuleIdentity MetadataModule { get; }
 
-    /// <summary>Gets the exact non-nil physical draft FieldDef token.</summary>
+    /// <summary>Gets the exact non-nil physical FieldDef token.</summary>
     public int FieldDefinitionToken { get; }
 
-    /// <summary>Gets the exact raw physical draft FieldAttributes bits.</summary>
+    /// <summary>Gets the exact raw physical FieldAttributes bits.</summary>
     public int Attributes { get; }
 
-    /// <summary>Gets the exact decoded non-empty physical draft FieldDef name.</summary>
+    /// <summary>Gets the exact decoded non-empty physical FieldDef name.</summary>
     public string Name { get; }
 
-    /// <summary>Gets a defensive copy of the complete physical draft FieldDef signature blob.</summary>
+    /// <summary>Gets a defensive copy of the complete physical FieldDef signature blob.</summary>
     public ImmutableArray<byte> SignatureBytes => ExpressionV2ContractEncoding.Copy(signatureBytes);
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft observation bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical observation bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft observation.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical observation.</summary>
     public string Sha256 { get; }
 
     internal ImmutableArray<byte> SignatureBytesCore => signatureBytes;
 
-    /// <summary>Creates one physical-column-only FieldDef row draft observation.</summary>
+    /// <summary>Creates one physical-column-only FieldDef row observation.</summary>
     /// <param name="metadataModule">The exact metadata module containing the physical row.</param>
     /// <param name="fieldDefinitionToken">The exact non-nil FieldDef token.</param>
     /// <param name="attributes">
@@ -162,7 +162,7 @@ public sealed class MetadataFieldDefinitionRowObservationIdentity :
     /// The complete initialized FieldDef signature blob, bounded by the shared TypeSpec byte cap. Grammar validity is
     /// established later by the complete catalog and is not asserted here.
     /// </param>
-    /// <returns>A sealed immutable physical draft row with no caller-authored declaring type.</returns>
+    /// <returns>A sealed immutable physical row with no caller-authored declaring type.</returns>
     public static MetadataFieldDefinitionRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity metadataModule,
         int fieldDefinitionToken,
@@ -202,25 +202,25 @@ public sealed class MetadataFieldDefinitionRowObservationIdentity :
             ExpressionV2ContractEncoding.Copy(signatureBytes));
     }
 
-    /// <summary>Tests canonical equality between two physical FieldDef draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical FieldDef observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataFieldDefinitionRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataFieldDefinitionRowObservationIdentity);
 
-    /// <summary>Computes a hash code from the immutable physical FieldDef draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable physical FieldDef bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes one FieldDef declaration after exact ownership and shared-grammar draft validation.</summary>
+/// <summary>Freezes one FieldDef declaration after exact ownership and shared-grammar validation.</summary>
 /// <remarks>
-/// This sealed draft identity can be issued only by the complete catalog. Its declaring TypeDef is the authority-issued
+/// This sealed identity can be issued only by the complete catalog. Its declaring TypeDef is the authority-issued
 /// identity that physically owns the FieldDef, and its signature was consumed completely by the shared Core grammar.
 /// Every exposed flag is a pure decoding of the retained physical FieldAttributes column.
 /// </remarks>
@@ -256,49 +256,49 @@ public sealed class MetadataFieldDefinitionTableRowIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the exact source-end draft identity governing the physical row and its declaring type.</summary>
+    /// <summary>Gets the exact source-end identity governing the physical row and its declaring type.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the unchanged physical FieldDef draft observation.</summary>
+    /// <summary>Gets the unchanged physical FieldDef observation.</summary>
     public MetadataFieldDefinitionRowObservationIdentity Observation { get; }
 
-    /// <summary>Gets the authority-issued TypeDef that physically owns this exact draft FieldDef.</summary>
+    /// <summary>Gets the authority-issued TypeDef that physically owns this exact FieldDef.</summary>
     public MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition { get; }
 
-    /// <summary>Gets the exact physical draft FieldDef token.</summary>
+    /// <summary>Gets the exact physical FieldDef token.</summary>
     public int FieldDefinitionToken => Observation.FieldDefinitionToken;
 
-    /// <summary>Gets the exact decoded non-empty physical draft FieldDef name.</summary>
+    /// <summary>Gets the exact decoded non-empty physical FieldDef name.</summary>
     public string Name => Observation.Name;
 
-    /// <summary>Gets the exact raw physical draft FieldAttributes bits.</summary>
+    /// <summary>Gets the exact raw physical FieldAttributes bits.</summary>
     public int Attributes => Observation.Attributes;
 
-    /// <summary>Gets a defensive copy of the complete exact draft FieldDef signature.</summary>
+    /// <summary>Gets a defensive copy of the complete exact FieldDef signature.</summary>
     public ImmutableArray<byte> SignatureBytes => Observation.SignatureBytes;
 
-    /// <summary>Gets the exact declaring TypeDef token derived from complete physical draft ownership.</summary>
+    /// <summary>Gets the exact declaring TypeDef token derived from complete physical ownership.</summary>
     public int DeclaringTypeDefinitionToken => DeclaringTypeDefinition.TypeDefinitionToken;
 
-    /// <summary>Gets whether the physical draft row has FieldAttributes.Static.</summary>
+    /// <summary>Gets whether the physical row has FieldAttributes.Static.</summary>
     public bool IsStatic => (Attributes & (int)FieldAttributes.Static) != 0;
 
-    /// <summary>Gets whether the physical draft row is an instance declaration.</summary>
+    /// <summary>Gets whether the physical row is an instance declaration.</summary>
     public bool IsInstance => !IsStatic;
 
-    /// <summary>Gets whether the physical draft row has FieldAttributes.InitOnly.</summary>
+    /// <summary>Gets whether the physical row has FieldAttributes.InitOnly.</summary>
     public bool IsInitOnly => (Attributes & (int)FieldAttributes.InitOnly) != 0;
 
-    /// <summary>Gets whether the physical draft row has FieldAttributes.Literal.</summary>
+    /// <summary>Gets whether the physical row has FieldAttributes.Literal.</summary>
     public bool IsLiteral => (Attributes & (int)FieldAttributes.Literal) != 0;
 
-    /// <summary>Gets whether the physical draft row has FieldAttributes.HasFieldRVA.</summary>
+    /// <summary>Gets whether the physical row has FieldAttributes.HasFieldRVA.</summary>
     public bool HasFieldRva => (Attributes & (int)FieldAttributes.HasFieldRVA) != 0;
 
-    /// <summary>Gets whether the physical draft row has FieldAttributes.HasDefault.</summary>
+    /// <summary>Gets whether the physical row has FieldAttributes.HasDefault.</summary>
     public bool HasDefault => (Attributes & (int)FieldAttributes.HasDefault) != 0;
 
-    /// <summary>Gets the physical draft accessibility decoded from the low three FieldAttributes bits.</summary>
+    /// <summary>Gets the physical accessibility decoded from the low three FieldAttributes bits.</summary>
     public MetadataFieldAccessibility DeclaredAccessibility => (Attributes & FieldAccessibilityMask) switch
     {
         0x0000 => MetadataFieldAccessibility.CompilerControlled,
@@ -310,10 +310,10 @@ public sealed class MetadataFieldDefinitionTableRowIdentity :
         _ => MetadataFieldAccessibility.Public,
     };
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row.</summary>
     public string Sha256 { get; }
 
     internal static MetadataFieldDefinitionTableRowIdentity Create(
@@ -342,31 +342,31 @@ public sealed class MetadataFieldDefinitionTableRowIdentity :
             certificate.SignatureByteCount != observation.SignatureBytesCore.Length ||
             certificate.Counters.ConsumedByteCount != observation.SignatureBytesCore.Length)
         {
-            throw new ArgumentException("A matching exact shared-grammar FieldDef draft certificate is required.");
+            throw new ArgumentException("A matching exact shared-grammar FieldDef certificate is required.");
         }
 
         return new MetadataFieldDefinitionTableRowIdentity(sourceEnds, observation, declaringTypeDefinition);
     }
 
-    /// <summary>Tests canonical equality between two complete FieldDef declaration draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete FieldDef declaration rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataFieldDefinitionTableRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete FieldDef declaration draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete FieldDef declaration equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataFieldDefinitionTableRowIdentity);
 
-    /// <summary>Computes a hash code from the immutable complete FieldDef declaration draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable complete FieldDef declaration bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
-/// <summary>Freezes a complete authority-joined FieldDef declaration-table draft projection.</summary>
+/// <summary>Freezes a complete authority-joined FieldDef declaration-table projection.</summary>
 /// <remarks>
-/// This sealed draft catalog requires an exact physical definition authority and exact RID-complete FieldDef rows. It
+/// This sealed catalog requires an exact physical definition authority and exact RID-complete FieldDef rows. It
 /// proves that authority TypeDef ownership covers every FieldDef exactly once and validates every signature with the
 /// shared bounded Core grammar before issuing any row, so every stop remains prefix-free.
 /// </remarks>
@@ -418,43 +418,43 @@ public sealed class MetadataFieldDefinitionTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete draft FieldDef table is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether the complete FieldDef table is exact, non-exact, or invalid.</summary>
     public MetadataFieldDefinitionTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed issue, or none for an exact result.</summary>
     public MetadataFieldDefinitionTableIssue Issue { get; }
 
-    /// <summary>Gets the complete physical definition-authority draft catalog supplying every declaring owner.</summary>
+    /// <summary>Gets the complete physical definition-authority catalog supplying every declaring owner.</summary>
     public MetadataDefinitionAuthorityCatalogIdentity DefinitionAuthority { get; }
 
-    /// <summary>Gets the exact source ends inherited from the physical definition-authority draft catalog.</summary>
+    /// <summary>Gets the exact source ends inherited from the physical definition-authority catalog.</summary>
     public MetadataSourceEndIdentity SourceEnds => DefinitionAuthority.SourceEnds;
 
-    /// <summary>Gets a defensive RID-order copy of exact derived FieldDef draft rows, or an empty array otherwise.</summary>
+    /// <summary>Gets a defensive RID-order copy of exact derived FieldDef rows, or an empty array otherwise.</summary>
     public ImmutableArray<MetadataFieldDefinitionTableRowIdentity> Rows =>
         ExpressionV2ContractEncoding.Copy(rows);
 
-    /// <summary>Gets the reached draft bound for a cap-plus-one or propagated non-exact result, otherwise null.</summary>
+    /// <summary>Gets the reached bound for a cap-plus-one or propagated non-exact result, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
-    /// <summary>Gets the issue-related draft supplied count or cap-plus-one observation.</summary>
+    /// <summary>Gets the issue-related supplied count or cap-plus-one observation.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets the FieldDef or prerequisite token related to the draft issue, otherwise null.</summary>
+    /// <summary>Gets the FieldDef or prerequisite token related to the issue, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft catalog bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical catalog bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft catalog.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical catalog.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete authority-joined FieldDef declaration-table draft projection.</summary>
-    /// <param name="definitionAuthority">The complete physical definition-authority draft prerequisite.</param>
+    /// <summary>Creates one complete authority-joined FieldDef declaration-table projection.</summary>
+    /// <param name="definitionAuthority">The complete physical definition-authority prerequisite.</param>
     /// <param name="observations">
     /// Every physical FieldDef row in RID order; default denotes unavailable acquisition when the source is non-empty.
     /// </param>
-    /// <returns>An exact catalog, a prefix-free non-exact stop, or a factless invalid draft result.</returns>
+    /// <returns>An exact catalog, a prefix-free non-exact stop, or a factless invalid result.</returns>
     public static MetadataFieldDefinitionTableCatalogIdentity Create(
         MetadataDefinitionAuthorityCatalogIdentity definitionAuthority,
         ImmutableArray<MetadataFieldDefinitionRowObservationIdentity> observations)
@@ -602,9 +602,9 @@ public sealed class MetadataFieldDefinitionTableCatalogIdentity :
             null);
     }
 
-    /// <summary>Finds the exact derived draft row for one physical FieldDef token.</summary>
+    /// <summary>Finds the exact derived row for one physical FieldDef token.</summary>
     /// <param name="fieldDefinitionToken">The physical FieldDef token to look up.</param>
-    /// <returns>The exact derived draft row, or null for a non-exact catalog or an unknown token.</returns>
+    /// <returns>The exact derived row, or null for a non-exact catalog or an unknown token.</returns>
     public MetadataFieldDefinitionTableRowIdentity? FindRow(int fieldDefinitionToken)
     {
         if (ResultKind != MetadataFieldDefinitionTableResultKind.Exact ||
@@ -617,10 +617,10 @@ public sealed class MetadataFieldDefinitionTableCatalogIdentity :
         return rowId > 0 && rowId <= rows.Length ? rows[rowId - 1] : null;
     }
 
-    /// <summary>Projects the exact derived draft rows owned by one authority-issued declaring TypeDef.</summary>
+    /// <summary>Projects the exact derived rows owned by one authority-issued declaring TypeDef.</summary>
     /// <param name="declaringType">The authority-issued TypeDef whose declared FieldDef rows are requested.</param>
     /// <returns>
-    /// The derived draft rows in declared ownership order, or an empty array for a non-exact catalog or a TypeDef that
+    /// The derived rows in declared ownership order, or an empty array for a non-exact catalog or a TypeDef that
     /// this catalog's own definition authority did not issue.
     /// </returns>
     public ImmutableArray<MetadataFieldDefinitionTableRowIdentity> RowsForDeclaringTypeOrEmpty(
@@ -650,19 +650,19 @@ public sealed class MetadataFieldDefinitionTableCatalogIdentity :
         return projected.MoveToImmutable();
     }
 
-    /// <summary>Tests canonical equality between two complete FieldDef table draft projections.</summary>
-    /// <param name="other">The other draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete FieldDef table projections.</summary>
+    /// <param name="other">The other catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataFieldDefinitionTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete FieldDef table draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete FieldDef table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataFieldDefinitionTableCatalogIdentity);
 
-    /// <summary>Computes a hash code from the immutable complete FieldDef table draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable complete FieldDef table bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>

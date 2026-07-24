@@ -4,7 +4,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Composes Product-owned static-field semantics with detached Host runtime facts.</summary>
 /// <remarks>
-/// This draft W7 boundary rereads no expression and performs no storage access. It uses counted metadata to assign
+/// This W7 boundary rereads no expression and performs no storage access. It uses counted metadata to assign
 /// semantic roles that the ClrMD Host deliberately leaves raw, then returns immutable proof objects accepted by the
 /// physical request factory.
 /// </remarks>

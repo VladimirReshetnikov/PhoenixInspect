@@ -32,7 +32,7 @@ public enum DumpQueryRootBindingStatus
 /// invalid evidence into a nullable object reference.
 /// </summary>
 /// <remarks>
-/// This is a draft W2 contract for the deliberately single-root grammar. A non-exact binding never exposes one of a
+/// This is a W2 contract for the deliberately single-root grammar. A non-exact binding never exposes one of a
 /// partial search's matches as though it were uniquely selected. Search-backed bindings retain the exact ordinal type
 /// predicate, adapter status, traversal counters, raw evidence, and applied bounds so every preparation or evaluation
 /// result can preserve the explanation produced before query binding began.

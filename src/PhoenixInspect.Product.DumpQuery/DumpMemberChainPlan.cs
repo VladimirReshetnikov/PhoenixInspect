@@ -10,7 +10,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Identifies the structural operator used by an admitted fixed-depth member chain.</summary>
 /// <remarks>
-/// This draft W6 value describes an already-admitted project shape. It neither widens syntax admission nor implies
+/// This W6 value describes an already-admitted project shape. It neither widens syntax admission nor implies
 /// support for arbitrary compiler parse trees.
 /// </remarks>
 public enum DumpMemberChainAccessKind
@@ -23,7 +23,7 @@ public enum DumpMemberChainAccessKind
 }
 
 /// <summary>Identifies the optional typed coalescing literal retained by a member-chain plan.</summary>
-/// <remarks>This draft W6 value is interpreted only after an exact null terminal result.</remarks>
+/// <remarks>This W6 value is interpreted only after an exact null terminal result.</remarks>
 public enum DumpMemberChainFallbackKind
 {
     /// <summary>The expression has no coalescing literal.</summary>
@@ -43,7 +43,7 @@ public enum DumpMemberChainFallbackKind
 /// Freezes one completely prepared W6 fixed-depth member chain before either its reference or terminal value is read.
 /// </summary>
 /// <remarks>
-/// This draft plan is snapshot-, root-, and request-specific. It retains the complete request identity, declared-data
+/// This plan is snapshot-, root-, and request-specific. It retains the complete request identity, declared-data
 /// certificate, physical relative layout, preparation evidence, and semantics needed by later evaluation. It contains
 /// no compiler object and gives evaluation no reason to repeat member, property, or type-catalog lookup.
 /// </remarks>
@@ -187,7 +187,7 @@ public sealed class DumpMemberChainPlan
     /// evidence and bounds, semantics, and explicit unread-value markers.
     /// </returns>
     /// <remarks>
-    /// The draft representation contains dump addresses and evidence bytes. It is replay material and is not intended
+    /// The representation contains dump addresses and evidence bytes. It is replay material and is not intended
     /// for diagnostic display.
     /// </remarks>
     public string ToCanonicalReplayProjection() => canonicalProjection;

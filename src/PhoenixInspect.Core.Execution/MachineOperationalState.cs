@@ -29,14 +29,14 @@ public sealed record MachineOperationalState(BudgetState Budget)
 
     /// <summary>Gets the number of frozen pure-model capabilities entered during this session.</summary>
     /// <remarks>
-    /// The monotonic draft counter must equal <see cref="ModelAttempts"/> length. It is retained explicitly so hosts
+    /// The monotonic counter must equal <see cref="ModelAttempts"/> length. It is retained explicitly so hosts
     /// can account for model capability use without inferring it from semantic debug events.
     /// </remarks>
     public int ModelInvocationCount { get; init; }
 
     /// <summary>Gets the number of modeled calls whose caller transfer completed atomically.</summary>
     /// <remarks>
-    /// The monotonic draft counter equals the number of attempts whose
+    /// The monotonic counter equals the number of attempts whose
     /// <see cref="PureModelAttempt.TransferCompleted"/> fact is true. It never exceeds
     /// <see cref="ModelInvocationCount"/>.
     /// </remarks>
@@ -70,7 +70,7 @@ public sealed record MachineOperationalState(BudgetState Budget)
     /// logical boundary without pushing a frame and advances this observation as soon as the frozen capability is
     /// invoked, even if its outcome later blocks or fails validation without a semantic transfer. Preflight and
     /// pre-instruction budget failures do not advance it. Consumers therefore must not infer this value from call-
-    /// stack length or completed-call count. This draft init-only counter defaults to the root depth.
+    /// stack length or completed-call count. This init-only counter defaults to the root depth.
     /// </remarks>
     public int ObservedLogicalDepthHighWater { get; init; } = 1;
 
@@ -78,7 +78,7 @@ public sealed record MachineOperationalState(BudgetState Budget)
     /// Gets the greatest number of simultaneously active interpreted frames observed so far.
     /// </summary>
     /// <remarks>
-    /// The draft counter defaults to the single activated root frame. It is operational evidence, excluded from
+    /// The counter defaults to the single activated root frame. It is operational evidence, excluded from
     /// <see cref="MachineStateSemanticComparer{TValue,TMemory}"/>, and advances only when a real frame push completes.
     /// </remarks>
     public int ActiveFrameDepthHighWater { get; init; } = 1;

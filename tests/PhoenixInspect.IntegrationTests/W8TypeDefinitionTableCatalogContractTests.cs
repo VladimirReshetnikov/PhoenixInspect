@@ -485,7 +485,7 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
         Assert.NotNull(catalog.ExactRowOrDefault(0x02000001));
     }
 
-    /// <summary>Proves every new public draft type and method has emitted XML and an intentionally narrow issuer surface.</summary>
+    /// <summary>Proves every new public type and method has emitted XML and an intentionally narrow issuer surface.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void TypeDefinition_table_public_surface_has_draft_XML_and_no_derived_row_factory()
@@ -506,7 +506,7 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -519,7 +519,7 @@ public sealed class W8TypeDefinitionTableCatalogContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
 

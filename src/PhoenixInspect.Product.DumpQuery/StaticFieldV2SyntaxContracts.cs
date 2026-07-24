@@ -4,7 +4,7 @@ using PhoenixInspect.Core.Abstractions;
 namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Identifies the first syntax boundary that prevented a V2 descriptor.</summary>
-/// <remarks>This draft-phase enumeration may evolve with the projector while preserving typed first-stop semantics.</remarks>
+/// <remarks>This enumeration may evolve with the projector while preserving typed first-stop semantics.</remarks>
 public enum StaticFieldV2SyntaxIssue
 {
     /// <summary>No issue occurred; valid only for an admitted descriptor.</summary>
@@ -48,7 +48,7 @@ public enum StaticFieldV2SyntaxIssue
 }
 
 /// <summary>Classifies the qualifier preceding the first V2 expression-name segment.</summary>
-/// <remarks>This draft-phase enumeration describes detached syntax and does not resolve an alias.</remarks>
+/// <remarks>This enumeration describes detached syntax and does not resolve an alias.</remarks>
 public enum StaticFieldV2AliasKind
 {
     /// <summary>No alias qualifier precedes the first segment.</summary>
@@ -60,7 +60,7 @@ public enum StaticFieldV2AliasKind
 }
 
 /// <summary>Classifies whether a structural partition has an explicit owner or a bare field root.</summary>
-/// <remarks>This draft-phase enumeration records syntax candidates before binding selects any route.</remarks>
+/// <remarks>This enumeration records syntax candidates before binding selects any route.</remarks>
 public enum StaticFieldV2CandidateKind
 {
     /// <summary>One or more namespace/type segments precede the candidate field.</summary>
@@ -70,7 +70,7 @@ public enum StaticFieldV2CandidateKind
 }
 
 /// <summary>Classifies the source edge leading to one expression-name segment.</summary>
-/// <remarks>This draft-phase enumeration retains source topology without evaluating the edge.</remarks>
+/// <remarks>This enumeration retains source topology without evaluating the edge.</remarks>
 public enum StaticFieldV2ExpressionSeparatorKind
 {
     /// <summary>The first segment has no dot edge.</summary>
@@ -82,7 +82,7 @@ public enum StaticFieldV2ExpressionSeparatorKind
 }
 
 /// <summary>Classifies the recursively detached closed type-argument syntax.</summary>
-/// <remarks>This draft-phase enumeration covers only the explicitly admitted closed type grammar.</remarks>
+/// <remarks>This enumeration covers only the explicitly admitted closed type grammar.</remarks>
 public enum StaticFieldV2TypeSyntaxKind
 {
     /// <summary>One admitted predefined C# type keyword.</summary>
@@ -98,7 +98,7 @@ public enum StaticFieldV2TypeSyntaxKind
 }
 
 /// <summary>Identifies each predefined type admitted by the V2 source grammar.</summary>
-/// <remarks>This draft-phase enumeration is a source-syntax catalog, not a bound runtime type catalog.</remarks>
+/// <remarks>This enumeration is a source-syntax catalog, not a bound runtime type catalog.</remarks>
 public enum StaticFieldV2PredefinedTypeKind
 {
     /// <summary><c>bool</c>.</summary>
@@ -138,7 +138,7 @@ public enum StaticFieldV2PredefinedTypeKind
 }
 
 /// <summary>Freezes the exact optional alias qualifier preceding a named route.</summary>
-/// <remarks>This sealed draft value distinguishes global, named, and absent qualifiers canonically.</remarks>
+/// <remarks>This sealed value distinguishes global, named, and absent qualifiers canonically.</remarks>
 public sealed class StaticFieldV2AliasQualifier : IEquatable<StaticFieldV2AliasQualifier>
 {
     private const string CanonicalDomain = "static-field-v2-alias-qualifier";
@@ -170,16 +170,16 @@ public sealed class StaticFieldV2AliasQualifier : IEquatable<StaticFieldV2AliasQ
     public string Sha256 { get; }
 
     /// <summary>Creates the canonical absence of an alias qualifier.</summary>
-    /// <returns>A new content-equal immutable draft qualifier.</returns>
+    /// <returns>A new content-equal immutable qualifier.</returns>
     public static StaticFieldV2AliasQualifier None() => new(StaticFieldV2AliasKind.None, null);
 
     /// <summary>Creates the canonical <c>global::</c> qualifier.</summary>
-    /// <returns>A new content-equal immutable draft qualifier.</returns>
+    /// <returns>A new content-equal immutable qualifier.</returns>
     public static StaticFieldV2AliasQualifier Global() => new(StaticFieldV2AliasKind.Global, null);
 
     /// <summary>Creates one arbitrary named alias qualifier.</summary>
     /// <param name="alias">The exact alias identifier preceding <c>::</c>.</param>
-    /// <returns>A sealed immutable draft qualifier.</returns>
+    /// <returns>A sealed immutable qualifier.</returns>
     public static StaticFieldV2AliasQualifier Named(DumpExpressionIdentifier alias)
     {
         ArgumentNullException.ThrowIfNull(alias);
@@ -198,7 +198,7 @@ public sealed class StaticFieldV2AliasQualifier : IEquatable<StaticFieldV2AliasQ
 }
 
 /// <summary>Freezes one named type segment and its segment-local ordered type arguments.</summary>
-/// <remarks>This sealed draft segment is detached syntax only; its namespace-versus-type role remains undecided.</remarks>
+/// <remarks>This sealed segment is detached syntax only; its namespace-versus-type role remains undecided.</remarks>
 public sealed class StaticFieldV2TypeNameSegment : IEquatable<StaticFieldV2TypeNameSegment>
 {
     private const string CanonicalDomain = "static-field-v2-type-name-segment";
@@ -236,7 +236,7 @@ public sealed class StaticFieldV2TypeNameSegment : IEquatable<StaticFieldV2TypeN
     /// <summary>Creates one validated named type segment.</summary>
     /// <param name="identifier">The exact detached segment identifier.</param>
     /// <param name="typeArguments">Zero through sixty-four segment-local closed type-argument trees.</param>
-    /// <returns>A sealed immutable draft segment.</returns>
+    /// <returns>A sealed immutable segment.</returns>
     /// <exception cref="ArgumentException">The array is default, over bound, or contains null.</exception>
     public static StaticFieldV2TypeNameSegment Create(
         DumpExpressionIdentifier identifier,
@@ -263,7 +263,7 @@ public sealed class StaticFieldV2TypeNameSegment : IEquatable<StaticFieldV2TypeN
 
 /// <summary>Freezes one recursively closed source type-argument tree without binding names.</summary>
 /// <remarks>
-/// This sealed draft syntax value admits only the W8 closed grammar. Pointer, function-pointer, tuple, dynamic, open
+/// This sealed syntax value admits only the W8 closed grammar. Pointer, function-pointer, tuple, dynamic, open
 /// type-parameter, and other valid C# trees receive a typed syntax outcome before this factory is called.
 /// </remarks>
 public sealed class StaticFieldV2TypeSyntax : IEquatable<StaticFieldV2TypeSyntax>
@@ -343,7 +343,7 @@ public sealed class StaticFieldV2TypeSyntax : IEquatable<StaticFieldV2TypeSyntax
 
     /// <summary>Creates one predefined type-keyword syntax tree.</summary>
     /// <param name="kind">The admitted predefined keyword kind.</param>
-    /// <returns>A sealed immutable draft tree.</returns>
+    /// <returns>A sealed immutable tree.</returns>
     public static StaticFieldV2TypeSyntax Predefined(StaticFieldV2PredefinedTypeKind kind)
     {
         ExpressionV2ContractEncoding.RequireDefined(kind, nameof(kind));
@@ -359,7 +359,7 @@ public sealed class StaticFieldV2TypeSyntax : IEquatable<StaticFieldV2TypeSyntax
     /// <summary>Creates one possibly alias-qualified named type syntax tree.</summary>
     /// <param name="aliasQualifier">The exact absent, global, or named qualifier.</param>
     /// <param name="segments">One through thirty-two undecided namespace/type segments.</param>
-    /// <returns>A sealed immutable draft tree.</returns>
+    /// <returns>A sealed immutable tree.</returns>
     public static StaticFieldV2TypeSyntax Named(
         StaticFieldV2AliasQualifier aliasQualifier,
         ImmutableArray<StaticFieldV2TypeNameSegment> segments)
@@ -378,7 +378,7 @@ public sealed class StaticFieldV2TypeSyntax : IEquatable<StaticFieldV2TypeSyntax
 
     /// <summary>Creates nullable syntax over one admitted closed element tree.</summary>
     /// <param name="elementType">The detached value-type candidate syntax.</param>
-    /// <returns>A sealed immutable draft tree.</returns>
+    /// <returns>A sealed immutable tree.</returns>
     public static StaticFieldV2TypeSyntax Nullable(StaticFieldV2TypeSyntax elementType)
     {
         ArgumentNullException.ThrowIfNull(elementType);
@@ -397,7 +397,7 @@ public sealed class StaticFieldV2TypeSyntax : IEquatable<StaticFieldV2TypeSyntax
 
     /// <summary>Creates single-dimensional zero-based array syntax.</summary>
     /// <param name="elementType">The detached closed element syntax.</param>
-    /// <returns>A sealed immutable draft tree.</returns>
+    /// <returns>A sealed immutable tree.</returns>
     public static StaticFieldV2TypeSyntax SzArray(StaticFieldV2TypeSyntax elementType)
     {
         ArgumentNullException.ThrowIfNull(elementType);
@@ -413,7 +413,7 @@ public sealed class StaticFieldV2TypeSyntax : IEquatable<StaticFieldV2TypeSyntax
     /// <summary>Creates bounded multidimensional array syntax.</summary>
     /// <param name="elementType">The detached closed element syntax.</param>
     /// <param name="rank">The exact source rank from two through thirty-two.</param>
-    /// <returns>A sealed immutable draft multidimensional-array tree.</returns>
+    /// <returns>A sealed immutable multidimensional-array tree.</returns>
     public static StaticFieldV2TypeSyntax MultidimensionalArray(StaticFieldV2TypeSyntax elementType, int rank)
     {
         ArgumentNullException.ThrowIfNull(elementType);
@@ -488,7 +488,7 @@ public sealed class StaticFieldV2TypeSyntax : IEquatable<StaticFieldV2TypeSyntax
 }
 
 /// <summary>Freezes one expression-name segment and its source-local generic arguments.</summary>
-/// <remarks>No namespace/type/member role is assigned by this sealed draft syntax value.</remarks>
+/// <remarks>No namespace/type/member role is assigned by this sealed syntax value.</remarks>
 public sealed class StaticFieldV2ExpressionNameSegment : IEquatable<StaticFieldV2ExpressionNameSegment>
 {
     private const string CanonicalDomain = "static-field-v2-expression-name-segment";
@@ -532,7 +532,7 @@ public sealed class StaticFieldV2ExpressionNameSegment : IEquatable<StaticFieldV
     /// <param name="identifier">The exact detached identifier.</param>
     /// <param name="separator">The source edge leading to this segment.</param>
     /// <param name="typeArguments">Zero through sixty-four source-local generic arguments.</param>
-    /// <returns>A sealed immutable draft segment.</returns>
+    /// <returns>A sealed immutable segment.</returns>
     public static StaticFieldV2ExpressionNameSegment Create(
         DumpExpressionIdentifier identifier,
         StaticFieldV2ExpressionSeparatorKind separator,
@@ -559,7 +559,7 @@ public sealed class StaticFieldV2ExpressionNameSegment : IEquatable<StaticFieldV
 }
 
 /// <summary>Freezes one complete structural interpretation without assigning namespace or type roles.</summary>
-/// <remarks>Every possible top-level type split is retained as a distinct sealed draft partition.</remarks>
+/// <remarks>Every possible top-level type split is retained as a distinct sealed partition.</remarks>
 public sealed class StaticFieldV2StructuralPartition : IEquatable<StaticFieldV2StructuralPartition>
 {
     private const string CanonicalDomain = "static-field-v2-structural-partition";
@@ -603,7 +603,7 @@ public sealed class StaticFieldV2StructuralPartition : IEquatable<StaticFieldV2S
     /// <param name="fieldSegmentIndex">The zero-based candidate field index.</param>
     /// <param name="possibleTopLevelTypeSegmentIndex">One possible top-level type index for a qualified route.</param>
     /// <param name="suffix">The exact detached suffix.</param>
-    /// <returns>A sealed immutable draft partition whose full extent is checked by its descriptor.</returns>
+    /// <returns>A sealed immutable partition whose full extent is checked by its descriptor.</returns>
     public static StaticFieldV2StructuralPartition Create(
         StaticFieldV2CandidateKind candidateKind,
         int fieldSegmentIndex,
@@ -648,7 +648,7 @@ public sealed class StaticFieldV2StructuralPartition : IEquatable<StaticFieldV2S
 }
 
 /// <summary>Records exact parser and projection counters for one V2 syntax outcome.</summary>
-/// <remarks>Cap-plus-one observations are retained for non-admitted outcomes by this sealed draft counter set.</remarks>
+/// <remarks>Cap-plus-one observations are retained for non-admitted outcomes by this sealed counter set.</remarks>
 public sealed class StaticFieldV2ParserCounts : IEquatable<StaticFieldV2ParserCounts>
 {
     private const string CanonicalDomain = "static-field-v2-parser-counts";
@@ -734,7 +734,7 @@ public sealed class StaticFieldV2ParserCounts : IEquatable<StaticFieldV2ParserCo
     /// <param name="maximumDecodedIdentifierLength">The greatest decoded identifier length, at most cap-plus-one.</param>
     /// <param name="maximumDecodedFallbackStringLength">The greatest decoded fallback-string length, at most cap-plus-one.</param>
     /// <param name="completePartitionCount">The complete partition count or saturated first over-cap observation.</param>
-    /// <returns>A sealed immutable draft counter set.</returns>
+    /// <returns>A sealed immutable counter set.</returns>
     public static StaticFieldV2ParserCounts Create(
         int nodeCount,
         int tokenCount,
@@ -823,7 +823,7 @@ public sealed class StaticFieldV2ParserCounts : IEquatable<StaticFieldV2ParserCo
 
 /// <summary>Freezes one admitted V2 expression with all complete structural partitions.</summary>
 /// <remarks>
-/// This sealed draft descriptor keeps namespace/type roles unresolved. A cap-plus-one partition observation has no
+/// This sealed descriptor keeps namespace/type roles unresolved. A cap-plus-one partition observation has no
 /// descriptor and must instead be represented by a typed unsupported syntax outcome.
 /// </remarks>
 public sealed class StaticFieldV2ExpressionDescriptor : IEquatable<StaticFieldV2ExpressionDescriptor>
@@ -887,7 +887,7 @@ public sealed class StaticFieldV2ExpressionDescriptor : IEquatable<StaticFieldV2
     /// <param name="partitions">Every complete structural partition.</param>
     /// <param name="parserCounts">Exact parser and projection counters.</param>
     /// <param name="reachedBounds">Exact declared bounds reached by the complete projection.</param>
-    /// <returns>A sealed immutable draft descriptor.</returns>
+    /// <returns>A sealed immutable descriptor.</returns>
     /// <exception cref="ArgumentException">Any topology, count, partition, bound, or suffix relation is inconsistent.</exception>
     public static StaticFieldV2ExpressionDescriptor Create(
         string rawExpression,
@@ -1245,7 +1245,7 @@ public sealed class StaticFieldV2ExpressionDescriptor : IEquatable<StaticFieldV2
 }
 
 /// <summary>Freezes an admitted descriptor or one typed invalid/unsupported V2 syntax stop.</summary>
-/// <remarks>This sealed draft outcome never carries a prefix partition after cap-plus-one is observed.</remarks>
+/// <remarks>This sealed outcome never carries a prefix partition after cap-plus-one is observed.</remarks>
 public sealed class StaticFieldV2SyntaxOutcome : IEquatable<StaticFieldV2SyntaxOutcome>
 {
     private const string CanonicalDomain = "static-field-v2-syntax-outcome";
@@ -1311,7 +1311,7 @@ public sealed class StaticFieldV2SyntaxOutcome : IEquatable<StaticFieldV2SyntaxO
     /// <summary>Creates one admitted syntax outcome.</summary>
     /// <param name="descriptor">The complete admitted V2 descriptor.</param>
     /// <param name="diagnostics">Optional stable informational diagnostics.</param>
-    /// <returns>A sealed immutable draft admitted outcome.</returns>
+    /// <returns>A sealed immutable admitted outcome.</returns>
     public static StaticFieldV2SyntaxOutcome Admitted(
         StaticFieldV2ExpressionDescriptor descriptor,
         ImmutableArray<DumpExpressionDiagnostic> diagnostics)
@@ -1343,7 +1343,7 @@ public sealed class StaticFieldV2SyntaxOutcome : IEquatable<StaticFieldV2SyntaxO
     /// <param name="parserCounts">Exact counters reached before the stop.</param>
     /// <param name="diagnostics">Stable diagnostics including at least one error.</param>
     /// <param name="reachedBounds">Exact declared bounds reached.</param>
-    /// <returns>A sealed immutable draft invalid outcome.</returns>
+    /// <returns>A sealed immutable invalid outcome.</returns>
     public static StaticFieldV2SyntaxOutcome Invalid(
         string rawExpression,
         StaticFieldV2SyntaxIssue issue,
@@ -1358,7 +1358,7 @@ public sealed class StaticFieldV2SyntaxOutcome : IEquatable<StaticFieldV2SyntaxO
     /// <param name="parserCounts">Exact complete-parse counters.</param>
     /// <param name="diagnostics">Stable diagnostics including at least one error.</param>
     /// <param name="reachedBounds">Exact declared bounds reached.</param>
-    /// <returns>A sealed immutable draft unsupported outcome with no prefix descriptor.</returns>
+    /// <returns>A sealed immutable unsupported outcome with no prefix descriptor.</returns>
     public static StaticFieldV2SyntaxOutcome Unsupported(
         string rawExpression,
         StaticFieldV2SyntaxIssue issue,

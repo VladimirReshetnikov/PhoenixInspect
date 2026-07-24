@@ -8,7 +8,7 @@ namespace PhoenixInspect.Domain.Concrete;
 /// <remarks>
 /// Each static type has <c>bottom &lt; known constant &lt; unknown</c>. Distinct known constants join to unknown and
 /// meet to bottom. This is intentionally a validation domain rather than a complete CLR runtime: the current slice
-/// provides exact primitive integer behavior and deterministic draft representations for object/array references.
+/// provides exact primitive integer behavior and deterministic representations for object/array references.
 /// </remarks>
 public sealed class ConcreteDomain : IValueDomain<ConcreteValue>
 {

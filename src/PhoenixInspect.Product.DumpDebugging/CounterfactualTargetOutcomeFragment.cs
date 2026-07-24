@@ -10,7 +10,7 @@ namespace PhoenixInspect.Product.DumpDebugging;
 /// </summary>
 /// <remarks>
 /// The fragment deliberately answers only which terminal outcome one admitted activation produced. It contains no
-/// snapshot, root, request, plan, traversal, or historical-execution identity. This is a draft W4 conformance
+/// snapshot, root, request, plan, traversal, or historical-execution identity. This is a W4 conformance
 /// surface; broader exception kinds require an explicit schema extension and executable evidence.
 /// </remarks>
 public sealed class CounterfactualTargetOutcomeFragment :

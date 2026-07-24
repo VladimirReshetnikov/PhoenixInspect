@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 namespace PhoenixInspect.W8TestTarget;
 
 /// <summary>Identifies the request-shaped construction used by the W8 physical fixture.</summary>
-/// <remarks>This is a draft emitted fixture type, not a product contract.</remarks>
+/// <remarks>This is an emitted fixture type, not a product contract.</remarks>
 public sealed class RequestContext
 {
     /// <summary>Initializes the request context.</summary>
@@ -15,7 +15,7 @@ public sealed class RequestContext
 }
 
 /// <summary>Identifies the batch-shaped construction used by the W8 physical fixture.</summary>
-/// <remarks>This is a draft emitted fixture type, not a product contract.</remarks>
+/// <remarks>This is an emitted fixture type, not a product contract.</remarks>
 public sealed class BatchContext
 {
     /// <summary>Initializes the batch context.</summary>
@@ -27,7 +27,7 @@ public sealed class BatchContext
 }
 
 /// <summary>Identifies the coordinator-shaped construction used by the W8 physical fixture.</summary>
-/// <remarks>This is a draft emitted fixture type, not a product contract.</remarks>
+/// <remarks>This is an emitted fixture type, not a product contract.</remarks>
 public sealed class CoordinatorContext
 {
     /// <summary>Initializes the coordinator context.</summary>
@@ -39,7 +39,7 @@ public sealed class CoordinatorContext
 }
 
 /// <summary>Identifies the workflow-shaped construction used by the W8 physical fixture.</summary>
-/// <remarks>This is a draft emitted fixture type, not a product contract.</remarks>
+/// <remarks>This is an emitted fixture type, not a product contract.</remarks>
 public sealed class WorkflowContext
 {
     /// <summary>Initializes the workflow context.</summary>
@@ -52,11 +52,11 @@ public sealed class WorkflowContext
 
 /// <summary>Supplies a non-reference generic argument for construction-kind and substitution probes.</summary>
 /// <param name="Marker">The stable integer marker.</param>
-/// <remarks>This is a draft emitted fixture value, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture value, not a product value contract.</remarks>
 public readonly record struct ValueContext(int Marker);
 
 /// <summary>Supplies enum-underlying metadata and stored-value evidence.</summary>
-/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture enum, not a product value contract.</remarks>
 public enum MarkerKind : short
 {
     /// <summary>The request marker.</summary>
@@ -67,7 +67,7 @@ public enum MarkerKind : short
 }
 
 /// <summary>Supplies a signed eight-bit enum representation for exact decoder evidence.</summary>
-/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture enum, not a product value contract.</remarks>
 public enum SignedByteMarker : sbyte
 {
     /// <summary>The retained negative marker.</summary>
@@ -75,7 +75,7 @@ public enum SignedByteMarker : sbyte
 }
 
 /// <summary>Supplies an unsigned eight-bit enum representation for exact decoder evidence.</summary>
-/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture enum, not a product value contract.</remarks>
 public enum UnsignedByteMarker : byte
 {
     /// <summary>The retained high-bit marker.</summary>
@@ -83,7 +83,7 @@ public enum UnsignedByteMarker : byte
 }
 
 /// <summary>Supplies an unsigned sixteen-bit enum representation for exact decoder evidence.</summary>
-/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture enum, not a product value contract.</remarks>
 public enum UnsignedInt16Marker : ushort
 {
     /// <summary>The retained high-bit marker.</summary>
@@ -91,7 +91,7 @@ public enum UnsignedInt16Marker : ushort
 }
 
 /// <summary>Supplies a signed thirty-two-bit enum representation for exact decoder evidence.</summary>
-/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture enum, not a product value contract.</remarks>
 public enum SignedInt32Marker : int
 {
     /// <summary>The retained negative marker.</summary>
@@ -99,7 +99,7 @@ public enum SignedInt32Marker : int
 }
 
 /// <summary>Supplies an unsigned thirty-two-bit enum representation for exact decoder evidence.</summary>
-/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture enum, not a product value contract.</remarks>
 public enum UnsignedInt32Marker : uint
 {
     /// <summary>The retained high-bit marker.</summary>
@@ -107,7 +107,7 @@ public enum UnsignedInt32Marker : uint
 }
 
 /// <summary>Supplies a signed sixty-four-bit enum representation for exact decoder evidence.</summary>
-/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture enum, not a product value contract.</remarks>
 public enum SignedInt64Marker : long
 {
     /// <summary>The retained negative marker.</summary>
@@ -115,7 +115,7 @@ public enum SignedInt64Marker : long
 }
 
 /// <summary>Supplies an unsigned sixty-four-bit enum representation for exact decoder evidence.</summary>
-/// <remarks>This is a draft emitted fixture enum, not a product value contract.</remarks>
+/// <remarks>This is an emitted fixture enum, not a product value contract.</remarks>
 public enum UnsignedInt64Marker : ulong
 {
     /// <summary>The retained high-bit marker.</summary>
@@ -142,7 +142,7 @@ public static class GenericSlot<T>
 }
 
 /// <summary>Supplies one context-relative static field for the W8 physical branch probe.</summary>
-/// <remarks>The member is draft runtime evidence and does not constitute a stable storage API.</remarks>
+/// <remarks>The member is runtime evidence and does not constitute a stable storage API.</remarks>
 public static class ContextRelativeStorage
 {
     /// <summary>Stores the value associated with the active runtime context.</summary>

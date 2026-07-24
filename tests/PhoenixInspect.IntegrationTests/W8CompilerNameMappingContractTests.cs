@@ -9,7 +9,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises definition-authority-bound draft compiler-name mapping with synthetic metadata modules.</summary>
+/// <summary>Exercises definition-authority-bound compiler-name mapping with synthetic metadata modules.</summary>
 public sealed class W8CompilerNameMappingContractTests
 {
     private const string SnapshotDigest =
@@ -341,7 +341,7 @@ public sealed class W8CompilerNameMappingContractTests
         AssertNoTerminalArity("G`999999");
     }
 
-    /// <summary>Proves every public mapping-catalog draft type and method has emitted XML documentation.</summary>
+    /// <summary>Proves every public mapping-catalog type and method has emitted XML documentation.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void Compiler_name_mapping_public_surface_has_draft_XML()
@@ -372,7 +372,7 @@ public sealed class W8CompilerNameMappingContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -385,7 +385,7 @@ public sealed class W8CompilerNameMappingContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
 
             Assert.Empty(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance));

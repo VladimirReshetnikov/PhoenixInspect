@@ -4,7 +4,7 @@ using PhoenixInspect.Core.Abstractions;
 namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Classifies route-specific context acquisition independently from later V2 stages.</summary>
-/// <remarks>This draft-phase axis may change as route contracts are refined.</remarks>
+/// <remarks>This axis may change as route contracts are refined.</remarks>
 public enum DumpExpressionContextOutcome
 {
     /// <summary>The selected route requires no frame, PDB, or import context.</summary>
@@ -28,7 +28,7 @@ public enum DumpExpressionContextOutcome
 }
 
 /// <summary>Classifies frame-root or bare-root attribution independently from type binding.</summary>
-/// <remarks>This draft-phase axis may change as attribution contracts are refined.</remarks>
+/// <remarks>This axis may change as attribution contracts are refined.</remarks>
 public enum DumpExpressionRootAttributionOutcome
 {
     /// <summary>The selected route has no separate root-attribution operation.</summary>
@@ -54,7 +54,7 @@ public enum DumpExpressionRootAttributionOutcome
 }
 
 /// <summary>Classifies completeness of the lexical-blocker catalog for a bare root.</summary>
-/// <remarks>This draft-phase axis may change as lexical contracts are refined.</remarks>
+/// <remarks>This axis may change as lexical contracts are refined.</remarks>
 public enum DumpExpressionLexicalCompletenessOutcome
 {
     /// <summary>The selected route does not consult a bare-root lexical catalog.</summary>
@@ -72,7 +72,7 @@ public enum DumpExpressionLexicalCompletenessOutcome
 }
 
 /// <summary>Classifies namespace, type, and alias binding independently from closed construction.</summary>
-/// <remarks>This draft-phase axis may change as binding contracts are refined.</remarks>
+/// <remarks>This axis may change as binding contracts are refined.</remarks>
 public enum DumpExpressionTypeBindingOutcome
 {
     /// <summary>The selected frame route needs no namespace or type-name binding.</summary>
@@ -98,7 +98,7 @@ public enum DumpExpressionTypeBindingOutcome
 }
 
 /// <summary>Classifies recursive closed metadata construction independently from member lookup.</summary>
-/// <remarks>This draft-phase axis may change as construction contracts are refined.</remarks>
+/// <remarks>This axis may change as construction contracts are refined.</remarks>
 public enum DumpExpressionTypeConstructionOutcome
 {
     /// <summary>The selected frame route already owns an exact root type.</summary>
@@ -124,7 +124,7 @@ public enum DumpExpressionTypeConstructionOutcome
 }
 
 /// <summary>Classifies definition-kind-specific field lookup independently from runtime mapping.</summary>
-/// <remarks>This draft-phase axis may change as member contracts are refined.</remarks>
+/// <remarks>This axis may change as member contracts are refined.</remarks>
 public enum DumpExpressionMemberLookupOutcome
 {
     /// <summary>A frame value has no static member-lookup operation.</summary>
@@ -152,7 +152,7 @@ public enum DumpExpressionMemberLookupOutcome
 }
 
 /// <summary>Classifies mapping to an exact loaded closed runtime construction.</summary>
-/// <remarks>This draft-phase axis may change as runtime contracts are refined.</remarks>
+/// <remarks>This axis may change as runtime contracts are refined.</remarks>
 public enum DumpExpressionRuntimeConstructionOutcome
 {
     /// <summary>The selected literal, module-RVA, or frame strategy needs no runtime construction.</summary>
@@ -178,7 +178,7 @@ public enum DumpExpressionRuntimeConstructionOutcome
 }
 
 /// <summary>Classifies strategy-specific storage acquisition independently from value decoding.</summary>
-/// <remarks>This draft-phase axis may change as storage contracts are refined.</remarks>
+/// <remarks>This axis may change as storage contracts are refined.</remarks>
 public enum DumpExpressionStorageOutcome
 {
     /// <summary>A metadata literal requires no storage acquisition.</summary>
@@ -202,7 +202,7 @@ public enum DumpExpressionStorageOutcome
 }
 
 /// <summary>Classifies direct root-value projection independently from suffix evaluation.</summary>
-/// <remarks>This draft-phase axis may change as projection contracts are refined.</remarks>
+/// <remarks>This axis may change as projection contracts are refined.</remarks>
 public enum DumpExpressionValueOutcome
 {
     /// <summary>An exact non-null value was projected.</summary>
@@ -224,7 +224,7 @@ public enum DumpExpressionValueOutcome
 }
 
 /// <summary>Classifies the unchanged detached suffix independently from root-value precision.</summary>
-/// <remarks>This draft-phase axis may change as suffix contracts are refined.</remarks>
+/// <remarks>This axis may change as suffix contracts are refined.</remarks>
 public enum DumpExpressionSuffixOutcome
 {
     /// <summary>No suffix was requested.</summary>
@@ -244,7 +244,7 @@ public enum DumpExpressionSuffixOutcome
 }
 
 /// <summary>Classifies overall answer completeness without collapsing the independent stage axes.</summary>
-/// <remarks>This draft-phase axis may change as completeness contracts are refined.</remarks>
+/// <remarks>This axis may change as completeness contracts are refined.</remarks>
 public enum DumpExpressionCompletenessOutcome
 {
     /// <summary>The selected request produced a complete exact answer.</summary>
@@ -257,7 +257,7 @@ public enum DumpExpressionCompletenessOutcome
 
 /// <summary>Freezes all independent W8 outcome axes and rejects impossible stage progression.</summary>
 /// <remarks>
-/// This sealed draft aggregate preserves each typed stop instead of deriving it from a diagnostic message. Its factory
+/// This sealed aggregate preserves each typed stop instead of deriving it from a diagnostic message. Its factory
 /// enforces the fixed operation order but permits both static and frame routes through explicit NotRequired values.
 /// </remarks>
 public sealed class DumpExpressionV2OutcomeAxes : IEquatable<DumpExpressionV2OutcomeAxes>
@@ -352,10 +352,10 @@ public sealed class DumpExpressionV2OutcomeAxes : IEquatable<DumpExpressionV2Out
     /// <param name="value">The direct-value disposition.</param>
     /// <param name="suffix">The suffix disposition.</param>
     /// <param name="completeness">The independently retained overall completeness.</param>
-    /// <returns>A sealed immutable draft aggregate.</returns>
+    /// <returns>A sealed immutable aggregate.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Any enum value is undefined.</exception>
     /// <exception cref="ArgumentException">The axes describe impossible fixed-order progression or completeness.</exception>
-    /// <remarks>This draft-phase factory validates the current progression model, which may change as the prototype evolves.</remarks>
+    /// <remarks>This factory validates the current progression model, which may change as the implementation evolves.</remarks>
     public static DumpExpressionV2OutcomeAxes Create(
         DumpExpressionSyntaxStatus syntax,
         DumpExpressionContextOutcome context,

@@ -73,7 +73,7 @@ public interface IValueDomain<TValue>
 
     /// <summary>Gets the static CLI type evidence carried by a semantic value.</summary>
     /// <param name="value">The value to classify.</param>
-    /// <returns>The value's deterministic draft type signature.</returns>
+    /// <returns>The value's deterministic type signature.</returns>
     TypeSig GetStaticType(TValue value);
 
     /// <summary>Gets the CLI evaluation-stack category used by opcode-profile admission.</summary>

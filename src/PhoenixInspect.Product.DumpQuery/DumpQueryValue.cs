@@ -5,7 +5,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Classifies the deliberately closed value set exposed by the first dump-query slice.</summary>
 /// <remarks>
-/// This draft surface intentionally admits only null, <see cref="int"/>, and <see cref="string"/>. Adding another
+/// This surface intentionally admits only null, <see cref="int"/>, and <see cref="string"/>. Adding another
 /// kind requires an explicit evidence decoder, canonical replay projection, and scenario tests.
 /// </remarks>
 public enum DumpQueryValueKind

@@ -8,7 +8,7 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// </summary>
 /// <remarks>
 /// Frame and PDB observations retain independent typed dispositions: an exact frame with unavailable PDB remains a
-/// useful current-namespace context, and fully qualified binding need consult neither. This draft context contains no
+/// useful current-namespace context, and fully qualified binding need consult neither. This context contains no
 /// paths, live runtime or metadata readers, exception objects, syntax candidates, or selected symbol declaration.
 /// </remarks>
 public sealed class DumpExpressionBindingContext : IEquatable<DumpExpressionBindingContext>

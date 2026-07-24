@@ -8,7 +8,7 @@ using static PhoenixInspect.W8BatchShapeTarget.BatchImports;
 namespace PhoenixInspect.W8BatchShapeTarget;
 
 /// <summary>Pauses where two same-level import paths converge on one physical TypeDef.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class ConvergenceProbe
 {
     /// <summary>Reads the converged construction's sentinel and pauses for the full dump.</summary>
@@ -24,7 +24,7 @@ public static class ConvergenceProbe
 }
 
 /// <summary>Pauses where the bare nested reference head is imported by <c>using static</c>.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class NestedHeadProbe
 {
     /// <summary>Reads the imported nested head's label and pauses for the full dump.</summary>
@@ -39,7 +39,7 @@ public static class NestedHeadProbe
 }
 
 /// <summary>Pauses where the bare pending count's blocker catalog is deliberately incomplete.</summary>
-/// <remarks>This is a draft frame probe and not a frame-value product contract.</remarks>
+/// <remarks>This is a frame probe and not a frame-value product contract.</remarks>
 public static class PendingCountProbe
 {
     /// <summary>Reads the bare pending count and pauses for the full dump.</summary>

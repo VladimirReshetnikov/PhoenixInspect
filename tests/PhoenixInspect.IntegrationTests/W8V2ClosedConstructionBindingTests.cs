@@ -246,7 +246,7 @@ public sealed class W8V2ClosedConstructionBindingTests
     }
 
     /// <summary>
-    /// Proves a violated hard constraint produces an invalid draft stop that retains exactly the one decisive check
+    /// Proves a violated hard constraint produces an invalid stop that retains exactly the one decisive check
     /// with its parameter row and substituted argument and retains no owner construction.
     /// </summary>
     [Fact]
@@ -320,7 +320,7 @@ public sealed class W8V2ClosedConstructionBindingTests
     }
 
     /// <summary>
-    /// Proves the declared boundary of this draft slice: an interface constraint target, a substituted TypeSpec
+    /// Proves the declared boundary of this slice: an interface constraint target, a substituted TypeSpec
     /// constraint target, and an unresolved TypeRef constraint target are all non-exact and unprovable rather than
     /// violated, because their proofs belong to separately owned later authorities.
     /// </summary>
@@ -435,7 +435,7 @@ public sealed class W8V2ClosedConstructionBindingTests
 
     /// <summary>
     /// Proves a supplied interface-implementation portfolio that itself stopped propagates as a typed prefix-free
-    /// draft stop rather than silently degrading to the deferred interface obligation.
+    /// stop rather than silently degrading to the deferred interface obligation.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -487,7 +487,7 @@ public sealed class W8V2ClosedConstructionBindingTests
     }
 
     /// <summary>
-    /// Proves every prerequisite contradiction stops with a typed prefix-free draft disposition that retains no
+    /// Proves every prerequisite contradiction stops with a typed prefix-free disposition that retains no
     /// construction, and records that per-segment arity re-assertion is unreachable because the preceding name binder
     /// already refuses every arity disagreement with a complete absent answer.
     /// </summary>
@@ -667,9 +667,9 @@ public sealed class W8V2ClosedConstructionBindingTests
     }
 
     /// <summary>
-    /// Proves canonical replay equality against a frozen golden digest, defensive copies for every returned draft
+    /// Proves canonical replay equality against a frozen golden digest, defensive copies for every returned
     /// array, guarded private issuance for the retained constraint check, the closed public issuer surface, and
-    /// emitted draft XML documentation.
+    /// emitted XML documentation.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -1118,7 +1118,7 @@ public sealed class W8V2ClosedConstructionBindingTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -1130,7 +1130,7 @@ public sealed class W8V2ClosedConstructionBindingTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

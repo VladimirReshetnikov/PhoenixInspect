@@ -5,7 +5,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Declares the operation-derived limits shared by the additive W8 expression contracts.</summary>
 /// <remarks>
-/// These values are draft prototype limits, not compatibility promises. Each name identifies the physical operation
+/// These values are limits, not compatibility promises. Each name identifies the physical operation
 /// being counted so a later implementation can report cap-plus-one evidence without silently retaining a prefix.
 /// </remarks>
 public static class ExpressionV2ContractLimits
@@ -60,7 +60,7 @@ public static class ExpressionV2ContractLimits
 
     /// <summary>Gets the maximum complete syntax-partition count.</summary>
     /// <remarks>
-    /// The draft cap is 63 because the real three-field-position derivation reaches exactly 63 partitions at 23
+    /// The cap is 63 because the real three-field-position derivation reaches exactly 63 partitions at 23
     /// simple segments; a 24th segment truthfully exposes the first over-cap partition without retaining a prefix.
     /// </remarks>
     public const int MaximumSyntaxPartitionCount = 63;
@@ -186,7 +186,7 @@ public static class ExpressionV2ContractLimits
     public const int MaximumPortableExecutableSectionCount = 128;
 
     /// <summary>Gets all shared limits in canonical bound-name order.</summary>
-    /// <remarks>The returned array is a defensive copy and remains a draft W8 contract artifact.</remarks>
+    /// <remarks>The returned array is a defensive copy and remains a W8 contract artifact.</remarks>
     public static ImmutableArray<EvaluationDeterministicBound> AllDeclaredBounds =>
         ImmutableArray.CreateRange(DeclaredBounds.OrderBy(static bound => bound.Name, StringComparer.Ordinal));
 
@@ -313,7 +313,7 @@ public static class ExpressionV2ContractLimits
 }
 
 /// <summary>Exposes the limits that can constrain the additive <c>StaticFieldExpressionV2</c> profile.</summary>
-/// <remarks>The aliases keep profile ownership explicit while sharing the single draft numeric declaration above.</remarks>
+/// <remarks>The aliases keep profile ownership explicit while sharing the single numeric declaration above.</remarks>
 public static class StaticFieldV2Limits
 {
     /// <summary>Gets the maximum complete expression character count.</summary>
@@ -488,7 +488,7 @@ public static class StaticFieldV2Limits
     public const int MaximumStringCharacterCount = ExpressionV2ContractLimits.MaximumStaticStringCharacterCount;
 
     /// <summary>Gets every operation-derived limit available to this profile in canonical name order.</summary>
-    /// <remarks>The defensive catalog is part of the draft profile and may change as its bounded operations evolve.</remarks>
+    /// <remarks>The defensive catalog is part of the profile and may change as its bounded operations evolve.</remarks>
     public static ImmutableArray<EvaluationDeterministicBound> AllDeclaredBounds =>
         ExpressionV2ContractLimits.AllDeclaredBounds
             .Where(static bound =>
@@ -498,7 +498,7 @@ public static class StaticFieldV2Limits
 }
 
 /// <summary>Exposes the limits that can constrain the additive <c>FrameValueExpressionV1</c> profile.</summary>
-/// <remarks>The frame profile is a distinct draft route and does not inherit static-field storage assumptions.</remarks>
+/// <remarks>The frame profile is a distinct route and does not inherit static-field storage assumptions.</remarks>
 public static class FrameValueV1Limits
 {
     /// <summary>Gets the maximum complete expression character count.</summary>
@@ -619,7 +619,7 @@ public static class FrameValueV1Limits
     public const int MaximumStringCharacterCount = ExpressionV2ContractLimits.MaximumFrameStringCharacterCount;
 
     /// <summary>Gets every operation-derived limit available to this profile in canonical name order.</summary>
-    /// <remarks>The defensive catalog is part of the draft profile and may change as its bounded operations evolve.</remarks>
+    /// <remarks>The defensive catalog is part of the profile and may change as its bounded operations evolve.</remarks>
     public static ImmutableArray<EvaluationDeterministicBound> AllDeclaredBounds =>
         ExpressionV2ContractLimits.AllDeclaredBounds
             .Where(static bound =>
@@ -661,7 +661,7 @@ public static class FrameValueV1Limits
 }
 
 /// <summary>Classifies a detached V2 syntax outcome.</summary>
-/// <remarks>This draft-phase discriminator is not yet a compatibility commitment.</remarks>
+/// <remarks>This discriminator is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionSyntaxStatus
 {
     /// <summary>The complete parse belongs to the selected V2 profile.</summary>
@@ -675,7 +675,7 @@ public enum DumpExpressionSyntaxStatus
 }
 
 /// <summary>Classifies the reusable suffix topology detached from a V2 root.</summary>
-/// <remarks>This draft-phase discriminator is not yet a compatibility commitment.</remarks>
+/// <remarks>This discriminator is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionSuffixKind
 {
     /// <summary>No instance-member suffix was requested.</summary>
@@ -689,7 +689,7 @@ public enum DumpExpressionSuffixKind
 }
 
 /// <summary>Classifies the edge leading to one detached suffix member.</summary>
-/// <remarks>This draft-phase discriminator is not yet a compatibility commitment.</remarks>
+/// <remarks>This discriminator is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionSuffixAccessKind
 {
     /// <summary>The member is reached through ordinary dot access.</summary>
@@ -700,7 +700,7 @@ public enum DumpExpressionSuffixAccessKind
 }
 
 /// <summary>Classifies the optional literal fallback retained by a suffix.</summary>
-/// <remarks>This draft-phase discriminator is not yet a compatibility commitment.</remarks>
+/// <remarks>This discriminator is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionFallbackKind
 {
     /// <summary>No fallback is present.</summary>
@@ -717,7 +717,7 @@ public enum DumpExpressionFallbackKind
 }
 
 /// <summary>Classifies one stable structured diagnostic argument.</summary>
-/// <remarks>This draft-phase discriminator is not yet a compatibility commitment.</remarks>
+/// <remarks>This discriminator is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionDiagnosticArgumentKind
 {
     /// <summary>The argument is bounded ordinal text.</summary>
@@ -737,7 +737,7 @@ public enum DumpExpressionDiagnosticArgumentKind
 }
 
 /// <summary>Classifies the stable importance of one structured diagnostic.</summary>
-/// <remarks>This draft-phase discriminator is not yet a compatibility commitment.</remarks>
+/// <remarks>This discriminator is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionDiagnosticSeverity
 {
     /// <summary>The diagnostic records supplementary exact evidence.</summary>
@@ -751,7 +751,7 @@ public enum DumpExpressionDiagnosticSeverity
 }
 
 /// <summary>Identifies the fixed W8 pipeline stage that emitted one structured diagnostic.</summary>
-/// <remarks>This draft-phase stage catalog is not yet a compatibility commitment.</remarks>
+/// <remarks>This stage catalog is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionDiagnosticStage
 {
     /// <summary>The selected profile and complete parse.</summary>
@@ -798,7 +798,7 @@ public enum DumpExpressionDiagnosticStage
 }
 
 /// <summary>Identifies a capability whose use or deliberate omission belongs to V2 provenance.</summary>
-/// <remarks>This draft-phase capability catalog is not yet a compatibility commitment.</remarks>
+/// <remarks>This capability catalog is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionCapabilityKind
 {
     /// <summary>The sole complete expression parse.</summary>
@@ -836,7 +836,7 @@ public enum DumpExpressionCapabilityKind
 }
 
 /// <summary>Classifies how one V2 capability participated in an outcome.</summary>
-/// <remarks>This draft-phase discriminator is not yet a compatibility commitment.</remarks>
+/// <remarks>This discriminator is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionCapabilityDisposition
 {
     /// <summary>The fixed route proved that the capability was unnecessary.</summary>
@@ -853,7 +853,7 @@ public enum DumpExpressionCapabilityDisposition
 }
 
 /// <summary>Identifies the route selected before V2 binding begins.</summary>
-/// <remarks>This draft-phase route catalog is not yet a compatibility commitment.</remarks>
+/// <remarks>This route catalog is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionRouteKind
 {
     /// <summary>Syntax stopped before any binding route could be selected.</summary>
@@ -876,7 +876,7 @@ public enum DumpExpressionRouteKind
 }
 
 /// <summary>Identifies the exact additive expression profile represented by shared W8 provenance.</summary>
-/// <remarks>This draft-phase profile catalog is not yet a compatibility commitment.</remarks>
+/// <remarks>This profile catalog is not yet a compatibility commitment.</remarks>
 public enum DumpExpressionProfileKind
 {
     /// <summary>The additive bounded static-field expression profile.</summary>
@@ -888,7 +888,7 @@ public enum DumpExpressionProfileKind
 
 /// <summary>Freezes one identifier value decoded by the sole complete Roslyn parse.</summary>
 /// <remarks>
-/// This sealed draft value retains no per-token source spelling, parser node, or semantic symbol. The parent syntax
+/// This sealed value retains no per-token source spelling, parser node, or semantic symbol. The parent syntax
 /// descriptor retains the exact complete expression, preventing a second token parse while preserving global replay.
 /// </remarks>
 public sealed class DumpExpressionIdentifier : IEquatable<DumpExpressionIdentifier>
@@ -918,10 +918,10 @@ public sealed class DumpExpressionIdentifier : IEquatable<DumpExpressionIdentifi
     /// <summary>Creates one validated identifier value supplied by the sole complete parser.</summary>
     /// <param name="decodedText">The exact non-empty decoded identifier value.</param>
     /// <remarks>
-    /// This factory validates a draft projection value only; its accepted identifier policy may change before the
+    /// This factory validates a projection value only; its accepted identifier policy may change before the
     /// schema is declared compatible.
     /// </remarks>
-    /// <returns>A sealed immutable draft identifier for the current prototype phase.</returns>
+    /// <returns>A sealed immutable identifier for the current early-development phase.</returns>
     /// <exception cref="ArgumentException">The value is empty, too long, NUL-containing, or not a C# identifier/keyword value.</exception>
     public static DumpExpressionIdentifier Create(string decodedText)
     {
@@ -956,7 +956,7 @@ public sealed class DumpExpressionIdentifier : IEquatable<DumpExpressionIdentifi
 }
 
 /// <summary>Freezes one member and the exact access edge leading to it.</summary>
-/// <remarks>This is an additive draft suffix primitive shared by both W8 expression profiles.</remarks>
+/// <remarks>This is an additive suffix primitive shared by both W8 expression profiles.</remarks>
 public sealed class DumpExpressionSuffixSegment : IEquatable<DumpExpressionSuffixSegment>
 {
     private const string CanonicalDomain = "expression-v2-suffix-segment";
@@ -990,9 +990,9 @@ public sealed class DumpExpressionSuffixSegment : IEquatable<DumpExpressionSuffi
     /// <param name="identifier">The exact member identifier.</param>
     /// <param name="accessKind">The exact edge leading to the member.</param>
     /// <remarks>
-    /// This draft factory freezes projection identity only and does not commit later binding or evaluation behavior.
+    /// This factory freezes projection identity only and does not commit later binding or evaluation behavior.
     /// </remarks>
-    /// <returns>A sealed immutable draft segment.</returns>
+    /// <returns>A sealed immutable segment.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="identifier"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="accessKind"/> is undefined.</exception>
     public static DumpExpressionSuffixSegment Create(
@@ -1018,7 +1018,7 @@ public sealed class DumpExpressionSuffixSegment : IEquatable<DumpExpressionSuffi
 }
 
 /// <summary>Freezes the unchanged zero-, one-, or two-member suffix and optional literal fallback.</summary>
-/// <remarks>The contract is draft and does not execute the suffix.</remarks>
+/// <remarks>The contract does not execute the suffix.</remarks>
 public sealed class DumpExpressionSuffixDescriptor : IEquatable<DumpExpressionSuffixDescriptor>
 {
     private const string CanonicalDomain = "expression-v2-suffix-descriptor";
@@ -1079,10 +1079,10 @@ public sealed class DumpExpressionSuffixDescriptor : IEquatable<DumpExpressionSu
     /// <param name="int32Fallback">The payload used only by an Int32 fallback.</param>
     /// <param name="stringFallback">The payload used only by a string fallback.</param>
     /// <remarks>
-    /// This draft factory validates detached suffix identity only; admitted suffix behavior remains independently
+    /// This factory validates detached suffix identity only; admitted suffix behavior remains independently
     /// versioned.
     /// </remarks>
-    /// <returns>A sealed immutable draft descriptor.</returns>
+    /// <returns>A sealed immutable descriptor.</returns>
     /// <exception cref="ArgumentException">The topology, array, or fallback payloads disagree.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An enum value is undefined.</exception>
     public static DumpExpressionSuffixDescriptor Create(
@@ -1132,8 +1132,8 @@ public sealed class DumpExpressionSuffixDescriptor : IEquatable<DumpExpressionSu
     }
 
     /// <summary>Creates the canonical no-suffix descriptor.</summary>
-    /// <remarks>This convenience factory belongs to the draft suffix schema and is not a compatibility commitment.</remarks>
-    /// <returns>A new content-equal immutable draft descriptor.</returns>
+    /// <remarks>This convenience factory belongs to the suffix schema and is not a compatibility commitment.</remarks>
+    /// <returns>A new content-equal immutable descriptor.</returns>
     public static DumpExpressionSuffixDescriptor NotRequested() =>
         Create(DumpExpressionSuffixKind.NotRequested, ImmutableArray<DumpExpressionSuffixSegment>.Empty);
 
@@ -1151,7 +1151,7 @@ public sealed class DumpExpressionSuffixDescriptor : IEquatable<DumpExpressionSu
 }
 
 /// <summary>Freezes one typed argument without retaining exception or compiler wording.</summary>
-/// <remarks>The stable argument kind and payload are draft canonical identity.</remarks>
+/// <remarks>The stable argument kind and payload are canonical identity.</remarks>
 public sealed class DumpExpressionDiagnosticArgument : IEquatable<DumpExpressionDiagnosticArgument>
 {
     private const string CanonicalDomain = "expression-v2-diagnostic-argument";
@@ -1204,8 +1204,8 @@ public sealed class DumpExpressionDiagnosticArgument : IEquatable<DumpExpression
     /// <summary>Creates a bounded ordinal-text argument.</summary>
     /// <param name="name">The stable lowercase semantic argument name.</param>
     /// <param name="value">The non-empty stable text.</param>
-    /// <remarks>This factory emits the draft diagnostic-argument schema, whose canonical form may still evolve.</remarks>
-    /// <returns>A sealed immutable draft argument.</returns>
+    /// <remarks>This factory emits the diagnostic-argument schema, whose canonical form may still evolve.</remarks>
+    /// <returns>A sealed immutable argument.</returns>
     public static DumpExpressionDiagnosticArgument Text(string name, string value)
     {
         ExpressionV2ContractEncoding.RequireStableName(name, nameof(name));
@@ -1216,8 +1216,8 @@ public sealed class DumpExpressionDiagnosticArgument : IEquatable<DumpExpression
     /// <summary>Creates a signed integer argument.</summary>
     /// <param name="name">The stable lowercase semantic argument name.</param>
     /// <param name="value">The exact signed value.</param>
-    /// <remarks>This factory emits the draft diagnostic-argument schema, whose canonical form may still evolve.</remarks>
-    /// <returns>A sealed immutable draft argument.</returns>
+    /// <remarks>This factory emits the diagnostic-argument schema, whose canonical form may still evolve.</remarks>
+    /// <returns>A sealed immutable argument.</returns>
     public static DumpExpressionDiagnosticArgument Signed(string name, long value)
     {
         ExpressionV2ContractEncoding.RequireStableName(name, nameof(name));
@@ -1227,8 +1227,8 @@ public sealed class DumpExpressionDiagnosticArgument : IEquatable<DumpExpression
     /// <summary>Creates an unsigned integer argument.</summary>
     /// <param name="name">The stable lowercase semantic argument name.</param>
     /// <param name="value">The exact unsigned value.</param>
-    /// <remarks>This factory emits the draft diagnostic-argument schema, whose canonical form may still evolve.</remarks>
-    /// <returns>A sealed immutable draft argument.</returns>
+    /// <remarks>This factory emits the diagnostic-argument schema, whose canonical form may still evolve.</remarks>
+    /// <returns>A sealed immutable argument.</returns>
     public static DumpExpressionDiagnosticArgument Unsigned(string name, ulong value)
     {
         ExpressionV2ContractEncoding.RequireStableName(name, nameof(name));
@@ -1238,8 +1238,8 @@ public sealed class DumpExpressionDiagnosticArgument : IEquatable<DumpExpression
     /// <summary>Creates a non-nil metadata-token argument.</summary>
     /// <param name="name">The stable lowercase semantic argument name.</param>
     /// <param name="metadataToken">The exact non-nil token.</param>
-    /// <remarks>This factory emits the draft diagnostic-argument schema, whose canonical form may still evolve.</remarks>
-    /// <returns>A sealed immutable draft argument.</returns>
+    /// <remarks>This factory emits the diagnostic-argument schema, whose canonical form may still evolve.</remarks>
+    /// <returns>A sealed immutable argument.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="metadataToken"/> is nil.</exception>
     public static DumpExpressionDiagnosticArgument MetadataToken(string name, int metadataToken)
     {
@@ -1259,8 +1259,8 @@ public sealed class DumpExpressionDiagnosticArgument : IEquatable<DumpExpression
     /// <summary>Creates a normalized SHA-256 argument.</summary>
     /// <param name="name">The stable lowercase semantic argument name.</param>
     /// <param name="sha256">A complete hexadecimal digest.</param>
-    /// <remarks>This factory emits the draft diagnostic-argument schema, whose canonical form may still evolve.</remarks>
-    /// <returns>A sealed immutable draft argument.</returns>
+    /// <remarks>This factory emits the diagnostic-argument schema, whose canonical form may still evolve.</remarks>
+    /// <returns>A sealed immutable argument.</returns>
     public static DumpExpressionDiagnosticArgument Digest(string name, string sha256)
     {
         ExpressionV2ContractEncoding.RequireStableName(name, nameof(name));
@@ -1286,7 +1286,7 @@ public sealed class DumpExpressionDiagnosticArgument : IEquatable<DumpExpression
 }
 
 /// <summary>Freezes one stable diagnostic code, stage, severity, and normalized named typed-argument set.</summary>
-/// <remarks>Human-readable messages are derived by consumers and deliberately do not enter this draft identity.</remarks>
+/// <remarks>Human-readable messages are derived by consumers and deliberately do not enter this identity.</remarks>
 public sealed class DumpExpressionDiagnostic : IEquatable<DumpExpressionDiagnostic>
 {
     /// <summary>Gets the maximum named argument count retained by one diagnostic.</summary>
@@ -1343,10 +1343,10 @@ public sealed class DumpExpressionDiagnostic : IEquatable<DumpExpressionDiagnost
     /// <param name="severity">The stable severity.</param>
     /// <param name="arguments">Zero through sixteen uniquely named typed arguments; caller order is normalized.</param>
     /// <remarks>
-    /// This factory validates the draft structured-diagnostic schema; its canonical contract may change before a
+    /// This factory validates the structured-diagnostic schema; its canonical contract may change before a
     /// compatibility declaration.
     /// </remarks>
-    /// <returns>A sealed immutable draft diagnostic.</returns>
+    /// <returns>A sealed immutable diagnostic.</returns>
     /// <exception cref="ArgumentException">The code or argument array is malformed.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="severity"/> is undefined.</exception>
     public static DumpExpressionDiagnostic Create(
@@ -1384,7 +1384,7 @@ public sealed class DumpExpressionDiagnostic : IEquatable<DumpExpressionDiagnost
 }
 
 /// <summary>Records whether and how one named capability participated in a V2 route.</summary>
-/// <remarks>The optional evidence digest addresses a detached canonical fact; no live service enters this draft value.</remarks>
+/// <remarks>The optional evidence digest addresses a detached canonical fact; no live service enters this value.</remarks>
 public sealed class DumpExpressionCapabilityUse : IEquatable<DumpExpressionCapabilityUse>
 {
     private const string CanonicalDomain = "expression-v2-capability-use";
@@ -1454,10 +1454,10 @@ public sealed class DumpExpressionCapabilityUse : IEquatable<DumpExpressionCapab
     /// <param name="reachedBounds">The normalized operation bounds reached by a called capability.</param>
     /// <param name="diagnostics">Stable capability-local diagnostics.</param>
     /// <remarks>
-    /// This factory enforces draft ledger invariants; later checkpoints may refine capability accounting before the
+    /// This factory enforces ledger invariants; later checkpoints may refine capability accounting before the
     /// schema is declared compatible.
     /// </remarks>
-    /// <returns>A sealed immutable draft capability-use record.</returns>
+    /// <returns>A sealed immutable capability-use record.</returns>
     /// <exception cref="ArgumentException">The digest or diagnostic payload contradicts the disposition.</exception>
     public static DumpExpressionCapabilityUse Create(
         DumpExpressionCapabilityKind capability,
@@ -1524,7 +1524,7 @@ public sealed class DumpExpressionCapabilityUse : IEquatable<DumpExpressionCapab
 
 /// <summary>Freezes the complete route, syntax digest, capability ledger, and stable diagnostics for one V2 outcome.</summary>
 /// <remarks>
-/// This draft identity requires exactly one record for every capability kind. It therefore proves both calls and
+/// This identity requires exactly one record for every capability kind. It therefore proves both calls and
 /// route-derived omissions rather than relying on absent log entries.
 /// </remarks>
 public sealed class DumpExpressionV2ProvenanceIdentity : IEquatable<DumpExpressionV2ProvenanceIdentity>
@@ -1592,10 +1592,10 @@ public sealed class DumpExpressionV2ProvenanceIdentity : IEquatable<DumpExpressi
     /// <param name="capabilityUses">Exactly one record for every capability kind.</param>
     /// <param name="diagnostics">Stable outcome-level diagnostics.</param>
     /// <remarks>
-    /// This factory enforces the draft route ledger; route and capability invariants may evolve before the provenance
+    /// This factory enforces the route ledger; route and capability invariants may evolve before the provenance
     /// schema is declared compatible.
     /// </remarks>
-    /// <returns>A sealed immutable draft provenance identity.</returns>
+    /// <returns>A sealed immutable provenance identity.</returns>
     /// <exception cref="ArgumentException">A payload is missing, duplicated, malformed, or route-inconsistent.</exception>
     public static DumpExpressionV2ProvenanceIdentity Create(
         DumpExpressionProfileKind profile,

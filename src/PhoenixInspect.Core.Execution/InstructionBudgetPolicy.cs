@@ -3,7 +3,7 @@ using PhoenixInspect.Core.Abstractions;
 namespace PhoenixInspect.Core.Execution;
 
 /// <summary>
-/// Provides a minimal deterministic budget policy suitable for draft interpreter integration tests.
+/// Provides a minimal deterministic budget policy suitable for interpreter integration tests.
 /// </summary>
 public sealed class InstructionBudgetPolicy : IBudgetPolicy
 {

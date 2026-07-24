@@ -8,7 +8,7 @@ using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
 
-/// <summary>Exercises the circularity-free physical GenericParam-table draft contract with synthetic owner groups.</summary>
+/// <summary>Exercises the circularity-free physical GenericParam-table contract with synthetic owner groups.</summary>
 public sealed class W8GenericParameterTableCatalogContractTests
 {
     private const string SnapshotDigest =
@@ -388,7 +388,7 @@ public sealed class W8GenericParameterTableCatalogContractTests
             null!));
     }
 
-    /// <summary>Proves every new public physical-table draft type and method has emitted XML documentation.</summary>
+    /// <summary>Proves every new public physical-table type and method has emitted XML documentation.</summary>
     [Fact]
     [Trait("Category", "Fast")]
     public void GenericParameter_physical_table_public_surface_has_draft_XML()
@@ -411,7 +411,7 @@ public sealed class W8GenericParameterTableCatalogContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
 
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -424,7 +424,7 @@ public sealed class W8GenericParameterTableCatalogContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

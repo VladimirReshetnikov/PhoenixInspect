@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 namespace PhoenixInspect.Core.Abstractions;
 
 /// <summary>
-/// Represents immutable IL body bytes plus the minimum admission facts preserved by the current prototype.
+/// Represents immutable IL body bytes plus the minimum admission facts preserved by the current implementation.
 /// </summary>
 /// <param name="MaxStack">The declared maximum evaluation-stack depth.</param>
 /// <param name="CodeBytes">An immutable copy of the method's IL instruction bytes.</param>

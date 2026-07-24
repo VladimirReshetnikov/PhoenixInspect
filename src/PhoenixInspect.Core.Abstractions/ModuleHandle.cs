@@ -10,7 +10,7 @@ namespace PhoenixInspect.Core.Abstractions;
 /// <param name="High">The most-significant 64 bits of the identity digest.</param>
 /// <param name="Low">The least-significant 64 bits of the identity digest.</param>
 /// <remarks>
-/// This draft handle intentionally excludes file-system paths and process-local hash codes. A metadata backend
+/// This handle intentionally excludes file-system paths and process-local hash codes. A metadata backend
 /// should derive it from exact metadata content, PE identity fields, and complete artifact content when a PE is
 /// available, so copying the same image does not change traces while patched method bodies cannot alias. The compact
 /// value is an execution-core key; artifact binding retains the complete identities rather than treating this

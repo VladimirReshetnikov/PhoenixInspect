@@ -29,7 +29,7 @@ public sealed partial class ClrmdDumpSession
     /// partial, unavailable, conflict, invalid, or unsupported result retaining every counted metadata read reached.
     /// </returns>
     /// <remarks>
-    /// This draft operation deliberately performs a cap-plus-one scan of
+    /// This operation deliberately performs a cap-plus-one scan of
     /// <see cref="ClrModule.EnumerateTypesWithStaticFields"/> and the selected <see cref="ClrType.StaticFields"/>
     /// catalog. It never treats a prefix as uniqueness and never exposes live ClrMD objects to Product.
     /// </remarks>
@@ -313,7 +313,7 @@ public sealed partial class ClrmdDumpSession
     /// read, raw-header-first target evidence, and either one exact terminal or the first typed stop.
     /// </returns>
     /// <remarks>
-    /// This draft operation uses ClrMD only to rebind the already proved declaration, enumerate application domains,
+    /// This operation uses ClrMD only to rebind the already proved declaration, enumerate application domains,
     /// obtain the ordinary-static slot, and map a raw method table back to a runtime type. Scalar, nullable, reference,
     /// object-header, string-length, and string-character values are decoded exclusively from <see cref="Memory"/>.
     /// </remarks>
@@ -624,7 +624,7 @@ public sealed partial class ClrmdDumpSession
     /// semantic HasValue/value roles. Counted metadata reads used to project child runtime types are retained.
     /// </returns>
     /// <remarks>
-    /// This draft operation is deliberately metadata-semantic-blind: it does not select children by name, recognize
+    /// This operation is deliberately metadata-semantic-blind: it does not select children by name, recognize
     /// Boolean or Int32, or assume offsets. Product must correlate every role with its independently resolved metadata.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="runtimeMapping"/> is null.</exception>

@@ -4,9 +4,9 @@ using PhoenixInspect.Host.Dump.ClrMD;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Identifies one lexical name kind that can outrank a bare static-field draft root.</summary>
+/// <summary>Identifies one lexical name kind that can outrank a bare static-field root.</summary>
 /// <remarks>
-/// The draft kinds are listed in C# precedence order. Every kind is certified independently so a consumer can always
+/// The kinds are listed in C# precedence order. Every kind is certified independently so a consumer can always
 /// see which construct was proved absent, which one owns the spelling, and which one carried no usable evidence.
 /// </remarks>
 public enum StaticFieldV2LexicalBlockerKind
@@ -33,9 +33,9 @@ public enum StaticFieldV2LexicalBlockerKind
     NestedTypeName = 7,
 }
 
-/// <summary>Classifies what one blocker kind proved about a requested draft spelling.</summary>
+/// <summary>Classifies what one blocker kind proved about a requested spelling.</summary>
 /// <remarks>
-/// The draft dispositions are deliberately three-valued. <see cref="Incomplete"/> is never a synonym for
+/// The dispositions are deliberately three-valued. <see cref="Incomplete"/> is never a synonym for
 /// <see cref="CompleteAndAbsent"/>, because missing evidence proves nothing about the construct.
 /// </remarks>
 public enum StaticFieldV2LexicalBlockerDisposition
@@ -50,11 +50,11 @@ public enum StaticFieldV2LexicalBlockerDisposition
     Incomplete = 3,
 }
 
-/// <summary>Identifies why one blocker kind's draft catalog could not be proved complete.</summary>
+/// <summary>Identifies why one blocker kind's catalog could not be proved complete.</summary>
 /// <remarks>Each value names one physical evidence gap, so an incomplete certificate is always explainable.</remarks>
 public enum StaticFieldV2LexicalIncompletenessSource
 {
-    /// <summary>No incompleteness applies to this draft blocker kind.</summary>
+    /// <summary>No incompleteness applies to this blocker kind.</summary>
     None = 0,
 
     /// <summary>A LocalVariable row reachable at the selected instruction carries an empty metadata name.</summary>
@@ -66,7 +66,7 @@ public enum StaticFieldV2LexicalIncompletenessSource
     /// <summary>A selected-method Param row carries an empty name or the ParamList omits a signature parameter.</summary>
     StrippedParameterName = 3,
 
-    /// <summary>The selected instruction has no active LocalScope chain this draft slice can consult.</summary>
+    /// <summary>The selected instruction has no active LocalScope chain this slice can consult.</summary>
     ActiveScopeUnavailable = 4,
 
     /// <summary>No FieldDef catalog of the selected module was supplied, so member names cannot be enumerated.</summary>
@@ -79,9 +79,9 @@ public enum StaticFieldV2LexicalIncompletenessSource
     UnnamedTypeParameter = 7,
 }
 
-/// <summary>Classifies one lexical-blocker completeness certificate draft answer.</summary>
+/// <summary>Classifies one lexical-blocker completeness certificate answer.</summary>
 /// <remarks>
-/// <see cref="Complete"/>, <see cref="Shadowed"/>, and <see cref="Partial"/> are complete derived draft answers that
+/// <see cref="Complete"/>, <see cref="Shadowed"/>, and <see cref="Partial"/> are complete derived answers that
 /// retain one disposition row per blocker kind. <see cref="NonExact"/>, <see cref="Invalid"/>, and
 /// <see cref="Unsupported"/> are prefix-free stops that retain no blocker row at all.
 /// </remarks>
@@ -96,33 +96,33 @@ public enum StaticFieldV2LexicalCertificateResultKind
     /// <summary>At least one blocker kind carried no proof of completeness.</summary>
     Partial = 3,
 
-    /// <summary>A prerequisite or a declared draft bound prevented any complete certificate.</summary>
+    /// <summary>A prerequisite or a declared bound prevented any complete certificate.</summary>
     NonExact = 4,
 
-    /// <summary>Complete supplied draft evidence contradicted the authority portfolio or itself.</summary>
+    /// <summary>Complete supplied evidence contradicted the authority portfolio or itself.</summary>
     Invalid = 5,
 
-    /// <summary>The requested owner selects a later draft route that this certificate does not own.</summary>
+    /// <summary>The requested owner selects a later route that this certificate does not own.</summary>
     Unsupported = 6,
 }
 
-/// <summary>Identifies the deterministic issue for one lexical-completeness certificate draft outcome.</summary>
-/// <remarks>The draft catalog keeps prerequisite, bound, and derived answers distinct.</remarks>
+/// <summary>Identifies the deterministic issue for one lexical-completeness certificate outcome.</summary>
+/// <remarks>The catalog keeps prerequisite, bound, and derived answers distinct.</remarks>
 public enum StaticFieldV2LexicalCertificateIssue
 {
-    /// <summary>No issue applies to a complete draft certificate.</summary>
+    /// <summary>No issue applies to a complete certificate.</summary>
     None = 0,
 
     /// <summary>The caller-supplied selected-method lexical evidence envelope was not exact.</summary>
     LexicalEvidenceNonExact = 1,
 
-    /// <summary>The ancestry authority draft portfolio prerequisite was non-exact.</summary>
+    /// <summary>The ancestry authority portfolio prerequisite was non-exact.</summary>
     AncestryPortfolioNonExact = 2,
 
-    /// <summary>The ancestry authority draft portfolio prerequisite was invalid.</summary>
+    /// <summary>The ancestry authority portfolio prerequisite was invalid.</summary>
     AncestryPortfolioInvalid = 3,
 
-    /// <summary>The selected metadata module is absent from the exact ancestry draft portfolio.</summary>
+    /// <summary>The selected metadata module is absent from the exact ancestry portfolio.</summary>
     SelectedModuleNotInPortfolio = 4,
 
     /// <summary>The selected TypeDef was not issued by the selected module's definition authority.</summary>
@@ -134,7 +134,7 @@ public enum StaticFieldV2LexicalCertificateIssue
     /// <summary>The selected owner is the ECMA module pseudo-type, which declares no source-addressable name.</summary>
     ModulePseudoTypeOwner = 7,
 
-    /// <summary>The examined lexical-name count reached the declared draft cap plus one.</summary>
+    /// <summary>The examined lexical-name count reached the declared cap plus one.</summary>
     LexicalBlockerCountBoundReached = 8,
 
     /// <summary>One complete blocker kind declares the requested spelling.</summary>
@@ -144,27 +144,27 @@ public enum StaticFieldV2LexicalCertificateIssue
     BlockerEvidenceIncomplete = 10,
 }
 
-/// <summary>Identifies which draft step selected or refused a bare static-field root.</summary>
+/// <summary>Identifies which step selected or refused a bare static-field root.</summary>
 /// <remarks>The source is retained so import order and ancestry can never be confused with one another.</remarks>
 public enum StaticFieldV2BareRootSource
 {
     /// <summary>The selected declaring type or one of its enclosing types, through its bounded base chain.</summary>
     DeclaringTypeChain = 1,
 
-    /// <summary>An active non-shadowed <c>using static</c> import of the projected scoped draft context.</summary>
+    /// <summary>An active non-shadowed <c>using static</c> import of the projected scoped context.</summary>
     UsingStaticImport = 2,
 }
 
-/// <summary>Classifies one bare static-field root draft binding answer.</summary>
+/// <summary>Classifies one bare static-field root binding answer.</summary>
 /// <remarks>
 /// <see cref="Exact"/>, <see cref="Absent"/>, <see cref="Ambiguous"/>, <see cref="Partial"/>,
-/// <see cref="Shadowed"/>, and <see cref="HiddenByUnsupportedMember"/> are complete derived draft answers that retain
+/// <see cref="Shadowed"/>, and <see cref="HiddenByUnsupportedMember"/> are complete derived answers that retain
 /// their certificate and their examined evidence. <see cref="NonExact"/>, <see cref="Invalid"/>, and
 /// <see cref="Unsupported"/> are prefix-free stops that retain no lookup and no import candidate.
 /// </remarks>
 public enum StaticFieldV2BareRootResultKind
 {
-    /// <summary>Exactly one accessible static field was selected for the bare draft root.</summary>
+    /// <summary>Exactly one accessible static field was selected for the bare root.</summary>
     Exact = 1,
 
     /// <summary>Every consulted source was complete and declared no such name.</summary>
@@ -179,27 +179,27 @@ public enum StaticFieldV2BareRootResultKind
     /// <summary>A complete higher-precedence lexical name owns the requested spelling.</summary>
     Shadowed = 5,
 
-    /// <summary>The nearest declaring level declared the name as a member this draft profile does not own.</summary>
+    /// <summary>The nearest declaring level declared the name as a member this profile does not own.</summary>
     HiddenByUnsupportedMember = 6,
 
-    /// <summary>A prerequisite, a declared draft bound, or retained non-exact evidence prevented an answer.</summary>
+    /// <summary>A prerequisite, a declared bound, or retained non-exact evidence prevented an answer.</summary>
     NonExact = 7,
 
-    /// <summary>Complete supplied draft evidence contradicted itself.</summary>
+    /// <summary>Complete supplied evidence contradicted itself.</summary>
     Invalid = 8,
 
-    /// <summary>A consulted owner selects a later draft route that this binder does not own.</summary>
+    /// <summary>A consulted owner selects a later route that this binder does not own.</summary>
     Unsupported = 9,
 }
 
-/// <summary>Identifies the deterministic issue for one bare static-field root draft outcome.</summary>
+/// <summary>Identifies the deterministic issue for one bare static-field root outcome.</summary>
 /// <remarks>
 /// Lookup-derived issues are shared by the declaring-type chain and the imported owners; the deciding step is
-/// retained separately so one issue value never has to encode two different draft sources.
+/// retained separately so one issue value never has to encode two different sources.
 /// </remarks>
 public enum StaticFieldV2BareRootIssue
 {
-    /// <summary>No issue applies to an exact draft outcome.</summary>
+    /// <summary>No issue applies to an exact outcome.</summary>
     None = 0,
 
     /// <summary>The lexical-completeness certificate prerequisite was non-exact.</summary>
@@ -208,7 +208,7 @@ public enum StaticFieldV2BareRootIssue
     /// <summary>The lexical-completeness certificate prerequisite was invalid.</summary>
     CertificateInvalid = 2,
 
-    /// <summary>The lexical-completeness certificate selects a later draft route.</summary>
+    /// <summary>The lexical-completeness certificate selects a later route.</summary>
     CertificateUnsupported = 3,
 
     /// <summary>A complete higher-precedence lexical name owns the requested spelling.</summary>
@@ -217,28 +217,28 @@ public enum StaticFieldV2BareRootIssue
     /// <summary>The certificate could not prove every blocker kind complete.</summary>
     CertificateIncomplete = 5,
 
-    /// <summary>The scoped-context draft projection prerequisite was non-exact.</summary>
+    /// <summary>The scoped-context projection prerequisite was non-exact.</summary>
     ScopedContextNonExact = 6,
 
-    /// <summary>The scoped-context draft projection prerequisite was invalid.</summary>
+    /// <summary>The scoped-context projection prerequisite was invalid.</summary>
     ScopedContextInvalid = 7,
 
     /// <summary>The scoped-context projection was made for another module, type, or ancestry portfolio.</summary>
     ScopedContextSubjectMismatch = 8,
 
-    /// <summary>One consulted member-lookup draft answer stopped non-exactly.</summary>
+    /// <summary>One consulted member-lookup answer stopped non-exactly.</summary>
     MemberLookupNonExact = 9,
 
-    /// <summary>One consulted member-lookup draft answer stopped as invalid or contradicted the certificate.</summary>
+    /// <summary>One consulted member-lookup answer stopped as invalid or contradicted the certificate.</summary>
     MemberLookupInvalid = 10,
 
-    /// <summary>One consulted member-lookup draft answer could not prove absence over its base chain.</summary>
+    /// <summary>One consulted member-lookup answer could not prove absence over its base chain.</summary>
     MemberLookupIncomplete = 11,
 
     /// <summary>One consulted level declared two or more accessible static fields with the name.</summary>
     AmbiguousDeclarations = 12,
 
-    /// <summary>The nearest declaring level declared the name as a member this draft profile does not own.</summary>
+    /// <summary>The nearest declaring level declared the name as a member this profile does not own.</summary>
     HiddenByUnsupportedMember = 13,
 
     /// <summary>Two or more imported owners contributed different physical static fields.</summary>
@@ -247,16 +247,16 @@ public enum StaticFieldV2BareRootIssue
     /// <summary>Every consulted complete source declared no such name.</summary>
     DeclarationAbsent = 15,
 
-    /// <summary>A non-exhaustive scoped draft context forbids claiming a complete absent answer.</summary>
+    /// <summary>A non-exhaustive scoped context forbids claiming a complete absent answer.</summary>
     AbsenceNotClaimableOverRetainedEvidence = 16,
 
     /// <summary>An active <c>using static</c> import retained a target that did not resolve exactly.</summary>
     UnresolvedUsingStaticTargetRetained = 17,
 }
 
-/// <summary>Identifies one declared coverage boundary retained by a lexical-completeness draft answer.</summary>
+/// <summary>Identifies one declared coverage boundary retained by a lexical-completeness answer.</summary>
 /// <remarks>
-/// Every boundary is an informational draft fact rather than an error. A boundary states what this phase deliberately
+/// Every boundary is an informational fact rather than an error. A boundary states what this phase deliberately
 /// does not model, so a consumer can never mistake a silent gap for a proven negative.
 /// </remarks>
 public enum StaticFieldV2LexicalCoverageBoundary
@@ -280,10 +280,10 @@ public enum StaticFieldV2LexicalCoverageBoundary
     ImportedMemberGroupBlockingNotModeled = 6,
 }
 
-/// <summary>Freezes one certified blocker-kind draft disposition for a single requested spelling.</summary>
+/// <summary>Freezes one certified blocker-kind disposition for a single requested spelling.</summary>
 /// <remarks>
 /// The row is minted only by <see cref="StaticFieldV2LexicalCertificateOutcome"/>. It retains the examined name count
-/// of the kind, and, for an owned spelling, the physical token and metadata name of the owning draft symbol.
+/// of the kind, and, for an owned spelling, the physical token and metadata name of the owning symbol.
 /// </remarks>
 public sealed class StaticFieldV2LexicalBlockerRow : IEquatable<StaticFieldV2LexicalBlockerRow>
 {
@@ -317,43 +317,43 @@ public sealed class StaticFieldV2LexicalBlockerRow : IEquatable<StaticFieldV2Lex
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the lexical name kind this draft row certifies.</summary>
+    /// <summary>Gets the lexical name kind this row certifies.</summary>
     public StaticFieldV2LexicalBlockerKind Kind { get; }
 
-    /// <summary>Gets whether this draft kind is complete-and-absent, complete-and-owned, or incomplete.</summary>
+    /// <summary>Gets whether this kind is complete-and-absent, complete-and-owned, or incomplete.</summary>
     public StaticFieldV2LexicalBlockerDisposition Disposition { get; }
 
-    /// <summary>Gets the physical evidence gap for an incomplete draft kind, otherwise none.</summary>
+    /// <summary>Gets the physical evidence gap for an incomplete kind, otherwise none.</summary>
     public StaticFieldV2LexicalIncompletenessSource IncompletenessSource { get; }
 
-    /// <summary>Gets the count of names this draft kind contributed to the examined lexical catalog.</summary>
+    /// <summary>Gets the count of names this kind contributed to the examined lexical catalog.</summary>
     public int ExaminedNameCount { get; }
 
-    /// <summary>Gets the exact metadata name of the owning draft symbol, otherwise null.</summary>
+    /// <summary>Gets the exact metadata name of the owning symbol, otherwise null.</summary>
     public string? OwningSymbolName { get; }
 
-    /// <summary>Gets the physical metadata token of the owning draft symbol, otherwise null.</summary>
+    /// <summary>Gets the physical metadata token of the owning symbol, otherwise null.</summary>
     public int? OwningSymbolMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft row bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft row.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical row.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two certified blocker draft rows.</summary>
-    /// <param name="other">The other draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two certified blocker rows.</summary>
+    /// <param name="other">The other row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2LexicalBlockerRow? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests certified blocker draft row equality against an arbitrary object.</summary>
+    /// <summary>Tests certified blocker row equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2LexicalBlockerRow);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft row content.</summary>
-    /// <returns>A hash code for this canonical draft row.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical row content.</summary>
+    /// <returns>A hash code for this canonical row.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2LexicalBlockerRow Create(
@@ -407,10 +407,10 @@ public sealed class StaticFieldV2LexicalBlockerRow : IEquatable<StaticFieldV2Lex
     }
 }
 
-/// <summary>Freezes one complete lexical-blocker completeness certificate draft request.</summary>
+/// <summary>Freezes one complete lexical-blocker completeness certificate request.</summary>
 /// <remarks>
 /// The request names the caller-supplied selected-method lexical evidence envelope, the requested bare identifier,
-/// the selected metadata module and declaring TypeDef, the exact ancestry authority draft portfolio, and one FieldDef
+/// the selected metadata module and declaring TypeDef, the exact ancestry authority portfolio, and one FieldDef
 /// catalog per ancestry-portfolio module. It carries no runtime, no storage, and no scoped import evidence.
 /// </remarks>
 public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFieldV2LexicalCertificateRequest>
@@ -453,7 +453,7 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the caller-supplied selected-method lexical draft evidence envelope.</summary>
+    /// <summary>Gets the caller-supplied selected-method lexical evidence envelope.</summary>
     public DumpSelectedMethodLexicalObservation LexicalEvidence { get; }
 
     /// <summary>Gets the decoded bare identifier whose lexical blockers are certified.</summary>
@@ -465,7 +465,7 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
     /// <summary>Gets the authority-issued declaring TypeDef of the selected method.</summary>
     public MetadataTypeDefinitionAuthorityIdentity SelectedTypeDefinition { get; }
 
-    /// <summary>Gets the ancestry authority draft portfolio supplying classification and definition authorities.</summary>
+    /// <summary>Gets the ancestry authority portfolio supplying classification and definition authorities.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
 
     /// <summary>Gets a defensive copy of the supplied per-module FieldDef catalog vector, default when absent.</summary>
@@ -475,23 +475,23 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
     /// <summary>Gets whether the supplied FieldDef catalog vector was explicitly initialized.</summary>
     public bool IsFieldCatalogVectorInitialized => !fieldCatalogs.IsDefault;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft request.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical request.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete lexical-blocker completeness certificate draft request.</summary>
-    /// <param name="lexicalEvidence">The caller-supplied selected-method lexical draft evidence envelope.</param>
+    /// <summary>Creates one complete lexical-blocker completeness certificate request.</summary>
+    /// <param name="lexicalEvidence">The caller-supplied selected-method lexical evidence envelope.</param>
     /// <param name="identifier">The decoded bare identifier whose lexical blockers are certified.</param>
     /// <param name="selectedModule">The exact metadata module owning the selected declaring TypeDef.</param>
     /// <param name="selectedTypeDefinition">The authority-issued declaring TypeDef of the selected method.</param>
-    /// <param name="ancestryPortfolio">The ancestry authority draft portfolio prerequisite.</param>
+    /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
     /// <param name="fieldCatalogs">
     /// One FieldDef catalog per ancestry-portfolio module in any order. A default or incomplete vector is admitted here
-    /// and becomes a typed incomplete member-name draft disposition rather than an exception.
+    /// and becomes a typed incomplete member-name disposition rather than an exception.
     /// </param>
-    /// <returns>A sealed immutable draft request with defensively copied evidence.</returns>
+    /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     public static StaticFieldV2LexicalCertificateRequest Create(
         DumpSelectedMethodLexicalObservation lexicalEvidence,
@@ -517,27 +517,27 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
             catalogs);
     }
 
-    /// <summary>Tests canonical equality between two certificate draft requests.</summary>
-    /// <param name="other">The other draft request.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two certificate requests.</summary>
+    /// <param name="other">The other request.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2LexicalCertificateRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests certificate draft request equality against an arbitrary object.</summary>
+    /// <summary>Tests certificate request equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a request with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a request with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2LexicalCertificateRequest);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft request content.</summary>
-    /// <returns>A hash code for this canonical draft request.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical request content.</summary>
+    /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogsCore => fieldCatalogs;
 }
 
-/// <summary>Freezes the complete draft outcome of one lexical-blocker completeness certification.</summary>
+/// <summary>Freezes the complete outcome of one lexical-blocker completeness certification.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of every blocker row it retains. A complete derived answer retains one
+/// This sealed outcome is the sole issuer of every blocker row it retains. A complete derived answer retains one
 /// row per lexical blocker kind in ascending kind order, so no kind can silently vanish. A prefix-free stop retains no
 /// row at all, because a partial derivation is not evidence about the requested spelling.
 /// <para>
@@ -549,7 +549,7 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
 /// </remarks>
 public sealed class StaticFieldV2LexicalCertificateOutcome : IEquatable<StaticFieldV2LexicalCertificateOutcome>
 {
-    /// <summary>Gets the shared examined lexical-name draft cap applied by one complete certification.</summary>
+    /// <summary>Gets the shared examined lexical-name cap applied by one complete certification.</summary>
     public const int MaximumLexicalBlockerCount = StaticFieldV2Limits.MaximumLexicalBlockerCount;
 
     private const string CanonicalDomain = "static-field-v2-lexical-certificate-outcome";
@@ -605,48 +605,48 @@ public sealed class StaticFieldV2LexicalCertificateOutcome : IEquatable<StaticFi
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft certificate is complete, shadowed, partial, or a typed stop.</summary>
+    /// <summary>Gets whether this certificate is complete, shadowed, partial, or a typed stop.</summary>
     public StaticFieldV2LexicalCertificateResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft certificate issue, or none for a complete certificate.</summary>
+    /// <summary>Gets the typed certificate issue, or none for a complete certificate.</summary>
     public StaticFieldV2LexicalCertificateIssue Issue { get; }
 
-    /// <summary>Gets the complete draft request that produced this certificate.</summary>
+    /// <summary>Gets the complete request that produced this certificate.</summary>
     public StaticFieldV2LexicalCertificateRequest Request { get; }
 
-    /// <summary>Gets a defensive ascending-kind copy of every certified draft blocker row, empty for a stop.</summary>
+    /// <summary>Gets a defensive ascending-kind copy of every certified blocker row, empty for a stop.</summary>
     public ImmutableArray<StaticFieldV2LexicalBlockerRow> Blockers =>
         ExpressionV2ContractEncoding.Copy(blockers);
 
-    /// <summary>Gets the blocker kind that owns the requested draft spelling, otherwise null.</summary>
+    /// <summary>Gets the blocker kind that owns the requested spelling, otherwise null.</summary>
     public StaticFieldV2LexicalBlockerKind? OwningKind { get; }
 
-    /// <summary>Gets the first blocker kind whose draft evidence was incomplete, otherwise null.</summary>
+    /// <summary>Gets the first blocker kind whose evidence was incomplete, otherwise null.</summary>
     public StaticFieldV2LexicalBlockerKind? FirstIncompleteKind { get; }
 
-    /// <summary>Gets a defensive ascending copy of every declared draft coverage boundary.</summary>
+    /// <summary>Gets a defensive ascending copy of every declared coverage boundary.</summary>
     public ImmutableArray<StaticFieldV2LexicalCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the examined lexical-name count for a complete answer, or the propagated stop observation.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets the metadata token related to this draft answer or stop, otherwise null.</summary>
+    /// <summary>Gets the metadata token related to this answer or stop, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Gets the certified draft row for one blocker kind, or null for a prefix-free stop.</summary>
-    /// <param name="kind">The lexical blocker kind whose draft disposition is requested.</param>
-    /// <returns>The retained draft row, or null when this outcome retains no row at all.</returns>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="kind"/> is not a defined draft kind.</exception>
+    /// <summary>Gets the certified row for one blocker kind, or null for a prefix-free stop.</summary>
+    /// <param name="kind">The lexical blocker kind whose disposition is requested.</param>
+    /// <returns>The retained row, or null when this outcome retains no row at all.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="kind"/> is not a defined kind.</exception>
     public StaticFieldV2LexicalBlockerRow? BlockerFor(StaticFieldV2LexicalBlockerKind kind)
     {
         ExpressionV2ContractEncoding.RequireDefined(kind, nameof(kind));
@@ -660,19 +660,19 @@ public sealed class StaticFieldV2LexicalCertificateOutcome : IEquatable<StaticFi
         return null;
     }
 
-    /// <summary>Tests canonical equality between two lexical-certificate draft outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two lexical-certificate outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2LexicalCertificateOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests lexical-certificate draft outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests lexical-certificate outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2LexicalCertificateOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -739,10 +739,10 @@ public sealed class StaticFieldV2LexicalCertificateOutcome : IEquatable<StaticFi
             relatedMetadataToken);
 }
 
-/// <summary>Freezes one examined <c>using static</c> imported owner draft candidate.</summary>
+/// <summary>Freezes one examined <c>using static</c> imported owner candidate.</summary>
 /// <remarks>
 /// The row is minted only by <see cref="StaticFieldV2BareRootOutcome"/>. It retains the contributing import
-/// projection, the resolved owner, the complete member-lookup draft answer on that owner, and whether the answer was
+/// projection, the resolved owner, the complete member-lookup answer on that owner, and whether the answer was
 /// refused because the selected declaration is inherited rather than directly declared by the imported owner.
 /// </remarks>
 public sealed class StaticFieldV2BareRootImportCandidate : IEquatable<StaticFieldV2BareRootImportCandidate>
@@ -777,43 +777,43 @@ public sealed class StaticFieldV2BareRootImportCandidate : IEquatable<StaticFiel
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the active non-shadowed <c>using static</c> draft projection that contributed this owner.</summary>
+    /// <summary>Gets the active non-shadowed <c>using static</c> projection that contributed this owner.</summary>
     public StaticFieldV2ScopedImportProjection ContributingImport { get; }
 
-    /// <summary>Gets the metadata module owning the resolved imported draft owner.</summary>
+    /// <summary>Gets the metadata module owning the resolved imported owner.</summary>
     public StaticFieldMetadataModuleIdentity OwnerModule { get; }
 
-    /// <summary>Gets the authority-issued TypeDef of the resolved imported draft owner.</summary>
+    /// <summary>Gets the authority-issued TypeDef of the resolved imported owner.</summary>
     public MetadataTypeDefinitionAuthorityIdentity OwnerTypeDefinition { get; }
 
-    /// <summary>Gets the complete member-lookup draft answer produced on this imported owner.</summary>
+    /// <summary>Gets the complete member-lookup answer produced on this imported owner.</summary>
     public StaticFieldV2MemberLookupOutcome Lookup { get; }
 
     /// <summary>Gets whether an exact answer was refused because the declaration is inherited, not imported.</summary>
     public bool IsInheritedAndRefused { get; }
 
-    /// <summary>Gets whether this imported owner contributed one directly declared draft candidate.</summary>
+    /// <summary>Gets whether this imported owner contributed one directly declared candidate.</summary>
     public bool IsAccepted { get; }
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft candidate bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical candidate bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft candidate.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical candidate.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two examined imported-owner draft candidates.</summary>
-    /// <param name="other">The other draft candidate.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two examined imported-owner candidates.</summary>
+    /// <param name="other">The other candidate.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2BareRootImportCandidate? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests imported-owner draft candidate equality against an arbitrary object.</summary>
+    /// <summary>Tests imported-owner candidate equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a candidate with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a candidate with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2BareRootImportCandidate);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft candidate content.</summary>
-    /// <returns>A hash code for this canonical draft candidate.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical candidate content.</summary>
+    /// <returns>A hash code for this canonical candidate.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static StaticFieldV2BareRootImportCandidate Create(
@@ -853,10 +853,10 @@ public sealed class StaticFieldV2BareRootImportCandidate : IEquatable<StaticFiel
     }
 }
 
-/// <summary>Freezes one complete bare static-field root draft binding request.</summary>
+/// <summary>Freezes one complete bare static-field root binding request.</summary>
 /// <remarks>
-/// The request reuses the certificate draft request for identity, evidence, and catalogs, and adds the projected
-/// scoped draft context plus the caller-declared accessibility certificate governing every member admission.
+/// The request reuses the certificate request for identity, evidence, and catalogs, and adds the projected
+/// scoped context plus the caller-declared accessibility certificate governing every member admission.
 /// </remarks>
 public sealed class StaticFieldV2BareRootRequest : IEquatable<StaticFieldV2BareRootRequest>
 {
@@ -892,10 +892,10 @@ public sealed class StaticFieldV2BareRootRequest : IEquatable<StaticFieldV2BareR
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the complete lexical-certificate draft request consumed by step one.</summary>
+    /// <summary>Gets the complete lexical-certificate request consumed by step one.</summary>
     public StaticFieldV2LexicalCertificateRequest CertificateRequest { get; }
 
-    /// <summary>Gets the projected scoped-context draft outcome supplying <c>using static</c> imports.</summary>
+    /// <summary>Gets the projected scoped-context outcome supplying <c>using static</c> imports.</summary>
     public StaticFieldV2ScopedContextOutcome ScopedContext { get; }
 
     /// <summary>Gets the caller-declared accessibility certificate governing every member admission.</summary>
@@ -904,22 +904,22 @@ public sealed class StaticFieldV2BareRootRequest : IEquatable<StaticFieldV2BareR
     /// <summary>Gets the requesting assembly for the use-site certificate, or null for qualified inspection.</summary>
     public StaticFieldContainingAssemblyIdentity? RequestingAssembly { get; }
 
-    /// <summary>Gets a defensive declaration-order copy of the caller-supplied friend-assembly draft grants.</summary>
+    /// <summary>Gets a defensive declaration-order copy of the caller-supplied friend-assembly grants.</summary>
     public ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> FriendAssemblyGrants =>
         ExpressionV2ContractEncoding.Copy(friendAssemblyGrants);
 
-    /// <summary>Gets the decoded bare identifier this draft request binds.</summary>
+    /// <summary>Gets the decoded bare identifier this request binds.</summary>
     public DumpExpressionIdentifier Identifier => CertificateRequest.Identifier;
 
-    /// <summary>Gets a defensive copy of the fixed-reference canonical draft request bytes.</summary>
+    /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft request.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical request.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete bare static-field root draft binding request.</summary>
-    /// <param name="certificateRequest">The complete lexical-certificate draft request consumed by step one.</param>
-    /// <param name="scopedContext">The projected scoped-context draft outcome supplying imports.</param>
+    /// <summary>Creates one complete bare static-field root binding request.</summary>
+    /// <param name="certificateRequest">The complete lexical-certificate request consumed by step one.</param>
+    /// <param name="scopedContext">The projected scoped-context outcome supplying imports.</param>
     /// <param name="accessibilityMode">The caller-declared accessibility certificate.</param>
     /// <param name="requestingAssembly">
     /// The requesting assembly, required exactly for <see cref="StaticFieldV2AccessibilityMode.UseSiteCertificate"/>.
@@ -927,7 +927,7 @@ public sealed class StaticFieldV2BareRootRequest : IEquatable<StaticFieldV2BareR
     /// <param name="friendAssemblyGrants">
     /// The caller-supplied friend grants, admitted only for the use-site certificate and bounded by the shared cap.
     /// </param>
-    /// <returns>A sealed immutable draft request with defensively copied evidence.</returns>
+    /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The declared accessibility mode is undefined.</exception>
     /// <exception cref="ArgumentException">The requesting assembly or grants disagree with the declared mode.</exception>
@@ -971,28 +971,28 @@ public sealed class StaticFieldV2BareRootRequest : IEquatable<StaticFieldV2BareR
             grants);
     }
 
-    /// <summary>Tests canonical equality between two bare-root draft requests.</summary>
-    /// <param name="other">The other draft request.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two bare-root requests.</summary>
+    /// <param name="other">The other request.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2BareRootRequest? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests bare-root draft request equality against an arbitrary object.</summary>
+    /// <summary>Tests bare-root request equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a request with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a request with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2BareRootRequest);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft request content.</summary>
-    /// <returns>A hash code for this canonical draft request.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical request content.</summary>
+    /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> FriendAssemblyGrantsCore =>
         friendAssemblyGrants;
 }
 
-/// <summary>Freezes the complete draft outcome of one bare static-field root binding.</summary>
+/// <summary>Freezes the complete outcome of one bare static-field root binding.</summary>
 /// <remarks>
-/// This sealed draft outcome is the sole issuer of every imported-owner candidate it retains. It always retains the
+/// This sealed outcome is the sole issuer of every imported-owner candidate it retains. It always retains the
 /// lexical-completeness certificate that governed the answer, so a consumer can see exactly why an import was or was
 /// not permitted to contribute.
 /// <para>
@@ -1072,70 +1072,70 @@ public sealed class StaticFieldV2BareRootOutcome : IEquatable<StaticFieldV2BareR
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether this draft binding is exact, absent, ambiguous, blocked, or a typed stop.</summary>
+    /// <summary>Gets whether this binding is exact, absent, ambiguous, blocked, or a typed stop.</summary>
     public StaticFieldV2BareRootResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft binding issue, or none for an exact outcome.</summary>
+    /// <summary>Gets the typed binding issue, or none for an exact outcome.</summary>
     public StaticFieldV2BareRootIssue Issue { get; }
 
-    /// <summary>Gets the complete draft request that produced this outcome.</summary>
+    /// <summary>Gets the complete request that produced this outcome.</summary>
     public StaticFieldV2BareRootRequest Request { get; }
 
-    /// <summary>Gets the lexical-completeness certificate that governed this draft outcome.</summary>
+    /// <summary>Gets the lexical-completeness certificate that governed this outcome.</summary>
     public StaticFieldV2LexicalCertificateOutcome Certificate { get; }
 
-    /// <summary>Gets the draft step that decided this outcome, or null for a certificate or context stop.</summary>
+    /// <summary>Gets the step that decided this outcome, or null for a certificate or context stop.</summary>
     public StaticFieldV2BareRootSource? Source { get; }
 
-    /// <summary>Gets the single selected static-field draft candidate, or null for anything but an exact answer.</summary>
+    /// <summary>Gets the single selected static-field candidate, or null for anything but an exact answer.</summary>
     public StaticFieldV2MemberCandidateIdentity? SelectedField { get; }
 
-    /// <summary>Gets the metadata module owning the selected draft declaration, otherwise null.</summary>
+    /// <summary>Gets the metadata module owning the selected declaration, otherwise null.</summary>
     public StaticFieldMetadataModuleIdentity? SelectedOwnerModule { get; }
 
-    /// <summary>Gets the consulted owner TypeDef that produced the selected draft declaration, otherwise null.</summary>
+    /// <summary>Gets the consulted owner TypeDef that produced the selected declaration, otherwise null.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? SelectedOwnerTypeDefinition { get; }
 
-    /// <summary>Gets a defensive innermost-first copy of every consulted declaring-chain draft lookup.</summary>
+    /// <summary>Gets a defensive innermost-first copy of every consulted declaring-chain lookup.</summary>
     public ImmutableArray<StaticFieldV2MemberLookupOutcome> DeclaringChainLookups =>
         ExpressionV2ContractEncoding.Copy(declaringChainLookups);
 
-    /// <summary>Gets a defensive examination-order copy of every examined imported-owner draft candidate.</summary>
+    /// <summary>Gets a defensive examination-order copy of every examined imported-owner candidate.</summary>
     public ImmutableArray<StaticFieldV2BareRootImportCandidate> ImportCandidates =>
         ExpressionV2ContractEncoding.Copy(importCandidates);
 
-    /// <summary>Gets a defensive ascending copy of every declared draft coverage boundary.</summary>
+    /// <summary>Gets a defensive ascending copy of every declared coverage boundary.</summary>
     public ImmutableArray<StaticFieldV2LexicalCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
 
-    /// <summary>Gets the declared draft bound reached at cap plus one, otherwise null.</summary>
+    /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the consulted owner count for a complete answer, or the propagated stop observation.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets the metadata token related to this draft answer or stop, otherwise null.</summary>
+    /// <summary>Gets the metadata token related to this answer or stop, otherwise null.</summary>
     public int? RelatedMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical draft outcome bytes.</summary>
+    /// <summary>Gets a defensive copy of the bounded fixed-reference canonical outcome bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft outcome.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two bare-root draft outcomes.</summary>
-    /// <param name="other">The other draft outcome.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two bare-root outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(StaticFieldV2BareRootOutcome? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests bare-root draft outcome equality against an arbitrary object.</summary>
+    /// <summary>Tests bare-root outcome equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an outcome with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as StaticFieldV2BareRootOutcome);
 
-    /// <summary>Computes a deterministic hash code from immutable canonical draft outcome content.</summary>
-    /// <returns>A hash code for this canonical draft outcome.</returns>
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static bool OwnsRowMintCapability(object? capability) =>
@@ -1214,14 +1214,14 @@ public sealed class StaticFieldV2BareRootOutcome : IEquatable<StaticFieldV2BareR
             relatedMetadataToken);
 }
 
-/// <summary>Certifies lexical-blocker completeness and binds bare <c>using static</c> static-field draft roots.</summary>
+/// <summary>Certifies lexical-blocker completeness and binds bare <c>using static</c> static-field roots.</summary>
 /// <remarks>
-/// This draft binder answers exactly one question: may a bare identifier root reach an imported static field? It first
+/// This binder answers exactly one question: may a bare identifier root reach an imported static field? It first
 /// proves, kind by kind, that every higher-precedence lexical name is completely accounted for at the selected
 /// instruction, and only then applies C# precedence over the declaring-type chain and the active
 /// <c>using static</c> imports.
 /// <para>
-/// Declared coverage boundaries of this draft slice: the physical Property and Event tables are not modeled, so a
+/// Declared coverage boundaries of this slice: the physical Property and Event tables are not modeled, so a
 /// same-name property or event can neither block a bare root nor block an import; query range variables and pattern
 /// designations leave no physical row and are not certified; a generated local-function MethodDef carries no physical
 /// parent relation, so attribution relies on the raw generated name alone; and selecting a directly declared member of
@@ -1266,14 +1266,14 @@ public static class StaticFieldV2LexicalCompleteness
     ];
 
     /// <summary>Certifies every higher-precedence lexical blocker for one bare identifier at one instruction.</summary>
-    /// <param name="request">The complete lexical-completeness certificate draft request.</param>
+    /// <param name="request">The complete lexical-completeness certificate request.</param>
     /// <remarks>
     /// Each blocker kind is certified independently and its disposition is always retained. A kind that actually
     /// declares the spelling is complete-and-owned even when another kind carried incomplete evidence, because a name
     /// that was found is positive proof. A kind whose catalog cannot be proved complete is incomplete and never
     /// silently becomes an absence.
     /// </remarks>
-    /// <returns>A sealed immutable draft certificate that is one complete answer or one prefix-free typed stop.</returns>
+    /// <returns>A sealed immutable certificate that is one complete answer or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2LexicalCertificateOutcome CertifyBlockers(
         StaticFieldV2LexicalCertificateRequest request)
@@ -1434,19 +1434,19 @@ public static class StaticFieldV2LexicalCompleteness
     }
 
     /// <summary>Binds one bare identifier root over lexical blockers, the declaring chain, and imports.</summary>
-    /// <param name="request">The complete bare static-field root draft binding request.</param>
+    /// <param name="request">The complete bare static-field root binding request.</param>
     /// <remarks>
-    /// The draft order is fixed and stops at the first decisive step. A certificate that is not complete propagates
+    /// The order is fixed and stops at the first decisive step. A certificate that is not complete propagates
     /// unchanged; the declaring type and each enclosing type outward are consulted next through the shared member
     /// lookup; and only then do active non-shadowed <c>using static</c> imports contribute directly declared members.
-    /// Absence is claimable only over an exhaustive scoped draft context whose every active import target resolved.
+    /// Absence is claimable only over an exhaustive scoped context whose every active import target resolved.
     /// <para>
     /// The certificate is a strictly stronger owner precondition than member lookup's own owner check, and the scoped
     /// projection never resolves an import onto the ECMA module pseudo-type. A consulted member lookup that
     /// nevertheless answers unsupported therefore contradicts the certified evidence and is reported as invalid.
     /// </para>
     /// </remarks>
-    /// <returns>A sealed immutable draft outcome that is one complete answer or one prefix-free typed stop.</returns>
+    /// <returns>A sealed immutable outcome that is one complete answer or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
     public static StaticFieldV2BareRootOutcome BindBareStaticRoot(StaticFieldV2BareRootRequest request)
     {

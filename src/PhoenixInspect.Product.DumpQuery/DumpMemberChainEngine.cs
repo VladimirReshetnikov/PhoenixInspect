@@ -9,7 +9,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <summary>Evaluates one completely prepared W6 member-chain plan without reparsing or repeating member lookup.</summary>
 /// <remarks>
-/// This draft engine reads the frozen outer reference once, validates an exact non-null target, derives terminal
+/// This engine reads the frozen outer reference once, validates an exact non-null target, derives terminal
 /// storage only from certified relative layout, and delegates decoding to existing descriptor-consuming adapter
 /// operations. It never invokes a certified getter or performs compiler binding.
 /// </remarks>

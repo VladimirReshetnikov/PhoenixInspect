@@ -4,9 +4,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one complete source-anchored NestedClass-table draft proof.</summary>
+/// <summary>Classifies one complete source-anchored NestedClass-table proof.</summary>
 /// <remarks>
-/// The draft discriminator separates a complete exact parent map from an acquisition stop and contradictory physical
+/// The discriminator separates a complete exact parent map from an acquisition stop and contradictory physical
 /// evidence. It is not a compatibility commitment.
 /// </remarks>
 public enum MetadataNestedClassTableResultKind
@@ -21,9 +21,9 @@ public enum MetadataNestedClassTableResultKind
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed disposition of one NestedClass-table draft proof.</summary>
+/// <summary>Identifies the typed disposition of one NestedClass-table proof.</summary>
 /// <remarks>
-/// The draft issue remains explicit when no relation prefix is exposed, so later composition never has to infer why
+/// The issue remains explicit when no relation prefix is exposed, so later composition never has to infer why
 /// the complete parent map was unavailable.
 /// </remarks>
 public enum MetadataNestedClassTableIssue
@@ -85,7 +85,7 @@ public enum MetadataNestedClassTableIssue
 
 /// <summary>Freezes only the physical columns observed from one NestedClass table row.</summary>
 /// <remarks>
-/// This sealed draft observation carries the source module, physical row token, and both TypeDef tokens. It contains
+/// This sealed observation carries the source module, physical row token, and both TypeDef tokens. It contains
 /// no caller-asserted parent chain, depth, decoded name, or semantic classification.
 /// </remarks>
 public sealed class MetadataNestedClassRowObservationIdentity :
@@ -127,18 +127,18 @@ public sealed class MetadataNestedClassRowObservationIdentity :
     /// <summary>Gets the exact non-nil enclosing TypeDef token from the physical row.</summary>
     public int EnclosingTypeDefinitionToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one physical-column-only NestedClass row draft observation.</summary>
+    /// <summary>Creates one physical-column-only NestedClass row observation.</summary>
     /// <param name="metadataModule">The exact metadata module containing the row.</param>
     /// <param name="nestedClassRowToken">The exact non-nil NestedClass table token and RID.</param>
     /// <param name="nestedTypeDefinitionToken">The exact non-nil nested TypeDef token.</param>
     /// <param name="enclosingTypeDefinitionToken">The exact non-nil enclosing TypeDef token.</param>
-    /// <returns>A sealed immutable draft observation containing no caller-authored parent chain.</returns>
+    /// <returns>A sealed immutable observation containing no caller-authored parent chain.</returns>
     public static MetadataNestedClassRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity metadataModule,
         int nestedClassRowToken,
@@ -165,25 +165,25 @@ public sealed class MetadataNestedClassRowObservationIdentity :
             enclosingTypeDefinitionToken);
     }
 
-    /// <summary>Tests canonical equality between two physical NestedClass draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical NestedClass observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataNestedClassRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests physical NestedClass draft equality against an arbitrary object.</summary>
+    /// <summary>Tests physical NestedClass equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataNestedClassRowObservationIdentity);
 
-    /// <summary>Computes a hash code from the immutable physical NestedClass draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable physical NestedClass bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Freezes one catalog-derived NestedClass parent relation and its complete nesting depth.</summary>
 /// <remarks>
-/// This sealed draft identity can be minted only by a complete exact NestedClass catalog. Both TypeDef rows come from
+/// This sealed identity can be minted only by a complete exact NestedClass catalog. Both TypeDef rows come from
 /// that catalog's exact TypeDef prerequisite, and the depth is derived from the complete parent map.
 /// </remarks>
 public sealed class MetadataNestedClassRelationIdentity : IEquatable<MetadataNestedClassRelationIdentity>
@@ -212,7 +212,7 @@ public sealed class MetadataNestedClassRelationIdentity : IEquatable<MetadataNes
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets the unchanged physical NestedClass row draft observation.</summary>
+    /// <summary>Gets the unchanged physical NestedClass row observation.</summary>
     public MetadataNestedClassRowObservationIdentity Observation { get; }
 
     /// <summary>Gets the exact nested TypeDef row selected from the correlated complete TypeDef catalog.</summary>
@@ -224,25 +224,25 @@ public sealed class MetadataNestedClassRelationIdentity : IEquatable<MetadataNes
     /// <summary>Gets the complete parent-link count from this nested TypeDef to its top-level root.</summary>
     public int NestingDepth { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two catalog-derived NestedClass draft relations.</summary>
-    /// <param name="other">The other derived draft relation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two catalog-derived NestedClass relations.</summary>
+    /// <param name="other">The other derived relation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataNestedClassRelationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests catalog-derived NestedClass draft equality against an arbitrary object.</summary>
+    /// <summary>Tests catalog-derived NestedClass equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a relation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a relation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataNestedClassRelationIdentity);
 
-    /// <summary>Computes a hash code from the immutable catalog-derived NestedClass draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable catalog-derived NestedClass bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataNestedClassRelationIdentity Create(
@@ -277,7 +277,7 @@ public sealed class MetadataNestedClassRelationIdentity : IEquatable<MetadataNes
 
 /// <summary>Freezes one complete source-anchored NestedClass table and its derived parent map.</summary>
 /// <remarks>
-/// This sealed draft catalog requires an exact correlated TypeDef catalog and exact physical NestedClass RID coverage.
+/// This sealed catalog requires an exact correlated TypeDef catalog and exact physical NestedClass RID coverage.
 /// Incomplete and bounded acquisition retains no relation prefix; contradictory evidence retains no parent facts.
 /// It is a prerequisite for later TypeDef authority and is not itself a final type identity commitment.
 /// </remarks>
@@ -322,41 +322,41 @@ public sealed class MetadataNestedClassTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete draft parent-map proof is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether the complete parent-map proof is exact, non-exact, or invalid.</summary>
     public MetadataNestedClassTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft table issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed table issue, or none for an exact result.</summary>
     public MetadataNestedClassTableIssue Issue { get; }
 
     /// <summary>Gets the exact source ends against which complete physical coverage was checked.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the correlated TypeDef-table draft prerequisite retained by this outcome.</summary>
+    /// <summary>Gets the correlated TypeDef-table prerequisite retained by this outcome.</summary>
     public MetadataTypeDefinitionTableCatalogIdentity TypeDefinitionCatalog { get; }
 
     /// <summary>Gets a defensive copy of exact parent relations, or an initialized empty array otherwise.</summary>
     public ImmutableArray<MetadataNestedClassRelationIdentity> Relations =>
         ExpressionV2ContractEncoding.Copy(relations);
 
-    /// <summary>Gets the operation bound reached only by a prefix-free non-exact draft outcome.</summary>
+    /// <summary>Gets the operation bound reached only by a prefix-free non-exact outcome.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
 
     /// <summary>Gets the issue-related cap-plus-one, supplied-row, prerequisite, or depth count.</summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete source-anchored NestedClass-table draft proof.</summary>
+    /// <summary>Creates one complete source-anchored NestedClass-table proof.</summary>
     /// <param name="sourceEnds">The exact table ends for the source metadata module.</param>
     /// <param name="typeDefinitionCatalog">The complete TypeDef-table prerequisite for the same source ends.</param>
     /// <param name="observations">
     /// Every physical NestedClass row in RID order; a default array denotes unavailable complete acquisition.
     /// </param>
-    /// <returns>An exact complete parent map, a prefix-free non-exact stop, or a factless invalid draft outcome.</returns>
+    /// <returns>An exact complete parent map, a prefix-free non-exact stop, or a factless invalid outcome.</returns>
     public static MetadataNestedClassTableCatalogIdentity Create(
         MetadataSourceEndIdentity sourceEnds,
         MetadataTypeDefinitionTableCatalogIdentity typeDefinitionCatalog,
@@ -576,19 +576,19 @@ public sealed class MetadataNestedClassTableCatalogIdentity :
             0);
     }
 
-    /// <summary>Tests canonical equality between two complete NestedClass-table draft proofs.</summary>
-    /// <param name="other">The other draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete NestedClass-table proofs.</summary>
+    /// <param name="other">The other catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataNestedClassTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete NestedClass-table draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete NestedClass-table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataNestedClassTableCatalogIdentity);
 
-    /// <summary>Computes a hash code from the immutable complete-table draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable complete-table bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal MetadataNestedClassRelationIdentity? ExactRelationOrDefault(int nestedTypeDefinitionToken)

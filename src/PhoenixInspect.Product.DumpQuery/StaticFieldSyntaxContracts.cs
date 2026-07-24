@@ -122,7 +122,7 @@ public enum StaticFieldFallbackKind
 
 /// <summary>Freezes one raw and decoded identifier plus its exact access-tree edge.</summary>
 /// <remarks>
-/// This draft value deliberately keeps source spelling separate from decoded identifier value. It contains no
+/// This value deliberately keeps source spelling separate from decoded identifier value. It contains no
 /// compiler syntax node, source file, or semantic symbol and can therefore survive disposal of the parser tree.
 /// </remarks>
 public sealed class StaticFieldAccessSegment : IEquatable<StaticFieldAccessSegment>

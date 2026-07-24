@@ -255,7 +255,7 @@ public sealed class W8MetadataAncestryAuthorityContractTests
 
     /// <summary>
     /// Proves defensive copies, private guarded issuance for every ancestry row family, the closed public issuer
-    /// surface, and emitted draft XML documentation.
+    /// surface, and emitted XML documentation.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -662,7 +662,7 @@ public sealed class W8MetadataAncestryAuthorityContractTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -674,7 +674,7 @@ public sealed class W8MetadataAncestryAuthorityContractTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

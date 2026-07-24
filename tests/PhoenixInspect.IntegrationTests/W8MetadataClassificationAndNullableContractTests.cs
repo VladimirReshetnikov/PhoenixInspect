@@ -10,7 +10,7 @@ namespace PhoenixInspect.IntegrationTests;
 /// <summary>Exercises authority-classified TypeDef consumption and metadata-preserving Nullable construction.</summary>
 /// <remarks>
 /// These headless tests consume semantic-classification rows issued only by the ancestry authority portfolio and do
-/// not present the draft contracts as a final compatibility surface.
+/// not present the contracts as a final compatibility surface.
 /// </remarks>
 public sealed class W8MetadataClassificationAndNullableContractTests
 {

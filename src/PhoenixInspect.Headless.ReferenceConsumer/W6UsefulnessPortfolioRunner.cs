@@ -18,7 +18,7 @@ internal static class W6UsefulnessPortfolioRunner
     private const int MinimumBoundaryApplicationShapes = 2;
     private const int MinimumDecisionChangingQuestions = 2;
     private const string EvidenceCaveat =
-        "Designed synthetic incidents validate prototype behavior and design decisions only; they are not external observations or field-readiness evidence.";
+        "Designed synthetic incidents validate implemented behavior and design decisions only; they are not external observations or field-readiness evidence.";
 
     internal static bool IsSchemaThreeManifest(string path)
     {
@@ -421,7 +421,7 @@ internal static class W6UsefulnessPortfolioRunner
         return new NextDecision(
             "SelectedSyntheticDesignDecision",
             selection,
-            "The unique leader clears every predeclared raw-count floor; the selection advances prototype design only.",
+            "The unique leader clears every predeclared raw-count floor; the selection advances design only.",
             rankings);
     }
 

@@ -14,7 +14,7 @@ using static PhoenixInspect.W8TestTarget.StaticImports<PhoenixInspect.W8TestTarg
 namespace PhoenixInspect.W8TestTarget.LexicalEvidence;
 
 /// <summary>Supplies a blocker-free bare imported static-field use.</summary>
-/// <remarks>This is a draft compiler/PDB fixture and not a product lookup contract.</remarks>
+/// <remarks>This is a compiler/PDB fixture and not a product lookup contract.</remarks>
 public static class BlockerFreeBareNameProbe
 {
     /// <summary>Reads fields imported from generic and non-generic static owners.</summary>
@@ -23,7 +23,7 @@ public static class BlockerFreeBareNameProbe
 }
 
 /// <summary>Supplies higher-precedence members that block imported static fields.</summary>
-/// <remarks>This is a draft compiler/PDB fixture and not a product lookup contract.</remarks>
+/// <remarks>This is a compiler/PDB fixture and not a product lookup contract.</remarks>
 public static class CurrentMemberBlockerProbe
 {
     /// <summary>Gets a property whose name blocks the constructed import's stored field.</summary>
@@ -39,7 +39,7 @@ public static class CurrentMemberBlockerProbe
 }
 
 /// <summary>Supplies an imported-field spelling shadowed by a parameter.</summary>
-/// <remarks>This is a draft compiler/PDB fixture and not a product lookup contract.</remarks>
+/// <remarks>This is a compiler/PDB fixture and not a product lookup contract.</remarks>
 public static class ParameterBlockerProbe
 {
     /// <summary>Returns the parameter that shadows the imported field.</summary>
@@ -50,7 +50,7 @@ public static class ParameterBlockerProbe
 
 /// <summary>Supplies the complete optimized lexical-name and local-scope evidence frame.</summary>
 /// <remarks>
-/// This is a draft frame/PDB fixture and not a frame-value product contract. The language modifier on
+/// This is a frame/PDB fixture and not a frame-value product contract. The language modifier on
 /// <see cref="Run"/> exists only to emit the fixed pointer local consumed by the physical PDB oracle.
 /// </remarks>
 public static class LexicalCatalogProbe

@@ -1,7 +1,7 @@
 namespace PhoenixInspect.W8RequestShapeTarget;
 
 /// <summary>Names the request-shape reference argument of the single-parameter slot family.</summary>
-/// <remarks>This emitted draft fixture type is a physical oracle, not a product contract.</remarks>
+/// <remarks>This emitted fixture type is a physical oracle, not a product contract.</remarks>
 public sealed class RequestContext
 {
     /// <summary>Initializes a request context with a stable fixture label.</summary>
@@ -13,7 +13,7 @@ public sealed class RequestContext
 }
 
 /// <summary>Names a second reference argument that must select a different construction and slot.</summary>
-/// <remarks>This emitted draft fixture type is a physical oracle, not a product contract.</remarks>
+/// <remarks>This emitted fixture type is a physical oracle, not a product contract.</remarks>
 public sealed class BatchContext
 {
     /// <summary>Initializes a batch context with a stable fixture label.</summary>
@@ -25,7 +25,7 @@ public sealed class BatchContext
 }
 
 /// <summary>Names an argument the target deliberately never constructs.</summary>
-/// <remarks>The absent construction is the point of this draft fixture type.</remarks>
+/// <remarks>The absent construction is the point of this fixture type.</remarks>
 public sealed class NeverConstructedContext
 {
     /// <summary>Initializes the never-constructed argument witness.</summary>
@@ -36,7 +36,7 @@ public sealed class NeverConstructedContext
 
 /// <summary>Owns the request-shape per-construction static storage the corpus reads.</summary>
 /// <typeparam name="TContext">The closed reference argument that selects one construction.</typeparam>
-/// <remarks>This emitted draft fixture type is a physical oracle, not a product contract.</remarks>
+/// <remarks>This emitted fixture type is a physical oracle, not a product contract.</remarks>
 public static class RequestSlot<TContext>
     where TContext : class
 {
@@ -53,7 +53,7 @@ public static class RequestSlot<TContext>
 
 /// <summary>Supplies the constructed <c>using static</c> import surface of the request shape.</summary>
 /// <typeparam name="TContext">The closed argument of the imported constructed head.</typeparam>
-/// <remarks>This emitted draft fixture type is a physical oracle, not a product contract.</remarks>
+/// <remarks>This emitted fixture type is a physical oracle, not a product contract.</remarks>
 public static class RequestImports<TContext>
     where TContext : class
 {
@@ -65,7 +65,7 @@ public static class RequestImports<TContext>
 }
 
 /// <summary>Owns the outer-scope declaration of the shadowed alias pair.</summary>
-/// <remarks>This emitted draft fixture type is a physical oracle, not a product contract.</remarks>
+/// <remarks>This emitted fixture type is a physical oracle, not a product contract.</remarks>
 public static class OuterScopedSlot
 {
     /// <summary>Stores the outer-scope sentinel that the inner alias must not reach.</summary>

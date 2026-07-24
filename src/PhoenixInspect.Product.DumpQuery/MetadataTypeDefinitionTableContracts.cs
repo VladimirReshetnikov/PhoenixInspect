@@ -3,9 +3,9 @@ using PhoenixInspect.Core.Abstractions;
 
 namespace PhoenixInspect.Product.DumpQuery;
 
-/// <summary>Classifies one complete source-anchored TypeDef-table draft proof.</summary>
+/// <summary>Classifies one complete source-anchored TypeDef-table proof.</summary>
 /// <remarks>
-/// The draft discriminator separates an exact complete table from a prefix-free acquisition or pointer-catalog
+/// The discriminator separates an exact complete table from a prefix-free acquisition or pointer-catalog
 /// prerequisite and contradictory supplied evidence. It is not a compatibility commitment.
 /// </remarks>
 public enum MetadataTypeDefinitionTableResultKind
@@ -20,9 +20,9 @@ public enum MetadataTypeDefinitionTableResultKind
     Invalid = 3,
 }
 
-/// <summary>Identifies the typed disposition of one TypeDef-table draft proof.</summary>
+/// <summary>Identifies the typed disposition of one TypeDef-table proof.</summary>
 /// <remarks>
-/// The draft issue is retained even when no usable row prefix is exposed, allowing a later host to distinguish an
+/// The issue is retained even when no usable row prefix is exposed, allowing a later host to distinguish an
 /// acquisition stop from malformed complete evidence without inferring missing rows.
 /// </remarks>
 public enum MetadataTypeDefinitionTableIssue
@@ -87,7 +87,7 @@ public enum MetadataTypeDefinitionTableIssue
 
 /// <summary>Freezes only the physical columns observed from one TypeDef row.</summary>
 /// <remarks>
-/// This sealed draft observation deliberately carries no derived FieldList or MethodList end, enclosing type,
+/// This sealed observation deliberately carries no derived FieldList or MethodList end, enclosing type,
 /// GenericParam arity, semantic classification, or compiler-name interpretation. Those facts require complete table
 /// proofs and cannot be asserted through this identity.
 /// </remarks>
@@ -155,13 +155,13 @@ public sealed class MetadataTypeDefinitionRowObservationIdentity :
     /// <summary>Gets the decoded TypeDef, TypeRef, or TypeSpec Extends token, or null for a nil coded index.</summary>
     public int? ExtendsMetadataToken { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one physical-column-only TypeDef row draft observation.</summary>
+    /// <summary>Creates one physical-column-only TypeDef row observation.</summary>
     /// <param name="metadataModule">The exact metadata module containing the row.</param>
     /// <param name="typeDefinitionToken">The exact non-nil TypeDef token.</param>
     /// <param name="fieldListRowId">The physical FieldList starting row identifier.</param>
@@ -171,7 +171,7 @@ public sealed class MetadataTypeDefinitionRowObservationIdentity :
     /// <param name="typeAttributes">The exact raw TypeAttributes bits.</param>
     /// <param name="extendsMetadataToken">The decoded Extends token, or null for nil.</param>
     /// <returns>
-    /// A sealed immutable draft observation that contains no caller-asserted list ends, nesting, or generic arity.
+    /// A sealed immutable observation that contains no caller-asserted list ends, nesting, or generic arity.
     /// </returns>
     public static MetadataTypeDefinitionRowObservationIdentity Create(
         StaticFieldMetadataModuleIdentity metadataModule,
@@ -216,19 +216,19 @@ public sealed class MetadataTypeDefinitionRowObservationIdentity :
             extendsMetadataToken);
     }
 
-    /// <summary>Tests canonical equality between two physical-column-only draft observations.</summary>
-    /// <param name="other">The other draft observation.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two physical-column-only observations.</summary>
+    /// <param name="other">The other observation.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeDefinitionRowObservationIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests draft canonical equality against an arbitrary object.</summary>
+    /// <summary>Tests canonical equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for an observation with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for an observation with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeDefinitionRowObservationIdentity);
 
-    /// <summary>Computes a hash code from the immutable physical-observation draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable physical-observation bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     private static void ValidateListStart(int rowId, string parameterName)
@@ -242,7 +242,7 @@ public sealed class MetadataTypeDefinitionRowObservationIdentity :
 
 /// <summary>Freezes one TypeDef row after complete-table derivation of its member-list intervals.</summary>
 /// <remarks>
-/// This sealed draft identity can be minted only by the complete TypeDef catalog. It retains its physical observation
+/// This sealed identity can be minted only by the complete TypeDef catalog. It retains its physical observation
 /// and exact source ends, while still making no nesting, GenericParam, or semantic-kind assertion.
 /// </remarks>
 public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<MetadataTypeDefinitionTableRowIdentity>
@@ -329,25 +329,25 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
     public ImmutableArray<int> MethodDefinitionTokens =>
         ExpressionV2ContractEncoding.Copy(methodDefinitionTokens);
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Tests canonical equality between two complete-table-derived draft rows.</summary>
-    /// <param name="other">The other derived draft row.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete-table-derived rows.</summary>
+    /// <param name="other">The other derived row.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeDefinitionTableRowIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete-table-derived draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete-table-derived equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a row with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a row with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeDefinitionTableRowIdentity);
 
-    /// <summary>Computes a hash code from the immutable complete-table-derived draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable complete-table-derived bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal static MetadataTypeDefinitionTableRowIdentity Create(
@@ -401,7 +401,7 @@ public sealed class MetadataTypeDefinitionTableRowIdentity : IEquatable<Metadata
 
 /// <summary>Freezes one complete source-anchored TypeDef table and its derived member-list intervals.</summary>
 /// <remarks>
-/// This sealed draft catalog requires exact physical RID coverage. Incomplete and bounded acquisition retains no row
+/// This sealed catalog requires exact physical RID coverage. Incomplete and bounded acquisition retains no row
 /// prefix; contradictory evidence retains no derived row facts. The exact result is the sole issuer of derived list
 /// ends in this contract family. It is a complete-table foundation for later TypeDef authority, not the final global
 /// TypeDef identity or a replacement for the legacy construction contracts in this checkpoint. Exact pointer-domain
@@ -445,16 +445,16 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
 
-    /// <summary>Gets whether the complete draft table proof is exact, non-exact, or invalid.</summary>
+    /// <summary>Gets whether the complete table proof is exact, non-exact, or invalid.</summary>
     public MetadataTypeDefinitionTableResultKind ResultKind { get; }
 
-    /// <summary>Gets the typed draft table issue, or none for an exact result.</summary>
+    /// <summary>Gets the typed table issue, or none for an exact result.</summary>
     public MetadataTypeDefinitionTableIssue Issue { get; }
 
     /// <summary>Gets the exact source ends against which complete physical coverage was checked.</summary>
     public MetadataSourceEndIdentity SourceEnds { get; }
 
-    /// <summary>Gets the complete member-pointer draft proof used to resolve active list-domain rows.</summary>
+    /// <summary>Gets the complete member-pointer proof used to resolve active list-domain rows.</summary>
     public MetadataMemberPointerTableCatalogIdentity MemberPointerCatalog { get; }
 
     /// <summary>Gets a defensive copy of exact derived rows, or an initialized empty array for every other result.</summary>
@@ -469,13 +469,13 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
     /// </summary>
     public int ObservedCount { get; }
 
-    /// <summary>Gets a defensive copy of the versioned canonical draft bytes.</summary>
+    /// <summary>Gets a defensive copy of the versioned canonical bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical draft bytes.</summary>
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical bytes.</summary>
     public string Sha256 { get; }
 
-    /// <summary>Creates one complete direct-domain TypeDef-table draft proof.</summary>
+    /// <summary>Creates one complete direct-domain TypeDef-table proof.</summary>
     /// <param name="sourceEnds">The exact table ends for the source metadata module.</param>
     /// <param name="observations">
     /// Every physical TypeDef row in RID order; a default array denotes unavailable complete acquisition.
@@ -492,7 +492,7 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
         return Create(sourceEnds, observations, directPointerCatalog);
     }
 
-    /// <summary>Creates one complete source-anchored TypeDef-table draft proof in direct or pointer list domains.</summary>
+    /// <summary>Creates one complete source-anchored TypeDef-table proof in direct or pointer list domains.</summary>
     /// <param name="sourceEnds">The exact table ends for the source metadata module.</param>
     /// <param name="observations">
     /// Every physical TypeDef row in RID order; a default array denotes unavailable complete acquisition.
@@ -501,7 +501,7 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
     /// The exact complete member-pointer catalog for the same source ends, including exact direct domains.
     /// </param>
     /// <returns>
-    /// An exact catalog with derived ownership, a prefix-free non-exact stop, or a factless invalid draft result.
+    /// An exact catalog with derived ownership, a prefix-free non-exact stop, or a factless invalid result.
     /// </returns>
     public static MetadataTypeDefinitionTableCatalogIdentity Create(
         MetadataSourceEndIdentity sourceEnds,
@@ -696,19 +696,19 @@ public sealed class MetadataTypeDefinitionTableCatalogIdentity :
             0);
     }
 
-    /// <summary>Tests canonical equality between two complete TypeDef-table draft proofs.</summary>
-    /// <param name="other">The other draft catalog.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical draft content.</returns>
+    /// <summary>Tests canonical equality between two complete TypeDef-table proofs.</summary>
+    /// <param name="other">The other catalog.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
     public bool Equals(MetadataTypeDefinitionTableCatalogIdentity? other) =>
         other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
 
-    /// <summary>Tests complete TypeDef-table draft equality against an arbitrary object.</summary>
+    /// <summary>Tests complete TypeDef-table equality against an arbitrary object.</summary>
     /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a catalog with identical canonical draft content.</returns>
+    /// <returns><see langword="true"/> only for a catalog with identical canonical content.</returns>
     public override bool Equals(object? obj) => Equals(obj as MetadataTypeDefinitionTableCatalogIdentity);
 
-    /// <summary>Computes a hash code from the immutable complete-table draft bytes.</summary>
-    /// <returns>A deterministic hash code for canonical draft content.</returns>
+    /// <summary>Computes a hash code from the immutable complete-table bytes.</summary>
+    /// <returns>A deterministic hash code for canonical content.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal MetadataTypeDefinitionTableRowIdentity? ExactRowOrDefault(int typeDefinitionToken)

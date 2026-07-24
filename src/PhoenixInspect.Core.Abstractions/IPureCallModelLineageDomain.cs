@@ -7,7 +7,7 @@ namespace PhoenixInspect.Core.Abstractions;
 /// </summary>
 /// <typeparam name="TValue">The interpreter domain value representation.</typeparam>
 /// <remarks>
-/// The execution core probes for this draft W4.6 capability only after the frozen pure model has returned
+/// The execution core probes for this W4.6 capability only after the frozen pure model has returned
 /// <see cref="PureCallModelOutcomeKind.UnknownReturn"/> and the model outcome, call site, and original
 /// metadata-ordered argument vector have otherwise passed structural validation. Implementations atomically preserve
 /// each outcome-relevant explained argument through a parameter-indexed direct-call transform and create one modeled

@@ -91,7 +91,7 @@ public sealed class W8V2AssignabilityTests
 
     /// <summary>
     /// Proves the System.Object core-role root admits every reference source in both its named and its primitive
-    /// spelling, and that a value-typed source is refused because this draft slice models no boxing conversion.
+    /// spelling, and that a value-typed source is refused because this slice models no boxing conversion.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -179,7 +179,7 @@ public sealed class W8V2AssignabilityTests
 
     /// <summary>
     /// Proves an invariant argument position admits only canonically equal arguments while a covariant position of the
-    /// same construction admits an assignable pair, and that every examined position is retained as draft evidence.
+    /// same construction admits an assignable pair, and that every examined position is retained as evidence.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -469,7 +469,7 @@ public sealed class W8V2AssignabilityTests
     }
 
     /// <summary>
-    /// Proves the declared boundary of this draft slice: an interface target that no class base chain reaches is
+    /// Proves the declared boundary of this slice: an interface target that no class base chain reaches is
     /// unprovable rather than a proven negative, exactly as the closed-construction binder treats an interface
     /// constraint target, and that a generic base definition reached on the chain is likewise unprovable.
     /// </summary>
@@ -664,7 +664,7 @@ public sealed class W8V2AssignabilityTests
 
     /// <summary>
     /// Proves a supplied interface-implementation portfolio that itself stopped propagates as a typed prefix-free
-    /// draft stop rather than silently degrading to the unprovable interface boundary.
+    /// stop rather than silently degrading to the unprovable interface boundary.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -698,7 +698,7 @@ public sealed class W8V2AssignabilityTests
     }
 
     /// <summary>
-    /// Proves both declared draft bounds stop prefix-free at cap plus one: the bounded ancestry chain that never
+    /// Proves both declared bounds stop prefix-free at cap plus one: the bounded ancestry chain that never
     /// reaches the target definition, and the cumulative comparison total, which deliberately reuses the declared
     /// constructed-ancestry-depth bound name and value.
     /// </summary>
@@ -733,7 +733,7 @@ public sealed class W8V2AssignabilityTests
     }
 
     /// <summary>
-    /// Proves each non-exact and invalid prerequisite propagates as a typed prefix-free draft stop that retains no
+    /// Proves each non-exact and invalid prerequisite propagates as a typed prefix-free stop that retains no
     /// edge, no variance position, and no related token, and that every issuer argument is null-checked.
     /// </summary>
     [Fact]
@@ -791,9 +791,9 @@ public sealed class W8V2AssignabilityTests
     }
 
     /// <summary>
-    /// Proves canonical replay equality against a frozen golden digest, defensive copies for every returned draft
+    /// Proves canonical replay equality against a frozen golden digest, defensive copies for every returned
     /// array, guarded private issuance for both retained row kinds, the closed public issuer surface, and emitted
-    /// draft XML documentation.
+    /// XML documentation.
     /// </summary>
     [Fact]
     [Trait("Category", "Fast")]
@@ -1280,7 +1280,7 @@ public sealed class W8V2AssignabilityTests
         {
             var typeDocumentation = Assert.Single(members, member =>
                 string.Equals((string?)member.Attribute("name"), $"T:{type.FullName}", StringComparison.Ordinal));
-            Assert.Contains("draft", typeDocumentation.Value, StringComparison.OrdinalIgnoreCase);
+            Assert.False(string.IsNullOrWhiteSpace(typeDocumentation.Value));
             foreach (var method in type.GetMethods(
                          BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                      .Where(static method => !method.IsSpecialName))
@@ -1292,7 +1292,7 @@ public sealed class W8V2AssignabilityTests
                      name.StartsWith($"{prefix}(", StringComparison.Ordinal))).ToArray();
                 Assert.NotEmpty(methodDocumentation);
                 Assert.All(methodDocumentation, static member =>
-                    Assert.Contains("draft", member.Value, StringComparison.OrdinalIgnoreCase));
+                    Assert.False(string.IsNullOrWhiteSpace(member.Value)));
             }
         }
     }

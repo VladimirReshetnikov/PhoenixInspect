@@ -8,7 +8,7 @@ namespace PhoenixInspect.Host.Abstractions;
 /// <remarks>
 /// The result retains only bytes actually returned by the backing reader. In particular, a partial or unavailable
 /// read never exposes an allocated, zero-filled suffix that could be mistaken for observed target state. This is a
-/// draft dump-evidence contract and may gain more specific backend miss diagnostics as the supported dump corpus grows.
+/// dump-evidence contract and may gain more specific backend miss diagnostics as the supported dump corpus grows.
 /// </remarks>
 public sealed class MemoryReadResult
 {

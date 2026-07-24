@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 namespace PhoenixInspect.W8TestTarget
 {
     /// <summary>Supplies the local half of a same-simple-name, cross-assembly lookup pair.</summary>
-    /// <remarks>This draft fixture type remains physically distinct from the external equally named candidate.</remarks>
+    /// <remarks>This fixture type remains physically distinct from the external equally named candidate.</remarks>
     public sealed class SharedSpelling
     {
         /// <summary>Initializes the local candidate with its exact retained marker.</summary>
@@ -15,7 +15,7 @@ namespace PhoenixInspect.W8TestTarget
     }
 
     /// <summary>Supplies simultaneous per-thread field observations over one exact static declaration.</summary>
-    /// <remarks>This is a draft physical runtime fixture and not a thread-storage product contract.</remarks>
+    /// <remarks>This is a physical runtime fixture and not a thread-storage product contract.</remarks>
     public static class ThreadRelativeProfile
     {
         /// <summary>Starts two retained workers, waits for both assignments, and pauses the coordinating thread.</summary>
@@ -82,7 +82,7 @@ namespace PhoenixInspect.W8TestTarget
     }
 
     /// <summary>Supplies one attributable context-relative field observation.</summary>
-    /// <remarks>This is a draft physical runtime fixture and not a context-storage product contract.</remarks>
+    /// <remarks>This is a physical runtime fixture and not a context-storage product contract.</remarks>
     public static class ContextRelativeProfile
     {
         /// <summary>Assigns the active-context value and pauses with the exact result retained.</summary>
@@ -105,7 +105,7 @@ namespace PhoenixInspect.W8TestTarget
     }
 
     /// <summary>Supplies an optimized selected frame beside the explicit non-optimized controls.</summary>
-    /// <remarks>This is a draft JIT/PDB evidence fixture and not a frame-value product contract.</remarks>
+    /// <remarks>This is a JIT/PDB evidence fixture and not a frame-value product contract.</remarks>
     public static class OptimizedFrameProfile
     {
         /// <summary>Pauses in a no-inline method whose body remains eligible for Release optimization.</summary>
@@ -135,7 +135,7 @@ namespace PhoenixInspect.W8TestTarget
 
     /// <summary>Supplies disjoint lexical locals that test whether the pinned compiler reuses one named slot.</summary>
     /// <remarks>
-    /// The current compiler emits distinct slots, which is an evidence-backed result of this draft Portable-PDB fixture
+    /// The current compiler emits distinct slots, which is an evidence-backed result of this Portable-PDB fixture
     /// rather than a frame-value product contract.
     /// </remarks>
     public static class SlotReuseProfile
@@ -175,7 +175,7 @@ namespace PhoenixInspect.W8TestTarget
     }
 
     /// <summary>Supplies selected-frame retention for the explicitly named RVA-backed fields.</summary>
-    /// <remarks>This is a draft PE/runtime fixture and not a module-storage product contract.</remarks>
+    /// <remarks>This is a PE/runtime fixture and not a module-storage product contract.</remarks>
     public static class NamedRvaProfile
     {
         /// <summary>Pauses with both fixed-width values and their defining module retained.</summary>
@@ -208,7 +208,7 @@ namespace PhoenixInspect.W8TestTarget
     }
 
     /// <summary>Supplies a query expression whose generated lambdas retain the source range-variable spelling.</summary>
-    /// <remarks>This is a draft compiler/PDB fixture and not a lexical-binding product contract.</remarks>
+    /// <remarks>This is a compiler/PDB fixture and not a lexical-binding product contract.</remarks>
     public static class QueryRangeProfile
     {
         /// <summary>Executes the query until its selected range element reaches the pause method.</summary>
@@ -256,7 +256,7 @@ namespace PhoenixInspect.W8AmbiguityEvidence
     using PhoenixInspect.W8TestTarget;
 
     /// <summary>Supplies two imported, same-simple-name candidates with distinct assembly identities.</summary>
-    /// <remarks>This is a draft compiler/PDB fixture and not a name-resolution product contract.</remarks>
+    /// <remarks>This is a compiler/PDB fixture and not a name-resolution product contract.</remarks>
     public static class CrossAssemblyAmbiguityProfile
     {
         /// <summary>Materializes both physical candidates and pauses under the import scope that makes them peers.</summary>
