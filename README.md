@@ -1,12 +1,12 @@
-# Tools: IL Interpreter & Dump-Time Evaluation (Concept Design)
+# PhoenixInspect: IL Interpreter & Dump-Time Evaluation
 
-This repository is the **design home** for an experimental .NET IL interpreter and a bounded, explainable system for evaluating expressions against memory dumps.
+This repository is the **design home** for a .NET IL interpreter and a bounded, explainable system for evaluating expressions against memory dumps.
 
 If you only read one thing: this project is about making dump-time debugging workflows more evidence-backed through deterministic execution, bounded analysis, and explicit explanations when answers are partial or unknown.
 
 ## Project gist
 
-We are designing and prototyping—not yet shipping—a library and architecture that can power experiences such as:
+We are designing and developing a library and architecture that can power experiences such as:
 
 - post-mortem expression evaluation,
 - virtual stepping (Step Into/Over/Out) over dump-backed sessions,
