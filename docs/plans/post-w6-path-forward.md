@@ -13,7 +13,7 @@
 > owned binders correlate selected syntax with stack, PDB, metadata, and dump evidence and may return a typed
 > incomplete or ambiguous result when contextual evidence is insufficient.
 >
-> **Evidence boundary:** W7 is a prototype-design milestone grounded in generated and predeclared synthetic evidence.
+> **Evidence boundary:** W7 is a development milestone grounded in generated and predeclared synthetic evidence.
 > It does not establish field readiness. The owner recorded a separate W7-only disposition on 2026-07-17 after the
 > complete local matrix closed; it does not claim hosted execution and does not weaken the workflow.
 >
@@ -428,8 +428,8 @@ reader objects, or live stack objects:
   null/value/object when available, raw reads, and canonical replay projection; and
 - `ClrmdDumpSession.ReadStaticField` performs the fixed storage operation once for an already bound declaration.
 
-Names are draft direction, not compatibility promises. Every public type and method must carry detailed XML
-documentation of intent, parameters/returns, failure behavior, and prototype caveats.
+Names are provisional direction, not compatibility promises. Every public type and method must carry detailed XML
+documentation of intent, parameters/returns, failure behavior, and caveats.
 
 ### 5.3 Product contracts
 
@@ -723,7 +723,7 @@ canonical encodings before composition.
   issue, and reached-bound facts.
 - Default arrays, malformed tokens, foreign snapshots, mismatched PDB identities, duplicate bounds, wrong pointer
   widths, and contradictory payloads are rejected.
-- Public types/methods have detailed draft XML documentation.
+- Public types/methods have detailed XML documentation.
 
 ### W7.3 — bounded Roslyn projection and fully qualified metadata binder
 
@@ -913,7 +913,7 @@ qualified access and its first selected-frame/PDB/import slice.
 | Result explanation | Improve the headless explanation without adding evaluation semantics |
 | No recurring useful answer | Stop feature expansion and reconsider the product thesis |
 
-The synthetic decision advances prototype design only. No W8 implementation is pre-approved by this plan, and later
+The synthetic decision advances design only. No W8 implementation is pre-approved by this plan, and later
 representative observations may confirm, reverse, or stop the selected direction.
 
 The completed W7 portfolio selected the manifest-assigned `BindingContextPrecision` label as its unique substantive
@@ -953,7 +953,7 @@ W7 closes only when all of the following are proven at current state:
 - any post-W7 selection remains documentation, not silently implemented successor work.
 
 These conditions hold under the W7-specific owner disposition recorded above, so W7 is complete for its stated
-synthetic prototype scope. `this`/argument/local values, generic/thread statics, extern aliases,
+synthetic milestone scope. `this`/argument/local values, generic/thread statics, extern aliases,
 bare `using static` members, arbitrary address contexts, deeper navigation, collection indexing, broader calls, and
 other product surfaces remain subsequent work over the W7 context and binding contracts.
 

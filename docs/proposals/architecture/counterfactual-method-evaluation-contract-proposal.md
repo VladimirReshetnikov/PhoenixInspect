@@ -51,7 +51,7 @@ and compiler/SRM fresh reconstruction. W4.8 implements request-configurable trav
 observation/plan/result artifacts, private typed runtime bindings, issuer-owned preparation, transition-validating
 execution, and common rooted/standalone projection. W4.9 validates dump-sourced root/helper bodies and both fields,
 detaches the complete rooted evidence/memory boundary, and executes exact, partial, and unavailable interpreted and
-modeled rows with dump close/reopen replay. API names shown here remain provisional design names; public prototype APIs
+modeled rows with dump close/reopen replay. API names shown here remain provisional design names; public APIs
 carry detailed XML documentation. W4 is closed for this contract's defined milestone-selected scope.
 
 ## 2) Product-value gate

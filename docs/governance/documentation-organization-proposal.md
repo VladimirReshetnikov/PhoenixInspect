@@ -84,7 +84,7 @@ Long templates and mandatory sections are intentionally avoided.
 
 Review affected documentation when:
 
-- a public prototype contract changes;
+- a public contract changes;
 - a milestone or scope lock changes;
 - implementation evidence changes a capability claim;
 - terminology or identity/result semantics change;

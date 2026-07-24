@@ -1,8 +1,8 @@
-# Prototype Contract Inventory
+# Contract Inventory
 
 **Lifecycle:** Current implementation note
 **Roadmap relation:** Active
-**Stability:** Draft and reversible
+**Stability:** Reversible
 
 ## Purpose
 
@@ -355,7 +355,7 @@ Actions run 29364905178](https://github.com/VladimirReshetnikov/PhoenixInspect/a
 
 ### Standalone counterfactual target outcome
 
-`PhoenixInspect.Product.DumpDebugging` exposes three W4.7 draft types:
+`PhoenixInspect.Product.DumpDebugging` exposes three W4.7 types:
 
 - `CounterfactualTargetOutcomeProjector.Project`, which validates the exact machine, initial semantic/operational
   state, and complete immutable issued-transition sequence rather than relying on a naked terminal record;
@@ -404,7 +404,7 @@ fragment. W6 checkpoints extend only the explicitly selected language profile an
 The [C# Expression Front-End and Subset-Admission Contract](csharp-expression-front-end-contract-proposal.md) governs
 the implemented one-parse boundary, project-owned W2/W5/W6/W7 descriptors, and no-parse preparation/evaluation rule.
 
-`PhoenixInspect.Headless.ReferenceConsumer` remains an internal, independently launched prototype host rather than a
+`PhoenixInspect.Headless.ReferenceConsumer` remains an internal, independently launched host rather than a
 stable CLI. Schema v1 preserves W5 scenario replay, schema v2 adds generated W6 exact and typed non-exact rows without
 changing the W5 path, and schema v3 evaluates twenty-four independent designed incidents across four graph shapes.
 Controlled/generated, designed/synthetic, and representative rows remain separate; promotion is rejected and the
@@ -460,7 +460,7 @@ The product composition overloads accept the W7 language profile, lazily acquire
 map one bound declaration to one ordinary application-domain static slot, decode the admitted direct value shapes,
 validate exact reference targets, and feed only exact non-null objects into the unchanged W2/W6 suffix planners. The
 headless reference consumer adds append-only W7 conformance and sixteen-incident portfolio modes; it remains an
-internal prototype host, not a stable CLI. Every public W7 type/method carries draft XML documentation and contract,
+internal host, not a stable CLI. Every public W7 type/method carries xML documentation and contract,
 canonical, invalid-input, replay, and real-dump tests.
 
 ## Completed W8.1 evidence inventory and active W8.2 contract frontier
@@ -472,7 +472,7 @@ grammar, its Product event adapter, and a selected-method lexical contract envel
 caller-supplied physical rows and source ends; it is not yet produced by one host-owned ClrMD acquisition authority.
 
 The completed [metadata-authority cutover](../../plans/w8-2-metadata-authority-cutover.md) replaced the earlier
-caller-authored proof inventory. Through `d4d5f745c` the public draft surface in `PhoenixInspect.Product.DumpQuery` is:
+caller-authored proof inventory. Through `d4d5f745c` the public surface in `PhoenixInspect.Product.DumpQuery` is:
 
 - `MetadataSourceEndIdentity` and `MetadataSignatureTokenResolutionCatalog` freeze exact table ends, physical token
   order, same-module resolution, and prefix-free incomplete/invalid/bound outcomes;
@@ -521,7 +521,7 @@ contracts remain unchanged while these additive W8.2 contracts land.
 
 A public contract change must include:
 
-1. detailed XML documentation of intent, failure behavior, parameters/returns, and draft caveats;
+1. detailed XML documentation of intent, failure behavior, parameters/returns, and caveats;
 2. an executable test at the boundary it introduces;
 3. deterministic identity and ordering where observable;
 4. explicit partial/unavailable behavior for evidence-dependent operations;

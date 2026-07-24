@@ -1,6 +1,6 @@
 # Documentation Index
 
-This directory contains conceptual design artifacts for the IL interpreter and dump-time evaluation project.
+This directory contains design artifacts for the IL interpreter and dump-time evaluation project.
 
 ## Current delivery focus
 
@@ -113,9 +113,9 @@ admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-chan
 representative rows. W5.5b adds 12 independently dumped, predeclared synthetic incidents over request-pipeline and
 batch-pipeline root graphs. Its raw counts are 8/12 admitted, 4/12 exact, 2/3 useful partial-or-unknown, and 6/12
 decision-changing; four recurring `MemberNavigation` blockers select `AdmitFixedDepthMemberChain` as the next
-prototype design slice. The designed corpus is not field evidence: representative/external observations remain 0
+design slice. The designed corpus is not field evidence: representative/external observations remain 0
 questions across 0 incidents and 0 application shapes, and no readiness rate is claimed. W5 is closed for its defined
-prototype scope under the owner's explicit 2026-07-16 waiver of the hosted-only closure condition. Exact source
+milestone scope under the owner's explicit 2026-07-16 waiver of the hosted-only closure condition. Exact source
 baseline `26ba75fb1` passes the complete local headless matrix. Hosted run
 [29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137) passed documentation and
 Build/Fast but never executed either dump job; [run
@@ -347,13 +347,13 @@ docs/
 | `proposals/architecture/concrete-il-execution-contract-proposal.md` | Architecture | Contract | Current · Active | Normative W3 metadata-derived activation, typed whole-body admission, dump-grounded field import, memory-opcode, exception-boundary, and replay contract. |
 | `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md` | Architecture | Contract | Current · Reference | Normative closed W4 branchless `GetMarkerSummary`/`CombineMarkers` method-evaluation contract and executable evidence record. |
 | `proposals/architecture/module-architecture-proposal.md` | Architecture | Proposal | Superseded · Reference | Granular responsibility catalog; not the active physical-package plan. |
-| `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current prototype contracts and contract-just-ahead-of-code policy supersede them. |
+| `proposals/architecture/minimal-interfaces-proposal.md` | Architecture | Design Sketch | Historical · Reference | Pre-evidence API sketches; current contracts and contract-just-ahead-of-code policy supersede them. |
 | `proposals/architecture/il-interpreter-framework-proposal.md` | Architecture | Proposal | Draft · Supporting | Core interpreter architecture and execution model. |
 | `proposals/architecture/mvp-abstract-domain-proposal.md` | Architecture | Proposal | Draft · Research | Candidate abstract domains and analysis behavior for a later research phase. |
 | `proposals/architecture/technical-stack-proposal.md` | Architecture | Proposal | Draft · Active | Language/runtime/dependency and package layout choices, including the durable sole-Roslyn-parser boundary, implemented W7 consumer/report reuse, W8.1 evidence projects, landed W8.2 expression/frame/lexical and metadata-proof contracts, and the missing host producer/binder/runtime/evaluator. |
 | `proposals/architecture/call-model-and-effects.md` | Architecture | Proposal | Draft · Supporting | Call classification, fallback behavior, and effect lattice contract for later method evaluation. |
 | `proposals/architecture/generic-context-resolver-proposal.md` | Architecture | Proposal | Draft · Research | Generic-context reconstruction strategy for later dump-backed method interpretation. |
-| `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical prototype layout and narrow implemented proof boundary. |
+| `proposals/architecture/prototype-solution-structure-proposal.md` | Architecture | Current Snapshot | Current · Active | Physical layout and narrow implemented proof boundary. |
 | `proposals/architecture/prototype-interface-catalog-proposal.md` | Architecture | Current Snapshot | Current · Active | Narrow contracts exercised through closed W7 and completed W8.1, plus immutable W8.2 expression/frame/lexical and source-anchored metadata-proof families; consumers and host production remain incomplete; unstable. |
 | `proposals/architecture/state-and-domain-model-proposal.md` | Architecture | Proposal | Draft · Supporting | Candidate execution-state, domain, and provenance semantics. |
 | `proposals/architecture/testing-strategy-proposal.md` | Architecture | Strategy | Current · Active | Present executable evidence through closed W7, completed W8.1 physical gates, and landed W8.2 detached proof tests, plus remaining consumer/generated/headless/replay obligations and a thirty-five-incident portfolio minimum. |
@@ -391,7 +391,7 @@ docs/
 | `lib/backend-capability-matrix.md` | Library Notes | Matrix | Historical · Research | Pre-decision comparison retained alongside the active SRM decision. |
 | `lib/adapter-conformance-checklist.md` | Library Notes | Checklist | Draft · Reference | Backend-neutral adapter and miss-reason guidance; apply only when an active fixture needs it. |
 | `lib/backend-evidence-log.md` | Library Notes | Evidence Log | Current · Reference | Current executable SRM and ClrMD/raw-memory evidence followed by the preserved 2026-02 source-review record. |
-| `lib/mvp-backend-decision-record.md` | Library Notes | Decision Record | Current · Active | SRM/PEReader decision for active prototype slices, with evidence-based revisit triggers. |
+| `lib/mvp-backend-decision-record.md` | Library Notes | Decision Record | Current · Active | SRM/PEReader decision for active development slices, with evidence-based revisit triggers. |
 | `lib/pe-pdb-reader-api-comparison.md` | Library Notes | Comparison Note | Historical · Research | Preserved pre-decision API comparison; not the active backend recommendation. |
 | `lib/source-review-deep-dive.md` | Library Notes | Source Review | Historical · Research | Preserved cross-library source review. |
 | `lib/source-tour-workbook.md` | Library Notes | Workbook | Historical · Research | Optional source-tour exercises for a future evidence-triggered backend evaluation. |
@@ -465,7 +465,7 @@ The paths below explore broader design possibilities. They are research/referenc
 1. `proposals/architecture/minimal-interfaces-proposal.md`
 2. `proposals/architecture/module-architecture-proposal.md`
 
-These sketches explain earlier reasoning, but neither their API shapes nor their project-per-seam package map is normative. Start from the current prototype source and `proposals/architecture/prototype-solution-structure-proposal.md` instead.
+These sketches explain earlier reasoning, but neither their API shapes nor their project-per-seam package map is normative. Start from the current source and `proposals/architecture/prototype-solution-structure-proposal.md` instead.
 
 ### Semantic-modeling research path
 
@@ -527,6 +527,6 @@ This project is distributed under the **MIT-0 (MIT No Attribution)** license. Se
 
 ## Documentation WIP policy
 
-For current-state questions, prefer evidence in this order: executable tests and their recorded results, prototype source/solution, active decision records and plans, then supporting proposals. Historical/research documents explain possibilities and prior reasoning; they do not override those sources.
+For current-state questions, prefer evidence in this order: executable tests and their recorded results, source/solution, active decision records and plans, then supporting proposals. Historical/research documents explain possibilities and prior reasoning; they do not override those sources.
 
 Do not add a new subsystem proposal merely because an existing plan mentions one. Add or deepen design only when the active vertical slice needs the contract, and pair the change with an executable validation step whenever practical. When evidence changes, update the active snapshot/traceability entry and mark superseded guidance explicitly instead of silently leaving two “current” answers.

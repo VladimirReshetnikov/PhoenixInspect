@@ -2,7 +2,7 @@
 
 > **Lifecycle:** Draft · **Roadmap:** Supporting
 
-This glossary establishes a shared vocabulary for the conceptual design phase of the IL interpreter and dump-time evaluation project.
+This glossary establishes a shared vocabulary for the early development phase of the IL interpreter and dump-time evaluation project.
 
 The intent is to reduce ambiguity across product, architecture, integration, and planning documents. Definitions here are design-time working definitions, not implementation commitments.
 

@@ -1,8 +1,8 @@
-# Prototype Solution Structure
+# Solution Structure
 
 **Lifecycle:** Current implementation note
 **Roadmap relation:** Active
-**Compatibility:** Draft and intentionally reversible
+**Compatibility:** Intentionally reversible
 
 ## 1. Why the solution was collapsed
 
@@ -25,7 +25,7 @@ The solution retains ten source projects, each containing contracts or behavior 
 | `PhoenixInspect.Host.Dump.ClrMD` | Dump loading, runtime/module discovery, raw evidence, W3 snapshot-scoped execution resolution/import correlation, W6 declared-member/reference/target/relative-storage projections, W7 selected-frame/PDB/import plus ordinary-static runtime declaration/storage/value/target acquisition through ClrMD, and W8.2's caller-supplied selected-method lexical contract envelope. A host-owned producer for that envelope has not landed. |
 | `PhoenixInspect.Product.DumpQuery` | Sole complete Roslyn expression parse; versioned W2/W5/W6/W7 tree recognition; typed snapshot-root and static-symbol binding; immutable canonical context/symbol/storage/object/provenance and W2/W6 plans; direct static value projection; bounded suffix evaluation; complete-corpus replay; and W8.2's immutable common expression and detached static/frame syntax contracts. The V2 binder/evaluator has not landed. |
 | `PhoenixInspect.Product.DumpDebugging` | W4 standalone target projection and rooted preparation/execution plus canonical W5/W6/W7 expression request/classification, typed method/member-chain/static-expression preparation, detached dump binding, lazy W7 context acquisition, and strict mode-preserving product evaluation outcomes. |
-| `PhoenixInspect.Headless.ReferenceConsumer` | Prototype composition root: read-only dump open/root binding, append-only W5/W6/W7 scenario execution, stable machine/human projection, typed root/static-selection reporting, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
+| `PhoenixInspect.Headless.ReferenceConsumer` | Composition root: read-only dump open/root binding, append-only W5/W6/W7 scenario execution, stable machine/human projection, typed root/static-selection reporting, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
 
 Tests are separated into a fast semantic/contract suite, a real dump integration suite, and eight generated target or
 evidence projects: the general dump target, optimized modeled-incident target, W7 application target, identity-
@@ -61,7 +61,7 @@ depth facts, high-water integrity, event and budget ordering, resolver-free repl
   row external-process routing corpus, usefulness-report raw-count replay, and rejection of generated-to-representative
   corpus promotion. W5.5b adds twelve independently dumped incidents across distinct request-pipeline and batch-
   pipeline object graphs, predeclared root/scenario/outcome/value contracts, and fresh-process portfolio replay. The
-  recurring blocker selects fixed-depth member navigation for prototype design. Controlled and designed fixtures both
+  recurring blocker selects fixed-depth member navigation for design. Controlled and designed fixtures both
   contribute zero representative/external-observation rows and establish no readiness rate.
   W7 tests add one-parser static-tree projection, counted fully qualified/contextual binding, selected-frame and
   identity-validated Portable-PDB imports/aliases, raw static scalar/string/nullable/reference reads, target
@@ -76,7 +76,7 @@ depth facts, high-water integrity, event and budget ordering, resolver-free repl
 - Concrete backends depend inward on project-owned contracts.
 - Dump runtime identity and artifact identity are joined through explicit mapping/evidence, not conflated by paths.
 - Dependency edges remain acyclic and point toward smaller stable concepts.
-- Public prototype APIs carry detailed XML documentation and no compatibility promise.
+- Public APIs carry detailed XML documentation and no compatibility promise.
 
 ## 4. Evidence boundary
 
@@ -363,4 +363,4 @@ implementation commit. Formal W3 closure is recorded at exact documentation comm
 run 29375584237](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29375584237) passed all four required
 jobs.
 
-The physical layout and contracts remain prototype hypotheses. They may change freely as later evidence forces better boundaries.
+The physical layout and contracts remain early-development hypotheses. They may change freely as later evidence forces better boundaries.

@@ -11,7 +11,7 @@
 > floor and one selected-frame/Portable-PDB import-context profile.
 > This later decision does not retroactively make W7 part of, or pre-approved by, this completed W6 plan.
 >
-> **Evidence boundary:** W6 is a prototype-design milestone grounded in predeclared synthetic incidents. It does not
+> **Evidence boundary:** W6 is a development milestone grounded in predeclared synthetic incidents. It does not
 > establish field readiness. W5's hosted disposition did not carry forward; the owner recorded a separate W6-only
 > disposition on 2026-07-16 after the local matrix closed.
 
@@ -104,13 +104,13 @@ W6 asks:
 > evidence behavior, without caller-assembled runtime structure or repeated member lookup?
 
 The milestone succeeds only if an external headless consumer can answer that question against real generated dumps
-and a predeclared multi-shape synthetic portfolio can use the resulting answers to choose the following prototype
+and a predeclared multi-shape synthetic portfolio can use the resulting answers to choose the following development
 direction.
 
 ### 2.3 What the evidence does not establish
 
 The W5 corpus is designed evidence over source-controlled fixtures. It does not establish how often a member chain is
-available or useful in external incidents. W6 may advance prototype design on the strength of the selected synthetic
+available or useful in external incidents. W6 may advance design on the strength of the selected synthetic
 decision, but it must continue to report a representative/external-observation denominator of zero unless separately
 qualified observations are supplied later.
 
@@ -290,8 +290,8 @@ W6 adds no project. Responsibilities remain aligned with the then-current fourte
 | `PhoenixInspect.TestTarget` | Source-controlled multi-shape object graphs and readiness oracles |
 | Unit/integration corpus | Three-bucket parser/admission laws, legacy compatibility, adapter evidence, plan/evaluation semantics, real dumps, fresh-process replay, and usefulness decision |
 
-Illustrative type names in this plan express ownership, not a frozen public API. Any public prototype type or method
-introduced during implementation requires complete XML documentation and an explicit draft-phase caveat.
+Illustrative type names in this plan express ownership, not a frozen public API. Any public type or method
+introduced during implementation requires complete XML documentation and an explicit caveat.
 
 ## 5) Identity, evidence, and replay contract
 
@@ -739,7 +739,7 @@ one shape. The initial scenario design is in section 8.
 - exact, null-short-circuit, fallback, partial, unavailable, conflict, invalid, direct-null, and unsupported rows;
 - two fresh portfolio processes produce byte-identical machine and human reports;
 - raw counts only, with generated, synthetic, and representative corpus kinds still non-promotable; and
-- a unique post-W6 prototype action selected only if it clears the evidence threshold in section 10; otherwise the
+- a unique post-W6 development action selected only if it clears the evidence threshold in section 10; otherwise the
   successor remains explicitly deferred rather than being chosen by enum order or architecture taste.
 
 **Implemented checkpoint.** Commit `93c1f684b` closes W6.6 at `~1K LOC` scale. The predeclared schema-v3 manifest
@@ -791,7 +791,7 @@ guard, and the authored-scope excluded-vocabulary scan is clean.
 GitHub billing remains outside the repository's control. The owner explicitly overrode W6's hosted-only closure block
 on 2026-07-16 and directed the milestone to proceed. This disposition does not claim a hosted job executed or passed,
 does not weaken the checked-in four-job workflow, does not establish field readiness, and does not automatically apply
-to any successor milestone. W6 is closed for its defined prototype scope. The evidence-selected
+to any successor milestone. W6 is closed for its defined milestone scope. The evidence-selected
 `AdmitOneConcreteContextAcquisitionScenario` action is documented but not implemented by W6. The separately approved
 [Post-W6 Path Forward](post-w6-path-forward.md) now defines W7 without changing this historical gate.
 
@@ -928,7 +928,7 @@ leader below that floor leaves the successor explicitly deferred.
 | Result explanation/consumption | Improve the headless result explanation before adding semantics |
 | No recurring useful answer | Stop feature expansion and reconsider the product thesis |
 
-The synthetic decision advances prototype design only. Later external observations may confirm, reverse, or stop it.
+The synthetic decision advances design only. Later external observations may confirm, reverse, or stop it.
 Explicit deferral is a valid W6 result; a report must never manufacture a winner merely to name W7. No W7
 implementation is pre-approved by this document.
 

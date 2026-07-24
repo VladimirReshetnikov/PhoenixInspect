@@ -9,14 +9,14 @@ The objective is to pick technologies that maximize:
 - maintainability over multiple years,
 - deterministic behavior for analysis tooling,
 - portability across hosts (CLI, IDE plugin, service), and
-- ease of incremental strengthening from prototype to production.
+- ease of incremental strengthening from early development to production.
 
 ---
 
 ## 1) Design constraints that drive stack choices
 
 1. **Tight runtime control**
-   Deterministic resource counters are required from the first executable slices; the prototype currently accounts
+   Deterministic resource counters are required from the first executable slices; the implementation currently accounts
    for admitted instruction transfers. W4.4 additionally records fixed internal graph-construction use under
    64-method and 1,024 method/field/edge-unit resource caps; those are not the later configurable product traversal
    budget. W4.5 separately admits a configured logical-call-depth limit before activation and records required,
@@ -60,7 +60,7 @@ The objective is to pick technologies that maximize:
 
 **Lifecycle correction (2026-07)**
 
-.NET 8 is in maintenance and reaches end of support on November 10, 2026. .NET 10 is active LTS through November 14, 2028. The project therefore moved now, before prototype compatibility becomes expensive. See the [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core).
+.NET 8 is in maintenance and reaches end of support on November 10, 2026. .NET 10 is active LTS through November 14, 2028. The project therefore moved now, before compatibility becomes expensive. See the [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core).
 
 **Deferred decision**
 
@@ -70,12 +70,12 @@ The objective is to pick technologies that maximize:
 
 ## 3) Repository and package layout proposal
 
-Current prototype structure:
+Current structure:
 
 - `src/PhoenixInspect.Core.Execution`
   - metadata-derived activation, typed whole-body admission, and deterministic IL micro-step engine.
 - `src/PhoenixInspect.Core.Abstractions`
-  - draft structural type/method/field identities, atomic resolution, value/memory, evidence-result, and budget
+  - structural type/method/field identities, atomic resolution, value/memory, evidence-result, and budget
     contracts consumed by the engine.
 - `src/PhoenixInspect.Metadata.Abstractions` and `src/PhoenixInspect.Metadata.SRM`
   - projected metadata contracts and the active SRM/PEReader adapter.
@@ -112,7 +112,7 @@ front end calls `SyntaxFactory.ParseExpression` with explicit C# 14 regular-sour
 The dependency is contained in `PhoenixInspect.Product.DumpQuery`. Workspaces, Scripting, compilation, semantic models,
 and emission are not part of the active product path. Internal tree visitors immediately project enabled W2/W5/W6/W7
 shapes into project-owned immutable descriptors; no Roslyn object enters core execution, dump/metadata abstractions,
-public prototype contracts, or canonical artifacts. A package or language-version change requires a three-bucket
+public contracts, or canonical artifacts. A package or language-version change requires a three-bucket
 parser/admission corpus diff and a new or explicitly revised front-end profile identity.
 
 Complete expression parsing does not imply complete binding or evaluation. Valid C# outside an enabled profile is a
@@ -140,7 +140,7 @@ proofs are not yet required inputs to the future V2 syntax/binder/runtime pipeli
 - Good control over blobs, signatures, tokens, and Portable PDB access.
 - Suitable for deterministic decoding and explicit handling of edge cases.
 
-This is the active prototype backend because it is exercised by executable integration evidence and aligns with the
+This is the active implementation backend because it is exercised by executable integration evidence and aligns with the
 planned Portable PDB path. W3's reusable SRM projection atomically derives body, calling convention, structural
 declaring type, receiver/parameters/return, initialized locals, and contextual FieldDefs from one `MetadataReader`.
 W4.4 adds body-independent contextual direct-MethodDef resolution: it proves same-module ordinary managed IL and
@@ -324,7 +324,7 @@ CFG/fixpoint, multi-domain lattice, virtual-stepping, dynamic, async, and broad 
 
 ### NuGet packaging
 
-- Do not publish packages during the conceptual prototype phase.
+- Do not publish packages during early development.
 - Revisit modular package publication only after active boundaries have independent consumers and compatibility tests.
 - Use semantic versioning with documented compatibility expectations.
 
@@ -410,15 +410,15 @@ mode. W8.2 onward adds append-only V2 modes and a 35-incident minimum portfolio:
 thread-relative, one RVA-backed, and one exact memory-homed frame-value incident.
 
 
-## 13) Prototype implementation snapshot (draft)
+## 13) Implementation snapshot
 
-> **Draft status notice:** The current solution is a reduced ten-source-project prototype organized around executable evidence and a small set of dependency boundaries.
+> **Status notice:** The current solution is a reduced ten-source-project solution organized around executable evidence and a small set of dependency boundaries.
 > Project names, dependencies, and interfaces are exploratory and may change without compatibility guarantees.
 
 Current facts:
 
 - The solution retains ten `src/` projects with active code/contracts plus ten test/target/evidence projects; 33 empty placeholders and three later experimental projects were removed, and the one-purpose `Types`/`IL` DTO assemblies were folded into core contracts.
-- Handwritten prototype code exists in `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Core.Execution`, `PhoenixInspect.Domain.Concrete`, `PhoenixInspect.Metadata.Abstractions`, `PhoenixInspect.Metadata.SRM`, `PhoenixInspect.Host.Abstractions`, `PhoenixInspect.Host.Dump.ClrMD`, `PhoenixInspect.Product.DumpQuery`, `PhoenixInspect.Product.DumpDebugging`, and `PhoenixInspect.Headless.ReferenceConsumer`.
+- Handwritten source code exists in `PhoenixInspect.Core.Abstractions`, `PhoenixInspect.Core.Execution`, `PhoenixInspect.Domain.Concrete`, `PhoenixInspect.Metadata.Abstractions`, `PhoenixInspect.Metadata.SRM`, `PhoenixInspect.Host.Abstractions`, `PhoenixInspect.Host.Dump.ClrMD`, `PhoenixInspect.Product.DumpQuery`, `PhoenixInspect.Product.DumpDebugging`, and `PhoenixInspect.Headless.ReferenceConsumer`.
 - Core execution now uses structural module/MethodDef/TypeDef/FieldDef identity, atomic method/signature/local projection,
   metadata-derived activation, frozen typed whole-body admission, an injected persistent-memory capability, and a
   terminal typed-null target outcome. W4.4 adds a separate frozen graph-preparation mode for exactly one direct

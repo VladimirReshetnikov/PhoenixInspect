@@ -1,6 +1,6 @@
 # Special Semantics Registry Proposal
 
-> **Roadmap status: research backlog.** A unified registry is premature until at least two implemented model kinds need shared precedence and diagnostics. The current prototype must not create registry infrastructure or packages in anticipation of that need.
+> **Roadmap status: research backlog.** A unified registry is premature until at least two implemented model kinds need shared precedence and diagnostics. The current implementation must not create registry infrastructure or packages in anticipation of that need.
 
 ## 1) Purpose
 

@@ -8,7 +8,7 @@ This FAQ answers the questions contributors, partner teams, and prospective adop
 
 The active product target is a deterministic, read-only expression evaluator grounded in .NET dumps. The IL
 interpreter supports bounded counterfactual method evaluation, but it is enabling technology rather than the product
-by itself. W1–W7 are closed for their named prototype scopes. Most recently, W7 implemented an opt-in
+by itself. W1–W7 are closed for their named milestone scopes. Most recently, W7 implemented an opt-in
 `StaticFieldExpressionV1`: a non-ambiguous fully qualified ordinary static field works without frame/PDB context,
 while exact selected-frame/Portable-PDB namespace, import, and simple-alias facts can bind contextual `Type.Field`
 forms. Direct values and exact references can continue through the unchanged W2/W6 suffix evaluator.
@@ -34,9 +34,9 @@ Longer-term workflows may include:
 
 ## 2) Is this already a production-ready implementation?
 
-No. The repository remains in conceptual design with a narrow executable prototype.
+No. The repository remains in early development with a narrow executable slice.
 
-The prototype under `src/` and `tests/` now includes the closed W1–W7 evidence: typed dump reads; restricted rooted
+The implementation under `src/` and `tests/` now includes the closed W1–W7 evidence: typed dump reads; restricted rooted
 queries; bounded concrete IL and counterfactual method execution; a product facade and hidden reference consumer;
 fixed-depth field/data-property navigation; one complete pinned Roslyn parse with versioned profile admission; and
 fully qualified/contextual ordinary static-field reads with direct or suffix results. W7's closure baseline passes its
@@ -47,7 +47,7 @@ respectively. This remains generated and meaningful-synthetic evidence with zero
 not establish production readiness. W8.2 product behavior requires its own implementation and validation evidence.
 
 The following W3 checkpoint record is retained as historical evidence for one of those foundations. At that point the
-prototype contained draft public contracts; structural module/type/method/field identities; SRM-derived method
+implementation contained public contracts; structural module/type/method/field identities; SRM-derived method
 signatures, locals, bodies, and field definitions; metadata-derived root activation; frozen typed whole-body admission;
 a persistent concrete validation heap; and bounded ClrMD dump/module/object/field/string/metadata/IL evidence. The
 closed W3 E1/E2 profiles execute branchless `Int32` arithmetic and one exact direct or constant-adjusted instance-field
@@ -112,7 +112,7 @@ Unknown is not an error by default. It is often the most correct answer and shou
 The primary output is executable evidence for the active vertical slice, accompanied by only the design needed to make that evidence evidence-backed. Useful artifacts include:
 
 - an end-to-end scenario and its tests,
-- lightweight prototype code that exercises the real boundary,
+- lightweight code that exercises the real boundary,
 - concise contract or decision updates required by that scenario,
 - an honest record of what the scenario did and did not prove.
 
@@ -232,7 +232,7 @@ If these answers become stronger over time, the design is moving in the right di
 
 Out of scope in the current phase:
 
-- claiming production or general-interpreter completeness from the closed W1–W7 prototype evidence,
+- claiming production or general-interpreter completeness from the closed W1–W7 early-development evidence,
 - presenting W8.2+ V2 product behavior as implemented before its checkpoint evidence lands,
 - promising production timelines,
 - polishing runtime tooling UX beyond design-level proposals,

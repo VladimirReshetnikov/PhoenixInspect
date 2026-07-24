@@ -728,9 +728,9 @@ To make this feature clean (and not a pile of special-cases), extend the W3 inte
 Everything else (unknown propagation, origin labels/effects, call modeling, dump-backed heap) plugs into this naturally.
 ---
 
-## Appendix A) Current prototype contract alignment (`src/`)
+## Appendix A) Current contract alignment (`src/`)
 
-`src/` is no longer scaffolding-only. `PhoenixInspect.Core.Execution` contains draft semantic/operational state,
+`src/` is no longer scaffolding-only. `PhoenixInspect.Core.Execution` contains semantic/operational state,
 `MachineActivationResult`, `StepOutcome`, `MachineRunStatus`, deterministic budgets/events, frozen typed whole-body
 admission, and `IlMachine.ActivateRoot`/`StepOne`. Activation derives receiver, parameter, local, and return shapes
 from one atomically resolved method definition; callers no longer seed counts, local values, or return disposition.

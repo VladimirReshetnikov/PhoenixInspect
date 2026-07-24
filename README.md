@@ -21,7 +21,7 @@ Core principles:
 
 ## Current phase
 
-- **Status:** conceptual design with an executable prototype, progressing through evidence-led vertical slices.
+- **Status:** early development, progressing through evidence-led vertical slices.
 - **Delivery status:** W8 is the sole active design/implementation sequence. W8.1 is implemented and locally validated
   through exact compiler/PDB, constructed-runtime, selected-frame, storage, literal, and assignability evidence. Its
   [`physical-truth disposition`](docs/plans/w8-1-physical-truth-disposition.md) admits constructed, thread-relative,
@@ -96,9 +96,9 @@ Core principles:
   report is 8/9 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers. A second
   predeclared portfolio runs 12 independently dumped incidents over request-pipeline and batch-pipeline roots: 8/12
   are admitted, 4/12 exact, 2/3 useful among partial-or-unknown answers, and 6/12 decision-changing. Its recurring
-  blocker ranking selects `AdmitFixedDepthMemberChain` for the next prototype design slice. The evidence is designed,
+  blocker ranking selects `AdmitFixedDepthMemberChain` for the next design slice. The evidence is designed,
   not representative: the external-observation denominator remains 0 questions across 0 incidents and 0 application
-  shapes, and no readiness rate is claimed. W5 is closed for its defined prototype scope under the owner's explicit
+  shapes, and no readiness rate is claimed. W5 is closed for its defined milestone scope under the owner's explicit
   2026-07-16 waiver of the hosted-only closure condition. The exact source baseline `26ba75fb1` passes the complete
   local headless matrix. [Run 29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137)
   passed documentation and Build/Fast at exact commit `24825ce53`, but GitHub rejected both dump jobs before their
@@ -141,10 +141,10 @@ Core principles:
 - **Physical scope:** ten source projects contain active contracts or behavior in a twenty-project solution.
   `PhoenixInspect.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
   evaluation, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources.
-  `PhoenixInspect.Headless.ReferenceConsumer` is the independently launched prototype composition root and report runner;
+  `PhoenixInspect.Headless.ReferenceConsumer` is the independently launched composition root and report runner;
   it is not a shipping CLI contract. The earlier empty placeholders and later out-of-scope experiments remain removed,
   and physical boundaries are still justified by executable evidence rather than speculative package maps.
-- **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains prototype evidence, not a production-ready evaluator or interpreter.
+- **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains early-development evidence, not a production-ready evaluator or interpreter.
 
 The normative W4 contract is
 `docs/proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`. Its generated-dump incident

@@ -4,7 +4,7 @@
 
 This note records applications and architectural implications that may become relevant if the domain-parametric semantics hypothesis is validated.
 
-The hypothesis is that a single, well-specified IL semantics could eventually support concrete, hybrid, and abstract modes and be reused beyond post-mortem debugging. The current prototype does not yet demonstrate that claim.
+The hypothesis is that a single, well-specified IL semantics could eventually support concrete, hybrid, and abstract modes and be reused beyond post-mortem debugging. The current implementation does not yet demonstrate that claim.
 
 ---
 

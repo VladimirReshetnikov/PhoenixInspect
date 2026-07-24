@@ -37,7 +37,7 @@ vectors, or machine state.
 
 W5 was product composition, not a general C# evaluator and not a new interpreter-semantics milestone. After W5 made
 the current capability consumable, a meaningful multi-shape synthetic incident-question portfolio selected the next
-prototype investment. This designed evidence does not establish field readiness. No W6 feature was pre-approved when
+development investment. This designed evidence does not establish field readiness. No W6 feature was pre-approved when
 W5 began; the later W6 contract is owned separately by the [Post-W5 Path Forward](post-w5-path-forward.md).
 
 ## 2) Why this is the right next move
@@ -50,7 +50,7 @@ product result. Three gaps defined W5's work:
 1. **Product reach:** W4 still requires expert, test-shaped structural assembly rather than one product request.
 2. **Meaningful synthetic usefulness:** the original admitted success evidence came from one controlled generated
    shape, so the project needed an independent, multi-shape designed-incident denominator before selecting more
-   prototype behavior. This denominator remains distinct from field-readiness evidence.
+   implemented behavior. This denominator remains distinct from field-readiness evidence.
 3. **Roadmap discipline:** without an explicit successor, it would have been easy to promote virtual stepping, branches,
    exception-handler transfer, CFG analysis, async/dynamic lifting, generics, or broad models merely because their
    research entry gates are now closer.
@@ -70,7 +70,7 @@ W5 closes the first gap and, through W5.5b checkpoint `90ade6d92`, measures the 
 - Preserve exact, partial, unavailable, conflict, invalid, budget, cancellation, model, effect, provenance, and
   diagnostic distinctions already implemented by W2/W4.
 - Provide a headless reference consumer and a versioned scenario manifest so the full request can run outside a test
-  method without declaring the prototype API stable.
+  method without declaring the aPI stable.
 
 ### Explicit exclusions
 
@@ -218,7 +218,7 @@ Add one repository-owned headless reference consumer that accepts a versioned lo
 - a concise human-readable explanation of semantic mode, completion, completeness, evidence, effects, value,
   reached bounds, provenance, and diagnostics.
 
-The consumer is a prototype composition root, not a shipping CLI contract. Its checked-in corpus uses generated
+The consumer is a composition root, not a shipping CLI contract. Its checked-in corpus uses generated
 fixtures and covers W2 query, W4 exact interpreted, W4 exact modeled, degraded field evidence, acquisition failure,
 unsupported expression, budget exhaustion, cancellation, repeated execution, and dump close/reopen/rebind.
 
@@ -248,7 +248,7 @@ Run a predeclared portfolio of incident questions through the W5 facade. The des
 order of `~10` independently dumped synthetic incidents across more than one application shape. Each application
 shape has a distinct root type and surrounding object graph, and every incident has a predeclared expected product
 outcome. The simple W5.4 controlled fixture may validate routing and the report runner, but it does not satisfy this
-gate. The qualifying synthetic portfolio validates prototype usefulness only and does not contribute to a field-
+gate. The qualifying synthetic portfolio validates usefulness only and does not contribute to a field-
 readiness rate.
 
 For every question, retain at least:
@@ -281,17 +281,17 @@ denominator. Do not extrapolate from designed scenarios or claim field readiness
 | W5.3 | `~1K LOC` | `fc8a43a7a` | One strict outcome union preserves the original W2 result, W4 execution result, preparation failure, classification failure, or acquisition failure without a fabricated common semantic mode. |
 | W5.4 | `~1K LOC` | `59d9bb590` | The 14-project solution contains a headless reference consumer and nine-row generated corpus with fresh-process and dump-reopen deterministic replay. |
 | W5.5a | `~1K LOC` | `0f5230e13`, `b788f4f66` | The schema-v2 usefulness runner separates generated routing, qualifying synthetic design evidence, and representative observations; it emits raw admission/outcome/usefulness/acquisition composition, rejects corpus-kind promotion, and requires predeclared synthetic root/scenario/outcome/value contracts plus independent snapshot identities. |
-| W5.5b | `~1K LOC` | `90ade6d92` | Twelve independently dumped, predeclared incidents across request-pipeline and batch-pipeline root graphs replay headlessly. Their blocker ranking selects `AdmitFixedDepthMemberChain` as a prototype design decision while representative observations remain zero. |
+| W5.5b | `~1K LOC` | `90ade6d92` | Twelve independently dumped, predeclared incidents across request-pipeline and batch-pipeline root graphs replay headlessly. Their blocker ranking selects `AdmitFixedDepthMemberChain` as a design decision while representative observations remain zero. |
 
 The implemented W5 surface is cumulatively `~10K LOC` at order-of-magnitude scale. The generated validation report is
 8/9 admitted and 3/9 exact, with 0/4 useful partial-or-unknown and 0/9 decision-changing answers. Those are runner-
 validation counts only. The meaningful synthetic report is 8/12 admitted and 4/12 exact, with 2/3 useful partial-or-
 unknown and 6/12 decision-changing answers across 12 incidents and two application shapes. It contains four
 `MemberNavigation`, three `ContextAcquisition`, one `ExecutionBody`, and four no-blocker rows. These designed counts
-select prototype direction only: they contribute nothing to a field-readiness rate, and the representative/external-
+select development direction only: they contribute nothing to a field-readiness rate, and the representative/external-
 observation denominator remains 0 questions across 0 incidents and 0 application shapes.
 
-W5.1–W5.5b and the W5 umbrella are closed for the defined prototype scope. Exact source baseline `26ba75fb1` passes
+W5.1–W5.5b and the W5 umbrella are closed for the defined milestone scope. Exact source baseline `26ba75fb1` passes
 the meaningful portfolio and complete local matrix. The owner explicitly waived the final hosted-only condition for
 W5 on 2026-07-16 because the external account state could not be repaired in this milestone. Run
 [29512657137](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29512657137) passed documentation and
@@ -330,8 +330,8 @@ Then choose exactly one branch:
 
 A candidate that requires branches, handler transfer, CFG/fixpoint analysis, generic dispatch, or another large
 subsystem receives a new contract and `~10K`-scale decomposition before implementation. Passing a historical research
-entry gate is necessary but not sufficient; the qualifying W5.5b blocker ranking must select the next prototype work.
-Because W5.5b uses designed scenarios, this decision advances prototype design only. External observations may later
+entry gate is necessary but not sufficient; the qualifying W5.5b blocker ranking must select the next development work.
+Because W5.5b uses designed scenarios, this decision advances design only. External observations may later
 confirm, reverse, or stop that direction before a field-readiness claim.
 
 ### W5.5b decision — fixed-depth member chain selected
@@ -345,7 +345,7 @@ selects `AdmitFixedDepthMemberChain`.
 This selection admits design work on one fixed-depth, null-aware member-chain slice after W5 closure. It does not yet
 admit arbitrary properties, collections, indexers, calls, frame recovery, general expression binding, or additional IL
 semantics. It is also not an external observation or a readiness claim; representative counts remain zero and may
-later reverse the prototype direction.
+later reverse the development direction.
 
 ## 7) Verification and delivery discipline
 
@@ -384,20 +384,20 @@ W5 closes only when all of the following are true:
 - exact, degraded, failure, budget, cancellation, interpreted, and modeled outcomes retain their existing truth axes;
 - a headless consumer and generated canonical corpus prove the complete request-to-result path;
 - the meaningful synthetic usefulness gate has produced raw counts from at least 10 independent dumps across two
-  structural application shapes and selected exactly one next prototype action; external observations remain a
+  structural application shapes and selected exactly one next development action; external observations remain a
   separate, explicitly zero-denominator field-readiness concern; and
 - the exact pushed closure commit passes locked restore, strict Release build, complete unit/Fast/focused dump lanes,
   Markdown/headless guards, and hosted CI with zero skips within the milestone test selection.
 
 All substantive product, evidence, replay, headless, synthetic-portfolio, and complete local-matrix conditions above
 are satisfied. The owner explicitly accepted the missing hosted portion of the final condition as a W5-only closure
-exception on 2026-07-16. Therefore W5 is closed for its defined prototype scope. The rejected hosted jobs remain
+exception on 2026-07-16. Therefore W5 is closed for its defined milestone scope. The rejected hosted jobs remain
 recorded as not executed and not passing; this exception neither establishes field readiness nor carries into the
 selected fixed-depth member-chain slice.
 
 Virtual stepping, broad interpreter expansion, and additional product surfaces remain research rather than active
 delivery work. Only the selected fixed-depth member-chain design slice is eligible for a separately contracted next
-prototype milestone; it is selected, not implemented by W5.
+development milestone; it is selected, not implemented by W5.
 
 The selected milestone is now specified by [`Post-W5 Path Forward`](post-w5-path-forward.md). This completed W5 plan
 remains the authoritative record of why that bounded member-chain direction was chosen.

@@ -4,7 +4,7 @@
 
 This document is the compact normative contract for the first product-facing dump query. It consolidates the W2
 language, binding, evidence, and replay rules that were previously distributed across the roadmap, architecture
-overview, product proposal, and test strategy. The prototype APIs remain draft-phase interfaces, but an implementation
+overview, product proposal, and test strategy. The aPIs remain early-development interfaces, but an implementation
 does not satisfy W2 unless it preserves the behavior below.
 
 W2 closed with a handwritten parser at commit `5bed47100`. W6.2 will replace that implementation with the common

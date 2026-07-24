@@ -867,6 +867,6 @@ product route.
 ## 8) Documentation policy
 
 - Update this plan when executable evidence changes sequencing or scope.
-- Keep current implementation facts in the root README and prototype-status documents; link rather than duplicating volatile counts.
+- Keep current implementation facts in the root README and status documents; link rather than duplicating volatile counts.
 - Mark research documents clearly, but do not expand them merely to make their taxonomies agree.
 - Prefer a short contract plus a running fixture over another comprehensive up-front specification.

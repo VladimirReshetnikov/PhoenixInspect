@@ -241,8 +241,8 @@ AdmittedExpression
 
 This is a design shape, not a frozen public API. It contains no syntax node, syntax token, span object, diagnostic,
 semantic symbol, or compilation. Names and literal values are copied into project-owned strings and scalars. Every
-public prototype type or method introduced during implementation requires complete XML documentation and an explicit
-draft-phase caveat.
+public type or method introduced during implementation requires complete XML documentation and an explicit
+caveat.
 
 Classification returns this descriptor internally with the public request. Preparation consumes it directly. The
 W5 evaluator must not call the parser again, and the W2 convenience entry point is only composition over parse,

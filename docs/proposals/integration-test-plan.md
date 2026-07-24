@@ -30,7 +30,7 @@ and W4.9 adds the ClrMD evidence producer, detached binding, dump-grounded exact
 and exact hosted closure. W5.1–W5.5b now add the focused expression classifier, typed acquisition facade, mode-
 preserving evaluator, external headless consumer, canonical generated corpus, deterministic usefulness-report runner,
 and twelve-incident/two-shape meaningful synthetic portfolio through pushed checkpoint `90ade6d92`. W5 is closed for
-its defined prototype scope under the milestone-scoped owner exception recorded in the
+its defined milestone scope under the milestone-scoped owner exception recorded in the
 [`Post-W4 Path Forward`](../plans/post-w4-path-forward.md); rejected hosted jobs are not test evidence.
 The completed [`Post-W5 Path Forward`](../plans/post-w5-path-forward.md) and
 [`C# Expression Front-End and Subset-Admission Contract`](architecture/csharp-expression-front-end-contract-proposal.md)
@@ -547,7 +547,7 @@ The test launches twelve isolated hidden targets, writes one full dump per targe
 one predeclared question per dump, requires twelve distinct snapshot hashes across request-pipeline and batch-pipeline
 root types, then runs two fresh portfolio processes and requires byte-identical reports. The raw baseline is 8/12
 admitted, 4/12 exact, 2/3 useful partial-or-unknown, and 6/12 decision-changing. Four member-navigation blockers outrank
-three context-acquisition and one execution-body blocker, selecting `AdmitFixedDepthMemberChain` for prototype design.
+three context-acquisition and one execution-body blocker, selecting `AdmitFixedDepthMemberChain` for design.
 The designed corpus contributes zero representative/external-observation rows and establishes no readiness rate.
 
 The cumulative documentation candidate passes locked restore; strict 14-project Release 0 warnings/0 errors; unit
@@ -687,7 +687,7 @@ and source-anchored metadata objects. Its shared Core grammar and Product event 
 FieldSig trees, direct named roots, nested generics, arrays, modifiers, function pointers, exact source/token ends,
 TypeSpec graph cycles and omissions, FieldSig anchors, GenericParam table/owner/binding completeness, edge aggregates,
 raw/provisional/exact type classification, and Nullable topology. Exact-cap, cap-plus-one, malformed, incomplete,
-duplicate, crossed-owner, defensive-copy, canonical-equality, and public-draft-XML cases expose no usable prefix on a
+duplicate, crossed-owner, defensive-copy, canonical-equality, and public-XML cases expose no usable prefix on a
 stop. Verification at `5fd87a3e5` passed strict Release with zero warnings/errors, unit 519/519, integration 344/344,
 and focused metadata construction 18/18.
 

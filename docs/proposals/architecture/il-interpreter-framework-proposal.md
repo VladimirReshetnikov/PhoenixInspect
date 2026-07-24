@@ -229,8 +229,8 @@ This control plane is policy + orchestration; opcode semantics remain in Layer B
 ## 4. Core abstractions (API sketch)
 
 The sketches in this section show the intended extension shape. They are not source-compatible transcriptions of the
-current prototype; the current surface is recorded in
-[Prototype Contract Inventory](prototype-interface-catalog-proposal.md).
+current implementation; the current surface is recorded in
+[Contract Inventory](prototype-interface-catalog-proposal.md).
 
 ### 4.1 Metadata and method bodies
 

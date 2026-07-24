@@ -39,7 +39,7 @@ Purpose: prove method-body acquisition, deterministic budget accounting, and roo
 |---|---|---|
 | `ret` | `void` root method with empty evaluation stack | `Exact` |
 
-This was the original body-only prototype slice. W1 later executed a normalized `RetOnly` body acquired from counted
+This was the original body-only development slice. W1 later executed a normalized `RetOnly` body acquired from counted
 dump memory, and W3 migrated that path to atomic metadata-derived activation. The independently opened disk PE remains
 artifact-oracle evidence, never an input to dump execution.
 

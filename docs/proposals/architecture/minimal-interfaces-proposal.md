@@ -1,4 +1,4 @@
-> **Historical design sketch.** These interfaces predate executable evidence and are not normative API commitments. The current prototype source is authoritative for implemented contracts; new public surface is added contract-just-ahead-of-code and must preserve typed evidence/provenance at partial-data boundaries. See `architecture-overview-proposal.md`.
+> **Historical design sketch.** These interfaces predate executable evidence and are not normative API commitments. The current source is authoritative for implemented contracts; new public surface is added contract-just-ahead-of-code and must preserve typed evidence/provenance at partial-data boundaries. See `architecture-overview-proposal.md`.
 
 Below is an earlier candidate public interface surface for three abstraction packages:
 

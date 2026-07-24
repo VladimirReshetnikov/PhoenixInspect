@@ -114,7 +114,7 @@ The W3 type vocabulary contains:
 - an exact object-reference type identified by content-derived module identity plus a non-nil `TypeDef` token.
 
 Display names are diagnostic evidence only. Two named types from different modules do not compare equal merely because
-their namespace-qualified names match. Prototype-only named types may retain a clearly marked synthetic identity for
+their namespace-qualified names match. Development-only named types may retain a clearly marked synthetic identity for
 isolated memory-law tests, but they are not admissible metadata identities.
 
 ### 5.2 Methods

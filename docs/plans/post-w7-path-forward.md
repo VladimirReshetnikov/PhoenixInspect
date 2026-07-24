@@ -19,7 +19,7 @@
 > A host-owned lexical producer, downstream authority integration, the remaining V2 contract families, binder,
 > runtime/storage mapping, evaluator, report schema, and portfolio result remain.
 >
-> **Evidence boundary:** W8 is a generated-fixture and meaningful-synthetic prototype milestone. Its planned corpus is
+> **Evidence boundary:** W8 is a generated-fixture and meaningful-synthetic development milestone. Its planned corpus is
 > not representative observation and cannot establish field readiness. W5, W6, and W7 milestone-specific hosted
 > dispositions do not carry forward.
 
@@ -854,7 +854,7 @@ before product contracts.
   minimum corpus are frozen before W8.2.
 - Negative artifacts are independent and preserve unrelated exact evidence.
 - The stack/generic-context probe either proves an attributable source or records a typed executable non-admission.
-- Every public target/probe type and public method introduced by W8.1 has detailed XML documentation and draft caveats.
+- Every public target/probe type and public method introduced by W8.1 has detailed XML documentation and caveats.
 - No product binder API or fabricated fixture fact precedes the gate.
 
 ### W8.2 — immutable V2 and evidence-admitted branch contracts
@@ -869,7 +869,7 @@ The metadata layer retains exact source ends, prefix-free token and graph stops,
 TypeSpec graphs, FieldSig certificates, GenericParam owner/table/binding proofs, complete interface/constraint table
 aggregates, provisional construction classification, and exact Nullable topology. Tests cover complex nested
 generics, arrays, modifiers, function pointers, duplicate blobs, cycles, crossed owners, exact-cap/cap-plus-one,
-direct named TypeSpec roots, incomplete sources, immutability, and public draft XML. The proof objects are not yet
+direct named TypeSpec roots, incomplete sources, immutability, and public XML. The proof objects are not yet
 required by substitution/member/context/runtime consumers, and no host producer, V2 binder, runtime/storage mapper,
 or evaluator is implied by this status.
 
@@ -881,7 +881,7 @@ profile boundary.
 
 **Exit gate**
 
-- All public prototype types/methods have detailed XML documentation and draft caveats.
+- All public types/methods have detailed XML documentation and caveats.
 - Canonical bytes, equality/hash, defensive copies, invalid-input matrices, and cap-plus-one behavior pass.
 - Every V1 and preceding golden artifact remains byte-identical.
 

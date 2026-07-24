@@ -817,14 +817,14 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`; the active W8 sequence
   [Post-W4 Path Forward](../../plans/post-w4-path-forward.md). It admits only unchanged W2 expressions plus
   `root.GetMarkerSummary()`, owns the current W4 acquisition/binding path, preserves semantic modes in one evaluator
   facade, adds a headless reference consumer, and requires meaningful predeclared incident-question evidence before
-  another prototype capability is selected. W5.1–W5.5b are implemented through pushed checkpoint `90ade6d92`:
+  another capability is selected. W5.1–W5.5b are implemented through pushed checkpoint `90ade6d92`:
   generated fresh-process replay validates the facade and raw-count runner, while twelve independent designed dumps
   across request-pipeline and batch-pipeline roots supply the decision corpus. Their recurring blocker ranking selects
-  `AdmitFixedDepthMemberChain` as the next prototype slice. Both corpora contribute zero representative/external-
+  `AdmitFixedDepthMemberChain` as the next development slice. Both corpora contribute zero representative/external-
   observation rows, so no field-readiness rate is claimed and external evidence may later reverse the direction. The
   owner closed W5 under an explicit milestone-only exception after hosted jobs were rejected before executing; those
   jobs remain absent evidence and the exception does not carry into W6.
-* **W6:** closed prototype sequence under the
+* **W6:** closed development sequence under the
   [Post-W5 Path Forward](../../plans/post-w5-path-forward.md). It adds only an explicit
   `FixedDepthMemberChainV1` profile: one root reference field, one direct terminal field or exactly certified trivial
   field-backed data property, null-aware access, and existing W2 terminal value decoding. The companion
@@ -833,11 +833,11 @@ W7 sequencing is in `docs/plans/post-w6-path-forward.md`; the active W8 sequence
   profiles remains unsupported. W6.1–W6.7 are closed through local source baseline `440053ad1`: emitted-shape proof,
   frozen declarations/plans, counted evaluation, headless generated conformance, and twenty-four independent synthetic dumps
   across four structural shapes all replay deterministically. Six root/context-attribution incidents across all four
-  shapes uniquely select `AdmitOneConcreteContextAcquisitionScenario`; the selection advances prototype design only
+  shapes uniquely select `AdmitOneConcreteContextAcquisitionScenario`; the selection advances design only
   and is not implemented by W6. Exact local closure baseline `440053ad1` passes the complete matrix and repository
   guards with zero skips. The owner's W6-only hosted disposition records the unremediable GitHub billing block without
   claiming a hosted pass or weakening the workflow.
-* **W7:** closed prototype sequence under the
+* **W7:** closed development sequence under the
   [Post-W6 Path Forward](../../plans/post-w6-path-forward.md). It admits one opt-in `StaticFieldExpressionV1` profile
   over complete Roslyn trees. The context-independent guarantee uniquely binds an ordinary static field on a fully
   qualified non-generic class; the first debugger-context slice correlates one selected frame with an identity-

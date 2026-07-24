@@ -272,7 +272,7 @@ Standardize adapter outputs so upper layers see deterministic miss reasons inste
 
 ---
 
-## 8) Suggested adapter shape for our prototype
+## 8) Suggested adapter shape for our implementation
 
 ```csharp
 public interface IRuntimeSnapshotAdapter
@@ -286,7 +286,7 @@ public interface IRuntimeSnapshotAdapter
 
 Design notes:
 
-- Keep this interface intentionally small in early prototype cycles.
+- Keep this interface intentionally small in early development cycles.
 - Expand only when a scenario requires new data, not when backend APIs expose more knobs.
 - Ensure every method is side-effect-free from the interpreter’s perspective.
 
@@ -310,4 +310,4 @@ Design notes:
 - Deep PDB symbol decoding pipelines.
 - Any claim that current draft snippets represent final public API commitments.
 
-This tutorial should evolve together with `clrmd-integration-proposal.md` and `docs/lib/clrmd/usage-notes.md` as we validate dump shapes and adapter behavior in prototype experiments.
+This tutorial should evolve together with `clrmd-integration-proposal.md` and `docs/lib/clrmd/usage-notes.md` as we validate dump shapes and adapter behavior in experiments.

@@ -5,14 +5,14 @@
 > **Scale:** Realized as additive `~1K LOC` complete-table slices, `~1K–2K LOC` resolution/ancestry portfolios, and a
 > net-negative consumer cutover; the original `~10K LOC` consumer estimate is retained as calibration only.
 >
-> **Scope caveat:** This document governs the draft W8 metadata authority used by the dump evaluator. It does not
+> **Scope caveat:** This document governs the w8 metadata authority used by the dump evaluator. It does not
 > change frozen W1–W7 contracts or claim that later W8 binding, runtime mapping, evaluation, and portfolio gates have
 > landed.
 
 ## 1. Purpose
 
 W8 needs one source of truth for TypeDef ownership, nesting, generic parameters, and MethodDef generic declarations.
-The first W8 prototype accepted objects whose callers supplied derived list ends, enclosing chains, generic arity, and
+The first W8 implementation accepted objects whose callers supplied derived list ends, enclosing chains, generic arity, and
 owner objects. Those shapes made useful experiments possible, but they allow a caller to assert the same fact that a
 later catalog appears to prove. Making the constructors non-public without changing that dependency graph would retain
 the circularity.
@@ -36,7 +36,7 @@ is issued only after every table needed for that identity has complete source-co
 7. Total TypeDef arity, introduced compiler-style arity, and MethodDef signature arity are distinct facts.
 8. The evaluator's per-owner generic-parameter cap is an admission bound, not a physical metadata validity rule.
 9. Exact identities have guarded issuers, immutable canonical content, content equality, defensive array accessors, and
-   detailed draft XML documentation.
+   detailed XML documentation.
 10. W7 TypeDef and MethodDef objects remain compatibility candidates. They cannot issue W8 authority.
 
 ## 3. Authority graph

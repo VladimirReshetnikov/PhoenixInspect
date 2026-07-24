@@ -85,7 +85,7 @@ ClrMD gives you:
 
 * Object graph snapshots (heap, references, field layouts) and raw memory reads via the target’s data reader.
 * Runtime method/type identities and call stacks.
-* For many methods, IL location hints via `ClrMethod.GetILInfo()`. The active prototype deliberately does not use those hints to construct a body: it reads the MethodDef RVA from counted dump metadata and decodes the physical method body itself. ([GitHub][1])
+* For many methods, IL location hints via `ClrMethod.GetILInfo()`. The active implementation deliberately does not use those hints to construct a body: it reads the MethodDef RVA from counted dump metadata and decodes the physical method body itself. ([GitHub][1])
 
 ClrMD also has first-class support for loading dumps and managing symbol-path-like lookup for binaries through `DataTarget.FileLocator` and `SetSymbolPath`. ([GitHub][2])
 
@@ -98,7 +98,7 @@ You need a real metadata reader for:
 * Parsing *managed* method bodies including EH sections, maxstack, initlocals
 
 ClrMD explicitly moved away from being a “PE reader toolkit”; it even notes its PE/ELF helpers became internal and suggests using a real PE/metadata library instead (e.g., `System.Reflection.Metadata`). ([GitHub][3])
-The active prototype uses `System.Reflection.Metadata`/`PEReader` for that role.
+The active implementation uses `System.Reflection.Metadata`/`PEReader` for that role.
 
 ### C) Symbols universe (PDB / Portable PDB)
 
@@ -467,7 +467,7 @@ Not implementation, but the shape you want:
 public interface IProgramModel
 {
     IRuntimeSnapshot Runtime { get; }        // ClrMD-backed
-    IMetadataUniverse Metadata { get; }      // SRM-backed in the active prototype
+    IMetadataUniverse Metadata { get; }      // SRM-backed in the active implementation
     IMethodBodyResolver MethodBodies { get; }
     ISymbolResolver? Symbols { get; }        // optional
     IHeapBridge Heap { get; }                // dump + virtual

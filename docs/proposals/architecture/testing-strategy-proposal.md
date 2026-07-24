@@ -39,8 +39,8 @@ W5 preserves all of those gates while adding focused expression classification, 
 composition, headless consumer, canonical-corpus, and usefulness evidence. W5.1–W5.5b are implemented through pushed
 checkpoints `7c3d52572`/`d88b13c2c`/`fc8a43a7a`/`59d9bb590`/`0f5230e13`/`b788f4f66`/`90ade6d92`. The generated lane
 validates deterministic raw-count reporting and corpus-kind enforcement. The meaningful synthetic lane supplies 12
-independent incidents across two shapes and selects fixed-depth member navigation for the next prototype design. Both
-lanes contribute zero representative/external-observation rows. W5 is closed for its defined prototype scope under
+independent incidents across two shapes and selects fixed-depth member navigation for the next design. Both
+lanes contribute zero representative/external-observation rows. W5 is closed for its defined milestone scope under
 the owner's explicit 2026-07-16 waiver of the hosted-only closure condition; the rejected hosted jobs remain absent
 evidence. No unimplemented research matrix is added in advance.
 
@@ -235,7 +235,7 @@ not imply that the later wrapper existed when the original W0 run was recorded.
 | Gate | Command shape | Result |
 |---|---|---|
 | Locked dependency graph | `./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode --disable-parallel --disable-build-servers` | Passed. |
-| Full prototype build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln -c Release --no-restore --disable-build-servers -m:1 /p:UseSharedCompilation=false` | Passed, 0 warnings / 0 errors. |
+| Full build | `./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln -c Release --no-restore --disable-build-servers -m:1 /p:UseSharedCompilation=false` | Passed, 0 warnings / 0 errors. |
 | Semantic/admission/differential suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj -c Release --no-build --no-restore ` | Passed, 60/60. |
 | Fast adapter suite | `./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj -c Release --no-build --no-restore --filter "Category=Fast"` | Passed, 40/40. |
 | Real dump evidence | the same wrapped integration-project command with `--filter "Category=Dump&Corpus!=ModeledIncidentContextV1"` | Passed, 3/3 on the W0 completion tree; the earlier reset tree also passed three consecutive runs (9/9 executions). |
@@ -938,7 +938,7 @@ selection is deferred. These counts validate the runner, not product usefulness.
 The focused `Category=Dump&Corpus=W5MeaningfulSyntheticV2` lane passes 1/1 at checkpoint `90ade6d92` with zero skips
 and no UI. It records 8/12 admitted, 4/12 exact, 2/3 useful partial-or-unknown, and 6/12 decision-changing questions.
 Four `MemberNavigation` incidents outrank three `ContextAcquisition` and one `ExecutionBody` incident, so the stable
-decision is `AdmitFixedDepthMemberChain`. This is designed prototype evidence, not field evidence: representative/
+decision is `AdmitFixedDepthMemberChain`. This is designed early-development evidence, not field evidence: representative/
 external-observation counts remain 0 questions, 0 incidents, and 0 shapes, and no readiness rate is claimed.
 
 The cumulative documentation candidate also passes locked restore; strict 14-project Release build with warnings as
@@ -1064,7 +1064,7 @@ forwarder paths with ambiguity, cycle, and depth stops; physical core-role selec
 rejections; immediate-base edges and semantic classification that make indirect role derivation impossible; bounded
 ancestry at the exact cap and cap plus one; constraint-target joins; complex nested generic, array, custom-modifier,
 and function-pointer trees; FieldSig anchors and authority-owned substitution; Nullable topology; defensive copies;
-guarded private issuance; and public draft XML. The projection cases cover admitted alias, global, nested generic,
+guarded private issuance; and public XML. The projection cases cover admitted alias, global, nested generic,
 bare, and suffixed spellings, typed unsupported grammar exclusions, Roslyn-diagnostic invalids, and exact-at-cap
 versus cap-plus-one pairs for every reachable syntax bound. An assembly-wide reflection guard rejects public
 metadata-identity factories that accept W7 candidates and proves the deleted pre-authority types are absent, and the

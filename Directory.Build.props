@@ -1,5 +1,5 @@
 <Project>
-  <!-- Draft/prototype baseline configuration. Public API and target frameworks are intentionally provisional. -->
+  <!-- Early-development baseline configuration. Public API and target frameworks are intentionally provisional. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

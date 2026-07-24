@@ -17,8 +17,8 @@ exact closure commit `a819a08fd9ccdf926620c505732475990b242be9` passed all four 
 Final documentation-closure commit `aaec73c5b987089addb539d3628de67bd815bd8f` passed the same matrix in [run
 29463847230](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/runs/29463847230).
 The bounded expression-to-result composition and meaningful synthetic usefulness gate in the
-[`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md) is closed for W5's stated prototype scope. W5.5b
-checkpoint `90ade6d92` selects one fixed-depth member-chain prototype slice from twelve designed incidents across two
+[`Post-W4 Path Forward`](../../plans/post-w4-path-forward.md) is closed for W5's stated milestone scope. W5.5b
+checkpoint `90ade6d92` selects one fixed-depth member-chain development slice from twelve designed incidents across two
 root shapes; it adds no interpreter semantics by itself and makes no field-readiness claim. The completed
 [`Post-W5 Path Forward`](../../plans/post-w5-path-forward.md) gave W6 an opt-in language profile, counted reference
 evidence, a narrow exact certificate for trivial field-backed terminal data properties, and independent headless
@@ -690,7 +690,7 @@ unchanged baselines.
 
 ## 11. Physical topology
 
-The prototype retains only projects containing behavior or contracts exercised by the active slices:
+The implementation retains only projects containing behavior or contracts exercised by the active slices:
 
 - `PhoenixInspect.Core.Abstractions` and `PhoenixInspect.Core.Execution` — backend-neutral type/body/call-target shapes,
   domain/memory contracts, optional value-precision and field-approximation capabilities, canonical structured field
@@ -721,7 +721,7 @@ The prototype retains only projects containing behavior or contracts exercised b
   dump memory; ClrMD evidence binder; W5 canonical expression classifier; W7 static-expression facade and lazy
   context composition; and strict mode-preserving evaluation unions. It depends on the active query, ClrMD, and SRM boundaries to compose the
   admitted dump scenario, while the core execution projects remain backend-independent;
-- `PhoenixInspect.Headless.ReferenceConsumer` — the independently launched prototype composition root, append-only W5/
+- `PhoenixInspect.Headless.ReferenceConsumer` — the independently launched composition root, append-only W5/
   W6/W7 generated scenario consumer, stable machine/human reporter, typed root/static-selection projection, and usefulness-
   portfolio raw-count/gate runner. It owns no reusable semantics and is not a shipping CLI contract.
 
