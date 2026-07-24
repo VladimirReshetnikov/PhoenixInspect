@@ -332,7 +332,6 @@ docs/
 
 | Document | Area | Type | Lifecycle / roadmap | Summary |
 |---|---|---|---|---|
-| `../DESIGN-ARCHITECTURE-REVIEW.md` | Cross-cutting | Review | Complete · Reference | Repository-wide assessment and prioritized dump-first reset plan. |
 | `plans/post-w7-path-forward.md` | Planning | Plan | Current · Active | W8 sequence with W8.1 physical gates complete and W8.2 active: additive V2/frame contracts, nested generic owners, scoped aliases/current-member/extern/using-static binding, constraints, accessibility, assignability, admitted stored/literal/frame strategies, suffix composition, thirty-five-incident minimum, and corrected decision gate. |
 | `plans/w8-1-physical-truth-disposition.md` | Planning | Evidence record | Complete · Active | Authoritative W8.1 checkpoint ledger and branch disposition: constructed/thread/RVA/literal/frame admission; context/frame-generic non-admission; exact array topology; W8.2 API and thirty-five-incident consequences. |
 | `plans/w8-2-metadata-authority-cutover.md` | Planning | Evidence record | Complete · Active | Completed non-circular complete-table authority: TypeDef ownership, NestedClass parents, member pointers, GenericParam owners, MethodDef declarations, compiler-style arity mapping, reference tables, TypeRef resolution, core roles, semantic classification, bounded ancestry, constraint targets, and total public-issuer removal. |
