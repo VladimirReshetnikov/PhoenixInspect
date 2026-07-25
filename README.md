@@ -423,6 +423,7 @@ For structured topic lists, document inventory, and recommended reading paths, s
 - **C# parsing and versioned subset-admission contract:** `docs/proposals/architecture/csharp-expression-front-end-contract-proposal.md`
 - **Completed W5 selection record:** `docs/plans/post-w4-path-forward.md`
 - **Documentation index and TOC-like navigation:** `docs/README.md`
+- **Internal WPF demonstration host (interactive, not a released product):** `docs/internal-demo-explorer-host.md`
 - **Normative W2 language, binding, plan, evidence, and replay contract:** `docs/proposals/architecture/restricted-dump-query-contract-proposal.md`
 - **Normative W3 concrete activation, admission, memory, outcome, and replay contract:** `docs/proposals/architecture/concrete-il-execution-contract-proposal.md`
 - **Normative W4 branchless counterfactual method, unknown, call, budget, and replay contract:** `docs/proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
