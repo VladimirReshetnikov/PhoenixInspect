@@ -28,11 +28,14 @@ The solution retains eleven source projects, each containing contracts or behavi
 | `PhoenixInspect.Headless.ReferenceConsumer` | Composition root: read-only dump open/root binding, append-only W5/W6/W7 scenario execution, stable machine/human projection, typed root/static-selection reporting, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
 | `PhoenixInspect.Explorer.Wpf` | Internal WPF demonstration host: single serialized dump session, snapshot/module/frame/strong-handle projections, both implemented expression entry points, and verbatim status/evidence/bound/diagnostic rendering. It is an interactive internal consumer, not a released application, and it adds no analysis of its own. See [`Internal Demo Host`](../../internal-demo-explorer-host.md). |
 
-Tests are separated into a fast semantic/contract suite, a real dump integration suite, and eight generated target or
+Tests are separated into a fast semantic/contract suite, a real dump integration suite, and twelve generated target or
 evidence projects: the general dump target, optimized modeled-incident target, W7 application target, identity-
-conflict PDB fixture, duplicate-type fixture, W8 application target, W8 alias target, and W8 forwarding target. W8.1's
-physical probes cover compiler/PDB 25/25, runtime construction 1/1, one selected-frame test across six dumps/profiles,
-and focused storage/assignability 8/8. Their definitive branch table lives in the
+conflict PDB fixture, duplicate-type fixture, W8 application target, W8 alias target, W8 forwarding target, and the
+four W8 application shapes consumed by the meaningful synthetic corpus — request, batch, coordinator, and workflow. The
+batch shape additionally composes a checked-in named-RVA fixture assembly that ships inside the W8 application target
+directory rather than as its own project, so the module-RVA owner type is present in every portfolio that incident
+consults. W8.1's physical probes cover compiler/PDB 25/25, runtime construction 1/1, one selected-frame test across six
+dumps/profiles, and focused storage/assignability 8/8. Their definitive branch table lives in the
 [`W8.1 Physical-Truth Disposition`](../../plans/w8-1-physical-truth-disposition.md). The
 real-dump suite contains an independently versioned 22-case/20-expression W2 corpus rather than treating one query in the W1
 omnibus test as query-product closure evidence. It also contains a dedicated W3 direct/adjusted getter lane that

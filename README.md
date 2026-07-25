@@ -415,7 +415,6 @@ speculation, no-JIT runtime hosting, and additional product surfaces are **resea
 
 For structured topic lists, document inventory, and recommended reading paths, start here:
 
-- **Repository-wide design and architecture review:** `DESIGN-ARCHITECTURE-REVIEW.md`
 - **Active post-W7 W8 sequence (W8.1 complete; W8.2 active):** `docs/plans/post-w7-path-forward.md`
 - **W8.1 physical-truth disposition:** `docs/plans/w8-1-physical-truth-disposition.md`
 - **Completed post-W6 W7 sequence:** `docs/plans/post-w6-path-forward.md`

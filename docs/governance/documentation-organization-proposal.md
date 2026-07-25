@@ -21,8 +21,6 @@ docs/
 └── lib/             source/library research notes
 ```
 
-The root `DESIGN-ARCHITECTURE-REVIEW.md` is the point-in-time review that motivated the 2026-07 reset.
-
 No per-folder index, owner field, freshness timestamp, ADR directory, normative-spec directory, or template automation is required now. Add such machinery only when a recurring coordination problem demonstrates its value.
 
 ## 3. Two independent status axes

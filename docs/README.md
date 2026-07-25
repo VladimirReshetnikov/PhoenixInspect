@@ -404,25 +404,24 @@ docs/
 
 ### Active delivery path
 
-1. `../DESIGN-ARCHITECTURE-REVIEW.md`
-2. `plans/post-w7-path-forward.md`
-3. `plans/w8-1-physical-truth-disposition.md`
-4. `plans/post-w6-path-forward.md`
-5. `plans/post-w5-path-forward.md`
-6. `proposals/architecture/csharp-expression-front-end-contract-proposal.md`
-7. `plans/post-w4-path-forward.md`
-8. `proposals/product/post-mortem-debugging-feature-proposal.md`
-9. `proposals/architecture/restricted-dump-query-contract-proposal.md`
-10. `proposals/architecture/concrete-il-execution-contract-proposal.md`
-11. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
-12. `proposals/architecture/architecture-overview-proposal.md`
-13. `proposals/architecture/prototype-solution-structure-proposal.md`
-14. `lib/mvp-backend-decision-record.md`
-15. `plans/future-work-planning.md`
-16. `proposals/architecture/testing-strategy-proposal.md`
-17. `proposals/integration-test-plan.md`
-18. `proposals/integration/clrmd-integration-proposal.md`
-19. `proposals/integration/pe-pdb-reader-integration-proposal.md`
+1. `plans/post-w7-path-forward.md`
+2. `plans/w8-1-physical-truth-disposition.md`
+3. `plans/post-w6-path-forward.md`
+4. `plans/post-w5-path-forward.md`
+5. `proposals/architecture/csharp-expression-front-end-contract-proposal.md`
+6. `plans/post-w4-path-forward.md`
+7. `proposals/product/post-mortem-debugging-feature-proposal.md`
+8. `proposals/architecture/restricted-dump-query-contract-proposal.md`
+9. `proposals/architecture/concrete-il-execution-contract-proposal.md`
+10. `proposals/architecture/counterfactual-method-evaluation-contract-proposal.md`
+11. `proposals/architecture/architecture-overview-proposal.md`
+12. `proposals/architecture/prototype-solution-structure-proposal.md`
+13. `lib/mvp-backend-decision-record.md`
+14. `plans/future-work-planning.md`
+15. `proposals/architecture/testing-strategy-proposal.md`
+16. `proposals/integration-test-plan.md`
+17. `proposals/integration/clrmd-integration-proposal.md`
+18. `proposals/integration/pe-pdb-reader-integration-proposal.md`
 
 The paths below explore broader design possibilities. They are research/reference paths, not delivery sequences; inclusion does not imply roadmap commitment or implementation evidence.
 
