@@ -19,6 +19,29 @@ Core principles:
 - **Explainability and provenance** over opaque results.
 - **Composable architecture** so hosts can integrate incrementally.
 
+## Tentative future directions
+
+The project's original planned scope was broader than the currently funded dump-evaluator slice: a
+multi-application execution platform. That scope is retained as **tentative future directions** — research-gated
+possibilities, not active implementation commitments:
+
+- **Virtual debugging:** counterfactual Step Into/Over/Out over dump snapshots plus virtual state
+  ([feature proposal](docs/proposals/product/virtual-step-debugging-feature-proposal.md),
+  [implementation proposal](docs/proposals/architecture/virtual-step-debugging-implementation-proposal.md)).
+- **Static analysis:** whole-method abstract interpretation over the same IL semantics
+  ([abstract-domain proposal](docs/proposals/architecture/mvp-abstract-domain-proposal.md)).
+- **Sandboxed IL interpretation:** bounded no-JIT execution hosts reusing the interpreter core
+  ([applications note](docs/proposals/product/other-potential-applications.md)).
+- **Live speculative debugging, async/dynamic lifting, and semantic modeling**
+  ([virtual tasks](docs/proposals/architecture/virtual-tasks-proposal.md),
+  [dynamic calls](docs/proposals/architecture/dynamic-calls-proposal.md),
+  [semantic modeling](docs/proposals/architecture/semantic-modeling-proposal.md)).
+
+The original pre-redesign design documents for this scope are restored under
+[`docs/proposals/original/`](docs/proposals/original/README.md). They may be outdated and need revision to match
+the architecture that has crystallized since then; current documents and executable evidence are authoritative on
+any conflict. The removed placeholder projects are not being recreated ahead of evidence.
+
 ## Current phase
 
 - **Status:** early development, progressing through evidence-led vertical slices.
@@ -410,6 +433,8 @@ cache, and 512 MiB managed PE admission) remain resource controls. Branches, CFG
 transfer EH, virtual stepping, broad call/model catalogs, open generic execution/context reconstruction beyond W8's
 bounded closed-construction owner grammar and evidence-conditioned branches, allocation, async/dynamic lifting, live
 speculation, no-JIT runtime hosting, and additional product surfaces are **research backlog, not delivery commitments**.
+They remain recorded as tentative future directions (see [above](#tentative-future-directions)), with the restored
+original design corpus under [`docs/proposals/original/`](docs/proposals/original/README.md).
 
 ## Where to go next
 

@@ -312,6 +312,10 @@ disabled, and managed PEs to 512 MiB on the actually opened stream before hashin
 analysis, handler-transfer EH, allocation, broad call/model catalogs, open generic execution/context reconstruction
 beyond W8's bounded owner grammar and evidence-conditioned branches, virtual stepping, whole-method abstract
 analysis, async/dynamic lifting, multi-application hosting, and other platform extensions remain gated research.
+These gated-research items are also the project's original planned scope — virtual debugging, static analysis, and
+sandboxed IL interpretation among them — and are retained as **tentative future directions**. The pre-redesign
+design documents that described that scope are restored under [`proposals/original/`](proposals/original/README.md);
+they may be outdated and need revision to match the architecture that has crystallized since then.
 
 Current, active, and supporting documents use two dimensions: lifecycle (`Draft`, `Current`, `Complete`, `Historical`, `Superseded`) and roadmap relation (`Active`, `Supporting`, `Research`, `Reference`, `Historical`). Historical source/library records may use one combined status when a second axis would add no decision value. A designed or documented capability is not thereby implemented or validated. `Historical` and `Superseded` documents are preserved for rationale and source research; they are not instructions to recreate their proposed topology or backend choice.
 
@@ -325,6 +329,7 @@ docs/
 └── proposals/
     ├── architecture/ # Interpreter/core/runtime contracts
     ├── integration/  # External systems and host integration boundaries
+    ├── original/     # Restored pre-redesign originals (historical planned scope)
     └── product/      # Product-facing experience and requirements
 ```
 
@@ -370,6 +375,14 @@ docs/
 | `proposals/integration/clrmd-apis-usage-tutorial-proposal.md` | Integration | Tutorial Proposal | Draft · Reference | Scenario-first tutorial mapping ClrMD APIs to our runtime snapshot and IL acquisition workflows. |
 | `proposals/integration/pe-pdb-reader-integration-proposal.md` | Integration | Proposal | Current · Active | Artifact-resolution design through W7, completed W8.1 physical evidence, landed W8.2 detached metadata proofs, and remaining host production/scoped binding. |
 | `proposals/integration-test-plan.md` | Integration | Verification Plan | Current · Active | Fast semantic/differential and real dump-memory evidence through closed W7, completed W8.1, and landed W8.2 metadata proofs, plus remaining consumer/product replay and thirty-five-incident portfolio obligations. |
+| `proposals/original/README.md` | Architecture | Index | Historical · Research | Index of the restored pre-redesign originals recording the tentative-future-direction planned scope. |
+| `proposals/original/architecture-overview-proposal.md` | Architecture | Restored Proposal | Historical · Research | Original multi-application platform architecture map: dump debugging, live speculation, static analysis, sandboxed execution. |
+| `proposals/original/opcode-support-matrix-proposal.md` | Architecture | Restored Proposal | Historical · Research | Original tiered opcode-support planning matrix, drafted ahead of executable evidence. |
+| `proposals/original/testing-strategy-proposal.md` | Architecture | Restored Strategy | Historical · Research | Original testing taxonomy for the full planned interpreter scope, including abstract interpretation and virtual stepping. |
+| `proposals/original/prototype-solution-structure-proposal.md` | Architecture | Restored Snapshot | Historical · Research | Original 42-project scaffold description; the placeholder projects themselves remain removed. |
+| `proposals/original/prototype-interface-catalog-proposal.md` | Architecture | Restored Snapshot | Historical · Research | Original draft public-interface catalog of the scaffold. |
+| `proposals/original/integration-test-plan.md` | Integration | Restored Plan | Historical · Reference | Original smallest-real-integration-test plan; implemented and superseded. |
+| `proposals/original/future-work-planning.md` | Planning | Restored Plan | Historical · Research | Original milestone roadmap across virtual stepping, async/dynamic lifting, semantic modeling, analysis, and sandboxed execution. |
 | `plans/future-work-planning.md` | Planning | Plan | Current · Supporting | Detailed evidence-led W0–W4 delivery record and research entry gates. |
 | `plans/requirements-traceability-map.md` | Planning | Matrix | Current · Active | Requirements mapped separately to design, implementation, and validation evidence, including the W8.2 proof-versus-consumer boundary. |
 | `lib/README.md` | Library Notes | Index | Current · Reference | Navigation and policy for active decisions versus preserved source research. |
@@ -467,6 +480,21 @@ The paths below explore broader design possibilities. They are research/referenc
 
 These sketches explain earlier reasoning, but neither their API shapes nor their project-per-seam package map is normative. Start from the current source and `proposals/architecture/prototype-solution-structure-proposal.md` instead.
 
+### Original planned scope (restored)
+
+The pre-redesign originals below record the project's initially planned scope — virtual debugging, live
+speculation, static analysis, and sandboxed IL interpretation — as tentative future directions. They may be
+outdated and need revision to match the crystallized architecture; current documents win on any conflict.
+
+1. `proposals/original/README.md`
+2. `proposals/original/architecture-overview-proposal.md`
+3. `proposals/original/future-work-planning.md`
+4. `proposals/original/prototype-solution-structure-proposal.md`
+5. `proposals/original/prototype-interface-catalog-proposal.md`
+6. `proposals/original/opcode-support-matrix-proposal.md`
+7. `proposals/original/testing-strategy-proposal.md`
+8. `proposals/original/integration-test-plan.md`
+
 ### Semantic-modeling research path
 
 1. `proposals/architecture/call-model-and-effects.md`
@@ -521,6 +549,7 @@ This project is distributed under the **MIT-0 (MIT No Attribution)** license. Se
 ## Naming and placement conventions
 
 - Place new design docs under `docs/proposals/<area>/` with `*-proposal.md` suffix.
+- `docs/proposals/original/` holds restored pre-redesign originals; do not add new design work there.
 - Place sequencing/roadmap artifacts under `docs/plans/`.
 - Place process and standards docs under `docs/governance/`.
 - Prefer stable filenames; if renaming, update links in both root `README.md` and this index.
