@@ -1,0 +1,16 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!--
+      The version the product reports. It defaulted to 1.0.0, which over-claims for an early preview whose supported
+      expression subset is deliberately narrow; keep the prerelease suffix until that surface stabilizes.
+
+      This is scoped to src/ on purpose. Test targets and fixtures under tests/ keep the default identity, because
+      several frozen physical-truth baselines record their exact assembly versions and must not move for a
+      presentational change to the product's own version.
+    -->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>preview.1</VersionSuffix>
+  </PropertyGroup>
+</Project>
