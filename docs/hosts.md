@@ -61,7 +61,7 @@ introducing a usage pattern the libraries do not support.
 |---|---|---|
 | Overview | `ClrmdDumpSession.Open`, `Snapshot`, `TargetPlatform`, `TargetArchitecture`, `Modules` | Dump content identity (SHA-256 of the file, excluding the local path), target facts, the deterministic caps this build declares, the pinned expression front end, and a plain-language statement of the supported surface. |
 | Modules | `Modules`, `ReadModuleContentIdentity` | Every managed module instance with its metadata root, reported length, and image layout. Selecting one reads its counted metadata from dump memory and reports the MVID, counted length, metadata digest, raw reads, and applied bounds. |
-| Call stacks | `SelectExpressionFrame` | Bounded managed frames with their MethodDef/TypeDef tokens, declaring namespace, IL offset, and instruction pointer. A selected frame can be adopted as the name-binding context of the static-field path. |
+| Call stacks | `SelectExpressionFrame`, `DescribeFrameMethod` | Bounded managed frames with the declaring type and method name resolved from snapshot metadata, plus their MethodDef/TypeDef tokens, declaring namespace, IL offset, and instruction pointer. A selected frame can be adopted as the name-binding context of the static-field path. |
 | Heap objects | `FindStrongHandleObjectsByTypeName` | A bounded strong-handle search over an exact ordinal type-name predicate, with the traversal counters and caps that say how exhaustive the result actually was. A match can be adopted as an expression root. |
 | Evaluate | `StaticFieldExpressionEvaluator`, `DumpExpressionEvaluator` | Both implemented expression entry points, each answer shown with its status, stage, value, raw reads, applied bounds, stable diagnostics, and canonical replay digest. |
 
@@ -101,6 +101,9 @@ them as distinct and conflating them would misrepresent its result axes.
 - The adapter selects one frame at a time by snapshot-scoped ordinal and publishes no thread count. Both hosts
   therefore probe ordinals, and state explicitly that they cannot distinguish a past-the-end ordinal from a live
   thread with no managed frames: both return the same typed unavailable observation.
+- Thread ordinals are not stable between runs of the same program. The console host can therefore select a frame by
+  method name, which is stable, but a frame whose module metadata is not completely present in the snapshot stays
+  explicitly unnamed and cannot be selected that way.
 - The observable value domain is limited to what the product admits: null, `Int32`, `Nullable<Int32>`, bounded
   strings, and validated object references. Anything else surfaces as a typed stop.
 - Interactive exploration is not a validation tier. The [`integration test plan`](proposals/integration-test-plan.md)

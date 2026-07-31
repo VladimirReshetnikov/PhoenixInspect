@@ -85,7 +85,22 @@ from a name you already know:
    eval root.LastFailure?.Code ?? "none"
    ```
 
-4. **Ask what the session was allowed to use.** `status` prints the adopted root, the frame supplying name context,
+4. **Or stand where the code stood.** Adopting a frame supplies its namespace, imports, and aliases as name
+   context, so a name can be written the way the source writes it. Frames are named from snapshot metadata, so a
+   frame can be selected by method name rather than by a thread ordinal that shifts between runs. Contextual names
+   additionally need import facts from a Portable PDB whose identity matches the module.
+
+   ```text
+   context Program.Main
+   pdb auto
+   eval ServiceState.BuildLabel
+   ```
+
+   `pdb auto` probes paths derived from target-side module hints on the analysis machine and says exactly what it
+   offered. A target path hint is not identity: every candidate is still validated against the module before any name
+   binds through it, and a candidate that does not match is rejected.
+
+5. **Ask what the session was allowed to use.** `status` prints the adopted root, the frame supplying name context,
    and the Portable-PDB candidates offered — so a transcript can be read back to see which evidence produced an
    answer.
 

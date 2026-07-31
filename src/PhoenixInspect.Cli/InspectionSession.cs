@@ -116,7 +116,7 @@ public sealed class InspectionSession
                 "threads" => await ShowThreadsAsync(rest).ConfigureAwait(false),
                 "frames" => await ShowFramesAsync(rest).ConfigureAwait(false),
                 "context" => await SetContextAsync(rest).ConfigureAwait(false),
-                "pdb" => SetPortablePdbCandidates(rest),
+                "pdb" => await SetPortablePdbCandidatesAsync(rest).ConfigureAwait(false),
                 "objects" => await SearchObjectsAsync(rest).ConfigureAwait(false),
                 "root" => await SetRootAsync(rest).ConfigureAwait(false),
                 "as" => SetRootIdentifier(rest),
@@ -158,8 +158,10 @@ public sealed class InspectionSession
         renderer.Pair("threads [count] [depth]", "Probe thread ordinals and show up to depth managed frames of each.");
         renderer.Pair("frames <thread> [count]", "Managed frames of one thread, in stack order.");
         renderer.Pair("context <thread> <frame>", "Adopt a frame's namespace, import, and alias facts for name binding.");
+        renderer.Pair("context <method>", "Adopt the first probed frame whose method name contains that text.");
         renderer.Pair("context none", "Require context-independent fully qualified names again.");
         renderer.Pair("pdb <path>", "Offer a Portable-PDB candidate; 'pdb clear' withdraws all candidates.");
+        renderer.Pair("pdb auto", "Probe paths derived from target-side module hints on this machine.");
         renderer.Pair("objects <TypeName> [max]", "Bounded strong-handle search over an exact ordinal type name.");
         renderer.Pair("root <index>", "Adopt a search match as the expression root.");
         renderer.Pair("root <expression>", "Adopt the object value of a static-field expression as the root.");
@@ -350,32 +352,30 @@ public sealed class InspectionSession
         }
 
         var parts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length != 2 ||
-            !int.TryParse(parts[0], CultureInfo.InvariantCulture, out var threadOrdinal) ||
-            !int.TryParse(parts[1], CultureInfo.InvariantCulture, out var frameOrdinal))
+        var threadOrdinal = 0;
+        var frameOrdinal = 0;
+        var byOrdinal =
+            parts.Length == 2 &&
+            int.TryParse(parts[0], CultureInfo.InvariantCulture, out threadOrdinal) &&
+            int.TryParse(parts[1], CultureInfo.InvariantCulture, out frameOrdinal);
+        if (!byOrdinal && argument.Length == 0)
         {
-            renderer.Error("usage: context <threadOrdinal> <frameOrdinal>  |  context none");
+            renderer.Error("usage: context <threadOrdinal> <frameOrdinal>  |  context <method>  |  context none");
             return CommandOutcome.Failed;
         }
 
-        var node = await host.QueryAsync(session =>
-        {
-            var selector = DumpSelectedFrameSelector.Create(session.Snapshot, threadOrdinal, frameOrdinal);
-            var observation = session.SelectExpressionFrame(selector);
-            return observation.Frame is not { } frame
-                ? null
-                : new CallStackFrameNode(
-                    selector,
-                    frame,
-                    $"Frame #{frameOrdinal}  ·  {Describe(frame.DeclaringNamespace)}",
-                    $"MethodDef {DisplayFormatting.Token(frame.MethodDefinitionToken)}",
-                    isExact: true);
-
-        }).ConfigureAwait(false);
+        // Thread ordinals are not stable between runs of the same program, so a frame can also be named. Naming is
+        // the useful form in a script: "the frame that was running Program.Main" survives a re-run, "thread 2 frame
+        // 4" does not.
+        var node = byOrdinal
+            ? await SelectFrameByOrdinalAsync(threadOrdinal, frameOrdinal).ConfigureAwait(false)
+            : await SelectFrameByMethodNameAsync(argument).ConfigureAwait(false);
 
         if (node is null)
         {
-            renderer.Error($"thread #{threadOrdinal} frame #{frameOrdinal} produced no exact managed frame.");
+            renderer.Error(byOrdinal
+                ? $"thread #{threadOrdinal} frame #{frameOrdinal} produced no exact managed frame."
+                : $"no probed managed frame's method name contains '{argument}'.");
             return CommandOutcome.Failed;
         }
 
@@ -384,7 +384,42 @@ public sealed class InspectionSession
         return CommandOutcome.Continue;
     }
 
-    private CommandOutcome SetPortablePdbCandidates(string argument)
+    private Task<CallStackFrameNode?> SelectFrameByOrdinalAsync(int threadOrdinal, int frameOrdinal) =>
+        host.QueryAsync(session =>
+        {
+            var selector = DumpSelectedFrameSelector.Create(session.Snapshot, threadOrdinal, frameOrdinal);
+            var observation = session.SelectExpressionFrame(selector);
+            return observation.Frame is null
+                ? null
+                : DumpInspectionService.CreateFrameNode(session, selector, observation);
+        });
+
+    private Task<CallStackFrameNode?> SelectFrameByMethodNameAsync(string methodName) =>
+        host.QueryAsync(CallStackFrameNode? (session) =>
+        {
+            var probed = DumpInspectionService.ProbeCallStacks(session, DefaultThreadProbe);
+            foreach (var thread in probed.Threads)
+            {
+                foreach (var frame in DumpInspectionService.LoadFrames(session, thread, DefaultFrameDepth))
+                {
+                    thread.Frames.Add(frame);
+                }
+
+                foreach (var frame in thread.Frames)
+                {
+                    if (frame.Frame is { } identity &&
+                        session.DescribeFrameMethod(identity).Value is { } method &&
+                        method.DisplayName.Contains(methodName, StringComparison.Ordinal))
+                    {
+                        return frame;
+                    }
+                }
+            }
+
+            return null;
+        });
+
+    private async Task<CommandOutcome> SetPortablePdbCandidatesAsync(string argument)
     {
         if (argument is "clear" or "none")
         {
@@ -393,14 +428,51 @@ public sealed class InspectionSession
             return CommandOutcome.Continue;
         }
 
+        if (argument is "auto")
+        {
+            return await OfferDiscoveredPortablePdbsAsync().ConfigureAwait(false);
+        }
+
         if (argument.Length == 0)
         {
-            renderer.Error("usage: pdb <path>  |  pdb clear");
+            renderer.Error("usage: pdb <path>  |  pdb auto  |  pdb clear");
             return CommandOutcome.Failed;
         }
 
         portablePdbCandidates = portablePdbCandidates.Add(argument);
         renderer.Note($"  Offered {argument} as a Portable-PDB candidate; identity is still validated before use.");
+        return CommandOutcome.Continue;
+    }
+
+    private async Task<CommandOutcome> OfferDiscoveredPortablePdbsAsync()
+    {
+        // Target path hints are target-side strings, not identity. This command says out loud that it is probing
+        // paths derived from them on the analysis machine, and offering a file changes nothing on its own: the
+        // product still validates a candidate's identity against the module before any name binds through it.
+        var hints = await host.QueryAsync(static session => session.Modules
+            .Select(static module => module.TargetPathHint)
+            .Where(static hint => !string.IsNullOrEmpty(hint))
+            .Select(static hint => Path.ChangeExtension(hint!, ".pdb"))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToImmutableArray()).ConfigureAwait(false);
+
+        var discovered = hints.Where(File.Exists).ToImmutableArray();
+        renderer.Note(
+            $"  Probed {hints.Length} path(s) derived from target-side module hints on this machine; "
+            + $"{discovered.Length} exist.");
+        if (discovered.Length == 0)
+        {
+            renderer.Note("  No candidate was offered. Supply one explicitly with 'pdb <path>'.");
+            return CommandOutcome.Continue;
+        }
+
+        foreach (var candidate in discovered)
+        {
+            renderer.Note($"    offered  {candidate}");
+        }
+
+        portablePdbCandidates = portablePdbCandidates.AddRange(discovered);
+        renderer.Note("  A target path hint is not identity; each candidate is still validated before use.");
         return CommandOutcome.Continue;
     }
 

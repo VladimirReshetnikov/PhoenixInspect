@@ -53,6 +53,7 @@ public sealed class PreviewDemoIntegrationTests
     private const string RootIdentifier = "root";
     private const string StalledFrameMethod =
         "Contoso.OrderService.Dispatching.DispatchLoop.AwaitCarrierAssignment";
+    private const string ContextFrameMethod = "Contoso.OrderService.Program.Main";
 
     /// <summary>The exact rendered answer the demo must produce for each static-field expression.</summary>
     private static readonly ImmutableArray<(string Expression, EvaluationSeverity Severity, string Value)>
@@ -66,6 +67,21 @@ public sealed class PreviewDemoIntegrationTests
                 EvaluationSeverity.Exact, "5031"),
             ("Contoso.OrderService.Diagnostics.ServiceState.OperatorNote",
                 EvaluationSeverity.Exact, "null"),
+        ];
+
+    /// <summary>
+    /// The exact rendered answer the demo must produce for each contextual static name, given the frame the process
+    /// stalled under and a Portable PDB whose identity matches the module.
+    /// </summary>
+    /// <remarks>
+    /// These are the same fields as the fully qualified expressions above, written the way the source writes them.
+    /// Proving they agree is the point: name context adds reach, not a second set of answers.
+    /// </remarks>
+    private static readonly ImmutableArray<(string Expression, EvaluationSeverity Severity, string Value)>
+        ContextualExpectations =
+        [
+            ("ServiceState.BuildLabel", EvaluationSeverity.Exact, "\"2026.07.30-preview\""),
+            ("ServiceState.LastFailureCode", EvaluationSeverity.Exact, "5031"),
         ];
 
     /// <summary>The exact rendered answer the demo must produce for each root-relative expression.</summary>
@@ -121,6 +137,7 @@ public sealed class PreviewDemoIntegrationTests
         }
 
         var expected = StaticFieldExpectations
+            .Concat(ContextualExpectations)
             .Concat(RootRelativeExpectations)
             .Select(static expectation => expectation.Expression)
             .ToImmutableArray();
@@ -155,6 +172,7 @@ public sealed class PreviewDemoIntegrationTests
             using var session = opened.Value!;
 
             AssertStaticFieldAnswers(session);
+            AssertContextualAnswers(session);
             var root = AssertRootAdoption(session);
             AssertRootRelativeAnswers(session, root);
             AssertStrongHandleSearchReachesTheSameObject(session);
@@ -177,6 +195,49 @@ public sealed class PreviewDemoIntegrationTests
             Assert.Equal(severity, report.Severity);
             Assert.Equal(value, report.Value);
         }
+    }
+
+    private static void AssertContextualAnswers(ClrmdDumpSession session)
+    {
+        var selector = RequireStalledContextFrame(session);
+        var pdbPath = Path.ChangeExtension(PreviewDemoPaths.ResolveExecutable(), ".pdb");
+        Assert.True(File.Exists(pdbPath), $"Expected the demo target's Portable PDB at '{pdbPath}'.");
+
+        foreach (var (expression, severity, value) in ContextualExpectations)
+        {
+            var report = ExpressionEvaluationService.EvaluateStaticField(
+                session,
+                expression,
+                selector,
+                [pdbPath]);
+            Assert.Equal(severity, report.Severity);
+            Assert.Equal(value, report.Value);
+
+            // Without the frame's imports the same name has nothing to bind against, which is what makes the
+            // contextual answer a consequence of the evidence rather than of the spelling.
+            var withoutContext = ExpressionEvaluationService.EvaluateStaticField(session, expression, null, []);
+            Assert.NotEqual(EvaluationSeverity.Exact, withoutContext.Severity);
+        }
+    }
+
+    private static DumpSelectedFrameSelector RequireStalledContextFrame(ClrmdDumpSession session)
+    {
+        var projection = DumpInspectionService.ProbeCallStacks(session, threadOrdinalsToProbe: 16);
+        foreach (var thread in projection.Threads)
+        {
+            foreach (var frame in DumpInspectionService.LoadFrames(session, thread, maximumFrames: 8))
+            {
+                if (frame.Frame is { } identity &&
+                    session.DescribeFrameMethod(identity).Value is { } method &&
+                    method.DisplayName == ContextFrameMethod)
+                {
+                    return frame.Selector;
+                }
+            }
+        }
+
+        Assert.Fail($"No probed managed frame resolved to '{ContextFrameMethod}'.");
+        return null!;
     }
 
     private static RootSelection AssertRootAdoption(ClrmdDumpSession session)
