@@ -262,6 +262,7 @@ defined milestone-selected scope.
 | Interpreter result | Metadata-derived activation, frozen typed plan, explicit value domain, persistent memory, and deterministic budget/event policy | Historical replay or product-level expression evaluation |
 | W7 selected-frame import context | Identity-validated bounded Portable PDB bytes, exact active LocalScope/ImportScope chain, and project-owned namespace/import/alias facts | Stack values, exact closed generic runtime arguments, lexical blocker completeness, or broader language binding |
 | W7 static-field result | Counted metadata, one exact non-generic declaration, pinned runtime slot, counted raw value reads, and optional unchanged suffix evaluation | Nested/generic owners, literals, per-construction slot selection, or any W8 branch |
+| Preview demo answers | One generated full dump of `samples/Contoso.OrderService`, with the exact rendered answer of every expression `eng/demo-session.pi` submits, an exhaustive strong-handle search reaching the same object, and the stalled frame resolved by name from snapshot metadata | That the demo's shapes generalize beyond the admitted subset, or that any published claim outside those expressions is proven |
 | Active W8.2 contract gate | W8.1 physical facts plus immutable expression/frame syntax, caller-supplied lexical evidence, one shared bounded Core signature grammar and Product event adapter, exact source ends/token catalogs, TypeSpec/FieldSig/GenericParam/edge proof artifacts, provisional type classification, and Nullable topology | Mandatory downstream proof consumption, a host-owned lexical/metadata producer, complete V2 contract surface, binder, runtime/storage mapper, evaluator, report schema, or portfolio result |
 
 ## CI policy
@@ -269,8 +270,11 @@ defined milestone-selected scope.
 Every managed restore/build/test step uses `./eng/Invoke-HeadlessProcess.ps1 dotnet ...`; repository policy rejects raw
 workflow `dotnet` launches. The workflow uses the pinned .NET 10 SDK and locked packages, runs repository-owned
 local-Markdown-link and headless-workflow consistency checks, builds Release with warnings as errors, runs the fast suite,
-and then runs the required ordinary-dump and optimized-context Windows lanes. Every current test command runs all
-remaining tests in its selected category, and restore/build cover the complete current 20-project solution. Caveat:
+and then runs the required ordinary-dump, preview-demo, and optimized-context Windows lanes. The preview-demo
+lane runs `eng/Invoke-PreviewDemo.ps1` end to end — build, target launch, readiness wait, dump capture, and
+scripted replay — and uploads the transcript, because the demo is the preview's front door and its script is
+not exercised by the test lanes. Every current test command runs all
+remaining tests in its selected category, and restore/build cover the complete current 28-project solution. Caveat:
 this establishes behavior only for the named fixture shapes. Third-party actions are pinned to verified release commit
 SHAs. A missing DAC or inability to write/load a required dump is a failing infrastructure signal, not a passing skip.
 

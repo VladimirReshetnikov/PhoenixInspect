@@ -369,9 +369,20 @@ foreach ($file in Get-ChildItem -LiteralPath $repositoryRoot -File -Filter '*.md
     $markdownFiles.Add($file.FullName)
 }
 
-$documentationRoot = Join-Path $repositoryRoot 'docs'
-if (Test-Path -LiteralPath $documentationRoot -PathType Container) {
-    foreach ($file in Get-ChildItem -LiteralPath $documentationRoot -File -Filter '*.md' -Recurse) {
+# Authored Markdown lives at the repository root, under docs/, and under samples/. Build output and the immutable
+# library snapshots under lib/ are deliberately not scanned.
+foreach ($subdirectory in @('docs', 'samples')) {
+    $searchRoot = Join-Path $repositoryRoot $subdirectory
+    if (-not (Test-Path -LiteralPath $searchRoot -PathType Container)) {
+        continue
+    }
+
+    foreach ($file in Get-ChildItem -LiteralPath $searchRoot -File -Filter '*.md' -Recurse) {
+        $relativeSegments = [System.IO.Path]::GetRelativePath($repositoryRoot, $file.FullName) -split '[\\/]'
+        if ($relativeSegments -contains 'bin' -or $relativeSegments -contains 'obj') {
+            continue
+        }
+
         $markdownFiles.Add($file.FullName)
     }
 }
