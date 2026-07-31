@@ -9,7 +9,7 @@ objects the snapshot actually contains.
 | Host | Project | Use it for |
 |---|---|---|
 | Console | [`src/PhoenixInspect.Cli`](../src/PhoenixInspect.Cli) | Scripted and interactive sessions, transcripts, CI. |
-| Desktop shell | [`src/PhoenixInspect.Wpf`](../src/PhoenixInspect.Wpf) | Browsing a dump interactively on Windows. |
+| Desktop shell | [`src/PhoenixInspect.Desktop`](../src/PhoenixInspect.Desktop) | Browsing a dump interactively in a docked, ILSpy-style workspace. |
 
 Neither host adds analysis of its own. Every fact both render comes from an existing public contract by way of
 [`src/PhoenixInspect.Inspection`](../src/PhoenixInspect.Inspection), the shared host-independent projection layer, and
@@ -47,29 +47,34 @@ the exit code: it is a reported limit of the evidence, and the session summary c
 ## Desktop shell
 
 ```text
-dotnet run --project src/PhoenixInspect.Wpf -- <path-to-dump.dmp>
+dotnet run --project src/PhoenixInspect.Desktop -- <path-to-dump.dmp>
 ```
 
-The path argument is optional; a dump can also be chosen through **Open dump…** or dropped onto the window. The shell
-requires Windows because ClrMD dump loading and WPF both do.
+The path argument is optional; a dump can also be chosen through **File → Open dump…** or dropped onto the window.
+The shell is an Avalonia application built on the same UI stack as the ILSpy frontend — Dock for tool-window docking
+and AvaloniaEdit for source text — with a light color scheme built around olive, khaki, sage, and gray; peach is
+reserved for error conditions. Opening a dump itself still requires Windows because ClrMD dump loading does.
 
 Only one session is open at a time, and every adapter call runs on one dedicated worker thread. The ClrMD adapter
 exposes an immutable snapshot but does not promise concurrent use, so both hosts serialize access rather than
 introducing a usage pattern the libraries do not support.
 
-The shell is one docked debugger-style workspace rather than a set of pages: the call stack and the module/heap tool
-tabs dock left, a source view and the evaluation console fill the center, and the evidence inspector docks right,
-with every dock resizable. Opening a dump probes thread ordinals automatically, so the stopped threads are visible
-without a manual step; the probe stays re-runnable with its caps from the Call Stack header.
+The workspace is docked the way ILSpy and a debugger are: the call stack and the tabbed Modules / Heap Search tools
+dock left, documents fill the center, the evaluation console docks at the bottom, and the evidence pane docks right.
+Every tool window can be resized, re-docked, or floated through the dock chrome. The center is a real document area:
+a non-closable Session start page shows the snapshot facts and the honest statement of the supported surface, and
+each resolved source file opens as its own closable tab. Opening a dump probes thread ordinals automatically, so the
+stopped threads are visible without a manual step; the probe stays re-runnable with its caps from the Call Stack
+header.
 
-| Tool window | Contracts exercised | What it shows |
+| Pane | Contracts exercised | What it shows |
 |---|---|---|
-| Call Stack | `SelectExpressionFrame` | Bounded managed frames with the declaring type and method name resolved from snapshot metadata, plus their MethodDef/TypeDef tokens, declaring namespace, IL offset, and instruction pointer. Double-clicking an exact frame adopts it as the static-field name context and resolves its source into the Source window. |
-| Source | `ResolveFrameSourceLocation` | The document and line span the build recorded for the selected frame, resolved through an identity-validated Portable PDB. File content renders only when the on-disk bytes reproduce the PDB's document checksum, under an explicit "checksum-verified" badge; a missing, mismatching, unverifiable, or over-bound file is a distinct plain-language explanation instead of content. |
+| Call Stack | `SelectExpressionFrame` | Bounded managed frames with the declaring type and method name resolved from snapshot metadata, plus their MethodDef/TypeDef tokens, declaring namespace, IL offset, and instruction pointer. Double-clicking an exact frame adopts it as the static-field name context and opens its source document. |
+| Source documents | `ResolveFrameSourceLocation` | One tab per resolved file: the document and line span the build recorded for the selected frame, resolved through an identity-validated Portable PDB. Verified content renders in a read-only editor with C# syntax coloring, line numbers, and the mapped span highlighted; a missing, mismatching, unverifiable, or over-bound file is a distinct plain-language explanation instead of content. |
 | Modules | `Modules`, `ReadModuleContentIdentity` | Every managed module instance with its reported length and image layout. Selecting one reads its counted metadata from dump memory and reports the MVID, counted length, metadata digest, raw reads, and applied bounds. |
 | Heap Search | `FindStrongHandleObjectsByTypeName` | A bounded strong-handle search over an exact ordinal type-name predicate, with the traversal counters and caps that say how exhaustive the result actually was. A match can be adopted as an expression root. |
-| Evaluate | `StaticFieldExpressionEvaluator`, `DumpExpressionEvaluator` | Both implemented expression entry points behind one immediate-window-style input, with a watch-style history grid. Selecting a history row drives the evidence inspector. |
-| Result / Session | — | The complete evidence behind the selected answer — status, stage, value, binding facts, raw reads, applied bounds, stable diagnostics, and canonical replay digest — plus the snapshot facts and the plain-language statement of the supported surface. |
+| Evaluate | `StaticFieldExpressionEvaluator`, `DumpExpressionEvaluator` | Both implemented expression entry points behind one immediate-window-style input, with a watch-style history grid. Selecting a history row drives the evidence pane. |
+| Result | — | The complete evidence behind the selected answer: status, stage, value, binding facts, raw reads, applied bounds, stable diagnostics, and canonical replay digest. |
 
 ## Source, verified before it is shown
 

@@ -223,7 +223,7 @@ any conflict. The removed placeholder projects are not being recreated ahead of 
   `PhoenixInspect.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
   evaluation, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources.
   `PhoenixInspect.Inspection` projects the implemented inspection and evaluation contracts into host-independent
-  display models, and `PhoenixInspect.Cli` and `PhoenixInspect.Wpf` are the console and desktop hosts over it;
+  display models, and `PhoenixInspect.Cli` and `PhoenixInspect.Desktop` are the console and desktop hosts over it;
   neither adds analysis of its own. `PhoenixInspect.Headless.ReferenceConsumer` remains the independently launched
   composition root and report runner for the usefulness portfolios, not a user-facing host.
   `samples/Contoso.OrderService` is the preview demo target. The earlier empty placeholders and later

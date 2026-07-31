@@ -28,7 +28,7 @@ The solution retains eleven source projects, each containing contracts or behavi
 | `PhoenixInspect.Headless.ReferenceConsumer` | Composition root: read-only dump open/root binding, append-only W5/W6/W7 scenario execution, stable machine/human projection, typed root/static-selection reporting, and deterministic usefulness-portfolio joining/raw-count/gate reporting. It is an external headless test consumer, not a shipping CLI contract. |
 | `PhoenixInspect.Inspection` | Host-independent presentation layer: snapshot/module/frame/strong-handle projections, both implemented expression entry points, and verbatim status/evidence/bound/diagnostic display models. It adds no analysis of its own. |
 | `PhoenixInspect.Cli` | Console host over `PhoenixInspect.Inspection`: one serialized dump session driven interactively, by repeated `--eval`/`--command`, or from a script file. See [`Hosts`](../../hosts.md). |
-| `PhoenixInspect.Wpf` | Desktop shell over `PhoenixInspect.Inspection`: single serialized dump session presented as navigable sections. See [`Hosts`](../../hosts.md). |
+| `PhoenixInspect.Desktop` | Desktop shell over `PhoenixInspect.Inspection`: a single serialized dump session presented as a docked, ILSpy-style workspace. See [`Hosts`](../../hosts.md). |
 
 Tests are separated into a fast semantic/contract suite, a real dump integration suite, and twelve generated target or
 evidence projects: the general dump target, optimized modeled-incident target, W7 application target, identity-

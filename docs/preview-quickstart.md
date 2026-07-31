@@ -51,7 +51,7 @@ dotnet run --project src/PhoenixInspect.Cli -- capture --pid <processId> --outpu
 A dump from any other collector — Windows Error Reporting, Task Manager, `dotnet-dump collect`, `procdump -ma` — is
 equally valid input. The capture command exists so a first session does not require installing a second tool.
 
-For a window instead of a prompt, run [`src/PhoenixInspect.Wpf`](../src/PhoenixInspect.Wpf). Both hosts are described
+For a window instead of a prompt, run [`src/PhoenixInspect.Desktop`](../src/PhoenixInspect.Desktop). Both hosts are described
 in [`Hosts`](hosts.md).
 
 ## The shape of a session
