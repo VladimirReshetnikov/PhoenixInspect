@@ -155,7 +155,7 @@ public sealed class InspectionSession
         renderer.Pair("status", "The evidence this session is currently allowed to use.");
         renderer.Pair("modules [substring]", "Managed module instances, optionally filtered by name.");
         renderer.Pair("module <index>", "Counted metadata content identity of one module, read from dump memory.");
-        renderer.Pair("threads [count]", "Probe thread ordinals and show the top managed frame of each.");
+        renderer.Pair("threads [count] [depth]", "Probe thread ordinals and show up to depth managed frames of each.");
         renderer.Pair("frames <thread> [count]", "Managed frames of one thread, in stack order.");
         renderer.Pair("context <thread> <frame>", "Adopt a frame's namespace, import, and alias facts for name binding.");
         renderer.Pair("context none", "Require context-independent fully qualified names again.");
@@ -256,9 +256,25 @@ public sealed class InspectionSession
 
     private async Task<CommandOutcome> ShowThreadsAsync(string argument)
     {
-        var probe = ParseCount(argument, DefaultThreadProbe);
+        var parts = argument.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var probe = parts.Length > 0 ? ParseCount(parts[0], DefaultThreadProbe) : DefaultThreadProbe;
+        var depth = parts.Length > 1 ? ParseCount(parts[1], 1) : 1;
         var projection = await host.QueryAsync(session =>
-            DumpInspectionService.ProbeCallStacks(session, probe)).ConfigureAwait(false);
+        {
+            var probed = DumpInspectionService.ProbeCallStacks(session, probe);
+            if (depth > 1)
+            {
+                foreach (var thread in probed.Threads)
+                {
+                    foreach (var frame in DumpInspectionService.LoadFrames(session, thread, depth))
+                    {
+                        thread.Frames.Add(frame);
+                    }
+                }
+            }
+
+            return probed;
+        }).ConfigureAwait(false);
 
         renderer.Heading("Managed threads");
         renderer.Note("  " + projection.Summary);
@@ -293,19 +309,13 @@ public sealed class InspectionSession
         var depth = parts.Length > 1 ? ParseCount(parts[1], DefaultFrameDepth) : DefaultFrameDepth;
         var frames = await host.QueryAsync(session =>
         {
-            var node = new CallStackThreadNode(threadOrdinal, $"Thread #{threadOrdinal}", string.Empty);
             var top = DumpSelectedFrameSelector.Create(session.Snapshot, threadOrdinal, 0);
             var observation = session.SelectExpressionFrame(top);
             var collected = ImmutableArray.CreateBuilder<CallStackFrameNode>();
             if (observation.Frame is not null)
             {
-                collected.Add(new CallStackFrameNode(
-                    top,
-                    observation.Frame,
-                    $"Frame #0  ·  {Describe(observation.Frame.DeclaringNamespace)}",
-                    $"MethodDef {DisplayFormatting.Token(observation.Frame.MethodDefinitionToken)}  ·  "
-                    + $"IL+{observation.Frame.Instruction.IlOffset}",
-                    isExact: true));
+                var node = new CallStackThreadNode(threadOrdinal, $"Thread #{threadOrdinal}", string.Empty);
+                collected.Add(DumpInspectionService.CreateFrameNode(session, top, observation));
                 collected.AddRange(DumpInspectionService.LoadFrames(session, node, depth));
             }
 
@@ -360,6 +370,7 @@ public sealed class InspectionSession
                     $"Frame #{frameOrdinal}  ·  {Describe(frame.DeclaringNamespace)}",
                     $"MethodDef {DisplayFormatting.Token(frame.MethodDefinitionToken)}",
                     isExact: true);
+
         }).ConfigureAwait(false);
 
         if (node is null)

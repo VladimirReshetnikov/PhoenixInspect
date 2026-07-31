@@ -75,8 +75,22 @@ public static class Program
     {
         foreach (var command in commands)
         {
+            // A script is also a narrated transcript: blank lines separate steps and comments explain them, so
+            // neither is echoed as if the reader had typed it at a prompt.
+            var trimmed = command.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            if (trimmed.StartsWith('#'))
+            {
+                renderer.Note(trimmed);
+                continue;
+            }
+
             renderer.Line();
-            renderer.Note($"phoenix> {command}");
+            renderer.Note($"phoenix> {trimmed}");
             var outcome = await session.ExecuteAsync(command).ConfigureAwait(false);
             if (outcome == CommandOutcome.Exit)
             {

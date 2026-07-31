@@ -249,7 +249,7 @@ public static class DumpInspectionService
                 ordinal,
                 $"Thread #{ordinal}  ·  managed id {frame.ManagedThreadId}",
                 $"runtime thread {DisplayFormatting.Address(frame.RuntimeThreadAddress)}");
-            node.Frames.Add(CreateFrameNode(selector, observation));
+            node.Frames.Add(CreateFrameNode(session, selector, observation));
 
             // Pre-expand the first thread so the panel is immediately useful; deeper frames still load on demand.
             node.IsExpanded = threads.Count == 0;
@@ -297,7 +297,7 @@ public static class DumpInspectionService
                 break;
             }
 
-            frames.Add(CreateFrameNode(selector, observation));
+            frames.Add(CreateFrameNode(session, selector, observation));
             if (observation.Frame is null)
             {
                 break;
@@ -367,10 +367,20 @@ public static class DumpInspectionService
         return new HeapObjectSearchProjection(rows, facts.ToImmutable(), summary, isExhaustive);
     }
 
-    private static CallStackFrameNode CreateFrameNode(
+    /// <summary>Builds the display node for one selected frame, naming its method when the metadata supports it.</summary>
+    /// <param name="session">The open dump session, used only to resolve the frame's method name.</param>
+    /// <param name="selector">The snapshot-scoped selector that produced the observation.</param>
+    /// <param name="observation">The selected-frame observation.</param>
+    /// <returns>The projected frame node.</returns>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    public static CallStackFrameNode CreateFrameNode(
+        ClrmdDumpSession session,
         DumpSelectedFrameSelector selector,
         DumpSelectedFrameObservation observation)
     {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(selector);
+        ArgumentNullException.ThrowIfNull(observation);
         if (observation.Frame is not { } frame)
         {
             return new CallStackFrameNode(
@@ -381,13 +391,21 @@ public static class DumpInspectionService
                 isExact: false);
         }
 
+        // A frame's method name comes from that frame's own module metadata inside the snapshot. When those bytes are
+        // not completely present the frame stays unnamed and says so, rather than being guessed at from the
+        // instruction pointer or from a disk image that was never proven to match.
+        var named = session.DescribeFrameMethod(frame);
         var declaringNamespace = string.IsNullOrEmpty(frame.DeclaringNamespace)
             ? "<global namespace>"
             : frame.DeclaringNamespace;
+        var title = named.Value is { } method
+            ? method.DisplayName
+            : $"{declaringNamespace}.<unnamed: {named.Status}/{named.Issue}>";
+
         return new CallStackFrameNode(
             selector,
             frame,
-            $"Frame #{selector.FrameOrdinal}  ·  {declaringNamespace}",
+            $"Frame #{selector.FrameOrdinal}  ·  {title}",
             $"MethodDef {DisplayFormatting.Token(frame.MethodDefinitionToken)}  ·  "
             + $"TypeDef {DisplayFormatting.Token(frame.DeclaringTypeDefinitionToken)}  ·  "
             + $"IL+{frame.Instruction.IlOffset}  ·  IP {DisplayFormatting.Address(frame.Instruction.NativeInstructionPointer)}",

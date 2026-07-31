@@ -1,0 +1,62 @@
+# PhoenixInspect preview demo session.
+#
+# Every line below is a command the console host accepts interactively. Nothing here is special-cased for the demo:
+# the same commands answer the same way against any dump of any .NET application, within the supported surface.
+#
+# The incident: an order-fulfillment service stopped dispatching. We have a dump and no logs.
+
+echo == 1. What was this process, and how far did it get? ==
+
+# Ordinary static fields are the part of a service that stays readable without a stack, a thread, or a debugger,
+# so they are where an inspection starts. Fully qualified names need no context evidence at all.
+eval Contoso.OrderService.Diagnostics.ServiceState.BuildLabel
+eval Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount
+
+echo == 2. Did anything fail, and did anyone leave a note? ==
+
+# A Nullable<int> that holds a value and a reference that is genuinely null are different answers, and stay different.
+eval Contoso.OrderService.Diagnostics.ServiceState.LastFailureCode
+eval Contoso.OrderService.Diagnostics.ServiceState.OperatorNote
+
+echo == 3. Follow the state into the object graph. ==
+
+# Adopting the exact object value of a static field is how an inspection reaches an object the handle table alone
+# cannot name. From here 'root' is that dispatcher.
+root Contoso.OrderService.Diagnostics.ServiceState.Dispatcher
+eval root.Region
+eval root.QueueDepth
+
+echo == 4. Which batch is stuck, and how badly? ==
+
+eval root.CurrentBatch.BatchId
+eval root.CurrentBatch.PendingCount
+eval root.CurrentBatch.DestinationHub
+
+echo == 5. Why is it stuck? ==
+
+# The failure record is present, so the conditional access reaches it.
+eval root.LastFailure?.Code
+eval root.LastFailure?.Detail
+
+# The carrier reference is null, so the conditional access short-circuits to null rather than guessing.
+eval root.AssignedCarrier?.Name
+eval root.AssignedCarrier?.Name ?? "no carrier ever accepted the batch"
+
+echo == 6. What happens when the evidence is not there? ==
+
+# A name the type does not declare is a reported stop with a stable diagnostic code, not a fabricated default.
+eval root.RetryBudgetRemaining
+
+echo == 7. The same object, reached a second way. ==
+
+# The dispatcher is also strongly rooted, so a bounded handle search finds it independently. The traversal counters
+# say how exhaustive that search actually was.
+objects Contoso.OrderService.Fulfillment.ShipmentDispatcher
+
+echo == 8. Where were the threads? ==
+
+threads 8 6
+
+echo == 9. What was this session allowed to use? ==
+
+status
