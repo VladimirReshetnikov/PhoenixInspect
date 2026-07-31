@@ -7,10 +7,10 @@
         Background="{StaticResource Surface.Base}"
         TextOptions.TextFormattingMode="Ideal"
         UseLayoutRounding="True"
-        MinWidth="1120"
-        MinHeight="720"
-        Width="1440"
-        Height="900"
+        MinWidth="1200"
+        MinHeight="760"
+        Width="1560"
+        Height="940"
         WindowStartupLocation="CenterScreen"
         AllowDrop="True"
         DragOver="OnWindowDragOver"
@@ -40,32 +40,6 @@
             </HierarchicalDataTemplate.ItemTemplate>
         </HierarchicalDataTemplate>
 
-        <!-- Evaluation history entry -->
-        <DataTemplate x:Key="HistoryTemplate" DataType="{x:Type models:EvaluationReport}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Border Width="6" Height="6"
-                        CornerRadius="3"
-                        VerticalAlignment="Top"
-                        Margin="0,6,9,0"
-                        Background="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="{Binding Expression}"
-                               Style="{StaticResource Text.Mono}"
-                               TextTrimming="CharacterEllipsis"
-                               TextWrapping="NoWrap" />
-                    <TextBlock Style="{StaticResource Text.Caption}" FontSize="11" TextWrapping="NoWrap">
-                        <Run Text="{Binding Status, Mode=OneWay}" />
-                        <Run Text="·" Foreground="{StaticResource Text.Muted}" />
-                        <Run Text="{Binding Path, Mode=OneWay}" Foreground="{StaticResource Text.Muted}" />
-                    </TextBlock>
-                </StackPanel>
-            </Grid>
-        </DataTemplate>
-
         <!-- Expression template chip -->
         <DataTemplate x:Key="SampleTemplate" DataType="{x:Type vm:ExpressionSample}">
             <Button Style="{StaticResource Button.Chip}"
@@ -85,11 +59,11 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- ============================ Header ============================ -->
+        <!-- ============================ Toolbar ============================ -->
         <Border Background="{StaticResource Surface.Panel}"
                 BorderBrush="{StaticResource Border.Subtle}"
                 BorderThickness="0,0,0,1"
-                Padding="20,14">
+                Padding="14,9">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -98,50 +72,41 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="34" Height="34"
-                            CornerRadius="9"
+                    <Border Width="28" Height="28"
+                            CornerRadius="8"
                             Background="{StaticResource Brand}"
-                            Margin="0,0,12,0">
+                            Margin="0,0,10,0">
                         <TextBlock Text="◆"
-                                   FontSize="15"
+                                   FontSize="13"
                                    Foreground="#FF16100C"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center" />
                     </Border>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="PhoenixInspect" Style="{StaticResource Text.Title}" FontSize="16" />
-                        <TextBlock Text="Internal demo of the implemented dump-inspection surface"
-                                   Style="{StaticResource Text.Caption}"
-                                   FontSize="11"
-                                   Foreground="{StaticResource Text.Muted}" />
-                    </StackPanel>
+                    <TextBlock Text="PhoenixInspect"
+                               Style="{StaticResource Text.Title}"
+                               FontSize="15"
+                               VerticalAlignment="Center" />
                 </StackPanel>
 
-                <!-- Open snapshot summary -->
-                <Border Grid.Column="1"
-                        Style="{StaticResource Card.Inset}"
-                        Padding="14,8"
-                        Margin="26,0"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        Visibility="{Binding IsDumpOpen, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel Orientation="Horizontal">
-                        <StackPanel Margin="0,0,20,0">
-                            <TextBlock Text="DUMP" Style="{StaticResource Text.Label}" Margin="0,0,0,2" />
-                            <TextBlock Text="{Binding DumpFileName}"
-                                       Style="{StaticResource Text.Mono}"
-                                       ToolTip="{Binding DumpDirectory}" />
-                        </StackPanel>
-                        <StackPanel Margin="0,0,20,0">
-                            <TextBlock Text="SNAPSHOT SHA-256" Style="{StaticResource Text.Label}" Margin="0,0,0,2" />
-                            <TextBlock Text="{Binding SnapshotDigest}" Style="{StaticResource Text.Mono}" />
-                        </StackPanel>
-                        <StackPanel>
-                            <TextBlock Text="TARGET" Style="{StaticResource Text.Label}" Margin="0,0,0,2" />
-                            <TextBlock Text="{Binding TargetSummary}" Style="{StaticResource Text.Mono}" />
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
+                <!-- Open snapshot chips -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Margin="18,0"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding IsDumpOpen, Converter={StaticResource BoolToVisibility}}">
+                    <Border Style="{StaticResource Card.Inset}" Padding="10,5" Margin="0,0,8,0" CornerRadius="6">
+                        <TextBlock Text="{Binding DumpFileName}"
+                                   Style="{StaticResource Text.Mono}"
+                                   ToolTip="{Binding DumpDirectory}" />
+                    </Border>
+                    <Border Style="{StaticResource Card.Inset}" Padding="10,5" Margin="0,0,8,0" CornerRadius="6"
+                            ToolTip="SHA-256 content identity of the complete dump file">
+                        <TextBlock Text="{Binding SnapshotDigest}" Style="{StaticResource Text.Mono}" Foreground="{StaticResource Text.Secondary}" />
+                    </Border>
+                    <Border Style="{StaticResource Card.Inset}" Padding="10,5" CornerRadius="6">
+                        <TextBlock Text="{Binding TargetSummary}" Style="{StaticResource Text.Mono}" Foreground="{StaticResource Text.Secondary}" />
+                    </Border>
+                </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="Close dump"
@@ -161,7 +126,7 @@
                 Background="#33E4574C"
                 BorderBrush="{StaticResource Accent.Stopped}"
                 BorderThickness="0,0,0,1"
-                Padding="20,10"
+                Padding="14,8"
                 Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -184,407 +149,311 @@
             </Grid>
         </Border>
 
-        <!-- ============================ Body ============================= -->
-        <Grid Grid.Row="2">
+        <!-- ====================== Docked workspace ======================= -->
+        <Grid Grid.Row="2" Margin="10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="248" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="330" MinWidth="260" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" MinWidth="460" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="390" MinWidth="320" />
             </Grid.ColumnDefinitions>
 
-            <!-- Navigation rail -->
-            <Border Background="{StaticResource Surface.Panel}"
-                    BorderBrush="{StaticResource Border.Subtle}"
-                    BorderThickness="0,0,1,0">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top"
-                               Text="SECTIONS"
-                               Style="{StaticResource Text.Label}"
-                               Margin="20,18,20,8" />
-                    <ListBox ItemsSource="{Binding Sections}"
-                             SelectedIndex="{Binding SelectedSectionIndex, Mode=TwoWay}"
-                             Style="{StaticResource Nav.List}"
-                             ItemContainerStyle="{StaticResource Nav.Item}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:NavigationSection}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding Glyph}"
-                                               Foreground="{StaticResource Brand}"
-                                               FontSize="14"
-                                               Width="22"
-                                               VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="NoWrap" />
-                                        <TextBlock Text="{Binding Caption}"
-                                                   Style="{StaticResource Text.Caption}"
-                                                   FontSize="11"
-                                                   Foreground="{StaticResource Text.Muted}" />
+            <!-- ~~~~~~~~~~~~~~~~~~ Left dock ~~~~~~~~~~~~~~~~~~ -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="180" />
+                    <RowDefinition Height="6" />
+                    <RowDefinition Height="300" MinHeight="180" />
+                </Grid.RowDefinitions>
+
+                <!-- Call Stack tool window -->
+                <Border Style="{StaticResource Tool.Container}">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource Tool.HeaderBar}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="CALL STACK" Style="{StaticResource Text.ToolTitle}" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="Set as context"
+                                            Style="{StaticResource Button.Chip}"
+                                            Command="{Binding CallStacks.UseAsContextCommand}"
+                                            ToolTip="Adopt the selected exact frame as the static-field name context"
+                                            Margin="0,0,6,0" />
+                                    <Button Content="⟳"
+                                            Style="{StaticResource Button.Chip}"
+                                            Command="{Binding CallStacks.ProbeCommand}"
+                                            ToolTip="Probe thread ordinals again with the caps below" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <Border DockPanel.Dock="Top"
+                                Background="{StaticResource Surface.Panel}"
+                                BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="0,0,0,1"
+                                Padding="12,6">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="probe" Style="{StaticResource Text.Caption}" FontSize="11"
+                                           Foreground="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Style="{StaticResource Input.Text}" Width="52" Padding="6,2" FontSize="11"
+                                         Text="{Binding CallStacks.ThreadOrdinalsToProbe}"
+                                         ToolTip="Zero-based thread ordinals to probe" />
+                                <TextBlock Text="ordinals ×" Style="{StaticResource Text.Caption}" FontSize="11"
+                                           Foreground="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="6,0" />
+                                <TextBox Style="{StaticResource Input.Text}" Width="52" Padding="6,2" FontSize="11"
+                                         Text="{Binding CallStacks.FramesPerThread}"
+                                         ToolTip="Maximum managed frames retained per thread" />
+                                <TextBlock Text="frames" Style="{StaticResource Text.Caption}" FontSize="11"
+                                           Foreground="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border DockPanel.Dock="Bottom"
+                                BorderBrush="{StaticResource Border.Subtle}"
+                                BorderThickness="0,1,0,0"
+                                Padding="12,6">
+                            <TextBlock Text="{Binding CallStacks.Summary}"
+                                       Style="{StaticResource Text.Caption}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource Text.Muted}"
+                                       ToolTip="{Binding CallStacks.Note}" />
+                        </Border>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Padding="6">
+                            <TreeView x:Name="StacksTree"
+                                      Style="{StaticResource Tree.Stacks}"
+                                      ItemsSource="{Binding CallStacks.Threads}"
+                                      ItemTemplate="{StaticResource ThreadTemplate}"
+                                      SelectedItemChanged="OnStackSelectionChanged"
+                                      MouseDoubleClick="OnStackDoubleClick"
+                                      TreeViewItem.Expanded="OnThreadExpanded" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <GridSplitter Grid.Row="1" Height="6" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
+
+                <!-- Modules / Heap objects tool tabs -->
+                <Border Grid.Row="2" Style="{StaticResource Tool.Container}">
+                    <TabControl Padding="0">
+                        <TabItem Header="MODULES">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Top" Padding="10,8,10,4">
+                                    <TextBox Style="{StaticResource Input.Text}"
+                                             Padding="8,4"
+                                             FontSize="12"
+                                             Text="{Binding Modules.Filter, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="Filter by module name or target path hint" />
+                                </Border>
+                                <Expander DockPanel.Dock="Bottom"
+                                          Header="Content identity"
+                                          Foreground="{StaticResource Text.Secondary}"
+                                          FontSize="11"
+                                          Margin="10,2,10,6"
+                                          IsExpanded="False"
+                                          Visibility="{Binding Modules.HasSelection, Converter={StaticResource BoolToVisibility}}">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="150">
+                                        <ItemsControl ItemsSource="{Binding Modules.GroupedDetails}"
+                                                      Style="{StaticResource Property.List}">
+                                            <ItemsControl.GroupStyle>
+                                                <StaticResource ResourceKey="Property.GroupStyle" />
+                                            </ItemsControl.GroupStyle>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Expander>
+                                <DataGrid Style="{StaticResource Grid.Data}"
+                                          Margin="4,0"
+                                          RowHeight="26"
+                                          ItemsSource="{Binding Modules.View}"
+                                          SelectedItem="{Binding Modules.Selected, Mode=TwoWay}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="MODULE" Binding="{Binding Name}" Width="*" MinWidth="140" />
+                                        <DataGridTextColumn Header="SIZE" Binding="{Binding MetadataLength}" Width="76" />
+                                        <DataGridTextColumn Header="LAYOUT" Binding="{Binding Layout}" Width="70" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+                        <TabItem Header="HEAP SEARCH">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Top" Padding="10,8,10,4">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Style="{StaticResource Input.Text}"
+                                                     Padding="8,4"
+                                                     FontSize="12"
+                                                     FontFamily="{StaticResource Font.Mono}"
+                                                     Text="{Binding HeapObjects.TypeName, UpdateSourceTrigger=PropertyChanged}"
+                                                     KeyDown="OnObjectSearchKeyDown"
+                                                     ToolTip="Exact case-sensitive runtime type name" />
+                                            <Button Grid.Column="1"
+                                                    Content="Search"
+                                                    Style="{StaticResource Button.Chip}"
+                                                    Command="{Binding HeapObjects.SearchCommand}"
+                                                    Margin="6,0,0,0" />
+                                        </Grid>
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <TextBox Style="{StaticResource Input.Text}" Width="52" Padding="6,2" FontSize="11"
+                                                     Text="{Binding HeapObjects.MaximumMatches}"
+                                                     ToolTip="Retained-match cap" />
+                                            <TextBlock Text="matches ·" Style="{StaticResource Text.Caption}" FontSize="11"
+                                                       Foreground="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="6,0" />
+                                            <TextBox Style="{StaticResource Input.Text}" Width="72" Padding="6,2" FontSize="11"
+                                                     Text="{Binding HeapObjects.MaximumHandlesScanned}"
+                                                     ToolTip="Handle-inspection cap" />
+                                            <TextBlock Text="handles" Style="{StaticResource Text.Caption}" FontSize="11"
+                                                       Foreground="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                            <Button Content="Use as root"
+                                                    Style="{StaticResource Button.Chip}"
+                                                    Command="{Binding HeapObjects.UseAsRootCommand}"
+                                                    ToolTip="Adopt the selected match as the root-relative expression root"
+                                                    Margin="10,0,0,0" />
+                                        </StackPanel>
                                     </StackPanel>
-                                    <Border Grid.Column="2"
-                                            Background="{StaticResource Surface.Raised}"
-                                            CornerRadius="9"
-                                            Padding="7,2"
-                                            VerticalAlignment="Center"
-                                            Visibility="{Binding Badge, Converter={StaticResource EmptyToVisibility}}">
-                                        <TextBlock Text="{Binding Badge}"
-                                                   Style="{StaticResource Text.Mono}"
-                                                   FontSize="10"
-                                                   Foreground="{StaticResource Text.Secondary}" />
-                                    </Border>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </DockPanel>
-            </Border>
-
-            <!-- Section panels -->
-            <TabControl Grid.Column="1"
-                        Style="{StaticResource Tabs.Chromeless}"
-                        SelectedIndex="{Binding SelectedSectionIndex, Mode=TwoWay}">
-
-                <!-- ================= Overview ================= -->
-                <TabItem>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="3*" MinWidth="420" />
-                                <ColumnDefinition Width="2*" MinWidth="300" />
-                            </Grid.ColumnDefinitions>
-
-                            <Border Style="{StaticResource Card}" Margin="0,0,12,0">
-                                <StackPanel>
-                                    <TextBlock Text="Snapshot" Style="{StaticResource Text.Title}" />
-                                    <TextBlock Text="Facts read from the immutable dump, plus the deterministic caps this build declares."
-                                               Style="{StaticResource Text.Caption}"
-                                               Margin="0,4,0,10" />
-                                    <ItemsControl ItemsSource="{Binding Overview.GroupedProperties}"
-                                                  Style="{StaticResource Property.List}"
-                                                  Visibility="{Binding Overview.HasProperties, Converter={StaticResource BoolToVisibility}}">
-                                        <ItemsControl.GroupStyle>
-                                            <StaticResource ResourceKey="Property.GroupStyle" />
-                                        </ItemsControl.GroupStyle>
-                                    </ItemsControl>
-                                    <TextBlock Text="No dump is open. Use “Open dump…”, drop a dump file onto this window, or pass a path on the command line."
+                                </Border>
+                                <Expander DockPanel.Dock="Bottom"
+                                          Header="Traversal evidence"
+                                          Foreground="{StaticResource Text.Secondary}"
+                                          FontSize="11"
+                                          Margin="10,2,10,6"
+                                          IsExpanded="False"
+                                          Visibility="{Binding HeapObjects.SearchFacts.Count, Converter={StaticResource EmptyToVisibility}}">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="150">
+                                        <ItemsControl ItemsSource="{Binding HeapObjects.GroupedSearchFacts}"
+                                                      Style="{StaticResource Property.List}">
+                                            <ItemsControl.GroupStyle>
+                                                <StaticResource ResourceKey="Property.GroupStyle" />
+                                            </ItemsControl.GroupStyle>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Expander>
+                                <Grid>
+                                    <TextBlock Text="{Binding HeapObjects.Summary}"
                                                Style="{StaticResource Text.Caption}"
                                                Foreground="{StaticResource Text.Muted}"
-                                               Margin="0,8,0,0"
-                                               Visibility="{Binding Overview.HasProperties, Converter={StaticResource InverseBoolToVisibility}}" />
-                                </StackPanel>
-                            </Border>
-
-                            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0" VerticalAlignment="Top">
-                                <StackPanel>
-                                    <TextBlock Text="What this build can answer" Style="{StaticResource Text.Title}" />
-                                    <TextBlock Text="The supported surface is deliberately narrow. Read this before interpreting a result."
-                                               Style="{StaticResource Text.Caption}"
-                                               Margin="0,4,0,12" />
-                                    <ItemsControl ItemsSource="{Binding Overview.CapabilityNotes}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid Margin="0,0,0,10">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <Border Width="5" Height="5"
-                                                            CornerRadius="3"
-                                                            Background="{StaticResource Brand}"
-                                                            VerticalAlignment="Top"
-                                                            Margin="0,6,10,0" />
-                                                    <TextBlock Grid.Column="1"
-                                                               Text="{Binding}"
-                                                               Style="{StaticResource Text.Caption}" />
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </ScrollViewer>
-                </TabItem>
-
-                <!-- ================= Modules ================= -->
-                <TabItem>
-                    <Grid Margin="24">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="3*" MinWidth="440" />
-                            <ColumnDefinition Width="2*" MinWidth="300" />
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.ColumnSpan="2" Margin="0,0,0,14">
-                            <TextBlock Text="Managed modules" Style="{StaticResource Text.Title}" />
-                            <TextBlock Text="{Binding Modules.Summary}" Style="{StaticResource Text.Caption}" Margin="0,4,0,10" />
-                            <StackPanel HorizontalAlignment="Left">
-                                <TextBlock Text="FILTER BY MODULE NAME OR TARGET PATH HINT" Style="{StaticResource Text.Label}" />
-                                <TextBox Style="{StaticResource Input.Text}"
-                                         Width="340"
-                                         Text="{Binding Modules.Filter, UpdateSourceTrigger=PropertyChanged}" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="6" Margin="0,0,12,0">
-                            <DataGrid Style="{StaticResource Grid.Data}"
-                                      ItemsSource="{Binding Modules.View}"
-                                      SelectedItem="{Binding Modules.Selected, Mode=TwoWay}">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="MODULE" Binding="{Binding Name}" Width="*" MinWidth="180" />
-                                    <DataGridTextColumn Header="AD" Binding="{Binding AppDomainId}" Width="42" />
-                                    <DataGridTextColumn Header="METADATA ROOT" Binding="{Binding MetadataAddress}" Width="184"
-                                                        FontFamily="{StaticResource Font.Mono}" />
-                                    <DataGridTextColumn Header="SIZE" Binding="{Binding MetadataLength}" Width="82" />
-                                    <DataGridTextColumn Header="LAYOUT" Binding="{Binding Layout}" Width="86" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </Border>
-
-                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0">
-                            <DockPanel>
-                                <TextBlock DockPanel.Dock="Top" Text="Module content identity" Style="{StaticResource Text.Title}" FontSize="16" />
-                                <TextBlock DockPanel.Dock="Top"
-                                           Text="Select a module to read its counted metadata from dump memory."
-                                           Style="{StaticResource Text.Caption}"
-                                           Margin="0,4,0,12"
-                                           Visibility="{Binding Modules.HasSelection, Converter={StaticResource InverseBoolToVisibility}}" />
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <ItemsControl ItemsSource="{Binding Modules.GroupedDetails}"
-                                                  Style="{StaticResource Property.List}">
-                                                      <ItemsControl.GroupStyle>
-                                                          <StaticResource ResourceKey="Property.GroupStyle" />
-                                                      </ItemsControl.GroupStyle>
-                                                  </ItemsControl>
-                                </ScrollViewer>
-                            </DockPanel>
-                        </Border>
-                    </Grid>
-                </TabItem>
-
-                <!-- ================= Call stacks ================= -->
-                <TabItem>
-                    <Grid Margin="24">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-
-                        <StackPanel Margin="0,0,0,14">
-                            <TextBlock Text="Managed call stacks" Style="{StaticResource Text.Title}" />
-                            <TextBlock Text="{Binding CallStacks.Summary}" Style="{StaticResource Text.Caption}" Margin="0,4,0,0" />
-                            <TextBlock Text="{Binding CallStacks.Note}"
-                                       Style="{StaticResource Text.Caption}"
-                                       Foreground="{StaticResource Text.Muted}"
-                                       FontSize="11"
-                                       Margin="0,4,0,12"
-                                       Visibility="{Binding CallStacks.Note, Converter={StaticResource EmptyToVisibility}}" />
-                            <StackPanel Orientation="Horizontal">
-                                <StackPanel Margin="0,0,14,0">
-                                    <TextBlock Text="THREAD ORDINALS TO PROBE" Style="{StaticResource Text.Label}" />
-                                    <TextBox Style="{StaticResource Input.Text}" Width="120"
-                                             Text="{Binding CallStacks.ThreadOrdinalsToProbe}" />
-                                </StackPanel>
-                                <StackPanel Margin="0,0,14,0">
-                                    <TextBlock Text="MAX FRAMES PER THREAD" Style="{StaticResource Text.Label}" />
-                                    <TextBox Style="{StaticResource Input.Text}" Width="120"
-                                             Text="{Binding CallStacks.FramesPerThread}" />
-                                </StackPanel>
-                                <Button Content="Probe threads"
-                                        Style="{StaticResource Button.Primary}"
-                                        Command="{Binding CallStacks.ProbeCommand}"
-                                        VerticalAlignment="Bottom"
-                                        Margin="0,0,10,0" />
-                                <Button Content="Use frame as name context"
-                                        Style="{StaticResource Button.Ghost}"
-                                        Command="{Binding CallStacks.UseAsContextCommand}"
-                                        VerticalAlignment="Bottom" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <Border Grid.Row="1" Style="{StaticResource Card}">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                                <TreeView x:Name="StacksTree"
-                                          Style="{StaticResource Tree.Stacks}"
-                                          ItemsSource="{Binding CallStacks.Threads}"
-                                          ItemTemplate="{StaticResource ThreadTemplate}"
-                                          SelectedItemChanged="OnStackSelectionChanged"
-                                          TreeViewItem.Expanded="OnThreadExpanded" />
-                            </ScrollViewer>
-                        </Border>
-                    </Grid>
-                </TabItem>
-
-                <!-- ================= Heap objects ================= -->
-                <TabItem>
-                    <Grid Margin="24">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="3*" MinWidth="440" />
-                            <ColumnDefinition Width="2*" MinWidth="290" />
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.ColumnSpan="2" Margin="0,0,0,14">
-                            <TextBlock Text="Strong-handle rooted objects" Style="{StaticResource Text.Title}" />
-                            <TextBlock Text="{Binding HeapObjects.Summary}" Style="{StaticResource Text.Caption}" Margin="0,4,0,12" />
-                            <StackPanel Orientation="Horizontal">
-                                <StackPanel Margin="0,0,14,0">
-                                    <TextBlock Text="EXACT RUNTIME TYPE NAME (CASE-SENSITIVE)" Style="{StaticResource Text.Label}" />
-                                    <TextBox Style="{StaticResource Input.Text}"
-                                             FontFamily="{StaticResource Font.Mono}"
-                                             Width="420"
-                                             Text="{Binding HeapObjects.TypeName, UpdateSourceTrigger=PropertyChanged}"
-                                             KeyDown="OnObjectSearchKeyDown" />
-                                </StackPanel>
-                                <StackPanel Margin="0,0,14,0">
-                                    <TextBlock Text="MATCH CAP" Style="{StaticResource Text.Label}" />
-                                    <TextBox Style="{StaticResource Input.Text}" Width="90"
-                                             Text="{Binding HeapObjects.MaximumMatches}" />
-                                </StackPanel>
-                                <StackPanel Margin="0,0,14,0">
-                                    <TextBlock Text="HANDLE CAP" Style="{StaticResource Text.Label}" />
-                                    <TextBox Style="{StaticResource Input.Text}" Width="110"
-                                             Text="{Binding HeapObjects.MaximumHandlesScanned}" />
-                                </StackPanel>
-                                <Button Content="Search"
-                                        Style="{StaticResource Button.Primary}"
-                                        Command="{Binding HeapObjects.SearchCommand}"
-                                        VerticalAlignment="Bottom"
-                                        Margin="0,0,10,0" />
-                                <Button Content="Use as expression root"
-                                        Style="{StaticResource Button.Ghost}"
-                                        Command="{Binding HeapObjects.UseAsRootCommand}"
-                                        VerticalAlignment="Bottom" />
-                            </StackPanel>
-                        </StackPanel>
-
-                        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="6" Margin="0,0,12,0">
-                          <Grid>
-                            <TextBlock Text="No retained matches. Search an exact runtime type name, or promote a static-field object value in Evaluate."
-                                       Style="{StaticResource Text.Caption}"
-                                       Foreground="{StaticResource Text.Muted}"
-                                       TextAlignment="Center"
-                                       MaxWidth="380"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       Panel.ZIndex="1"
-                                       Visibility="{Binding HeapObjects.Matches, Converter={StaticResource EmptyToVisibility}, ConverterParameter=invert}" />
-                            <DataGrid Style="{StaticResource Grid.Data}"
-                                      ItemsSource="{Binding HeapObjects.Matches}"
-                                      SelectedItem="{Binding HeapObjects.Selected, Mode=TwoWay}">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="ADDRESS" Binding="{Binding Address}" Width="184"
-                                                        FontFamily="{StaticResource Font.Mono}" />
-                                    <DataGridTextColumn Header="RUNTIME TYPE" Binding="{Binding TypeName}" Width="2*" MinWidth="160" />
-                                    <DataGridTextColumn Header="HANDLE" Binding="{Binding RootKind}" Width="112" />
-                                    <DataGridTextColumn Header="MODULE" Binding="{Binding ModuleName}" Width="*" MinWidth="120" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-                          </Grid>
-                        </Border>
-
-                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0">
-                            <DockPanel>
-                                <TextBlock DockPanel.Dock="Top" Text="Traversal evidence" Style="{StaticResource Text.Title}" FontSize="16" />
-                                <TextBlock DockPanel.Dock="Top"
-                                           Text="A truncated traversal is never presented as exhaustive."
-                                           Style="{StaticResource Text.Caption}"
-                                           Margin="0,4,0,12" />
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <ItemsControl ItemsSource="{Binding HeapObjects.GroupedSearchFacts}"
-                                                  Style="{StaticResource Property.List}">
-                                                      <ItemsControl.GroupStyle>
-                                                          <StaticResource ResourceKey="Property.GroupStyle" />
-                                                      </ItemsControl.GroupStyle>
-                                                  </ItemsControl>
-                                </ScrollViewer>
-                            </DockPanel>
-                        </Border>
-                    </Grid>
-                </TabItem>
-
-                <!-- ================= Evaluate ================= -->
-                <TabItem>
-                    <Grid Margin="24">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="3*" MinWidth="520" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Request -->
-                        <Border Style="{StaticResource Card}" Margin="0,0,0,14" Grid.ColumnSpan="2">
-                            <StackPanel>
-                                <TextBlock Text="Evaluate an expression" Style="{StaticResource Text.Title}" />
-                                <TextBlock Text="{Binding Evaluate.ReadinessMessage}"
-                                           Style="{StaticResource Text.Caption}"
-                                           Margin="0,4,0,14" />
-
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                                    <RadioButton GroupName="Path"
-                                                 Margin="0,0,10,0"
-                                                 IsChecked="{Binding Evaluate.IsStaticFieldPath, Mode=TwoWay}">
-                                        <StackPanel>
-                                            <TextBlock Text="Static field" FontWeight="SemiBold" />
-                                            <TextBlock Text="Namespace-qualified static field, bound from module metadata"
-                                                       Style="{StaticResource Text.Caption}"
-                                                       FontSize="11"
-                                                       Foreground="{StaticResource Text.Muted}" />
-                                        </StackPanel>
-                                    </RadioButton>
-                                    <RadioButton GroupName="Path"
-                                                 IsChecked="{Binding Evaluate.IsRootRelativePath, Mode=TwoWay}">
-                                        <StackPanel>
-                                            <TextBlock Text="Root-relative" FontWeight="SemiBold" />
-                                            <TextBlock Text="Member expression over one exact heap object"
-                                                       Style="{StaticResource Text.Caption}"
-                                                       FontSize="11"
-                                                       Foreground="{StaticResource Text.Muted}" />
-                                        </StackPanel>
-                                    </RadioButton>
-                                </StackPanel>
-
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="ExpressionBox"
-                                             Style="{StaticResource Input.Expression}"
-                                             Text="{Binding Evaluate.Expression, UpdateSourceTrigger=PropertyChanged}"
-                                             KeyDown="OnExpressionKeyDown" />
-                                    <Button Grid.Column="1"
-                                            Content="Evaluate"
-                                            Style="{StaticResource Button.Primary}"
-                                            Command="{Binding Evaluate.EvaluateCommand}"
-                                            Margin="10,0,0,0"
-                                            Padding="20,7" />
+                                               FontSize="11"
+                                               TextAlignment="Center"
+                                               MaxWidth="260"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Panel.ZIndex="1"
+                                               Visibility="{Binding HeapObjects.Matches.Count, Converter={StaticResource EmptyToVisibility}, ConverterParameter=invert}" />
+                                    <DataGrid Style="{StaticResource Grid.Data}"
+                                              Margin="4,0"
+                                              RowHeight="26"
+                                              ItemsSource="{Binding HeapObjects.Matches}"
+                                              SelectedItem="{Binding HeapObjects.Selected, Mode=TwoWay}">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="ADDRESS" Binding="{Binding Address}" Width="140"
+                                                                FontFamily="{StaticResource Font.Mono}" />
+                                            <DataGridTextColumn Header="RUNTIME TYPE" Binding="{Binding TypeName}" Width="*" MinWidth="120" />
+                                            <DataGridTextColumn Header="HANDLE" Binding="{Binding RootKind}" Width="80" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
                                 </Grid>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
+                </Border>
+            </Grid>
 
-                                <ItemsControl ItemsSource="{Binding Evaluate.Samples}"
-                                              ItemTemplate="{StaticResource SampleTemplate}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
+            <GridSplitter Grid.Column="1" Width="6" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
 
-                                <!-- Static-field options -->
+            <!-- ~~~~~~~~~~~~~~~~~~ Center: evaluation console ~~~~~~~~~~~~~~~~~~ -->
+            <Border Grid.Column="2" Style="{StaticResource Tool.Container}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource Tool.HeaderBar}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="EVALUATE — C# EXPRESSION" Style="{StaticResource Text.ToolTitle}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Border Background="{StaticResource Surface.Input}"
+                                        CornerRadius="6"
+                                        Padding="2"
+                                        Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Style="{StaticResource Toggle.Segment}"
+                                                     GroupName="PathSegment"
+                                                     Content="Static field"
+                                                     ToolTip="Namespace-qualified static field, bound from module metadata"
+                                                     IsChecked="{Binding Evaluate.IsStaticFieldPath, Mode=TwoWay}" />
+                                        <RadioButton Style="{StaticResource Toggle.Segment}"
+                                                     GroupName="PathSegment"
+                                                     Content="Root-relative"
+                                                     ToolTip="Member expression over one exact heap object"
+                                                     IsChecked="{Binding Evaluate.IsRootRelativePath, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Border>
+                                <ToggleButton x:Name="OptionsToggle"
+                                              Style="{StaticResource Toggle.Chip}"
+                                              Content="Options"
+                                              Margin="0,0,6,0" />
+                                <Button Content="Clear"
+                                        Style="{StaticResource Button.Chip}"
+                                        ToolTip="Clear the evaluation history"
+                                        Command="{Binding Evaluate.ClearHistoryCommand}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Expression input -->
+                    <Border DockPanel.Dock="Top"
+                            Background="{StaticResource Surface.Panel}"
+                            BorderBrush="{StaticResource Border.Subtle}"
+                            BorderThickness="0,0,0,1"
+                            Padding="12,10">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="❯"
+                                           FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="15"
+                                           Foreground="{StaticResource Brand}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0" />
+                                <TextBox x:Name="ExpressionBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource Input.Expression}"
+                                         Text="{Binding Evaluate.Expression, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="OnExpressionKeyDown" />
+                                <Button Grid.Column="2"
+                                        Content="Evaluate"
+                                        Style="{StaticResource Button.Primary}"
+                                        Command="{Binding Evaluate.EvaluateCommand}"
+                                        Margin="8,0,0,0"
+                                        Padding="18,7" />
+                            </Grid>
+                            <TextBlock Text="{Binding Evaluate.ReadinessMessage}"
+                                       Style="{StaticResource Text.Caption}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource Text.Muted}"
+                                       Margin="24,6,0,0" />
+                            <ItemsControl ItemsSource="{Binding Evaluate.Samples}"
+                                          ItemTemplate="{StaticResource SampleTemplate}"
+                                          Margin="24,8,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+
+                            <!-- Collapsible options -->
+                            <StackPanel Margin="24,4,0,0"
+                                        Visibility="{Binding IsChecked, ElementName=OptionsToggle, Converter={StaticResource BoolToVisibility}}">
                                 <Border Style="{StaticResource Card.Inset}"
-                                        Margin="0,6,0,0"
                                         Visibility="{Binding Evaluate.IsStaticFieldPath, Converter={StaticResource BoolToVisibility}}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -614,10 +483,7 @@
                                         </StackPanel>
                                     </Grid>
                                 </Border>
-
-                                <!-- Root-relative options -->
                                 <Border Style="{StaticResource Card.Inset}"
-                                        Margin="0,6,0,0"
                                         Visibility="{Binding Evaluate.IsRootRelativePath, Converter={StaticResource BoolToVisibility}}">
                                     <StackPanel>
                                         <Grid>
@@ -692,191 +558,261 @@
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
-                        </Border>
+                        </StackPanel>
+                    </Border>
 
-                        <!-- Result -->
-                        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
-                            <Grid>
-                                <TextBlock Text="No expression has been evaluated yet."
-                                           Style="{StaticResource Text.Caption}"
-                                           Foreground="{StaticResource Text.Muted}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Visibility="{Binding Evaluate.HasReport, Converter={StaticResource InverseBoolToVisibility}}" />
+                    <!-- Watch-style history grid -->
+                    <Grid>
+                        <TextBlock Text="Evaluated expressions appear here with their value, kind, and status. Select a row to inspect the complete evidence."
+                                   Style="{StaticResource Text.Caption}"
+                                   Foreground="{StaticResource Text.Muted}"
+                                   TextAlignment="Center"
+                                   MaxWidth="420"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Panel.ZIndex="1"
+                                   Visibility="{Binding Evaluate.History.Count, Converter={StaticResource EmptyToVisibility}, ConverterParameter=invert}" />
+                        <DataGrid Style="{StaticResource Grid.Data}"
+                                  Margin="4"
+                                  ItemsSource="{Binding Evaluate.History}"
+                                  SelectedItem="{Binding Evaluate.Report, Mode=TwoWay}">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="26">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type models:EvaluationReport}">
+                                            <Border Width="8" Height="8"
+                                                    CornerRadius="4"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Background="{Binding Severity, Converter={StaticResource SeverityToBrush}}"
+                                                    ToolTip="{Binding Status}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="EXPRESSION" Binding="{Binding Expression}" Width="2*" MinWidth="180"
+                                                    FontFamily="{StaticResource Font.Mono}" />
+                                <DataGridTextColumn Header="VALUE" Binding="{Binding Value}" Width="2*" MinWidth="140"
+                                                    FontFamily="{StaticResource Font.Mono}" />
+                                <DataGridTextColumn Header="KIND" Binding="{Binding ValueKind}" Width="130" />
+                                <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="100" />
+                                <DataGridTextColumn Header="MS" Binding="{Binding Duration.TotalMilliseconds, StringFormat={}{0:N1}}" Width="64" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </DockPanel>
+            </Border>
 
-                                <DockPanel Visibility="{Binding Evaluate.HasReport, Converter={StaticResource BoolToVisibility}}"
-                                           DataContext="{Binding Evaluate}">
-                                    <!-- Outcome banner -->
-                                    <Border DockPanel.Dock="Top"
-                                            Background="{StaticResource Surface.Raised}"
-                                            CornerRadius="8,8,0,0"
-                                            Padding="18,14">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <Border Width="40" Height="40"
-                                                    CornerRadius="20"
-                                                    Margin="0,0,14,0"
-                                                    Background="{Binding Report.Severity, Converter={StaticResource SeverityToBrush}}">
-                                                <TextBlock Text="{Binding Report.Severity, Converter={StaticResource SeverityToGlyph}}"
-                                                           FontSize="17"
-                                                           Foreground="#FF10121A"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center" />
-                                            </Border>
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Style="{StaticResource Text.Title}" FontSize="16">
-                                                    <Run Text="{Binding Report.Status, Mode=OneWay}" />
-                                                </TextBlock>
-                                                <TextBlock Text="{Binding Report.Stage}" Style="{StaticResource Text.Caption}" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                                <Button Content="Use this object as expression root"
-                                                        Style="{StaticResource Button.Chip}"
-                                                        HorizontalAlignment="Right"
-                                                        Margin="0,0,0,6"
-                                                        Command="{Binding PromoteResultToRootCommand}"
-                                                        ToolTip="Adopt the exact object this field holds as the root of a root-relative expression."
-                                                        Visibility="{Binding CanPromoteResultToRoot, Converter={StaticResource BoolToVisibility}}" />
-                                                <TextBlock Text="{Binding Report.Path}"
-                                                           Style="{StaticResource Text.Caption}"
-                                                           HorizontalAlignment="Right" />
-                                                <TextBlock Style="{StaticResource Text.Caption}"
-                                                           FontSize="11"
-                                                           Foreground="{StaticResource Text.Muted}"
-                                                           HorizontalAlignment="Right">
-                                                    <Run Text="{Binding Report.Duration.TotalMilliseconds, StringFormat={}{0:N1} ms, Mode=OneWay}" />
-                                                </TextBlock>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
+            <GridSplitter Grid.Column="3" Width="6" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
 
-                                    <!-- Value -->
-                                    <Border DockPanel.Dock="Top"
-                                            Background="{StaticResource Surface.Input}"
-                                            Padding="18,14"
-                                            BorderBrush="{StaticResource Border.Subtle}"
-                                            BorderThickness="0,0,0,1">
-                                        <StackPanel>
-                                            <TextBlock Text="VALUE" Style="{StaticResource Text.Label}" />
-                                            <TextBlock Text="{Binding Report.Value}"
-                                                       Style="{StaticResource Text.Mono}"
-                                                       FontSize="16"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Text="{Binding Report.ValueKind}"
-                                                       Style="{StaticResource Text.Caption}"
-                                                       FontSize="11"
-                                                       Foreground="{StaticResource Text.Muted}"
-                                                       Margin="0,4,0,0"
-                                                       Visibility="{Binding Report.ValueKind, Converter={StaticResource EmptyToVisibility}}" />
+            <!-- ~~~~~~~~~~~~~~~~~~ Right dock: evidence ~~~~~~~~~~~~~~~~~~ -->
+            <Border Grid.Column="4" Style="{StaticResource Tool.Container}">
+                <TabControl Padding="0">
+                    <TabItem Header="RESULT">
+                        <Grid>
+                            <TextBlock Text="No expression is selected. Evaluate one, or select a row in the history."
+                                       Style="{StaticResource Text.Caption}"
+                                       Foreground="{StaticResource Text.Muted}"
+                                       TextAlignment="Center"
+                                       MaxWidth="280"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding Evaluate.HasReport, Converter={StaticResource InverseBoolToVisibility}}" />
+
+                            <DockPanel Visibility="{Binding Evaluate.HasReport, Converter={StaticResource BoolToVisibility}}"
+                                       DataContext="{Binding Evaluate}">
+                                <!-- Outcome banner -->
+                                <Border DockPanel.Dock="Top"
+                                        Background="{StaticResource Surface.Raised}"
+                                        Padding="14,12">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="32" Height="32"
+                                                CornerRadius="16"
+                                                Margin="0,0,12,0"
+                                                Background="{Binding Report.Severity, Converter={StaticResource SeverityToBrush}}">
+                                            <TextBlock Text="{Binding Report.Severity, Converter={StaticResource SeverityToGlyph}}"
+                                                       FontSize="14"
+                                                       Foreground="#FF10121A"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Style="{StaticResource Text.Title}" FontSize="14">
+                                                <Run Text="{Binding Report.Status, Mode=OneWay}" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Report.Stage}" Style="{StaticResource Text.Caption}" FontSize="11" />
                                             <TextBlock Style="{StaticResource Text.Caption}"
-                                                       FontFamily="{StaticResource Font.Mono}"
-                                                       FontSize="10"
-                                                       Foreground="{StaticResource Text.Muted}"
-                                                       Margin="0,8,0,0"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       TextWrapping="NoWrap"
-                                                       Visibility="{Binding Report.Sha256, Converter={StaticResource EmptyToVisibility}}">
-                                                <Run Text="canonical replay digest " />
-                                                <Run Text="{Binding Report.Sha256, Mode=OneWay}" Foreground="{StaticResource Text.Secondary}" />
+                                                       FontSize="11"
+                                                       Foreground="{StaticResource Text.Muted}">
+                                                <Run Text="{Binding Report.Path, Mode=OneWay}" />
+                                                <Run Text="·" />
+                                                <Run Text="{Binding Report.Duration.TotalMilliseconds, StringFormat={}{0:N1} ms, Mode=OneWay}" />
                                             </TextBlock>
                                         </StackPanel>
-                                    </Border>
+                                    </Grid>
+                                </Border>
 
-                                    <!-- Evidence -->
-                                    <TabControl Background="Transparent"
-                                                BorderThickness="0"
-                                                Padding="14"
-                                                Foreground="{StaticResource Text.Primary}">
-                                        <TabItem Header="Binding facts">
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                <ItemsControl ItemsSource="{Binding GroupedReportFacts}"
-                                                              Style="{StaticResource Property.List}">
-                                                                  <ItemsControl.GroupStyle>
-                                                                      <StaticResource ResourceKey="Property.GroupStyle" />
-                                                                  </ItemsControl.GroupStyle>
-                                                              </ItemsControl>
-                                            </ScrollViewer>
-                                        </TabItem>
-                                        <TabItem Header="Raw reads">
-                                            <DataGrid Style="{StaticResource Grid.Data}"
-                                                      ItemsSource="{Binding ReportMemoryReads}"
-                                                      RowHeight="26">
-                                                <DataGrid.Columns>
-                                                    <DataGridTextColumn Header="ADDRESS / SOURCE" Binding="{Binding Address}"
-                                                                        FontFamily="{StaticResource Font.Mono}" Width="184" />
-                                                    <DataGridTextColumn Header="REQUESTED" Binding="{Binding Requested}" Width="88" />
-                                                    <DataGridTextColumn Header="OBSERVED" Binding="{Binding Observed}" Width="84" />
-                                                    <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="110" />
-                                                    <DataGridTextColumn Header="BYTES" Binding="{Binding Preview}"
-                                                                        FontFamily="{StaticResource Font.Mono}" Width="*" />
-                                                </DataGrid.Columns>
-                                            </DataGrid>
-                                        </TabItem>
-                                        <TabItem Header="Applied bounds">
-                                            <DataGrid Style="{StaticResource Grid.Data}"
-                                                      ItemsSource="{Binding ReportBounds}"
-                                                      RowHeight="26">
-                                                <DataGrid.Columns>
-                                                    <DataGridTextColumn Header="BOUND" Binding="{Binding Name}"
-                                                                        FontFamily="{StaticResource Font.Mono}" Width="*" />
-                                                    <DataGridTextColumn Header="VALUE" Binding="{Binding Value}" Width="Auto" />
-                                                </DataGrid.Columns>
-                                            </DataGrid>
-                                        </TabItem>
-                                        <TabItem Header="Diagnostics">
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                <ItemsControl ItemsSource="{Binding ReportDiagnostics}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate DataType="{x:Type models:DiagnosticRow}">
-                                                            <StackPanel Margin="0,0,0,12">
-                                                                <TextBlock Text="{Binding Code}"
-                                                                           Style="{StaticResource Text.Mono}"
-                                                                           Foreground="{StaticResource Accent.Partial}" />
-                                                                <TextBlock Text="{Binding Message}"
-                                                                           Style="{StaticResource Text.Caption}"
-                                                                           Margin="0,2,0,0" />
-                                                            </StackPanel>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </ScrollViewer>
-                                        </TabItem>
-                                    </TabControl>
-                                </DockPanel>
-                            </Grid>
-                        </Border>
+                                <!-- Value -->
+                                <Border DockPanel.Dock="Top"
+                                        Background="{StaticResource Surface.Input}"
+                                        Padding="14,12"
+                                        BorderBrush="{StaticResource Border.Subtle}"
+                                        BorderThickness="0,1,0,1">
+                                    <StackPanel>
+                                        <TextBlock Text="VALUE" Style="{StaticResource Text.Label}" />
+                                        <TextBlock Text="{Binding Report.Value}"
+                                                   Style="{StaticResource Text.Mono}"
+                                                   FontSize="14"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Report.ValueKind}"
+                                                   Style="{StaticResource Text.Caption}"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource Text.Muted}"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding Report.ValueKind, Converter={StaticResource EmptyToVisibility}}" />
+                                        <Button Content="Use this object as expression root"
+                                                Style="{StaticResource Button.Chip}"
+                                                HorizontalAlignment="Left"
+                                                Margin="0,8,0,0"
+                                                Command="{Binding PromoteResultToRootCommand}"
+                                                ToolTip="Adopt the exact object this field holds as the root of a root-relative expression."
+                                                Visibility="{Binding CanPromoteResultToRoot, Converter={StaticResource BoolToVisibility}}" />
+                                        <TextBlock Style="{StaticResource Text.Caption}"
+                                                   FontFamily="{StaticResource Font.Mono}"
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource Text.Muted}"
+                                                   Margin="0,8,0,0"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap"
+                                                   ToolTip="{Binding Report.Sha256}"
+                                                   Visibility="{Binding Report.Sha256, Converter={StaticResource EmptyToVisibility}}">
+                                            <Run Text="replay digest " />
+                                            <Run Text="{Binding Report.Sha256, Mode=OneWay}" Foreground="{StaticResource Text.Secondary}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
 
-                        <!-- History -->
-                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Width="300" Margin="14,0,0,0">
-                            <DockPanel>
-                                <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="History" Style="{StaticResource Text.Title}" FontSize="16" />
-                                    <Button Grid.Column="1"
-                                            Content="Clear"
-                                            Style="{StaticResource Button.Chip}"
-                                            Command="{Binding Evaluate.ClearHistoryCommand}" />
-                                </Grid>
-                                <ListBox ItemsSource="{Binding Evaluate.History}"
-                                         SelectedItem="{Binding Evaluate.Report, Mode=TwoWay}"
-                                         Style="{StaticResource List.Plain}"
-                                         ItemContainerStyle="{StaticResource List.Item}"
-                                         ItemTemplate="{StaticResource HistoryTemplate}" />
+                                <!-- Evidence -->
+                                <TabControl Background="Transparent"
+                                            BorderThickness="0"
+                                            Padding="10"
+                                            Foreground="{StaticResource Text.Primary}">
+                                    <TabItem Header="Binding facts">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding GroupedReportFacts}"
+                                                          Style="{StaticResource Property.List}">
+                                                <ItemsControl.GroupStyle>
+                                                    <StaticResource ResourceKey="Property.GroupStyle" />
+                                                </ItemsControl.GroupStyle>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </TabItem>
+                                    <TabItem Header="Raw reads">
+                                        <DataGrid Style="{StaticResource Grid.Data}"
+                                                  ItemsSource="{Binding ReportMemoryReads}"
+                                                  RowHeight="26">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="ADDRESS / SOURCE" Binding="{Binding Address}"
+                                                                    FontFamily="{StaticResource Font.Mono}" Width="150" />
+                                                <DataGridTextColumn Header="REQ" Binding="{Binding Requested}" Width="46" />
+                                                <DataGridTextColumn Header="OBS" Binding="{Binding Observed}" Width="46" />
+                                                <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="76" />
+                                                <DataGridTextColumn Header="BYTES" Binding="{Binding Preview}"
+                                                                    FontFamily="{StaticResource Font.Mono}" Width="*" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </TabItem>
+                                    <TabItem Header="Bounds">
+                                        <DataGrid Style="{StaticResource Grid.Data}"
+                                                  ItemsSource="{Binding ReportBounds}"
+                                                  RowHeight="26">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="BOUND" Binding="{Binding Name}"
+                                                                    FontFamily="{StaticResource Font.Mono}" Width="*" />
+                                                <DataGridTextColumn Header="VALUE" Binding="{Binding Value}" Width="Auto" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </TabItem>
+                                    <TabItem Header="Diagnostics">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding ReportDiagnostics}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type models:DiagnosticRow}">
+                                                        <StackPanel Margin="0,0,0,12">
+                                                            <TextBlock Text="{Binding Code}"
+                                                                       Style="{StaticResource Text.Mono}"
+                                                                       Foreground="{StaticResource Accent.Partial}" />
+                                                            <TextBlock Text="{Binding Message}"
+                                                                       Style="{StaticResource Text.Caption}"
+                                                                       Margin="0,2,0,0" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </TabItem>
+                                </TabControl>
                             </DockPanel>
-                        </Border>
-                    </Grid>
-                </TabItem>
-            </TabControl>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="SESSION">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="14">
+                            <StackPanel>
+                                <TextBlock Text="Snapshot" Style="{StaticResource Text.Title}" FontSize="14" />
+                                <TextBlock Text="Facts read from the immutable dump, plus the deterministic caps this build declares."
+                                           Style="{StaticResource Text.Caption}"
+                                           FontSize="11"
+                                           Margin="0,4,0,10" />
+                                <ItemsControl ItemsSource="{Binding Overview.GroupedProperties}"
+                                              Style="{StaticResource Property.List}"
+                                              Visibility="{Binding Overview.HasProperties, Converter={StaticResource BoolToVisibility}}">
+                                    <ItemsControl.GroupStyle>
+                                        <StaticResource ResourceKey="Property.GroupStyle" />
+                                    </ItemsControl.GroupStyle>
+                                </ItemsControl>
+                                <TextBlock Text="No dump is open. Use “Open dump…”, drop a dump file onto this window, or pass a path on the command line."
+                                           Style="{StaticResource Text.Caption}"
+                                           Foreground="{StaticResource Text.Muted}"
+                                           Margin="0,8,0,0"
+                                           Visibility="{Binding Overview.HasProperties, Converter={StaticResource InverseBoolToVisibility}}" />
+                                <Separator />
+                                <TextBlock Text="What this build can answer" Style="{StaticResource Text.Title}" FontSize="14" />
+                                <TextBlock Text="The supported surface is deliberately narrow. Read this before interpreting a result."
+                                           Style="{StaticResource Text.Caption}"
+                                           FontSize="11"
+                                           Margin="0,4,0,12" />
+                                <ItemsControl ItemsSource="{Binding Overview.CapabilityNotes}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="5" Height="5"
+                                                        CornerRadius="3"
+                                                        Background="{StaticResource Brand}"
+                                                        VerticalAlignment="Top"
+                                                        Margin="0,6,10,0" />
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding}"
+                                                           Style="{StaticResource Text.Caption}"
+                                                           FontSize="11" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </Border>
 
             <!-- Busy overlay -->
-            <Border Grid.ColumnSpan="2"
+            <Border Grid.ColumnSpan="5"
                     Background="#BB090B10"
                     Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
                 <Border Style="{StaticResource Card}"
@@ -904,10 +840,11 @@
                 Background="{StaticResource Surface.Panel}"
                 BorderBrush="{StaticResource Border.Subtle}"
                 BorderThickness="0,1,0,0"
-                Padding="20,7">
+                Padding="14,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding StatusMessage}"
@@ -916,6 +853,14 @@
                            TextTrimming="CharacterEllipsis"
                            TextWrapping="NoWrap" />
                 <TextBlock Grid.Column="1"
+                           Style="{StaticResource Text.Caption}"
+                           FontSize="11"
+                           Margin="0,0,14,0"
+                           Foreground="{StaticResource Brand}"
+                           ToolTip="{Binding Evaluate.ContextDescription}"
+                           Visibility="{Binding Evaluate.HasContextFrame, Converter={StaticResource BoolToVisibility}}"
+                           Text="frame context" />
+                <TextBlock Grid.Column="2"
                            Text="Read-only · deterministic · budgeted"
                            Style="{StaticResource Text.Caption}"
                            FontSize="11"

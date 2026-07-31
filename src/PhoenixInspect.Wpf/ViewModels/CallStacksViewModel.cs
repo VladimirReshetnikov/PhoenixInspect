@@ -134,8 +134,19 @@ public sealed class CallStacksViewModel : ObservableObject
         }
     }
 
-    private async Task ProbeAsync()
+    /// <summary>Probes the configured thread ordinals and reloads the retained threads.</summary>
+    /// <returns>A task that completes once the probe outcome is displayed.</returns>
+    /// <remarks>
+    /// The shell also invokes this once per opened dump so the stopped threads are visible without a manual probe,
+    /// matching what a debugger user expects on attach. Re-running it from the panel stays supported.
+    /// </remarks>
+    public async Task ProbeAsync()
     {
+        if (!shell.IsDumpOpen)
+        {
+            return;
+        }
+
         var ordinals = ThreadOrdinalsToProbe;
         var projection = await shell.RunAsync(
             $"Probing {DisplayFormatting.Count(ordinals)} thread ordinals…",

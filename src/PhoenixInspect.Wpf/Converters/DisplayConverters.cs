@@ -70,10 +70,13 @@ public sealed class InverseBooleanToVisibilityConverter : IValueConverter
         throw new NotSupportedException("Visibility inversion is display-only.");
 }
 
-/// <summary>Collapses an element when the bound collection or string is empty.</summary>
+/// <summary>Collapses an element when the bound collection, count, or string is empty.</summary>
 /// <remarks>
 /// Pass <c>invert</c> as the converter parameter to show the element only while the source is empty, which is how
-/// empty-state hints are rendered behind a grid or list.
+/// empty-state hints are rendered behind a grid or list. Collection-backed visibility should bind the collection's
+/// <c>Count</c> property rather than the collection itself: a binding to the instance is never re-evaluated when
+/// items are added or removed, while <see cref="System.Collections.ObjectModel.ObservableCollection{T}"/> raises a
+/// property change for <c>Count</c>.
 /// </remarks>
 public sealed class EmptyToVisibilityConverter : IValueConverter
 {
@@ -84,6 +87,7 @@ public sealed class EmptyToVisibilityConverter : IValueConverter
         {
             null => true,
             string text => string.IsNullOrWhiteSpace(text),
+            int count => count == 0,
             System.Collections.ICollection collection => collection.Count == 0,
             _ => false,
         };

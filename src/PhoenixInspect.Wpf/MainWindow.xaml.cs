@@ -58,6 +58,18 @@ public partial class MainWindow : Window
     private void OnStackSelectionChanged(object sender, RoutedPropertyChangedEventArgs<object> e) =>
         model.CallStacks.SelectedNode = e.NewValue;
 
+    private void OnStackDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        // Double-clicking an exact frame adopts it as the name context, matching the "activate this frame"
+        // gesture a debugger user expects from a call-stack window.
+        var command = model.CallStacks.UseAsContextCommand;
+        if (command.CanExecute(null))
+        {
+            e.Handled = true;
+            command.Execute(null);
+        }
+    }
+
     private void OnThreadExpanded(object sender, RoutedEventArgs e)
     {
         if (e.OriginalSource is TreeViewItem { DataContext: CallStackThreadNode node })

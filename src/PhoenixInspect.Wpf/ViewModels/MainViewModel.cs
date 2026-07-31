@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.IO;
 using PhoenixInspect.Inspection;
 using PhoenixInspect.Host.Dump.ClrMD;
@@ -14,23 +13,10 @@ namespace PhoenixInspect.Wpf.ViewModels;
 /// </remarks>
 public sealed class MainViewModel : ObservableObject, IShellServices, IDisposable
 {
-    /// <summary>The index of the overview section in <see cref="Sections"/>.</summary>
-    public const int OverviewSectionIndex = 0;
-
-    /// <summary>The index of the call-stack section in <see cref="Sections"/>.</summary>
-    public const int CallStacksSectionIndex = 2;
-
-    /// <summary>The index of the heap-object section in <see cref="Sections"/>.</summary>
-    public const int HeapObjectsSectionIndex = 3;
-
-    /// <summary>The index of the evaluation section in <see cref="Sections"/>.</summary>
-    public const int EvaluateSectionIndex = 4;
-
     private readonly DumpSessionHost host = new();
     private readonly RelayCommand openCommand;
     private readonly RelayCommand closeCommand;
     private int busyDepth;
-    private int selectedSectionIndex;
     private string busyMessage = string.Empty;
     private string statusMessage = "Ready. Open a dump to begin.";
     private string? errorMessage;
@@ -48,24 +34,12 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
         HeapObjects = new HeapObjectsViewModel(this);
         Evaluate = new EvaluateViewModel(this);
 
-        Sections =
-        [
-            new NavigationSection("Overview", "◈", "Snapshot identity, target facts, and enabled profiles"),
-            new NavigationSection("Modules", "▤", "Managed module instances and metadata content identity"),
-            new NavigationSection("Call stacks", "⇉", "Bounded managed frames and expression name context"),
-            new NavigationSection("Heap objects", "◉", "Strong-handle rooted objects and expression roots"),
-            new NavigationSection("Evaluate", "ƒ", "Expression evaluation with the evidence behind each answer"),
-        ];
-
         openCommand = new RelayCommand(() => _ = OpenDumpAsync(), () => !IsBusy);
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
         Evaluate.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
     }
-
-    /// <summary>Gets the navigation rail entries in display order.</summary>
-    public ObservableCollection<NavigationSection> Sections { get; }
 
     /// <summary>Gets the overview panel.</summary>
     public OverviewViewModel Overview { get; }
@@ -87,13 +61,6 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
 
     /// <summary>Gets the command that closes the current dump session.</summary>
     public RelayCommand CloseDumpCommand => closeCommand;
-
-    /// <summary>Gets or sets the selected navigation index, which also selects the visible panel.</summary>
-    public int SelectedSectionIndex
-    {
-        get => selectedSectionIndex;
-        set => Set(ref selectedSectionIndex, Math.Clamp(value, 0, Sections.Count - 1));
-    }
 
     /// <inheritdoc />
     public bool IsDumpOpen => host.IsOpen;
@@ -169,7 +136,6 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
     public void UseAsEvaluationContext(CallStackFrameNode frame)
     {
         Evaluate.AdoptContext(frame);
-        SelectedSectionIndex = EvaluateSectionIndex;
         SetStatus("Adopted a selected frame as the static-field name context.");
     }
 
@@ -177,7 +143,6 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
     public void UseAsEvaluationRoot(HeapObjectRow row)
     {
         Evaluate.AdoptRoot(RootSelection.FromHandleObject(row));
-        SelectedSectionIndex = EvaluateSectionIndex;
         SetStatus("Adopted an exact heap object as the root-relative expression root.");
     }
 
@@ -273,10 +238,10 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
             Modules.Load(snapshot.Modules);
             SnapshotDigest = DisplayFormatting.ShortDigest(snapshot.SnapshotSha256);
             TargetSummary = $"{snapshot.TargetPlatform} · {snapshot.TargetArchitecture}";
-            Sections[1].Badge = DisplayFormatting.Count(snapshot.Modules.Length);
         }
 
-        SelectedSectionIndex = OverviewSectionIndex;
+        // A debugger surfaces the stopped threads without being asked; the probe stays re-runnable from the panel.
+        await CallStacks.ProbeAsync().ConfigureAwait(true);
         SetStatus(outcome.Message);
     }
 
@@ -316,11 +281,6 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();
-        foreach (var section in Sections)
-        {
-            section.Badge = string.Empty;
-        }
-
         Raise(nameof(IsDumpOpen));
         closeCommand.RaiseCanExecuteChanged();
     }

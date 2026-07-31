@@ -347,43 +347,106 @@
         </Style.Triggers>
     </Style>
 
-    <!-- Navigation rail -->
-    <Style TargetType="ListBox" x:Key="Nav.List">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="8" />
-        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    <!--
+        Tool-window chrome. Every docked panel is a Tool.Container with one Tool.HeaderBar at the top, so the shell
+        reads as one debugger-style workspace rather than a set of unrelated cards.
+    -->
+    <Style TargetType="Border" x:Key="Tool.Container">
+        <Setter Property="Background" Value="{StaticResource Surface.Panel}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Subtle}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource Corner.Panel}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
     </Style>
 
-    <Style TargetType="ListBoxItem" x:Key="Nav.Item">
-        <Setter Property="Padding" Value="0" />
-        <Setter Property="Margin" Value="0,1" />
+    <Style TargetType="Border" x:Key="Tool.HeaderBar">
+        <Setter Property="Background" Value="{StaticResource Surface.Raised}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Subtle}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="CornerRadius" Value="8,8,0,0" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style TargetType="TextBlock" x:Key="Text.ToolTitle" BasedOn="{StaticResource Text.Body}">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Secondary}" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Invisible-until-hovered splitters between docked tool windows. -->
+    <Style TargetType="GridSplitter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#33FF7A45" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Compact segmented toggle used for the evaluation entry-point switch. -->
+    <Style TargetType="RadioButton" x:Key="Toggle.Segment">
+        <Setter Property="FontFamily" Value="{StaticResource Font.Ui}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Secondary}" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Grid>
-                        <Border x:Name="Chrome"
-                                Background="Transparent"
-                                CornerRadius="{StaticResource Corner.Control}"
-                                SnapsToDevicePixels="True" />
-                        <Border x:Name="Marker"
-                                Width="3"
-                                HorizontalAlignment="Left"
-                                Margin="0,7"
-                                Background="{StaticResource Brand}"
-                                CornerRadius="2"
-                                Visibility="Collapsed" />
-                        <ContentPresenter Margin="14,9,10,9" />
-                    </Grid>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Chrome"
+                            Background="Transparent"
+                            CornerRadius="5"
+                            Padding="10,4"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Surface.Selected}" />
+                            <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Small header-bar toggle that reveals an options area. -->
+    <Style TargetType="ToggleButton" x:Key="Toggle.Chip">
+        <Setter Property="FontFamily" Value="{StaticResource Font.Ui}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Secondary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Chrome"
+                            Background="Transparent"
+                            BorderBrush="{StaticResource Border.Strong}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Corner.Control}"
+                            Padding="9,3"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Surface.Hover}" />
+                            <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
                         </Trigger>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Surface.Raised}" />
-                            <Setter TargetName="Marker" Property="Visibility" Value="Visible" />
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Surface.Selected}" />
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource Brand}" />
+                            <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
