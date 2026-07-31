@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:PhoenixInspect.Desktop.Views"
+             x:Class="PhoenixInspect.Desktop.Views.ModulesPaneView"
+             Background="{DynamicResource Phoenix.PaneBackground}">
+    <!-- DataContext: ModulesTool -->
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="8,5">
+            <TextBox Padding="6,3"
+                     FontSize="12"
+                     Text="{Binding Panel.Filter, Mode=TwoWay}"
+                     PlaceholderText="Filter by module name or target path hint"
+                     ToolTip.Tip="{Binding Panel.Summary}" />
+        </Border>
+        <Expander DockPanel.Dock="Bottom"
+                  Header="Content identity"
+                  FontSize="11"
+                  Margin="8,2,8,4"
+                  IsVisible="{Binding Panel.HasSelection}">
+            <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                <views:PropertyGroupsView DataContext="{Binding Panel.GroupedDetails}" />
+            </ScrollViewer>
+        </Expander>
+        <DataGrid ItemsSource="{Binding Panel.View}"
+                  SelectedItem="{Binding Panel.Selected, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserResizeColumns="True"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="None"
+                  Margin="4,0">
+        <DataGrid.Columns>
+            <DataGridTextColumn Header="Module" Binding="{Binding Name}" Width="*" />
+            <DataGridTextColumn Header="Size" Binding="{Binding MetadataLength}" Width="Auto" />
+            <DataGridTextColumn Header="Layout" Binding="{Binding Layout}" Width="Auto" />
+        </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

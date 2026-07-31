@@ -9,5 +9,14 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageVersion Include="xunit" Version="2.9.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!-- Desktop shell UI stack, matching the versions the ILSpy frontend pins. -->
+    <PackageVersion Include="Avalonia" Version="12.1.0" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.0" />
+    <PackageVersion Include="Avalonia.Themes.Simple" Version="12.1.0" />
+    <PackageVersion Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <PackageVersion Include="Dock.Avalonia" Version="12.0.0.2" />
+    <PackageVersion Include="Dock.Avalonia.Themes.Simple" Version="12.0.0.2" />
+    <PackageVersion Include="Dock.Model.Mvvm" Version="12.0.0.2" />
+    <PackageVersion Include="ProDataGrid" Version="12.0.4" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:PhoenixInspect.Desktop.Converters"
+             xmlns:views="using:PhoenixInspect.Desktop.Views"
+             x:Class="PhoenixInspect.Desktop.Views.ResultPaneView"
+             Background="{DynamicResource Phoenix.PaneBackground}">
+    <!-- DataContext: ResultTool -->
+    <Panel>
+        <TextBlock Text="No expression is selected. Evaluate one, or select a row in the history."
+                   Classes="secondary"
+                   FontSize="11"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   MaxWidth="240"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   IsVisible="{Binding !Panel.HasReport}" />
+
+        <DockPanel IsVisible="{Binding Panel.HasReport}">
+            <!-- Outcome banner -->
+            <Border DockPanel.Dock="Top"
+                    Background="{DynamicResource Phoenix.SageLight}"
+                    BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                    BorderThickness="0,0,0,1"
+                    Padding="10,8">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Width="28" Height="28" CornerRadius="14"
+                            Background="{Binding Panel.Report.Severity, Converter={x:Static conv:SeverityToBrushConverter.Instance}}">
+                        <TextBlock Text="{Binding Panel.Report.Severity, Converter={x:Static conv:SeverityToGlyphConverter.Instance}}"
+                                   FontSize="12"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Panel.Report.Status}" FontWeight="SemiBold" FontSize="13" />
+                        <TextBlock Text="{Binding Panel.Report.Stage}" Classes="secondary" FontSize="10" TextWrapping="Wrap" MaxWidth="280" />
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding Panel.Report.Path}" Classes="secondary" FontSize="10" />
+                            <TextBlock Text="·" Classes="secondary" FontSize="10" />
+                            <TextBlock Text="{Binding Panel.Report.Duration.TotalMilliseconds, StringFormat={}{0:N1} ms}" Classes="secondary" FontSize="10" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Value -->
+            <Border DockPanel.Dock="Top"
+                    Background="{DynamicResource Phoenix.EditorBackground}"
+                    BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                    BorderThickness="0,0,0,1"
+                    Padding="10,8">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="VALUE" Classes="secondary" FontSize="10" FontWeight="SemiBold" />
+                    <TextBlock Classes="mono"
+                               FontSize="13"
+                               Text="{Binding Panel.Report.Value}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Classes="secondary"
+                               FontSize="10"
+                               Text="{Binding Panel.Report.ValueKind}"
+                               IsVisible="{Binding Panel.Report.ValueKind, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Button Content="Use this object as expression root"
+                            FontSize="10"
+                            Padding="6,2"
+                            HorizontalAlignment="Left"
+                            Command="{Binding Panel.PromoteResultToRootCommand}"
+                            ToolTip.Tip="Adopt the exact object this field holds as the root of a root-relative expression."
+                            IsVisible="{Binding Panel.CanPromoteResultToRoot}" />
+                    <TextBlock Classes="mono secondary"
+                               FontSize="9"
+                               Text="{Binding Panel.Report.Sha256, StringFormat=replay digest {0}}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Panel.Report.Sha256}"
+                               IsVisible="{Binding Panel.Report.Sha256, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Evidence -->
+            <TabControl Padding="6">
+                <TabItem Header="Binding facts" FontSize="11">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <views:PropertyGroupsView DataContext="{Binding Panel.GroupedReportFacts}" Margin="4" />
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="Raw reads" FontSize="11">
+                    <DataGrid ItemsSource="{Binding Panel.ReportMemoryReads}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="None">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Address / source" Binding="{Binding Address}" Width="Auto" FontFamily="Cascadia Mono,Consolas,monospace" />
+                            <DataGridTextColumn Header="Req" Binding="{Binding Requested}" Width="Auto" />
+                            <DataGridTextColumn Header="Obs" Binding="{Binding Observed}" Width="Auto" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="Auto" />
+                            <DataGridTextColumn Header="Bytes" Binding="{Binding Preview}" Width="*" FontFamily="Cascadia Mono,Consolas,monospace" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+                <TabItem Header="Bounds" FontSize="11">
+                    <DataGrid ItemsSource="{Binding Panel.ReportBounds}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="None">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Bound" Binding="{Binding Name}" Width="*" FontFamily="Cascadia Mono,Consolas,monospace" />
+                            <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="Auto" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+                <TabItem Header="Diagnostics" FontSize="11">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Panel.ReportDiagnostics}" Margin="4">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,10">
+                                        <TextBlock Classes="mono"
+                                                   Text="{Binding Code}"
+                                                   Foreground="{DynamicResource Phoenix.PeachForeground}" />
+                                        <TextBlock Classes="secondary"
+                                                   FontSize="11"
+                                                   Text="{Binding Message}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </DockPanel>
+    </Panel>
+</UserControl>

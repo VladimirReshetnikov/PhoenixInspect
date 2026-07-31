@@ -1,0 +1,130 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dock="using:Dock.Avalonia.Controls"
+        xmlns:vm="using:PhoenixInspect.Desktop.ViewModels"
+        x:Class="PhoenixInspect.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="PhoenixInspect — post-mortem inspection"
+        Width="1380" Height="880"
+        MinWidth="1100" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        DragDrop.AllowDrop="True">
+
+    <DockPanel>
+
+        <!-- ============================ Menu ============================ -->
+        <Menu DockPanel.Dock="Top" Padding="4,2">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open dump…" Command="{Binding OpenDumpCommand}" InputGesture="Ctrl+O" />
+                <MenuItem Header="_Close dump" Command="{Binding CloseDumpCommand}" />
+                <Separator />
+                <MenuItem Header="E_xit" Click="OnExitClick" />
+            </MenuItem>
+            <MenuItem Header="_Session">
+                <MenuItem Header="Probe _threads again" Command="{Binding CallStacks.ProbeCommand}" />
+                <MenuItem Header="Clear evaluation _history" Command="{Binding Evaluate.ClearHistoryCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- ============================ Toolbar ============================ -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Phoenix.WindowBackground}"
+                BorderBrush="{DynamicResource Phoenix.ChromeBorder}"
+                BorderThickness="0,0,0,1"
+                Padding="8,5">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                    <Button Content="Close dump"
+                            Command="{Binding CloseDumpCommand}"
+                            IsVisible="{Binding IsDumpOpen}" />
+                    <Button Content="Open dump…"
+                            Classes="accent"
+                            Command="{Binding OpenDumpCommand}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                    <Border Width="24" Height="24" CornerRadius="6"
+                            Background="{DynamicResource Phoenix.AccentOlive}">
+                        <TextBlock Text="◆" FontSize="12" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="PhoenixInspect" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                                IsVisible="{Binding IsDumpOpen}">
+                        <Border Classes="chip">
+                            <TextBlock Classes="mono" Text="{Binding DumpFileName}"
+                                       ToolTip.Tip="{Binding DumpDirectory}" />
+                        </Border>
+                        <Border Classes="chip" ToolTip.Tip="SHA-256 content identity of the complete dump file">
+                            <TextBlock Classes="mono secondary" Text="{Binding SnapshotDigest}" />
+                        </Border>
+                        <Border Classes="chip">
+                            <TextBlock Classes="mono secondary" Text="{Binding TargetSummary}" />
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ========================= Error banner ========================= -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Phoenix.PeachBackground}"
+                BorderBrush="{DynamicResource Phoenix.PeachBorder}"
+                BorderThickness="0,0,0,1"
+                Padding="10,6"
+                IsVisible="{Binding HasError}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Dismiss" Click="OnDismissErrorClick" />
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="{DynamicResource Phoenix.PeachForeground}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+
+        <!-- =========================== Status bar =========================== -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource Phoenix.WindowBackground}"
+                BorderBrush="{DynamicResource Phoenix.ChromeBorder}"
+                BorderThickness="0,1,0,0"
+                Padding="10,4">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right"
+                           Text="Read-only · deterministic · budgeted"
+                           Classes="secondary"
+                           FontSize="11" />
+                <TextBlock DockPanel.Dock="Right"
+                           Text="frame context ·"
+                           Foreground="{DynamicResource Phoenix.AccentOliveDeep}"
+                           FontSize="11"
+                           Margin="0,0,6,0"
+                           ToolTip.Tip="{Binding Evaluate.ContextDescription}"
+                           IsVisible="{Binding Evaluate.HasContextFrame}" />
+                <TextBlock Text="{Binding StatusMessage}"
+                           FontSize="11"
+                           TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- ====================== Docked workspace ======================= -->
+        <Panel>
+            <dock:DockControl Layout="{Binding Layout}" Margin="4" />
+
+            <!-- Busy overlay -->
+            <Border Background="#66E9E7D6" IsVisible="{Binding IsBusy}">
+                <Border Background="{DynamicResource Phoenix.PaneBackground}"
+                        BorderBrush="{DynamicResource Phoenix.ChromeBorder}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="24,16"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <StackPanel Spacing="10">
+                        <ProgressBar IsIndeterminate="True" Height="4" Width="240"
+                                     Foreground="{DynamicResource Phoenix.AccentOlive}" />
+                        <TextBlock Text="{Binding BusyMessage}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Border>
+        </Panel>
+    </DockPanel>
+</Window>

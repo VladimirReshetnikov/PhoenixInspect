@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ae="using:AvaloniaEdit"
+             x:Class="PhoenixInspect.Desktop.Views.SourceDocumentView"
+             Background="{DynamicResource Phoenix.EditorBackground}">
+    <!-- DataContext: SourceDocument -->
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Phoenix.PaneBackground}"
+                BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                BorderThickness="0,0,0,1"
+                Padding="10,5">
+            <DockPanel>
+                <Border DockPanel.Dock="Right"
+                        Background="{DynamicResource Phoenix.VerifiedBadgeBackground}"
+                        CornerRadius="8"
+                        Padding="8,2"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="{Binding Result.Summary}"
+                        IsVisible="{Binding Result.IsResolved}">
+                    <TextBlock x:Name="VerificationBadge"
+                               FontSize="10"
+                               Foreground="{DynamicResource Phoenix.VerifiedBadgeForeground}" />
+                </Border>
+                <TextBlock Classes="mono secondary"
+                           FontSize="11"
+                           Text="{Binding Result.Title}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip.Tip="{Binding Result.DocumentPath}" />
+            </DockPanel>
+        </Border>
+
+        <Panel>
+            <!-- Explanation shown for every outcome that must not render file content. -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          IsVisible="{Binding !#Editor.IsVisible}">
+                <TextBlock Text="{Binding Result.Summary}"
+                           Classes="secondary"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           MaxWidth="560"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Margin="24" />
+            </ScrollViewer>
+
+            <ae:TextEditor x:Name="Editor"
+                           IsReadOnly="True"
+                           ShowLineNumbers="True"
+                           FontFamily="{DynamicResource Phoenix.MonoFont}"
+                           FontSize="13"
+                           Background="{DynamicResource Phoenix.EditorBackground}"
+                           HorizontalScrollBarVisibility="Auto"
+                           VerticalScrollBarVisibility="Auto" />
+        </Panel>
+    </DockPanel>
+</UserControl>

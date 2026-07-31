@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:PhoenixInspect.Desktop.Views"
+             x:Class="PhoenixInspect.Desktop.Views.HeapSearchPaneView"
+             Background="{DynamicResource Phoenix.PaneBackground}">
+    <!-- DataContext: HeapSearchTool -->
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="8,5">
+            <StackPanel Spacing="5">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            Content="Search"
+                            FontSize="11"
+                            Padding="8,3"
+                            Margin="6,0,0,0"
+                            Command="{Binding Panel.SearchCommand}" />
+                    <TextBox Padding="6,3"
+                             FontSize="12"
+                             FontFamily="{DynamicResource Phoenix.MonoFont}"
+                             Text="{Binding Panel.TypeName, Mode=TwoWay}"
+                             PlaceholderText="Exact case-sensitive runtime type name"
+                             KeyDown="OnSearchKeyDown" />
+                </DockPanel>
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <TextBox Width="52" Padding="4,2" FontSize="11"
+                             Text="{Binding Panel.MaximumMatches}"
+                             ToolTip.Tip="Retained-match cap" />
+                    <TextBlock Text="matches ·" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                    <TextBox Width="72" Padding="4,2" FontSize="11"
+                             Text="{Binding Panel.MaximumHandlesScanned}"
+                             ToolTip.Tip="Handle-inspection cap" />
+                    <TextBlock Text="handles" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                    <Button Content="Use as root"
+                            FontSize="11"
+                            Padding="8,3"
+                            Command="{Binding Panel.UseAsRootCommand}"
+                            ToolTip.Tip="Adopt the selected match as the root-relative expression root" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        <Expander DockPanel.Dock="Bottom"
+                  Header="Traversal evidence"
+                  FontSize="11"
+                  Margin="8,2,8,4"
+                  IsVisible="{Binding !!Panel.SearchFacts.Count}">
+            <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                <views:PropertyGroupsView DataContext="{Binding Panel.GroupedSearchFacts}" />
+            </ScrollViewer>
+        </Expander>
+        <Panel>
+            <TextBlock Text="{Binding Panel.Summary}"
+                       Classes="secondary"
+                       FontSize="11"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       MaxWidth="260"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       ZIndex="1"
+                       IsVisible="{Binding !Panel.Matches.Count}" />
+            <DataGrid ItemsSource="{Binding Panel.Matches}"
+                      SelectedItem="{Binding Panel.Selected, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserResizeColumns="True"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="None"
+                      Margin="4,0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Address" Binding="{Binding Address}" Width="Auto" />
+                    <DataGridTextColumn Header="Runtime type" Binding="{Binding TypeName}" Width="*" />
+                    <DataGridTextColumn Header="Handle" Binding="{Binding RootKind}" Width="Auto" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Panel>
+    </DockPanel>
+</UserControl>

@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:PhoenixInspect.Desktop.Views"
+             x:Class="PhoenixInspect.Desktop.Views.WelcomeDocumentView"
+             Background="{DynamicResource Phoenix.EditorBackground}">
+    <!-- DataContext: WelcomeDocument -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,14">
+        <StackPanel MaxWidth="900" HorizontalAlignment="Left" Spacing="6">
+            <TextBlock Text="Snapshot" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="Facts read from the immutable dump, plus the deterministic caps this build declares."
+                       Classes="secondary" FontSize="11" />
+            <views:PropertyGroupsView DataContext="{Binding Overview.GroupedProperties}"
+                                      IsVisible="{Binding Overview.HasProperties}"
+                                      Margin="0,4,0,0" />
+            <TextBlock Text="No dump is open. Use File → Open dump…, drop a dump file onto this window, or pass a path on the command line."
+                       Classes="secondary"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding !Overview.HasProperties}"
+                       Margin="0,4,0,0" />
+            <Separator Background="{DynamicResource Phoenix.SubtleBorder}" Height="1" Margin="0,10" />
+            <TextBlock Text="What this build can answer" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="The supported surface is deliberately narrow. Read this before interpreting a result."
+                       Classes="secondary" FontSize="11" />
+            <ItemsControl ItemsSource="{Binding Overview.CapabilityNotes}" Margin="0,4,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,8">
+                            <Ellipse Width="5" Height="5"
+                                     Fill="{DynamicResource Phoenix.AccentOlive}"
+                                     VerticalAlignment="Top"
+                                     Margin="0,6,10,0" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding}"
+                                       Classes="secondary"
+                                       FontSize="12"
+                                       TextWrapping="Wrap" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

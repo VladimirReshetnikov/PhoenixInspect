@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PhoenixInspect.Desktop.Views.PropertyGroupsView">
+    <!-- DataContext: PropertyGroupList. Renders grouped label/value facts. -->
+    <ItemsControl ItemsSource="{Binding Groups}">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock Text="{Binding Name}"
+                               Classes="secondary"
+                               FontWeight="SemiBold"
+                               FontSize="11"
+                               Margin="0,4,0,4" />
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="160,*" Margin="0,2">
+                                    <TextBlock Text="{Binding Name}"
+                                               Classes="secondary"
+                                               FontSize="11"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,10,0" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Classes="mono"
+                                                   Text="{Binding Value}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Classes="secondary"
+                                                   FontSize="10"
+                                                   Text="{Binding Detail}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,1,0,0"
+                                                   IsVisible="{Binding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

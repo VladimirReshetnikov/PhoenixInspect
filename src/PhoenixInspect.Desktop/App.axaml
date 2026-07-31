@@ -1,0 +1,173 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PhoenixInspect.Desktop.App"
+             Name="PhoenixInspect"
+             xmlns:local="using:PhoenixInspect.Desktop"
+             xmlns:dockTheme="using:Dock.Avalonia.Themes.Simple"
+             xmlns:dockControls="using:Dock.Avalonia.Controls"
+             RequestedThemeVariant="Light">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <!--
+                The preview's light palette: olive for accents and exact evidence, khaki and sage for surfaces and
+                highlights, grays for chrome, and peach reserved for error conditions. The scheme is deliberately
+                close to ILSpy's light chrome in structure (window / pane / editor / strip surfaces) with the
+                colors shifted into the olive family.
+            -->
+            <SolidColorBrush x:Key="Phoenix.WindowBackground" Color="#E9E7D6" />
+            <SolidColorBrush x:Key="Phoenix.WindowForeground" Color="#2F3126" />
+            <SolidColorBrush x:Key="Phoenix.PaneBackground" Color="#F5F3E7" />
+            <SolidColorBrush x:Key="Phoenix.EditorBackground" Color="#FAF8EC" />
+            <SolidColorBrush x:Key="Phoenix.ChromeBorder" Color="#A9A98E" />
+            <SolidColorBrush x:Key="Phoenix.SubtleBorder" Color="#C9C7AE" />
+            <SolidColorBrush x:Key="Phoenix.SecondaryForeground" Color="#6C6F5C" />
+            <SolidColorBrush x:Key="Phoenix.AccentOlive" Color="#6B8E23" />
+            <SolidColorBrush x:Key="Phoenix.AccentOliveDeep" Color="#556B2F" />
+            <SolidColorBrush x:Key="Phoenix.Sage" Color="#9CAF88" />
+            <SolidColorBrush x:Key="Phoenix.SageLight" Color="#D9E2CC" />
+            <SolidColorBrush x:Key="Phoenix.KhakiHighlight" Color="#F0E68C" />
+            <SolidColorBrush x:Key="Phoenix.KhakiChip" Color="#E4DFC0" />
+            <SolidColorBrush x:Key="Phoenix.PeachBackground" Color="#FBE3CF" />
+            <SolidColorBrush x:Key="Phoenix.PeachBorder" Color="#D9764A" />
+            <SolidColorBrush x:Key="Phoenix.PeachForeground" Color="#A34A24" />
+            <SolidColorBrush x:Key="Phoenix.InputBackground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="Phoenix.InputBorder" Color="#A9A98E" />
+            <SolidColorBrush x:Key="Phoenix.TabStripBackground" Color="#DEDCC4" />
+            <SolidColorBrush x:Key="Phoenix.TabItemSelectedBackground" Color="#F5F3E7" />
+            <SolidColorBrush x:Key="Phoenix.TabItemActiveBackground" Color="#6B8E23" />
+            <SolidColorBrush x:Key="Phoenix.TabItemActiveForeground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="Phoenix.ToolActiveHeaderBackground" Color="#C7D3B4" />
+            <SolidColorBrush x:Key="Phoenix.SelectionBrush" Color="#6B8E23" Opacity="0.25" />
+            <SolidColorBrush x:Key="Phoenix.VerifiedBadgeBackground" Color="#DCE8C8" />
+            <SolidColorBrush x:Key="Phoenix.VerifiedBadgeForeground" Color="#4E7A27" />
+            <FontFamily x:Key="Phoenix.MonoFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <SimpleTheme />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Simple.v2.xaml" />
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
+        <dockTheme:DockSimpleTheme CacheDocumentTabContent="True" />
+
+        <!-- Window-level chrome. -->
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.WindowBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+
+        <!-- Reusable classes shared by the shell views. -->
+        <Style Selector="Border.chip">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.KhakiChip}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Phoenix.SubtleBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="8,3" />
+        </Style>
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="{DynamicResource Phoenix.MonoFont}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="TextBlock.secondary">
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.SecondaryForeground}" />
+        </Style>
+        <Style Selector="TextBlock.paneTitle">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.accent">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.AccentOlive}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.AccentOliveDeep}" />
+            <Setter Property="TextElement.Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="ToolTip">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.PaneBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Phoenix.ChromeBorder}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MaxWidth" Value="560" />
+        </Style>
+
+        <!-- Menus. -->
+        <Style Selector="Menu">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.WindowBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+        <Style Selector="MenuItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+            <Setter Property="MinHeight" Value="26" />
+        </Style>
+        <Style Selector="MenuFlyoutPresenter">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.PaneBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+
+        <!-- Inputs. -->
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.InputBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Phoenix.InputBorder}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource Phoenix.SelectionBrush}" />
+        </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+        <Style Selector="ListBox">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.PaneBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+        <Style Selector="TreeView">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.PaneBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+
+        <!-- Pane surfaces. -->
+        <Style Selector="DataGrid">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.PaneBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+        <Style Selector="DataGridRow:selected">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <!-- Dock chrome: tab strips and tool headers in the khaki family, olive for the active document. -->
+        <Style Selector="dockControls|DocumentTabStrip, dockControls|ToolTabStrip">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.TabStripBackground}" />
+        </Style>
+        <Style Selector="dockControls|DocumentTabStripItem, dockControls|ToolTabStripItem">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.TabStripBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+        <Style Selector="dockControls|DocumentTabStripItem:selected:not(:active), dockControls|ToolTabStripItem:selected:not(:active)">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.TabItemSelectedBackground}" />
+        </Style>
+        <Style Selector="dockControls|DocumentTabStripItem:selected:active">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.TabItemActiveBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.TabItemActiveForeground}" />
+        </Style>
+        <Style Selector="dockControls|ToolTabStripItem:selected:active">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.TabItemSelectedBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+        <Style Selector="dockControls|ToolChromeControl:active /template/ Grid#PART_Grip">
+            <Setter Property="Background" Value="{DynamicResource Phoenix.ToolActiveHeaderBackground}" />
+        </Style>
+        <Style Selector="dockControls|ToolChromeControl /template/ TextBlock#PART_Title">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="dockControls|ToolChromeControl:active /template/ TextBlock#PART_Title">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+        </Style>
+    </Application.Styles>
+</Application>

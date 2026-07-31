@@ -1,0 +1,199 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:PhoenixInspect.Desktop.Converters"
+             x:Class="PhoenixInspect.Desktop.Views.EvaluatePaneView"
+             Background="{DynamicResource Phoenix.PaneBackground}">
+    <!-- DataContext: EvaluateTool -->
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                BorderThickness="0,0,0,1"
+                Padding="8,6">
+            <StackPanel Spacing="5">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <RadioButton Content="Static field"
+                                     FontSize="11"
+                                     GroupName="EvalPath"
+                                     IsChecked="{Binding Panel.IsStaticFieldPath, Mode=TwoWay}"
+                                     ToolTip.Tip="Namespace-qualified static field, bound from module metadata" />
+                        <RadioButton Content="Root-relative"
+                                     FontSize="11"
+                                     GroupName="EvalPath"
+                                     IsChecked="{Binding Panel.IsRootRelativePath, Mode=TwoWay}"
+                                     ToolTip.Tip="Member expression over one exact heap object" />
+                        <ToggleButton x:Name="OptionsToggle" Content="Options" FontSize="11" Padding="8,3" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="❯"
+                                   FontFamily="{DynamicResource Phoenix.MonoFont}"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource Phoenix.AccentOliveDeep}"
+                                   VerticalAlignment="Center" />
+                        <TextBox x:Name="ExpressionBox"
+                                 Width="420"
+                                 Padding="7,4"
+                                 FontSize="13"
+                                 FontFamily="{DynamicResource Phoenix.MonoFont}"
+                                 Text="{Binding Panel.Expression, Mode=TwoWay}"
+                                 PlaceholderText="C# expression"
+                                 KeyDown="OnExpressionKeyDown" />
+                        <Button Content="Evaluate"
+                                Classes="accent"
+                                Padding="12,4"
+                                Command="{Binding Panel.EvaluateCommand}" />
+                    </StackPanel>
+                </DockPanel>
+                <DockPanel>
+                    <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding Panel.Samples}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Label}"
+                                        FontSize="10"
+                                        Padding="6,2"
+                                        Click="OnSampleClick"
+                                        ToolTip.Tip="{Binding Text}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding Panel.ReadinessMessage}"
+                               Classes="secondary"
+                               FontSize="10"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+
+                <!-- Collapsible options -->
+                <StackPanel IsVisible="{Binding IsChecked, ElementName=OptionsToggle}" Spacing="5">
+                    <Border Background="{DynamicResource Phoenix.KhakiChip}"
+                            BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="8"
+                            IsVisible="{Binding Panel.IsStaticFieldPath}">
+                        <Grid ColumnDefinitions="*,*">
+                            <StackPanel Spacing="4" Margin="0,0,10,0">
+                                <TextBlock Text="NAME CONTEXT" Classes="secondary" FontSize="10" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Panel.ContextDescription}" FontSize="11" TextWrapping="Wrap" />
+                                <Button Content="Drop adopted frame"
+                                        FontSize="10"
+                                        Padding="6,2"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding Panel.ClearContextCommand}"
+                                        IsVisible="{Binding Panel.HasContextFrame}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="PORTABLE-PDB CANDIDATES (ONE PATH PER LINE)" Classes="secondary" FontSize="10" FontWeight="SemiBold" />
+                                <TextBox FontSize="10"
+                                         FontFamily="{DynamicResource Phoenix.MonoFont}"
+                                         Height="52"
+                                         AcceptsReturn="True"
+                                         Text="{Binding Panel.PortablePdbCandidates, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Background="{DynamicResource Phoenix.KhakiChip}"
+                            BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="8"
+                            IsVisible="{Binding Panel.IsRootRelativePath}">
+                        <StackPanel Spacing="5">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Left" Spacing="4" Margin="0,0,14,0">
+                                    <TextBlock Text="ROOT IDENTIFIER" Classes="secondary" FontSize="10" FontWeight="SemiBold" />
+                                    <TextBox Width="130"
+                                             FontSize="11"
+                                             FontFamily="{DynamicResource Phoenix.MonoFont}"
+                                             Text="{Binding Panel.RootIdentifier, Mode=TwoWay}" />
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="ADOPTED ROOT" Classes="secondary" FontSize="10" FontWeight="SemiBold" />
+                                    <TextBlock FontSize="10"
+                                               FontFamily="{DynamicResource Phoenix.MonoFont}"
+                                               Text="{Binding Panel.RootDescription}"
+                                               TextWrapping="Wrap" />
+                                    <Button Content="Drop adopted root"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            HorizontalAlignment="Left"
+                                            Command="{Binding Panel.ClearRootCommand}"
+                                            IsVisible="{Binding Panel.HasRootObject}" />
+                                </StackPanel>
+                            </DockPanel>
+                            <WrapPanel>
+                                <CheckBox Content="Admit two-hop member chains"
+                                          FontSize="11"
+                                          Margin="0,0,16,0"
+                                          IsChecked="{Binding Panel.AdmitMemberChain, Mode=TwoWay}" />
+                                <CheckBox Content="Replace admitted helpers with pure models"
+                                          FontSize="11"
+                                          Margin="0,0,16,0"
+                                          IsChecked="{Binding Panel.UseModeledMethods, Mode=TwoWay}" />
+                                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,14,0">
+                                    <TextBlock Text="Instruction budget" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBox Width="86" Padding="4,2" FontSize="11" Text="{Binding Panel.InstructionLimit}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,14,0">
+                                    <TextBlock Text="Call depth" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBox Width="56" Padding="4,2" FontSize="11" Text="{Binding Panel.LogicalDepthLimit}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="Traversal units" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBox Width="72" Padding="4,2" FontSize="11" Text="{Binding Panel.TraversalLimit}" />
+                                </StackPanel>
+                            </WrapPanel>
+                            <TextBlock Text="{Binding Panel.LimitsCaption}" Classes="secondary" FontSize="10" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Watch-style history grid -->
+        <Panel>
+            <TextBlock Text="Evaluated expressions appear here with their value, kind, and status. Select a row to inspect the complete evidence in the Result pane."
+                       Classes="secondary"
+                       FontSize="11"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       MaxWidth="420"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       ZIndex="1"
+                       IsVisible="{Binding !Panel.History.Count}" />
+            <DataGrid ItemsSource="{Binding Panel.History}"
+                      SelectedItem="{Binding Panel.Report, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserResizeColumns="True"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="None"
+                      Margin="4,2">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="30">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Ellipse Width="9" Height="9"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         Fill="{Binding Severity, Converter={x:Static conv:SeverityToBrushConverter.Instance}}"
+                                         ToolTip.Tip="{Binding Status}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Expression" Binding="{Binding Expression}" Width="2*" FontFamily="Cascadia Mono,Consolas,monospace" />
+                    <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="2*" FontFamily="Cascadia Mono,Consolas,monospace" />
+                    <DataGridTextColumn Header="Kind" Binding="{Binding ValueKind}" Width="Auto" />
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="Auto" />
+                    <DataGridTextColumn Header="ms" Binding="{Binding Duration.TotalMilliseconds, StringFormat={}{0:N1}}" Width="Auto" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Panel>
+    </DockPanel>
+</UserControl>

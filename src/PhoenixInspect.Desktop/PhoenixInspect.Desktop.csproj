@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The PhoenixInspect desktop shell: an Avalonia application presenting an opened dump as an inspectable,
+    debugger-shaped session. It adds no analysis of its own — every fact it renders comes from an existing public
+    contract, projected by PhoenixInspect.Inspection. The UI stack (Avalonia + Dock + AvaloniaEdit + ProDataGrid)
+    deliberately matches the ILSpy frontend so the docking and editor behavior feel familiar.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>PhoenixInspect.Desktop</RootNamespace>
+    <AssemblyName>PhoenixInspect</AssemblyName>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Simple" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" />
+    <PackageReference Include="Dock.Avalonia" />
+    <PackageReference Include="Dock.Avalonia.Themes.Simple" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="ProDataGrid" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PhoenixInspect.Inspection\PhoenixInspect.Inspection.csproj" />
+  </ItemGroup>
+
+</Project>
