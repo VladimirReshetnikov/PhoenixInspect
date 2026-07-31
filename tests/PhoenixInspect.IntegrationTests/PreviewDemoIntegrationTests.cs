@@ -112,6 +112,12 @@ public sealed class PreviewDemoIntegrationTests
             // The demo shows a name the type does not declare. A stop with a stable diagnostic code is the correct
             // answer; a fabricated zero, empty string, or null would not be.
             ("root.RetryBudgetRemaining", EvaluationSeverity.Stopped, "No value was produced."),
+
+            // Composed expressions: each chain is still evaluated by the frozen pipeline; arithmetic, comparison,
+            // and slicing then fold over the exact values it produced.
+            ("root.QueueDepth * 2 + 1", EvaluationSeverity.Exact, "35"),
+            ("root.CurrentBatch.PendingCount > 50", EvaluationSeverity.Exact, "true"),
+            ("root.CurrentBatch.BatchId[6..^5]", EvaluationSeverity.Exact, "\"2026-07-30\""),
         ];
 
     /// <summary>The exact rendered answer the demo must produce for each constant expression.</summary>
@@ -126,6 +132,13 @@ public sealed class PreviewDemoIntegrationTests
             ("\"batch-2026-07-30-0042\".Substring(6, 4)", EvaluationSeverity.Exact, "\"2026\""),
             ("\"AMS-3\".Contains('-')", EvaluationSeverity.Exact, "true"),
             ("\"batch-2026-07-30-0042\"[6..^5]", EvaluationSeverity.Exact, "\"2026-07-30\""),
+            ("Math.Round(Math.PI, 4)", EvaluationSeverity.Exact, "3.1416"),
+
+            // Stored static values compose into constant folding, including a Nullable with a fallback.
+            ("Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount + 1",
+                EvaluationSeverity.Exact, "84214"),
+            ("Contoso.OrderService.Diagnostics.ServiceState.LastFailureCode ?? 0",
+                EvaluationSeverity.Exact, "5031"),
         ];
 
     /// <summary>

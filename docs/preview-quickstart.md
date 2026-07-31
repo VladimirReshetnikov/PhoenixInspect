@@ -119,11 +119,15 @@ subset:
 | Root-relative member chain of any depth | `root.Member.Member.Member.Member` |
 | Conditional access at any hop after the first | `root.Member?.Member.Member?.Member` |
 | Coalescing with a literal | `root.Member?.Member ?? "fallback"` |
-| Constant integer arithmetic | `(86400 / 24) / 60` |
+| Constant arithmetic over every C# numeric type | `(86400 / 24) / 60`, `0.1 + 0.2`, `10m / 4`, `1UL << 40` |
+| Numeric casts and conversions, including nullable targets | `(long)int.MaxValue + 1`, `(int?)null` |
 | Enum member or const field | `System.DayOfWeek.Monday` |
+| `System.Math`, `BigInteger`, and numeric type statics | `Math.Round(Math.PI, 4)`, `BigInteger.Pow(2, 100)`, `double.NaN` |
+| Invariant `ToString`, with or without a format | `(255).ToString("X4")`, `(0.1 + 0.2).ToString()` |
 | Deterministic string/char operations over constants | `("a" + "b").ToUpperInvariant()`, `"text".Contains('x')` |
 | Index and range expressions on constant strings | `"hello"[^1]`, `"hello"[1..^1]` |
 | Boolean logic and comparisons over constants | `"abc".Length > 2 && char.IsDigit('5')` |
+| Dump values as operands in composed expressions | `root.QueueDepth * 2 + 1`, `Some.Type.Count + 1`, `root.Batch.Id[6..^5]` |
 
 A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
 limits. Each intermediate hop must be a directly declared reference field whose exact declared type is present in
@@ -146,21 +150,37 @@ object search with the traversal counters that say how exhaustive it was.
 - **It does not guess.** A name the metadata does not declare, a byte range the snapshot does not contain, or a shape
   outside the admitted subset produces a typed non-exact outcome with a stable diagnostic code — never a fabricated
   zero, empty string, or null.
-Constant expressions never read a runtime value: pure integer arithmetic folds with checked C# semantics (overflow
-and division by zero are typed stops reported under their familiar exception names), and a fully qualified enum
-member or `const` field is read from the declaring module's metadata Constant table in the dump — Int32-family and
-string constants are supported, and other constant types are a typed stop. A closed allowlist of deterministic,
-stateless, culture-independent `string` and `char` members evaluates over constant operands: concatenation, ordinal
-`Contains`/`StartsWith`/`EndsWith`/`IndexOf`, `Substring`, `Trim`, `Pad`, `Insert`, `Remove`, ordinal `Replace`,
-`ToUpperInvariant`/`ToLowerInvariant`, `string.Concat`/`Join`/`IsNullOrEmpty`/`CompareOrdinal`, the `char`
-classification predicates, indexing and range slicing with from-end `^n` indexes, `Length`, equality, relational
-comparison, Boolean logic, and the conditional operator. A culture-sensitive member or overload — `ToLower()`, `IndexOf(string)` without a `StringComparison`, or a
+Constant expressions fold with the semantics C# defines, across the full numeric tower: every fixed-size integral
+type, `nint`/`nuint` (folded at 64 bits, matching the x64 processes the preview targets), `Int128`/`UInt128`,
+`System.Numerics.BigInteger`, `float`, `double`, and `decimal`, with C# numeric promotion, checked integral
+arithmetic, and casts between all of them (overflow, division by zero, and argument errors are typed stops reported
+under their familiar exception names). Floating point is IEEE-754 faithful — signed zeros, infinities, and NaN
+behave exactly as in running code — and `decimal` keeps exact scale. `System.Math`, the numeric type statics
+(`MinValue`/`MaxValue`, `double.NaN`, `Epsilon`, `Pi`), the `double`/`float` classification predicates, and the
+`BigInteger` factories evaluate deterministically; hardware-dependent estimates are typed stops. Numeric `ToString`
+— with or without a format string — always evaluates under the invariant culture. Nullable semantics are lifted
+exactly: `null` and `(int?)null` are exact null results, arithmetic with a null operand yields exactly null, and
+`??` coalesces. A fully qualified enum member or `const` field is read from the declaring module's metadata Constant
+table in the dump — Int32-family and string constants are supported, and other constant types are a typed stop. A
+closed allowlist of deterministic, stateless, culture-independent `string` and `char` members evaluates over
+constant operands: concatenation, ordinal `Contains`/`StartsWith`/`EndsWith`/`IndexOf`, `Substring`, `Trim`, `Pad`,
+`Insert`, `Remove`, ordinal `Replace`, `ToUpperInvariant`/`ToLowerInvariant`,
+`string.Concat`/`Join`/`IsNullOrEmpty`/`CompareOrdinal`, the `char` classification predicates, indexing and range
+slicing with from-end `^n` indexes, `Length`, equality, relational comparison, Boolean logic, and the conditional
+operator. A culture-sensitive member or overload — `ToLower()`, `IndexOf(string)` without a `StringComparison`, or a
 culture-based comparison — is a typed stop naming the deterministic alternative; `StringComparison.Ordinal` and
 `OrdinalIgnoreCase` arguments are accepted. Character classification follows the pinned analysis runtime's Unicode
 tables. Nested types and names that need import context are outside this version.
 
-- **It is not a general expression evaluator.** Arithmetic over runtime values, comparisons, indexers, casts, method
-  calls, and generics are outside the current subset.
+**Dump values compose.** Inside a composed expression, a static-field name or a root-relative member chain resolves
+through the same frozen pipeline that answers it alone, and its exact Int32, string, or null value becomes an
+operand: `root.QueueDepth * 2 + 1`, `Some.Type.ProcessedCount + 1`, `root.Batch.Id[6..^5]`, or a stored
+`Nullable<Int32>` behind `?? 0`. A bare name or bare chain never enters this path — it keeps its full evidence
+report — and an operand that is not exact is a typed stop carrying the pipeline's own diagnostic, never a guessed
+value. The answer reports how many dump values it consumed.
+
+- **It is not a general expression evaluator.** Method calls on runtime objects, generics, and operands beyond the
+  Int32/string/null value surface are outside the current subset.
 - **It does not read your disk to fill gaps.** Names and values come from the snapshot. A Portable PDB is consulted
   only when you offer one and only after its identity is validated against the module.
 

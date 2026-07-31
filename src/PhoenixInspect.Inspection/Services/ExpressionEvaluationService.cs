@@ -59,10 +59,17 @@ public static class ExpressionEvaluationService
         var candidates = portablePdbCandidates.IsDefault ? [] : portablePdbCandidates;
         var stopwatch = Stopwatch.StartNew();
 
-        // Constant expressions — folded integer arithmetic and metadata literal fields — are a pre-stage the
-        // frozen static-field pipeline rejects by design. A not-constant disposition falls through untouched, so
-        // every stored-field answer stays exactly what it was.
-        var constant = ConstantExpressionEvaluator.Evaluate(session, expression);
+        // Constant expressions — folded arithmetic, metadata literal fields, and composed expressions consuming
+        // stored static values as operands — are a pre-stage the frozen static-field pipeline rejects by design.
+        // A not-constant disposition falls through untouched, so every bare stored-field answer stays exactly
+        // what it was.
+        var resolvers = new ConstantOperandResolvers
+        {
+            StaticName = name => MapStaticOperand(name, contextSelector is null
+                ? StaticFieldExpressionEvaluator.Evaluate(session, name)
+                : StaticFieldExpressionEvaluator.Evaluate(session, name, contextSelector, candidates)),
+        };
+        var constant = ConstantExpressionEvaluator.Evaluate(session, expression, resolvers);
         if (constant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
@@ -125,10 +132,104 @@ public static class ExpressionEvaluationService
         }
 
         var stopwatch = Stopwatch.StartNew();
+
+        // A composed expression — arithmetic, comparison, or string composition around one or more root-relative
+        // chains — folds in the constant pre-stage, with each chain evaluated by the frozen root-relative pipeline
+        // and consumed as an exact operand. A bare chain, invocation, or chain-with-fallback never enters the
+        // pre-stage, so every existing answer keeps its evidence report and replay identity.
+        var resolvers = new ConstantOperandResolvers
+        {
+            RootIdentifier = rootIdentifier,
+            RootChain = chain => MapRootOperand(
+                chain,
+                DumpExpressionEvaluator.Evaluate(session, chain, rootBinding, policy, languageProfile)),
+            StaticName = name => MapStaticOperand(name, StaticFieldExpressionEvaluator.Evaluate(session, name)),
+        };
+        var constant = ConstantExpressionEvaluator.Evaluate(session, expression, resolvers);
+        if (constant.Status != ConstantExpressionStatus.NotConstant)
+        {
+            stopwatch.Stop();
+            return BuildConstantReport(expression, constant, stopwatch.Elapsed);
+        }
+
         var outcome = DumpExpressionEvaluator.Evaluate(session, expression, rootBinding, policy, languageProfile);
         stopwatch.Stop();
         return BuildRootRelativeReport(expression, rootBinding, languageProfile, outcome, stopwatch.Elapsed);
     }
+
+    private static ConstantOperandResolution MapStaticOperand(
+        string name,
+        StaticFieldExpressionEvaluationResult result)
+    {
+        if (result.Status != StaticFieldExpressionEvaluationStatus.Exact)
+        {
+            return ConstantOperandResolution.ForStop(
+                result.DiagnosticCode ?? "CONSTANT_DUMP_OPERAND_NOT_EXACT",
+                result.DiagnosticMessage
+                    ?? $"Operand '{name}' did not produce an exact value; the static-field pipeline reported "
+                    + $"{result.Status}.");
+        }
+
+        if (result.SuffixResult is { } suffix)
+        {
+            return MapQueryValue(name, suffix.Value);
+        }
+
+        var value = result.HostObservation?.Value;
+        return value?.Kind switch
+        {
+            ClrmdStaticFieldTerminalKind.Int32 or ClrmdStaticFieldTerminalKind.NullableInt32Value =>
+                ConstantOperandResolution.FromInt32(value.Int32Value!.Value),
+            ClrmdStaticFieldTerminalKind.Null or ClrmdStaticFieldTerminalKind.NullableInt32NoValue =>
+                ConstantOperandResolution.ExactNull(),
+            ClrmdStaticFieldTerminalKind.String =>
+                ConstantOperandResolution.FromString(value.StringValue!.Value),
+            ClrmdStaticFieldTerminalKind.ObjectReference => ConstantOperandResolution.ForStop(
+                "CONSTANT_DUMP_OPERAND_TYPE_UNSUPPORTED",
+                $"Operand '{name}' is an object reference; only Int32, string, and null dump values compose "
+                + "into expressions."),
+            _ => ConstantOperandResolution.ForStop(
+                "CONSTANT_DUMP_OPERAND_NOT_EXACT",
+                $"Operand '{name}' produced no value."),
+        };
+    }
+
+    private static ConstantOperandResolution MapRootOperand(string chain, DumpExpressionEvaluationOutcome outcome)
+    {
+        if (outcome.Kind != DumpExpressionEvaluationOutcomeKind.DerivedQuery ||
+            outcome.DerivedQueryResult is not { } derived)
+        {
+            // A chain the root-relative classifier does not admit keeps the whole expression not-constant, so the
+            // frozen path reports the rejection with its own vocabulary.
+            return ConstantOperandResolution.OutsideDomain();
+        }
+
+        if (MapSeverity(derived) != EvaluationSeverity.Exact)
+        {
+            var code = "CONSTANT_DUMP_OPERAND_NOT_EXACT";
+            var message = $"Operand '{chain}' did not produce an exact value.";
+            foreach (var diagnostic in derived.Diagnostics)
+            {
+                code = diagnostic.Code;
+                message = diagnostic.Message;
+                break;
+            }
+
+            return ConstantOperandResolution.ForStop(code, message);
+        }
+
+        return MapQueryValue(chain, derived.Value);
+    }
+
+    private static ConstantOperandResolution MapQueryValue(string name, DumpQueryValue? value) => value?.Kind switch
+    {
+        DumpQueryValueKind.Null => ConstantOperandResolution.ExactNull(),
+        DumpQueryValueKind.Int32 => ConstantOperandResolution.FromInt32(value.Int32Value!.Value),
+        DumpQueryValueKind.String => ConstantOperandResolution.FromString(value.StringValue!),
+        _ => ConstantOperandResolution.ForStop(
+            "CONSTANT_DUMP_OPERAND_NOT_EXACT",
+            $"Operand '{name}' produced no value."),
+    };
 
     private static EvaluationReport BuildConstantReport(
         string expression,
@@ -227,6 +328,15 @@ public static class ExpressionEvaluationService
                 "Qualified names inside the expression resolved as literal fields from module metadata."));
         }
 
+        if (constant.DumpValuesConsumed > 0)
+        {
+            facts.Add(new PropertyRow(
+                "Constant",
+                "Dump values consumed",
+                DisplayFormatting.Count(constant.DumpValuesConsumed),
+                "Names inside the expression resolved to exact values through the frozen dump pipelines."));
+        }
+
         return new EvaluationReport
         {
             Expression = expression,
@@ -235,9 +345,11 @@ public static class ExpressionEvaluationService
             Status = "Exact",
             Stage = isLiteralField
                 ? "Literal read from complete module metadata"
-                : constant.MetadataLiteralsConsumed > 0
-                    ? "Folded with metadata literal operands"
-                    : "Folded without dump evidence",
+                : constant.DumpValuesConsumed > 0
+                    ? "Folded with exact dump-value operands"
+                    : constant.MetadataLiteralsConsumed > 0
+                        ? "Folded with metadata literal operands"
+                        : "Folded without dump evidence",
             Value = value,
             ValueKind = valueKind,
             Facts = facts.ToImmutable(),

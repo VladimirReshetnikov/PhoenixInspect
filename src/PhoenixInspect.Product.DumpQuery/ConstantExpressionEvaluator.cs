@@ -225,7 +225,8 @@ public sealed class ConstantExpressionEvaluation
         string message,
         int modulesScanned = 0,
         int moduleCount = 0,
-        int metadataLiteralsConsumed = 0) => new(
+        int metadataLiteralsConsumed = 0,
+        int dumpValuesConsumed = 0) => new(
         ConstantExpressionStatus.Invalid,
         expression,
         ConstantValueKind.None,
@@ -244,7 +245,8 @@ public sealed class ConstantExpressionEvaluation
         moduleCount,
         metadataLiteralsConsumed,
         code,
-        message);
+        message,
+        dumpValuesConsumed: dumpValuesConsumed);
 
     private string ComputeSha256()
     {
@@ -279,6 +281,111 @@ public sealed class ConstantExpressionEvaluation
         builder.Append(value);
         builder.Append(';');
     }
+}
+
+/// <summary>Identifies how one dump-value operand resolution ended.</summary>
+public enum ConstantOperandResolutionKind
+{
+    /// <summary>The name is outside the resolver's domain; the whole expression stays not-constant.</summary>
+    Outside = 0,
+
+    /// <summary>The operand resolved to an exact Int32 value, including a Nullable&lt;Int32&gt; holding one.</summary>
+    Int32 = 1,
+
+    /// <summary>The operand resolved to an exact complete string value.</summary>
+    String = 2,
+
+    /// <summary>The operand resolved to exactly null: a null reference or a Nullable without a value.</summary>
+    Null = 3,
+
+    /// <summary>The operand resolved but cannot participate; the expression becomes a typed stop.</summary>
+    Stop = 4,
+}
+
+/// <summary>One value extracted from the dump for use as an operand inside a composed expression.</summary>
+public sealed class ConstantOperandResolution
+{
+    private ConstantOperandResolution(
+        ConstantOperandResolutionKind kind,
+        int? int32Value,
+        string? stringValue,
+        string? diagnosticCode,
+        string? diagnosticMessage)
+    {
+        Kind = kind;
+        Int32Value = int32Value;
+        StringValue = stringValue;
+        DiagnosticCode = diagnosticCode;
+        DiagnosticMessage = diagnosticMessage;
+    }
+
+    /// <summary>Gets the resolution discriminator.</summary>
+    public ConstantOperandResolutionKind Kind { get; }
+
+    /// <summary>Gets the exact Int32 value only for <see cref="ConstantOperandResolutionKind.Int32"/>.</summary>
+    public int? Int32Value { get; }
+
+    /// <summary>Gets the exact string value only for <see cref="ConstantOperandResolutionKind.String"/>.</summary>
+    public string? StringValue { get; }
+
+    /// <summary>Gets the stable diagnostic code only for <see cref="ConstantOperandResolutionKind.Stop"/>.</summary>
+    public string? DiagnosticCode { get; }
+
+    /// <summary>Gets the stop explanation only for <see cref="ConstantOperandResolutionKind.Stop"/>.</summary>
+    public string? DiagnosticMessage { get; }
+
+    /// <summary>Creates an exact Int32 operand.</summary>
+    /// <param name="value">The exact value read from the dump.</param>
+    /// <returns>An Int32 resolution.</returns>
+    public static ConstantOperandResolution FromInt32(int value) =>
+        new(ConstantOperandResolutionKind.Int32, value, null, null, null);
+
+    /// <summary>Creates an exact string operand.</summary>
+    /// <param name="value">The exact complete string read from the dump.</param>
+    /// <returns>A string resolution.</returns>
+    public static ConstantOperandResolution FromString(string value) =>
+        new(ConstantOperandResolutionKind.String, null,
+            value ?? throw new ArgumentNullException(nameof(value)), null, null);
+
+    /// <summary>Creates an exactly-null operand.</summary>
+    /// <returns>A null resolution.</returns>
+    public static ConstantOperandResolution ExactNull() =>
+        new(ConstantOperandResolutionKind.Null, null, null, null, null);
+
+    /// <summary>Creates a typed stop that halts the composed expression with the sub-expression's own facts.</summary>
+    /// <param name="code">The stable diagnostic code.</param>
+    /// <param name="message">The artifact-independent explanation.</param>
+    /// <returns>A stop resolution.</returns>
+    public static ConstantOperandResolution ForStop(string code, string message) =>
+        new(ConstantOperandResolutionKind.Stop, null, null,
+            code ?? throw new ArgumentNullException(nameof(code)),
+            message ?? throw new ArgumentNullException(nameof(message)));
+
+    /// <summary>Creates an outside-the-domain resolution that keeps the whole expression not-constant.</summary>
+    /// <returns>An outside resolution.</returns>
+    public static ConstantOperandResolution OutsideDomain() =>
+        new(ConstantOperandResolutionKind.Outside, null, null, null, null);
+}
+
+/// <summary>
+/// Caller-supplied bridges that let a composed expression consume values extracted from the dump as operands.
+/// </summary>
+/// <remarks>
+/// The evaluator itself never reads storage. Each bridge delegates one dotted name or one root-relative chain to
+/// the caller — the host layer that owns the frozen static-field and root-relative pipelines — and receives back a
+/// typed resolution. A bare name or bare chain never consults a bridge: the whole expression stays not-constant so
+/// the frozen paths keep answering those exactly as before, with their complete evidence reports.
+/// </remarks>
+public sealed class ConstantOperandResolvers
+{
+    /// <summary>Gets the resolver for dotted static-field names, or null when stored statics cannot compose.</summary>
+    public Func<string, ConstantOperandResolution>? StaticName { get; init; }
+
+    /// <summary>Gets the resolver for root-relative member chains, or null outside a root-relative evaluation.</summary>
+    public Func<string, ConstantOperandResolution>? RootChain { get; init; }
+
+    /// <summary>Gets the case-sensitive root identifier that anchors a root-relative chain, or null.</summary>
+    public string? RootIdentifier { get; init; }
 }
 
 /// <summary>
@@ -324,7 +431,27 @@ public static partial class ConstantExpressionEvaluator
     /// </param>
     /// <param name="expression">The raw expression text, submitted without normalization.</param>
     /// <returns>An exact value, a typed constant-domain error, or a not-constant disposition.</returns>
-    public static ConstantExpressionEvaluation Evaluate(ClrmdDumpSession? session, string? expression)
+    public static ConstantExpressionEvaluation Evaluate(ClrmdDumpSession? session, string? expression) =>
+        Evaluate(session, expression, resolvers: null);
+
+    /// <summary>
+    /// Attempts to evaluate one raw expression as a constant, optionally consuming values extracted from the dump
+    /// as operands through caller-supplied resolvers.
+    /// </summary>
+    /// <param name="session">
+    /// The open dump session used to resolve literal fields; when null, qualified names cannot resolve and only
+    /// literal-based evaluation can succeed.
+    /// </param>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="resolvers">
+    /// Bridges to the frozen static-field and root-relative pipelines, or null when only pure constants and
+    /// metadata literals may participate. A bare name or bare chain never consults a resolver.
+    /// </param>
+    /// <returns>An exact value, a typed constant-domain error, or a not-constant disposition.</returns>
+    public static ConstantExpressionEvaluation Evaluate(
+        ClrmdDumpSession? session,
+        string? expression,
+        ConstantOperandResolvers? resolvers)
     {
         if (string.IsNullOrWhiteSpace(expression) ||
             expression.Length > CSharpExpressionFrontEnd.MaximumExpressionLength)
@@ -354,6 +481,15 @@ public static partial class ConstantExpressionEvaluator
             return ConstantExpressionEvaluation.NotConstantResult(expression);
         }
 
+        // A bare root-relative expression — the root alone, a chain, an invocation, an element access, or any of
+        // those under a coalescing fallback — keeps its frozen evaluation path untouched, with its complete
+        // evidence report and replay identity. Only composed expressions consume dump values as operands.
+        if (resolvers?.RootIdentifier is { } bareRootIdentifier &&
+            IsBareDumpExpression(syntax, bareRootIdentifier))
+        {
+            return ConstantExpressionEvaluation.NotConstantResult(expression);
+        }
+
         // A bare qualified-name chain keeps its dedicated literal-field path so the result retains complete
         // module and token facts; a stored static field keeps falling through to the frozen pipeline. A chain
         // whose receiver is a known BCL type — 'Int32.MaxValue', 'System.Math.PI' — folds instead, because those
@@ -367,7 +503,7 @@ public static partial class ConstantExpressionEvaluator
                 : ResolveLiteralField(session, expression, nameParts);
         }
 
-        var context = new FoldContext(session);
+        var context = new FoldContext(session, resolvers);
         var outcome = Fold(syntax, context);
         return outcome.Disposition switch
         {
@@ -376,16 +512,93 @@ public static partial class ConstantExpressionEvaluator
                 expression,
                 outcome.Code!,
                 outcome.Message!,
-                metadataLiteralsConsumed: context.MetadataLiteralsConsumed),
+                metadataLiteralsConsumed: context.MetadataLiteralsConsumed,
+                dumpValuesConsumed: context.DumpValuesConsumed),
             _ => ConstantExpressionEvaluation.NotConstantResult(expression),
         };
     }
 
-    private sealed class FoldContext(ClrmdDumpSession? session)
+    private sealed class FoldContext(ClrmdDumpSession? session, ConstantOperandResolvers? resolvers)
     {
         internal ClrmdDumpSession? Session { get; } = session;
 
+        internal ConstantOperandResolvers? Resolvers { get; } = resolvers;
+
         internal int MetadataLiteralsConsumed { get; set; }
+
+        internal int DumpValuesConsumed { get; set; }
+    }
+
+    /// <summary>Returns the leftmost identifier of an access chain, stepping through every access shape.</summary>
+    private static string? LeftmostIdentifier(ExpressionSyntax syntax)
+    {
+        var current = syntax;
+        while (true)
+        {
+            switch (current)
+            {
+                case MemberAccessExpressionSyntax { RawKind: (int)SyntaxKind.SimpleMemberAccessExpression } member:
+                    current = member.Expression;
+                    break;
+                case ConditionalAccessExpressionSyntax conditional:
+                    current = conditional.Expression;
+                    break;
+                case InvocationExpressionSyntax invocation:
+                    current = invocation.Expression;
+                    break;
+                case ElementAccessExpressionSyntax element:
+                    current = element.Expression;
+                    break;
+                case IdentifierNameSyntax identifier:
+                    return identifier.Identifier.ValueText;
+                default:
+                    return null;
+            }
+        }
+    }
+
+    private static bool IsBareDumpExpression(ExpressionSyntax syntax, string rootIdentifier)
+    {
+        if (syntax is BinaryExpressionSyntax { RawKind: (int)SyntaxKind.CoalesceExpression } coalesce)
+        {
+            return IsBareDumpExpression(coalesce.Left, rootIdentifier);
+        }
+
+        // Indexing a chain's value is composition, not a bare chain: the frozen root-relative path has no
+        // indexer, so 'root.X.Name[6..^5]' folds here over the chain's exact string value.
+        if (syntax is ElementAccessExpressionSyntax)
+        {
+            return false;
+        }
+
+        return LeftmostIdentifier(syntax) == rootIdentifier;
+    }
+
+    /// <summary>Matches a plain or conditional member chain anchored at the root identifier, used as an operand.</summary>
+    private static bool IsRootChainOperand(ExpressionSyntax syntax, string rootIdentifier) =>
+        syntax is MemberAccessExpressionSyntax or ConditionalAccessExpressionSyntax &&
+        LeftmostIdentifier(syntax) == rootIdentifier;
+
+    private static FoldOutcome ResolveDumpOperand(
+        FoldContext context,
+        ConstantOperandResolution resolution)
+    {
+        switch (resolution.Kind)
+        {
+            case ConstantOperandResolutionKind.Int32:
+                context.DumpValuesConsumed++;
+                return FoldOutcome.Folded(Operand.FromInt32(resolution.Int32Value!.Value));
+            case ConstantOperandResolutionKind.String:
+                context.DumpValuesConsumed++;
+                return FoldOutcome.Folded(Operand.FromString(resolution.StringValue!));
+            case ConstantOperandResolutionKind.Null:
+                context.DumpValuesConsumed++;
+                return FoldOutcome.Folded(Operand.Null());
+            case ConstantOperandResolutionKind.Stop:
+                return FoldOutcome.Error(resolution.DiagnosticCode!, resolution.DiagnosticMessage!);
+            default:
+                return FoldOutcome.NotArithmetic();
+        }
     }
 
     private enum OperandKind
@@ -542,11 +755,20 @@ public static partial class ConstantExpressionEvaluator
             diagnosticCode: null,
             diagnosticMessage: null,
             valueTypeName,
-            valueText);
+            valueText,
+            context.DumpValuesConsumed);
     }
 
     private static FoldOutcome Fold(ExpressionSyntax syntax, FoldContext context)
     {
+        // A member chain anchored at the root identifier is one operand: the frozen root-relative pipeline
+        // evaluates the whole chain — including its ?. short-circuit semantics — and hands back the exact value.
+        if (context.Resolvers is { RootChain: { } rootResolver, RootIdentifier: { } rootIdentifier } &&
+            IsRootChainOperand(syntax, rootIdentifier))
+        {
+            return ResolveDumpOperand(context, rootResolver(syntax.ToString()));
+        }
+
         switch (syntax)
         {
             case LiteralExpressionSyntax literal:
@@ -1008,30 +1230,35 @@ public static partial class ConstantExpressionEvaluator
 
     private static FoldOutcome FoldQualifiedName(ImmutableArray<string> parts, FoldContext context)
     {
-        if (context.Session is null || parts.Length < 3)
+        // A metadata literal wins when one declares the name; a stored static field then resolves through the
+        // caller's bridge to the frozen pipeline, so composed expressions can consume its exact value.
+        if (context.Session is not null && parts.Length >= 3)
         {
-            return FoldOutcome.NotArithmetic();
+            var resolved = ResolveLiteralField(context.Session, string.Join('.', parts), parts);
+            switch (resolved.Status)
+            {
+                case ConstantExpressionStatus.Exact:
+                    context.MetadataLiteralsConsumed++;
+                    return FoldOutcome.Folded(resolved.Kind switch
+                    {
+                        ConstantValueKind.EnumMember => Operand.FromEnum(
+                            resolved.Int32Value!.Value,
+                            resolved.EnumTypeFullName!,
+                            resolved.EnumMemberName!),
+                        ConstantValueKind.String => Operand.FromString(resolved.StringValue!),
+                        _ => Operand.FromInt32(resolved.Int32Value!.Value),
+                    });
+                case ConstantExpressionStatus.Invalid:
+                    return FoldOutcome.Error(resolved.DiagnosticCode!, resolved.DiagnosticMessage!);
+            }
         }
 
-        var resolved = ResolveLiteralField(context.Session, string.Join('.', parts), parts);
-        switch (resolved.Status)
+        if (context.Resolvers?.StaticName is { } staticResolver)
         {
-            case ConstantExpressionStatus.Exact:
-                context.MetadataLiteralsConsumed++;
-                return FoldOutcome.Folded(resolved.Kind switch
-                {
-                    ConstantValueKind.EnumMember => Operand.FromEnum(
-                        resolved.Int32Value!.Value,
-                        resolved.EnumTypeFullName!,
-                        resolved.EnumMemberName!),
-                    ConstantValueKind.String => Operand.FromString(resolved.StringValue!),
-                    _ => Operand.FromInt32(resolved.Int32Value!.Value),
-                });
-            case ConstantExpressionStatus.Invalid:
-                return FoldOutcome.Error(resolved.DiagnosticCode!, resolved.DiagnosticMessage!);
-            default:
-                return FoldOutcome.NotArithmetic();
+            return ResolveDumpOperand(context, staticResolver(string.Join('.', parts)));
         }
+
+        return FoldOutcome.NotArithmetic();
     }
 
     private static FoldOutcome FoldInvocation(InvocationExpressionSyntax invocation, FoldContext context)

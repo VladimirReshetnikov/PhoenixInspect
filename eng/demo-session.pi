@@ -71,7 +71,15 @@ echo == 7. What happens when the evidence is not there? ==
 # A name the type does not declare is a reported stop with a stable diagnostic code, not a fabricated default.
 eval root.RetryBudgetRemaining
 
-echo == 8. Constants are evidence too: metadata, not memory. ==
+echo == 8. Compute with the evidence: dump values as operands. ==
+
+# A value the dump answers exactly can be an operand. Each chain below is still evaluated by the same frozen
+# pipeline as before; arithmetic, comparison, and slicing then fold over the exact values it produced.
+eval root.QueueDepth * 2 + 1
+eval root.CurrentBatch.PendingCount > 50
+eval root.CurrentBatch.BatchId[6..^5]
+
+echo == 9. Constants are evidence too: metadata, not memory. ==
 
 # An enum member or a const is a literal in the module's metadata Constant table, so the snapshot can answer it
 # even though no storage slot exists. Pure integer arithmetic folds with checked C# semantics.
@@ -88,16 +96,24 @@ eval "AMS-3".Contains('-')
 # Range expressions slice with C# semantics, including from-end indexes.
 eval "batch-2026-07-30-0042"[6..^5]
 
-echo == 9. The same object, reached a second way. ==
+# The full numeric tower folds: every C# numeric type, IEEE floating point, and System.Math — invariant, checked,
+# and deterministic.
+eval Math.Round(Math.PI, 4)
+
+# Stored static values compose the same way, including a Nullable with a coalescing fallback.
+eval Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount + 1
+eval Contoso.OrderService.Diagnostics.ServiceState.LastFailureCode ?? 0
+
+echo == 10. The same object, reached a second way. ==
 
 # The dispatcher is also strongly rooted, so a bounded handle search finds it independently. The traversal counters
 # say how exhaustive that search actually was.
 objects Contoso.OrderService.Fulfillment.ShipmentDispatcher
 
-echo == 10. Where were the threads? ==
+echo == 11. Where were the threads? ==
 
 threads 8 6
 
-echo == 11. What was this session allowed to use? ==
+echo == 12. What was this session allowed to use? ==
 
 status
