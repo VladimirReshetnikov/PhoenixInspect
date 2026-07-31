@@ -13,6 +13,12 @@ public enum ClrmdHeapObjectSelectionKind
     /// The object was already selected by a typed Product binding and is projected only for legacy instance engines.
     /// </summary>
     TypedObjectBinding = 2,
+
+    /// <summary>
+    /// The object was validated as an intermediate member-chain reference target and is projected so the next hop
+    /// can evaluate against it.
+    /// </summary>
+    ChainReferencedObject = 3,
 }
 
 /// <summary>

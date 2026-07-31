@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -25,7 +26,13 @@ internal enum ParsedExpressionOperationKind
     EmptyInstanceInvocation,
     DirectMemberChain,
     ConditionalMemberChain,
+    MemberChainPath,
 }
+
+/// <summary>One admitted member hop of an arbitrary-depth chain.</summary>
+/// <param name="Name">The decoded member identifier.</param>
+/// <param name="IsConditionalAccess">Whether the separator before this member is <c>?.</c> rather than <c>.</c>.</param>
+internal sealed record ParsedChainHop(string Name, bool IsConditionalAccess);
 
 internal sealed record ParsedExpressionDescriptor(
     ParsedExpressionOperationKind Operation,
@@ -34,6 +41,13 @@ internal sealed record ParsedExpressionDescriptor(
     string? SecondMemberName,
     DumpQueryLiteral? CoalesceLiteral)
 {
+    /// <summary>Gets every admitted hop in chain order; empty for legacy single- and two-member operations.</summary>
+    internal System.Collections.Immutable.ImmutableArray<ParsedChainHop> Hops { get; init; } =
+        System.Collections.Immutable.ImmutableArray<ParsedChainHop>.Empty;
+
+    /// <summary>Gets the exact source spelling of the coalescing literal, when one is present on a chain.</summary>
+    internal string? CoalesceLiteralText { get; init; }
+
     internal ParsedDumpQuery ToDumpQuery()
     {
         if (Operation != ParsedExpressionOperationKind.DirectMember)
@@ -72,6 +86,7 @@ internal enum CSharpExpressionAdmissionProfile
     FrozenW2,
     FrozenW5,
     FixedDepthMemberChainV1,
+    MemberChainV2,
 }
 
 internal enum CSharpExpressionAdmissionStatus
@@ -183,7 +198,9 @@ internal static class CSharpExpressionFrontEnd
         }
 
         bounds |= DumpQueryParserBounds.RootNameLength;
-        var legacyProfile = profile != CSharpExpressionAdmissionProfile.FixedDepthMemberChainV1;
+        var legacyProfile = profile is not (
+            CSharpExpressionAdmissionProfile.FixedDepthMemberChainV1 or
+            CSharpExpressionAdmissionProfile.MemberChainV2);
         if (!IsValidRootName(expectedRootName, legacyProfile, out var rootTooLong))
         {
             return Invalid(
@@ -258,7 +275,8 @@ internal static class CSharpExpressionFrontEnd
                 bounds | DumpQueryParserBounds.StringLiteralLength);
         }
 
-        if (profile == CSharpExpressionAdmissionProfile.FixedDepthMemberChainV1)
+        if (profile is CSharpExpressionAdmissionProfile.FixedDepthMemberChainV1 or
+            CSharpExpressionAdmissionProfile.MemberChainV2)
         {
             bounds |= DumpQueryParserBounds.SyntaxNodeTokenCount | DumpQueryParserBounds.SyntaxDepth;
         }
@@ -293,6 +311,15 @@ internal static class CSharpExpressionFrontEnd
             if (w6 is not null)
             {
                 return w6;
+            }
+        }
+
+        if (profile == CSharpExpressionAdmissionProfile.MemberChainV2)
+        {
+            var chainPath = TryRecognizeMemberChainPath(syntax, expectedRootName!, bounds);
+            if (chainPath is not null)
+            {
+                return chainPath;
             }
         }
 
@@ -480,6 +507,144 @@ internal static class CSharpExpressionFrontEnd
                 terminalMember.Identifier.ValueText,
                 literal),
             bounds);
+    }
+
+    private static CSharpExpressionAdmissionResult? TryRecognizeMemberChainPath(
+        ExpressionSyntax syntax,
+        string expectedRootName,
+        DumpQueryParserBounds bounds)
+    {
+        var (left, right) = SplitCoalesce(syntax);
+        var hops = new List<ParsedChainHop>();
+        if (!TryFlattenChain(left, hops, out var root) || root is null || hops.Count < 2)
+        {
+            return null;
+        }
+
+        // The first separator must be ordinary member access: the exact root object is host-selected and never
+        // null, so a conditional first hop would claim a guard the evaluation cannot honestly exercise.
+        if (hops[0].IsConditionalAccess)
+        {
+            return Unsupported(
+                "QUERY_CHAIN_ROOT_CONDITIONAL_UNSUPPORTED",
+                "Conditional access on the host-selected root is outside the member-chain grammar.",
+                bounds);
+        }
+
+        if (!string.Equals(root.Identifier.ValueText, expectedRootName, StringComparison.Ordinal))
+        {
+            return Invalid(
+                "QUERY_ROOT_MISMATCH",
+                "The expression does not reference the configured root name exactly.",
+                bounds);
+        }
+
+        DumpQueryLiteral? literal = null;
+        if (right is not null &&
+            !TryProjectLiteral(right, legacyProfile: false, out literal, out var code, out var message))
+        {
+            return IsInvalidLiteralCode(code)
+                ? Invalid(code!, message!, bounds)
+                : Unsupported(code!, message!, bounds);
+        }
+
+        var hopArray = hops.ToImmutableArray();
+        if (hops.Count == 2)
+        {
+            // A two-member chain keeps its frozen V1 operation kind so it routes through the unchanged
+            // fixed-depth pipeline and reproduces its exact behavior and identities.
+            return Accepted(
+                new ParsedExpressionDescriptor(
+                    hops[1].IsConditionalAccess
+                        ? ParsedExpressionOperationKind.ConditionalMemberChain
+                        : ParsedExpressionOperationKind.DirectMemberChain,
+                    root.Identifier.ValueText,
+                    hops[0].Name,
+                    hops[1].Name,
+                    literal)
+                {
+                    Hops = hopArray,
+                    CoalesceLiteralText = right?.ToString(),
+                },
+                bounds);
+        }
+
+        return Accepted(
+            new ParsedExpressionDescriptor(
+                ParsedExpressionOperationKind.MemberChainPath,
+                root.Identifier.ValueText,
+                hops[0].Name,
+                hops[^1].Name,
+                literal)
+            {
+                Hops = hopArray,
+                CoalesceLiteralText = right?.ToString(),
+            },
+            bounds);
+    }
+
+    private static bool TryFlattenChain(
+        ExpressionSyntax node,
+        List<ParsedChainHop> hops,
+        out IdentifierNameSyntax? root)
+    {
+        switch (node)
+        {
+            case IdentifierNameSyntax identifier:
+                root = identifier;
+                return true;
+            case MemberAccessExpressionSyntax
+            {
+                RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
+                Expression: { } inner,
+                Name: IdentifierNameSyntax member,
+            }:
+                if (!TryFlattenChain(inner, hops, out root))
+                {
+                    return false;
+                }
+
+                hops.Add(new ParsedChainHop(member.Identifier.ValueText, IsConditionalAccess: false));
+                return true;
+            case ConditionalAccessExpressionSyntax conditional:
+                if (!TryFlattenChain(conditional.Expression, hops, out root))
+                {
+                    return false;
+                }
+
+                return TryFlattenConditionalTail(conditional.WhenNotNull, hops);
+            default:
+                root = null;
+                return false;
+        }
+    }
+
+    private static bool TryFlattenConditionalTail(ExpressionSyntax node, List<ParsedChainHop> hops)
+    {
+        switch (node)
+        {
+            case MemberBindingExpressionSyntax { Name: IdentifierNameSyntax bound }:
+                hops.Add(new ParsedChainHop(bound.Identifier.ValueText, IsConditionalAccess: true));
+                return true;
+            case MemberAccessExpressionSyntax
+            {
+                RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
+                Expression: { } inner,
+                Name: IdentifierNameSyntax member,
+            }:
+                if (!TryFlattenConditionalTail(inner, hops))
+                {
+                    return false;
+                }
+
+                hops.Add(new ParsedChainHop(member.Identifier.ValueText, IsConditionalAccess: false));
+                return true;
+            case ConditionalAccessExpressionSyntax conditional:
+                return TryFlattenConditionalTail(conditional.Expression, hops) &&
+                    TryFlattenConditionalTail(conditional.WhenNotNull, hops);
+            default:
+                return false;
+        }
     }
 
     private static (ExpressionSyntax Left, ExpressionSyntax? Right) SplitCoalesce(ExpressionSyntax syntax) =>

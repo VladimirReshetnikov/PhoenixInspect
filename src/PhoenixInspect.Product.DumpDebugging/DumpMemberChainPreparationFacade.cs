@@ -41,7 +41,9 @@ public static class DumpMemberChainPreparationFacade
         ArgumentNullException.ThrowIfNull(request);
         var identity = request.MemberChainExpressionIdentity;
         if (request.AdmittedKind != DumpExpressionKind.FixedDepthMemberChain ||
-            request.LanguageProfile != DumpExpressionLanguageProfile.FixedDepthMemberChainV1 ||
+            request.LanguageProfile is not (
+                DumpExpressionLanguageProfile.FixedDepthMemberChainV1 or
+                DumpExpressionLanguageProfile.MemberChainV2) ||
             identity is null)
         {
             return Failed(
