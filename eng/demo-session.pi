@@ -48,6 +48,10 @@ eval root.CurrentBatch.BatchId
 eval root.CurrentBatch.PendingCount
 eval root.CurrentBatch.DestinationHub
 
+# The chain goes as deep as the object graph does. There is no hop limit — only the evidence boundary.
+eval root.CurrentBatch.Route.HubCode
+eval root.CurrentBatch.Route.Corridor.Name
+
 echo == 6. Why is it stuck? ==
 
 # The failure record is present, so the conditional access reaches it.
@@ -57,6 +61,10 @@ eval root.LastFailure?.Detail
 # The carrier reference is null, so the conditional access short-circuits to null rather than guessing.
 eval root.AssignedCarrier?.Name
 eval root.AssignedCarrier?.Name ?? "no carrier ever accepted the batch"
+
+# Nobody ever escalated the batch. A conditional hop that meets an exact null short-circuits mid-chain,
+# however deep the rest of the chain would have gone.
+eval root.CurrentBatch.Escalation?.Review?.Owner ?? "the batch was never escalated"
 
 echo == 7. What happens when the evidence is not there? ==
 

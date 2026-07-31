@@ -93,12 +93,21 @@ public sealed class PreviewDemoIntegrationTests
             ("root.CurrentBatch.BatchId", EvaluationSeverity.Exact, "\"batch-2026-07-30-0042\""),
             ("root.CurrentBatch.PendingCount", EvaluationSeverity.Exact, "96"),
             ("root.CurrentBatch.DestinationHub", EvaluationSeverity.Exact, "\"AMS-3\""),
+
+            // Deeper chains prove there is no hop limit: three and four hops answer from the same evidence rules.
+            ("root.CurrentBatch.Route.HubCode", EvaluationSeverity.Exact, "\"AMS-3-SOUTH-DOCK-07\""),
+            ("root.CurrentBatch.Route.Corridor.Name", EvaluationSeverity.Exact, "\"NL-BE overnight corridor\""),
             ("root.LastFailure?.Code", EvaluationSeverity.Exact, "\"carrier-handoff-timeout\""),
             ("root.LastFailure?.Detail", EvaluationSeverity.Exact,
                 "\"No carrier accepted batch-2026-07-30-0042 within the 30s hand-off window.\""),
             ("root.AssignedCarrier?.Name", EvaluationSeverity.Exact, "null"),
             ("root.AssignedCarrier?.Name ?? \"no carrier ever accepted the batch\"",
                 EvaluationSeverity.Exact, "\"no carrier ever accepted the batch\""),
+
+            // A conditional hop that meets an exact null short-circuits mid-chain, however deep the rest of the
+            // chain would have gone.
+            ("root.CurrentBatch.Escalation?.Review?.Owner ?? \"the batch was never escalated\"",
+                EvaluationSeverity.Exact, "\"the batch was never escalated\""),
 
             // The demo shows a name the type does not declare. A stop with a stable diagnostic code is the correct
             // answer; a fabricated zero, empty string, or null would not be.
@@ -271,7 +280,7 @@ public sealed class PreviewDemoIntegrationTests
                 root,
                 RootIdentifier,
                 policy,
-                DumpExpressionLanguageProfile.FixedDepthMemberChainV1);
+                DumpExpressionLanguageProfile.MemberChainV2);
             Assert.Equal(severity, report.Severity);
             Assert.Equal(value, report.Value);
         }

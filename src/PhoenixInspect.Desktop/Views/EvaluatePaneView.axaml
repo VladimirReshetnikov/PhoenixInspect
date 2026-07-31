@@ -127,7 +127,7 @@
                                 </StackPanel>
                             </DockPanel>
                             <WrapPanel>
-                                <CheckBox Content="Admit two-hop member chains"
+                                <CheckBox Content="Admit member chains (any depth)"
                                           FontSize="11"
                                           Margin="0,0,16,0"
                                           IsChecked="{Binding Panel.AdmitMemberChain, Mode=TwoWay}" />

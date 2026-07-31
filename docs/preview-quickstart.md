@@ -116,9 +116,16 @@ subset:
 | Static field with one member suffix | `Some.Namespace.Type.Field.Member` |
 | Contextual static name, given a selected frame and its Portable PDB | `Statics.Field` |
 | Root-relative member | `root.Member` |
-| Root-relative two-member chain | `root.Member.Member` |
-| Conditional access | `root.Member?.Member` |
+| Root-relative member chain of any depth | `root.Member.Member.Member.Member` |
+| Conditional access at any hop after the first | `root.Member?.Member.Member?.Member` |
 | Coalescing with a literal | `root.Member?.Member ?? "fallback"` |
+
+A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
+limits. Each intermediate hop must be a directly declared reference field whose exact declared type is present in
+the snapshot's runtime type catalog and agrees with the referenced object, validated with the same counted evidence
+at every link; a `?.` whose receiver is exactly null short-circuits the whole chain to the coalescing fallback. A
+hop whose declared type the captured process never loaded is a typed stop, because the snapshot cannot validate what
+it never materialized.
 
 **Values.** `Int32`, `Nullable<Int32>`, bounded `String`, exact null, and validated object references. Anything else
 is reported as a typed stop rather than approximated.
@@ -134,8 +141,8 @@ object search with the traversal counters that say how exhaustive it was.
 - **It does not guess.** A name the metadata does not declare, a byte range the snapshot does not contain, or a shape
   outside the admitted subset produces a typed non-exact outcome with a stable diagnostic code — never a fabricated
   zero, empty string, or null.
-- **It is not a general expression evaluator.** Arithmetic, comparisons, indexers, casts, method calls, generics, and
-  arbitrary chain depth are outside the current subset.
+- **It is not a general expression evaluator.** Arithmetic, comparisons, indexers, casts, method calls, and generics
+  are outside the current subset.
 - **It does not read your disk to fill gaps.** Names and values come from the snapshot. A Portable PDB is consulted
   only when you offer one and only after its identity is validated against the module.
 

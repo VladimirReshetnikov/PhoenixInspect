@@ -177,7 +177,7 @@ public sealed class EvaluateViewModel : ObservableObject
         }
     }
 
-    /// <summary>Gets or sets whether the opt-in fixed-depth two-hop member-chain grammar is admitted.</summary>
+    /// <summary>Gets or sets whether the opt-in member-chain grammar of unlimited depth is admitted.</summary>
     public bool AdmitMemberChain
     {
         get => admitMemberChain;
@@ -440,12 +440,12 @@ public sealed class EvaluateViewModel : ObservableObject
             $"{identifier}.Name ?? \"unset\"",
             ExpressionPath.RootRelative));
         Samples.Add(new ExpressionSample(
-            "Two-hop member chain",
-            $"{identifier}.Child.Name",
+            "Member chain (any depth)",
+            $"{identifier}.Child.Route.Corridor.Name",
             ExpressionPath.RootRelative));
         Samples.Add(new ExpressionSample(
             "Conditional member chain",
-            $"{identifier}?.Child?.Name",
+            $"{identifier}.Child?.Owner?.Name",
             ExpressionPath.RootRelative));
         Samples.Add(new ExpressionSample(
             "Admitted parameterless method",
@@ -490,7 +490,7 @@ public sealed class EvaluateViewModel : ObservableObject
                 logicalDepthLimit,
                 traversalLimit);
             var profile = admitMemberChain
-                ? DumpExpressionLanguageProfile.FixedDepthMemberChainV1
+                ? DumpExpressionLanguageProfile.MemberChainV2
                 : DumpExpressionLanguageProfile.FrozenW5;
             produced = await shell.RunAsync(
                 "Evaluating root-relative expression…",

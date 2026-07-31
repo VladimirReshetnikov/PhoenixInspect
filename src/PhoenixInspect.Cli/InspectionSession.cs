@@ -649,7 +649,7 @@ public sealed class InspectionSession
             selected,
             identifier,
             policy,
-            DumpExpressionLanguageProfile.FixedDepthMemberChainV1));
+            DumpExpressionLanguageProfile.MemberChainV2));
     }
 
     private void RecordEvaluation(EvaluationReport report)
