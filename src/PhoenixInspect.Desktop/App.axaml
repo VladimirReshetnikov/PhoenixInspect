@@ -10,37 +10,38 @@
     <Application.Resources>
         <ResourceDictionary>
             <!--
-                The preview's light palette: olive for accents and exact evidence, khaki and sage for surfaces and
-                highlights, grays for chrome, and peach reserved for error conditions. The scheme is deliberately
-                close to ILSpy's light chrome in structure (window / pane / editor / strip surfaces) with the
-                colors shifted into the olive family.
+                The preview's light palette: a paper-like off-white dominates every surface, with muted olive for
+                accents and exact evidence, soft khaki and sage for chips, highlights, and active chrome, quiet
+                grays for borders and secondary text, and pale peach reserved for error conditions. The scheme is
+                deliberately close to ILSpy's light chrome in structure (window / pane / editor / strip surfaces),
+                kept low-saturation so the syntax-colored source reads as the strongest color on screen.
             -->
-            <SolidColorBrush x:Key="Phoenix.WindowBackground" Color="#E9E7D6" />
-            <SolidColorBrush x:Key="Phoenix.WindowForeground" Color="#2F3126" />
-            <SolidColorBrush x:Key="Phoenix.PaneBackground" Color="#F5F3E7" />
-            <SolidColorBrush x:Key="Phoenix.EditorBackground" Color="#FAF8EC" />
-            <SolidColorBrush x:Key="Phoenix.ChromeBorder" Color="#A9A98E" />
-            <SolidColorBrush x:Key="Phoenix.SubtleBorder" Color="#C9C7AE" />
-            <SolidColorBrush x:Key="Phoenix.SecondaryForeground" Color="#6C6F5C" />
-            <SolidColorBrush x:Key="Phoenix.AccentOlive" Color="#6B8E23" />
-            <SolidColorBrush x:Key="Phoenix.AccentOliveDeep" Color="#556B2F" />
-            <SolidColorBrush x:Key="Phoenix.Sage" Color="#9CAF88" />
-            <SolidColorBrush x:Key="Phoenix.SageLight" Color="#D9E2CC" />
-            <SolidColorBrush x:Key="Phoenix.KhakiHighlight" Color="#F0E68C" />
-            <SolidColorBrush x:Key="Phoenix.KhakiChip" Color="#E4DFC0" />
-            <SolidColorBrush x:Key="Phoenix.PeachBackground" Color="#FBE3CF" />
-            <SolidColorBrush x:Key="Phoenix.PeachBorder" Color="#D9764A" />
-            <SolidColorBrush x:Key="Phoenix.PeachForeground" Color="#A34A24" />
+            <SolidColorBrush x:Key="Phoenix.WindowBackground" Color="#FAF9F4" />
+            <SolidColorBrush x:Key="Phoenix.WindowForeground" Color="#3A3C33" />
+            <SolidColorBrush x:Key="Phoenix.PaneBackground" Color="#FDFDFA" />
+            <SolidColorBrush x:Key="Phoenix.EditorBackground" Color="#FFFFFD" />
+            <SolidColorBrush x:Key="Phoenix.ChromeBorder" Color="#CCCABB" />
+            <SolidColorBrush x:Key="Phoenix.SubtleBorder" Color="#E2E0D4" />
+            <SolidColorBrush x:Key="Phoenix.SecondaryForeground" Color="#83857A" />
+            <SolidColorBrush x:Key="Phoenix.AccentOlive" Color="#8A9B5C" />
+            <SolidColorBrush x:Key="Phoenix.AccentOliveDeep" Color="#6D7C46" />
+            <SolidColorBrush x:Key="Phoenix.Sage" Color="#B3C2A2" />
+            <SolidColorBrush x:Key="Phoenix.SageLight" Color="#EDF2E4" />
+            <SolidColorBrush x:Key="Phoenix.KhakiHighlight" Color="#F5EFC4" />
+            <SolidColorBrush x:Key="Phoenix.KhakiChip" Color="#F4F2E5" />
+            <SolidColorBrush x:Key="Phoenix.PeachBackground" Color="#FCF0E5" />
+            <SolidColorBrush x:Key="Phoenix.PeachBorder" Color="#E2A981" />
+            <SolidColorBrush x:Key="Phoenix.PeachForeground" Color="#AE5F38" />
             <SolidColorBrush x:Key="Phoenix.InputBackground" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="Phoenix.InputBorder" Color="#A9A98E" />
-            <SolidColorBrush x:Key="Phoenix.TabStripBackground" Color="#DEDCC4" />
-            <SolidColorBrush x:Key="Phoenix.TabItemSelectedBackground" Color="#F5F3E7" />
-            <SolidColorBrush x:Key="Phoenix.TabItemActiveBackground" Color="#6B8E23" />
-            <SolidColorBrush x:Key="Phoenix.TabItemActiveForeground" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="Phoenix.ToolActiveHeaderBackground" Color="#C7D3B4" />
-            <SolidColorBrush x:Key="Phoenix.SelectionBrush" Color="#6B8E23" Opacity="0.25" />
-            <SolidColorBrush x:Key="Phoenix.VerifiedBadgeBackground" Color="#DCE8C8" />
-            <SolidColorBrush x:Key="Phoenix.VerifiedBadgeForeground" Color="#4E7A27" />
+            <SolidColorBrush x:Key="Phoenix.InputBorder" Color="#CCCABB" />
+            <SolidColorBrush x:Key="Phoenix.TabStripBackground" Color="#F0EEE3" />
+            <SolidColorBrush x:Key="Phoenix.TabItemSelectedBackground" Color="#FDFDFA" />
+            <SolidColorBrush x:Key="Phoenix.TabItemActiveBackground" Color="#DFE6C9" />
+            <SolidColorBrush x:Key="Phoenix.TabItemActiveForeground" Color="#3F4630" />
+            <SolidColorBrush x:Key="Phoenix.ToolActiveHeaderBackground" Color="#E6EBDB" />
+            <SolidColorBrush x:Key="Phoenix.SelectionBrush" Color="#8A9B5C" Opacity="0.20" />
+            <SolidColorBrush x:Key="Phoenix.VerifiedBadgeBackground" Color="#EDF3DF" />
+            <SolidColorBrush x:Key="Phoenix.VerifiedBadgeForeground" Color="#647F3E" />
             <FontFamily x:Key="Phoenix.MonoFont">Cascadia Mono,Consolas,Menlo,monospace</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
@@ -81,12 +82,13 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.accent">
-            <Setter Property="Background" Value="{DynamicResource Phoenix.AccentOlive}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{DynamicResource Phoenix.TabItemActiveBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource Phoenix.TabItemActiveForeground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Phoenix.AccentOlive}" />
         </Style>
         <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource Phoenix.AccentOliveDeep}" />
-            <Setter Property="TextElement.Foreground" Value="White" />
+            <Setter Property="Background" Value="{DynamicResource Phoenix.ToolActiveHeaderBackground}" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Phoenix.TabItemActiveForeground}" />
         </Style>
 
         <Style Selector="ToolTip">

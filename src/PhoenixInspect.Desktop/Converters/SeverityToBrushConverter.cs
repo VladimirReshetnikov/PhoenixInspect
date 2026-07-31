@@ -13,11 +13,11 @@ namespace PhoenixInspect.Desktop.Converters;
 /// </remarks>
 public sealed class SeverityToBrushConverter : IValueConverter
 {
-    private static readonly SolidColorBrush Exact = new(Color.Parse("#4E7A27"));
-    private static readonly SolidColorBrush Absent = new(Color.Parse("#5F7E97"));
-    private static readonly SolidColorBrush Partial = new(Color.Parse("#B8860B"));
-    private static readonly SolidColorBrush Stopped = new(Color.Parse("#D9764A"));
-    private static readonly SolidColorBrush Rejected = new(Color.Parse("#8A7090"));
+    private static readonly SolidColorBrush Exact = new(Color.Parse("#84A05E"));
+    private static readonly SolidColorBrush Absent = new(Color.Parse("#8AA0B4"));
+    private static readonly SolidColorBrush Partial = new(Color.Parse("#CBA95B"));
+    private static readonly SolidColorBrush Stopped = new(Color.Parse("#E3986F"));
+    private static readonly SolidColorBrush Rejected = new(Color.Parse("#A796AE"));
 
     /// <summary>Gets the shared converter instance.</summary>
     public static SeverityToBrushConverter Instance { get; } = new();

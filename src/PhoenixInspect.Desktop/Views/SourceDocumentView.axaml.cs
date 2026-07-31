@@ -104,7 +104,7 @@ public partial class SourceDocumentView : UserControl
 /// <summary>Paints the khaki highlight behind the frame's mapped line span.</summary>
 public sealed class LineSpanBackgroundRenderer : IBackgroundRenderer
 {
-    private static readonly IBrush Highlight = new SolidColorBrush(Color.Parse("#80F0E68C"));
+    private static readonly IBrush Highlight = new SolidColorBrush(Color.Parse("#66F1EBBB"));
     private int startLine;
     private int endLine;
 
