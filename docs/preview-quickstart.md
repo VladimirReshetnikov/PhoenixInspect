@@ -119,6 +119,8 @@ subset:
 | Root-relative member chain of any depth | `root.Member.Member.Member.Member` |
 | Conditional access at any hop after the first | `root.Member?.Member.Member?.Member` |
 | Coalescing with a literal | `root.Member?.Member ?? "fallback"` |
+| Constant integer arithmetic | `(86400 / 24) / 60` |
+| Enum member or const field | `System.DayOfWeek.Monday` |
 
 A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
 limits. Each intermediate hop must be a directly declared reference field whose exact declared type is present in
@@ -141,8 +143,13 @@ object search with the traversal counters that say how exhaustive it was.
 - **It does not guess.** A name the metadata does not declare, a byte range the snapshot does not contain, or a shape
   outside the admitted subset produces a typed non-exact outcome with a stable diagnostic code — never a fabricated
   zero, empty string, or null.
-- **It is not a general expression evaluator.** Arithmetic, comparisons, indexers, casts, method calls, and generics
-  are outside the current subset.
+Constant expressions never read a runtime value: pure integer arithmetic folds with checked C# semantics (overflow
+and division by zero are typed stops), and a fully qualified enum member or `const` field is read from the declaring
+module's metadata Constant table in the dump — Int32-family and string constants are supported, and other constant
+types are a typed stop. Nested types and names that need import context are outside this version.
+
+- **It is not a general expression evaluator.** Arithmetic over runtime values, comparisons, indexers, casts, method
+  calls, and generics are outside the current subset.
 - **It does not read your disk to fill gaps.** Names and values come from the snapshot. A Portable PDB is consulted
   only when you offer one and only after its identity is validated against the module.
 

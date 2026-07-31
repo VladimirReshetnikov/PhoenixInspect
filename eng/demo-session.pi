@@ -71,16 +71,24 @@ echo == 7. What happens when the evidence is not there? ==
 # A name the type does not declare is a reported stop with a stable diagnostic code, not a fabricated default.
 eval root.RetryBudgetRemaining
 
-echo == 8. The same object, reached a second way. ==
+echo == 8. Constants are evidence too: metadata, not memory. ==
+
+# An enum member or a const is a literal in the module's metadata Constant table, so the snapshot can answer it
+# even though no storage slot exists. Pure integer arithmetic folds with checked C# semantics.
+eval System.DayOfWeek.Monday
+eval Contoso.OrderService.Diagnostics.ServiceState.HandoffWindowSeconds
+eval (86400 / 24) / 60
+
+echo == 9. The same object, reached a second way. ==
 
 # The dispatcher is also strongly rooted, so a bounded handle search finds it independently. The traversal counters
 # say how exhaustive that search actually was.
 objects Contoso.OrderService.Fulfillment.ShipmentDispatcher
 
-echo == 9. Where were the threads? ==
+echo == 10. Where were the threads? ==
 
 threads 8 6
 
-echo == 10. What was this session allowed to use? ==
+echo == 11. What was this session allowed to use? ==
 
 status

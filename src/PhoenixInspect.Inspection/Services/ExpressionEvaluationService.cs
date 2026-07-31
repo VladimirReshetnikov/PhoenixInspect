@@ -58,6 +58,17 @@ public static class ExpressionEvaluationService
         ArgumentNullException.ThrowIfNull(session);
         var candidates = portablePdbCandidates.IsDefault ? [] : portablePdbCandidates;
         var stopwatch = Stopwatch.StartNew();
+
+        // Constant expressions — folded integer arithmetic and metadata literal fields — are a pre-stage the
+        // frozen static-field pipeline rejects by design. A not-constant disposition falls through untouched, so
+        // every stored-field answer stays exactly what it was.
+        var constant = ConstantExpressionEvaluator.Evaluate(session, expression);
+        if (constant.Status != ConstantExpressionStatus.NotConstant)
+        {
+            stopwatch.Stop();
+            return BuildConstantReport(expression, constant, stopwatch.Elapsed);
+        }
+
         var result = contextSelector is null
             ? StaticFieldExpressionEvaluator.Evaluate(session, expression)
             : StaticFieldExpressionEvaluator.Evaluate(session, expression, contextSelector, candidates);
@@ -117,6 +128,105 @@ public static class ExpressionEvaluationService
         var outcome = DumpExpressionEvaluator.Evaluate(session, expression, rootBinding, policy, languageProfile);
         stopwatch.Stop();
         return BuildRootRelativeReport(expression, rootBinding, languageProfile, outcome, stopwatch.Elapsed);
+    }
+
+    private static EvaluationReport BuildConstantReport(
+        string expression,
+        ConstantExpressionEvaluation constant,
+        TimeSpan duration)
+    {
+        var facts = ImmutableArray.CreateBuilder<PropertyRow>();
+        facts.Add(new PropertyRow("Routing", "Entry point", "ConstantExpressionEvaluator"));
+        facts.Add(new PropertyRow(
+            "Routing",
+            "Domain",
+            "Constant expression",
+            "No runtime value is read: folded arithmetic depends on no dump evidence, and a literal field's value "
+            + "comes from the module's metadata Constant table."));
+        facts.Add(new PropertyRow(
+            "Syntax",
+            "Profile",
+            "RoslynCSharpExpressionV1",
+            "One complete pinned Roslyn C# expression parse; checked Int32 semantics for arithmetic."));
+
+        var isLiteralField = constant.FieldToken is not null;
+        if (isLiteralField)
+        {
+            facts.Add(new PropertyRow("Constant", "Module", constant.ModuleName ?? DisplayFormatting.Absent));
+            facts.Add(new PropertyRow(
+                "Constant",
+                "Metadata digest",
+                DisplayFormatting.ShortDigest(constant.ModuleContentSha256)));
+            facts.Add(new PropertyRow("Constant", "TypeDef", DisplayFormatting.Token(constant.TypeToken!.Value)));
+            facts.Add(new PropertyRow("Constant", "FieldDef", DisplayFormatting.Token(constant.FieldToken!.Value)));
+            facts.Add(new PropertyRow(
+                "Constant",
+                "Constant type code",
+                constant.UnderlyingTypeName ?? DisplayFormatting.Absent));
+        }
+
+        if (constant.ModuleCount > 0)
+        {
+            facts.Add(new PropertyRow(
+                "Constant",
+                "Modules scanned",
+                $"{DisplayFormatting.Count(constant.ModulesScanned)} of {DisplayFormatting.Count(constant.ModuleCount)}",
+                "The uniqueness claim spans the module instances whose complete metadata was exactly readable."));
+        }
+
+        if (constant.Status == ConstantExpressionStatus.Invalid)
+        {
+            return new EvaluationReport
+            {
+                Expression = expression,
+                Path = "Constant expression",
+                Severity = EvaluationSeverity.Stopped,
+                Status = "Blocked",
+                Stage = "The expression is constant-shaped but has no value under C# constant semantics",
+                Value = "No value was produced.",
+                Facts = facts.ToImmutable(),
+                Diagnostics = [new DiagnosticRow(constant.DiagnosticCode!, constant.DiagnosticMessage!)],
+                Duration = duration,
+                Sha256 = constant.Sha256,
+            };
+        }
+
+        var (value, valueKind) = constant.Kind switch
+        {
+            ConstantValueKind.EnumMember => (
+                $"{ShortTypeName(constant.EnumTypeFullName!)}.{constant.EnumMemberName} "
+                + $"({constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})",
+                $"Enum {constant.EnumTypeFullName} · underlying {constant.UnderlyingTypeName}"),
+            ConstantValueKind.String => (
+                DisplayFormatting.QuotedString(constant.StringValue!),
+                $"String constant (length {DisplayFormatting.Count(constant.StringValue!.Length)})"),
+            _ => (
+                constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture),
+                isLiteralField
+                    ? $"Int32 constant literal field ({constant.UnderlyingTypeName})"
+                    : "Int32 · checked constant folding"),
+        };
+        return new EvaluationReport
+        {
+            Expression = expression,
+            Path = "Constant expression",
+            Severity = EvaluationSeverity.Exact,
+            Status = "Exact",
+            Stage = isLiteralField
+                ? "Literal read from complete module metadata"
+                : "Folded without dump evidence",
+            Value = value,
+            ValueKind = valueKind,
+            Facts = facts.ToImmutable(),
+            Duration = duration,
+            Sha256 = constant.Sha256,
+        };
+    }
+
+    private static string ShortTypeName(string fullName)
+    {
+        var separator = fullName.LastIndexOf('.');
+        return separator >= 0 ? fullName[(separator + 1)..] : fullName;
     }
 
     private static EvaluationReport BuildStaticFieldReport(

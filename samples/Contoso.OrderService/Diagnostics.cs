@@ -12,6 +12,10 @@ namespace Contoso.OrderService.Diagnostics;
 /// </remarks>
 public static class ServiceState
 {
+    /// <summary>The contracted carrier hand-off window, in seconds.</summary>
+    /// <remarks>A const lives in metadata, not storage, so a dump can answer it even for a type never touched.</remarks>
+    public const int HandoffWindowSeconds = 30;
+
     /// <summary>The number of orders this process dispatched before it stalled.</summary>
     public static int ProcessedOrderCount;
 

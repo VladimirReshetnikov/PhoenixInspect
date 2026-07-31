@@ -43,6 +43,11 @@ phoenix> eval root.AssignedCarrier?.Name ?? "no carrier ever accepted the batch"
   [exact]    root.AssignedCarrier?.Name ?? "no carrier ever accepted the batch"
     =   "no carrier ever accepted the batch"   [String (length 34)]
 
+phoenix> eval System.DayOfWeek.Monday
+
+  [exact]    System.DayOfWeek.Monday
+    =   DayOfWeek.Monday (1)   [Enum System.DayOfWeek · underlying Int32]
+
 phoenix> eval root.RetryBudgetRemaining
 
   [stopped]  root.RetryBudgetRemaining

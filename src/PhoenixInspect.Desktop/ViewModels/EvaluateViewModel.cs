@@ -430,6 +430,14 @@ public sealed class EvaluateViewModel : ObservableObject
                 "Contextual name (needs a frame)",
                 "RequestCounters.Total",
                 ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Enum literal",
+                "System.DayOfWeek.Monday",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Constant arithmetic",
+                "(2 + 3) * 4",
+                ExpressionPath.StaticField));
             return;
         }
 

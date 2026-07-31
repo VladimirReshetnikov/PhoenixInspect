@@ -114,6 +114,15 @@ public sealed class PreviewDemoIntegrationTests
             ("root.RetryBudgetRemaining", EvaluationSeverity.Stopped, "No value was produced."),
         ];
 
+    /// <summary>The exact rendered answer the demo must produce for each constant expression.</summary>
+    private static readonly ImmutableArray<(string Expression, EvaluationSeverity Severity, string Value)>
+        ConstantExpectations =
+        [
+            ("System.DayOfWeek.Monday", EvaluationSeverity.Exact, "DayOfWeek.Monday (1)"),
+            ("Contoso.OrderService.Diagnostics.ServiceState.HandoffWindowSeconds", EvaluationSeverity.Exact, "30"),
+            ("(86400 / 24) / 60", EvaluationSeverity.Exact, "60"),
+        ];
+
     /// <summary>
     /// Proves the demo script and the expected answers describe the same session, without opening a dump.
     /// </summary>
@@ -148,6 +157,7 @@ public sealed class PreviewDemoIntegrationTests
         var expected = StaticFieldExpectations
             .Concat(ContextualExpectations)
             .Concat(RootRelativeExpectations)
+            .Concat(ConstantExpectations)
             .Select(static expectation => expectation.Expression)
             .ToImmutableArray();
 
@@ -184,6 +194,7 @@ public sealed class PreviewDemoIntegrationTests
             AssertContextualAnswers(session);
             var root = AssertRootAdoption(session);
             AssertRootRelativeAnswers(session, root);
+            AssertConstantAnswers(session);
             AssertStrongHandleSearchReachesTheSameObject(session);
             AssertStalledFrameIsNamed(session);
         }
@@ -281,6 +292,16 @@ public sealed class PreviewDemoIntegrationTests
                 RootIdentifier,
                 policy,
                 DumpExpressionLanguageProfile.MemberChainV2);
+            Assert.Equal(severity, report.Severity);
+            Assert.Equal(value, report.Value);
+        }
+    }
+
+    private static void AssertConstantAnswers(ClrmdDumpSession session)
+    {
+        foreach (var (expression, severity, value) in ConstantExpectations)
+        {
+            var report = ExpressionEvaluationService.EvaluateStaticField(session, expression, null, []);
             Assert.Equal(severity, report.Severity);
             Assert.Equal(value, report.Value);
         }
