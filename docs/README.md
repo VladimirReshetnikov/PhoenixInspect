@@ -2,6 +2,15 @@
 
 This directory contains design artifacts for the IL interpreter and dump-time evaluation project.
 
+## Start here
+
+- **Using PhoenixInspect:** [`Preview Quickstart`](preview-quickstart.md) — run the demo, open your own dump, and
+  see the exact expression subset and value domain supported today.
+- **Choosing a host:** [`Hosts`](hosts.md) — the console host and the Windows desktop shell.
+- **What has actually been proven:** [`Integration Test Plan`](proposals/integration-test-plan.md).
+
+Everything below is the design and milestone record behind those three.
+
 ## Current delivery focus
 
 The only active product target is a deterministic, read-only expression evaluator grounded in a .NET dump. The W0

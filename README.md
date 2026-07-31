@@ -524,9 +524,11 @@ For process and roadmap context:
 
 ## How to use this repository
 
-1. Use this top-level README for intent and orientation.
-2. Use `docs/README.md` as the canonical index of topics and reading paths.
-3. Read proposals in the sequence that matches your goal (product, architecture, integration, or governance).
+1. To **use** PhoenixInspect, start with the [preview quickstart](docs/preview-quickstart.md) and
+   [`Hosts`](docs/hosts.md).
+2. Use this top-level README for intent and orientation.
+3. Use `docs/README.md` as the canonical index of topics and reading paths.
+4. Read proposals in the sequence that matches your goal (product, architecture, integration, or governance).
 
 ## Contribution focus (this phase)
 
