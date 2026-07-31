@@ -20,6 +20,12 @@ namespace PhoenixInspect.Cli;
 public sealed class ConsoleRenderer
 {
     private const char Escape = (char)0x1b;
+
+    /// <summary>The column a property value starts in, which is also where its explanatory detail wraps into.</summary>
+    private const int DetailIndent = 32;
+
+    /// <summary>The width available to wrapped detail text inside a 96-column page.</summary>
+    private const int DetailWidth = 96 - DetailIndent;
     private static readonly string Reset = $"{Escape}[0m";
     private static readonly string Bold = $"{Escape}[1m";
     private static readonly string Dim = $"{Escape}[2m";
@@ -94,7 +100,13 @@ public sealed class ConsoleRenderer
             output.WriteLine($"    {Style(Pad(row.Name, 28), Dim)}{row.Value}");
             if (includeDetail && !string.IsNullOrEmpty(row.Detail))
             {
-                output.WriteLine($"    {Style(Wrap(row.Detail, 30), Dim)}");
+                // Detail is commentary about the value above it, so it wraps into the value column rather than
+                // starting a new one.
+                var indent = new string(' ', DetailIndent);
+                foreach (var line in WrapLines(row.Detail, DetailWidth))
+                {
+                    output.WriteLine($"{indent}{Style(line, Dim)}");
+                }
             }
         }
     }
@@ -217,22 +229,28 @@ public sealed class ConsoleRenderer
         return string.Join("  ", parts);
     }
 
-    private static string Wrap(string text, int indent)
+    private static List<string> WrapLines(string text, int width)
     {
-        var margin = new string(' ', indent);
         var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var lines = new List<string>();
         var current = string.Empty;
         foreach (var word in words)
         {
-            if (current.Length + word.Length + 1 > 92 - indent)
+            if (current.Length == 0)
+            {
+                // A single word longer than the column still gets its own line rather than an empty one before it.
+                current = word;
+                continue;
+            }
+
+            if (current.Length + word.Length + 1 > width)
             {
                 lines.Add(current);
                 current = word;
                 continue;
             }
 
-            current = current.Length == 0 ? word : $"{current} {word}";
+            current = $"{current} {word}";
         }
 
         if (current.Length != 0)
@@ -240,7 +258,7 @@ public sealed class ConsoleRenderer
             lines.Add(current);
         }
 
-        return string.Join(Environment.NewLine + "    " + margin, lines);
+        return lines;
     }
 
     private string Style(string text, string code) => styled ? code + text + Reset : text;

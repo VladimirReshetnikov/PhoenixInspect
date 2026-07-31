@@ -123,12 +123,21 @@ finally {
 Write-Host 'Replaying the inspection session against the dump…' -ForegroundColor Cyan
 Write-Host ''
 
-# The transcript is written without styling so it stays readable in a file, and mirrored to the console so the run is
-# watchable. The host's exit code decides the demo's exit code.
-& $consoleHost $dumpPath '--script' $SessionScript '--no-color' 2>&1 |
-    Tee-Object -FilePath $transcriptPath |
-    Write-Host
-$sessionExitCode = $LASTEXITCODE
+# The host writes UTF-8. Without this the console decodes its output using the active code page and the transcript
+# records mojibake in place of every box-drawing and punctuation character.
+$previousOutputEncoding = [Console]::OutputEncoding
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+try {
+    # The transcript is written without styling so it stays readable in a file, and mirrored to the console so the
+    # run is watchable. The host's exit code decides the demo's exit code.
+    & $consoleHost $dumpPath '--script' $SessionScript '--no-color' 2>&1 |
+        Tee-Object -FilePath $transcriptPath |
+        Write-Host
+    $sessionExitCode = $LASTEXITCODE
+}
+finally {
+    [Console]::OutputEncoding = $previousOutputEncoding
+}
 
 Write-Host ''
 Write-Host "Transcript: $transcriptPath" -ForegroundColor Cyan
