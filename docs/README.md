@@ -408,7 +408,7 @@ docs/
 | `lib/pe-pdb-reader-api-comparison.md` | Library Notes | Comparison Note | Historical · Research | Preserved pre-decision API comparison; not the active backend recommendation. |
 | `lib/source-review-deep-dive.md` | Library Notes | Source Review | Historical · Research | Preserved cross-library source review. |
 | `lib/source-tour-workbook.md` | Library Notes | Workbook | Historical · Research | Optional source-tour exercises for a future evidence-triggered backend evaluation. |
-| `internal-demo-explorer-host.md` | Product | Guide | Current · Active | Internal WPF demonstration host: what it exercises, how to run it, how to read a result honestly, its explicit non-claims, and the two supported expression-root sources. |
+| `hosts.md` | Product | Guide | Current · Active | The console and desktop hosts: what they exercise, how to run them, how to read a result honestly, their explicit non-claims, and the two supported expression-root sources. |
 | `governance/documentation-organization-proposal.md` | Governance | Policy | Current · Supporting | Lightweight information architecture, status vocabulary, and evidence-language rules. |
 | `governance/project-faq.md` | Governance | Guide | Draft · Supporting | FAQ for contributors and stakeholders about scope, expectations, and direction in the concept phase. |
 | `governance/terminology-glossary.md` | Governance | Glossary | Draft · Supporting | Canonical terminology definitions and cross-document language alignment guidance. |

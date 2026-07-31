@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Host-independent presentation layer. It projects the implemented dump-inspection and expression-evaluation
+    contracts into display-ready reports without deciding how those reports are rendered, so the WPF shell and the
+    console host show the same facts in the same vocabulary. It adds no analysis of its own: every value it reports
+    comes from a public product contract and is carried through verbatim, including status, issue, completeness,
+    evidence, bound, and diagnostic spellings.
+  -->
+  <PropertyGroup>
+    <RootNamespace>PhoenixInspect.Inspection</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PhoenixInspect.Core.Abstractions\PhoenixInspect.Core.Abstractions.csproj" />
+    <ProjectReference Include="..\PhoenixInspect.Host.Abstractions\PhoenixInspect.Host.Abstractions.csproj" />
+    <ProjectReference Include="..\PhoenixInspect.Host.Dump.ClrMD\PhoenixInspect.Host.Dump.ClrMD.csproj" />
+    <ProjectReference Include="..\PhoenixInspect.Product.DumpDebugging\PhoenixInspect.Product.DumpDebugging.csproj" />
+    <ProjectReference Include="..\PhoenixInspect.Product.DumpQuery\PhoenixInspect.Product.DumpQuery.csproj" />
+  </ItemGroup>
+
+</Project>

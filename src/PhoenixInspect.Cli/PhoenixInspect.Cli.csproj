@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The PhoenixInspect console host. It opens one dump and presents it as an inspectable session: modules, threads and
+    frames, rooted objects, and C# expressions evaluated against the values and objects the snapshot actually contains.
+    Like the desktop shell it adds no analysis of its own; it renders what PhoenixInspect.Inspection projects from the
+    public product contracts, including the status, evidence, bound, and diagnostic vocabulary of every answer.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PhoenixInspect.Cli</RootNamespace>
+    <AssemblyName>phoenixinspect</AssemblyName>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PhoenixInspect.Inspection\PhoenixInspect.Inspection.csproj" />
+  </ItemGroup>
+
+</Project>
