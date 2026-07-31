@@ -79,6 +79,12 @@ eval System.DayOfWeek.Monday
 eval Contoso.OrderService.Diagnostics.ServiceState.HandoffWindowSeconds
 eval (86400 / 24) / 60
 
+# Deterministic, culture-independent string and char operations evaluate too — ordinal search, substrings,
+# invariant case mapping. Culture-sensitive members are typed stops, never silently evaluated.
+eval ("carrier" + "-" + "handoff").ToUpperInvariant()
+eval "batch-2026-07-30-0042".Substring(6, 4)
+eval "AMS-3".Contains('-')
+
 echo == 9. The same object, reached a second way. ==
 
 # The dispatcher is also strongly rooted, so a bounded handle search finds it independently. The traversal counters

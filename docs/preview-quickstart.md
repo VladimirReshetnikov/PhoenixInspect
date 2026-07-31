@@ -121,6 +121,8 @@ subset:
 | Coalescing with a literal | `root.Member?.Member ?? "fallback"` |
 | Constant integer arithmetic | `(86400 / 24) / 60` |
 | Enum member or const field | `System.DayOfWeek.Monday` |
+| Deterministic string/char operations over constants | `("a" + "b").ToUpperInvariant()`, `"text".Contains('x')` |
+| Boolean logic and comparisons over constants | `"abc".Length > 2 && char.IsDigit('5')` |
 
 A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
 limits. Each intermediate hop must be a directly declared reference field whose exact declared type is present in
@@ -144,9 +146,17 @@ object search with the traversal counters that say how exhaustive it was.
   outside the admitted subset produces a typed non-exact outcome with a stable diagnostic code — never a fabricated
   zero, empty string, or null.
 Constant expressions never read a runtime value: pure integer arithmetic folds with checked C# semantics (overflow
-and division by zero are typed stops), and a fully qualified enum member or `const` field is read from the declaring
-module's metadata Constant table in the dump — Int32-family and string constants are supported, and other constant
-types are a typed stop. Nested types and names that need import context are outside this version.
+and division by zero are typed stops reported under their familiar exception names), and a fully qualified enum
+member or `const` field is read from the declaring module's metadata Constant table in the dump — Int32-family and
+string constants are supported, and other constant types are a typed stop. A closed allowlist of deterministic,
+stateless, culture-independent `string` and `char` members evaluates over constant operands: concatenation, ordinal
+`Contains`/`StartsWith`/`EndsWith`/`IndexOf`, `Substring`, `Trim`, `Pad`, `Insert`, `Remove`, ordinal `Replace`,
+`ToUpperInvariant`/`ToLowerInvariant`, `string.Concat`/`Join`/`IsNullOrEmpty`/`CompareOrdinal`, the `char`
+classification predicates, indexing, `Length`, equality, relational comparison, Boolean logic, and the conditional
+operator. A culture-sensitive member or overload — `ToLower()`, `IndexOf(string)` without a `StringComparison`, or a
+culture-based comparison — is a typed stop naming the deterministic alternative; `StringComparison.Ordinal` and
+`OrdinalIgnoreCase` arguments are accepted. Character classification follows the pinned analysis runtime's Unicode
+tables. Nested types and names that need import context are outside this version.
 
 - **It is not a general expression evaluator.** Arithmetic over runtime values, comparisons, indexers, casts, method
   calls, and generics are outside the current subset.

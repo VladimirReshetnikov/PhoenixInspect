@@ -121,6 +121,10 @@ public sealed class PreviewDemoIntegrationTests
             ("System.DayOfWeek.Monday", EvaluationSeverity.Exact, "DayOfWeek.Monday (1)"),
             ("Contoso.OrderService.Diagnostics.ServiceState.HandoffWindowSeconds", EvaluationSeverity.Exact, "30"),
             ("(86400 / 24) / 60", EvaluationSeverity.Exact, "60"),
+            ("(\"carrier\" + \"-\" + \"handoff\").ToUpperInvariant()",
+                EvaluationSeverity.Exact, "\"CARRIER-HANDOFF\""),
+            ("\"batch-2026-07-30-0042\".Substring(6, 4)", EvaluationSeverity.Exact, "\"2026\""),
+            ("\"AMS-3\".Contains('-')", EvaluationSeverity.Exact, "true"),
         ];
 
     /// <summary>

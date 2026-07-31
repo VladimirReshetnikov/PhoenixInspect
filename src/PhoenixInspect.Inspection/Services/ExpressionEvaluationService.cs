@@ -200,12 +200,27 @@ public static class ExpressionEvaluationService
             ConstantValueKind.String => (
                 DisplayFormatting.QuotedString(constant.StringValue!),
                 $"String constant (length {DisplayFormatting.Count(constant.StringValue!.Length)})"),
+            ConstantValueKind.Char => (
+                $"'{DisplayFormatting.QuotedString(constant.CharValue!.Value.ToString())[1..^1]}'",
+                "Char constant"),
+            ConstantValueKind.Boolean => (
+                constant.BooleanValue!.Value ? "true" : "false",
+                "Boolean constant"),
             _ => (
                 constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture),
                 isLiteralField
                     ? $"Int32 constant literal field ({constant.UnderlyingTypeName})"
                     : "Int32 · checked constant folding"),
         };
+        if (!isLiteralField && constant.MetadataLiteralsConsumed > 0)
+        {
+            facts.Add(new PropertyRow(
+                "Constant",
+                "Metadata literals consumed",
+                DisplayFormatting.Count(constant.MetadataLiteralsConsumed),
+                "Qualified names inside the expression resolved as literal fields from module metadata."));
+        }
+
         return new EvaluationReport
         {
             Expression = expression,
@@ -214,7 +229,9 @@ public static class ExpressionEvaluationService
             Status = "Exact",
             Stage = isLiteralField
                 ? "Literal read from complete module metadata"
-                : "Folded without dump evidence",
+                : constant.MetadataLiteralsConsumed > 0
+                    ? "Folded with metadata literal operands"
+                    : "Folded without dump evidence",
             Value = value,
             ValueKind = valueKind,
             Facts = facts.ToImmutable(),

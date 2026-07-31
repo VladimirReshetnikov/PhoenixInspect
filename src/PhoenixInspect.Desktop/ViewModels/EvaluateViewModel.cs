@@ -438,6 +438,10 @@ public sealed class EvaluateViewModel : ObservableObject
                 "Constant arithmetic",
                 "(2 + 3) * 4",
                 ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "String API",
+                "(\"post\" + \"-\" + \"mortem\").ToUpperInvariant()",
+                ExpressionPath.StaticField));
             return;
         }
 
