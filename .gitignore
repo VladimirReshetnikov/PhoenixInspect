@@ -3,6 +3,9 @@
 [Oo]bj/
 out/
 
+# Demo and CI run output
+artifacts/
+
 # User-specific files
 *.user
 *.rsuser
