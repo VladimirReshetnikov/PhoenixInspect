@@ -4,10 +4,18 @@
 - Read `README.md` and `docs/README.md` before making any changes.
 
 ## Current project phase
-- The project is currently in **early development stages**.
-- The main deliverables are documentation artifacts in `docs/*.md`.
-- The source code is in `src`.
+- The project is currently in **early development stages**, working toward a first public preview.
+- The primary progress signal is executable behavior: source in `src`, tests in `tests`, and the preview demo target
+  in `samples`. Documentation in `docs/*.md` is a first-class deliverable alongside it, kept just ahead of and
+  consistent with that evidence — never ahead of what the code can actually do.
+- `README.md` opens with the preview: what PhoenixInspect answers today and how to run the demo. Everything below
+  that heading is the design and milestone record. Keep both accurate.
 - Snapshots of some relevant libraries are under `lib`. They are provided as a reference to help with our design process, and should be treated as immutable. Do not add direct references to them from `src`, use corresponding NuGet packages. The set of libraries is not exhaustive; other can be used as needed.
+
+## Preview claims
+- Anything the preview documentation says the product answers must be backed by a passing test over a real dump.
+- `eng/Invoke-PreviewDemo.ps1` must keep working. The expressions in `eng/demo-session.pi` are asserted by
+  `PreviewDemoIntegrationTests`, so changing one without the other fails the fast lane by design.
 
 ## Documentation ownership and expectations
 - Continuously expand and refine the documentation set.

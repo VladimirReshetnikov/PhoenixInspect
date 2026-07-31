@@ -409,6 +409,7 @@ docs/
 | `lib/source-review-deep-dive.md` | Library Notes | Source Review | Historical · Research | Preserved cross-library source review. |
 | `lib/source-tour-workbook.md` | Library Notes | Workbook | Historical · Research | Optional source-tour exercises for a future evidence-triggered backend evaluation. |
 | `hosts.md` | Product | Guide | Current · Active | The console and desktop hosts: what they exercise, how to run them, how to read a result honestly, their explicit non-claims, and the two supported expression-root sources. |
+| `preview-quickstart.md` | Product | Guide | Current · Active | First-run guide: run the demo, open your own dump, the session model, the exact expression subset and value domain supported today, what the preview deliberately does not do, and how to read a non-exact answer. |
 | `governance/documentation-organization-proposal.md` | Governance | Policy | Current · Supporting | Lightweight information architecture, status vocabulary, and evidence-language rules. |
 | `governance/project-faq.md` | Governance | Guide | Draft · Supporting | FAQ for contributors and stakeholders about scope, expectations, and direction in the concept phase. |
 | `governance/terminology-glossary.md` | Governance | Glossary | Draft · Supporting | Canonical terminology definitions and cross-document language alignment guidance. |

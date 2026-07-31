@@ -1,8 +1,63 @@
-# PhoenixInspect: IL Interpreter & Dump-Time Evaluation
+# PhoenixInspect
 
-This repository is the **design home** for a .NET IL interpreter and a bounded, explainable system for evaluating expressions against memory dumps.
+**Post-mortem .NET inspection: open a memory dump and ask it C# questions.**
 
-If you only read one thing: this project is about making dump-time debugging workflows more evidence-backed through deterministic execution, bounded analysis, and explicit explanations when answers are partial or unknown.
+A dump is a process reduced to ashes. PhoenixInspect restores enough structure to walk through it — modules, threads
+and named frames, rooted objects — and answers C# expressions against the values and objects the snapshot actually
+contains. The resemblance to a live debugger is deliberate, because that is the shape a post-mortem user already
+thinks in. It stops at the evidence boundary: nothing is resumed, stepped, mutated, or re-executed, and an answer the
+snapshot cannot support is reported as a typed limit rather than filled in.
+
+## Try it
+
+```text
+./eng/Invoke-PreviewDemo.ps1
+```
+
+One command builds a sample order-fulfillment service, stalls it on a batch no carrier ever accepted, captures a full
+dump, and replays a narrated inspection session against that dump:
+
+```text
+phoenix> eval Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount
+
+  [exact]    Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount
+    =   84213   [Int32]
+    status  Exact  ·  Complete
+    via Static field expression  ·  31.7 ms  ·  replay 6356ea9b…ffb93a5f
+
+phoenix> root Contoso.OrderService.Diagnostics.ServiceState.Dispatcher
+  Root is Contoso.OrderService.Fulfillment.ShipmentDispatcher @ 0x000001C49700A0A8
+
+phoenix> eval root.CurrentBatch.BatchId
+
+  [exact]    root.CurrentBatch.BatchId
+    =   "batch-2026-07-30-0042"   [String (length 21)]
+
+phoenix> eval root.AssignedCarrier?.Name ?? "no carrier ever accepted the batch"
+
+  [exact]    root.AssignedCarrier?.Name ?? "no carrier ever accepted the batch"
+    =   "no carrier ever accepted the batch"   [String (length 34)]
+
+phoenix> eval root.RetryBudgetRemaining
+
+  [stopped]  root.RetryBudgetRemaining
+    =   No value was produced.
+    DUMP_FIELD_UNAVAILABLE  The requested runtime field is unavailable.
+```
+
+To open your own dump:
+
+```text
+dotnet run --project src/PhoenixInspect.Cli -- <path-to-your.dmp>
+```
+
+The [preview quickstart](docs/preview-quickstart.md) explains the session model, the exact expression subset and
+value domain supported today, what the preview deliberately does not do, and how to read a non-exact answer.
+[`Hosts`](docs/hosts.md) covers the console host and the Windows desktop shell.
+
+**This is an early preview.** The supported subset is narrow on purpose: everything the quickstart lists is backed by
+executable tests over real dumps, and nothing is listed that is not. The rest of this README is the project's design
+and evidence record.
 
 ## Project gist
 
@@ -161,12 +216,17 @@ any conflict. The removed placeholder projects are not being recreated ahead of 
   the completed W7 static-field-expression and debugger-context slice without retroactively implementing successor
   work. W6's umbrella scale is `~10K LOC` split into `~1K LOC` evidence checkpoints.
 - **Current evidence:** the Windows fixtures generate and open real dumps read-only, discover a strongly GCHandle-rooted object, validate both its handle slot and object-header method table with counted raw-memory reads, then read `Int32`, `Nullable<Int32>`, bounded/null strings, metadata, and complete tiny and compiler-emitted fat method bodies from dump memory. The MethodDef RVA, header, code, locals token, padding, and declared EH sections are dump evidence; an independently opened disk PE is a comparison oracle, never an input to the executable dump body. The query path parses each bounded expression once with the pinned complete Roslyn expression parser, admits only the versioned W2/W5/W6/W7 tree subsets, binds either a typed snapshot root or one exact static declaration, and evaluates immutable plans without reparsing or rebinding. W7 adds counted selected-frame/PDB/import context, fully qualified and contextual static binding, ordinary static scalar/string/nullable/reference storage, target validation, and unchanged W2/W6 suffix reuse. W8.1 adds pre-contract emitted TypeSpec/import/constraint/literal evidence, candidate-keyed runtime construction identity, exact strategy-specific storage facts, exact memory-homed frame roots, typed context/frame-generic non-admissions, and close/reopen replay. W8.2 now validates source ends, shared-grammar signature projection, TypeSpec graphs, FieldSig anchors, GenericParam ownership/bindings, edge aggregates, provisional type use, and Nullable topology as immutable Product proof objects. Canonical request, context, symbol, storage, plan, root-selection, and complete-result identities preserve the distinctions needed for deterministic replay. The legacy 22-case W2 corpus, W3/W4 generated-dump lanes, W6 conformance/portfolio lanes, W7's sixteen-dump/four-shape portfolio, W8.1 physical gates, and the landed W8.2 proof tests all remain passing; CoreCLR and high-level runtime reads remain late oracles, not inputs to interpreter shape, dump evidence, preparation, or execution.
-- **Physical scope:** ten source projects contain active contracts or behavior in a twenty-project solution.
+- **Physical scope:** thirteen source projects contain active contracts or behavior in a twenty-eight-project
+  solution of thirteen source, fourteen test, and one sample project.
   `PhoenixInspect.Product.DumpDebugging` owns standalone target projection, W5 expression classification/acquisition/
   evaluation, canonical rooted preparation/execution, and detached ClrMD binding without exposing live dump resources.
-  `PhoenixInspect.Headless.ReferenceConsumer` is the independently launched composition root and report runner;
-  it is not a shipping CLI contract. The earlier empty placeholders and later out-of-scope experiments remain removed,
-  and physical boundaries are still justified by executable evidence rather than speculative package maps.
+  `PhoenixInspect.Inspection` projects the implemented inspection and evaluation contracts into host-independent
+  display models, and `PhoenixInspect.Cli` and `PhoenixInspect.Wpf` are the console and desktop hosts over it;
+  neither adds analysis of its own. `PhoenixInspect.Headless.ReferenceConsumer` remains the independently launched
+  composition root and report runner for the usefulness portfolios, not a user-facing host.
+  `samples/Contoso.OrderService` is the preview demo target. The earlier empty placeholders and later
+  out-of-scope experiments remain removed, and physical boundaries are still justified by executable evidence
+  rather than speculative package maps.
 - **Primary progress signal:** executable scenarios and tests, with the design under `docs/` kept just ahead of and consistent with that evidence. This remains early-development evidence, not a production-ready evaluator or interpreter.
 
 The normative W4 contract is
