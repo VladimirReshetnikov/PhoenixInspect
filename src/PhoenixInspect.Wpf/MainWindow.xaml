@@ -7,10 +7,10 @@
         Background="{StaticResource Surface.Base}"
         TextOptions.TextFormattingMode="Ideal"
         UseLayoutRounding="True"
-        MinWidth="1200"
-        MinHeight="760"
-        Width="1560"
-        Height="940"
+        MinWidth="1180"
+        MinHeight="720"
+        Width="1380"
+        Height="860"
         WindowStartupLocation="CenterScreen"
         AllowDrop="True"
         DragOver="OnWindowDragOver"
@@ -618,8 +618,10 @@
                                        VerticalAlignment="Center"
                                        Visibility="{Binding Evaluate.HasReport, Converter={StaticResource InverseBoolToVisibility}}" />
 
-                            <DockPanel Visibility="{Binding Evaluate.HasReport, Converter={StaticResource BoolToVisibility}}"
-                                       DataContext="{Binding Evaluate}">
+                            <!-- The DataContext assignment applies to this element's own bindings, so the visibility
+                                 path is relative to the evaluation panel, not the shell. -->
+                            <DockPanel DataContext="{Binding Evaluate}"
+                                       Visibility="{Binding HasReport, Converter={StaticResource BoolToVisibility}}">
                                 <!-- Outcome banner -->
                                 <Border DockPanel.Dock="Top"
                                         Background="{StaticResource Surface.Raised}"
