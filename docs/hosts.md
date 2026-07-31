@@ -50,7 +50,8 @@ the exit code: it is a reported limit of the evidence, and the session summary c
 dotnet run --project src/PhoenixInspect.Desktop -- <path-to-dump.dmp>
 ```
 
-The path argument is optional; a dump can also be chosen through **File → Open dump…** or dropped onto the window.
+The path argument is optional; a dump can also be chosen through **File → Open dump…**, re-opened from
+**File → Open recent** (the last ten opened paths, persisted across sessions), or dropped onto the window.
 The shell is an Avalonia application built on the same UI stack as the ILSpy frontend — Dock for tool-window docking
 and AvaloniaEdit for source text — with a light color scheme built around olive, khaki, sage, and gray; peach is
 reserved for error conditions. Opening a dump itself still requires Windows because ClrMD dump loading does.

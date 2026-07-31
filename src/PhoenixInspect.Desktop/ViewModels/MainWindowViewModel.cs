@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using Dock.Model.Controls;
@@ -53,7 +54,11 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         Evaluate.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
+        LoadRecentDumps();
     }
+
+    /// <summary>The greatest number of dump paths remembered across sessions.</summary>
+    public const int MaximumRecentDumps = 10;
 
     /// <summary>Raised when the user asks to open a dump; the view shows the platform file picker.</summary>
     /// <remarks>File dialogs need a top-level window, so the view owns the picker and calls back with a path.</remarks>
@@ -82,6 +87,9 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
     /// <summary>Gets the command that closes the current dump session.</summary>
     public RelayCommand CloseDumpCommand => closeCommand;
+
+    /// <summary>Gets the most recently opened dump paths, newest first, persisted across sessions.</summary>
+    public ObservableCollection<string> RecentDumps { get; } = [];
 
     /// <inheritdoc />
     public bool IsDumpOpen => host.IsOpen;
@@ -259,6 +267,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
         DumpFileName = Path.GetFileName(dumpPath);
         DumpDirectory = Path.GetDirectoryName(dumpPath);
+        RecordRecentDump(dumpPath);
         Raise(nameof(IsDumpOpen));
         closeCommand.RaiseCanExecuteChanged();
 
@@ -309,6 +318,66 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
     /// <inheritdoc />
     public void Dispose() => host.Dispose();
+
+    private static string RecentDumpsStorePath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "PhoenixInspect",
+        "recent-dumps.txt");
+
+    private void LoadRecentDumps()
+    {
+        // The list is a convenience, never evidence: a stale entry simply reproduces the same typed open failure
+        // the path would produce anywhere else, so load errors are swallowed rather than surfaced.
+        try
+        {
+            if (!File.Exists(RecentDumpsStorePath))
+            {
+                return;
+            }
+
+            foreach (var line in File.ReadAllLines(RecentDumpsStorePath))
+            {
+                var path = line.Trim();
+                if (path.Length > 0 &&
+                    !RecentDumps.Contains(path, StringComparer.OrdinalIgnoreCase) &&
+                    RecentDumps.Count < MaximumRecentDumps)
+                {
+                    RecentDumps.Add(path);
+                }
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A broken store must never block the shell; the list simply starts empty.
+        }
+    }
+
+    private void RecordRecentDump(string dumpPath)
+    {
+        var normalized = Path.GetFullPath(dumpPath);
+        var existing = RecentDumps.FirstOrDefault(
+            entry => string.Equals(entry, normalized, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            RecentDumps.Remove(existing);
+        }
+
+        RecentDumps.Insert(0, normalized);
+        while (RecentDumps.Count > MaximumRecentDumps)
+        {
+            RecentDumps.RemoveAt(RecentDumps.Count - 1);
+        }
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(RecentDumpsStorePath)!);
+            File.WriteAllLines(RecentDumpsStorePath, RecentDumps);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Losing the persisted list is strictly less bad than failing the open that just succeeded.
+        }
+    }
 
     private void SubscribeThreadExpansion()
     {

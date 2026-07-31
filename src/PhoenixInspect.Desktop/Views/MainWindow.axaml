@@ -16,6 +16,18 @@
         <Menu DockPanel.Dock="Top" Padding="4,2">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open dump…" Command="{Binding OpenDumpCommand}" InputGesture="Ctrl+O" />
+                <MenuItem x:Name="RecentDumpsMenu"
+                          Header="Open _recent"
+                          ItemsSource="{Binding RecentDumps}"
+                          IsEnabled="{Binding !!RecentDumps.Count}"
+                          Click="OnRecentDumpClick">
+                    <MenuItem.ItemTemplate>
+                        <DataTemplate>
+                            <!-- A literal TextBlock keeps '_' in paths from being read as an access key. -->
+                            <TextBlock Text="{Binding}" FontFamily="{DynamicResource Phoenix.MonoFont}" FontSize="12" />
+                        </DataTemplate>
+                    </MenuItem.ItemTemplate>
+                </MenuItem>
                 <MenuItem Header="_Close dump" Command="{Binding CloseDumpCommand}" />
                 <Separator />
                 <MenuItem Header="E_xit" Click="OnExitClick" />
@@ -89,14 +101,9 @@
                 Padding="10,4">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Right"
-                           Text="Read-only · deterministic · budgeted"
-                           Classes="secondary"
-                           FontSize="11" />
-                <TextBlock DockPanel.Dock="Right"
-                           Text="frame context ·"
+                           Text="frame context"
                            Foreground="{DynamicResource Phoenix.AccentOliveDeep}"
                            FontSize="11"
-                           Margin="0,0,6,0"
                            ToolTip.Tip="{Binding Evaluate.ContextDescription}"
                            IsVisible="{Binding Evaluate.HasContextFrame}" />
                 <TextBlock Text="{Binding StatusMessage}"

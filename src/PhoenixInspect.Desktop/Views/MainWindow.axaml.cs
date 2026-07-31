@@ -83,5 +83,16 @@ public partial class MainWindow : Window
 
     private void OnDismissErrorClick(object? sender, RoutedEventArgs e) => model.DismissError();
 
+    private void OnRecentDumpClick(object? sender, RoutedEventArgs e)
+    {
+        // The click bubbles from a generated child item whose data context is the stored path; the parent
+        // "Open recent" item itself has the shell as its context and must not trigger an open.
+        if (e.Source is MenuItem { DataContext: string path })
+        {
+            e.Handled = true;
+            _ = model.OpenDumpAsync(path);
+        }
+    }
+
     private void OnExitClick(object? sender, RoutedEventArgs e) => Close();
 }
