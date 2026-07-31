@@ -49,6 +49,18 @@ public enum ConstantValueKind
 
     /// <summary>A Boolean, from a literal, a comparison, logic, or a deterministic predicate.</summary>
     Boolean = 5,
+
+    /// <summary>
+    /// A numeric value in any C# numeric domain other than plain <see cref="int"/>: the other fixed-size integral
+    /// types, <c>nint</c>/<c>nuint</c> (folded at 64 bits), <c>Int128</c>/<c>UInt128</c>,
+    /// <see cref="System.Numerics.BigInteger"/>, <see cref="float"/>, <see cref="double"/>, and
+    /// <see cref="decimal"/>. The exact kind is named by <see cref="ConstantExpressionEvaluation.ValueTypeName"/> and
+    /// the value by its invariant-culture text in <see cref="ConstantExpressionEvaluation.ValueText"/>.
+    /// </summary>
+    Numeric = 6,
+
+    /// <summary>An exact null, from the null literal, a lifted nullable operation, or a null dump value.</summary>
+    Null = 7,
 }
 
 /// <summary>The complete outcome of one constant-expression evaluation attempt.</summary>
@@ -60,7 +72,7 @@ public enum ConstantValueKind
 /// </remarks>
 public sealed class ConstantExpressionEvaluation
 {
-    private const string CanonicalVersion = "dump-constant-expression-v2";
+    private const string CanonicalVersion = "dump-constant-expression-v3";
 
     internal ConstantExpressionEvaluation(
         ConstantExpressionStatus status,
@@ -81,8 +93,14 @@ public sealed class ConstantExpressionEvaluation
         int moduleCount,
         int metadataLiteralsConsumed,
         string? diagnosticCode,
-        string? diagnosticMessage)
+        string? diagnosticMessage,
+        string? valueTypeName = null,
+        string? valueText = null,
+        int dumpValuesConsumed = 0)
     {
+        ValueTypeName = valueTypeName;
+        ValueText = valueText;
+        DumpValuesConsumed = dumpValuesConsumed;
         Status = status;
         Expression = expression;
         Kind = kind;
@@ -155,6 +173,21 @@ public sealed class ConstantExpressionEvaluation
 
     /// <summary>Gets how many metadata literal fields a composed expression consumed as operands.</summary>
     public int MetadataLiteralsConsumed { get; }
+
+    /// <summary>
+    /// Gets the exact numeric type name of a <see cref="ConstantValueKind.Numeric"/> result — for example
+    /// <c>Double</c>, <c>Int64</c>, <c>Decimal</c>, <c>IntPtr</c>, or <c>BigInteger</c>; otherwise null.
+    /// </summary>
+    public string? ValueTypeName { get; }
+
+    /// <summary>
+    /// Gets the invariant-culture text of a <see cref="ConstantValueKind.Numeric"/> result. IEEE-754 specials keep
+    /// their invariant spellings: <c>NaN</c>, <c>Infinity</c>, <c>-Infinity</c>, and negative zero as <c>-0</c>.
+    /// </summary>
+    public string? ValueText { get; }
+
+    /// <summary>Gets how many values extracted from the dump a composed expression consumed as operands.</summary>
+    public int DumpValuesConsumed { get; }
 
     /// <summary>Gets the stable diagnostic code for an invalid outcome; otherwise null.</summary>
     public string? DiagnosticCode { get; }
@@ -231,6 +264,9 @@ public sealed class ConstantExpressionEvaluation
         Append(builder, TypeToken?.ToString("x8", CultureInfo.InvariantCulture) ?? "none");
         Append(builder, FieldToken?.ToString("x8", CultureInfo.InvariantCulture) ?? "none");
         Append(builder, MetadataLiteralsConsumed.ToString(CultureInfo.InvariantCulture));
+        Append(builder, ValueTypeName ?? "none");
+        Append(builder, ValueText ?? "none");
+        Append(builder, DumpValuesConsumed.ToString(CultureInfo.InvariantCulture));
         Append(builder, DiagnosticCode ?? "none");
         return Convert.ToHexString(
             SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString()))).ToLowerInvariant();
@@ -267,7 +303,7 @@ public sealed class ConstantExpressionEvaluation
 /// out-of-range substring are typed stops, and no result is fabricated.
 /// </para>
 /// </remarks>
-public static class ConstantExpressionEvaluator
+public static partial class ConstantExpressionEvaluator
 {
     // Runtime-error analogues use the familiar exception type names; admission limits — members or operand
     // shapes the closed deterministic subset does not admit — keep descriptive codes because no exception
@@ -319,8 +355,12 @@ public static class ConstantExpressionEvaluator
         }
 
         // A bare qualified-name chain keeps its dedicated literal-field path so the result retains complete
-        // module and token facts; a stored static field keeps falling through to the frozen pipeline.
-        if (TryReadQualifiedName(syntax, out var nameParts))
+        // module and token facts; a stored static field keeps falling through to the frozen pipeline. A chain
+        // whose receiver is a known BCL type — 'Int32.MaxValue', 'System.Math.PI' — folds instead, because those
+        // members are type statics, not metadata literals declared in dump modules.
+        if (TryReadQualifiedName(syntax, out var nameParts) &&
+            !(syntax is MemberAccessExpressionSyntax typeStaticCandidate &&
+                TryReadTypeReceiver(typeStaticCandidate.Expression, out _)))
         {
             return session is null || nameParts.Length < 3
                 ? ConstantExpressionEvaluation.NotConstantResult(expression)
@@ -355,6 +395,8 @@ public static class ConstantExpressionEvaluator
         Char,
         String,
         Enum,
+        Numeric,
+        Null,
     }
 
     private readonly record struct Operand(
@@ -364,20 +406,36 @@ public static class ConstantExpressionEvaluator
         char Char,
         string? String,
         string? EnumTypeFullName,
-        string? EnumMemberName)
+        string? EnumMemberName,
+        NumericKind NumericKind,
+        object? Box)
     {
-        internal static Operand FromInt32(int value) => new(OperandKind.Int32, value, false, '\0', null, null, null);
+        internal static Operand FromInt32(int value) =>
+            new(OperandKind.Int32, value, false, '\0', null, null, null, NumericKind.Int32, null);
 
-        internal static Operand FromBoolean(bool value) => new(OperandKind.Boolean, 0, value, '\0', null, null, null);
+        internal static Operand FromBoolean(bool value) =>
+            new(OperandKind.Boolean, 0, value, '\0', null, null, null, default, null);
 
-        internal static Operand FromChar(char value) => new(OperandKind.Char, 0, false, value, null, null, null);
+        internal static Operand FromChar(char value) =>
+            new(OperandKind.Char, 0, false, value, null, null, null, default, null);
 
-        internal static Operand FromString(string value) => new(OperandKind.String, 0, false, '\0', value, null, null);
+        internal static Operand FromString(string value) =>
+            new(OperandKind.String, 0, false, '\0', value, null, null, default, null);
 
         internal static Operand FromEnum(int value, string typeFullName, string memberName) =>
-            new(OperandKind.Enum, value, false, '\0', null, typeFullName, memberName);
+            new(OperandKind.Enum, value, false, '\0', null, typeFullName, memberName, default, null);
 
-        internal bool IsNumeric => Kind is OperandKind.Int32 or OperandKind.Char or OperandKind.Enum;
+        // Plain Int32 stays a first-class kind so the value composes with the string/char surface unchanged;
+        // every other numeric domain rides in the boxed representation with its exact kind.
+        internal static Operand FromNumeric(NumericKind kind, object value) => kind == NumericKind.Int32
+            ? FromInt32((int)value)
+            : new(OperandKind.Numeric, 0, false, '\0', null, null, null, kind, value);
+
+        internal static Operand Null() =>
+            new(OperandKind.Null, 0, false, '\0', null, null, null, default, null);
+
+        internal bool IsNumeric =>
+            Kind is OperandKind.Int32 or OperandKind.Char or OperandKind.Enum or OperandKind.Numeric;
 
         internal int AsInt32 => Kind switch
         {
@@ -419,7 +477,9 @@ public static class ConstantExpressionEvaluator
         bool? boolean = null;
         string? enumType = null;
         string? enumMember = null;
-        string underlying;
+        string? valueTypeName = null;
+        string? valueText = null;
+        string? underlying;
         switch (operand.Kind)
         {
             case OperandKind.Int32:
@@ -441,6 +501,17 @@ public static class ConstantExpressionEvaluator
                 kind = ConstantValueKind.Boolean;
                 boolean = operand.Boolean;
                 underlying = "Boolean";
+                break;
+            case OperandKind.Numeric:
+                kind = ConstantValueKind.Numeric;
+                valueTypeName = operand.NumericKind.ToString();
+                valueText = FormatNumeric(operand.NumericKind, operand.Box!);
+                underlying = valueTypeName;
+                break;
+            case OperandKind.Null:
+                kind = ConstantValueKind.Null;
+                valueText = "null";
+                underlying = null;
                 break;
             default:
                 kind = ConstantValueKind.EnumMember;
@@ -469,7 +540,9 @@ public static class ConstantExpressionEvaluator
             moduleCount: 0,
             context.MetadataLiteralsConsumed,
             diagnosticCode: null,
-            diagnosticMessage: null);
+            diagnosticMessage: null,
+            valueTypeName,
+            valueText);
     }
 
     private static FoldOutcome Fold(ExpressionSyntax syntax, FoldContext context)
@@ -486,6 +559,8 @@ public static class ConstantExpressionEvaluator
                 return FoldBinary(binary, context);
             case ConditionalExpressionSyntax conditional:
                 return FoldConditional(conditional, context);
+            case CastExpressionSyntax cast:
+                return FoldCast(cast, context);
             case ElementAccessExpressionSyntax elementAccess:
                 return FoldElementAccess(elementAccess, context);
             case MemberAccessExpressionSyntax memberAccess:
@@ -501,11 +576,26 @@ public static class ConstantExpressionEvaluator
     {
         if (literal.IsKind(SyntaxKind.NumericLiteralExpression))
         {
-            return literal.Token.Value is int value
-                ? FoldOutcome.Folded(Operand.FromInt32(value))
-                : FoldOutcome.Error(
+            // The literal's own C# type is kept: 5 is Int32, 5u UInt32, 5L Int64, 5UL UInt64, 5f Single,
+            // 5.0 Double, 5m Decimal.
+            return literal.Token.Value switch
+            {
+                int value => FoldOutcome.Folded(Operand.FromInt32(value)),
+                uint value => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.UInt32, value)),
+                long value => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Int64, value)),
+                ulong value => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.UInt64, value)),
+                float value => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, value)),
+                double value => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Double, value)),
+                decimal value => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Decimal, value)),
+                _ => FoldOutcome.Error(
                     LiteralTypeUnsupportedCode,
-                    "Only Int32 numeric literals participate in constant folding.");
+                    "The numeric literal's type is outside the supported numeric domains."),
+            };
+        }
+
+        if (literal.IsKind(SyntaxKind.NullLiteralExpression))
+        {
+            return FoldOutcome.Folded(Operand.Null());
         }
 
         if (literal.IsKind(SyntaxKind.StringLiteralExpression) && literal.Token.Value is string text)
@@ -533,12 +623,17 @@ public static class ConstantExpressionEvaluator
 
     private static FoldOutcome FoldUnary(PrefixUnaryExpressionSyntax unary, FoldContext context)
     {
-        // C# admits -2147483648 even though 2147483648 alone overflows Int32, so the exact spelling is
-        // special-cased before the operand is folded.
-        if (unary.IsKind(SyntaxKind.UnaryMinusExpression) &&
-            unary.Operand is LiteralExpressionSyntax { Token.Value: 2147483648u })
+        // C# admits -2147483648 and -9223372036854775808 even though the bare magnitudes overflow their signed
+        // types, so the exact spellings are special-cased before the operand is folded.
+        if (unary.IsKind(SyntaxKind.UnaryMinusExpression))
         {
-            return FoldOutcome.Folded(Operand.FromInt32(int.MinValue));
+            switch (unary.Operand)
+            {
+                case LiteralExpressionSyntax { Token.Value: 2147483648u }:
+                    return FoldOutcome.Folded(Operand.FromInt32(int.MinValue));
+                case LiteralExpressionSyntax { Token.Value: 9223372036854775808ul }:
+                    return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Int64, long.MinValue));
+            }
         }
 
         var operand = Fold(unary.Operand, context);
@@ -554,26 +649,24 @@ public static class ConstantExpressionEvaluator
                 : FoldOutcome.Error(OperandTypeCode, "Logical negation requires one Boolean operand.");
         }
 
-        if (!operand.Operand.IsNumeric)
+        if (unary.Kind() is not (SyntaxKind.UnaryPlusExpression or SyntaxKind.UnaryMinusExpression
+            or SyntaxKind.BitwiseNotExpression))
         {
-            return FoldOutcome.Error(OperandTypeCode, "Unary arithmetic requires one Int32-valued operand.");
+            return FoldOutcome.NotArithmetic();
         }
 
-        var value = operand.Operand.AsInt32;
-        try
+        // Lifted unary arithmetic: an operand that is exactly null yields exactly null.
+        if (operand.Operand.Kind == OperandKind.Null)
         {
-            return unary.Kind() switch
-            {
-                SyntaxKind.UnaryPlusExpression => FoldOutcome.Folded(Operand.FromInt32(value)),
-                SyntaxKind.UnaryMinusExpression => FoldOutcome.Folded(Operand.FromInt32(checked(-value))),
-                SyntaxKind.BitwiseNotExpression => FoldOutcome.Folded(Operand.FromInt32(~value)),
-                _ => FoldOutcome.NotArithmetic(),
-            };
+            return FoldOutcome.Folded(Operand.Null());
         }
-        catch (OverflowException)
+
+        if (!operand.Operand.IsNumeric)
         {
-            return Overflow();
+            return FoldOutcome.Error(OperandTypeCode, "Unary arithmetic requires one numeric operand.");
         }
+
+        return ComputeNumericUnary(unary.Kind(), operand.Operand);
     }
 
     private static FoldOutcome FoldBinary(BinaryExpressionSyntax binary, FoldContext context)
@@ -587,7 +680,7 @@ public static class ConstantExpressionEvaluator
             SyntaxKind.EqualsExpression or SyntaxKind.NotEqualsExpression or SyntaxKind.LessThanExpression or
             SyntaxKind.LessThanOrEqualExpression or SyntaxKind.GreaterThanExpression or
             SyntaxKind.GreaterThanOrEqualExpression or SyntaxKind.LogicalAndExpression or
-            SyntaxKind.LogicalOrExpression))
+            SyntaxKind.LogicalOrExpression or SyntaxKind.CoalesceExpression))
         {
             return FoldOutcome.NotArithmetic();
         }
@@ -606,6 +699,16 @@ public static class ConstantExpressionEvaluator
 
         var leftOperand = left.Operand;
         var rightOperand = right.Operand;
+
+        if (kind == SyntaxKind.CoalesceExpression)
+        {
+            return FoldOutcome.Folded(leftOperand.Kind == OperandKind.Null ? rightOperand : leftOperand);
+        }
+
+        if (leftOperand.Kind == OperandKind.Null || rightOperand.Kind == OperandKind.Null)
+        {
+            return FoldNullLifted(kind, leftOperand, rightOperand);
+        }
 
         if (kind == SyntaxKind.AddExpression &&
             (leftOperand.Kind == OperandKind.String || rightOperand.Kind == OperandKind.String))
@@ -639,20 +742,23 @@ public static class ConstantExpressionEvaluator
                 (OperandKind.String, OperandKind.String) =>
                     string.Equals(leftOperand.String, rightOperand.String, StringComparison.Ordinal),
                 (OperandKind.Boolean, OperandKind.Boolean) => leftOperand.Boolean == rightOperand.Boolean,
-                _ when leftOperand.IsNumeric && rightOperand.IsNumeric =>
-                    leftOperand.AsInt32 == rightOperand.AsInt32,
                 _ => null,
             };
-            if (equal is null)
+            if (equal is { } known)
             {
-                return FoldOutcome.Error(
-                    OperandTypeCode,
-                    "Equality requires two string, two Boolean, or two Int32-valued constant operands.");
+                return FoldOutcome.Folded(Operand.FromBoolean(kind == SyntaxKind.EqualsExpression
+                    ? known
+                    : !known));
             }
 
-            return FoldOutcome.Folded(Operand.FromBoolean(kind == SyntaxKind.EqualsExpression
-                ? equal.Value
-                : !equal.Value));
+            if (leftOperand.IsNumeric && rightOperand.IsNumeric)
+            {
+                return ComputeNumericComparison(kind, leftOperand, rightOperand);
+            }
+
+            return FoldOutcome.Error(
+                OperandTypeCode,
+                "Equality requires two string, two Boolean, or two numeric constant operands.");
         }
 
         if (kind is SyntaxKind.LessThanExpression or SyntaxKind.LessThanOrEqualExpression or
@@ -662,51 +768,51 @@ public static class ConstantExpressionEvaluator
             {
                 return FoldOutcome.Error(
                     OperandTypeCode,
-                    "Relational comparison requires Int32-valued constant operands.");
+                    "Relational comparison requires numeric constant operands.");
             }
 
-            var comparison = leftOperand.AsInt32.CompareTo(rightOperand.AsInt32);
-            return FoldOutcome.Folded(Operand.FromBoolean(kind switch
-            {
-                SyntaxKind.LessThanExpression => comparison < 0,
-                SyntaxKind.LessThanOrEqualExpression => comparison <= 0,
-                SyntaxKind.GreaterThanExpression => comparison > 0,
-                _ => comparison >= 0,
-            }));
+            return ComputeNumericComparison(kind, leftOperand, rightOperand);
         }
 
         if (!leftOperand.IsNumeric || !rightOperand.IsNumeric)
         {
-            return FoldOutcome.Error(OperandTypeCode, "Arithmetic requires Int32-valued constant operands.");
+            return FoldOutcome.Error(OperandTypeCode, "Arithmetic requires numeric constant operands.");
         }
 
-        var leftValue = leftOperand.AsInt32;
-        var rightValue = rightOperand.AsInt32;
-        if (kind is SyntaxKind.DivideExpression or SyntaxKind.ModuloExpression && rightValue == 0)
+        return ComputeBinaryNumeric(kind, leftOperand, rightOperand);
+    }
+
+    private static FoldOutcome FoldNullLifted(SyntaxKind kind, Operand left, Operand right)
+    {
+        // Concatenating null contributes an empty string, exactly as string concatenation defines.
+        if (kind == SyntaxKind.AddExpression &&
+            (left.Kind == OperandKind.String || right.Kind == OperandKind.String))
         {
-            return FoldOutcome.Error(DivisionByZeroCode, "The constant expression divides by zero.");
+            return FoldOutcome.Folded(Operand.FromString(
+                (left.Kind == OperandKind.String ? left.String : string.Empty) +
+                (right.Kind == OperandKind.String ? right.String : string.Empty)));
         }
 
-        try
+        switch (kind)
         {
-            return FoldOutcome.Folded(Operand.FromInt32(kind switch
-            {
-                SyntaxKind.AddExpression => checked(leftValue + rightValue),
-                SyntaxKind.SubtractExpression => checked(leftValue - rightValue),
-                SyntaxKind.MultiplyExpression => checked(leftValue * rightValue),
-                SyntaxKind.DivideExpression => checked(leftValue / rightValue),
-                SyntaxKind.ModuloExpression => leftValue % rightValue,
-                SyntaxKind.BitwiseAndExpression => leftValue & rightValue,
-                SyntaxKind.BitwiseOrExpression => leftValue | rightValue,
-                SyntaxKind.ExclusiveOrExpression => leftValue ^ rightValue,
-                SyntaxKind.LeftShiftExpression => leftValue << rightValue,
-                SyntaxKind.RightShiftExpression => leftValue >> rightValue,
-                _ => leftValue >>> rightValue,
-            }));
-        }
-        catch (OverflowException)
-        {
-            return Overflow();
+            case SyntaxKind.EqualsExpression:
+                return FoldOutcome.Folded(Operand.FromBoolean(
+                    left.Kind == OperandKind.Null && right.Kind == OperandKind.Null));
+            case SyntaxKind.NotEqualsExpression:
+                return FoldOutcome.Folded(Operand.FromBoolean(
+                    left.Kind != OperandKind.Null || right.Kind != OperandKind.Null));
+            case SyntaxKind.LessThanExpression:
+            case SyntaxKind.LessThanOrEqualExpression:
+            case SyntaxKind.GreaterThanExpression:
+            case SyntaxKind.GreaterThanOrEqualExpression:
+                // A lifted comparison with a null operand is false, never null.
+                return FoldOutcome.Folded(Operand.FromBoolean(false));
+            case SyntaxKind.LogicalAndExpression:
+            case SyntaxKind.LogicalOrExpression:
+                return FoldOutcome.Error(OperandTypeCode, "Logical operators require Boolean constant operands.");
+            default:
+                // Lifted arithmetic: a null operand yields exactly null, and no operand error is fabricated.
+                return FoldOutcome.Folded(Operand.Null());
         }
     }
 
@@ -738,7 +844,10 @@ public static class ConstantExpressionEvaluator
 
         var selected = condition.Operand.Boolean ? whenTrue.Operand : whenFalse.Operand;
         var other = condition.Operand.Boolean ? whenFalse.Operand : whenTrue.Operand;
-        if (selected.Kind == other.Kind || (selected.IsNumeric && other.IsNumeric))
+        if (selected.Kind == other.Kind ||
+            (selected.IsNumeric && other.IsNumeric) ||
+            selected.Kind == OperandKind.Null ||
+            other.Kind == OperandKind.Null)
         {
             return FoldOutcome.Folded(selected);
         }
@@ -834,12 +943,10 @@ public static class ConstantExpressionEvaluator
                 return operand;
             }
 
-            if (!operand.Operand.IsNumeric)
+            if (!TryImplicitInt32(operand.Operand, out var fromEndValue))
             {
                 return FoldOutcome.Error(OperandTypeCode, "A from-end index must be an Int32 constant.");
             }
-
-            var fromEndValue = operand.Operand.AsInt32;
             if (fromEndValue < 0)
             {
                 return FoldOutcome.Error(
@@ -856,40 +963,32 @@ public static class ConstantExpressionEvaluator
             return folded;
         }
 
-        if (!folded.Operand.IsNumeric)
+        if (!TryImplicitInt32(folded.Operand, out var offset))
         {
             return FoldOutcome.Error(OperandTypeCode, "A string index must be an Int32 constant.");
         }
 
-        return FoldOutcome.Folded(Operand.FromInt32(folded.Operand.AsInt32));
+        return FoldOutcome.Folded(Operand.FromInt32(offset));
     }
 
     private static FoldOutcome FoldMemberAccess(MemberAccessExpressionSyntax memberAccess, FoldContext context)
     {
-        // A pure qualified-name chain is a metadata literal candidate; a stored static field stays not-constant.
-        if (TryReadQualifiedName(memberAccess, out var parts))
-        {
-            return FoldQualifiedName(parts, context);
-        }
-
         if (memberAccess.Name is not IdentifierNameSyntax member)
         {
             return FoldOutcome.NotArithmetic();
         }
 
+        // A known type receiver wins over the metadata-literal path so 'Math.PI' or 'double.NaN' never triggers a
+        // module scan; every other pure qualified-name chain is a metadata literal candidate, and a stored static
+        // field stays not-constant.
         if (TryReadTypeReceiver(memberAccess.Expression, out var typeReceiver))
         {
-            return (typeReceiver, member.Identifier.ValueText) switch
-            {
-                (KnownType.String, "Empty") => FoldOutcome.Folded(Operand.FromString(string.Empty)),
-                (KnownType.Char, "MaxValue") => FoldOutcome.Folded(Operand.FromChar(char.MaxValue)),
-                (KnownType.Char, "MinValue") => FoldOutcome.Folded(Operand.FromChar(char.MinValue)),
-                (KnownType.Int32, "MaxValue") => FoldOutcome.Folded(Operand.FromInt32(int.MaxValue)),
-                (KnownType.Int32, "MinValue") => FoldOutcome.Folded(Operand.FromInt32(int.MinValue)),
-                _ => FoldOutcome.Error(
-                    MemberUnsupportedCode,
-                    $"'{member.Identifier.ValueText}' is not an admitted deterministic constant member."),
-            };
+            return DispatchTypeStatic(typeReceiver, member.Identifier.ValueText);
+        }
+
+        if (TryReadQualifiedName(memberAccess, out var parts))
+        {
+            return FoldQualifiedName(parts, context);
         }
 
         var receiver = Fold(memberAccess.Expression, context);
@@ -935,67 +1034,6 @@ public static class ConstantExpressionEvaluator
         }
     }
 
-    private enum KnownType
-    {
-        String,
-        Char,
-        Int32,
-    }
-
-    private static bool TryReadTypeReceiver(ExpressionSyntax expression, out KnownType type)
-    {
-        type = KnownType.String;
-        switch (expression)
-        {
-            case PredefinedTypeSyntax predefined:
-                switch (predefined.Keyword.Kind())
-                {
-                    case SyntaxKind.StringKeyword:
-                        type = KnownType.String;
-                        return true;
-                    case SyntaxKind.CharKeyword:
-                        type = KnownType.Char;
-                        return true;
-                    case SyntaxKind.IntKeyword:
-                        type = KnownType.Int32;
-                        return true;
-                    default:
-                        return false;
-                }
-
-            case IdentifierNameSyntax identifier:
-                return TryMapTypeName(identifier.Identifier.ValueText, out type);
-            case MemberAccessExpressionSyntax
-            {
-                RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
-                Expression: IdentifierNameSyntax { Identifier.ValueText: "System" },
-                Name: IdentifierNameSyntax nested,
-            }:
-                return TryMapTypeName(nested.Identifier.ValueText, out type);
-            default:
-                return false;
-        }
-    }
-
-    private static bool TryMapTypeName(string name, out KnownType type)
-    {
-        switch (name)
-        {
-            case "String":
-                type = KnownType.String;
-                return true;
-            case "Char":
-                type = KnownType.Char;
-                return true;
-            case "Int32":
-                type = KnownType.Int32;
-                return true;
-            default:
-                type = KnownType.String;
-                return false;
-        }
-    }
-
     private static FoldOutcome FoldInvocation(InvocationExpressionSyntax invocation, FoldContext context)
     {
         if (invocation.Expression is not MemberAccessExpressionSyntax
@@ -1028,11 +1066,12 @@ public static class ConstantExpressionEvaluator
         var name = method.Identifier.ValueText;
         if (TryReadTypeReceiver(receiverExpression, out var typeReceiver))
         {
-            return typeReceiver switch
+            return typeReceiver.Category switch
             {
-                KnownType.String => DispatchStaticString(name, arguments),
-                KnownType.Char => DispatchStaticChar(name, arguments),
-                _ => MemberUnsupported(name),
+                TypeReceiverCategory.String => DispatchStaticString(name, arguments),
+                TypeReceiverCategory.Char => DispatchStaticChar(name, arguments),
+                TypeReceiverCategory.Math => DispatchMath(name, arguments),
+                _ => DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments),
             };
         }
 
@@ -1042,11 +1081,28 @@ public static class ConstantExpressionEvaluator
             return receiver;
         }
 
+        // Every numeric ToString evaluates under the invariant culture, with or without a format string, so the
+        // answer never depends on the analysis machine's regional settings.
+        if (name == "ToString" &&
+            receiver.Operand.Kind is OperandKind.Int32 or OperandKind.Numeric)
+        {
+            switch (arguments)
+            {
+                case []:
+                    return NumericToString(receiver.Operand, format: null);
+                case [{ Kind: OperandKind.String } format]:
+                    return NumericToString(receiver.Operand, format.String);
+            }
+        }
+
         return receiver.Operand.Kind switch
         {
             OperandKind.String => DispatchInstanceString(receiver.Operand.String!, name, arguments),
             OperandKind.Char => name == "ToString" && arguments.Count == 0
                 ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.Char.ToString()))
+                : MemberUnsupported(name),
+            OperandKind.Boolean => name == "ToString" && arguments.Count == 0
+                ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.Boolean ? "True" : "False"))
                 : MemberUnsupported(name),
             OperandKind.Enum => name == "ToString" && arguments.Count == 0
                 ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.EnumMemberName!))
@@ -1312,9 +1368,6 @@ public static class ConstantExpressionEvaluator
             MemberUnsupportedCode,
             $"'{member}' is not an admitted deterministic constant member.");
 
-    private static FoldOutcome Overflow() =>
-        FoldOutcome.Error(OverflowCode, "The constant expression overflows Int32 under checked evaluation.");
-
     private static bool TryConcatOperand(Operand operand, out string text)
     {
         switch (operand.Kind)
@@ -1324,6 +1377,19 @@ public static class ConstantExpressionEvaluator
                 return true;
             case OperandKind.Char:
                 text = operand.Char.ToString();
+                return true;
+            case OperandKind.Int32:
+            case OperandKind.Numeric:
+                text = FormatNumeric(NumericKindOf(operand), BoxOf(operand));
+                return true;
+            case OperandKind.Boolean:
+                text = operand.Boolean ? "True" : "False";
+                return true;
+            case OperandKind.Enum:
+                text = operand.EnumMemberName!;
+                return true;
+            case OperandKind.Null:
+                text = string.Empty;
                 return true;
             default:
                 text = string.Empty;

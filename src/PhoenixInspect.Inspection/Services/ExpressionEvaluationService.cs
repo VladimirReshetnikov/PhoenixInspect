@@ -206,6 +206,12 @@ public static class ExpressionEvaluationService
             ConstantValueKind.Boolean => (
                 constant.BooleanValue!.Value ? "true" : "false",
                 "Boolean constant"),
+            ConstantValueKind.Numeric => (
+                constant.ValueText!,
+                $"{constant.ValueTypeName} constant"),
+            ConstantValueKind.Null => (
+                "null",
+                "Exactly null"),
             _ => (
                 constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture),
                 isLiteralField

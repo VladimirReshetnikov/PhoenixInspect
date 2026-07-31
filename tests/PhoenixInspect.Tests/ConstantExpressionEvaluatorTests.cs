@@ -46,6 +46,20 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("(\"ab\" + \"cd\").Length * 2", 8)]
     [InlineData("true ? 1 : 2", 1)]
     [InlineData("false ? 1 : 2", 2)]
+    [InlineData("(int)3.99", 3)]
+    [InlineData("(int)(-3.99)", -3)]
+    [InlineData("(int)2.5m", 2)]
+    [InlineData("(int)'a'", 97)]
+    [InlineData("(int)(long)5", 5)]
+    [InlineData("(byte)200 + (byte)100", 300)]
+    [InlineData("Math.Abs(-7)", 7)]
+    [InlineData("Math.Max(2, 3)", 3)]
+    [InlineData("Math.Clamp(10, 1, 5)", 5)]
+    [InlineData("Math.Sign(-9)", -1)]
+    [InlineData("Math.ILogB(1024.0)", 10)]
+    [InlineData("null ?? 2", 2)]
+    [InlineData("1 ?? 2", 1)]
+    [InlineData("(int?)5 + 3", 8)]
     public void Integer_results_fold_exactly(string expression, int expected)
     {
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
@@ -101,6 +115,21 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("\"abcdef\"[(1 + 1)..(2 * 2)]", "cd")]
     [InlineData("(\"prefix-\" + \"payload\")[7..]", "payload")]
     [InlineData("\"batch-2026-07-30-0042\"[6..^5].ToUpperInvariant()", "2026-07-30")]
+    [InlineData("\"a\" + 1", "a1")]
+    [InlineData("\"n=\" + 2.5", "n=2.5")]
+    [InlineData("\"\" + true", "True")]
+    [InlineData("null + \"x\"", "x")]
+    [InlineData("true.ToString()", "True")]
+    [InlineData("(1.0 / 0.0).ToString()", "Infinity")]
+    [InlineData("(-1.0 / 0.0).ToString()", "-Infinity")]
+    [InlineData("(0.0 / 0.0).ToString()", "NaN")]
+    [InlineData("(-0.0).ToString()", "-0")]
+    [InlineData("(0.1 + 0.2).ToString()", "0.30000000000000004")]
+    [InlineData("(1e21).ToString()", "1E+21")]
+    [InlineData("(255).ToString(\"X4\")", "00FF")]
+    [InlineData("(3.14159).ToString(\"F2\")", "3.14")]
+    [InlineData("(1234567.891).ToString(\"N2\")", "1,234,567.89")]
+    [InlineData("12.5m.ToString()", "12.5")]
     public void String_results_evaluate_exactly(string expression, string expected)
     {
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
@@ -150,6 +179,25 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("char.IsAsciiHexDigit('F')", true)]
     [InlineData("\"abc\".Length > 2", true)]
     [InlineData("\"abc\"[1] == 'b'", true)]
+    [InlineData("0.1 + 0.2 == 0.3", false)]
+    [InlineData("0.1 + 0.2 > 0.3", true)]
+    [InlineData("double.NaN == double.NaN", false)]
+    [InlineData("double.NaN != double.NaN", true)]
+    [InlineData("double.IsNaN(0.0 / 0.0)", true)]
+    [InlineData("double.IsPositiveInfinity(1.0 / 0.0)", true)]
+    [InlineData("double.IsNegative(-0.0)", true)]
+    [InlineData("double.IsFinite(1.0 / 0.0)", false)]
+    [InlineData("float.IsNaN(0f / 0f)", true)]
+    [InlineData("1 == 1.0", true)]
+    [InlineData("1.0f == 1.0", true)]
+    [InlineData("2m == 2.0m", true)]
+    [InlineData("(nint)4 == 4", true)]
+    [InlineData("1UL < 2", true)]
+    [InlineData("BigInteger.Pow(2, 64) > ulong.MaxValue", true)]
+    [InlineData("null == null", true)]
+    [InlineData("\"a\" == null", false)]
+    [InlineData("(int?)null == null", true)]
+    [InlineData("5 > null", false)]
     public void Boolean_results_evaluate_exactly(string expression, bool expected)
     {
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
@@ -205,9 +253,29 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("\"abc\"[^(-1)..]", "System.ArgumentOutOfRangeException")]
     [InlineData("1[0..1]", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("\"abc\"[\"x\"..]", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
-    [InlineData("2147483648", "CONSTANT_LITERAL_TYPE_UNSUPPORTED")]
-    [InlineData("1.5 + 2", "CONSTANT_LITERAL_TYPE_UNSUPPORTED")]
-    [InlineData("1L + 2", "CONSTANT_LITERAL_TYPE_UNSUPPORTED")]
+    [InlineData("(byte)300", "System.OverflowException")]
+    [InlineData("(int)1e300", "System.OverflowException")]
+    [InlineData("(int)double.NaN", "System.OverflowException")]
+    [InlineData("(long)ulong.MaxValue", "System.OverflowException")]
+    [InlineData("(char)(-1)", "System.OverflowException")]
+    [InlineData("decimal.MaxValue + 1m", "System.OverflowException")]
+    [InlineData("(decimal)double.NaN", "System.OverflowException")]
+    [InlineData("long.MaxValue + 1", "System.OverflowException")]
+    [InlineData("Int128.MaxValue + 1", "System.OverflowException")]
+    [InlineData("10m / 0m", "System.DivideByZeroException")]
+    [InlineData("1L / 0", "System.DivideByZeroException")]
+    [InlineData("Math.Sign(0.0 / 0.0)", "System.ArithmeticException")]
+    [InlineData("BigInteger.Parse(\"abc\")", "System.FormatException")]
+    [InlineData("(1.5).ToString(\"Q9\")", "System.FormatException")]
+    [InlineData("Math.ReciprocalEstimate(2.0)", "CONSTANT_MEMBER_UNSUPPORTED")]
+    [InlineData("Math.Sqrt(2m)", "CONSTANT_MEMBER_UNSUPPORTED")]
+    [InlineData("1m + 0.5", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("1.5 & 2", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("-1 + 1UL", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("-(1UL)", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("(bool)1", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("(int)\"5\"", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("(int)null", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("\"abc\".ToLower()", "CONSTANT_CULTURE_SENSITIVE_UNSUPPORTED")]
     [InlineData("\"abc\".ToUpper()", "CONSTANT_CULTURE_SENSITIVE_UNSUPPORTED")]
     [InlineData("\"abc\".IndexOf(\"b\")", "CONSTANT_CULTURE_SENSITIVE_UNSUPPORTED")]
@@ -218,7 +286,6 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("\"abc\".Split('b')", "CONSTANT_MEMBER_UNSUPPORTED")]
     [InlineData("\"abc\".NoSuchMethod()", "CONSTANT_MEMBER_UNSUPPORTED")]
     [InlineData("string.Format(\"{0}\", \"x\")", "CONSTANT_MEMBER_UNSUPPORTED")]
-    [InlineData("\"a\" + 1", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("true + 1", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("\"a\" < \"b\"", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("!1", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
@@ -252,13 +319,113 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("root.GetMarkerSummary()")]
     [InlineData("root.Name.ToUpperInvariant()")]
     [InlineData("x.Length")]
-    [InlineData("1 ?? 2")]
+    [InlineData("(SomeUnknownType)1")]
     [InlineData("checked(1 + 2)")]
     public void Everything_else_is_not_constant(string? expression)
     {
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
         Assert.Equal(ConstantExpressionStatus.NotConstant, result.Status);
         Assert.Null(result.Int32Value);
+        Assert.Null(result.DiagnosticCode);
+    }
+
+    /// <summary>
+    /// Proves the wider numeric tower folds with C# promotion, checked conversion, and IEEE-754 semantics: every
+    /// fixed-size type, <c>nint</c>/<c>nuint</c> at 64 bits, <c>Int128</c>/<c>UInt128</c>, <c>BigInteger</c>,
+    /// <c>float</c>/<c>double</c> with signed zero, infinities, and NaN, and <c>decimal</c> with exact scale.
+    /// </summary>
+    /// <param name="expression">The constant expression to fold.</param>
+    /// <param name="expectedTypeName">The exact numeric kind the C# rules assign to the result.</param>
+    /// <param name="expectedText">The invariant-culture text of the exact value.</param>
+    [Theory]
+    [InlineData("1.5 + 2", "Double", "3.5")]
+    [InlineData("1L + 2", "Int64", "3")]
+    [InlineData("2147483648", "UInt32", "2147483648")]
+    [InlineData("10 / 4.0", "Double", "2.5")]
+    [InlineData("(double)1 / 3", "Double", "0.3333333333333333")]
+    [InlineData("0.1 + 0.2", "Double", "0.30000000000000004")]
+    [InlineData("1.0 / 0.0", "Double", "Infinity")]
+    [InlineData("-1.0 / 0.0", "Double", "-Infinity")]
+    [InlineData("0.0 / 0.0", "Double", "NaN")]
+    [InlineData("-0.0", "Double", "-0")]
+    [InlineData("1e300 * 1e300", "Double", "Infinity")]
+    [InlineData("7 % 2.5", "Double", "2")]
+    [InlineData("1f / 4", "Single", "0.25")]
+    [InlineData("(float)0.1", "Single", "0.1")]
+    [InlineData("float.MaxValue * 2f", "Single", "Infinity")]
+    [InlineData("10m / 4", "Decimal", "2.5")]
+    [InlineData("0.1m + 0.2m", "Decimal", "0.3")]
+    [InlineData("1m + 2", "Decimal", "3")]
+    [InlineData("(decimal)0.1", "Decimal", "0.1")]
+    [InlineData("10.5m % 3", "Decimal", "1.5")]
+    [InlineData("Math.Abs(-1.5m)", "Decimal", "1.5")]
+    [InlineData("Math.Floor(-2.5m)", "Decimal", "-3")]
+    [InlineData("3 * 1000000000L", "Int64", "3000000000")]
+    [InlineData("(long)int.MaxValue + 1", "Int64", "2147483648")]
+    [InlineData("-9223372036854775808", "Int64", "-9223372036854775808")]
+    [InlineData("long.MaxValue", "Int64", "9223372036854775807")]
+    [InlineData("uint.MaxValue + 1", "Int64", "4294967296")]
+    [InlineData("ulong.MaxValue", "UInt64", "18446744073709551615")]
+    [InlineData("5UL + 5", "UInt64", "10")]
+    [InlineData("(uint)15", "UInt32", "15")]
+    [InlineData("(ushort)65535", "UInt16", "65535")]
+    [InlineData("(sbyte)-5", "SByte", "-5")]
+    [InlineData("(short)1000", "Int16", "1000")]
+    [InlineData("(nint)5 + 3", "IntPtr", "8")]
+    [InlineData("(nuint)5 * 2", "UIntPtr", "10")]
+    [InlineData("nint.MaxValue", "IntPtr", "9223372036854775807")]
+    [InlineData("(Int128)long.MaxValue + 1", "Int128", "9223372036854775808")]
+    [InlineData("Int128.MaxValue", "Int128", "170141183460469231731687303715884105727")]
+    [InlineData("UInt128.MaxValue", "UInt128", "340282366920938463463374607431768211455")]
+    [InlineData(
+        "(System.Numerics.BigInteger)1 << 200",
+        "BigInteger",
+        "1606938044258990275541962092341162602522202993782792835301376")]
+    [InlineData("BigInteger.Pow(2, 100)", "BigInteger", "1267650600228229401496703205376")]
+    [InlineData(
+        "BigInteger.Parse(\"123456789012345678901234567890\") + 1",
+        "BigInteger",
+        "123456789012345678901234567891")]
+    [InlineData("Math.Sqrt(2.0)", "Double", "1.4142135623730951")]
+    [InlineData("Math.Pow(2, 10)", "Double", "1024")]
+    [InlineData("Math.Floor(2.9)", "Double", "2")]
+    [InlineData("Math.Round(2.5)", "Double", "2")]
+    [InlineData("Math.Round(2.567, 2)", "Double", "2.57")]
+    [InlineData("Math.Abs(-2.5)", "Double", "2.5")]
+    [InlineData("Math.Max(1.5, 2)", "Double", "2")]
+    [InlineData("Math.Min(3L, 2)", "Int64", "2")]
+    [InlineData("Math.PI", "Double", "3.141592653589793")]
+    [InlineData("double.MaxValue", "Double", "1.7976931348623157E+308")]
+    [InlineData("double.Epsilon", "Double", "5E-324")]
+    [InlineData("1 + 2L + 0.5", "Double", "3.5")]
+    [InlineData("(double?)2.5", "Double", "2.5")]
+    public void Numeric_results_fold_exactly(string expression, string expectedTypeName, string expectedText)
+    {
+        var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        Assert.Equal(ConstantExpressionStatus.Exact, result.Status);
+        Assert.Equal(ConstantValueKind.Numeric, result.Kind);
+        Assert.Equal(expectedTypeName, result.ValueTypeName);
+        Assert.Equal(expectedText, result.ValueText);
+
+        // The same expression reproduces the same canonical outcome identity.
+        Assert.Equal(result.Sha256, ConstantExpressionEvaluator.Evaluate(session: null, expression).Sha256);
+    }
+
+    /// <summary>Proves lifted nullable semantics: a null operand yields exactly null, never a fabricated value.</summary>
+    /// <param name="expression">The constant expression producing exactly null.</param>
+    [Theory]
+    [InlineData("null")]
+    [InlineData("(int?)null")]
+    [InlineData("(int?)null + 5")]
+    [InlineData("-((int?)null)")]
+    [InlineData("(long?)null * 10")]
+    [InlineData("(double?)null ?? null")]
+    public void Null_results_are_exact(string expression)
+    {
+        var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        Assert.Equal(ConstantExpressionStatus.Exact, result.Status);
+        Assert.Equal(ConstantValueKind.Null, result.Kind);
+        Assert.Equal("null", result.ValueText);
         Assert.Null(result.DiagnosticCode);
     }
 }
