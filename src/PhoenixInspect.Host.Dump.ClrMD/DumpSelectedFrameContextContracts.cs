@@ -114,6 +114,12 @@ public enum DumpContextEvidenceIssue : ushort
 
     /// <summary>The active scope representation is deliberately outside the current reader.</summary>
     UnsupportedScope = 23,
+
+    /// <summary>No non-hidden sequence point maps the selected IL offset to a source line.</summary>
+    SequencePointsUnavailable = 24,
+
+    /// <summary>The mapped sequence point does not name an exact source document.</summary>
+    DocumentUnavailable = 25,
 }
 
 /// <summary>
@@ -739,7 +745,9 @@ internal static class DumpContextContractEncoding
                 DumpContextEvidenceIssue.ModuleCorrelationUnavailable or
                 DumpContextEvidenceIssue.PortablePdbDebugIdentityUnavailable or
                 DumpContextEvidenceIssue.PortablePdbUnavailable or
-                DumpContextEvidenceIssue.ScopeUnavailable,
+                DumpContextEvidenceIssue.ScopeUnavailable or
+                DumpContextEvidenceIssue.SequencePointsUnavailable or
+                DumpContextEvidenceIssue.DocumentUnavailable,
             DumpContextEvidenceStatus.Ambiguous => issue is
                 DumpContextEvidenceIssue.FrameAmbiguous or
                 DumpContextEvidenceIssue.PortablePdbAmbiguous or
@@ -842,6 +850,43 @@ internal static class DumpContextContractEncoding
         {
             throw new ArgumentException(
                 $"Issue {issue} is not meaningful for a Portable-PDB {status} observation.",
+                nameof(issue));
+        }
+    }
+
+    internal static void ValidateFrameSourceStatusIssue(
+        DumpContextEvidenceStatus status,
+        DumpContextEvidenceIssue issue)
+    {
+        var valid = status switch
+        {
+            DumpContextEvidenceStatus.Exact => issue == DumpContextEvidenceIssue.None,
+            DumpContextEvidenceStatus.Partial => issue is
+                DumpContextEvidenceIssue.BoundReached or
+                DumpContextEvidenceIssue.SourceIncomplete,
+            DumpContextEvidenceStatus.Unavailable => issue is
+                DumpContextEvidenceIssue.PrerequisiteUnavailable or
+                DumpContextEvidenceIssue.ModuleCorrelationUnavailable or
+                DumpContextEvidenceIssue.PortablePdbDebugIdentityUnavailable or
+                DumpContextEvidenceIssue.PortablePdbUnavailable or
+                DumpContextEvidenceIssue.SequencePointsUnavailable or
+                DumpContextEvidenceIssue.DocumentUnavailable,
+            DumpContextEvidenceStatus.Ambiguous => issue == DumpContextEvidenceIssue.PortablePdbAmbiguous,
+            DumpContextEvidenceStatus.Conflict => issue is
+                DumpContextEvidenceIssue.PortablePdbIdentityMismatch or
+                DumpContextEvidenceIssue.SnapshotMismatch or
+                DumpContextEvidenceIssue.ModuleMismatch,
+            DumpContextEvidenceStatus.Invalid => issue is
+                DumpContextEvidenceIssue.InvalidModuleDebugIdentity or
+                DumpContextEvidenceIssue.InvalidPortablePdb,
+            DumpContextEvidenceStatus.Unsupported => issue == DumpContextEvidenceIssue.UnsupportedPortablePdb,
+            _ => false,
+        };
+
+        if (!valid)
+        {
+            throw new ArgumentException(
+                $"Issue {issue} is not meaningful for a frame-source {status} observation.",
                 nameof(issue));
         }
     }
