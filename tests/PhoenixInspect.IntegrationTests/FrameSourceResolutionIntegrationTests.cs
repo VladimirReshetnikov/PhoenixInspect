@@ -65,16 +65,18 @@ public sealed class FrameSourceResolutionIntegrationTests
                 Assert.True(location.EndLine >= location.StartLine);
                 Assert.True(location.SequencePointIlOffset <= frame.Frame!.Instruction.IlOffset);
 
-                // The PDB was built from this repository's own sources on this machine, so the recorded document
+                // The PDB was built from this repository's own sources on this machine, so the recorded document —
+                // after undoing SourceLink's deterministic '/_/' path map when ContinuousIntegrationBuild applied —
                 // must exist here and its bytes must reproduce the PDB checksum. This is the same verification a
                 // host performs before presenting a file as the frame's source.
                 Assert.Equal(Sha256ChecksumAlgorithm, location.Document.ChecksumAlgorithm);
-                Assert.True(File.Exists(location.DocumentPath), $"Expected source at '{location.DocumentPath}'.");
-                var onDiskChecksum = SHA256.HashData(File.ReadAllBytes(location.DocumentPath));
+                var sourcePath = ResolveRecordedDocumentPath(location.DocumentPath);
+                Assert.True(File.Exists(sourcePath), $"Expected source at '{sourcePath}'.");
+                var onDiskChecksum = SHA256.HashData(File.ReadAllBytes(sourcePath));
                 Assert.Equal(onDiskChecksum, location.Document.Checksum.ToArray());
 
                 // The mapped span must sit inside the method that declares the selected frame's namespace.
-                var mappedText = File.ReadLines(location.DocumentPath)
+                var mappedText = File.ReadLines(sourcePath)
                     .Skip(location.StartLine - 1)
                     .FirstOrDefault();
                 Assert.False(string.IsNullOrWhiteSpace(mappedText));
@@ -125,6 +127,20 @@ public sealed class FrameSourceResolutionIntegrationTests
                 File.Delete(dumpPath);
             }
         }
+    }
+
+    private static string ResolveRecordedDocumentPath(string documentPath)
+    {
+        // A ContinuousIntegrationBuild records SourceLink's deterministic '/_/' repository-root map instead of the
+        // build machine's absolute path. The test knows this repository's root, so it can undo the map; a product
+        // host would need an explicit source-path mapping to do the same, and reports the file as missing today.
+        if (!documentPath.Replace('\\', '/').StartsWith("/_/", StringComparison.Ordinal))
+        {
+            return documentPath;
+        }
+
+        var repositoryRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
+        return Path.GetFullPath(Path.Combine(repositoryRoot, documentPath.Replace('\\', '/')[3..]));
     }
 
     private static ClrmdDumpSession OpenSession(string dumpPath)
