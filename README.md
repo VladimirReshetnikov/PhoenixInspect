@@ -53,7 +53,9 @@ dotnet run --project src/PhoenixInspect.Cli -- <path-to-your.dmp>
 
 The [preview quickstart](docs/preview-quickstart.md) explains the session model, the exact expression subset and
 value domain supported today, what the preview deliberately does not do, and how to read a non-exact answer.
-[`Hosts`](docs/hosts.md) covers the console host and the Windows desktop shell.
+[`Hosts`](docs/hosts.md) covers the console host and the Windows desktop shell — a docked debugger-style workspace
+that can also resolve a selected stack frame to its source through an identity-validated Portable PDB, rendering the
+file only when its bytes reproduce the PDB's document checksum.
 
 **This is an early preview.** The supported subset is narrow on purpose: everything the quickstart lists is backed by
 executable tests over real dumps, and nothing is listed that is not. The rest of this README is the project's design

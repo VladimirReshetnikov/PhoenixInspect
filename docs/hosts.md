@@ -57,13 +57,33 @@ Only one session is open at a time, and every adapter call runs on one dedicated
 exposes an immutable snapshot but does not promise concurrent use, so both hosts serialize access rather than
 introducing a usage pattern the libraries do not support.
 
-| Section | Contracts exercised | What it shows |
+The shell is one docked debugger-style workspace rather than a set of pages: the call stack and the module/heap tool
+tabs dock left, a source view and the evaluation console fill the center, and the evidence inspector docks right,
+with every dock resizable. Opening a dump probes thread ordinals automatically, so the stopped threads are visible
+without a manual step; the probe stays re-runnable with its caps from the Call Stack header.
+
+| Tool window | Contracts exercised | What it shows |
 |---|---|---|
-| Overview | `ClrmdDumpSession.Open`, `Snapshot`, `TargetPlatform`, `TargetArchitecture`, `Modules` | Dump content identity (SHA-256 of the file, excluding the local path), target facts, the deterministic caps this build declares, the pinned expression front end, and a plain-language statement of the supported surface. |
-| Modules | `Modules`, `ReadModuleContentIdentity` | Every managed module instance with its metadata root, reported length, and image layout. Selecting one reads its counted metadata from dump memory and reports the MVID, counted length, metadata digest, raw reads, and applied bounds. |
-| Call stacks | `SelectExpressionFrame`, `DescribeFrameMethod` | Bounded managed frames with the declaring type and method name resolved from snapshot metadata, plus their MethodDef/TypeDef tokens, declaring namespace, IL offset, and instruction pointer. A selected frame can be adopted as the name-binding context of the static-field path. |
-| Heap objects | `FindStrongHandleObjectsByTypeName` | A bounded strong-handle search over an exact ordinal type-name predicate, with the traversal counters and caps that say how exhaustive the result actually was. A match can be adopted as an expression root. |
-| Evaluate | `StaticFieldExpressionEvaluator`, `DumpExpressionEvaluator` | Both implemented expression entry points, each answer shown with its status, stage, value, raw reads, applied bounds, stable diagnostics, and canonical replay digest. |
+| Call Stack | `SelectExpressionFrame` | Bounded managed frames with the declaring type and method name resolved from snapshot metadata, plus their MethodDef/TypeDef tokens, declaring namespace, IL offset, and instruction pointer. Double-clicking an exact frame adopts it as the static-field name context and resolves its source into the Source window. |
+| Source | `ResolveFrameSourceLocation` | The document and line span the build recorded for the selected frame, resolved through an identity-validated Portable PDB. File content renders only when the on-disk bytes reproduce the PDB's document checksum, under an explicit "checksum-verified" badge; a missing, mismatching, unverifiable, or over-bound file is a distinct plain-language explanation instead of content. |
+| Modules | `Modules`, `ReadModuleContentIdentity` | Every managed module instance with its reported length and image layout. Selecting one reads its counted metadata from dump memory and reports the MVID, counted length, metadata digest, raw reads, and applied bounds. |
+| Heap Search | `FindStrongHandleObjectsByTypeName` | A bounded strong-handle search over an exact ordinal type-name predicate, with the traversal counters and caps that say how exhaustive the result actually was. A match can be adopted as an expression root. |
+| Evaluate | `StaticFieldExpressionEvaluator`, `DumpExpressionEvaluator` | Both implemented expression entry points behind one immediate-window-style input, with a watch-style history grid. Selecting a history row drives the evidence inspector. |
+| Result / Session | — | The complete evidence behind the selected answer — status, stage, value, binding facts, raw reads, applied bounds, stable diagnostics, and canonical replay digest — plus the snapshot facts and the plain-language statement of the supported surface. |
+
+## Source, verified before it is shown
+
+A frame's source location is resolved from a Portable PDB whose identity is validated against the mapped module's
+CodeView record, exactly as in the static-field context path: a file with the right name is not evidence. Candidates
+come from two places — paths offered explicitly (the console host's `pdb <path>`, the shell's evaluation options) and
+paths derived from target-side module hints that exist on the analysis machine (the console host's `pdb auto`; the
+shell probes them automatically). Every candidate is content-hashed and identity-checked before use.
+
+Resolution answers with the build-recorded document path and the line span of the closest preceding non-hidden
+sequence point for the frame's IL offset. Before presenting any file content as that source, the host requires the
+on-disk bytes to reproduce the PDB's document checksum. A file that hashes differently is reported as a mismatch and
+deliberately not rendered, because a similar-looking file presented as the captured code would be fabricated
+evidence — the same rule every other panel follows for values.
 
 ## Selecting an expression root
 
@@ -106,5 +126,8 @@ them as distinct and conflating them would misrepresent its result axes.
   explicitly unnamed and cannot be selected that way.
 - The observable value domain is limited to what the product admits: null, `Int32`, `Nullable<Int32>`, bounded
   strings, and validated object references. Anything else surfaces as a typed stop.
+- Source viewing needs the identity-matching Portable PDB and the exact source bytes on the analysis machine. The
+  mapping can be exact while the local file is missing or has drifted; both are reported as such, and neither is
+  papered over by rendering whatever file happens to be at the recorded path.
 - Interactive exploration is not a validation tier. The [`integration test plan`](proposals/integration-test-plan.md)
   remains the authority on what has been proven.
