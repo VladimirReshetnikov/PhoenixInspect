@@ -91,6 +91,16 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("\"same\".ToString()", "same")]
     [InlineData("char.ToUpperInvariant('a').ToString()", "A")]
     [InlineData("true ? \"yes\" : \"no\"", "yes")]
+    [InlineData("\"hello\"[1..3]", "el")]
+    [InlineData("\"hello\"[..2]", "he")]
+    [InlineData("\"hello\"[2..]", "llo")]
+    [InlineData("\"hello\"[..]", "hello")]
+    [InlineData("\"hello\"[^3..^1]", "ll")]
+    [InlineData("\"hello\"[1..^1]", "ell")]
+    [InlineData("\"hello\"[^0..^0]", "")]
+    [InlineData("\"abcdef\"[(1 + 1)..(2 * 2)]", "cd")]
+    [InlineData("(\"prefix-\" + \"payload\")[7..]", "payload")]
+    [InlineData("\"batch-2026-07-30-0042\"[6..^5].ToUpperInvariant()", "2026-07-30")]
     public void String_results_evaluate_exactly(string expression, string expected)
     {
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
@@ -158,6 +168,8 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("char.ToLowerInvariant('A')", 'a')]
     [InlineData("char.MaxValue", char.MaxValue)]
     [InlineData("char.MinValue", char.MinValue)]
+    [InlineData("\"hello\"[^1]", 'o')]
+    [InlineData("\"hello\"[^5]", 'h')]
     public void Char_results_evaluate_exactly(string expression, char expected)
     {
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
@@ -186,6 +198,13 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("\"abc\"[3]", "System.ArgumentOutOfRangeException")]
     [InlineData("\"abc\"[-1]", "System.ArgumentOutOfRangeException")]
     [InlineData("\"7\".PadLeft(-1)", "System.ArgumentOutOfRangeException")]
+    [InlineData("\"abc\"[2..1]", "System.ArgumentOutOfRangeException")]
+    [InlineData("\"abc\"[..4]", "System.ArgumentOutOfRangeException")]
+    [InlineData("\"abc\"[^4..]", "System.ArgumentOutOfRangeException")]
+    [InlineData("\"abc\"[^0]", "System.ArgumentOutOfRangeException")]
+    [InlineData("\"abc\"[^(-1)..]", "System.ArgumentOutOfRangeException")]
+    [InlineData("1[0..1]", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("\"abc\"[\"x\"..]", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("2147483648", "CONSTANT_LITERAL_TYPE_UNSUPPORTED")]
     [InlineData("1.5 + 2", "CONSTANT_LITERAL_TYPE_UNSUPPORTED")]
     [InlineData("1L + 2", "CONSTANT_LITERAL_TYPE_UNSUPPORTED")]

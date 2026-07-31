@@ -125,6 +125,7 @@ public sealed class PreviewDemoIntegrationTests
                 EvaluationSeverity.Exact, "\"CARRIER-HANDOFF\""),
             ("\"batch-2026-07-30-0042\".Substring(6, 4)", EvaluationSeverity.Exact, "\"2026\""),
             ("\"AMS-3\".Contains('-')", EvaluationSeverity.Exact, "true"),
+            ("\"batch-2026-07-30-0042\"[6..^5]", EvaluationSeverity.Exact, "\"2026-07-30\""),
         ];
 
     /// <summary>

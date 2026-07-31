@@ -122,6 +122,7 @@ subset:
 | Constant integer arithmetic | `(86400 / 24) / 60` |
 | Enum member or const field | `System.DayOfWeek.Monday` |
 | Deterministic string/char operations over constants | `("a" + "b").ToUpperInvariant()`, `"text".Contains('x')` |
+| Index and range expressions on constant strings | `"hello"[^1]`, `"hello"[1..^1]` |
 | Boolean logic and comparisons over constants | `"abc".Length > 2 && char.IsDigit('5')` |
 
 A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
@@ -152,8 +153,8 @@ string constants are supported, and other constant types are a typed stop. A clo
 stateless, culture-independent `string` and `char` members evaluates over constant operands: concatenation, ordinal
 `Contains`/`StartsWith`/`EndsWith`/`IndexOf`, `Substring`, `Trim`, `Pad`, `Insert`, `Remove`, ordinal `Replace`,
 `ToUpperInvariant`/`ToLowerInvariant`, `string.Concat`/`Join`/`IsNullOrEmpty`/`CompareOrdinal`, the `char`
-classification predicates, indexing, `Length`, equality, relational comparison, Boolean logic, and the conditional
-operator. A culture-sensitive member or overload — `ToLower()`, `IndexOf(string)` without a `StringComparison`, or a
+classification predicates, indexing and range slicing with from-end `^n` indexes, `Length`, equality, relational
+comparison, Boolean logic, and the conditional operator. A culture-sensitive member or overload — `ToLower()`, `IndexOf(string)` without a `StringComparison`, or a
 culture-based comparison — is a typed stop naming the deterministic alternative; `StringComparison.Ordinal` and
 `OrdinalIgnoreCase` arguments are accepted. Character classification follows the pinned analysis runtime's Unicode
 tables. Nested types and names that need import context are outside this version.

@@ -85,6 +85,9 @@ eval ("carrier" + "-" + "handoff").ToUpperInvariant()
 eval "batch-2026-07-30-0042".Substring(6, 4)
 eval "AMS-3".Contains('-')
 
+# Range expressions slice with C# semantics, including from-end indexes.
+eval "batch-2026-07-30-0042"[6..^5]
+
 echo == 9. The same object, reached a second way. ==
 
 # The dispatcher is also strongly rooted, so a bounded handle search finds it independently. The traversal counters

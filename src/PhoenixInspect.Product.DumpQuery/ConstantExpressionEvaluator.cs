@@ -751,12 +751,7 @@ public static class ConstantExpressionEvaluator
     private static FoldOutcome FoldElementAccess(ElementAccessExpressionSyntax elementAccess, FoldContext context)
     {
         var receiver = Fold(elementAccess.Expression, context);
-        if (receiver.Disposition == FoldDisposition.NotArithmetic)
-        {
-            return receiver;
-        }
-
-        if (receiver.Disposition == FoldDisposition.Error)
+        if (receiver.Disposition != FoldDisposition.Folded)
         {
             return receiver;
         }
@@ -766,22 +761,48 @@ public static class ConstantExpressionEvaluator
         {
             return FoldOutcome.Error(
                 OperandTypeCode,
-                "Constant element access requires one string receiver and one Int32 index.");
+                "Constant element access requires one string receiver and one index or range.");
         }
 
-        var index = Fold(elementAccess.ArgumentList.Arguments[0].Expression, context);
+        var text = receiver.Operand.String!;
+        var argument = elementAccess.ArgumentList.Arguments[0].Expression;
+
+        // A range argument slices with C# range semantics: s[a..b] over resolved from-start/from-end offsets.
+        if (argument is RangeExpressionSyntax range)
+        {
+            var start = ResolveIndex(range.LeftOperand, text.Length, defaultOffset: 0, context);
+            if (start.Disposition != FoldDisposition.Folded)
+            {
+                return start;
+            }
+
+            var end = ResolveIndex(range.RightOperand, text.Length, defaultOffset: text.Length, context);
+            if (end.Disposition != FoldDisposition.Folded)
+            {
+                return end;
+            }
+
+            var startOffset = start.Operand.Int32;
+            var endOffset = end.Operand.Int32;
+            if (startOffset < 0 || endOffset > text.Length || startOffset > endOffset)
+            {
+                return FoldOutcome.Error(
+                    ArgumentOutOfRangeCode,
+                    $"Range [{startOffset.ToString(CultureInfo.InvariantCulture)}.."
+                    + $"{endOffset.ToString(CultureInfo.InvariantCulture)}] is outside the string of length "
+                    + $"{text.Length.ToString(CultureInfo.InvariantCulture)}.");
+            }
+
+            return FoldOutcome.Folded(Operand.FromString(text[startOffset..endOffset]));
+        }
+
+        var index = ResolveIndex(argument, text.Length, defaultOffset: 0, context);
         if (index.Disposition != FoldDisposition.Folded)
         {
             return index;
         }
 
-        if (!index.Operand.IsNumeric)
-        {
-            return FoldOutcome.Error(OperandTypeCode, "The string index must be an Int32 constant.");
-        }
-
-        var text = receiver.Operand.String!;
-        var position = index.Operand.AsInt32;
+        var position = index.Operand.Int32;
         if (position < 0 || position >= text.Length)
         {
             return FoldOutcome.Error(
@@ -791,6 +812,56 @@ public static class ConstantExpressionEvaluator
         }
 
         return FoldOutcome.Folded(Operand.FromChar(text[position]));
+    }
+
+    private static FoldOutcome ResolveIndex(
+        ExpressionSyntax? syntax,
+        int length,
+        int defaultOffset,
+        FoldContext context)
+    {
+        if (syntax is null)
+        {
+            return FoldOutcome.Folded(Operand.FromInt32(defaultOffset));
+        }
+
+        // ^n counts from the end, resolving to length - n exactly as System.Index does.
+        if (syntax is PrefixUnaryExpressionSyntax fromEnd && fromEnd.IsKind(SyntaxKind.IndexExpression))
+        {
+            var operand = Fold(fromEnd.Operand, context);
+            if (operand.Disposition != FoldDisposition.Folded)
+            {
+                return operand;
+            }
+
+            if (!operand.Operand.IsNumeric)
+            {
+                return FoldOutcome.Error(OperandTypeCode, "A from-end index must be an Int32 constant.");
+            }
+
+            var fromEndValue = operand.Operand.AsInt32;
+            if (fromEndValue < 0)
+            {
+                return FoldOutcome.Error(
+                    ArgumentOutOfRangeCode,
+                    "A from-end index cannot be negative.");
+            }
+
+            return FoldOutcome.Folded(Operand.FromInt32(length - fromEndValue));
+        }
+
+        var folded = Fold(syntax, context);
+        if (folded.Disposition != FoldDisposition.Folded)
+        {
+            return folded;
+        }
+
+        if (!folded.Operand.IsNumeric)
+        {
+            return FoldOutcome.Error(OperandTypeCode, "A string index must be an Int32 constant.");
+        }
+
+        return FoldOutcome.Folded(Operand.FromInt32(folded.Operand.AsInt32));
     }
 
     private static FoldOutcome FoldMemberAccess(MemberAccessExpressionSyntax memberAccess, FoldContext context)
