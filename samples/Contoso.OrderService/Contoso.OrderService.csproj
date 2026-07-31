@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The preview demo target. It is a deliberately ordinary .NET service: public namespaced types, ordinary static
+    fields, and an object graph a real incident would leave behind. It exists so the demo evaluates expressions a
+    user would actually type against their own application, rather than probes shaped around the evaluator.
+
+    It is built optimized with a Portable PDB, because that is what a production dump is taken from, and the
+    selected-frame name context the evaluator can consult comes from exactly such a PDB.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Contoso.OrderService</AssemblyName>
+    <RootNamespace>Contoso.OrderService</RootNamespace>
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

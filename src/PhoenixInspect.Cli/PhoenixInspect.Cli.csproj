@@ -18,4 +18,9 @@
     <ProjectReference Include="..\PhoenixInspect.Inspection\PhoenixInspect.Inspection.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Collection only: the capture command asks the target runtime's own diagnostics server for a full dump. -->
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" />
+  </ItemGroup>
+
 </Project>

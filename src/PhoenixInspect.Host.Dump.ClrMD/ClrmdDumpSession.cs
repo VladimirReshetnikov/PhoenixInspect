@@ -23,8 +23,23 @@ namespace PhoenixInspect.Host.Dump.ClrMD;
 /// </remarks>
 public sealed partial class ClrmdDumpSession : IDisposable
 {
-    private const int MaximumHandleMatches = 4_096;
-    private const int MaximumHandleScanCount = 100_000;
+    /// <summary>
+    /// Gets the adapter's hard cap on matches one strong-handle search may retain.
+    /// </summary>
+    /// <remarks>
+    /// A caller that requests more is rejected rather than silently clamped, so a host must consult this cap to keep
+    /// a user-supplied limit inside the contract instead of discovering it through an exception.
+    /// </remarks>
+    public const int MaximumHandleMatches = 4_096;
+
+    /// <summary>
+    /// Gets the adapter's hard cap on runtime handles one strong-handle search may inspect.
+    /// </summary>
+    /// <remarks>
+    /// Reaching this cap makes a search non-exhaustive, which the result reports; requesting a larger cap is rejected.
+    /// </remarks>
+    public const int MaximumHandleScanCount = 100_000;
+
     private const int MaximumRuntimeMethodScanCount = 10_000;
     private const int MaximumRuntimeInstanceFieldCount = 4_096;
     private const int MaximumRuntimeModuleCount = 4_096;

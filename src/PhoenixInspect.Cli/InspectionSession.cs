@@ -41,7 +41,7 @@ public sealed class InspectionSession
     private const int DefaultThreadProbe = 24;
     private const int DefaultFrameDepth = 32;
     private const int DefaultMatchCap = 32;
-    private const int DefaultHandleScanCap = 200_000;
+    private const int HandleScanCap = ClrmdDumpSession.MaximumHandleScanCount;
 
     private readonly DumpSessionHost host;
     private readonly ConsoleRenderer renderer;
@@ -126,9 +126,11 @@ public sealed class InspectionSession
                 _ => await EvaluateAsync(text).ConfigureAwait(false),
             };
         }
-        catch (Exception exception) when (exception is InvalidOperationException or IOException)
+        catch (Exception exception) when (exception is not (OutOfMemoryException or StackOverflowException))
         {
-            renderer.Error(exception.Message);
+            // A command that cannot run must end as a reported failure, never as a lost session. The dump stays open
+            // and the next command still runs against the same snapshot.
+            renderer.Error($"{exception.GetType().Name}: {exception.Message}");
             return CommandOutcome.Failed;
         }
     }
@@ -401,9 +403,16 @@ public sealed class InspectionSession
         }
 
         var typeName = parts[0];
-        var cap = parts.Length > 1 ? ParseCount(parts[1], DefaultMatchCap) : DefaultMatchCap;
+        var requested = parts.Length > 1 ? ParseCount(parts[1], DefaultMatchCap) : DefaultMatchCap;
+        var cap = Math.Min(requested, ClrmdDumpSession.MaximumHandleMatches);
+        if (cap != requested)
+        {
+            renderer.Note(
+                $"  The adapter retains at most {ClrmdDumpSession.MaximumHandleMatches:N0} matches; using that cap.");
+        }
+
         var projection = await host.QueryAsync(session =>
-            DumpInspectionService.SearchObjects(session, typeName, cap, DefaultHandleScanCap)).ConfigureAwait(false);
+            DumpInspectionService.SearchObjects(session, typeName, cap, HandleScanCap)).ConfigureAwait(false);
         lastSearch = projection.Rows;
 
         renderer.Heading($"Strong-handle search: {typeName}");

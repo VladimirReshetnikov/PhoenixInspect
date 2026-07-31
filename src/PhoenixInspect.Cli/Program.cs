@@ -22,6 +22,11 @@ public static class Program
     public static async Task<int> Main(string[] args)
     {
         Console.OutputEncoding = Encoding.UTF8;
+        if (args is [CaptureCommand.Verb, ..])
+        {
+            return CaptureCommand.Run(args[1..]);
+        }
+
         if (!CommandLineOptions.TryParse(args, out var options, out var usageError))
         {
             var plain = new ConsoleRenderer(Console.Error, styled: false);
@@ -122,6 +127,10 @@ public static class Program
         renderer.Pair("--help", "Show this help.", 30);
         renderer.Line();
         renderer.Line("With no --eval, --command, or --script the session starts an interactive prompt.");
+        renderer.Line();
+        renderer.Line("usage: phoenixinspect capture --pid <processId> --output <path>");
+        renderer.Line();
+        renderer.Line("Writes a full dump of a running process. Dumps from any other collector are equally valid input.");
     }
 
     private static string Version =>
