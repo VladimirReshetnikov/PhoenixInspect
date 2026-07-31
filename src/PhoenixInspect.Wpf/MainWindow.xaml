@@ -364,8 +364,97 @@
 
             <GridSplitter Grid.Column="1" Width="6" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
 
-            <!-- ~~~~~~~~~~~~~~~~~~ Center: evaluation console ~~~~~~~~~~~~~~~~~~ -->
-            <Border Grid.Column="2" Style="{StaticResource Tool.Container}">
+            <!-- ~~~~~~~~~~~~~~~~~~ Center: source + evaluation console ~~~~~~~~~~~~~~~~~~ -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="2*" MinHeight="140" />
+                    <RowDefinition Height="6" />
+                    <RowDefinition Height="3*" MinHeight="260" />
+                </Grid.RowDefinitions>
+
+                <!-- Source tool window -->
+                <Border Style="{StaticResource Tool.Container}">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource Tool.HeaderBar}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="SOURCE" Style="{StaticResource Text.ToolTitle}" Margin="0,0,10,0" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding Source.Title}"
+                                           Style="{StaticResource Text.Mono}"
+                                           FontSize="11"
+                                           Foreground="{StaticResource Text.Secondary}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap"
+                                           ToolTip="{Binding Source.DocumentPath}" />
+                                <Border Grid.Column="2"
+                                        Background="#2A3FBF7F"
+                                        CornerRadius="9"
+                                        Padding="8,2"
+                                        VerticalAlignment="Center"
+                                        ToolTip="{Binding Source.Summary}"
+                                        Visibility="{Binding Source.IsVerified, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="✔ checksum-verified"
+                                               FontSize="10"
+                                               Foreground="{StaticResource Accent.Exact}" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Grid>
+                            <TextBlock Text="{Binding Source.Summary}"
+                                       Style="{StaticResource Text.Caption}"
+                                       Foreground="{StaticResource Text.Muted}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       MaxWidth="520"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Margin="16"
+                                       Panel.ZIndex="1"
+                                       Visibility="{Binding Source.HasContent, Converter={StaticResource InverseBoolToVisibility}}" />
+                            <ListBox x:Name="SourceList"
+                                     Style="{StaticResource List.Plain}"
+                                     ItemContainerStyle="{StaticResource Source.LineItem}"
+                                     ItemsSource="{Binding Source.Lines}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     VirtualizingPanel.IsVirtualizing="True"
+                                     VirtualizingPanel.ScrollUnit="Item"
+                                     Visibility="{Binding Source.HasContent, Converter={StaticResource BoolToVisibility}}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:SourceLineRow}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="52" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Number}"
+                                                       Style="{StaticResource Text.Mono}"
+                                                       FontSize="11"
+                                                       Foreground="{StaticResource Text.Muted}"
+                                                       TextAlignment="Right"
+                                                       Margin="0,0,14,0" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Text}"
+                                                       Style="{StaticResource Text.Mono}"
+                                                       FontSize="12"
+                                                       TextWrapping="NoWrap" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+
+                <GridSplitter Grid.Row="1" Height="6" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
+
+                <!-- Evaluation console -->
+                <Border Grid.Row="2" Style="{StaticResource Tool.Container}">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource Tool.HeaderBar}">
                         <Grid>
@@ -600,7 +689,8 @@
                         </DataGrid>
                     </Grid>
                 </DockPanel>
-            </Border>
+                </Border>
+            </Grid>
 
             <GridSplitter Grid.Column="3" Width="6" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" />
 

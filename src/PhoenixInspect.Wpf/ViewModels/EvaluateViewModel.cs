@@ -508,7 +508,10 @@ public sealed class EvaluateViewModel : ObservableObject
         shell.SetStatus($"{produced.Path}: {produced.Status} — {produced.Stage}");
     }
 
-    private static ImmutableArray<string> ParseCandidates(string text) =>
+    /// <summary>Parses the newline-separated candidate text into a bounded path array.</summary>
+    /// <param name="text">The raw editor text, possibly empty.</param>
+    /// <returns>The trimmed non-empty paths, capped at the adapter's candidate bound.</returns>
+    internal static ImmutableArray<string> ParseCandidates(string text) =>
         string.IsNullOrWhiteSpace(text)
             ? []
             : text

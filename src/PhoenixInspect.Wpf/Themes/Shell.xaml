@@ -489,6 +489,34 @@
         </Setter>
     </Style>
 
+    <!-- Source-view line: dense, non-interactive, with the mapped span highlighted. -->
+    <Style TargetType="ListBoxItem" x:Key="Source.LineItem">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Chrome"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="2,0,0,0"
+                            Padding="8,1"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Surface.Selected}" />
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource Brand}" />
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Property lists: grouped label/value pairs -->
     <Style TargetType="GroupItem" x:Key="Property.Group">
         <Setter Property="Margin" Value="0,0,0,14" />

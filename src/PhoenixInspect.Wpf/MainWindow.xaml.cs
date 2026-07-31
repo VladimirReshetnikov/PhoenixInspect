@@ -60,13 +60,32 @@ public partial class MainWindow : Window
 
     private void OnStackDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        // Double-clicking an exact frame adopts it as the name context, matching the "activate this frame"
-        // gesture a debugger user expects from a call-stack window.
+        // Double-clicking an exact frame activates it the way a debugger call-stack window does: the frame becomes
+        // the name-binding context and its verified source is resolved into the source pane.
+        if (model.CallStacks.SelectedFrame is not { IsExact: true } frame)
+        {
+            return;
+        }
+
+        e.Handled = true;
         var command = model.CallStacks.UseAsContextCommand;
         if (command.CanExecute(null))
         {
-            e.Handled = true;
             command.Execute(null);
+        }
+
+        _ = ShowFrameSourceAsync(frame);
+    }
+
+    private async Task ShowFrameSourceAsync(PhoenixInspect.Inspection.CallStackFrameNode frame)
+    {
+        var highlighted = await model.ShowFrameSourceAsync(frame);
+        if (highlighted is not null)
+        {
+            // Scroll the mapped span into view once the virtualized list has materialized the rows.
+            await Dispatcher.InvokeAsync(
+                () => SourceList.ScrollIntoView(highlighted),
+                System.Windows.Threading.DispatcherPriority.Loaded);
         }
     }
 

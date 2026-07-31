@@ -33,6 +33,7 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
         CallStacks = new CallStacksViewModel(this);
         HeapObjects = new HeapObjectsViewModel(this);
         Evaluate = new EvaluateViewModel(this);
+        Source = new SourceViewModel(this);
 
         openCommand = new RelayCommand(() => _ = OpenDumpAsync(), () => !IsBusy);
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
@@ -55,6 +56,9 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
 
     /// <summary>Gets the evaluation panel.</summary>
     public EvaluateViewModel Evaluate { get; }
+
+    /// <summary>Gets the source panel.</summary>
+    public SourceViewModel Source { get; }
 
     /// <summary>Gets the command that prompts for and opens a dump file.</summary>
     public RelayCommand OpenDumpCommand => openCommand;
@@ -137,6 +141,16 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
     {
         Evaluate.AdoptContext(frame);
         SetStatus("Adopted a selected frame as the static-field name context.");
+    }
+
+    /// <summary>Resolves and displays one frame's verified source in the source panel.</summary>
+    /// <param name="frame">The frame to resolve.</param>
+    /// <returns>The first highlighted line for the view to scroll to, or null.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is null.</exception>
+    public Task<PhoenixInspect.Inspection.SourceLineRow?> ShowFrameSourceAsync(CallStackFrameNode frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        return Source.ShowFrameAsync(frame, EvaluateViewModel.ParseCandidates(Evaluate.PortablePdbCandidates));
     }
 
     /// <inheritdoc />
@@ -227,6 +241,7 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();
+        Source.Reset();
 
         var length = host.DumpLength ?? 0;
         var snapshot = await RunAsync(
@@ -281,6 +296,7 @@ public sealed class MainViewModel : ObservableObject, IShellServices, IDisposabl
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();
+        Source.Reset();
         Raise(nameof(IsDumpOpen));
         closeCommand.RaiseCanExecuteChanged();
     }
