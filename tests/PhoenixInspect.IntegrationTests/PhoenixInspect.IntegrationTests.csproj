@@ -24,6 +24,7 @@
     <ProjectReference Include="../../src/PhoenixInspect.Host.Dump.ClrMD/PhoenixInspect.Host.Dump.ClrMD.csproj" />
     <ProjectReference Include="../../src/PhoenixInspect.Product.DumpDebugging/PhoenixInspect.Product.DumpDebugging.csproj" />
     <ProjectReference Include="../../src/PhoenixInspect.Product.DumpQuery/PhoenixInspect.Product.DumpQuery.csproj" />
+    <ProjectReference Include="../../src/PhoenixInspect.Inspection/PhoenixInspect.Inspection.csproj" />
     <ProjectReference Include="../../src/PhoenixInspect.Headless.ReferenceConsumer/PhoenixInspect.Headless.ReferenceConsumer.csproj"
                       ReferenceOutputAssembly="false" />
     <ProjectReference Include="../PhoenixInspect.OptimizedContextTestTarget/PhoenixInspect.OptimizedContextTestTarget.csproj"
@@ -48,5 +49,8 @@
                       ReferenceOutputAssembly="false"
                       AdditionalProperties="Configuration=Release" />
     <ProjectReference Include="../PhoenixInspect.TestTarget/PhoenixInspect.TestTarget.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../samples/Contoso.OrderService/Contoso.OrderService.csproj"
+                      ReferenceOutputAssembly="false"
+                      AdditionalProperties="Configuration=Release" />
   </ItemGroup>
 </Project>

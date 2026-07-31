@@ -280,10 +280,20 @@
       "phoenixinspect.host.dump.clrmd": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Diagnostics.Runtime": "[4.0.732401, )",
           "PhoenixInspect.Core.Abstractions": "[1.0.0, )",
           "PhoenixInspect.Host.Abstractions": "[1.0.0, )",
-          "PhoenixInspect.Metadata.SRM": "[1.0.0, )",
-          "Microsoft.Diagnostics.Runtime": "[4.0.732401, )"
+          "PhoenixInspect.Metadata.SRM": "[1.0.0, )"
+        }
+      },
+      "phoenixinspect.inspection": {
+        "type": "Project",
+        "dependencies": {
+          "PhoenixInspect.Core.Abstractions": "[1.0.0, )",
+          "PhoenixInspect.Host.Abstractions": "[1.0.0, )",
+          "PhoenixInspect.Host.Dump.ClrMD": "[1.0.0, )",
+          "PhoenixInspect.Product.DumpDebugging": "[1.0.0, )",
+          "PhoenixInspect.Product.DumpQuery": "[1.0.0, )"
         }
       },
       "phoenixinspect.metadata.abstractions": {
@@ -312,9 +322,9 @@
       "phoenixinspect.product.dumpquery": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.CodeAnalysis.CSharp": "[5.3.0, )",
           "PhoenixInspect.Core.Abstractions": "[1.0.0, )",
-          "PhoenixInspect.Host.Dump.ClrMD": "[1.0.0, )",
-          "Microsoft.CodeAnalysis.CSharp": "[5.3.0, )"
+          "PhoenixInspect.Host.Dump.ClrMD": "[1.0.0, )"
         }
       },
       "Microsoft.CodeAnalysis.CSharp": {
