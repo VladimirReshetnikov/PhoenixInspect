@@ -17,6 +17,7 @@ public partial class SourceDocumentView : UserControl
 {
     private readonly LineSpanBackgroundRenderer highlighter = new();
     private SourceDocument? document;
+    private int pendingScrollLine;
 
     /// <summary>Creates the view and configures the read-only editor.</summary>
     public SourceDocumentView()
@@ -25,6 +26,10 @@ public partial class SourceDocumentView : UserControl
         Editor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#");
         Editor.TextArea.TextView.BackgroundRenderers.Add(highlighter);
         DataContextChanged += (_, _) => Attach(DataContext as SourceDocument);
+
+        // Content is applied while the tab is still unrealized, when ScrollToLine is a no-op. The pending line is
+        // therefore replayed once the editor has an actual layout.
+        Editor.LayoutUpdated += (_, _) => FlushPendingScroll();
     }
 
     private void Attach(SourceDocument? next)
@@ -78,7 +83,21 @@ public partial class SourceDocumentView : UserControl
         Editor.Text = text.ToString();
         highlighter.SetSpan(result.StartLine, result.EndLine);
         Editor.TextArea.TextView.Redraw();
-        Editor.ScrollToLine(Math.Max(1, result.StartLine));
+        pendingScrollLine = Math.Max(1, result.StartLine);
+        FlushPendingScroll();
+    }
+
+    private void FlushPendingScroll()
+    {
+        if (pendingScrollLine <= 0 || Editor.Bounds.Height <= 0 ||
+            Editor.Document is not { } textDocument || textDocument.LineCount < pendingScrollLine)
+        {
+            return;
+        }
+
+        var line = pendingScrollLine;
+        pendingScrollLine = 0;
+        Editor.ScrollToLine(line);
     }
 }
 
