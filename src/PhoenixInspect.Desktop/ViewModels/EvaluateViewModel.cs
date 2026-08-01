@@ -483,14 +483,21 @@ public sealed class EvaluateViewModel : ObservableObject
         if (path == ExpressionPath.StaticField)
         {
             var selector = contextFrame?.Selector;
-            var candidates = ParseCandidates(portablePdbCandidates);
+            // The shell probes hint-derived Portable-PDB candidates automatically, exactly as the source view does;
+            // only the console host makes that probe an explicit command ('pdb auto'). Identity is still validated
+            // per candidate before any name binds through it.
+            var explicitCandidates = ParseCandidates(portablePdbCandidates);
             produced = await shell.RunAsync(
                 "Evaluating static-field expression…",
                 session => ExpressionEvaluationService.EvaluateStaticField(
                     session,
                     submitted,
                     selector,
-                    candidates)).ConfigureAwait(true);
+                    explicitCandidates
+                        .Concat(SourceNavigationService.DiscoverPortablePdbCandidates(session))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Take(64)
+                        .ToImmutableArray())).ConfigureAwait(true);
         }
         else
         {

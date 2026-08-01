@@ -200,7 +200,8 @@ this version.
   operands beyond the scalar, string, null, and single-dimension array value surface are outside the current
   subset.
 - **It does not read your disk to fill gaps.** Names and values come from the snapshot. A Portable PDB is consulted
-  only when you offer one and only after its identity is validated against the module. The desktop shell's source
+  only when you offer one — in the console host explicitly, via `pdb <path>` or `pdb auto`; in the desktop shell the
+  hint-derived probe runs automatically — and only after its identity is validated against the module. The desktop shell's source
   view holds the same line: a file is presented as a frame's source only when its bytes reproduce the PDB's document
   checksum. When no matching PDB or verified source exists, the shell falls back to C# **decompiled from the
   module's IL** by the ILSpy engine — and only from an on-disk assembly whose complete metadata content identity
