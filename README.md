@@ -73,6 +73,12 @@ value domain supported today, what the preview deliberately does not do, and how
 that can also resolve a selected stack frame to its source through an identity-validated Portable PDB, rendering the
 file only when its bytes reproduce the PDB's document checksum.
 
+![The PhoenixInspect desktop shell over the demo dump: docked call stack, modules, session document, evaluation console, and evidence pane](docs/assets/desktop-shell.png)
+
+*The desktop shell over the demo dump. The adopted `Program.Main` frame supplies namespace and import context, so
+`ServiceState.BuildLabel` binds the way the source writes it — and the Result pane carries the complete evidence
+behind the exact answer: binding facts, raw reads, reached bounds, and the canonical replay digest.*
+
 ## What the preview answers today
 
 Everything below is backed by executable tests over real dumps, and nothing is listed that is not. The
