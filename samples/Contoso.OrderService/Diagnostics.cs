@@ -30,4 +30,7 @@ public static class ServiceState
 
     /// <summary>The dispatcher this process is draining.</summary>
     public static ShipmentDispatcher? Dispatcher;
+
+    /// <summary>The corridors this process is licensed to dispatch onto.</summary>
+    public static string[] ActiveCorridors = ["NL-BE", "NL-DE", "BE-FR"];
 }

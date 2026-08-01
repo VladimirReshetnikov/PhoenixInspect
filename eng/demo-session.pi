@@ -79,6 +79,13 @@ eval root.QueueDepth * 2 + 1
 eval root.CurrentBatch.PendingCount > 50
 eval root.CurrentBatch.BatchId[6..^5]
 
+# Arrays in the dump heap are read-only evidence. One materializes as a virtual sequence that exists only while
+# the expression evaluates — inspect it, slice it, or aggregate it with the lambda-free Enumerable surface.
+eval root.CurrentBatch.Tags[..]
+eval root.CurrentBatch.Tags.Contains("priority")
+eval root.CurrentBatch.Tags.Length
+eval root.RecentDispatchDurationsMs.Max()
+
 echo == 9. Constants are evidence too: metadata, not memory. ==
 
 # An enum member or a const is a literal in the module's metadata Constant table, so the snapshot can answer it
@@ -103,6 +110,10 @@ eval Math.Round(Math.PI, 4)
 # Stored static values compose the same way, including a Nullable with a coalescing fallback.
 eval Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount + 1
 eval Contoso.OrderService.Diagnostics.ServiceState.LastFailureCode ?? 0
+
+# Array-producing BCL members build virtual sequences from constants, and a stored static array composes too.
+eval "batch-2026-07-30-0042".Split('-').Length
+eval Contoso.OrderService.Diagnostics.ServiceState.ActiveCorridors[0]
 
 echo == 10. The same object, reached a second way. ==
 

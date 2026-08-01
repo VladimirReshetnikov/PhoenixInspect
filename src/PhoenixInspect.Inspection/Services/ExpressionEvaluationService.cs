@@ -65,7 +65,7 @@ public static class ExpressionEvaluationService
         // what it was.
         var resolvers = new ConstantOperandResolvers
         {
-            StaticName = name => MapStaticOperand(name, contextSelector is null
+            StaticName = name => MapStaticOperand(session, name, contextSelector is null
                 ? StaticFieldExpressionEvaluator.Evaluate(session, name)
                 : StaticFieldExpressionEvaluator.Evaluate(session, name, contextSelector, candidates)),
         };
@@ -141,9 +141,14 @@ public static class ExpressionEvaluationService
         {
             RootIdentifier = rootIdentifier,
             RootChain = chain => MapRootOperand(
+                session,
+                rootBinding,
                 chain,
                 DumpExpressionEvaluator.Evaluate(session, chain, rootBinding, policy, languageProfile)),
-            StaticName = name => MapStaticOperand(name, StaticFieldExpressionEvaluator.Evaluate(session, name)),
+            StaticName = name => MapStaticOperand(
+                session,
+                name,
+                StaticFieldExpressionEvaluator.Evaluate(session, name)),
         };
         var constant = ConstantExpressionEvaluator.Evaluate(session, expression, resolvers);
         if (constant.Status != ConstantExpressionStatus.NotConstant)
@@ -158,11 +163,19 @@ public static class ExpressionEvaluationService
     }
 
     private static ConstantOperandResolution MapStaticOperand(
+        ClrmdDumpSession session,
         string name,
         StaticFieldExpressionEvaluationResult result)
     {
         if (result.Status != StaticFieldExpressionEvaluationStatus.Exact)
         {
+            // The frozen static pipeline's declaration surface has no array shape, so a name it cannot answer
+            // gets one more chance as a read-only static array field.
+            if (TryMapStaticArrayField(session, name, out var arrayResolution))
+            {
+                return arrayResolution;
+            }
+
             return ConstantOperandResolution.ForStop(
                 result.DiagnosticCode ?? "CONSTANT_DUMP_OPERAND_NOT_EXACT",
                 result.DiagnosticMessage
@@ -184,41 +197,157 @@ public static class ExpressionEvaluationService
                 ConstantOperandResolution.ExactNull(),
             ClrmdStaticFieldTerminalKind.String =>
                 ConstantOperandResolution.FromString(value.StringValue!.Value),
-            ClrmdStaticFieldTerminalKind.ObjectReference => ConstantOperandResolution.ForStop(
-                "CONSTANT_DUMP_OPERAND_TYPE_UNSUPPORTED",
-                $"Operand '{name}' is an object reference; only Int32, string, and null dump values compose "
-                + "into expressions."),
+            ClrmdStaticFieldTerminalKind.ObjectReference =>
+                MapObjectReferenceOperand(session, name, value.ObjectReference!.Address),
             _ => ConstantOperandResolution.ForStop(
                 "CONSTANT_DUMP_OPERAND_NOT_EXACT",
                 $"Operand '{name}' produced no value."),
         };
     }
 
-    private static ConstantOperandResolution MapRootOperand(string chain, DumpExpressionEvaluationOutcome outcome)
+    private static ConstantOperandResolution MapObjectReferenceOperand(
+        ClrmdDumpSession session,
+        string name,
+        ulong address)
     {
+        // A single-dimension array materializes as a read-only virtual sequence; any other object reference has
+        // no operand representation.
+        var array = session.ReadSzArrayValue(address, ConstantExpressionEvaluator.MaximumSequenceLength);
+        if (array.Status == ClrmdEvidenceStatus.Exact)
+        {
+            return MapArrayObservation(array.Value!);
+        }
+
+        if (array.Issue == ClrmdValueIssue.MemberShapeUnsupported)
+        {
+            return ConstantOperandResolution.ForStop(
+                "CONSTANT_DUMP_OPERAND_TYPE_UNSUPPORTED",
+                $"Operand '{name}' is an object reference; only Int32, Int64, floating-point, Boolean, char, "
+                + "string, null, and single-dimension array dump values compose into expressions.");
+        }
+
+        return ConstantOperandResolution.ForStop(
+            "CONSTANT_DUMP_OPERAND_NOT_EXACT",
+            $"Operand '{name}' is an array the snapshot cannot answer exactly: {array.Issue}.");
+    }
+
+    private static ConstantOperandResolution MapArrayObservation(ClrmdArrayValueObservation observation)
+    {
+        var elements = ImmutableArray.CreateBuilder<ConstantOperandResolution>(observation.Elements.Length);
+        foreach (var element in observation.Elements)
+        {
+            elements.Add(element switch
+            {
+                { IsNull: true } => ConstantOperandResolution.ExactNull(),
+                { Int32Value: { } int32 } => ConstantOperandResolution.FromInt32(int32),
+                { Int64Value: { } int64 } => ConstantOperandResolution.FromInt64(int64),
+                { DoubleValue: { } doubleValue } => ConstantOperandResolution.FromDouble(doubleValue),
+                { SingleValue: { } single } => ConstantOperandResolution.FromSingle(single),
+                { BooleanValue: { } boolean } => ConstantOperandResolution.FromBoolean(boolean),
+                { CharValue: { } character } => ConstantOperandResolution.FromChar(character),
+                _ => ConstantOperandResolution.FromString(element.StringValue!),
+            });
+        }
+
+        return ConstantOperandResolution.FromSequence(elements.ToImmutable(), observation.ElementTypeName);
+    }
+
+    private static ConstantOperandResolution MapRootOperand(
+        ClrmdDumpSession session,
+        DumpQueryRootBinding rootBinding,
+        string chain,
+        DumpExpressionEvaluationOutcome outcome)
+    {
+        if (outcome.Kind == DumpExpressionEvaluationOutcomeKind.DerivedQuery &&
+            outcome.DerivedQueryResult is { } derived &&
+            MapSeverity(derived) == EvaluationSeverity.Exact)
+        {
+            return MapQueryValue(chain, derived.Value);
+        }
+
+        // The frozen pipeline's value surface has no array terminal, so a chain it cannot answer gets one more
+        // chance as a read-only array path: plain direct hops ending at a single-dimension array member.
+        if (TryMapRootArrayChain(session, rootBinding, chain, out var arrayResolution))
+        {
+            return arrayResolution;
+        }
+
         if (outcome.Kind != DumpExpressionEvaluationOutcomeKind.DerivedQuery ||
-            outcome.DerivedQueryResult is not { } derived)
+            outcome.DerivedQueryResult is not { } stopped)
         {
             // A chain the root-relative classifier does not admit keeps the whole expression not-constant, so the
             // frozen path reports the rejection with its own vocabulary.
             return ConstantOperandResolution.OutsideDomain();
         }
 
-        if (MapSeverity(derived) != EvaluationSeverity.Exact)
+        var code = "CONSTANT_DUMP_OPERAND_NOT_EXACT";
+        var message = $"Operand '{chain}' did not produce an exact value.";
+        foreach (var diagnostic in stopped.Diagnostics)
         {
-            var code = "CONSTANT_DUMP_OPERAND_NOT_EXACT";
-            var message = $"Operand '{chain}' did not produce an exact value.";
-            foreach (var diagnostic in derived.Diagnostics)
-            {
-                code = diagnostic.Code;
-                message = diagnostic.Message;
-                break;
-            }
-
-            return ConstantOperandResolution.ForStop(code, message);
+            code = diagnostic.Code;
+            message = diagnostic.Message;
+            break;
         }
 
-        return MapQueryValue(chain, derived.Value);
+        return ConstantOperandResolution.ForStop(code, message);
+    }
+
+    private static bool TryMapStaticArrayField(
+        ClrmdDumpSession session,
+        string name,
+        out ConstantOperandResolution resolution)
+    {
+        resolution = ConstantOperandResolution.OutsideDomain();
+        var separator = name.LastIndexOf('.');
+        if (separator <= 0 || separator == name.Length - 1)
+        {
+            return false;
+        }
+
+        var array = session.ReadStaticSzArrayField(
+            name[..separator],
+            name[(separator + 1)..],
+            ConstantExpressionEvaluator.MaximumSequenceLength);
+        if (array.Status != ClrmdEvidenceStatus.Exact)
+        {
+            return false;
+        }
+
+        resolution = MapArrayObservation(array.Value!);
+        return true;
+    }
+
+    private static bool TryMapRootArrayChain(
+        ClrmdDumpSession session,
+        DumpQueryRootBinding rootBinding,
+        string chain,
+        out ConstantOperandResolution resolution)
+    {
+        resolution = ConstantOperandResolution.OutsideDomain();
+        if (rootBinding.Root is not { } root || chain.Contains('?', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var segments = chain.Split('.', StringSplitOptions.TrimEntries);
+        if (segments.Length < 2 ||
+            segments.Skip(1).Any(static segment => segment.Length == 0 ||
+                !segment.All(static character => char.IsLetterOrDigit(character) || character == '_')))
+        {
+            return false;
+        }
+
+        var array = session.ReadSzArrayInstancePath(
+            root.Address,
+            [.. segments[1..]],
+            ConstantExpressionEvaluator.MaximumSequenceLength);
+        if (array.Status != ClrmdEvidenceStatus.Exact)
+        {
+            return false;
+        }
+
+        resolution = MapArrayObservation(array.Value!);
+        return true;
     }
 
     private static ConstantOperandResolution MapQueryValue(string name, DumpQueryValue? value) => value?.Kind switch

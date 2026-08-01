@@ -312,6 +312,27 @@ public enum ConstantOperandResolutionKind
 
     /// <summary>The operand resolved but cannot participate; the expression becomes a typed stop.</summary>
     Stop = 4,
+
+    /// <summary>The operand resolved to an exact Int64 value.</summary>
+    Int64 = 5,
+
+    /// <summary>The operand resolved to an exact IEEE-754 double.</summary>
+    Double = 6,
+
+    /// <summary>The operand resolved to an exact IEEE-754 single.</summary>
+    Single = 7,
+
+    /// <summary>The operand resolved to an exact Boolean.</summary>
+    Boolean = 8,
+
+    /// <summary>The operand resolved to an exact UTF-16 code unit.</summary>
+    Char = 9,
+
+    /// <summary>
+    /// The operand resolved to a read-only array from the dump heap, materialized as a virtual sequence whose
+    /// elements are themselves scalar resolutions.
+    /// </summary>
+    Sequence = 10,
 }
 
 /// <summary>One value extracted from the dump for use as an operand inside a composed expression.</summary>
@@ -322,13 +343,27 @@ public sealed class ConstantOperandResolution
         int? int32Value,
         string? stringValue,
         string? diagnosticCode,
-        string? diagnosticMessage)
+        string? diagnosticMessage,
+        long? int64Value = null,
+        double? doubleValue = null,
+        float? singleValue = null,
+        bool? booleanValue = null,
+        char? charValue = null,
+        ImmutableArray<ConstantOperandResolution> elements = default,
+        string? elementTypeName = null)
     {
         Kind = kind;
         Int32Value = int32Value;
         StringValue = stringValue;
         DiagnosticCode = diagnosticCode;
         DiagnosticMessage = diagnosticMessage;
+        Int64Value = int64Value;
+        DoubleValue = doubleValue;
+        SingleValue = singleValue;
+        BooleanValue = booleanValue;
+        CharValue = charValue;
+        Elements = elements.IsDefault ? [] : elements;
+        ElementTypeName = elementTypeName;
     }
 
     /// <summary>Gets the resolution discriminator.</summary>
@@ -345,6 +380,30 @@ public sealed class ConstantOperandResolution
 
     /// <summary>Gets the stop explanation only for <see cref="ConstantOperandResolutionKind.Stop"/>.</summary>
     public string? DiagnosticMessage { get; }
+
+    /// <summary>Gets the exact Int64 value only for <see cref="ConstantOperandResolutionKind.Int64"/>.</summary>
+    public long? Int64Value { get; }
+
+    /// <summary>Gets the exact double value only for <see cref="ConstantOperandResolutionKind.Double"/>.</summary>
+    public double? DoubleValue { get; }
+
+    /// <summary>Gets the exact single value only for <see cref="ConstantOperandResolutionKind.Single"/>.</summary>
+    public float? SingleValue { get; }
+
+    /// <summary>Gets the exact Boolean value only for <see cref="ConstantOperandResolutionKind.Boolean"/>.</summary>
+    public bool? BooleanValue { get; }
+
+    /// <summary>Gets the exact char value only for <see cref="ConstantOperandResolutionKind.Char"/>.</summary>
+    public char? CharValue { get; }
+
+    /// <summary>Gets the scalar element resolutions only for <see cref="ConstantOperandResolutionKind.Sequence"/>.</summary>
+    public ImmutableArray<ConstantOperandResolution> Elements { get; }
+
+    /// <summary>
+    /// Gets the element domain name — <c>Int32</c>, <c>Int64</c>, <c>Double</c>, <c>Single</c>, <c>Boolean</c>,
+    /// <c>Char</c>, or <c>String</c> — only for <see cref="ConstantOperandResolutionKind.Sequence"/>.
+    /// </summary>
+    public string? ElementTypeName { get; }
 
     /// <summary>Creates an exact Int32 operand.</summary>
     /// <param name="value">The exact value read from the dump.</param>
@@ -377,6 +436,47 @@ public sealed class ConstantOperandResolution
     /// <returns>An outside resolution.</returns>
     public static ConstantOperandResolution OutsideDomain() =>
         new(ConstantOperandResolutionKind.Outside, null, null, null, null);
+
+    /// <summary>Creates an exact Int64 operand.</summary>
+    /// <param name="value">The exact value read from the dump.</param>
+    /// <returns>An Int64 resolution.</returns>
+    public static ConstantOperandResolution FromInt64(long value) =>
+        new(ConstantOperandResolutionKind.Int64, null, null, null, null, int64Value: value);
+
+    /// <summary>Creates an exact double operand.</summary>
+    /// <param name="value">The exact value read from the dump.</param>
+    /// <returns>A double resolution.</returns>
+    public static ConstantOperandResolution FromDouble(double value) =>
+        new(ConstantOperandResolutionKind.Double, null, null, null, null, doubleValue: value);
+
+    /// <summary>Creates an exact single operand.</summary>
+    /// <param name="value">The exact value read from the dump.</param>
+    /// <returns>A single resolution.</returns>
+    public static ConstantOperandResolution FromSingle(float value) =>
+        new(ConstantOperandResolutionKind.Single, null, null, null, null, singleValue: value);
+
+    /// <summary>Creates an exact Boolean operand.</summary>
+    /// <param name="value">The exact value read from the dump.</param>
+    /// <returns>A Boolean resolution.</returns>
+    public static ConstantOperandResolution FromBoolean(bool value) =>
+        new(ConstantOperandResolutionKind.Boolean, null, null, null, null, booleanValue: value);
+
+    /// <summary>Creates an exact char operand.</summary>
+    /// <param name="value">The exact value read from the dump.</param>
+    /// <returns>A char resolution.</returns>
+    public static ConstantOperandResolution FromChar(char value) =>
+        new(ConstantOperandResolutionKind.Char, null, null, null, null, charValue: value);
+
+    /// <summary>Creates a read-only array operand materialized from the dump heap.</summary>
+    /// <param name="elements">The scalar element resolutions, in array order.</param>
+    /// <param name="elementTypeName">The element domain name.</param>
+    /// <returns>A sequence resolution.</returns>
+    public static ConstantOperandResolution FromSequence(
+        ImmutableArray<ConstantOperandResolution> elements,
+        string elementTypeName) =>
+        new(ConstantOperandResolutionKind.Sequence, null, null, null, null,
+            elements: elements,
+            elementTypeName: elementTypeName ?? throw new ArgumentNullException(nameof(elementTypeName)));
 }
 
 /// <summary>
@@ -505,8 +605,10 @@ public static partial class ConstantExpressionEvaluator
         // A bare qualified-name chain keeps its dedicated literal-field path so the result retains complete
         // module and token facts; a stored static field keeps falling through to the frozen pipeline. A chain
         // whose receiver is a known BCL type — 'Int32.MaxValue', 'System.Math.PI' — folds instead, because those
-        // members are type statics, not metadata literals declared in dump modules.
+        // members are type statics, not metadata literals declared in dump modules; and a chain ending in
+        // '.Length' folds so an array or string field's length can answer.
         if (TryReadQualifiedName(syntax, out var nameParts) &&
+            nameParts[^1] != "Length" &&
             !(syntax is MemberAccessExpressionSyntax typeStaticCandidate &&
                 TryReadTypeReceiver(typeStaticCandidate.Expression, out _)))
         {
@@ -576,14 +678,24 @@ public static partial class ConstantExpressionEvaluator
             return IsBareDumpExpression(coalesce.Left, rootIdentifier);
         }
 
-        // Indexing a chain's value is composition, not a bare chain: the frozen root-relative path has no
-        // indexer, so 'root.X.Name[6..^5]' folds here over the chain's exact string value.
-        if (syntax is ElementAccessExpressionSyntax)
+        // Only the root identifier itself and plain or conditional member chains are bare: those are exactly the
+        // shapes the frozen root-relative path answers. Indexing a chain's value and calling a method on a chain's
+        // value are composition — 'root.X.Name[6..^5]' and 'root.X.Values.Max()' fold here over the chain's exact
+        // value, while a method invoked on the root itself still reaches the counterfactual path, because folding
+        // has no value for the bare root and yields not-constant.
+        if (syntax is IdentifierNameSyntax identifier)
+        {
+            return identifier.Identifier.ValueText == rootIdentifier;
+        }
+
+        // A chain ending in '.Length' composes: the resolver still gives the frozen pipeline first chance at a
+        // genuine field of that name, and falls back to the receiver value's length for arrays and strings.
+        if (syntax is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "Length" })
         {
             return false;
         }
 
-        return LeftmostIdentifier(syntax) == rootIdentifier;
+        return IsRootChainOperand(syntax, rootIdentifier);
     }
 
     /// <summary>Matches a plain or conditional member chain anchored at the root identifier, used as an operand.</summary>
@@ -606,11 +718,70 @@ public static partial class ConstantExpressionEvaluator
             case ConstantOperandResolutionKind.Null:
                 context.DumpValuesConsumed++;
                 return FoldOutcome.Folded(Operand.Null());
+            case ConstantOperandResolutionKind.Int64:
+                context.DumpValuesConsumed++;
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Int64, resolution.Int64Value!.Value));
+            case ConstantOperandResolutionKind.Double:
+                context.DumpValuesConsumed++;
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Double, resolution.DoubleValue!.Value));
+            case ConstantOperandResolutionKind.Single:
+                context.DumpValuesConsumed++;
+                return FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Single, resolution.SingleValue!.Value));
+            case ConstantOperandResolutionKind.Boolean:
+                context.DumpValuesConsumed++;
+                return FoldOutcome.Folded(Operand.FromBoolean(resolution.BooleanValue!.Value));
+            case ConstantOperandResolutionKind.Char:
+                context.DumpValuesConsumed++;
+                return FoldOutcome.Folded(Operand.FromChar(resolution.CharValue!.Value));
+            case ConstantOperandResolutionKind.Sequence:
+                context.DumpValuesConsumed++;
+                return MaterializeSequenceResolution(resolution);
             case ConstantOperandResolutionKind.Stop:
                 return FoldOutcome.Error(resolution.DiagnosticCode!, resolution.DiagnosticMessage!);
             default:
                 return FoldOutcome.NotArithmetic();
         }
+    }
+
+    private static FoldOutcome MaterializeSequenceResolution(ConstantOperandResolution resolution)
+    {
+        var (elementKind, elementNumeric) = resolution.ElementTypeName switch
+        {
+            "Int32" => (OperandKind.Int32, NumericKind.Int32),
+            "Int64" => (OperandKind.Numeric, NumericKind.Int64),
+            "Double" => (OperandKind.Numeric, NumericKind.Double),
+            "Single" => (OperandKind.Numeric, NumericKind.Single),
+            "Boolean" => (OperandKind.Boolean, default),
+            "Char" => (OperandKind.Char, default),
+            _ => (OperandKind.String, default(NumericKind)),
+        };
+        var items = ImmutableArray.CreateBuilder<Operand>(resolution.Elements.Length);
+        foreach (var element in resolution.Elements)
+        {
+            items.Add(element.Kind switch
+            {
+                ConstantOperandResolutionKind.Int32 => Operand.FromInt32(element.Int32Value!.Value),
+                ConstantOperandResolutionKind.Int64 => Operand.FromNumeric(
+                    NumericKind.Int64,
+                    element.Int64Value!.Value),
+                ConstantOperandResolutionKind.Double => Operand.FromNumeric(
+                    NumericKind.Double,
+                    element.DoubleValue!.Value),
+                ConstantOperandResolutionKind.Single => Operand.FromNumeric(
+                    NumericKind.Single,
+                    element.SingleValue!.Value),
+                ConstantOperandResolutionKind.Boolean => Operand.FromBoolean(element.BooleanValue!.Value),
+                ConstantOperandResolutionKind.Char => Operand.FromChar(element.CharValue!.Value),
+                ConstantOperandResolutionKind.String => Operand.FromString(element.StringValue!),
+                _ => Operand.Null(),
+            });
+        }
+
+        return CreateSequence(new SequencePayload(
+            items.ToImmutable(),
+            elementKind,
+            elementNumeric,
+            resolution.ElementTypeName ?? "String"));
     }
 
     private enum OperandKind
@@ -787,10 +958,34 @@ public static partial class ConstantExpressionEvaluator
     {
         // A member chain anchored at the root identifier is one operand: the frozen root-relative pipeline
         // evaluates the whole chain — including its ?. short-circuit semantics — and hands back the exact value.
+        // A chain ending in '.Length' that has no value of its own falls back to the receiver chain's value, so
+        // 'root.X.Tags.Length' answers over the array and 'root.Region.Length' over the string.
         if (context.Resolvers is { RootChain: { } rootResolver, RootIdentifier: { } rootIdentifier } &&
             IsRootChainOperand(syntax, rootIdentifier))
         {
-            return ResolveDumpOperand(context, rootResolver(syntax.ToString()));
+            var resolved = ResolveDumpOperand(context, rootResolver(syntax.ToString()));
+            if (resolved.Disposition == FoldDisposition.Folded ||
+                syntax is not MemberAccessExpressionSyntax
+                {
+                    Name.Identifier.ValueText: "Length",
+                    Expression: { } lengthReceiver,
+                } ||
+                !IsRootChainOperand(lengthReceiver, rootIdentifier))
+            {
+                return resolved;
+            }
+
+            var receiverValue = ResolveDumpOperand(context, rootResolver(lengthReceiver.ToString()));
+            return receiverValue.Disposition == FoldDisposition.Folded
+                ? receiverValue.Operand.Kind switch
+                {
+                    OperandKind.Sequence => FoldOutcome.Folded(Operand.FromInt32(
+                        PayloadOf(receiverValue.Operand).Items.Length)),
+                    OperandKind.String => FoldOutcome.Folded(Operand.FromInt32(
+                        receiverValue.Operand.String!.Length)),
+                    _ => resolved,
+                }
+                : resolved;
         }
 
         switch (syntax)
@@ -1241,15 +1436,25 @@ public static partial class ConstantExpressionEvaluator
             return DispatchTypeStatic(typeReceiver, member.Identifier.ValueText);
         }
 
+        // A whole qualified chain resolves first, so metadata literals and stored fields keep their answers. When
+        // the member is 'Length' and the whole chain has no value of its own, the receiver's value gets a chance:
+        // that is how 'Some.Type.Field.Length' answers over a stored array or string.
+        FoldOutcome? qualifiedOutcome = null;
         if (TryReadQualifiedName(memberAccess, out var parts))
         {
-            return FoldQualifiedName(parts, context);
+            var qualified = FoldQualifiedName(parts, context);
+            if (qualified.Disposition == FoldDisposition.Folded || member.Identifier.ValueText != "Length")
+            {
+                return qualified;
+            }
+
+            qualifiedOutcome = qualified;
         }
 
         var receiver = Fold(memberAccess.Expression, context);
         if (receiver.Disposition != FoldDisposition.Folded)
         {
-            return receiver;
+            return qualifiedOutcome ?? receiver;
         }
 
         return (receiver.Operand.Kind, member.Identifier.ValueText) switch
@@ -1257,7 +1462,7 @@ public static partial class ConstantExpressionEvaluator
             (OperandKind.String, "Length") => FoldOutcome.Folded(Operand.FromInt32(receiver.Operand.String!.Length)),
             (OperandKind.Sequence, "Length") => FoldOutcome.Folded(Operand.FromInt32(
                 PayloadOf(receiver.Operand).Items.Length)),
-            _ => FoldOutcome.Error(
+            _ => qualifiedOutcome ?? FoldOutcome.Error(
                 MemberUnsupportedCode,
                 $"'{member.Identifier.ValueText}' is not an admitted deterministic constant member."),
         };

@@ -146,6 +146,9 @@ public sealed class OrderBatch
 
     /// <summary>The escalation opened against this batch, or null while nobody escalated it.</summary>
     public EscalationRecord? Escalation;
+
+    /// <summary>The handling tags operators attached to this batch.</summary>
+    public string[] Tags = ["priority", "cross-border", "temp-controlled"];
 }
 
 /// <summary>The dispatcher that drains a queue of batches to carriers.</summary>
@@ -176,4 +179,7 @@ public sealed class ShipmentDispatcher
 
     /// <summary>The reason the last dispatch attempt stopped, or null when the last attempt succeeded.</summary>
     public FailureRecord? LastFailure;
+
+    /// <summary>Durations of the most recent dispatch attempts, in milliseconds; the outlier is the stall.</summary>
+    public int[] RecentDispatchDurationsMs = [1210, 980, 30045, 1105];
 }

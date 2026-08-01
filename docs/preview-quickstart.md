@@ -128,6 +128,9 @@ subset:
 | Index and range expressions on constant strings | `"hello"[^1]`, `"hello"[1..^1]` |
 | Boolean logic and comparisons over constants | `"abc".Length > 2 && char.IsDigit('5')` |
 | Dump values as operands in composed expressions | `root.QueueDepth * 2 + 1`, `Some.Type.Count + 1`, `root.Batch.Id[6..^5]` |
+| Array initializers and array-producing BCL members | `new[] { 1, 2, 3 }`, `"a,b".Split(',')`, `"abc".ToCharArray()` |
+| Lambda-free `System.Linq.Enumerable` over sequences | `"a,b".Split(',').Length`, `xs.Distinct().Order()`, `xs.Contains(2)` |
+| Read-only arrays from the dump heap | `root.Batch.Tags[..]`, `root.DurationsMs.Max()`, `Some.Type.Corridors[0]` |
 
 A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
 limits. Each intermediate hop must be a directly declared reference field whose exact declared type is present in
@@ -179,8 +182,23 @@ operand: `root.QueueDepth * 2 + 1`, `Some.Type.ProcessedCount + 1`, `root.Batch.
 report — and an operand that is not exact is a typed stop carrying the pipeline's own diagnostic, never a guessed
 value. The answer reports how many dump values it consumed.
 
-- **It is not a general expression evaluator.** Method calls on runtime objects, generics, and operands beyond the
-  Int32/string/null value surface are outside the current subset.
+**Arrays are virtual sequences.** An array initializer (`new[] { 1, 2, 3 }`), an array-producing BCL member
+(`Split`, `ToCharArray`, `Enumerable.Range`/`Repeat`), or a single-dimension array read from the dump heap
+materializes as a virtual sequence: it exists only while the one expression evaluates, is never persisted anywhere,
+and is transformed purely functionally. Dump-heap arrays are read-only evidence — a static array field or a plain
+root-relative chain ending at an array member materializes its exact elements (integral, floating-point, Boolean,
+char, and string element domains; other shapes are typed stops). Sequences answer indexing and range slicing,
+`Length`, and the deterministic lambda-free `System.Linq.Enumerable` surface — `Count`, `Any`, `Contains`,
+`First`/`Last`/`Single` and their `OrDefault` forms, `ElementAt`, `Skip`/`Take`/`SkipLast`/`TakeLast`, `Reverse`,
+`Distinct`, `Append`/`Prepend`/`Concat`, `Union`/`Except`/`Intersect`, `SequenceEqual`, `Order`/`OrderDescending`,
+and the `Sum`/`Min`/`Max`/`Average` aggregates — with the real BCL semantics, including overflow and empty-sequence
+stops under their familiar exception names. Sequences are bounded at 4096 elements as a deterministic limit;
+ordering or `Min`/`Max` over strings is a culture-sensitive typed stop; overloads that take a lambda are outside
+this version.
+
+- **It is not a general expression evaluator.** Method calls on runtime objects, generics, lambda expressions, and
+  operands beyond the scalar, string, null, and single-dimension array value surface are outside the current
+  subset.
 - **It does not read your disk to fill gaps.** Names and values come from the snapshot. A Portable PDB is consulted
   only when you offer one and only after its identity is validated against the module.
 

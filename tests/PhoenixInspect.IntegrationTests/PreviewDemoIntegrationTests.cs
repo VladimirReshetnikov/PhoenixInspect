@@ -118,6 +118,14 @@ public sealed class PreviewDemoIntegrationTests
             ("root.QueueDepth * 2 + 1", EvaluationSeverity.Exact, "35"),
             ("root.CurrentBatch.PendingCount > 50", EvaluationSeverity.Exact, "true"),
             ("root.CurrentBatch.BatchId[6..^5]", EvaluationSeverity.Exact, "\"2026-07-30\""),
+
+            // Read-only arrays from the dump heap materialize as virtual sequences and answer through the
+            // lambda-free Enumerable surface.
+            ("root.CurrentBatch.Tags[..]", EvaluationSeverity.Exact,
+                "{ \"priority\", \"cross-border\", \"temp-controlled\" }"),
+            ("root.CurrentBatch.Tags.Contains(\"priority\")", EvaluationSeverity.Exact, "true"),
+            ("root.CurrentBatch.Tags.Length", EvaluationSeverity.Exact, "3"),
+            ("root.RecentDispatchDurationsMs.Max()", EvaluationSeverity.Exact, "30045"),
         ];
 
     /// <summary>The exact rendered answer the demo must produce for each constant expression.</summary>
@@ -139,6 +147,11 @@ public sealed class PreviewDemoIntegrationTests
                 EvaluationSeverity.Exact, "84214"),
             ("Contoso.OrderService.Diagnostics.ServiceState.LastFailureCode ?? 0",
                 EvaluationSeverity.Exact, "5031"),
+
+            // Virtual sequences from array-producing BCL members, and a stored static array as an operand.
+            ("\"batch-2026-07-30-0042\".Split('-').Length", EvaluationSeverity.Exact, "5"),
+            ("Contoso.OrderService.Diagnostics.ServiceState.ActiveCorridors[0]",
+                EvaluationSeverity.Exact, "\"NL-BE\""),
         ];
 
     /// <summary>

@@ -15,7 +15,7 @@ namespace PhoenixInspect.Product.DumpQuery;
 public static partial class ConstantExpressionEvaluator
 {
     /// <summary>The deterministic bound on virtual sequence length; a longer sequence is a typed stop.</summary>
-    internal const int MaximumSequenceLength = 4096;
+    public const int MaximumSequenceLength = 4096;
 
     private const string SequenceBoundCode = "CONSTANT_SEQUENCE_BOUND_EXCEEDED";
     private const string EmptySequenceMessage = "Sequence contains no elements.";
