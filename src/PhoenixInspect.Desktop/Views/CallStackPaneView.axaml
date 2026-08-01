@@ -22,7 +22,9 @@
                             Command="{Binding Panel.ProbeCommand}"
                             ToolTip.Tip="Probe thread ordinals again with these caps" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                <!-- A horizontal StackPanel paints past its arranged width, so without clipping the probe row
+                     would render under the right-docked buttons whenever the pane is narrow. -->
+                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" ClipToBounds="True">
                     <TextBlock Text="probe" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
                     <TextBox Width="48" Padding="4,2" FontSize="11"
                              Text="{Binding Panel.ThreadOrdinalsToProbe}"

@@ -178,6 +178,8 @@
                        VerticalAlignment="Center"
                        ZIndex="1"
                        IsVisible="{Binding !Panel.History.Count}" />
+            <!-- The empty-state caption and the grid never render together: the always-visible column headers
+                 would otherwise sit under the centered caption in a short pane. -->
             <DataGrid ItemsSource="{Binding Panel.History}"
                       SelectedItem="{Binding Panel.Report, Mode=TwoWay}"
                       AutoGenerateColumns="False"
@@ -185,7 +187,8 @@
                       CanUserResizeColumns="True"
                       HeadersVisibility="Column"
                       GridLinesVisibility="None"
-                      Margin="4,2">
+                      Margin="4,2"
+                      IsVisible="{Binding !!Panel.History.Count}">
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Width="30">
                         <DataGridTemplateColumn.CellTemplate>
