@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "DbgEngStandalone": {
-      "commandName": "Project",
-      "commandLineArgs": "..\\..\\..\\..\\..\\src\\TestTargets\\bin\\x64\\AppDomains_wks.dmp"
-    }
-  }
-}

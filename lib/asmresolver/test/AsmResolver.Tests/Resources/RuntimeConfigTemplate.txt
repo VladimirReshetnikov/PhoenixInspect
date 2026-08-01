@@ -1,9 +1,0 @@
-{
-  "runtimeOptions": {
-    "tfm": "%tfm%",
-    "framework": {
-      "name": "%name%",
-      "version": "%version%"
-    }
-  }
-}
