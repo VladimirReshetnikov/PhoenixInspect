@@ -82,8 +82,39 @@ public sealed partial class ClrmdDumpSession
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(certificate);
         ArgumentNullException.ThrowIfNull(reference);
+        return ValidateReferencedObjectCore(certificate.OuterField, certificate.DeclaredTarget, reference);
+    }
+
+    /// <summary>
+    /// Validates one exact non-null reference observation against an intermediate-hop reference certificate.
+    /// </summary>
+    /// <param name="certificate">The reference-member certificate that issued the outer field and target TypeDef.</param>
+    /// <param name="reference">The exact non-null pointer observation selecting the candidate object.</param>
+    /// <returns>
+    /// Exact non-root identity and extent, or a typed result retaining the pointer and any object-header read,
+    /// with dispositions identical to the pair-certificate overload.
+    /// </returns>
+    /// <remarks>The validation core is shared with the frozen pair-certificate overload byte for byte.</remarks>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="certificate"/> or <paramref name="reference"/> is <see langword="null"/>.
+    /// </exception>
+    public ClrmdEvidenceResult<ClrmdReferencedObjectInfo> ValidateReferencedObject(
+        ClrmdDeclaredReferenceMemberCertificate certificate,
+        ClrmdObjectReferenceObservation reference)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(certificate);
+        ArgumentNullException.ThrowIfNull(reference);
+        return ValidateReferencedObjectCore(certificate.OuterField, certificate.DeclaredTarget, reference);
+    }
+
+    private ClrmdEvidenceResult<ClrmdReferencedObjectInfo> ValidateReferencedObjectCore(
+        ClrmdInstanceFieldInfo outerField,
+        ClrmdDeclaredTypeInfo declaredTarget,
+        ClrmdObjectReferenceObservation reference)
+    {
         var pointerEvidence = ImmutableArray.Create(reference.Memory);
-        if (certificate.OuterField.Snapshot != Snapshot || reference.Field.Snapshot != Snapshot)
+        if (outerField.Snapshot != Snapshot || reference.Field.Snapshot != Snapshot)
         {
             return ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
                 ClrmdEvidenceStatus.Conflict,
@@ -92,7 +123,7 @@ public sealed partial class ClrmdDumpSession
         }
 
         if (!string.Equals(
-                certificate.OuterField.ToCanonicalReplayProjection(),
+                outerField.ToCanonicalReplayProjection(),
                 reference.Field.ToCanonicalReplayProjection(),
                 StringComparison.Ordinal))
         {
@@ -186,9 +217,9 @@ public sealed partial class ClrmdDumpSession
                 evidence: evidence);
         }
 
-        if (runtimeModule.Identity != certificate.DeclaredTarget.RuntimeModule ||
-            runtimeType.MetadataToken != certificate.DeclaredTarget.MetadataToken ||
-            !string.Equals(runtimeType.Name, certificate.DeclaredTarget.Name, StringComparison.Ordinal))
+        if (runtimeModule.Identity != declaredTarget.RuntimeModule ||
+            runtimeType.MetadataToken != declaredTarget.MetadataToken ||
+            !string.Equals(runtimeType.Name, declaredTarget.Name, StringComparison.Ordinal))
         {
             return ClrmdEvidenceResult<ClrmdReferencedObjectInfo>.Create(
                 ClrmdEvidenceStatus.Unavailable,
@@ -220,7 +251,7 @@ public sealed partial class ClrmdDumpSession
         var target = new ClrmdReferencedObjectInfo(
             Snapshot,
             targetAddress,
-            runtimeType.Name ?? certificate.DeclaredTarget.Name,
+            runtimeType.Name ?? declaredTarget.Name,
             runtimeType.MetadataToken,
             observedMethodTable,
             objectSize,

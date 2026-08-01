@@ -29,7 +29,13 @@ public static class Program
             currentBatch: new OrderBatch(
                 batchId: "batch-2026-07-30-0042",
                 pendingCount: 96,
-                destinationHub: "AMS-3"))
+                destinationHub: "AMS-3",
+                route: new RouteAssignment(
+                    hubCode: "AMS-3-SOUTH-DOCK-07",
+                    legCount: 3,
+                    corridor: new TransitCorridor(
+                        name: "NL-BE overnight corridor",
+                        segmentCount: 11))))
         {
             // No carrier ever accepted the hand-off, which is why the batch is still pending.
             AssignedCarrier = null,
@@ -39,6 +45,10 @@ public static class Program
                 attempt: 4),
         };
         ServiceState.Dispatcher = dispatcher;
+
+        // Escalations exist in this service even though nobody escalated this batch. Constructing one loads the
+        // escalation types into the runtime, so the snapshot can name them when a chain walks a null escalation.
+        GC.KeepAlive(new EscalationRecord("prototype", new ReviewNote("ops-oncall")));
 
         var rooted = GCHandle.Alloc(dispatcher, GCHandleType.Normal);
         CarrierGateway.StartPollingWorkers(dispatcher, workerCount: 2);

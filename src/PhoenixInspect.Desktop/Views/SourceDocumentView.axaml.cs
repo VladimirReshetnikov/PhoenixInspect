@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Media;
-using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Rendering;
 using PhoenixInspect.Desktop.Docking;
 using PhoenixInspect.Inspection;
@@ -23,7 +22,7 @@ public partial class SourceDocumentView : UserControl
     public SourceDocumentView()
     {
         InitializeComponent();
-        Editor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#");
+        Editor.SyntaxHighlighting = PhoenixCSharpHighlighting.Definition;
         Editor.TextArea.TextView.BackgroundRenderers.Add(highlighter);
         DataContextChanged += (_, _) => Attach(DataContext as SourceDocument);
 
@@ -65,9 +64,14 @@ public partial class SourceDocumentView : UserControl
     {
         var result = document?.Result;
         var verified = result is { Verification: SourceContentVerification.VerifiedExact };
-        Editor.IsVisible = verified;
-        VerificationBadge.Text = verified ? "✔ checksum-verified" : string.Empty;
-        if (result is null || !verified)
+        var decompiled = result is { Verification: SourceContentVerification.DecompiledFromValidatedAssembly };
+        Editor.IsVisible = verified || decompiled;
+        VerificationBadge.Text = verified
+            ? "✔ checksum-verified"
+            : decompiled
+                ? "⚠ decompiled from IL"
+                : string.Empty;
+        if (result is null || !(verified || decompiled))
         {
             Editor.Text = string.Empty;
             highlighter.Clear();

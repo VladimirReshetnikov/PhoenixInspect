@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ICSharpCode.Decompiler" />
     <ProjectReference Include="..\PhoenixInspect.Core.Abstractions\PhoenixInspect.Core.Abstractions.csproj" />
     <ProjectReference Include="..\PhoenixInspect.Host.Abstractions\PhoenixInspect.Host.Abstractions.csproj" />
     <ProjectReference Include="..\PhoenixInspect.Host.Dump.ClrMD\PhoenixInspect.Host.Dump.ClrMD.csproj" />

@@ -116,9 +116,28 @@ subset:
 | Static field with one member suffix | `Some.Namespace.Type.Field.Member` |
 | Contextual static name, given a selected frame and its Portable PDB | `Statics.Field` |
 | Root-relative member | `root.Member` |
-| Root-relative two-member chain | `root.Member.Member` |
-| Conditional access | `root.Member?.Member` |
+| Root-relative member chain of any depth | `root.Member.Member.Member.Member` |
+| Conditional access at any hop after the first | `root.Member?.Member.Member?.Member` |
 | Coalescing with a literal | `root.Member?.Member ?? "fallback"` |
+| Constant arithmetic over every C# numeric type | `(86400 / 24) / 60`, `0.1 + 0.2`, `10m / 4`, `1UL << 40` |
+| Numeric casts and conversions, including nullable targets | `(long)int.MaxValue + 1`, `(int?)null` |
+| Enum member or const field | `System.DayOfWeek.Monday` |
+| `System.Math`, `BigInteger`, and numeric type statics | `Math.Round(Math.PI, 4)`, `BigInteger.Pow(2, 100)`, `double.NaN` |
+| Invariant `ToString`, with or without a format | `(255).ToString("X4")`, `(0.1 + 0.2).ToString()` |
+| Deterministic string/char operations over constants | `("a" + "b").ToUpperInvariant()`, `"text".Contains('x')` |
+| Index and range expressions on constant strings | `"hello"[^1]`, `"hello"[1..^1]` |
+| Boolean logic and comparisons over constants | `"abc".Length > 2 && char.IsDigit('5')` |
+| Dump values as operands in composed expressions | `root.QueueDepth * 2 + 1`, `Some.Type.Count + 1`, `root.Batch.Id[6..^5]` |
+| Array initializers and array-producing BCL members | `new[] { 1, 2, 3 }`, `"a,b".Split(',')`, `"abc".ToCharArray()` |
+| Lambda-free `System.Linq.Enumerable` over sequences | `"a,b".Split(',').Length`, `xs.Distinct().Order()`, `xs.Contains(2)` |
+| Read-only arrays from the dump heap | `root.Batch.Tags[..]`, `root.DurationsMs.Max()`, `Some.Type.Corridors[0]` |
+
+A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
+limits. Each intermediate hop must be a directly declared reference field whose exact declared type is present in
+the snapshot's runtime type catalog and agrees with the referenced object, validated with the same counted evidence
+at every link; a `?.` whose receiver is exactly null short-circuits the whole chain to the coalescing fallback. A
+hop whose declared type the captured process never loaded is a typed stop, because the snapshot cannot validate what
+it never materialized.
 
 **Values.** `Int32`, `Nullable<Int32>`, bounded `String`, exact null, and validated object references. Anything else
 is reported as a typed stop rather than approximated.
@@ -134,10 +153,59 @@ object search with the traversal counters that say how exhaustive it was.
 - **It does not guess.** A name the metadata does not declare, a byte range the snapshot does not contain, or a shape
   outside the admitted subset produces a typed non-exact outcome with a stable diagnostic code — never a fabricated
   zero, empty string, or null.
-- **It is not a general expression evaluator.** Arithmetic, comparisons, indexers, casts, method calls, generics, and
-  arbitrary chain depth are outside the current subset.
+Constant expressions fold with the semantics C# defines, across the full numeric tower: every fixed-size integral
+type, `nint`/`nuint` (folded at 64 bits, matching the x64 processes the preview targets), `Int128`/`UInt128`,
+`System.Numerics.BigInteger`, `float`, `double`, and `decimal`, with C# numeric promotion, checked integral
+arithmetic, and casts between all of them (overflow, division by zero, and argument errors are typed stops reported
+under their familiar exception names). Floating point is IEEE-754 faithful — signed zeros, infinities, and NaN
+behave exactly as in running code — and `decimal` keeps exact scale. `System.Math`, the numeric type statics
+(`MinValue`/`MaxValue`, `double.NaN`, `Epsilon`, `Pi`), the `double`/`float` classification predicates, and the
+`BigInteger` factories evaluate deterministically; hardware-dependent estimates are typed stops. Numeric `ToString`
+— with or without a format string — always evaluates under the invariant culture. Nullable semantics are lifted
+exactly: `null` and `(int?)null` are exact null results, arithmetic with a null operand yields exactly null, and
+`??` coalesces. A fully qualified enum member or `const` field is read from the declaring module's metadata Constant
+table in the dump — Int32-family and string constants are supported, and other constant types are a typed stop. A
+closed allowlist of deterministic, stateless, culture-independent `string` and `char` members evaluates over
+constant operands: concatenation, ordinal `Contains`/`StartsWith`/`EndsWith`/`IndexOf`, `Substring`, `Trim`, `Pad`,
+`Insert`, `Remove`, ordinal `Replace`, `ToUpperInvariant`/`ToLowerInvariant`,
+`string.Concat`/`Join`/`IsNullOrEmpty`/`CompareOrdinal`, the `char` classification predicates, indexing and range
+slicing with from-end `^n` indexes, `Length`, equality, relational comparison, Boolean logic, and the conditional
+operator. A culture-sensitive member or overload — `ToLower()`, `IndexOf(string)` without a `StringComparison`, or a
+culture-based comparison — is a typed stop naming the deterministic alternative; `StringComparison.Ordinal` and
+`OrdinalIgnoreCase` arguments are accepted. Character classification follows the pinned analysis runtime's Unicode
+tables. Nested types and names that need import context are outside this version.
+
+**Dump values compose.** Inside a composed expression, a static-field name or a root-relative member chain resolves
+through the same frozen pipeline that answers it alone, and its exact Int32, string, or null value becomes an
+operand: `root.QueueDepth * 2 + 1`, `Some.Type.ProcessedCount + 1`, `root.Batch.Id[6..^5]`, or a stored
+`Nullable<Int32>` behind `?? 0`. A bare name or bare chain never enters this path — it keeps its full evidence
+report — and an operand that is not exact is a typed stop carrying the pipeline's own diagnostic, never a guessed
+value. The answer reports how many dump values it consumed.
+
+**Arrays are virtual sequences.** An array initializer (`new[] { 1, 2, 3 }`), an array-producing BCL member
+(`Split`, `ToCharArray`, `Enumerable.Range`/`Repeat`), or a single-dimension array read from the dump heap
+materializes as a virtual sequence: it exists only while the one expression evaluates, is never persisted anywhere,
+and is transformed purely functionally. Dump-heap arrays are read-only evidence — a static array field or a plain
+root-relative chain ending at an array member materializes its exact elements (integral, floating-point, Boolean,
+char, and string element domains; other shapes are typed stops). Sequences answer indexing and range slicing,
+`Length`, and the deterministic lambda-free `System.Linq.Enumerable` surface — `Count`, `Any`, `Contains`,
+`First`/`Last`/`Single` and their `OrDefault` forms, `ElementAt`, `Skip`/`Take`/`SkipLast`/`TakeLast`, `Reverse`,
+`Distinct`, `Append`/`Prepend`/`Concat`, `Union`/`Except`/`Intersect`, `SequenceEqual`, `Order`/`OrderDescending`,
+and the `Sum`/`Min`/`Max`/`Average` aggregates — with the real BCL semantics, including overflow and empty-sequence
+stops under their familiar exception names. Sequences are bounded at 4096 elements as a deterministic limit;
+ordering or `Min`/`Max` over strings is a culture-sensitive typed stop; overloads that take a lambda are outside
+this version.
+
+- **It is not a general expression evaluator.** Method calls on runtime objects, generics, lambda expressions, and
+  operands beyond the scalar, string, null, and single-dimension array value surface are outside the current
+  subset.
 - **It does not read your disk to fill gaps.** Names and values come from the snapshot. A Portable PDB is consulted
-  only when you offer one and only after its identity is validated against the module.
+  only when you offer one and only after its identity is validated against the module. The desktop shell's source
+  view holds the same line: a file is presented as a frame's source only when its bytes reproduce the PDB's document
+  checksum. When no matching PDB or verified source exists, the shell falls back to C# **decompiled from the
+  module's IL** by the ILSpy engine — and only from an on-disk assembly whose complete metadata content identity
+  reproduces the dump module's. The view is labelled as a reconstruction (`⚠ decompiled from IL`), never presented
+  as the original source.
 
 ## Reading an answer
 

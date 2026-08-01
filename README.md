@@ -33,10 +33,20 @@ phoenix> eval root.CurrentBatch.BatchId
   [exact]    root.CurrentBatch.BatchId
     =   "batch-2026-07-30-0042"   [String (length 21)]
 
+phoenix> eval root.CurrentBatch.Route.Corridor.Name
+
+  [exact]    root.CurrentBatch.Route.Corridor.Name
+    =   "NL-BE overnight corridor"   [String (length 24)]
+
 phoenix> eval root.AssignedCarrier?.Name ?? "no carrier ever accepted the batch"
 
   [exact]    root.AssignedCarrier?.Name ?? "no carrier ever accepted the batch"
     =   "no carrier ever accepted the batch"   [String (length 34)]
+
+phoenix> eval System.DayOfWeek.Monday
+
+  [exact]    System.DayOfWeek.Monday
+    =   DayOfWeek.Monday (1)   [Enum System.DayOfWeek · underlying Int32]
 
 phoenix> eval root.RetryBudgetRemaining
 

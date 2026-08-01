@@ -250,6 +250,13 @@ public static class DumpExpressionEvaluator
             return EvaluateMemberChain(new ClrmdDumpMemberChainEvidenceSource(session), request);
         }
 
+        if (classification.Kind == DumpExpressionKind.MemberChainPath)
+        {
+            return DumpExpressionEvaluationOutcome.FromDerivedQuery(
+                request,
+                DumpMemberChainPathEvaluator.Evaluate(session, request));
+        }
+
         return EvaluateMethod(new ClrmdDumpMethodEvidenceSource(session), request, cancellationToken);
     }
 

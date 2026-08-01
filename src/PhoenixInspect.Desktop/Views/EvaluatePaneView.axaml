@@ -10,63 +10,74 @@
                 BorderThickness="0,0,0,1"
                 Padding="8,6">
             <StackPanel Spacing="5">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <RadioButton Content="Static field"
-                                     FontSize="11"
-                                     GroupName="EvalPath"
-                                     IsChecked="{Binding Panel.IsStaticFieldPath, Mode=TwoWay}"
-                                     ToolTip.Tip="Namespace-qualified static field, bound from module metadata" />
-                        <RadioButton Content="Root-relative"
-                                     FontSize="11"
-                                     GroupName="EvalPath"
-                                     IsChecked="{Binding Panel.IsRootRelativePath, Mode=TwoWay}"
-                                     ToolTip.Tip="Member expression over one exact heap object" />
-                        <ToggleButton x:Name="OptionsToggle" Content="Options" FontSize="11" Padding="8,3" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="❯"
-                                   FontFamily="{DynamicResource Phoenix.MonoFont}"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource Phoenix.AccentOliveDeep}"
-                                   VerticalAlignment="Center" />
-                        <TextBox x:Name="ExpressionBox"
-                                 Width="420"
-                                 Padding="7,4"
-                                 FontSize="13"
-                                 FontFamily="{DynamicResource Phoenix.MonoFont}"
-                                 Text="{Binding Panel.Expression, Mode=TwoWay}"
-                                 PlaceholderText="C# expression"
-                                 KeyDown="OnExpressionKeyDown" />
-                        <Button Content="Evaluate"
-                                Classes="accent"
-                                Padding="12,4"
-                                Command="{Binding Panel.EvaluateCommand}" />
-                    </StackPanel>
-                </DockPanel>
-                <DockPanel>
-                    <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding Panel.Samples}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="4" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding Label}"
-                                        FontSize="10"
-                                        Padding="6,2"
-                                        Click="OnSampleClick"
-                                        ToolTip.Tip="{Binding Text}" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <TextBlock Text="{Binding Panel.ReadinessMessage}"
-                               Classes="secondary"
-                               FontSize="10"
+                <!-- The expression box takes every spare pixel; fixed-width neighbors can never overlap it. -->
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                    <TextBlock Text="❯"
+                               FontFamily="{DynamicResource Phoenix.MonoFont}"
+                               FontSize="13"
+                               Foreground="{DynamicResource Phoenix.AccentOliveDeep}"
                                VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
-                </DockPanel>
+                               Margin="0,0,6,0" />
+                    <TextBox x:Name="ExpressionBox"
+                             Grid.Column="1"
+                             Padding="7,4"
+                             FontSize="13"
+                             FontFamily="{DynamicResource Phoenix.MonoFont}"
+                             Text="{Binding Panel.Expression, Mode=TwoWay}"
+                             PlaceholderText="C# expression"
+                             KeyDown="OnExpressionKeyDown" />
+                    <Button Grid.Column="2"
+                            Content="Evaluate"
+                            Classes="accent"
+                            Padding="12,4"
+                            Margin="6,0,12,0"
+                            VerticalAlignment="Center"
+                            Command="{Binding Panel.EvaluateCommand}" />
+                    <RadioButton Grid.Column="3"
+                                 Content="Static field"
+                                 FontSize="11"
+                                 GroupName="EvalPath"
+                                 VerticalAlignment="Center"
+                                 Margin="0,0,8,0"
+                                 IsChecked="{Binding Panel.IsStaticFieldPath, Mode=TwoWay}"
+                                 ToolTip.Tip="Namespace-qualified static field, bound from module metadata" />
+                    <RadioButton Grid.Column="4"
+                                 Content="Root-relative"
+                                 FontSize="11"
+                                 GroupName="EvalPath"
+                                 VerticalAlignment="Center"
+                                 Margin="0,0,8,0"
+                                 IsChecked="{Binding Panel.IsRootRelativePath, Mode=TwoWay}"
+                                 ToolTip.Tip="Member expression over one exact heap object" />
+                    <ToggleButton Grid.Column="5"
+                                  x:Name="OptionsToggle"
+                                  Content="Options"
+                                  FontSize="11"
+                                  Padding="8,3"
+                                  VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Text="{Binding Panel.ReadinessMessage}"
+                           Classes="secondary"
+                           FontSize="10"
+                           Margin="20,0,0,0"
+                           TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding Panel.Samples}" Margin="20,0,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding Label}"
+                                    FontSize="10"
+                                    Padding="6,2"
+                                    Margin="0,0,4,4"
+                                    Click="OnSampleClick"
+                                    ToolTip.Tip="{Binding Text}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
                 <!-- Collapsible options -->
                 <StackPanel IsVisible="{Binding IsChecked, ElementName=OptionsToggle}" Spacing="5">
@@ -127,7 +138,7 @@
                                 </StackPanel>
                             </DockPanel>
                             <WrapPanel>
-                                <CheckBox Content="Admit two-hop member chains"
+                                <CheckBox Content="Admit member chains (any depth)"
                                           FontSize="11"
                                           Margin="0,0,16,0"
                                           IsChecked="{Binding Panel.AdmitMemberChain, Mode=TwoWay}" />

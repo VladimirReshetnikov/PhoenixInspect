@@ -93,6 +93,10 @@ public sealed class PreviewDemoIntegrationTests
             ("root.CurrentBatch.BatchId", EvaluationSeverity.Exact, "\"batch-2026-07-30-0042\""),
             ("root.CurrentBatch.PendingCount", EvaluationSeverity.Exact, "96"),
             ("root.CurrentBatch.DestinationHub", EvaluationSeverity.Exact, "\"AMS-3\""),
+
+            // Deeper chains prove there is no hop limit: three and four hops answer from the same evidence rules.
+            ("root.CurrentBatch.Route.HubCode", EvaluationSeverity.Exact, "\"AMS-3-SOUTH-DOCK-07\""),
+            ("root.CurrentBatch.Route.Corridor.Name", EvaluationSeverity.Exact, "\"NL-BE overnight corridor\""),
             ("root.LastFailure?.Code", EvaluationSeverity.Exact, "\"carrier-handoff-timeout\""),
             ("root.LastFailure?.Detail", EvaluationSeverity.Exact,
                 "\"No carrier accepted batch-2026-07-30-0042 within the 30s hand-off window.\""),
@@ -100,9 +104,54 @@ public sealed class PreviewDemoIntegrationTests
             ("root.AssignedCarrier?.Name ?? \"no carrier ever accepted the batch\"",
                 EvaluationSeverity.Exact, "\"no carrier ever accepted the batch\""),
 
+            // A conditional hop that meets an exact null short-circuits mid-chain, however deep the rest of the
+            // chain would have gone.
+            ("root.CurrentBatch.Escalation?.Review?.Owner ?? \"the batch was never escalated\"",
+                EvaluationSeverity.Exact, "\"the batch was never escalated\""),
+
             // The demo shows a name the type does not declare. A stop with a stable diagnostic code is the correct
             // answer; a fabricated zero, empty string, or null would not be.
             ("root.RetryBudgetRemaining", EvaluationSeverity.Stopped, "No value was produced."),
+
+            // Composed expressions: each chain is still evaluated by the frozen pipeline; arithmetic, comparison,
+            // and slicing then fold over the exact values it produced.
+            ("root.QueueDepth * 2 + 1", EvaluationSeverity.Exact, "35"),
+            ("root.CurrentBatch.PendingCount > 50", EvaluationSeverity.Exact, "true"),
+            ("root.CurrentBatch.BatchId[6..^5]", EvaluationSeverity.Exact, "\"2026-07-30\""),
+
+            // Read-only arrays from the dump heap materialize as virtual sequences and answer through the
+            // lambda-free Enumerable surface.
+            ("root.CurrentBatch.Tags[..]", EvaluationSeverity.Exact,
+                "{ \"priority\", \"cross-border\", \"temp-controlled\" }"),
+            ("root.CurrentBatch.Tags.Contains(\"priority\")", EvaluationSeverity.Exact, "true"),
+            ("root.CurrentBatch.Tags.Length", EvaluationSeverity.Exact, "3"),
+            ("root.RecentDispatchDurationsMs.Max()", EvaluationSeverity.Exact, "30045"),
+        ];
+
+    /// <summary>The exact rendered answer the demo must produce for each constant expression.</summary>
+    private static readonly ImmutableArray<(string Expression, EvaluationSeverity Severity, string Value)>
+        ConstantExpectations =
+        [
+            ("System.DayOfWeek.Monday", EvaluationSeverity.Exact, "DayOfWeek.Monday (1)"),
+            ("Contoso.OrderService.Diagnostics.ServiceState.HandoffWindowSeconds", EvaluationSeverity.Exact, "30"),
+            ("(86400 / 24) / 60", EvaluationSeverity.Exact, "60"),
+            ("(\"carrier\" + \"-\" + \"handoff\").ToUpperInvariant()",
+                EvaluationSeverity.Exact, "\"CARRIER-HANDOFF\""),
+            ("\"batch-2026-07-30-0042\".Substring(6, 4)", EvaluationSeverity.Exact, "\"2026\""),
+            ("\"AMS-3\".Contains('-')", EvaluationSeverity.Exact, "true"),
+            ("\"batch-2026-07-30-0042\"[6..^5]", EvaluationSeverity.Exact, "\"2026-07-30\""),
+            ("Math.Round(Math.PI, 4)", EvaluationSeverity.Exact, "3.1416"),
+
+            // Stored static values compose into constant folding, including a Nullable with a fallback.
+            ("Contoso.OrderService.Diagnostics.ServiceState.ProcessedOrderCount + 1",
+                EvaluationSeverity.Exact, "84214"),
+            ("Contoso.OrderService.Diagnostics.ServiceState.LastFailureCode ?? 0",
+                EvaluationSeverity.Exact, "5031"),
+
+            // Virtual sequences from array-producing BCL members, and a stored static array as an operand.
+            ("\"batch-2026-07-30-0042\".Split('-').Length", EvaluationSeverity.Exact, "5"),
+            ("Contoso.OrderService.Diagnostics.ServiceState.ActiveCorridors[0]",
+                EvaluationSeverity.Exact, "\"NL-BE\""),
         ];
 
     /// <summary>
@@ -139,6 +188,7 @@ public sealed class PreviewDemoIntegrationTests
         var expected = StaticFieldExpectations
             .Concat(ContextualExpectations)
             .Concat(RootRelativeExpectations)
+            .Concat(ConstantExpectations)
             .Select(static expectation => expectation.Expression)
             .ToImmutableArray();
 
@@ -175,6 +225,7 @@ public sealed class PreviewDemoIntegrationTests
             AssertContextualAnswers(session);
             var root = AssertRootAdoption(session);
             AssertRootRelativeAnswers(session, root);
+            AssertConstantAnswers(session);
             AssertStrongHandleSearchReachesTheSameObject(session);
             AssertStalledFrameIsNamed(session);
         }
@@ -271,7 +322,17 @@ public sealed class PreviewDemoIntegrationTests
                 root,
                 RootIdentifier,
                 policy,
-                DumpExpressionLanguageProfile.FixedDepthMemberChainV1);
+                DumpExpressionLanguageProfile.MemberChainV2);
+            Assert.Equal(severity, report.Severity);
+            Assert.Equal(value, report.Value);
+        }
+    }
+
+    private static void AssertConstantAnswers(ClrmdDumpSession session)
+    {
+        foreach (var (expression, severity, value) in ConstantExpectations)
+        {
+            var report = ExpressionEvaluationService.EvaluateStaticField(session, expression, null, []);
             Assert.Equal(severity, report.Severity);
             Assert.Equal(value, report.Value);
         }

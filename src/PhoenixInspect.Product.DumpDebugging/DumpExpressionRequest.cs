@@ -26,6 +26,9 @@ public enum DumpExpressionKind
 
     /// <summary>The opt-in W6 fixed-depth direct or conditional member-chain grammar admitted the expression.</summary>
     FixedDepthMemberChain = 3,
+
+    /// <summary>The opt-in arbitrary-depth member-chain grammar admitted an expression of three or more hops.</summary>
+    MemberChainPath = 4,
 }
 
 /// <summary>Chooses the versioned expression-admission profile applied after one complete C# expression parse.</summary>
@@ -40,6 +43,13 @@ public enum DumpExpressionLanguageProfile
 
     /// <summary>Adds the version-one direct and conditional two-member chain shapes after the legacy recognizers.</summary>
     FixedDepthMemberChainV1 = 2,
+
+    /// <summary>
+    /// Removes the hop-count limit: admits member chains of any depth, with each separator after the first
+    /// independently direct or conditional. Two-member chains keep their exact V1 routing and identities, and
+    /// deeper chains resolve intermediate references hop by hop before the frozen two-member tail evaluates.
+    /// </summary>
+    MemberChainV2 = 3,
 }
 
 /// <summary>Publishes the frozen, project-owned identity of the complete C# expression front-end profile.</summary>
@@ -376,6 +386,132 @@ public sealed class DumpMemberChainExpressionIdentity
     }
 }
 
+/// <summary>One admitted hop of an arbitrary-depth member chain.</summary>
+/// <param name="Name">The decoded, case-sensitive member identifier.</param>
+/// <param name="IsConditionalAccess">Whether the separator before this member is <c>?.</c> rather than <c>.</c>.</param>
+public sealed record DumpMemberChainPathHop(string Name, bool IsConditionalAccess);
+
+/// <summary>
+/// Freezes one opt-in arbitrary-depth member-chain descriptor independently of metadata binding and value reads.
+/// </summary>
+/// <remarks>
+/// This identity contains only bounded raw text and project-owned decoded scalars: the ordered hops with their
+/// per-separator conditionality, and the optional coalescing literal with both its decoded value and exact source
+/// spelling. Chain depth is bounded only by the front end's expression-length and node-count limits, never by a
+/// hop count.
+/// </remarks>
+public sealed class DumpMemberChainPathIdentity
+{
+    /// <summary>Gets the canonical path-identity schema version.</summary>
+    public const int CanonicalSchemaVersion = 1;
+
+    /// <summary>Gets the exact opt-in admission-profile identity.</summary>
+    public const string AdmissionProfileId = "MemberChainV2";
+
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    internal DumpMemberChainPathIdentity(string expression, ParsedExpressionDescriptor descriptor)
+    {
+        if (descriptor.Operation != ParsedExpressionOperationKind.MemberChainPath ||
+            descriptor.Hops.Length < 3)
+        {
+            throw new ArgumentException(
+                "A member-chain path identity requires one admitted chain of at least three hops.",
+                nameof(descriptor));
+        }
+
+        Expression = expression;
+        RootName = descriptor.RootName;
+        Hops = descriptor.Hops
+            .Select(static hop => new DumpMemberChainPathHop(hop.Name, hop.IsConditionalAccess))
+            .ToImmutableArray();
+        FallbackKind = descriptor.CoalesceLiteral switch
+        {
+            null => DumpMemberChainFallbackKind.None,
+            { Kind: DumpQueryLiteralKind.Null } => DumpMemberChainFallbackKind.Null,
+            { Kind: DumpQueryLiteralKind.Int32 } => DumpMemberChainFallbackKind.Int32,
+            { Kind: DumpQueryLiteralKind.String } => DumpMemberChainFallbackKind.String,
+            _ => throw new InvalidOperationException("The admitted chain contains an invalid coalescing literal."),
+        };
+        Int32Fallback = descriptor.CoalesceLiteral is { Kind: DumpQueryLiteralKind.Int32 } int32
+            ? int32.Int32Value
+            : null;
+        StringFallback = descriptor.CoalesceLiteral is { Kind: DumpQueryLiteralKind.String } text
+            ? text.StringValue
+            : null;
+        FallbackLiteralText = descriptor.CoalesceLiteralText;
+        canonicalBytes = EncodeCanonical();
+        Sha256 = CounterfactualCanonical.Hash(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets the exact bounded raw expression, including trivia and literal spelling.</summary>
+    public string Expression { get; }
+
+    /// <summary>Gets the decoded, case-sensitive root identifier value.</summary>
+    public string RootName { get; }
+
+    /// <summary>Gets every admitted hop in chain order; the first hop is always direct.</summary>
+    public ImmutableArray<DumpMemberChainPathHop> Hops { get; }
+
+    /// <summary>Gets the typed coalescing-literal discriminator.</summary>
+    public DumpMemberChainFallbackKind FallbackKind { get; }
+
+    /// <summary>Gets the exact integer fallback only when <see cref="FallbackKind"/> is <see cref="DumpMemberChainFallbackKind.Int32"/>.</summary>
+    public int? Int32Fallback { get; }
+
+    /// <summary>Gets the decoded string fallback only when <see cref="FallbackKind"/> is <see cref="DumpMemberChainFallbackKind.String"/>.</summary>
+    public string? StringFallback { get; }
+
+    /// <summary>Gets the exact source spelling of the coalescing literal, or null when the chain has none.</summary>
+    public string? FallbackLiteralText { get; }
+
+    /// <summary>Gets a defensive copy of the canonical schema-v1 path bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes =>
+        ImmutableArray.CreateRange(canonicalBytes.AsSpan().ToArray());
+
+    /// <summary>Gets the lowercase SHA-256 fingerprint of <see cref="CanonicalBytes"/>.</summary>
+    public string Sha256 { get; }
+
+    private ImmutableArray<byte> EncodeCanonical()
+    {
+        var writer = new CounterfactualCanonicalWriter();
+        writer.WriteString("dump-member-chain-path-expression");
+        writer.WriteInt32(CanonicalSchemaVersion);
+        writer.WriteString(DumpCSharpExpressionProfile.Id);
+        writer.WriteString(DumpCSharpExpressionProfile.PackageId);
+        writer.WriteString(DumpCSharpExpressionProfile.PackageVersion);
+        writer.WriteString(DumpCSharpExpressionProfile.LanguageVersion);
+        writer.WriteString(AdmissionProfileId);
+        writer.WriteString(Expression);
+        writer.WriteString(RootName);
+        writer.WriteInt32(Hops.Length);
+        foreach (var hop in Hops)
+        {
+            writer.WriteString(hop.Name);
+            writer.WriteBoolean(hop.IsConditionalAccess);
+        }
+
+        writer.WriteInt32((int)FallbackKind);
+        if (Int32Fallback is { } int32)
+        {
+            writer.WriteInt32(int32);
+        }
+
+        if (StringFallback is not null)
+        {
+            writer.WriteString(StringFallback);
+        }
+
+        writer.WriteBoolean(FallbackLiteralText is not null);
+        if (FallbackLiteralText is not null)
+        {
+            writer.WriteString(FallbackLiteralText);
+        }
+
+        return writer.ToImmutableArray();
+    }
+}
+
 /// <summary>
 /// Freezes one bounded W5 product request before evidence acquisition or execution and binds it to the exact
 /// host-selected dump object.
@@ -409,7 +545,8 @@ public sealed class DumpExpressionRequest
         ParsedExpressionDescriptor? parsedExpression,
         DumpQueryParserBounds parserBounds,
         DumpMethodExpressionIdentity? methodExpressionIdentity,
-        DumpMemberChainExpressionIdentity? memberChainExpressionIdentity)
+        DumpMemberChainExpressionIdentity? memberChainExpressionIdentity,
+        DumpMemberChainPathIdentity? memberChainPathIdentity = null)
     {
         if (expression?.Length > MaximumExpressionCharacters)
         {
@@ -437,6 +574,7 @@ public sealed class DumpExpressionRequest
         ParserBounds = parserBounds;
         MethodExpressionIdentity = methodExpressionIdentity;
         MemberChainExpressionIdentity = memberChainExpressionIdentity;
+        MemberChainPathIdentity = memberChainPathIdentity;
         ValidateAdmissionState();
         canonicalBytes = EncodeCanonical();
         Sha256 = CounterfactualCanonical.Hash(canonicalBytes.AsSpan());
@@ -471,6 +609,12 @@ public sealed class DumpExpressionRequest
     /// <see langword="null"/> for legacy operations and rejected syntax.
     /// </summary>
     public DumpMemberChainExpressionIdentity? MemberChainExpressionIdentity { get; }
+
+    /// <summary>
+    /// Gets the separate versioned arbitrary-depth chain identity for an admitted path request, or
+    /// <see langword="null"/> for every other operation and rejected syntax.
+    /// </summary>
+    public DumpMemberChainPathIdentity? MemberChainPathIdentity { get; }
 
     /// <summary>Gets a defensive, canonical-name-ordered copy of syntax bounds reached during classification.</summary>
     public ImmutableArray<EvaluationDeterministicBound> ReachedBounds =>
@@ -525,6 +669,17 @@ public sealed class DumpExpressionRequest
             }
         }
 
+        // The path-identity block appears only under the V2 profile so every V1 request encoding stays
+        // byte-identical to its frozen form.
+        if (LanguageProfile == DumpExpressionLanguageProfile.MemberChainV2)
+        {
+            writer.WriteBoolean(MemberChainPathIdentity is not null);
+            if (MemberChainPathIdentity is { } pathIdentity)
+            {
+                writer.WriteBytes(pathIdentity.CanonicalBytes.AsSpan());
+            }
+        }
+
         return writer.ToImmutableArray();
     }
 
@@ -532,7 +687,8 @@ public sealed class DumpExpressionRequest
     {
         if (LanguageProfile is not (
             DumpExpressionLanguageProfile.FrozenW5 or
-            DumpExpressionLanguageProfile.FixedDepthMemberChainV1))
+            DumpExpressionLanguageProfile.FixedDepthMemberChainV1 or
+            DumpExpressionLanguageProfile.MemberChainV2))
         {
             throw new ArgumentOutOfRangeException(nameof(LanguageProfile));
         }
@@ -554,9 +710,22 @@ public sealed class DumpExpressionRequest
         }
 
         if (AdmittedKind == DumpExpressionKind.FixedDepthMemberChain &&
-            LanguageProfile != DumpExpressionLanguageProfile.FixedDepthMemberChainV1)
+            LanguageProfile is not (
+                DumpExpressionLanguageProfile.FixedDepthMemberChainV1 or
+                DumpExpressionLanguageProfile.MemberChainV2))
         {
-            throw new ArgumentException("A fixed-depth member chain requires the opt-in W6 language profile.");
+            throw new ArgumentException("A fixed-depth member chain requires an opt-in chain language profile.");
+        }
+
+        if ((AdmittedKind == DumpExpressionKind.MemberChainPath) != (MemberChainPathIdentity is not null))
+        {
+            throw new ArgumentException("The path identity must appear only on an admitted chain-path request.");
+        }
+
+        if (AdmittedKind == DumpExpressionKind.MemberChainPath &&
+            LanguageProfile != DumpExpressionLanguageProfile.MemberChainV2)
+        {
+            throw new ArgumentException("An arbitrary-depth member chain requires the MemberChainV2 profile.");
         }
     }
 
@@ -749,7 +918,8 @@ public static class DumpExpressionClassifier
         ArgumentNullException.ThrowIfNull(policy);
         if (languageProfile is not (
             DumpExpressionLanguageProfile.FrozenW5 or
-            DumpExpressionLanguageProfile.FixedDepthMemberChainV1))
+            DumpExpressionLanguageProfile.FixedDepthMemberChainV1 or
+            DumpExpressionLanguageProfile.MemberChainV2))
         {
             throw new ArgumentOutOfRangeException(nameof(languageProfile));
         }
@@ -766,9 +936,13 @@ public static class DumpExpressionClassifier
         var syntax = CSharpExpressionFrontEnd.Classify(
             expression,
             rootBinding.Name,
-            languageProfile == DumpExpressionLanguageProfile.FrozenW5
-                ? CSharpExpressionAdmissionProfile.FrozenW5
-                : CSharpExpressionAdmissionProfile.FixedDepthMemberChainV1);
+            languageProfile switch
+            {
+                DumpExpressionLanguageProfile.FrozenW5 => CSharpExpressionAdmissionProfile.FrozenW5,
+                DumpExpressionLanguageProfile.FixedDepthMemberChainV1 =>
+                    CSharpExpressionAdmissionProfile.FixedDepthMemberChainV1,
+                _ => CSharpExpressionAdmissionProfile.MemberChainV2,
+            });
         if (expression?.Length > DumpExpressionRequest.MaximumExpressionCharacters ||
             rootBinding.Name?.Length > DumpExpressionRequest.MaximumRootNameCharacters)
         {
@@ -789,6 +963,7 @@ public static class DumpExpressionClassifier
                 ParsedExpressionOperationKind.DirectMemberChain or
                     ParsedExpressionOperationKind.ConditionalMemberChain =>
                     DumpExpressionKind.FixedDepthMemberChain,
+                ParsedExpressionOperationKind.MemberChainPath => DumpExpressionKind.MemberChainPath,
                 _ => throw new InvalidOperationException("The parsed expression operation is invalid."),
             };
             var methodIdentity = kind == DumpExpressionKind.CounterfactualMethod
@@ -796,6 +971,9 @@ public static class DumpExpressionClassifier
                 : null;
             var chainIdentity = kind == DumpExpressionKind.FixedDepthMemberChain
                 ? new DumpMemberChainExpressionIdentity(expression!, descriptor)
+                : null;
+            var pathIdentity = kind == DumpExpressionKind.MemberChainPath
+                ? new DumpMemberChainPathIdentity(expression!, descriptor)
                 : null;
             var request = new DumpExpressionRequest(
                 expression,
@@ -807,7 +985,8 @@ public static class DumpExpressionClassifier
                 descriptor,
                 syntax.AppliedBounds,
                 methodIdentity,
-                chainIdentity);
+                chainIdentity,
+                pathIdentity);
             return Accepted(kind, request);
         }
 
