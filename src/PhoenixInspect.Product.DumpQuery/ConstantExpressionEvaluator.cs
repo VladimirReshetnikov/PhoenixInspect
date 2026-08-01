@@ -61,6 +61,15 @@ public enum ConstantValueKind
 
     /// <summary>An exact null, from the null literal, a lifted nullable operation, or a null dump value.</summary>
     Null = 7,
+
+    /// <summary>
+    /// A virtual array sequence: elements produced by an array-creating BCL member, an array initializer
+    /// expression, a <c>System.Linq.Enumerable</c> transformation, or a read-only array read from the dump heap.
+    /// The sequence exists only while the expression evaluates and is never persisted. The element type is named by
+    /// <see cref="ConstantExpressionEvaluation.ValueTypeName"/> and the rendered elements by
+    /// <see cref="ConstantExpressionEvaluation.ValueText"/>.
+    /// </summary>
+    Sequence = 8,
 }
 
 /// <summary>The complete outcome of one constant-expression evaluation attempt.</summary>
@@ -132,7 +141,10 @@ public sealed class ConstantExpressionEvaluation
     /// <summary>Gets the value domain of an exact result; otherwise <see cref="ConstantValueKind.None"/>.</summary>
     public ConstantValueKind Kind { get; }
 
-    /// <summary>Gets the exact Int32 value for arithmetic, integer literal fields, and enum members.</summary>
+    /// <summary>
+    /// Gets the exact Int32 value for arithmetic, integer literal fields, and enum members; for a
+    /// <see cref="ConstantValueKind.Sequence"/> result it carries the exact element count.
+    /// </summary>
     public int? Int32Value { get; }
 
     /// <summary>Gets the string value only for <see cref="ConstantValueKind.String"/>.</summary>
@@ -610,6 +622,7 @@ public static partial class ConstantExpressionEvaluator
         Enum,
         Numeric,
         Null,
+        Sequence,
     }
 
     private readonly record struct Operand(
@@ -646,6 +659,9 @@ public static partial class ConstantExpressionEvaluator
 
         internal static Operand Null() =>
             new(OperandKind.Null, 0, false, '\0', null, null, null, default, null);
+
+        internal static Operand FromSequence(SequencePayload payload) =>
+            new(OperandKind.Sequence, 0, false, '\0', null, null, null, default, payload);
 
         internal bool IsNumeric =>
             Kind is OperandKind.Int32 or OperandKind.Char or OperandKind.Enum or OperandKind.Numeric;
@@ -726,6 +742,14 @@ public static partial class ConstantExpressionEvaluator
                 valueText = "null";
                 underlying = null;
                 break;
+            case OperandKind.Sequence:
+                var payload = PayloadOf(operand);
+                kind = ConstantValueKind.Sequence;
+                int32 = payload.Items.Length;
+                valueTypeName = payload.DisplayName + "[]";
+                valueText = RenderSequence(payload);
+                underlying = valueTypeName;
+                break;
             default:
                 kind = ConstantValueKind.EnumMember;
                 int32 = operand.Int32;
@@ -783,6 +807,10 @@ public static partial class ConstantExpressionEvaluator
                 return FoldConditional(conditional, context);
             case CastExpressionSyntax cast:
                 return FoldCast(cast, context);
+            case ArrayCreationExpressionSyntax arrayCreation:
+                return FoldArrayCreation(arrayCreation, context);
+            case ImplicitArrayCreationExpressionSyntax implicitCreation:
+                return FoldInitializer(implicitCreation.Initializer, context);
             case ElementAccessExpressionSyntax elementAccess:
                 return FoldElementAccess(elementAccess, context);
             case MemberAccessExpressionSyntax memberAccess:
@@ -1087,12 +1115,17 @@ public static partial class ConstantExpressionEvaluator
             return receiver;
         }
 
+        if (receiver.Operand.Kind == OperandKind.Sequence)
+        {
+            return FoldSequenceElementAccess(receiver.Operand, elementAccess, context);
+        }
+
         if (receiver.Operand.Kind != OperandKind.String ||
             elementAccess.ArgumentList.Arguments.Count != 1)
         {
             return FoldOutcome.Error(
                 OperandTypeCode,
-                "Constant element access requires one string receiver and one index or range.");
+                "Constant element access requires one string or array receiver and one index or range.");
         }
 
         var text = receiver.Operand.String!;
@@ -1222,6 +1255,8 @@ public static partial class ConstantExpressionEvaluator
         return (receiver.Operand.Kind, member.Identifier.ValueText) switch
         {
             (OperandKind.String, "Length") => FoldOutcome.Folded(Operand.FromInt32(receiver.Operand.String!.Length)),
+            (OperandKind.Sequence, "Length") => FoldOutcome.Folded(Operand.FromInt32(
+                PayloadOf(receiver.Operand).Items.Length)),
             _ => FoldOutcome.Error(
                 MemberUnsupportedCode,
                 $"'{member.Identifier.ValueText}' is not an admitted deterministic constant member."),
@@ -1298,6 +1333,8 @@ public static partial class ConstantExpressionEvaluator
                 TypeReceiverCategory.String => DispatchStaticString(name, arguments),
                 TypeReceiverCategory.Char => DispatchStaticChar(name, arguments),
                 TypeReceiverCategory.Math => DispatchMath(name, arguments),
+                TypeReceiverCategory.Enumerable => DispatchEnumerable(name, arguments),
+                TypeReceiverCategory.KnownEnum => MemberUnsupported(name),
                 _ => DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments),
             };
         }
@@ -1325,6 +1362,7 @@ public static partial class ConstantExpressionEvaluator
         return receiver.Operand.Kind switch
         {
             OperandKind.String => DispatchInstanceString(receiver.Operand.String!, name, arguments),
+            OperandKind.Sequence => DispatchSequence(receiver.Operand, name, arguments),
             OperandKind.Char => name == "ToString" && arguments.Count == 0
                 ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.Char.ToString()))
                 : MemberUnsupported(name),
@@ -1342,6 +1380,25 @@ public static partial class ConstantExpressionEvaluator
     {
         switch (name)
         {
+            case "Concat" or "Join" when
+                (name == "Concat" && arguments is [{ Kind: OperandKind.Sequence }]) ||
+                (name == "Join" && arguments is [{ Kind: OperandKind.String }, { Kind: OperandKind.Sequence }]):
+                var sequence = arguments[^1];
+                var joined = new List<string>(PayloadOf(sequence).Items.Length);
+                foreach (var item in PayloadOf(sequence).Items)
+                {
+                    if (!TryConcatOperand(item, out var text))
+                    {
+                        return FoldOutcome.Error(
+                            OperandTypeCode,
+                            $"string.{name} admits only string, char, numeric, and Boolean elements.");
+                    }
+
+                    joined.Add(text);
+                }
+
+                return FoldOutcome.Folded(Operand.FromString(
+                    string.Join(name == "Join" ? arguments[0].String : string.Empty, joined)));
             case "Concat" when arguments.Count >= 1:
                 var builder = new StringBuilder();
                 foreach (var argument in arguments)
@@ -1544,6 +1601,20 @@ public static partial class ConstantExpressionEvaluator
                 case "Equals" when arguments is [{ Kind: OperandKind.String } single, { } comparison]:
                     return WithComparison(comparison, mode => FoldOutcome.Folded(Operand.FromBoolean(
                         string.Equals(receiver, single.String, mode))));
+                case "ToCharArray" when arguments.Count == 0:
+                    return CreateCharSequence(receiver.ToCharArray());
+                case "Split" when arguments.Count >= 1 &&
+                    arguments.All(static argument => argument.Kind == OperandKind.Char):
+                    return CreateStringSequence(receiver.Split(
+                        [.. arguments.Select(static argument => argument.Char)]));
+                case "Split" when arguments is [{ Kind: OperandKind.Char } separator, { } options] &&
+                    TryGetSplitOptions(options, out var charSplitOptions):
+                    return CreateStringSequence(receiver.Split(separator.Char, charSplitOptions));
+                case "Split" when arguments is [{ Kind: OperandKind.String } separator]:
+                    return CreateStringSequence(receiver.Split(separator.String));
+                case "Split" when arguments is [{ Kind: OperandKind.String } separator, { } options] &&
+                    TryGetSplitOptions(options, out var stringSplitOptions):
+                    return CreateStringSequence(receiver.Split(separator.String, stringSplitOptions));
                 case "GetHashCode":
                     return FoldOutcome.Error(
                         MemberUnsupportedCode,

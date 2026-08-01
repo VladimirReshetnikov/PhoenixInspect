@@ -313,6 +313,10 @@ public static class ExpressionEvaluationService
             ConstantValueKind.Null => (
                 "null",
                 "Exactly null"),
+            ConstantValueKind.Sequence => (
+                constant.ValueText!,
+                $"{constant.ValueTypeName} · virtual array "
+                + $"(length {constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})"),
             _ => (
                 constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture),
                 isLiteralField

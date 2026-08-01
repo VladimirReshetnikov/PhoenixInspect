@@ -905,9 +905,38 @@ public static partial class ConstantExpressionEvaluator
         Char,
         Numeric,
         Math,
+        Enumerable,
+        KnownEnum,
     }
 
-    private readonly record struct TypeReceiver(TypeReceiverCategory Category, NumericKind Numeric);
+    private readonly record struct TypeReceiver(
+        TypeReceiverCategory Category,
+        NumericKind Numeric,
+        string? EnumTypeFullName = null);
+
+    /// <summary>
+    /// The small closed set of BCL argument enums recognized without dump metadata, so comparison and split
+    /// options work even before any module is read. The member values are fixed by the BCL contract.
+    /// </summary>
+    private static FoldOutcome DispatchKnownEnum(string enumTypeFullName, string member)
+    {
+        int? value = (enumTypeFullName, member) switch
+        {
+            ("System.StringComparison", "CurrentCulture") => 0,
+            ("System.StringComparison", "CurrentCultureIgnoreCase") => 1,
+            ("System.StringComparison", "InvariantCulture") => 2,
+            ("System.StringComparison", "InvariantCultureIgnoreCase") => 3,
+            ("System.StringComparison", "Ordinal") => 4,
+            ("System.StringComparison", "OrdinalIgnoreCase") => 5,
+            ("System.StringSplitOptions", "None") => 0,
+            ("System.StringSplitOptions", "RemoveEmptyEntries") => 1,
+            ("System.StringSplitOptions", "TrimEntries") => 2,
+            _ => null,
+        };
+        return value is { } resolved
+            ? FoldOutcome.Folded(Operand.FromEnum(resolved, enumTypeFullName, member))
+            : MemberUnsupported(member);
+    }
 
     private static bool TryReadTypeReceiver(ExpressionSyntax expression, out TypeReceiver receiver)
     {
@@ -956,6 +985,19 @@ public static partial class ConstantExpressionEvaluator
             }:
                 receiver = new TypeReceiver(TypeReceiverCategory.Numeric, NumericKind.BigInteger);
                 return true;
+            case MemberAccessExpressionSyntax
+            {
+                RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
+                Expression: MemberAccessExpressionSyntax
+                {
+                    RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
+                    Expression: IdentifierNameSyntax { Identifier.ValueText: "System" },
+                    Name.Identifier.ValueText: "Linq",
+                },
+                Name.Identifier.ValueText: "Enumerable",
+            }:
+                receiver = new TypeReceiver(TypeReceiverCategory.Enumerable, default);
+                return true;
             default:
                 return false;
         }
@@ -974,6 +1016,15 @@ public static partial class ConstantExpressionEvaluator
                 return true;
             case "Math":
                 receiver = new TypeReceiver(TypeReceiverCategory.Math, default);
+                return true;
+            case "Enumerable":
+                receiver = new TypeReceiver(TypeReceiverCategory.Enumerable, default);
+                return true;
+            case "StringComparison":
+                receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, "System.StringComparison");
+                return true;
+            case "StringSplitOptions":
+                receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, "System.StringSplitOptions");
                 return true;
             default:
                 var target = CastTarget.Numeric;
@@ -1011,6 +1062,10 @@ public static partial class ConstantExpressionEvaluator
                     "Tau" => FoldOutcome.Folded(Operand.FromNumeric(NumericKind.Double, Math.Tau)),
                     _ => MemberUnsupported(member),
                 };
+            case TypeReceiverCategory.KnownEnum:
+                return DispatchKnownEnum(receiver.EnumTypeFullName!, member);
+            case TypeReceiverCategory.Enumerable:
+                return MemberUnsupported($"Enumerable.{member}");
             default:
                 return DispatchNumericTypeStatic(receiver.Numeric, member);
         }

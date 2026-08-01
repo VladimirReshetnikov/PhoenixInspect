@@ -283,7 +283,6 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("char.ToUpper('a')", "CONSTANT_CULTURE_SENSITIVE_UNSUPPORTED")]
     [InlineData("\"abc\".CompareTo(\"abd\")", "CONSTANT_CULTURE_SENSITIVE_UNSUPPORTED")]
     [InlineData("\"abc\".GetHashCode()", "CONSTANT_MEMBER_UNSUPPORTED")]
-    [InlineData("\"abc\".Split('b')", "CONSTANT_MEMBER_UNSUPPORTED")]
     [InlineData("\"abc\".NoSuchMethod()", "CONSTANT_MEMBER_UNSUPPORTED")]
     [InlineData("string.Format(\"{0}\", \"x\")", "CONSTANT_MEMBER_UNSUPPORTED")]
     [InlineData("true + 1", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
@@ -409,6 +408,154 @@ public sealed class ConstantExpressionEvaluatorTests
 
         // The same expression reproduces the same canonical outcome identity.
         Assert.Equal(result.Sha256, ConstantExpressionEvaluator.Evaluate(session: null, expression).Sha256);
+    }
+
+    /// <summary>
+    /// Proves virtual array sequences: creation from initializers and array-producing BCL members, indexing and
+    /// slicing, and the deterministic lambda-free <c>System.Linq.Enumerable</c> surface. A sequence result renders
+    /// its exact element type and elements.
+    /// </summary>
+    /// <param name="expression">The constant expression producing a sequence.</param>
+    /// <param name="expectedTypeName">The element type name with array suffix.</param>
+    /// <param name="expectedText">The rendered elements.</param>
+    [Theory]
+    [InlineData("new[] { 1, 2, 3 }", "Int32[]", "{ 1, 2, 3 }")]
+    [InlineData("new int[] { 4, 5 }", "Int32[]", "{ 4, 5 }")]
+    [InlineData("new[] { 1, 2.5 }", "Double[]", "{ 1, 2.5 }")]
+    [InlineData("new[] { \"a\", null, \"c\" }", "String[]", "{ \"a\", null, \"c\" }")]
+    [InlineData("new[] { 'x', 'y' }", "Char[]", "{ 'x', 'y' }")]
+    [InlineData("\"abc\".ToCharArray()", "Char[]", "{ 'a', 'b', 'c' }")]
+    [InlineData("\"a,b,c\".Split(',')", "String[]", "{ \"a\", \"b\", \"c\" }")]
+    [InlineData("\"a,b;c\".Split(',', ';')", "String[]", "{ \"a\", \"b\", \"c\" }")]
+    [InlineData("\"a, ,b\".Split(',', StringSplitOptions.RemoveEmptyEntries)", "String[]", "{ \"a\", \" \", \"b\" }")]
+    [InlineData(
+        "\"a, ,b\".Split(',', StringSplitOptions.TrimEntries)",
+        "String[]",
+        "{ \"a\", \"\", \"b\" }")]
+    [InlineData("\"x--y\".Split(\"--\")", "String[]", "{ \"x\", \"y\" }")]
+    [InlineData("Enumerable.Range(3, 4)", "Int32[]", "{ 3, 4, 5, 6 }")]
+    [InlineData("Enumerable.Repeat(\"ok\", 3)", "String[]", "{ \"ok\", \"ok\", \"ok\" }")]
+    [InlineData("new[] { 5, 1, 4 }.Order()", "Int32[]", "{ 1, 4, 5 }")]
+    [InlineData("new[] { 5, 1, 4 }.OrderDescending()", "Int32[]", "{ 5, 4, 1 }")]
+    [InlineData("new[] { 1, 2, 2, 3, 1 }.Distinct()", "Int32[]", "{ 1, 2, 3 }")]
+    [InlineData("new[] { 1, 2, 3 }.Reverse()", "Int32[]", "{ 3, 2, 1 }")]
+    [InlineData("new[] { 1, 2, 3, 4 }.Skip(1).Take(2)", "Int32[]", "{ 2, 3 }")]
+    [InlineData("new[] { 1, 2, 3, 4 }.SkipLast(1).TakeLast(2)", "Int32[]", "{ 2, 3 }")]
+    [InlineData("new[] { 1, 2 }.Concat(new[] { 3 })", "Int32[]", "{ 1, 2, 3 }")]
+    [InlineData("new[] { 1, 2 }.Append(3).Prepend(0)", "Int32[]", "{ 0, 1, 2, 3 }")]
+    [InlineData("new[] { 1, 2, 2, 3 }.Union(new[] { 3, 4 })", "Int32[]", "{ 1, 2, 3, 4 }")]
+    [InlineData("new[] { 1, 2, 3 }.Except(new[] { 2 })", "Int32[]", "{ 1, 3 }")]
+    [InlineData("new[] { 1, 2, 3 }.Intersect(new[] { 2, 3, 4 })", "Int32[]", "{ 2, 3 }")]
+    [InlineData("new[] { 1, 2, 3, 4 }[1..3]", "Int32[]", "{ 2, 3 }")]
+    [InlineData("\"batch-2026-07-30-0042\".Split('-')[1..^1]", "String[]", "{ \"2026\", \"07\", \"30\" }")]
+    [InlineData("new[] { \"b\", \"a\", \"b\" }.Distinct()", "String[]", "{ \"b\", \"a\" }")]
+    [InlineData("\"aab\".ToCharArray().Distinct()", "Char[]", "{ 'a', 'b' }")]
+    public void Sequence_results_evaluate_exactly(string expression, string expectedTypeName, string expectedText)
+    {
+        var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        Assert.Equal(ConstantExpressionStatus.Exact, result.Status);
+        Assert.Equal(ConstantValueKind.Sequence, result.Kind);
+        Assert.Equal(expectedTypeName, result.ValueTypeName);
+        Assert.Equal(expectedText, result.ValueText);
+
+        // The same expression reproduces the same canonical outcome identity.
+        Assert.Equal(result.Sha256, ConstantExpressionEvaluator.Evaluate(session: null, expression).Sha256);
+    }
+
+    /// <summary>Proves sequences collapse to scalar answers through the lambda-free Enumerable surface.</summary>
+    /// <param name="expression">The constant expression consuming a sequence.</param>
+    /// <param name="expected">The exact rendered scalar.</param>
+    [Theory]
+    [InlineData("new[] { 1, 2, 3 }.Length", "3")]
+    [InlineData("\"a,b,c\".Split(',').Length", "3")]
+    [InlineData("new[] { 1, 2, 3 }.Count()", "3")]
+    [InlineData("new[] { 1, 2, 3 }.Sum()", "6")]
+    [InlineData("new[] { 1210, 980, 30045, 1105 }.Max()", "30045")]
+    [InlineData("new[] { 1210, 980, 30045, 1105 }.Min()", "980")]
+    [InlineData("new[] { 1, 2, 3, 4 }.Average()", "2.5")]
+    [InlineData("new[] { 1.5, 2.5 }.Sum()", "4")]
+    [InlineData("new[] { 10m, 0.1m }.Sum()", "10.1")]
+    [InlineData("new[] { 1L, 2L }.Sum()", "3")]
+    [InlineData("new[] { 1, 2, 3 }.First()", "1")]
+    [InlineData("new[] { 1, 2, 3 }.Last()", "3")]
+    [InlineData("new[] { 7 }.Single()", "7")]
+    [InlineData("new[] { 1, 2, 3 }.ElementAt(1)", "2")]
+    [InlineData("new[] { 1, 2, 3 }.ElementAtOrDefault(9)", "0")]
+    [InlineData("\"abc\".ToCharArray()[^1].ToString()", "\"c\"")]
+    [InlineData("\"a-b-c\".Split('-')[1]", "\"b\"")]
+    [InlineData("string.Join(\"/\", new[] { \"x\", \"y\" })", "\"x/y\"")]
+    [InlineData("string.Join(\", \", new[] { 1, 2, 3 })", "\"1, 2, 3\"")]
+    [InlineData("string.Concat(\"abc\".ToCharArray().Reverse())", "\"cba\"")]
+    [InlineData("\"batch-2026-07-30-0042\".Split('-').First()", "\"batch\"")]
+    public void Sequence_scalars_evaluate_exactly(string expression, string expected)
+    {
+        var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        Assert.Equal(ConstantExpressionStatus.Exact, result.Status);
+        var rendered = result.Kind switch
+        {
+            ConstantValueKind.Int32 => result.Int32Value!.Value.ToString(
+                System.Globalization.CultureInfo.InvariantCulture),
+            ConstantValueKind.Numeric => result.ValueText,
+            ConstantValueKind.String => "\"" + result.StringValue + "\"",
+            _ => result.ValueText,
+        };
+        Assert.Equal(expected, rendered);
+    }
+
+    /// <summary>Proves sequence predicates answer exactly.</summary>
+    /// <param name="expression">The constant expression producing a Boolean from a sequence.</param>
+    /// <param name="expected">The exact Boolean value.</param>
+    [Theory]
+    [InlineData("new[] { \"priority\", \"cross-border\" }.Contains(\"priority\")", true)]
+    [InlineData("new[] { \"priority\", \"cross-border\" }.Contains(\"bulk\")", false)]
+    [InlineData("new[] { 1, 2, 3 }.Contains(2)", true)]
+    [InlineData("new[] { 1, 2, 3 }.Contains(2L)", true)]
+    [InlineData("\"abc\".ToCharArray().Contains('b')", true)]
+    [InlineData("new[] { 1, 2 }.Any()", true)]
+    [InlineData("new[] { 1, 2 }.Skip(5).Any()", false)]
+    [InlineData("new[] { 1, 2 }.SequenceEqual(new[] { 1, 2 })", true)]
+    [InlineData("new[] { 1, 2 }.SequenceEqual(new[] { 2, 1 })", false)]
+    [InlineData("\"a,b\".Split(',').SequenceEqual(new[] { \"a\", \"b\" })", true)]
+    public void Sequence_predicates_evaluate_exactly(string expression, bool expected)
+    {
+        var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        Assert.Equal(ConstantExpressionStatus.Exact, result.Status);
+        Assert.Equal(ConstantValueKind.Boolean, result.Kind);
+        Assert.Equal(expected, result.BooleanValue);
+    }
+
+    /// <summary>Proves sequence errors are typed stops with exact semantics, never fabricated values.</summary>
+    /// <param name="expression">The erroneous sequence expression.</param>
+    /// <param name="expectedCode">The stable diagnostic code.</param>
+    [Theory]
+    [InlineData("new[] { 1, 2 }.First(x => x > 1)", null)]
+    [InlineData("new int[0].First()", null)]
+    [InlineData("new[] { 1, 2 }.Skip(5).First()", "System.InvalidOperationException")]
+    [InlineData("new[] { 1, 2 }.Single()", "System.InvalidOperationException")]
+    [InlineData("new[] { 1, 2 }.Skip(9).Max()", "System.InvalidOperationException")]
+    [InlineData("new[] { 1, 2 }[5]", "System.IndexOutOfRangeException")]
+    [InlineData("new[] { 1, 2 }.ElementAt(5)", "System.ArgumentOutOfRangeException")]
+    [InlineData("new[] { int.MaxValue, 1 }.Sum()", "System.OverflowException")]
+    [InlineData("Enumerable.Range(0, 5000)", "CONSTANT_SEQUENCE_BOUND_EXCEEDED")]
+    [InlineData("Enumerable.Repeat(1, -1)", "System.ArgumentOutOfRangeException")]
+    [InlineData("new[] { \"b\", \"a\" }.Order()", "CONSTANT_CULTURE_SENSITIVE_UNSUPPORTED")]
+    [InlineData("new[] { \"b\", \"a\" }.Max()", "CONSTANT_CULTURE_SENSITIVE_UNSUPPORTED")]
+    [InlineData("new[] { \"a\", 'b' }", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("new[] { \"a\" }.Sum()", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("new int[] { }", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    public void Sequence_errors_are_typed_stops(string expression, string? expectedCode)
+    {
+        var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        if (expectedCode is null)
+        {
+            // Shapes outside the lambda-free surface (or with no inferable elements) stay not-constant, so the
+            // frozen paths keep rejecting them with their own vocabulary.
+            Assert.Equal(ConstantExpressionStatus.NotConstant, result.Status);
+            return;
+        }
+
+        Assert.Equal(ConstantExpressionStatus.Invalid, result.Status);
+        Assert.Equal(expectedCode, result.DiagnosticCode);
     }
 
     /// <summary>Proves lifted nullable semantics: a null operand yields exactly null, never a fabricated value.</summary>
