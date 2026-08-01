@@ -494,6 +494,7 @@
       "phoenixinspect.inspection": {
         "type": "Project",
         "dependencies": {
+          "ICSharpCode.Decompiler": "[9.1.0.7988, )",
           "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )",
           "PhoenixInspect.Host.Abstractions": "[0.1.0-preview.1, )",
           "PhoenixInspect.Host.Dump.ClrMD": "[0.1.0-preview.1, )",
@@ -531,6 +532,12 @@
           "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )",
           "PhoenixInspect.Host.Dump.ClrMD": "[0.1.0-preview.1, )"
         }
+      },
+      "ICSharpCode.Decompiler": {
+        "type": "CentralTransitive",
+        "requested": "[9.1.0.7988, )",
+        "resolved": "9.1.0.7988",
+        "contentHash": "N5HEh7n/9GpnkH6ojwPbzWbO1Ma+SFZCKafz69uRLnkt/bWzPON7wf7NLxTdU/fGWPnG2TEXRsu5DnRyvIQSaQ=="
       },
       "Microsoft.CodeAnalysis.CSharp": {
         "type": "CentralTransitive",

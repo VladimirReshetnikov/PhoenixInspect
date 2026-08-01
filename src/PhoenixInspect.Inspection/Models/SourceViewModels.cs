@@ -30,6 +30,13 @@ public enum SourceContentVerification
 
     /// <summary>The file exists but exceeds the display byte bound, so content is deliberately not shown.</summary>
     FileTooLarge,
+
+    /// <summary>
+    /// No matching PDB or verified source was available, so the shown content is C# decompiled from the IL of an
+    /// on-disk assembly whose complete metadata content identity matches the dump module's. It is a faithful
+    /// reconstruction labelled as such — never presented as the original source.
+    /// </summary>
+    DecompiledFromValidatedAssembly,
 }
 
 /// <summary>One rendered source line.</summary>

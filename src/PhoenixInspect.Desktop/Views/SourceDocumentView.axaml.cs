@@ -64,9 +64,14 @@ public partial class SourceDocumentView : UserControl
     {
         var result = document?.Result;
         var verified = result is { Verification: SourceContentVerification.VerifiedExact };
-        Editor.IsVisible = verified;
-        VerificationBadge.Text = verified ? "✔ checksum-verified" : string.Empty;
-        if (result is null || !verified)
+        var decompiled = result is { Verification: SourceContentVerification.DecompiledFromValidatedAssembly };
+        Editor.IsVisible = verified || decompiled;
+        VerificationBadge.Text = verified
+            ? "✔ checksum-verified"
+            : decompiled
+                ? "⚠ decompiled from IL"
+                : string.Empty;
+        if (result is null || !(verified || decompiled))
         {
             Editor.Text = string.Empty;
             highlighter.Clear();

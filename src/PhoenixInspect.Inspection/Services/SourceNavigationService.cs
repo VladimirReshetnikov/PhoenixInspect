@@ -1,6 +1,11 @@
 using System.Collections.Immutable;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
+using ICSharpCode.Decompiler;
+using ICSharpCode.Decompiler.CSharp;
 using PhoenixInspect.Host.Dump.ClrMD;
 
 namespace PhoenixInspect.Inspection;
@@ -74,18 +79,26 @@ public static class SourceNavigationService
         var resolution = session.ResolveFrameSourceLocation(observation, candidates);
         if (resolution.Location is not { } location)
         {
-            return new SourceViewResult
-            {
-                IsResolved = false,
-                Title = frame.Header,
-                Summary = ExplainFailure(resolution, candidates.Length),
-                Sha256 = resolution.Sha256,
-                Facts = FailureFacts(resolution, explicitCandidates.Length, discovered.Length),
-            };
+            var failureSummary = ExplainFailure(resolution, candidates.Length);
+            return TryDecompileFallback(session, observation, failureSummary, resolution.Sha256)
+                ?? new SourceViewResult
+                {
+                    IsResolved = false,
+                    Title = frame.Header,
+                    Summary = failureSummary,
+                    Sha256 = resolution.Sha256,
+                    Facts = FailureFacts(resolution, explicitCandidates.Length, discovered.Length),
+                };
         }
 
         var fileName = SafeFileName(location.DocumentPath);
         var (verification, lines, verificationSummary) = VerifyAndRead(location);
+        if (verification != SourceContentVerification.VerifiedExact &&
+            TryDecompileFallback(session, observation, verificationSummary, resolution.Sha256) is { } decompiled)
+        {
+            return decompiled;
+        }
+
         var spanText = location.StartLine == location.EndLine
             ? $"line {location.StartLine}"
             : $"lines {location.StartLine}–{location.EndLine}";
@@ -102,6 +115,166 @@ public static class SourceNavigationService
             Sha256 = resolution.Sha256,
             Facts = LocationFacts(location, verificationSummary, explicitCandidates.Length, discovered.Length),
         };
+    }
+
+    /// <summary>
+    /// Decompiles the frame's declaring type from an on-disk assembly when no verified source can be shown. The
+    /// assembly is admitted only when its complete metadata content identity reproduces the dump module's, so the
+    /// decompiled C# is a faithful reconstruction of exactly the code the process was running — and it is labelled
+    /// as a reconstruction, never presented as the original source.
+    /// </summary>
+    private static SourceViewResult? TryDecompileFallback(
+        ClrmdDumpSession session,
+        DumpSelectedFrameObservation observation,
+        string originalSummary,
+        string? sha256)
+    {
+        if (observation.Frame is not { } identity)
+        {
+            return null;
+        }
+
+        var module = session.Modules.FirstOrDefault(candidate => candidate.Identity == identity.RuntimeModule);
+        var assemblyPath = module?.TargetPathHint;
+        if (assemblyPath is null || !File.Exists(assemblyPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            if (!DiskMetadataMatches(assemblyPath, identity.ModuleContent.MetadataSha256))
+            {
+                return null;
+            }
+
+            var decompiler = new CSharpDecompiler(assemblyPath, new DecompilerSettings
+            {
+                ThrowOnAssemblyResolveErrors = false,
+                ShowXmlDocumentation = false,
+            });
+            var typeText = decompiler.DecompileAsString(
+                (TypeDefinitionHandle)MetadataTokens.EntityHandle(identity.DeclaringTypeDefinitionToken));
+            if (typeText.Length > MaximumSourceFileBytes)
+            {
+                return null;
+            }
+
+            var methodText = decompiler.DecompileAsString(
+                (MethodDefinitionHandle)MetadataTokens.EntityHandle(identity.MethodDefinitionToken));
+            var (lines, methodLine) = RenderDecompiledLines(typeText, methodText);
+            var methodName = session.DescribeFrameMethod(identity).Value?.DisplayName;
+            var title = $"{TypeDisplayName(methodName, assemblyPath)} — decompiled";
+            var engine = typeof(CSharpDecompiler).Assembly.GetName();
+            return new SourceViewResult
+            {
+                IsResolved = true,
+                Title = title,
+                Summary =
+                    "No identity-matching PDB or checksum-verified source was available, so this view is C# "
+                    + "decompiled from the module's IL by the ILSpy engine. It is a faithful reconstruction of "
+                    + "exactly the code the process was running — names, comments, and formatting may differ from "
+                    + "the original source. " + originalSummary,
+                DocumentPath = assemblyPath,
+                StartLine = methodLine,
+                EndLine = methodLine,
+                Verification = SourceContentVerification.DecompiledFromValidatedAssembly,
+                Lines = lines,
+                Sha256 = sha256,
+                Facts =
+                [
+                    new PropertyRow(
+                        "Decompilation",
+                        "Assembly",
+                        assemblyPath,
+                        "A target-side path hint that exists on this machine; admitted on identity, not on path."),
+                    new PropertyRow(
+                        "Decompilation",
+                        "Metadata identity",
+                        DisplayFormatting.ShortDigest(identity.ModuleContent.MetadataSha256),
+                        "The on-disk assembly's complete metadata content reproduces the dump module's identity."),
+                    new PropertyRow(
+                        "Decompilation",
+                        "Engine",
+                        $"{engine.Name} {engine.Version}",
+                        "The ILSpy decompiler engine, reconstructing C# from IL."),
+                    new PropertyRow(
+                        "Decompilation",
+                        "Method token",
+                        identity.MethodDefinitionToken.ToString("x8", System.Globalization.CultureInfo.InvariantCulture)),
+                    new PropertyRow("Decompilation", "Why not source", originalSummary),
+                ],
+            };
+        }
+        catch (Exception exception) when (exception is
+            BadImageFormatException or IOException or UnauthorizedAccessException or ArgumentException or
+            InvalidOperationException or NotSupportedException or DecompilerException)
+        {
+            // Decompilation is an opportunistic fallback: any failure keeps the original typed explanation.
+            return null;
+        }
+    }
+
+    /// <summary>Proves the on-disk assembly is the dump module: its metadata bytes reproduce the same identity.</summary>
+    private static bool DiskMetadataMatches(string assemblyPath, string expectedMetadataSha256)
+    {
+        using var stream = File.OpenRead(assemblyPath);
+        using var reader = new PEReader(stream);
+        if (!reader.HasMetadata)
+        {
+            return false;
+        }
+
+        var metadata = reader.GetMetadata().GetContent();
+        var digest = Convert.ToHexString(SHA256.HashData(metadata.AsSpan())).ToLowerInvariant();
+        return string.Equals(digest, expectedMetadataSha256, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static (ImmutableArray<SourceLineRow> Lines, int MethodLine) RenderDecompiledLines(
+        string typeText,
+        string methodText)
+    {
+        // The method's signature line — its first line that is not an attribute — locates the frame's method
+        // inside the decompiled type, because the engine prints the same signature in both renderings.
+        var signature = methodText
+            .Split('\n')
+            .Select(static line => line.TrimEnd('\r'))
+            .FirstOrDefault(static line =>
+                line.Trim().Length > 0 && !line.TrimStart().StartsWith('[') && !line.TrimStart().StartsWith("//"));
+        var methodLine = 0;
+        var lines = ImmutableArray.CreateBuilder<SourceLineRow>();
+        var number = 0;
+        foreach (var raw in typeText.Split('\n'))
+        {
+            number++;
+            var text = raw.TrimEnd('\r');
+            if (methodLine == 0 && signature is not null && text.Trim() == signature.Trim())
+            {
+                methodLine = number;
+            }
+
+            lines.Add(new SourceLineRow(number, text, false));
+        }
+
+        if (methodLine > 0)
+        {
+            lines[methodLine - 1] = new SourceLineRow(methodLine, lines[methodLine - 1].Text, true);
+        }
+
+        return (lines.ToImmutable(), methodLine);
+    }
+
+    private static string TypeDisplayName(string? methodDisplayName, string assemblyPath)
+    {
+        if (!string.IsNullOrEmpty(methodDisplayName))
+        {
+            var separator = methodDisplayName.LastIndexOf('.');
+            var typeFullName = separator > 0 ? methodDisplayName[..separator] : methodDisplayName;
+            var shortStart = typeFullName.LastIndexOf('.');
+            return shortStart >= 0 ? typeFullName[(shortStart + 1)..] : typeFullName;
+        }
+
+        return SafeFileName(assemblyPath);
     }
 
     private static (SourceContentVerification Verification, ImmutableArray<SourceLineRow> Lines, string Summary)
