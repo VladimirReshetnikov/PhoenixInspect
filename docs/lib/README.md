@@ -1,6 +1,11 @@
 # Library Reference Notes (`lib/` snapshots)
 
-This section indexes design-oriented notes for library snapshots stored under `lib/` and separates them from active implementation decisions.
+This section indexes design-oriented notes for library snapshots that were stored under `lib/` and separates them from active implementation decisions.
+
+> **Snapshot removal (2026-07-31):** the `lib/` directory itself has been removed from the working tree to keep the
+> repository lean for the public preview. The snapshots are preserved in history at the annotated tag
+> **`last-with-lib`** (`git checkout last-with-lib`). Every `lib/<library>` path mentioned in this folder refers to
+> that tagged revision.
 
 > **Current policy (2026-07):** SRM/PEReader is the active metadata backend and ClrMD is the active dump adapter. The source scans, tutorials, and comparisons in this directory are preserved research, not package-selection instructions. Executable evidence lives in `backend-evidence-log.md`; the active choice and revisit triggers live in `mvp-backend-decision-record.md`.
 

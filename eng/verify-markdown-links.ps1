@@ -369,8 +369,8 @@ foreach ($file in Get-ChildItem -LiteralPath $repositoryRoot -File -Filter '*.md
     $markdownFiles.Add($file.FullName)
 }
 
-# Authored Markdown lives at the repository root, under docs/, and under samples/. Build output and the immutable
-# library snapshots under lib/ are deliberately not scanned.
+# Authored Markdown lives at the repository root, under docs/, and under samples/. Build output is deliberately not
+# scanned (nor were the immutable library snapshots under lib/, before their removal at tag last-with-lib).
 foreach ($subdirectory in @('docs', 'samples')) {
     $searchRoot = Join-Path $repositoryRoot $subdirectory
     if (-not (Test-Path -LiteralPath $searchRoot -PathType Container)) {
