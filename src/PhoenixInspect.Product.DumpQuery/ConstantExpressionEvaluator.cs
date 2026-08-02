@@ -1012,6 +1012,22 @@ public static partial class ConstantExpressionEvaluator
                 return FoldMemberAccess(memberAccess, context);
             case InvocationExpressionSyntax invocation:
                 return FoldInvocation(invocation, context);
+            case InterpolatedStringExpressionSyntax interpolated:
+                return FoldInterpolatedString(interpolated, context);
+            case IsPatternExpressionSyntax isPattern:
+                return FoldIsPattern(isPattern, context);
+            case SwitchExpressionSyntax switchExpression:
+                return FoldSwitchExpression(switchExpression, context);
+            case DefaultExpressionSyntax defaultExpression:
+                return FoldDefaultExpression(defaultExpression);
+            case SizeOfExpressionSyntax sizeOf:
+                return FoldSizeOf(sizeOf);
+            case CheckedExpressionSyntax checkedExpression:
+                return FoldCheckedExpression(checkedExpression, context);
+            case PostfixUnaryExpressionSyntax postfix
+                when postfix.IsKind(SyntaxKind.SuppressNullableWarningExpression):
+                // The null-forgiving operator is a compile-time annotation with no run-time effect.
+                return Fold(postfix.Operand, context);
             default:
                 return FoldOutcome.NotArithmetic();
         }
@@ -1503,6 +1519,12 @@ public static partial class ConstantExpressionEvaluator
 
     private static FoldOutcome FoldInvocation(InvocationExpressionSyntax invocation, FoldContext context)
     {
+        // nameof is a contextual operator, not a call: its argument is a name that is never evaluated.
+        if (invocation.Expression is IdentifierNameSyntax { Identifier.ValueText: "nameof" })
+        {
+            return FoldNameOf(invocation);
+        }
+
         if (invocation.Expression is not MemberAccessExpressionSyntax
             {
                 RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,

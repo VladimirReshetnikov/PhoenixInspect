@@ -131,6 +131,14 @@ subset:
 | Array initializers and array-producing BCL members | `new[] { 1, 2, 3 }`, `"a,b".Split(',')`, `"abc".ToCharArray()` |
 | Lambda-free `System.Linq.Enumerable` over sequences | `"a,b".Split(',').Length`, `xs.Distinct().Order()`, `xs.Contains(2)` |
 | Read-only arrays from the dump heap | `root.Batch.Tags[..]`, `root.DurationsMs.Max()`, `Some.Type.Corridors[0]` |
+| Interpolated strings, invariant, with alignment and formats | `$"depth {root.QueueDepth,4}"`, `$"{255:X4}"` |
+| `is` patterns: constant, `null`, relational, `and`/`or`/`not` | `root.QueueDepth is > 0 and < 100`, `root.Failure?.Code is not null` |
+| `switch` expressions over the same patterns, with `when` | `root.QueueDepth switch { > 10 => "busy", _ => "idle" }` |
+| `nameof`, `default(T)`, `sizeof(T)` | `nameof(root.Batch.Id)`, `default(int?)`, `sizeof(decimal)` |
+| `checked`/`unchecked` wrappers | `checked(int.MaxValue + 0)` — `unchecked` wrap-around is a typed stop |
+
+Type, declaration, property, and list patterns need runtime type identity the constant domain does not model, so
+they are typed stops rather than guesses; an interpolated value must be a scalar constant.
 
 A member chain has no hop-count limit: depth is bounded only by the front end's expression-length and node-count
 limits. Each intermediate hop must be a directly declared reference field whose exact declared type is present in

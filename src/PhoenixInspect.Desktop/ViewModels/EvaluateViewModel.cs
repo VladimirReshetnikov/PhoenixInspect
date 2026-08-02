@@ -442,6 +442,18 @@ public sealed class EvaluateViewModel : ObservableObject
                 "String API",
                 "(\"post\" + \"-\" + \"mortem\").ToUpperInvariant()",
                 ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Interpolated string",
+                "$\"total {MyCompany.MyApp.Diagnostics.RequestCounters.Total:N0}\"",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Switch expression",
+                "MyCompany.MyApp.Diagnostics.RequestCounters.Total switch { > 1000 => \"hot\", > 0 => \"warm\", _ => \"idle\" }",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Pattern test",
+                "MyCompany.MyApp.Diagnostics.RequestCounters.Total is > 0 and < 100000",
+                ExpressionPath.StaticField));
             return;
         }
 
@@ -462,6 +474,14 @@ public sealed class EvaluateViewModel : ObservableObject
         Samples.Add(new ExpressionSample(
             "Admitted parameterless method",
             $"{identifier}.GetMarkerSummary()",
+            ExpressionPath.RootRelative));
+        Samples.Add(new ExpressionSample(
+            "Interpolated summary",
+            $"$\"name {{{identifier}.Name}} ({{{identifier}.Name.Length}} chars)\"",
+            ExpressionPath.RootRelative));
+        Samples.Add(new ExpressionSample(
+            "Pattern over a dump value",
+            $"{identifier}.Child?.Name is not null",
             ExpressionPath.RootRelative));
     }
 

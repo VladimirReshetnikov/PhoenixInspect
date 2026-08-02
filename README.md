@@ -99,6 +99,11 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   (`root.DurationsMs.Max()`, `xs.Distinct().Order()`).
 - **Dump values compose with constants.** `root.QueueDepth * 2 + 1` resolves the dump value through the same
   frozen pipeline that answers it alone, then folds the arithmetic.
+- **Modern C# expression forms.** Interpolated strings with invariant formatting and alignment
+  (`$"depth {root.QueueDepth,4}"`), `is` patterns and `switch` expressions over constant, relational, and
+  `and`/`or`/`not` patterns (`root.QueueDepth switch { > 10 => "busy", _ => "idle" }`), plus `nameof`,
+  `default(T)`, `sizeof(T)`, and `checked`/`unchecked` wrappers — all deterministic, with unsupported pattern
+  kinds reported as typed stops.
 - **Answers you can audit.** Every result carries its status (`[exact]`, `[absent]`, `[partial]`, `[stopped]`,
   `[rejected]`), the binding facts and raw reads behind it, stable diagnostic codes, and a canonical replay
   digest. An exhaustively proven absence and a bounded partial read are reported as the distinct facts they are.

@@ -319,7 +319,8 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("root.Name.ToUpperInvariant()")]
     [InlineData("x.Length")]
     [InlineData("(SomeUnknownType)1")]
-    [InlineData("checked(1 + 2)")]
+    [InlineData("default(SomeUnknownType)")]
+    [InlineData("sizeof(SomeUnknownType)")]
     public void Everything_else_is_not_constant(string? expression)
     {
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
