@@ -43,7 +43,8 @@
                   DoubleTapped="OnDoubleTapped"
                   KeyDown="OnKeyDown">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="#" Binding="{Binding FrameOrdinal}" Width="Auto" />
+                <!-- Text columns pin the template columns' font size so every cell shares one row metric. -->
+                <DataGridTextColumn Header="#" Binding="{Binding FrameOrdinal}" Width="Auto" FontSize="11" />
                 <DataGridTemplateColumn Header="Name" Width="3*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -69,9 +70,9 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Module" Binding="{Binding ModuleName}" Width="Auto" />
-                <DataGridTextColumn Header="IL" Binding="{Binding IlOffset}" Width="Auto" />
-                <DataGridTextColumn Header="IP" Binding="{Binding InstructionPointer}" Width="Auto"
+                <DataGridTextColumn Header="Module" Binding="{Binding ModuleName}" Width="Auto" FontSize="11" />
+                <DataGridTextColumn Header="IL" Binding="{Binding IlOffset}" Width="Auto" FontSize="11" />
+                <DataGridTextColumn Header="IP" Binding="{Binding InstructionPointer}" Width="Auto" FontSize="11"
                                     FontFamily="Cascadia Mono,Consolas,monospace" />
             </DataGrid.Columns>
         </DataGrid>

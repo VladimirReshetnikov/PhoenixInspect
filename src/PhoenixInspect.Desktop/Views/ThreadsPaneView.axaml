@@ -46,9 +46,10 @@
                   Margin="4,2"
                   DoubleTapped="OnDoubleTapped">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="#" Binding="{Binding ThreadOrdinal}" Width="Auto" />
-                <DataGridTextColumn Header="Managed ID" Binding="{Binding ManagedThreadId}" Width="Auto" />
-                <DataGridTextColumn Header="Thread" Binding="{Binding RuntimeThreadAddress}" Width="Auto"
+                <!-- Text columns pin the template column's font size so every cell shares one row metric. -->
+                <DataGridTextColumn Header="#" Binding="{Binding ThreadOrdinal}" Width="Auto" FontSize="11" />
+                <DataGridTextColumn Header="Managed ID" Binding="{Binding ManagedThreadId}" Width="Auto" FontSize="11" />
+                <DataGridTextColumn Header="Thread" Binding="{Binding RuntimeThreadAddress}" Width="Auto" FontSize="11"
                                     FontFamily="Cascadia Mono,Consolas,monospace" />
                 <DataGridTemplateColumn Header="Location (frame 0)" Width="*">
                     <DataGridTemplateColumn.CellTemplate>

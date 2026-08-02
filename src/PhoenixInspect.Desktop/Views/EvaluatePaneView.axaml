@@ -200,11 +200,13 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Expression" Binding="{Binding Expression}" Width="2*" FontFamily="Cascadia Mono,Consolas,monospace" />
-                    <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="2*" FontFamily="Cascadia Mono,Consolas,monospace" />
-                    <DataGridTextColumn Header="Kind" Binding="{Binding ValueKind}" Width="Auto" />
-                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="Auto" />
-                    <DataGridTextColumn Header="ms" Binding="{Binding Duration.TotalMilliseconds, StringFormat={}{0:N1}}" Width="Auto" />
+                    <!-- Every column pins the same font size: mixed text metrics make the fixed row height clip
+                         and visually misalign the taller cells. -->
+                    <DataGridTextColumn Header="Expression" Binding="{Binding Expression}" Width="2*" FontSize="12" FontFamily="Cascadia Mono,Consolas,monospace" />
+                    <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="2*" FontSize="12" FontFamily="Cascadia Mono,Consolas,monospace" />
+                    <DataGridTextColumn Header="Kind" Binding="{Binding ValueKind}" Width="Auto" FontSize="12" />
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="Auto" FontSize="12" />
+                    <DataGridTextColumn Header="ms" Binding="{Binding Duration.TotalMilliseconds, StringFormat={}{0:N1}}" Width="Auto" FontSize="12" />
                 </DataGrid.Columns>
             </DataGrid>
         </Panel>

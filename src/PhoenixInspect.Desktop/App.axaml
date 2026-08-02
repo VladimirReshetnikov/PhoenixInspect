@@ -144,6 +144,9 @@
         <Style Selector="DataGridRow:selected">
             <Setter Property="Foreground" Value="White" />
         </Style>
+        <Style Selector="DataGridCell">
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
 
         <!-- Dock chrome: tab strips and tool headers in the khaki family, olive for the active document. -->
         <Style Selector="dockControls|DocumentTabStrip, dockControls|ToolTabStrip">
