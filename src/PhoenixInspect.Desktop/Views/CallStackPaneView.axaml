@@ -40,7 +40,8 @@
                   CanUserResizeColumns="True"
                   HeadersVisibility="Column"
                   Margin="4,2"
-                  DoubleTapped="OnDoubleTapped">
+                  DoubleTapped="OnDoubleTapped"
+                  KeyDown="OnKeyDown">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="#" Binding="{Binding FrameOrdinal}" Width="Auto" />
                 <DataGridTemplateColumn Header="Name" Width="3*">

@@ -58,12 +58,23 @@ public static class SourceNavigationService
     /// <param name="session">The open dump session.</param>
     /// <param name="frame">The frame node whose selector reproduces the frame.</param>
     /// <param name="explicitCandidates">Caller-supplied Portable-PDB candidate paths, possibly empty.</param>
+    /// <param name="allowSourceLinkDownload">
+    /// Whether a document that cannot be produced locally may be fetched through the PDB's SourceLink map. The
+    /// download is an explicit host capability rather than a default because it leaves the analysis machine; its
+    /// content is shown only when the bytes reproduce the PDB's document checksum.
+    /// </param>
     /// <returns>A display projection that never presents unverified content as the frame's source.</returns>
+    /// <remarks>
+    /// Content is produced by the first of these that succeeds: the checksum-verified local file at the recorded
+    /// path, the source embedded in the identity-matching PDB, a checksum-verified SourceLink download (when
+    /// enabled), and finally C# decompiled from an identity-matching on-disk assembly.
+    /// </remarks>
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
     public static SourceViewResult ResolveFrameSource(
         ClrmdDumpSession session,
         CallStackFrameNode frame,
-        ImmutableArray<string> explicitCandidates)
+        ImmutableArray<string> explicitCandidates,
+        bool allowSourceLinkDownload = false)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(frame);
@@ -93,10 +104,16 @@ public static class SourceNavigationService
 
         var fileName = SafeFileName(location.DocumentPath);
         var (verification, lines, verificationSummary) = VerifyAndRead(location);
-        if (verification != SourceContentVerification.VerifiedExact &&
-            TryDecompileFallback(session, observation, verificationSummary, resolution.Sha256) is { } decompiled)
+        if (verification != SourceContentVerification.VerifiedExact)
         {
-            return decompiled;
+            if (TryPdbBackedSource(location, candidates, allowSourceLinkDownload, verificationSummary) is { } salvaged)
+            {
+                (verification, lines, verificationSummary) = salvaged;
+            }
+            else if (TryDecompileFallback(session, observation, verificationSummary, resolution.Sha256) is { } decompiled)
+            {
+                return decompiled;
+            }
         }
 
         var spanText = location.StartLine == location.EndLine
@@ -116,6 +133,133 @@ public static class SourceNavigationService
             Facts = LocationFacts(location, verificationSummary, explicitCandidates.Length, discovered.Length),
         };
     }
+
+    /// <summary>
+    /// Produces the document's content from the identity-matched PDB itself when the local file cannot: first from
+    /// the source the compiler embedded for the document, then — when downloads are allowed — from the PDB's
+    /// SourceLink map, whose fetched bytes are shown only after they reproduce the document checksum.
+    /// </summary>
+    /// <param name="location">The exact mapped location, including the validated artifact and document identities.</param>
+    /// <param name="candidates">The candidate paths offered to resolution, used to re-locate the artifact bytes.</param>
+    /// <param name="allowSourceLinkDownload">Whether the SourceLink fetch is permitted.</param>
+    /// <param name="localFileSummary">The explanation of why the local file produced no content.</param>
+    /// <returns>The produced verification, lines, and summary, or null when the PDB yields no showable content.</returns>
+    private static (SourceContentVerification Verification, ImmutableArray<SourceLineRow> Lines, string Summary)?
+        TryPdbBackedSource(
+            DumpFrameSourceLocation location,
+            ImmutableArray<string> candidates,
+            bool allowSourceLinkDownload,
+            string localFileSummary)
+    {
+        var pdbBytes = PortablePdbSourceContent.FindArtifactBytes(
+            candidates,
+            location.Artifact.Content.Sha256,
+            checked((int)ClrmdDumpSession.PortablePdbArtifactByteBound.Value));
+        if (pdbBytes is null)
+        {
+            return null;
+        }
+
+        if (PortablePdbSourceContent.TryReadEmbeddedSource(
+                pdbBytes, location.DocumentPath, MaximumSourceFileBytes) is { } embedded)
+        {
+            // The embedded blob is compiler-written content inside the identity-matched artifact. The document
+            // checksum is verified when its algorithm is known; only a positive mismatch disqualifies the content,
+            // because that would mean the artifact contradicts itself.
+            var verified = ChecksumMatches(embedded, location.Document.ChecksumAlgorithm, location.Document.Checksum);
+            if (verified != false)
+            {
+                var provenance = verified == true
+                    ? "and its bytes reproduce the PDB's document checksum."
+                    : "the document carries no checksum this host can verify, so the artifact itself is the evidence.";
+                return (
+                    SourceContentVerification.EmbeddedInMatchingPdb,
+                    ReadLines(embedded, location.StartLine, location.EndLine),
+                    "The recorded file could not be produced locally, so this is the source the compiler embedded "
+                    + $"for the document inside the identity-matching Portable PDB, {provenance} {localFileSummary}");
+            }
+        }
+
+        if (!allowSourceLinkDownload ||
+            PortablePdbSourceContent.TryReadSourceLinkJson(pdbBytes) is not { } sourceLinkJson ||
+            PortablePdbSourceContent.TryMapSourceLinkUrl(sourceLinkJson, location.DocumentPath) is not { } url ||
+            !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        // A download is admissible evidence only through the checksum: a URL serves whatever it serves today, so
+        // content that does not reproduce the PDB's document checksum is discarded, never displayed.
+        if (TryDownload(url) is not { } downloaded ||
+            ChecksumMatches(downloaded, location.Document.ChecksumAlgorithm, location.Document.Checksum) != true)
+        {
+            return null;
+        }
+
+        return (
+            SourceContentVerification.SourceLinkVerified,
+            ReadLines(downloaded, location.StartLine, location.EndLine),
+            $"The recorded file could not be produced locally, so it was fetched through the PDB's SourceLink map "
+            + $"from {url}; the downloaded bytes reproduce the PDB's document checksum, byte for byte. "
+            + localFileSummary);
+    }
+
+    /// <summary>States whether content reproduces a document checksum, or null when it cannot be verified.</summary>
+    /// <param name="content">The candidate content bytes.</param>
+    /// <param name="algorithm">The document's checksum-algorithm GUID.</param>
+    /// <param name="recorded">The recorded checksum bytes.</param>
+    private static bool? ChecksumMatches(byte[] content, Guid algorithm, ImmutableArray<byte> recorded)
+    {
+        if (recorded.IsDefaultOrEmpty)
+        {
+            return null;
+        }
+
+        byte[] computed;
+        if (algorithm == Sha256Algorithm)
+        {
+            computed = SHA256.HashData(content);
+        }
+        else if (algorithm == Sha1Algorithm)
+        {
+            computed = SHA1.HashData(content);
+        }
+        else
+        {
+            return null;
+        }
+
+        return computed.AsSpan().SequenceEqual(recorded.AsSpan());
+    }
+
+    /// <summary>Fetches one SourceLink-mapped document within the display byte bound.</summary>
+    /// <param name="url">The mapped HTTPS URL.</param>
+    /// <returns>The downloaded bytes, or null on any transport failure or bound violation.</returns>
+    private static byte[]? TryDownload(string url)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var response = DownloadClient.Send(request, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode ||
+                response.Content.Headers.ContentLength is > MaximumSourceFileBytes)
+            {
+                return null;
+            }
+
+            using var stream = response.Content.ReadAsStream();
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            return buffer.Length <= MaximumSourceFileBytes ? buffer.ToArray() : null;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or IOException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The client used for SourceLink fetches, bounded by a fixed timeout.</summary>
+    private static readonly HttpClient DownloadClient = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     /// <summary>
     /// Decompiles the frame's declaring type from an on-disk assembly when no verified source can be shown. The

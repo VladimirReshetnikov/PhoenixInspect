@@ -93,6 +93,19 @@ on-disk bytes to reproduce the PDB's document checksum. A file that hashes diffe
 deliberately not rendered, because a similar-looking file presented as the captured code would be fabricated
 evidence — the same rule every other panel follows for values.
 
+When the recorded file cannot be produced locally, two PDB-backed fallbacks are tried before decompilation, in
+order of evidential strength:
+
+1. **Embedded source.** If the identity-matched PDB embeds the document's source (the compiler's
+   `EmbeddedSource` custom debug information), those bytes are shown directly — they are build-time artifact
+   content on the same footing as the line mapping itself, and they are checksum-verified when the document
+   records a verifiable algorithm.
+2. **SourceLink.** If the PDB carries a [SourceLink](https://github.com/dotnet/sourcelink) document map, the
+   desktop shell maps the recorded path to its HTTPS URL and fetches it. Downloaded bytes are shown **only**
+   when they reproduce the PDB's document checksum, byte for byte — a URL serves whatever it serves today, so
+   the checksum is the entire admission criterion. The fetch is an explicit host capability (the shell enables
+   it; headless resolution defaults to off).
+
 ## Selecting an expression root
 
 The root-relative path needs one exact object. Two supported sources are offered, because the strong-handle catalog

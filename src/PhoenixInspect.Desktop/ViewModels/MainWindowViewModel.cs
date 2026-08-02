@@ -206,7 +206,11 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         var explicitCandidates = EvaluateViewModel.ParseCandidates(Evaluate.PortablePdbCandidates);
         var produced = await RunAsync(
             "Resolving and verifying the frame's source…",
-            session => SourceNavigationService.ResolveFrameSource(session, frame, explicitCandidates))
+            session => SourceNavigationService.ResolveFrameSource(
+                session,
+                frame,
+                explicitCandidates,
+                allowSourceLinkDownload: true))
             .ConfigureAwait(true);
         if (produced is null)
         {

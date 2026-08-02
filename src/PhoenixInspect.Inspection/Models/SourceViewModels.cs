@@ -32,6 +32,18 @@ public enum SourceContentVerification
     FileTooLarge,
 
     /// <summary>
+    /// The shown content is the source the compiler embedded for this document inside the identity-matching
+    /// Portable PDB. It is build-time artifact content on the same footing as the line mapping itself.
+    /// </summary>
+    EmbeddedInMatchingPdb,
+
+    /// <summary>
+    /// The shown content was downloaded through the PDB's SourceLink document map, and the downloaded bytes
+    /// reproduce the PDB's document checksum. Content that fails that verification is never shown.
+    /// </summary>
+    SourceLinkVerified,
+
+    /// <summary>
     /// No matching PDB or verified source was available, so the shown content is C# decompiled from the IL of an
     /// on-disk assembly whose complete metadata content identity matches the dump module's. It is a faithful
     /// reconstruction labelled as such — never presented as the original source.
@@ -72,7 +84,7 @@ public sealed record SourceViewResult
     /// <summary>Gets what was proven about the on-disk file before any content was shown.</summary>
     public SourceContentVerification Verification { get; init; } = SourceContentVerification.NotApplicable;
 
-    /// <summary>Gets the rendered lines; empty unless <see cref="Verification"/> is <c>VerifiedExact</c>.</summary>
+    /// <summary>Gets the rendered lines; empty unless <see cref="Verification"/> permits showing content.</summary>
     public ImmutableArray<SourceLineRow> Lines { get; init; } = [];
 
     /// <summary>Gets labelled resolution and verification facts for the evidence pane.</summary>
