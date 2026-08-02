@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PhoenixInspect.Desktop.Views.ThreadsPaneView"
+             Background="{DynamicResource Phoenix.PaneBackground}">
+    <!-- DataContext: ThreadsTool -->
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                BorderThickness="0,0,0,1"
+                Padding="8,5">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Content="⟳"
+                        FontSize="11"
+                        Padding="8,3"
+                        Command="{Binding Panel.ProbeCommand}"
+                        ToolTip.Tip="Probe thread ordinals again" />
+                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" ClipToBounds="True">
+                    <TextBlock Text="probe" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                    <TextBox Width="48" Padding="4,2" FontSize="11"
+                             Text="{Binding Panel.ThreadOrdinalsToProbe}"
+                             ToolTip.Tip="Zero-based thread ordinals to probe" />
+                    <TextBlock Text="ordinals" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                    <TextBlock Text="· double-click a thread to front its call stack"
+                               Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom"
+                BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                BorderThickness="0,1,0,0"
+                Padding="8,4">
+            <TextBlock Text="{Binding Panel.Summary}"
+                       Classes="secondary"
+                       FontSize="10"
+                       TextWrapping="Wrap"
+                       ToolTip.Tip="{Binding Panel.Note}" />
+        </Border>
+        <DataGrid ItemsSource="{Binding Panel.Threads}"
+                  SelectedItem="{Binding Panel.SelectedThread, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserResizeColumns="True"
+                  HeadersVisibility="Column"
+                  Margin="4,2"
+                  DoubleTapped="OnDoubleTapped">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="#" Binding="{Binding ThreadOrdinal}" Width="Auto" />
+                <DataGridTextColumn Header="Managed ID" Binding="{Binding ManagedThreadId}" Width="Auto" />
+                <DataGridTextColumn Header="Thread" Binding="{Binding RuntimeThreadAddress}" Width="Auto"
+                                    FontFamily="Cascadia Mono,Consolas,monospace" />
+                <DataGridTemplateColumn Header="Location (frame 0)" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Classes="mono"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0"
+                                       Text="{Binding Location}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding Detail}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

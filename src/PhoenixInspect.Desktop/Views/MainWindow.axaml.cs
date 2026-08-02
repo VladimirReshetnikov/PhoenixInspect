@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -35,6 +36,50 @@ public partial class MainWindow : Window
         {
             Loaded += (_, _) => _ = model.OpenDumpAsync(startupDumpPath);
         }
+    }
+
+    /// <inheritdoc />
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+        FitToWorkingArea();
+    }
+
+    /// <summary>
+    /// Shrinks and re-centers the window so it fits inside the current screen's working area — the space above the
+    /// taskbar. The XAML default size is a preference for large screens; CenterScreen centers on the full screen
+    /// bounds, so without this a nearly screen-tall window ends up underneath the taskbar.
+    /// </summary>
+    private void FitToWorkingArea()
+    {
+        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+        if (screen is null || WindowState != WindowState.Normal)
+        {
+            return;
+        }
+
+        // WorkingArea is in physical pixels; Width/Height are logical client sizes, so the decoration overhead
+        // (title bar and borders) has to come out of the budget too.
+        var scaling = screen.Scaling;
+        var workArea = screen.WorkingArea;
+        var frame = FrameSize ?? ClientSize;
+        var decorationWidth = Math.Max(0, frame.Width - ClientSize.Width);
+        var decorationHeight = Math.Max(0, frame.Height - ClientSize.Height);
+        var maxWidth = (workArea.Width / scaling) - decorationWidth - 8;
+        var maxHeight = (workArea.Height / scaling) - decorationHeight - 8;
+        if (maxWidth <= 0 || maxHeight <= 0)
+        {
+            return;
+        }
+
+        Width = Math.Min(Width, maxWidth);
+        Height = Math.Min(Height, maxHeight);
+
+        var frameWidthPx = (int)((Width + decorationWidth) * scaling);
+        var frameHeightPx = (int)((Height + decorationHeight) * scaling);
+        Position = new PixelPoint(
+            workArea.X + Math.Max(0, (workArea.Width - frameWidthPx) / 2),
+            workArea.Y + Math.Max(0, (workArea.Height - frameHeightPx) / 2));
     }
 
     private async void OnOpenDumpRequested(object? sender, EventArgs e)

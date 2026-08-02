@@ -5,8 +5,8 @@
         x:Class="PhoenixInspect.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="PhoenixInspect — post-mortem inspection"
-        Width="1380" Height="880"
-        MinWidth="1100" MinHeight="700"
+        Width="1380" Height="840"
+        MinWidth="960" MinHeight="560"
         WindowStartupLocation="CenterScreen"
         DragDrop.AllowDrop="True">
 
@@ -33,7 +33,7 @@
                 <MenuItem Header="E_xit" Click="OnExitClick" />
             </MenuItem>
             <MenuItem Header="_Session">
-                <MenuItem Header="Probe _threads again" Command="{Binding CallStacks.ProbeCommand}" />
+                <MenuItem Header="Probe _threads again" Command="{Binding Threads.ProbeCommand}" />
                 <MenuItem Header="Clear evaluation _history" Command="{Binding Evaluate.ClearHistoryCommand}" />
             </MenuItem>
         </Menu>

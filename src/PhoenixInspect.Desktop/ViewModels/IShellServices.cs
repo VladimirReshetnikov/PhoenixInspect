@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using PhoenixInspect.Inspection;
 using PhoenixInspect.Host.Dump.ClrMD;
 
@@ -41,4 +42,13 @@ public interface IShellServices
     /// <param name="frame">The frame to resolve.</param>
     /// <returns>A task that completes once the document is shown.</returns>
     Task ShowFrameSourceAsync(CallStackFrameNode frame);
+
+    /// <summary>Gets the explicit Portable-PDB candidate paths the user supplied in the evaluation options.</summary>
+    ImmutableArray<string> ExplicitPortablePdbCandidates { get; }
+
+    /// <summary>Loads one probed thread's call stack into the Call Stack pane.</summary>
+    /// <param name="thread">The thread whose stack should be shown.</param>
+    /// <param name="activatePane">Whether to also bring the Call Stack pane to the front of its tab group.</param>
+    /// <returns>A task that completes once the stack is loaded.</returns>
+    Task ShowThreadCallStackAsync(CallStackThreadNode thread, bool activatePane);
 }

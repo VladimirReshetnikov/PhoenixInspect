@@ -4,12 +4,12 @@ using PhoenixInspect.Desktop.Docking;
 
 namespace PhoenixInspect.Desktop.Views;
 
-/// <summary>The Call Stack tool pane.</summary>
-public partial class CallStackPaneView : UserControl
+/// <summary>The Threads tool pane.</summary>
+public partial class ThreadsPaneView : UserControl
 {
     /// <summary>Creates the view.</summary>
-    public CallStackPaneView() => InitializeComponent();
+    public ThreadsPaneView() => InitializeComponent();
 
     private void OnDoubleTapped(object? sender, TappedEventArgs e) =>
-        (DataContext as CallStackTool)?.Panel.ActivateSelectedFrame();
+        (DataContext as ThreadsTool)?.Panel.ActivateSelectedThread();
 }

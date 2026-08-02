@@ -135,10 +135,34 @@ public static class DumpInspectionService
                     ? DisplayFormatting.Absent
                     : DisplayFormatting.ByteSize((long)module.MetadataLength),
                 module.Layout,
-                module.TargetPathHint ?? DisplayFormatting.Absent))
+                module.TargetPathHint ?? DisplayFormatting.Absent,
+                DescribeSymbolHint(module.TargetPathHint)))
             .OrderBy(static row => row.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(static row => row.Module.MetadataAddress)
             .ToImmutableArray();
+    }
+
+    /// <summary>States whether a hint-derived Portable-PDB candidate exists on the analysis machine.</summary>
+    /// <param name="targetPathHint">The unmodified target-side path hint, or null.</param>
+    /// <returns>A short discovery statement; a present candidate is still identity-validated before use.</returns>
+    private static string DescribeSymbolHint(string? targetPathHint)
+    {
+        if (string.IsNullOrEmpty(targetPathHint))
+        {
+            return "no path hint";
+        }
+
+        try
+        {
+            return File.Exists(Path.ChangeExtension(targetPathHint, ".pdb"))
+                ? "candidate .pdb found"
+                : "no .pdb beside hint";
+        }
+        catch (ArgumentException)
+        {
+            // A target-side hint may not be a well-formed path on this machine; that is a discovery miss, not an error.
+            return "no .pdb beside hint";
+        }
     }
 
     /// <summary>Reads and describes one module's counted metadata content identity from dump memory.</summary>
@@ -215,8 +239,8 @@ public static class DumpInspectionService
     /// <remarks>
     /// The adapter selects one frame at a time by snapshot-scoped ordinal and does not publish a thread count. A probe
     /// therefore cannot distinguish a past-the-end thread ordinal from a live thread with no managed frames: both
-    /// return the same typed unavailable observation. Deeper frames are loaded on demand by
-    /// <see cref="LoadFrames(ClrmdDumpSession, CallStackThreadNode, int)"/>.
+    /// return the same typed unavailable observation. Complete stacks are loaded on demand by
+    /// <see cref="LoadFrames(ClrmdDumpSession, CallStackThreadNode, int, System.Collections.Immutable.ImmutableArray{string})"/>.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="threadOrdinalsToProbe"/> is not positive.</exception>
@@ -248,11 +272,10 @@ public static class DumpInspectionService
             var node = new CallStackThreadNode(
                 ordinal,
                 $"Thread #{ordinal}  ·  managed id {frame.ManagedThreadId}",
-                $"runtime thread {DisplayFormatting.Address(frame.RuntimeThreadAddress)}");
+                $"runtime thread {DisplayFormatting.Address(frame.RuntimeThreadAddress)}",
+                frame.ManagedThreadId,
+                DisplayFormatting.Address(frame.RuntimeThreadAddress));
             node.Frames.Add(CreateFrameNode(session, selector, observation));
-
-            // Pre-expand the first thread so the panel is immediately useful; deeper frames still load on demand.
-            node.IsExpanded = threads.Count == 0;
             threads.Add(node);
         }
 
@@ -271,24 +294,33 @@ public static class DumpInspectionService
         return new CallStackProjection(threads.ToImmutable(), summary, note);
     }
 
-    /// <summary>Loads the remaining managed frames of one already-probed thread.</summary>
+    /// <summary>Loads the complete bounded managed call stack of one already-probed thread.</summary>
     /// <param name="session">The open dump session.</param>
-    /// <param name="node">The thread node whose frame list should be completed.</param>
+    /// <param name="node">The thread node whose stack should be walked.</param>
     /// <param name="maximumFrames">The maximum number of frames to retain for this thread.</param>
-    /// <returns>The frames beyond the top frame, in stack order.</returns>
+    /// <returns>The frames from the top of the stack downward, in stack order.</returns>
+    /// <remarks>
+    /// When <paramref name="portablePdbCandidates"/> is initialized — even empty — each exact frame is additionally
+    /// resolved to its Portable-PDB source location so the call-stack grid can show a file and line per frame. The
+    /// default value skips that resolution entirely, which keeps callers that only need frame identities fast.
+    /// </remarks>
     /// <exception cref="ArgumentNullException">A required argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="maximumFrames"/> is not positive.</exception>
+    /// <param name="portablePdbCandidates">
+    /// Local Portable-PDB candidate paths offered to per-frame source resolution, or default to skip resolution.
+    /// </param>
     public static ImmutableArray<CallStackFrameNode> LoadFrames(
         ClrmdDumpSession session,
         CallStackThreadNode node,
-        int maximumFrames)
+        int maximumFrames,
+        ImmutableArray<string> portablePdbCandidates = default)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(node);
         ArgumentOutOfRangeException.ThrowIfLessThan(maximumFrames, 1);
 
         var frames = ImmutableArray.CreateBuilder<CallStackFrameNode>();
-        for (var ordinal = 1; ordinal < maximumFrames; ordinal++)
+        for (var ordinal = 0; ordinal < maximumFrames; ordinal++)
         {
             var selector = DumpSelectedFrameSelector.Create(session.Snapshot, node.ThreadOrdinal, ordinal);
             var observation = session.SelectExpressionFrame(selector);
@@ -297,7 +329,7 @@ public static class DumpInspectionService
                 break;
             }
 
-            frames.Add(CreateFrameNode(session, selector, observation));
+            frames.Add(CreateFrameNode(session, selector, observation, portablePdbCandidates));
             if (observation.Frame is null)
             {
                 break;
@@ -368,15 +400,19 @@ public static class DumpInspectionService
     }
 
     /// <summary>Builds the display node for one selected frame, naming its method when the metadata supports it.</summary>
-    /// <param name="session">The open dump session, used only to resolve the frame's method name.</param>
+    /// <param name="session">The open dump session, used to resolve the frame's method name and source location.</param>
     /// <param name="selector">The snapshot-scoped selector that produced the observation.</param>
     /// <param name="observation">The selected-frame observation.</param>
+    /// <param name="portablePdbCandidates">
+    /// Local Portable-PDB candidate paths offered to source resolution, or default to skip resolution.
+    /// </param>
     /// <returns>The projected frame node.</returns>
     /// <exception cref="ArgumentNullException">A required argument is null.</exception>
     public static CallStackFrameNode CreateFrameNode(
         ClrmdDumpSession session,
         DumpSelectedFrameSelector selector,
-        DumpSelectedFrameObservation observation)
+        DumpSelectedFrameObservation observation,
+        ImmutableArray<string> portablePdbCandidates = default)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(selector);
@@ -388,7 +424,8 @@ public static class DumpInspectionService
                 null,
                 $"Frame #{selector.FrameOrdinal}  ·  {observation.Status}",
                 observation.Issue.ToString(),
-                isExact: false);
+                isExact: false,
+                methodDisplay: $"<{observation.Status}: {observation.Issue}>");
         }
 
         // A frame's method name comes from that frame's own module metadata inside the snapshot. When those bytes are
@@ -401,6 +438,13 @@ public static class DumpInspectionService
         var title = named.Value is { } method
             ? method.DisplayName
             : $"{declaringNamespace}.<unnamed: {named.Status}/{named.Issue}>";
+        var moduleName = named.Value?.ModuleName
+            ?? session.Modules.FirstOrDefault(candidate => candidate.Identity == frame.RuntimeModule)?.Name
+            ?? string.Empty;
+
+        var (location, locationDetail) = portablePdbCandidates.IsDefault
+            ? (string.Empty, null)
+            : DescribeFrameSourceCell(session.ResolveFrameSourceLocation(observation, portablePdbCandidates));
 
         return new CallStackFrameNode(
             selector,
@@ -409,7 +453,38 @@ public static class DumpInspectionService
             $"MethodDef {DisplayFormatting.Token(frame.MethodDefinitionToken)}  ·  "
             + $"TypeDef {DisplayFormatting.Token(frame.DeclaringTypeDefinitionToken)}  ·  "
             + $"IL+{frame.Instruction.IlOffset}  ·  IP {DisplayFormatting.Address(frame.Instruction.NativeInstructionPointer)}",
-            isExact: true);
+            isExact: true,
+            methodDisplay: named.Value?.Signature ?? title,
+            moduleName: moduleName,
+            location: location,
+            locationDetail: locationDetail);
+    }
+
+    /// <summary>Projects one frame-to-source resolution into a short grid cell and its tooltip explanation.</summary>
+    /// <param name="resolution">The typed resolution outcome.</param>
+    /// <returns>The cell text and the fuller explanation, both honest about what the PDB did and did not prove.</returns>
+    private static (string Location, string? Detail) DescribeFrameSourceCell(DumpFrameSourceObservation resolution)
+    {
+        if (resolution.Location is { } location)
+        {
+            var fileName = Path.GetFileName(location.DocumentPath);
+            var cell = string.IsNullOrEmpty(fileName)
+                ? $"line {location.StartLine}"
+                : $"{fileName}, line {location.StartLine}";
+            return (cell, $"{location.DocumentPath} — the path the build recorded in the identity-matching "
+                + "Portable PDB; whether that file exists on this machine is verified only when it is opened.");
+        }
+
+        var cellText = resolution.Issue switch
+        {
+            DumpContextEvidenceIssue.PortablePdbUnavailable => "no PDB candidate",
+            DumpContextEvidenceIssue.PortablePdbIdentityMismatch => "PDB identity mismatch",
+            DumpContextEvidenceIssue.PortablePdbDebugIdentityUnavailable => "no CodeView identity",
+            DumpContextEvidenceIssue.SequencePointsUnavailable => "no sequence point",
+            DumpContextEvidenceIssue.DocumentUnavailable => "no document",
+            _ => DisplayFormatting.Humanize(resolution.Issue.ToString()),
+        };
+        return (cellText, $"Source resolution stopped: {resolution.Status} — {resolution.Issue}.");
     }
 
     private static void AddBound(

@@ -1,24 +1,27 @@
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using PhoenixInspect.Inspection;
 
 namespace PhoenixInspect.Desktop.ViewModels;
 
-/// <summary>Presents bounded managed call stacks and lets one frame become the evaluation name context.</summary>
+/// <summary>
+/// Presents the bounded managed call stack of one selected thread, the way Visual Studio's Call Stack window
+/// presents the active thread: one row per frame with its signature, source location, module, and offsets.
+/// </summary>
 /// <remarks>
-/// The adapter selects one frame at a time by snapshot-scoped ordinal, so this pane probes ordinals rather than
-/// enumerating a thread list. It states what the probe cannot distinguish instead of implying an exhaustive view.
+/// The thread whose stack is shown comes from the Threads pane; this pane never probes ordinals itself. Each frame
+/// row carries the typed evidence behind its cells, so an unnamed method or an unresolved source stays an explained
+/// limit rather than a blank.
 /// </remarks>
 public sealed class CallStacksViewModel : ObservableObject
 {
     private readonly IShellServices shell;
-    private readonly HashSet<int> loadedThreads = [];
-    private readonly RelayCommand probeCommand;
+    private readonly RelayCommand refreshCommand;
     private readonly RelayCommand useContextCommand;
-    private int threadOrdinalsToProbe = 64;
     private int framesPerThread = 64;
-    private string summary = "No dump is open.";
-    private string note = string.Empty;
-    private object? selectedNode;
+    private CallStackThreadNode? thread;
+    private CallStackFrameNode? selectedFrame;
+    private string caption = "No dump is open.";
 
     /// <summary>Creates the call-stack pane.</summary>
     /// <param name="shell">The shell services used for serialized session access.</param>
@@ -26,7 +29,15 @@ public sealed class CallStacksViewModel : ObservableObject
     public CallStacksViewModel(IShellServices shell)
     {
         this.shell = shell ?? throw new ArgumentNullException(nameof(shell));
-        probeCommand = new RelayCommand(() => _ = ProbeAsync(), () => this.shell.IsDumpOpen);
+        refreshCommand = new RelayCommand(
+            () =>
+            {
+                if (thread is { } current)
+                {
+                    _ = LoadThreadAsync(current);
+                }
+            },
+            () => thread is not null && this.shell.IsDumpOpen);
         useContextCommand = new RelayCommand(
             () =>
             {
@@ -38,61 +49,44 @@ public sealed class CallStacksViewModel : ObservableObject
             () => SelectedFrame is { IsExact: true });
     }
 
-    /// <summary>Gets the probed threads that carry at least one exact managed frame.</summary>
-    public ObservableCollection<CallStackThreadNode> Threads { get; } = [];
+    /// <summary>Gets the displayed thread's frames, from the top of the stack downward.</summary>
+    public ObservableCollection<CallStackFrameNode> Frames { get; } = [];
 
-    /// <summary>Gets the command that probes thread ordinals and loads each thread's top frame.</summary>
-    public RelayCommand ProbeCommand => probeCommand;
+    /// <summary>Gets the command that re-walks the displayed thread's stack with the current frame cap.</summary>
+    public RelayCommand RefreshCommand => refreshCommand;
 
     /// <summary>Gets the command that adopts the selected frame as the evaluation name context.</summary>
     public RelayCommand UseAsContextCommand => useContextCommand;
 
-    /// <summary>Gets or sets how many zero-based thread ordinals the probe should request.</summary>
-    public int ThreadOrdinalsToProbe
-    {
-        get => threadOrdinalsToProbe;
-        set => Set(ref threadOrdinalsToProbe, Math.Clamp(value, 1, 1024));
-    }
-
-    /// <summary>Gets or sets the maximum number of managed frames retained per thread.</summary>
+    /// <summary>Gets or sets the maximum number of managed frames retained for the displayed thread.</summary>
     public int FramesPerThread
     {
         get => framesPerThread;
         set => Set(ref framesPerThread, Math.Clamp(value, 1, 1024));
     }
 
-    /// <summary>Gets a one-line description of the last probe.</summary>
-    public string Summary
+    /// <summary>Gets a one-line description of the thread whose stack is displayed.</summary>
+    public string Caption
     {
-        get => summary;
-        private set => Set(ref summary, value);
+        get => caption;
+        private set => Set(ref caption, value);
     }
 
-    /// <summary>Gets an explanation of what the ordinal probe cannot distinguish.</summary>
-    public string Note
+    /// <summary>Gets or sets the selected frame row.</summary>
+    public CallStackFrameNode? SelectedFrame
     {
-        get => note;
-        private set => Set(ref note, value);
-    }
-
-    /// <summary>Gets or sets the tree selection, which may be a thread node or a frame node.</summary>
-    public object? SelectedNode
-    {
-        get => selectedNode;
+        get => selectedFrame;
         set
         {
-            if (!Set(ref selectedNode, value))
+            if (Set(ref selectedFrame, value))
             {
-                return;
+                useContextCommand.RaiseCanExecuteChanged();
             }
-
-            Raise(nameof(SelectedFrame));
-            useContextCommand.RaiseCanExecuteChanged();
         }
     }
 
-    /// <summary>Gets the selected frame node, or null when the selection is not a frame.</summary>
-    public CallStackFrameNode? SelectedFrame => selectedNode as CallStackFrameNode;
+    /// <summary>Gets the thread whose stack is currently displayed, or null.</summary>
+    public CallStackThreadNode? Thread => thread;
 
     /// <summary>
     /// Activates the selected exact frame the way a debugger call-stack window does: it becomes the name-binding
@@ -107,78 +101,52 @@ public sealed class CallStacksViewModel : ObservableObject
         }
     }
 
-    /// <summary>Clears every probed thread so the pane matches a newly opened or closed dump.</summary>
+    /// <summary>Clears the pane so it matches a newly opened or closed dump.</summary>
     public void Reset()
     {
-        Threads.Clear();
-        loadedThreads.Clear();
-        SelectedNode = null;
-        Summary = shell.IsDumpOpen
-            ? "Probe thread ordinals to load managed call stacks."
+        thread = null;
+        Frames.Clear();
+        SelectedFrame = null;
+        Caption = shell.IsDumpOpen
+            ? "Select a thread in the Threads pane to walk its managed call stack."
             : "No dump is open.";
-        Note = string.Empty;
-        probeCommand.RaiseCanExecuteChanged();
+        refreshCommand.RaiseCanExecuteChanged();
     }
 
-    /// <summary>Loads the remaining frames of one thread the first time it is expanded.</summary>
-    /// <param name="node">The expanded thread node.</param>
-    /// <returns>A task that completes once the thread's frames are present.</returns>
+    /// <summary>Walks one thread's bounded stack, resolving each frame's source location, and displays it.</summary>
+    /// <param name="node">The probed thread whose stack should be shown.</param>
+    /// <returns>A task that completes once the stack is displayed.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="node"/> is null.</exception>
-    public async Task EnsureFramesLoadedAsync(CallStackThreadNode node)
+    public async Task LoadThreadAsync(CallStackThreadNode node)
     {
         ArgumentNullException.ThrowIfNull(node);
-        if (!loadedThreads.Add(node.ThreadOrdinal))
-        {
-            return;
-        }
+        thread = node;
+        Caption = node.Header;
+        refreshCommand.RaiseCanExecuteChanged();
 
+        var frameCap = FramesPerThread;
+        var explicitCandidates = shell.ExplicitPortablePdbCandidates;
         var frames = await shell.RunAsync(
             $"Walking managed frames of thread #{node.ThreadOrdinal}…",
-            session => DumpInspectionService.LoadFrames(session, node, FramesPerThread)).ConfigureAwait(true);
-        if (frames.IsDefault)
+            session => DumpInspectionService.LoadFrames(
+                session,
+                node,
+                frameCap,
+                explicitCandidates
+                    .Concat(SourceNavigationService.DiscoverPortablePdbCandidates(session))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(64)
+                    .ToImmutableArray())).ConfigureAwait(true);
+        if (frames.IsDefault || !ReferenceEquals(thread, node))
         {
-            loadedThreads.Remove(node.ThreadOrdinal);
             return;
         }
 
+        Frames.Clear();
+        SelectedFrame = null;
         foreach (var frame in frames)
         {
-            node.Frames.Add(frame);
+            Frames.Add(frame);
         }
-    }
-
-    /// <summary>Probes the configured thread ordinals and reloads the retained threads.</summary>
-    /// <returns>A task that completes once the probe outcome is displayed.</returns>
-    /// <remarks>
-    /// The shell also invokes this once per opened dump so the stopped threads are visible without a manual probe,
-    /// matching what a debugger user expects on attach. Re-running it from the pane stays supported.
-    /// </remarks>
-    public async Task ProbeAsync()
-    {
-        if (!shell.IsDumpOpen)
-        {
-            return;
-        }
-
-        var ordinals = ThreadOrdinalsToProbe;
-        var projection = await shell.RunAsync(
-            $"Probing {DisplayFormatting.Count(ordinals)} thread ordinals…",
-            session => DumpInspectionService.ProbeCallStacks(session, ordinals)).ConfigureAwait(true);
-        if (projection is null)
-        {
-            return;
-        }
-
-        Threads.Clear();
-        loadedThreads.Clear();
-        SelectedNode = null;
-        foreach (var thread in projection.Threads)
-        {
-            Threads.Add(thread);
-        }
-
-        Summary = projection.Summary;
-        Note = projection.Note;
-        shell.SetStatus(projection.Summary);
     }
 }

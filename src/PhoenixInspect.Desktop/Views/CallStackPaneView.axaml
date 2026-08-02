@@ -1,6 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:models="using:PhoenixInspect.Inspection"
              x:Class="PhoenixInspect.Desktop.Views.CallStackPaneView"
              Background="{DynamicResource Phoenix.PaneBackground}">
     <!-- DataContext: CallStackTool -->
@@ -11,6 +10,10 @@
                 Padding="8,5">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="max" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
+                    <TextBox Width="48" Padding="4,2" FontSize="11"
+                             Text="{Binding Panel.FramesPerThread}"
+                             ToolTip.Tip="Maximum managed frames retained for the displayed thread" />
                     <Button Content="Set as context"
                             FontSize="11"
                             Padding="8,3"
@@ -19,57 +22,57 @@
                     <Button Content="⟳"
                             FontSize="11"
                             Padding="8,3"
-                            Command="{Binding Panel.ProbeCommand}"
-                            ToolTip.Tip="Probe thread ordinals again with these caps" />
+                            Command="{Binding Panel.RefreshCommand}"
+                            ToolTip.Tip="Walk this thread's managed frames again with the current cap" />
                 </StackPanel>
-                <!-- A horizontal StackPanel paints past its arranged width, so without clipping the probe row
-                     would render under the right-docked buttons whenever the pane is narrow. -->
-                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" ClipToBounds="True">
-                    <TextBlock Text="probe" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
-                    <TextBox Width="48" Padding="4,2" FontSize="11"
-                             Text="{Binding Panel.ThreadOrdinalsToProbe}"
-                             ToolTip.Tip="Zero-based thread ordinals to probe" />
-                    <TextBlock Text="×" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
-                    <TextBox Width="48" Padding="4,2" FontSize="11"
-                             Text="{Binding Panel.FramesPerThread}"
-                             ToolTip.Tip="Maximum managed frames retained per thread" />
-                    <TextBlock Text="frames" Classes="secondary" FontSize="11" VerticalAlignment="Center" />
-                </StackPanel>
+                <TextBlock Text="{Binding Panel.Caption}"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
             </DockPanel>
         </Border>
-        <Border DockPanel.Dock="Bottom"
-                BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
-                BorderThickness="0,1,0,0"
-                Padding="8,4">
-            <TextBlock Text="{Binding Panel.Summary}"
-                       Classes="secondary"
-                       FontSize="10"
-                       TextWrapping="Wrap"
-                       ToolTip.Tip="{Binding Panel.Note}" />
-        </Border>
-        <TreeView x:Name="StacksTree"
-                  ItemsSource="{Binding Panel.Threads}"
-                  SelectionChanged="OnSelectionChanged"
+        <DataGrid x:Name="FramesGrid"
+                  ItemsSource="{Binding Panel.Frames}"
+                  SelectedItem="{Binding Panel.SelectedFrame, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserResizeColumns="True"
+                  HeadersVisibility="Column"
+                  Margin="4,2"
                   DoubleTapped="OnDoubleTapped">
-            <TreeView.Styles>
-                <Style Selector="TreeViewItem">
-                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                </Style>
-            </TreeView.Styles>
-            <TreeView.DataTemplates>
-                <TreeDataTemplate DataType="models:CallStackThreadNode" ItemsSource="{Binding Frames}">
-                    <StackPanel Margin="0,2">
-                        <TextBlock Text="{Binding Header}" FontWeight="SemiBold" FontSize="12" />
-                        <TextBlock Text="{Binding Detail}" Classes="secondary" FontSize="10" />
-                    </StackPanel>
-                </TreeDataTemplate>
-                <DataTemplate DataType="models:CallStackFrameNode">
-                    <StackPanel Margin="0,1">
-                        <TextBlock Classes="mono" Text="{Binding Header}" FontSize="11" />
-                        <TextBlock Classes="mono secondary" Text="{Binding Detail}" FontSize="10" />
-                    </StackPanel>
-                </DataTemplate>
-            </TreeView.DataTemplates>
-        </TreeView>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="#" Binding="{Binding FrameOrdinal}" Width="Auto" />
+                <DataGridTemplateColumn Header="Name" Width="3*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Classes="mono"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0"
+                                       Text="{Binding MethodDisplay}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding Detail}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Source" Width="1.4*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0"
+                                       Text="{Binding Location}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding LocationDetail}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Module" Binding="{Binding ModuleName}" Width="Auto" />
+                <DataGridTextColumn Header="IL" Binding="{Binding IlOffset}" Width="Auto" />
+                <DataGridTextColumn Header="IP" Binding="{Binding InstructionPointer}" Width="Auto"
+                                    FontFamily="Cascadia Mono,Consolas,monospace" />
+            </DataGrid.Columns>
+        </DataGrid>
     </DockPanel>
 </UserControl>

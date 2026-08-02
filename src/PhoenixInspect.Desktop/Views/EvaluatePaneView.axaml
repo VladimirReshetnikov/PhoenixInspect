@@ -186,7 +186,6 @@
                       IsReadOnly="True"
                       CanUserResizeColumns="True"
                       HeadersVisibility="Column"
-                      GridLinesVisibility="None"
                       Margin="4,2"
                       IsVisible="{Binding !!Panel.History.Count}">
                 <DataGrid.Columns>

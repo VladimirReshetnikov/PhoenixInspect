@@ -27,12 +27,18 @@
                   IsReadOnly="True"
                   CanUserResizeColumns="True"
                   HeadersVisibility="Column"
-                  GridLinesVisibility="None"
                   Margin="4,0">
         <DataGrid.Columns>
-            <DataGridTextColumn Header="Module" Binding="{Binding Name}" Width="*" />
+            <!-- Fixed starting widths: star sizing would collapse under this narrow pane's many Auto columns. -->
+            <DataGridTextColumn Header="Module" Binding="{Binding Name}" Width="170" />
+            <DataGridTextColumn Header="Domain" Binding="{Binding AppDomainId}" Width="Auto" />
+            <DataGridTextColumn Header="Metadata" Binding="{Binding MetadataAddress}" Width="Auto"
+                                FontFamily="Cascadia Mono,Consolas,monospace" />
             <DataGridTextColumn Header="Size" Binding="{Binding MetadataLength}" Width="Auto" />
             <DataGridTextColumn Header="Layout" Binding="{Binding Layout}" Width="Auto" />
+            <DataGridTextColumn Header="Symbols (hint)" Binding="{Binding SymbolHint}" Width="Auto" />
+            <DataGridTextColumn Header="Path (target hint)" Binding="{Binding TargetPathHint}" Width="320"
+                                FontFamily="Cascadia Mono,Consolas,monospace" />
         </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

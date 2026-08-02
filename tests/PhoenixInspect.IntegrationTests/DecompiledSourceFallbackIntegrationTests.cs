@@ -96,9 +96,8 @@ public sealed class DecompiledSourceFallbackIntegrationTests
         var projection = DumpInspectionService.ProbeCallStacks(session, threadOrdinalsToProbe: 16);
         foreach (var thread in projection.Threads)
         {
-            // The probe itself carries frame #0 on the thread node; LoadFrames supplies the frames beyond it.
-            foreach (var frame in thread.Frames
-                .Concat(DumpInspectionService.LoadFrames(session, thread, maximumFrames: 16)))
+            // LoadFrames walks the complete bounded stack from frame #0 downward.
+            foreach (var frame in DumpInspectionService.LoadFrames(session, thread, maximumFrames: 16))
             {
                 if (frame.Frame is not { } identity)
                 {

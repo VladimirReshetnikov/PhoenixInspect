@@ -31,6 +31,7 @@ public sealed class ViewLocator : IDataTemplate
         Control? view = data switch
         {
             CallStackTool => new CallStackPaneView(),
+            ThreadsTool => new ThreadsPaneView(),
             ModulesTool => new ModulesPaneView(),
             HeapSearchTool => new HeapSearchPaneView(),
             EvaluateTool => new EvaluatePaneView(),
@@ -51,6 +52,6 @@ public sealed class ViewLocator : IDataTemplate
 
     /// <inheritdoc />
     public bool Match(object? data) => data is
-        CallStackTool or ModulesTool or HeapSearchTool or EvaluateTool or ResultTool or
+        CallStackTool or ThreadsTool or ModulesTool or HeapSearchTool or EvaluateTool or ResultTool or
         WelcomeDocument or SourceDocument;
 }

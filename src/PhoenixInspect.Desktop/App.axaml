@@ -133,10 +133,13 @@
             <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
         </Style>
 
-        <!-- Pane surfaces. -->
+        <!-- Pane surfaces. Every grid gets Visual Studio's column separators and resizable columns by default. -->
         <Style Selector="DataGrid">
             <Setter Property="Background" Value="{DynamicResource Phoenix.PaneBackground}" />
             <Setter Property="Foreground" Value="{DynamicResource Phoenix.WindowForeground}" />
+            <Setter Property="GridLinesVisibility" Value="Vertical" />
+            <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource Phoenix.SubtleBorder}" />
+            <Setter Property="CanUserResizeColumns" Value="True" />
         </Style>
         <Style Selector="DataGridRow:selected">
             <Setter Property="Foreground" Value="White" />

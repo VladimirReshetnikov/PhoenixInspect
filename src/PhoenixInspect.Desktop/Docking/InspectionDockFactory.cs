@@ -7,8 +7,9 @@ using Dock.Model.Mvvm.Controls;
 namespace PhoenixInspect.Desktop.Docking;
 
 /// <summary>
-/// Builds the shell's fixed docking layout: call stack, modules, and heap search on the left; source documents in
-/// the center; the evaluation console at the bottom; and the evidence pane on the right.
+/// Builds the shell's fixed docking layout, arranged the way Visual Studio arranges a debugging session: documents
+/// in the center, Modules and Heap Search on the left, the evidence pane on the right, and a full-width bottom band
+/// holding the evaluation console beside the Call Stack and Threads tab group.
 /// </summary>
 /// <remarks>
 /// Layout persistence is deliberately out of scope for the preview — every launch starts from this one layout, and
@@ -17,6 +18,7 @@ namespace PhoenixInspect.Desktop.Docking;
 public sealed class InspectionDockFactory : Factory
 {
     private readonly CallStackTool callStack;
+    private readonly ThreadsTool threads;
     private readonly ModulesTool modules;
     private readonly HeapSearchTool heapSearch;
     private readonly EvaluateTool evaluate;
@@ -25,6 +27,7 @@ public sealed class InspectionDockFactory : Factory
 
     /// <summary>Creates the factory over the singleton panes.</summary>
     /// <param name="callStack">The call-stack tool pane.</param>
+    /// <param name="threads">The threads tool pane.</param>
     /// <param name="modules">The modules tool pane.</param>
     /// <param name="heapSearch">The heap-search tool pane.</param>
     /// <param name="evaluate">The evaluation-console tool pane.</param>
@@ -33,6 +36,7 @@ public sealed class InspectionDockFactory : Factory
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
     public InspectionDockFactory(
         CallStackTool callStack,
+        ThreadsTool threads,
         ModulesTool modules,
         HeapSearchTool heapSearch,
         EvaluateTool evaluate,
@@ -40,6 +44,7 @@ public sealed class InspectionDockFactory : Factory
         WelcomeDocument welcome)
     {
         this.callStack = callStack ?? throw new ArgumentNullException(nameof(callStack));
+        this.threads = threads ?? throw new ArgumentNullException(nameof(threads));
         this.modules = modules ?? throw new ArgumentNullException(nameof(modules));
         this.heapSearch = heapSearch ?? throw new ArgumentNullException(nameof(heapSearch));
         this.evaluate = evaluate ?? throw new ArgumentNullException(nameof(evaluate));
@@ -58,58 +63,20 @@ public sealed class InspectionDockFactory : Factory
             Id = "Documents",
             Title = "Documents",
             IsCollapsable = false,
-            Proportion = 0.7,
+            Proportion = 0.56,
             DockCapabilityPolicy = new DockCapabilityPolicy(),
         };
         Documents = documents;
         documents.VisibleDockables = CreateList<IDockable>(welcome);
         documents.ActiveDockable = welcome;
 
-        var leftColumn = new ProportionalDock
+        var leftTools = new ToolDock
         {
-            Id = "LeftColumn",
-            Orientation = Orientation.Vertical,
-            Proportion = 0.24,
-            VisibleDockables = CreateList<IDockable>(
-                new ToolDock
-                {
-                    Id = "LeftTopTools",
-                    Proportion = 0.55,
-                    Alignment = Alignment.Left,
-                    VisibleDockables = CreateList<IDockable>(callStack),
-                    ActiveDockable = callStack,
-                    DockCapabilityPolicy = new DockCapabilityPolicy(),
-                },
-                new ProportionalDockSplitter { Id = "LeftToolsSplitter" },
-                new ToolDock
-                {
-                    Id = "LeftBottomTools",
-                    Proportion = 0.45,
-                    Alignment = Alignment.Left,
-                    VisibleDockables = CreateList<IDockable>(modules, heapSearch),
-                    ActiveDockable = modules,
-                    DockCapabilityPolicy = new DockCapabilityPolicy(),
-                }),
-            DockCapabilityPolicy = new DockCapabilityPolicy(),
-        };
-
-        var centerColumn = new ProportionalDock
-        {
-            Id = "CenterColumn",
-            Orientation = Orientation.Vertical,
-            Proportion = 0.54,
-            VisibleDockables = CreateList<IDockable>(
-                documents,
-                new ProportionalDockSplitter { Id = "EvaluateSplitter" },
-                new ToolDock
-                {
-                    Id = "BottomTools",
-                    Proportion = 0.3,
-                    Alignment = Alignment.Bottom,
-                    VisibleDockables = CreateList<IDockable>(evaluate),
-                    ActiveDockable = evaluate,
-                    DockCapabilityPolicy = new DockCapabilityPolicy(),
-                }),
+            Id = "LeftTools",
+            Proportion = 0.22,
+            Alignment = Alignment.Left,
+            VisibleDockables = CreateList<IDockable>(modules, heapSearch),
+            ActiveDockable = modules,
             DockCapabilityPolicy = new DockCapabilityPolicy(),
         };
 
@@ -123,16 +90,58 @@ public sealed class InspectionDockFactory : Factory
             DockCapabilityPolicy = new DockCapabilityPolicy(),
         };
 
+        var upperBand = new ProportionalDock
+        {
+            Id = "UpperBand",
+            Orientation = Orientation.Horizontal,
+            Proportion = 0.63,
+            VisibleDockables = CreateList<IDockable>(
+                leftTools,
+                new ProportionalDockSplitter { Id = "LeftSplitter" },
+                documents,
+                new ProportionalDockSplitter { Id = "RightSplitter" },
+                rightTools),
+            DockCapabilityPolicy = new DockCapabilityPolicy(),
+        };
+
+        // The bottom band mirrors Visual Studio's debugger tool-window band: the watch-style console on the left,
+        // and the Call Stack / Threads tab group on the right, both spanning the full window width.
+        var bottomBand = new ProportionalDock
+        {
+            Id = "BottomBand",
+            Orientation = Orientation.Horizontal,
+            Proportion = 0.37,
+            VisibleDockables = CreateList<IDockable>(
+                new ToolDock
+                {
+                    Id = "BottomLeftTools",
+                    Proportion = 0.55,
+                    Alignment = Alignment.Bottom,
+                    VisibleDockables = CreateList<IDockable>(evaluate),
+                    ActiveDockable = evaluate,
+                    DockCapabilityPolicy = new DockCapabilityPolicy(),
+                },
+                new ProportionalDockSplitter { Id = "BottomSplitter" },
+                new ToolDock
+                {
+                    Id = "BottomRightTools",
+                    Proportion = 0.45,
+                    Alignment = Alignment.Bottom,
+                    VisibleDockables = CreateList<IDockable>(callStack, threads),
+                    ActiveDockable = callStack,
+                    DockCapabilityPolicy = new DockCapabilityPolicy(),
+                }),
+            DockCapabilityPolicy = new DockCapabilityPolicy(),
+        };
+
         var mainLayout = new ProportionalDock
         {
             Id = "MainLayout",
-            Orientation = Orientation.Horizontal,
+            Orientation = Orientation.Vertical,
             VisibleDockables = CreateList<IDockable>(
-                leftColumn,
-                new ProportionalDockSplitter { Id = "LeftSplitter" },
-                centerColumn,
-                new ProportionalDockSplitter { Id = "RightSplitter" },
-                rightTools),
+                upperBand,
+                new ProportionalDockSplitter { Id = "BandSplitter" },
+                bottomBand),
             DockCapabilityPolicy = new DockCapabilityPolicy(),
         };
 
@@ -153,6 +162,7 @@ public sealed class InspectionDockFactory : Factory
         DockableLocator = new Dictionary<string, Func<IDockable?>>
         {
             [callStack.Id] = () => callStack,
+            [threads.Id] = () => threads,
             [modules.Id] = () => modules,
             [heapSearch.Id] = () => heapSearch,
             [evaluate.Id] = () => evaluate,
@@ -165,6 +175,9 @@ public sealed class InspectionDockFactory : Factory
         };
         base.InitLayout(layout);
     }
+
+    /// <summary>Brings the Call Stack pane to the front of its tab group.</summary>
+    public void ActivateCallStackPane() => SetActiveDockable(callStack);
 
     /// <summary>Adds a source document to the document dock and activates it.</summary>
     /// <param name="document">The document to show.</param>

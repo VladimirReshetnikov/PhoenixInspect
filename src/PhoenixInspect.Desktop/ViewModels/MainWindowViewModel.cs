@@ -1,5 +1,5 @@
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using Dock.Model.Controls;
 using PhoenixInspect.Desktop.Docking;
@@ -36,11 +36,13 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         Overview = new OverviewViewModel();
         Modules = new ModulesViewModel(this);
         CallStacks = new CallStacksViewModel(this);
+        Threads = new ThreadsViewModel(this);
         HeapObjects = new HeapObjectsViewModel(this);
         Evaluate = new EvaluateViewModel(this);
 
         factory = new InspectionDockFactory(
             new CallStackTool(CallStacks),
+            new ThreadsTool(Threads),
             new ModulesTool(Modules),
             new HeapSearchTool(HeapObjects),
             new EvaluateTool(Evaluate),
@@ -52,6 +54,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         openCommand = new RelayCommand(() => OpenDumpRequested?.Invoke(this, EventArgs.Empty), () => !IsBusy);
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
         Evaluate.Reset();
+        Threads.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
         LoadRecentDumps();
@@ -75,6 +78,9 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
     /// <summary>Gets the call-stack pane.</summary>
     public CallStacksViewModel CallStacks { get; }
+
+    /// <summary>Gets the threads pane.</summary>
+    public ThreadsViewModel Threads { get; }
 
     /// <summary>Gets the heap-object pane.</summary>
     public HeapObjectsViewModel HeapObjects { get; }
@@ -175,6 +181,21 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         SetStatus("Adopted an exact heap object as the root-relative expression root.");
     }
 
+    /// <inheritdoc />
+    public ImmutableArray<string> ExplicitPortablePdbCandidates =>
+        EvaluateViewModel.ParseCandidates(Evaluate.PortablePdbCandidates);
+
+    /// <inheritdoc />
+    public async Task ShowThreadCallStackAsync(CallStackThreadNode thread, bool activatePane)
+    {
+        ArgumentNullException.ThrowIfNull(thread);
+        await CallStacks.LoadThreadAsync(thread).ConfigureAwait(true);
+        if (activatePane)
+        {
+            factory.ActivateCallStackPane();
+        }
+    }
+
     /// <summary>Resolves one frame's verified source and shows it as a document tab.</summary>
     /// <param name="frame">The frame to resolve.</param>
     /// <returns>A task that completes once the document is shown.</returns>
@@ -271,6 +292,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         Raise(nameof(IsDumpOpen));
         closeCommand.RaiseCanExecuteChanged();
 
+        Threads.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();
@@ -289,8 +311,8 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         }
 
         // A debugger surfaces the stopped threads without being asked; the probe stays re-runnable from the pane.
-        await CallStacks.ProbeAsync().ConfigureAwait(true);
-        SubscribeThreadExpansion();
+        // Probing also selects the first thread, which loads its call stack into the Call Stack pane.
+        await Threads.ProbeAsync().ConfigureAwait(true);
         SetStatus(outcome.Message);
     }
 
@@ -379,30 +401,6 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         }
     }
 
-    private void SubscribeThreadExpansion()
-    {
-        // Expanding a thread node lazily walks its remaining frames. The node publishes expansion through
-        // INotifyPropertyChanged, so no view code-behind is needed for the load trigger. A thread the projection
-        // pre-expanded never raises that change, so its frames are walked eagerly here.
-        foreach (var thread in CallStacks.Threads)
-        {
-            thread.PropertyChanged += OnThreadNodeChanged;
-            if (thread.IsExpanded)
-            {
-                _ = CallStacks.EnsureFramesLoadedAsync(thread);
-            }
-        }
-    }
-
-    private void OnThreadNodeChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (sender is CallStackThreadNode { IsExpanded: true } node &&
-            string.Equals(e.PropertyName, nameof(CallStackThreadNode.IsExpanded), StringComparison.Ordinal))
-        {
-            _ = CallStacks.EnsureFramesLoadedAsync(node);
-        }
-    }
-
     private void ClearSessionState()
     {
         DumpFileName = null;
@@ -411,6 +409,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         TargetSummary = string.Empty;
         Overview.Load([]);
         Modules.Load([]);
+        Threads.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();

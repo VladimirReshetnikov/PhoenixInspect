@@ -22,6 +22,24 @@ public sealed class CallStackTool : Tool
     public CallStacksViewModel Panel { get; }
 }
 
+/// <summary>The dockable Threads tool pane.</summary>
+public sealed class ThreadsTool : Tool
+{
+    /// <summary>Creates the pane over its view model.</summary>
+    /// <param name="panel">The threads pane view model.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="panel"/> is null.</exception>
+    public ThreadsTool(ThreadsViewModel panel)
+    {
+        Panel = panel ?? throw new ArgumentNullException(nameof(panel));
+        Id = "Threads";
+        Title = "Threads";
+        CanClose = false;
+    }
+
+    /// <summary>Gets the pane view model the view binds to.</summary>
+    public ThreadsViewModel Panel { get; }
+}
+
 /// <summary>The dockable Modules tool pane.</summary>
 public sealed class ModulesTool : Tool
 {

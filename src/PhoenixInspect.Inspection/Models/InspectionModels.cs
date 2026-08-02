@@ -18,6 +18,10 @@ public sealed record PropertyRow(string Group, string Name, string Value, string
 /// <param name="MetadataLength">The formatted metadata length.</param>
 /// <param name="Layout">The ClrMD-reported mapped-image layout name.</param>
 /// <param name="TargetPathHint">The unmodified target-side path hint, which is never an analysis-machine path.</param>
+/// <param name="SymbolHint">
+/// A short statement of whether a hint-derived <c>.pdb</c> candidate exists on this machine. It reports discovery
+/// only — a present candidate is still identity-validated before anything binds through it.
+/// </param>
 public sealed record ModuleRow(
     ClrmdModuleInfo Module,
     string Name,
@@ -25,7 +29,8 @@ public sealed record ModuleRow(
     string MetadataAddress,
     string MetadataLength,
     string Layout,
-    string TargetPathHint);
+    string TargetPathHint,
+    string SymbolHint = "");
 
 /// <summary>One strong-handle-rooted heap object projected for the object grid.</summary>
 /// <param name="Object">The originating adapter evidence, retained so it can become an expression root.</param>
@@ -90,17 +95,29 @@ public sealed class CallStackFrameNode : CallStackNode
     /// <param name="header">The primary display line.</param>
     /// <param name="detail">The secondary display line carrying tokens and offsets.</param>
     /// <param name="isExact">Whether the underlying observation was exact.</param>
+    /// <param name="methodDisplay">The method signature, or the typed explanation of why no name resolved.</param>
+    /// <param name="moduleName">The display name of the frame's module, or an empty string when unmatched.</param>
+    /// <param name="location">The short source-location cell text, or an empty string when none was attempted.</param>
+    /// <param name="locationDetail">The full source-location explanation shown as a tooltip, or null.</param>
     public CallStackFrameNode(
         DumpSelectedFrameSelector selector,
         DumpSelectedFrameIdentity? frame,
         string header,
         string detail,
-        bool isExact)
+        bool isExact,
+        string methodDisplay = "",
+        string moduleName = "",
+        string location = "",
+        string? locationDetail = null)
         : base(header, detail)
     {
         Selector = selector ?? throw new ArgumentNullException(nameof(selector));
         Frame = frame;
         IsExact = isExact;
+        MethodDisplay = methodDisplay.Length > 0 ? methodDisplay : header;
+        ModuleName = moduleName;
+        Location = location;
+        LocationDetail = locationDetail;
     }
 
     /// <summary>Gets the snapshot-scoped selector that reproduces this frame.</summary>
@@ -111,20 +128,66 @@ public sealed class CallStackFrameNode : CallStackNode
 
     /// <summary>Gets whether this node came from an exact observation.</summary>
     public bool IsExact { get; }
+
+    /// <summary>Gets the zero-based frame ordinal within its thread's stack.</summary>
+    public int FrameOrdinal => Selector.FrameOrdinal;
+
+    /// <summary>Gets the method signature shown in the call-stack grid's Name column.</summary>
+    public string MethodDisplay { get; }
+
+    /// <summary>Gets the display name of the frame's module, or an empty string when it could not be matched.</summary>
+    public string ModuleName { get; }
+
+    /// <summary>Gets the short source-location cell text, such as <c>Program.cs, line 12</c>.</summary>
+    public string Location { get; }
+
+    /// <summary>Gets the full source-location explanation shown as a tooltip, or null when none applies.</summary>
+    public string? LocationDetail { get; }
+
+    /// <summary>Gets the frame's IL offset as invariant text, or an empty string for a non-exact frame.</summary>
+    public string IlOffset => Frame is { } frame
+        ? frame.Instruction.IlOffset.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        : string.Empty;
+
+    /// <summary>Gets the formatted native instruction pointer, or an empty string for a non-exact frame.</summary>
+    public string InstructionPointer => Frame is { } frame
+        ? DisplayFormatting.Address(frame.Instruction.NativeInstructionPointer)
+        : string.Empty;
 }
 
-/// <summary>One managed thread projected for the call-stack tree.</summary>
+/// <summary>One managed thread projected for the thread grid.</summary>
 public sealed class CallStackThreadNode : CallStackNode
 {
     /// <summary>Creates a thread node.</summary>
     /// <param name="threadOrdinal">The zero-based producer ordinal of the thread.</param>
     /// <param name="header">The primary display line.</param>
     /// <param name="detail">The secondary display line.</param>
-    public CallStackThreadNode(int threadOrdinal, string header, string detail)
-        : base(header, detail) => ThreadOrdinal = threadOrdinal;
+    /// <param name="managedThreadId">The runtime-reported managed thread id, or null when unknown.</param>
+    /// <param name="runtimeThreadAddress">The formatted runtime thread address, or an empty string.</param>
+    public CallStackThreadNode(
+        int threadOrdinal,
+        string header,
+        string detail,
+        uint? managedThreadId = null,
+        string runtimeThreadAddress = "")
+        : base(header, detail)
+    {
+        ThreadOrdinal = threadOrdinal;
+        ManagedThreadId = managedThreadId;
+        RuntimeThreadAddress = runtimeThreadAddress;
+    }
 
     /// <summary>Gets the zero-based producer ordinal of the thread.</summary>
     public int ThreadOrdinal { get; }
+
+    /// <summary>Gets the runtime-reported managed thread id, or null when the probe did not observe one.</summary>
+    public uint? ManagedThreadId { get; }
+
+    /// <summary>Gets the formatted runtime thread address, or an empty string.</summary>
+    public string RuntimeThreadAddress { get; }
+
+    /// <summary>Gets the top frame's method display, shown as the thread grid's Location column.</summary>
+    public string Location => Frames.Count > 0 ? Frames[0].MethodDisplay : string.Empty;
 
     /// <summary>Gets the bounded managed frames enumerated for this thread, in stack order.</summary>
     public ObservableCollection<CallStackFrameNode> Frames { get; } = [];

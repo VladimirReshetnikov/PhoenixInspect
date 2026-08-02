@@ -268,7 +268,10 @@ public sealed class InspectionSession
             {
                 foreach (var thread in probed.Threads)
                 {
-                    foreach (var frame in DumpInspectionService.LoadFrames(session, thread, depth))
+                    // LoadFrames walks the complete bounded stack from frame #0, so it replaces the probe's top frame.
+                    var frames = DumpInspectionService.LoadFrames(session, thread, depth);
+                    thread.Frames.Clear();
+                    foreach (var frame in frames)
                     {
                         thread.Frames.Add(frame);
                     }
@@ -317,7 +320,6 @@ public sealed class InspectionSession
             if (observation.Frame is not null)
             {
                 var node = new CallStackThreadNode(threadOrdinal, $"Thread #{threadOrdinal}", string.Empty);
-                collected.Add(DumpInspectionService.CreateFrameNode(session, top, observation));
                 collected.AddRange(DumpInspectionService.LoadFrames(session, node, depth));
             }
 
@@ -401,11 +403,6 @@ public sealed class InspectionSession
             foreach (var thread in probed.Threads)
             {
                 foreach (var frame in DumpInspectionService.LoadFrames(session, thread, DefaultFrameDepth))
-                {
-                    thread.Frames.Add(frame);
-                }
-
-                foreach (var frame in thread.Frames)
                 {
                     if (frame.Frame is { } identity &&
                         session.DescribeFrameMethod(identity).Value is { } method &&
