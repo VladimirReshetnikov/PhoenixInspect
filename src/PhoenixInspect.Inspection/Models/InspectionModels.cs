@@ -49,6 +49,19 @@ public sealed record HeapObjectRow(
     string RootAddress,
     string ModuleName);
 
+/// <summary>One row of the Locals pane: a parameter or a local variable slot of the selected frame.</summary>
+/// <param name="Kind">The row kind: <c>Parameter</c>, <c>this</c>, or <c>Local</c>.</param>
+/// <param name="Name">The decoded name, or a slot placeholder when no name is recorded.</param>
+/// <param name="TypeDisplay">The C#-flavored declared type.</param>
+/// <param name="Slot">The IL local slot index, or the parameter ordinal, as display text.</param>
+/// <param name="Note">Display notes: out-of-scope or debugger-hidden markers, or an empty string.</param>
+public sealed record FrameVariableRow(
+    string Kind,
+    string Name,
+    string TypeDisplay,
+    string Slot,
+    string Note);
+
 /// <summary>Shared display state for a node in the call-stack tree.</summary>
 /// <remarks>
 /// Expansion state lives on the node rather than on the tree container so the panel can pre-expand a thread and so

@@ -72,7 +72,10 @@ public sealed class CallStacksViewModel : ObservableObject
         private set => Set(ref caption, value);
     }
 
-    /// <summary>Gets or sets the selected frame row.</summary>
+    /// <summary>
+    /// Gets or sets the selected frame row. Selecting a frame decodes its parameters and locals into the Locals
+    /// pane, matching how Visual Studio's Locals window follows the Call Stack selection.
+    /// </summary>
     public CallStackFrameNode? SelectedFrame
     {
         get => selectedFrame;
@@ -81,6 +84,10 @@ public sealed class CallStacksViewModel : ObservableObject
             if (Set(ref selectedFrame, value))
             {
                 useContextCommand.RaiseCanExecuteChanged();
+                if (value is not null)
+                {
+                    _ = shell.ShowFrameVariablesAsync(value);
+                }
             }
         }
     }
@@ -148,5 +155,9 @@ public sealed class CallStacksViewModel : ObservableObject
         {
             Frames.Add(frame);
         }
+
+        // A debugger lands on the top frame; selecting it here also populates the Locals pane through the same
+        // path a user click would take.
+        SelectedFrame = Frames.FirstOrDefault(static frame => frame.IsExact) ?? Frames.FirstOrDefault();
     }
 }

@@ -31,6 +31,13 @@ public sealed record SnapshotProjection(
     string TargetPlatform,
     string TargetArchitecture);
 
+/// <summary>Carries the decoded parameters and local slots of one selected frame for the Locals pane.</summary>
+/// <param name="Rows">The parameter rows followed by the local-slot rows, in declaration order.</param>
+/// <param name="Summary">A one-line description of what was decoded and what was not.</param>
+public sealed record FrameVariablesProjection(
+    ImmutableArray<FrameVariableRow> Rows,
+    string Summary);
+
 /// <summary>Carries the bounded call-stack probe result together with an explanation of its limits.</summary>
 /// <param name="Threads">Thread nodes that carry at least one exact managed frame.</param>
 /// <param name="Summary">A one-line description of what was probed and what was found.</param>
@@ -397,6 +404,91 @@ public static class DumpInspectionService
         };
 
         return new HeapObjectSearchProjection(rows, facts.ToImmutable(), summary, isExhaustive);
+    }
+
+    /// <summary>Decodes one selected frame's parameters and local slots for the Locals pane.</summary>
+    /// <param name="session">The open dump session.</param>
+    /// <param name="frame">The frame node whose identity should be decoded.</param>
+    /// <param name="portablePdbCandidates">
+    /// Local Portable-PDB candidate paths offered for slot names; each is identity-validated before use.
+    /// </param>
+    /// <returns>The projected rows and an honest summary; a non-exact frame projects an explanation only.</returns>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    public static FrameVariablesProjection DescribeFrameVariables(
+        ClrmdDumpSession session,
+        CallStackFrameNode frame,
+        ImmutableArray<string> portablePdbCandidates)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(frame);
+        if (frame.Frame is not { } identity)
+        {
+            return new FrameVariablesProjection(
+                [],
+                "The selected frame is not exact, so its variables cannot be decoded.");
+        }
+
+        var decoded = session.DescribeFrameVariables(identity, portablePdbCandidates);
+        if (decoded.Value is not { } variables)
+        {
+            return new FrameVariablesProjection(
+                [],
+                $"Variable decoding ended {decoded.Status} ({decoded.Issue}); the frame module's metadata could "
+                + "not supply the declarations.");
+        }
+
+        var rows = ImmutableArray.CreateBuilder<FrameVariableRow>();
+        foreach (var parameter in variables.Parameters)
+        {
+            rows.Add(new FrameVariableRow(
+                parameter.IsThis ? "this" : "Parameter",
+                parameter.Name,
+                parameter.TypeDisplay,
+                parameter.Ordinal.ToString(CultureInfo.InvariantCulture),
+                string.Empty));
+        }
+
+        foreach (var slot in variables.LocalSlots)
+        {
+            var notes = new List<string>(capacity: 2);
+            if (slot.Name is not null && !slot.IsInScopeAtCurrentOffset)
+            {
+                notes.Add("out of scope at the current IL offset");
+            }
+
+            if (slot.IsDebuggerHidden)
+            {
+                notes.Add("debugger-hidden");
+            }
+
+            rows.Add(new FrameVariableRow(
+                "Local",
+                slot.Name ?? $"<slot {slot.Slot.ToString(CultureInfo.InvariantCulture)}>",
+                slot.TypeDisplay,
+                slot.Slot.ToString(CultureInfo.InvariantCulture),
+                string.Join(", ", notes)));
+        }
+
+        var parts = new List<string>(capacity: 4)
+        {
+            $"{DisplayFormatting.Count(variables.Parameters.Length)} parameters and "
+            + $"{DisplayFormatting.Count(variables.LocalSlots.Length)} local slots decoded from the frame "
+            + "module's metadata and method body.",
+        };
+        if (variables.LocalSlotsNote is { } slotsNote)
+        {
+            parts.Add(slotsNote);
+        }
+
+        if (variables.LocalNamesNote is { } namesNote)
+        {
+            parts.Add(namesNote);
+        }
+
+        parts.Add(
+            "Values are deliberately not shown: the adapter publishes no register or stack-slot mapping for "
+            + "managed frames, and a guessed value would be fabricated evidence.");
+        return new FrameVariablesProjection(rows.ToImmutable(), string.Join(" ", parts));
     }
 
     /// <summary>Builds the display node for one selected frame, naming its method when the metadata supports it.</summary>

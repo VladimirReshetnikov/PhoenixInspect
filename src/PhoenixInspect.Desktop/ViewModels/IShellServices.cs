@@ -51,4 +51,9 @@ public interface IShellServices
     /// <param name="activatePane">Whether to also bring the Call Stack pane to the front of its tab group.</param>
     /// <returns>A task that completes once the stack is loaded.</returns>
     Task ShowThreadCallStackAsync(CallStackThreadNode thread, bool activatePane);
+
+    /// <summary>Decodes one selected frame's parameters and local slots into the Locals pane.</summary>
+    /// <param name="frame">The selected frame.</param>
+    /// <returns>A task that completes once the pane reflects the frame.</returns>
+    Task ShowFrameVariablesAsync(CallStackFrameNode frame);
 }

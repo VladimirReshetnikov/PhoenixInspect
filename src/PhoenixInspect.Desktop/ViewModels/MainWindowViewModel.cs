@@ -37,12 +37,14 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         Modules = new ModulesViewModel(this);
         CallStacks = new CallStacksViewModel(this);
         Threads = new ThreadsViewModel(this);
+        Locals = new LocalsViewModel(this);
         HeapObjects = new HeapObjectsViewModel(this);
         Evaluate = new EvaluateViewModel(this);
 
         factory = new InspectionDockFactory(
             new CallStackTool(CallStacks),
             new ThreadsTool(Threads),
+            new LocalsTool(Locals),
             new ModulesTool(Modules),
             new HeapSearchTool(HeapObjects),
             new EvaluateTool(Evaluate),
@@ -55,6 +57,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
         Evaluate.Reset();
         Threads.Reset();
+        Locals.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
         LoadRecentDumps();
@@ -81,6 +84,9 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
     /// <summary>Gets the threads pane.</summary>
     public ThreadsViewModel Threads { get; }
+
+    /// <summary>Gets the locals pane.</summary>
+    public LocalsViewModel Locals { get; }
 
     /// <summary>Gets the heap-object pane.</summary>
     public HeapObjectsViewModel HeapObjects { get; }
@@ -196,6 +202,13 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         }
     }
 
+    /// <inheritdoc />
+    public Task ShowFrameVariablesAsync(CallStackFrameNode frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        return Locals.LoadFrameAsync(frame);
+    }
+
     /// <summary>Resolves one frame's verified source and shows it as a document tab.</summary>
     /// <param name="frame">The frame to resolve.</param>
     /// <returns>A task that completes once the document is shown.</returns>
@@ -297,6 +310,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         closeCommand.RaiseCanExecuteChanged();
 
         Threads.Reset();
+        Locals.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();
@@ -414,6 +428,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         Overview.Load([]);
         Modules.Load([]);
         Threads.Reset();
+        Locals.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();

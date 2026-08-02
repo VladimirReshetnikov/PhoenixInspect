@@ -36,7 +36,8 @@
                        TextWrapping="Wrap"
                        ToolTip.Tip="{Binding Panel.Note}" />
         </Border>
-        <DataGrid ItemsSource="{Binding Panel.Threads}"
+        <DataGrid x:Name="ThreadsGrid"
+                  ItemsSource="{Binding Panel.Threads}"
                   SelectedItem="{Binding Panel.SelectedThread, Mode=TwoWay}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"

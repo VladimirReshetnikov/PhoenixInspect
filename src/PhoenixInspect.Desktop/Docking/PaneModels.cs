@@ -40,6 +40,24 @@ public sealed class ThreadsTool : Tool
     public ThreadsViewModel Panel { get; }
 }
 
+/// <summary>The dockable Locals tool pane.</summary>
+public sealed class LocalsTool : Tool
+{
+    /// <summary>Creates the pane over its view model.</summary>
+    /// <param name="panel">The locals pane view model.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="panel"/> is null.</exception>
+    public LocalsTool(LocalsViewModel panel)
+    {
+        Panel = panel ?? throw new ArgumentNullException(nameof(panel));
+        Id = "Locals";
+        Title = "Locals";
+        CanClose = false;
+    }
+
+    /// <summary>Gets the pane view model the view binds to.</summary>
+    public LocalsViewModel Panel { get; }
+}
+
 /// <summary>The dockable Modules tool pane.</summary>
 public sealed class ModulesTool : Tool
 {
