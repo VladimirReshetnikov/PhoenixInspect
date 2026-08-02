@@ -454,6 +454,10 @@ public sealed class EvaluateViewModel : ObservableObject
                 "Pattern test",
                 "MyCompany.MyApp.Diagnostics.RequestCounters.Total is > 0 and < 100000",
                 ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Lambda pipeline",
+                "Enumerable.Range(1, 10).Where(x => x % 2 == 1).Select(x => x * x).Sum()",
+                ExpressionPath.StaticField));
             return;
         }
 
@@ -478,6 +482,10 @@ public sealed class EvaluateViewModel : ObservableObject
         Samples.Add(new ExpressionSample(
             "Interpolated summary",
             $"$\"name {{{identifier}.Name}} ({{{identifier}.Name.Length}} chars)\"",
+            ExpressionPath.RootRelative));
+        Samples.Add(new ExpressionSample(
+            "Lambda over a dump array",
+            $"{identifier}.RecentDispatchDurationsMs.Where(ms => ms > 1000).Select(ms => ms / 1000.0).ToArray()",
             ExpressionPath.RootRelative));
         Samples.Add(new ExpressionSample(
             "Pattern over a dump value",

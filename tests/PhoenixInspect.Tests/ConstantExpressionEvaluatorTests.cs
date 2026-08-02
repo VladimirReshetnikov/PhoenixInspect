@@ -529,7 +529,6 @@ public sealed class ConstantExpressionEvaluatorTests
     /// <param name="expression">The erroneous sequence expression.</param>
     /// <param name="expectedCode">The stable diagnostic code.</param>
     [Theory]
-    [InlineData("new[] { 1, 2 }.First(x => x > 1)", null)]
     [InlineData("new int[0].First()", null)]
     [InlineData("new[] { 1, 2 }.Skip(5).First()", "System.InvalidOperationException")]
     [InlineData("new[] { 1, 2 }.Single()", "System.InvalidOperationException")]
@@ -549,8 +548,8 @@ public sealed class ConstantExpressionEvaluatorTests
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
         if (expectedCode is null)
         {
-            // Shapes outside the lambda-free surface (or with no inferable elements) stay not-constant, so the
-            // frozen paths keep rejecting them with their own vocabulary.
+            // Shapes with no inferable elements stay not-constant, so the frozen paths keep rejecting them with
+            // their own vocabulary.
             Assert.Equal(ConstantExpressionStatus.NotConstant, result.Status);
             return;
         }

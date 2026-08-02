@@ -8,9 +8,10 @@ namespace PhoenixInspect.Product.DumpQuery;
 
 /// <content>
 /// Virtual array sequences: values produced by array-creating BCL members, array initializer expressions, and the
-/// deterministic lambda-free <c>System.Linq.Enumerable</c> surface. A sequence exists only while one expression
-/// evaluates — it is never persisted and never written back anywhere — and every operation over it is purely
-/// functional: each step produces a new sequence and leaves its input untouched.
+/// deterministic <c>System.Linq.Enumerable</c> surface — lambda-free operators here, with the expression-lambda
+/// operators in the lambda partial. A sequence exists only while one expression evaluates — it is never persisted
+/// and never written back anywhere — and every operation over it is purely functional: each step produces a new
+/// sequence and leaves its input untouched.
 /// </content>
 public static partial class ConstantExpressionEvaluator
 {
@@ -351,6 +352,8 @@ public static partial class ConstantExpressionEvaluator
             case "Average" when arguments.Count == 0:
                 return SequenceAverage(payload);
             case "ToArray" when arguments.Count == 0:
+            case "ToList" when arguments.Count == 0:
+                // A virtual sequence is already materialized and immutable, so both are the identity.
                 return FoldOutcome.Folded(receiver);
             default:
                 return MemberUnsupported(name);

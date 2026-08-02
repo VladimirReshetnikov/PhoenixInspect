@@ -634,6 +634,10 @@ public static partial class ConstantExpressionEvaluator
 
     private sealed class FoldContext(ClrmdDumpSession? session, ConstantOperandResolvers? resolvers)
     {
+        // Lambda-parameter bindings, innermost last. Folding is single-threaded recursive descent, so a simple
+        // push/pop stack gives correct lexical scoping and shadowing without allocating per scope.
+        private readonly List<(string Name, Operand Value)> bindings = [];
+
         internal ClrmdDumpSession? Session { get; } = session;
 
         internal ConstantOperandResolvers? Resolvers { get; } = resolvers;
@@ -641,6 +645,38 @@ public static partial class ConstantExpressionEvaluator
         internal int MetadataLiteralsConsumed { get; set; }
 
         internal int DumpValuesConsumed { get; set; }
+
+        internal void PushBinding(string name, Operand value) => bindings.Add((name, value));
+
+        internal void PopBindings(int count) => bindings.RemoveRange(bindings.Count - count, count);
+
+        internal bool IsBound(string name)
+        {
+            foreach (var (bound, _) in bindings)
+            {
+                if (string.Equals(bound, name, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal bool TryResolveBinding(string name, out Operand value)
+        {
+            for (var index = bindings.Count - 1; index >= 0; index--)
+            {
+                if (string.Equals(bindings[index].Name, name, StringComparison.Ordinal))
+                {
+                    value = bindings[index].Value;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+        }
     }
 
     /// <summary>Returns the leftmost identifier of an access chain, stepping through every access shape.</summary>
@@ -961,6 +997,7 @@ public static partial class ConstantExpressionEvaluator
         // A chain ending in '.Length' that has no value of its own falls back to the receiver chain's value, so
         // 'root.X.Tags.Length' answers over the array and 'root.Region.Length' over the string.
         if (context.Resolvers is { RootChain: { } rootResolver, RootIdentifier: { } rootIdentifier } &&
+            !context.IsBound(rootIdentifier) &&
             IsRootChainOperand(syntax, rootIdentifier))
         {
             var resolved = ResolveDumpOperand(context, rootResolver(syntax.ToString()));
@@ -1028,6 +1065,11 @@ public static partial class ConstantExpressionEvaluator
                 when postfix.IsKind(SyntaxKind.SuppressNullableWarningExpression):
                 // The null-forgiving operator is a compile-time annotation with no run-time effect.
                 return Fold(postfix.Operand, context);
+            case IdentifierNameSyntax identifier
+                when context.TryResolveBinding(identifier.Identifier.ValueText, out var bound):
+                // A lambda parameter in scope is a value; every other bare identifier stays not-constant so the
+                // frozen pipelines keep answering those names.
+                return FoldOutcome.Folded(bound);
             default:
                 return FoldOutcome.NotArithmetic();
         }
@@ -1444,10 +1486,14 @@ public static partial class ConstantExpressionEvaluator
             return FoldOutcome.NotArithmetic();
         }
 
+        // A chain anchored at a lambda parameter is value access, never a type static, a metadata literal, or a
+        // stored field, so the binding wins before any name-shaped interpretation.
+        var leftmostBound = LeftmostIdentifier(memberAccess) is { } leftmost && context.IsBound(leftmost);
+
         // A known type receiver wins over the metadata-literal path so 'Math.PI' or 'double.NaN' never triggers a
         // module scan; every other pure qualified-name chain is a metadata literal candidate, and a stored static
         // field stays not-constant.
-        if (TryReadTypeReceiver(memberAccess.Expression, out var typeReceiver))
+        if (!leftmostBound && TryReadTypeReceiver(memberAccess.Expression, out var typeReceiver))
         {
             return DispatchTypeStatic(typeReceiver, member.Identifier.ValueText);
         }
@@ -1456,7 +1502,7 @@ public static partial class ConstantExpressionEvaluator
         // the member is 'Length' and the whole chain has no value of its own, the receiver's value gets a chance:
         // that is how 'Some.Type.Field.Length' answers over a stored array or string.
         FoldOutcome? qualifiedOutcome = null;
-        if (TryReadQualifiedName(memberAccess, out var parts))
+        if (!leftmostBound && TryReadQualifiedName(memberAccess, out var parts))
         {
             var qualified = FoldQualifiedName(parts, context);
             if (qualified.Disposition == FoldDisposition.Folded || member.Identifier.ValueText != "Length")
@@ -1535,6 +1581,20 @@ public static partial class ConstantExpressionEvaluator
             return FoldOutcome.NotArithmetic();
         }
 
+        // A lambda argument is not a value to fold: it routes to the expression-lambda sequence surface, which
+        // folds the body once per element under the parameter binding.
+        if (invocation.ArgumentList.Arguments.Any(
+                static argument => argument.Expression is LambdaExpressionSyntax))
+        {
+            return FoldLambdaInvocation(
+                receiverExpression,
+                method.Identifier.ValueText,
+                invocation.ArgumentList,
+                context);
+        }
+
+        var receiverIsBound = receiverExpression is IdentifierNameSyntax { Identifier.ValueText: { } receiverName }
+            && context.IsBound(receiverName);
         var arguments = new List<Operand>(invocation.ArgumentList.Arguments.Count);
         foreach (var argument in invocation.ArgumentList.Arguments)
         {
@@ -1553,7 +1613,7 @@ public static partial class ConstantExpressionEvaluator
         }
 
         var name = method.Identifier.ValueText;
-        if (TryReadTypeReceiver(receiverExpression, out var typeReceiver))
+        if (!receiverIsBound && TryReadTypeReceiver(receiverExpression, out var typeReceiver))
         {
             return typeReceiver.Category switch
             {

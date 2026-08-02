@@ -95,8 +95,9 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   promotion and checked semantics; `System.Math`, numeric statics, and invariant `ToString` included.
 - **Deterministic string, char, and sequence operations.** The culture-independent `string`/`char` surface,
   index and range slicing (`"hello"[^1]`, `root.Batch.Id[6..^5]`), array initializers, and dump-heap arrays
-  read as immutable virtual sequences with the lambda-free `System.Linq.Enumerable` surface
-  (`root.DurationsMs.Max()`, `xs.Distinct().Order()`).
+  read as immutable virtual sequences with the deterministic `System.Linq.Enumerable` surface — including
+  expression lambdas: `root.DurationsMs.Where(ms => ms > 1000).Select(ms => ms / 1000.0).ToArray()`,
+  `xs.Count(x => x is > 1 and < 9)`, `xs.OrderBy(x => -x)`, `xs.Sum(x => x * x)`.
 - **Dump values compose with constants.** `root.QueueDepth * 2 + 1` resolves the dump value through the same
   frozen pipeline that answers it alone, then folds the arithmetic.
 - **Modern C# expression forms.** Interpolated strings with invariant formatting and alignment

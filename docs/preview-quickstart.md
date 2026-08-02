@@ -130,6 +130,7 @@ subset:
 | Dump values as operands in composed expressions | `root.QueueDepth * 2 + 1`, `Some.Type.Count + 1`, `root.Batch.Id[6..^5]` |
 | Array initializers and array-producing BCL members | `new[] { 1, 2, 3 }`, `"a,b".Split(',')`, `"abc".ToCharArray()` |
 | Lambda-free `System.Linq.Enumerable` over sequences | `"a,b".Split(',').Length`, `xs.Distinct().Order()`, `xs.Contains(2)` |
+| Expression lambdas over sequences: `Select`/`Where` (with index), `Any`/`All`/`Count`, `First`/`Last`/`Single` (+`OrDefault`), `Sum`/`Min`/`Max`/`Average` selectors, `OrderBy`(`Descending`), `TakeWhile`/`SkipWhile`, `ToArray`/`ToList` | `xs.Where(x => x % 2 == 1).Select(x => x * x).Sum()`, `root.DurationsMs.Select(ms => ms / 1000.0).ToArray()` — expression bodies only; block bodies, captures of mutable state, and `Aggregate` are typed stops |
 | Read-only arrays from the dump heap | `root.Batch.Tags[..]`, `root.DurationsMs.Max()`, `Some.Type.Corridors[0]` |
 | Interpolated strings, invariant, with alignment and formats | `$"depth {root.QueueDepth,4}"`, `$"{255:X4}"` |
 | `is` patterns: constant, `null`, relational, `and`/`or`/`not` | `root.QueueDepth is > 0 and < 100`, `root.Failure?.Code is not null` |
