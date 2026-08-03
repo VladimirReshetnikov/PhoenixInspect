@@ -51,6 +51,21 @@ public sealed record BoundRow(string Name, string Value);
 public sealed record DiagnosticRow(string Code, string Message);
 
 /// <summary>
+/// One structured child of a compound value — a sequence element or a tuple element — realized so a watch row can
+/// expand the way Visual Studio's Watch window does: <c>[i]</c> rows for arrays, <c>ItemN</c> or declared-name
+/// rows for tuples, recursively for nested compounds.
+/// </summary>
+/// <param name="Name">The child's display name.</param>
+/// <param name="Value">The child's rendered value.</param>
+/// <param name="ValueKind">The child's display type name, or null for a null element.</param>
+/// <param name="Children">The child's own children; empty for scalars.</param>
+public sealed record ValueChildRow(
+    string Name,
+    string Value,
+    string? ValueKind,
+    ImmutableArray<ValueChildRow> Children);
+
+/// <summary>
 /// Carries the complete display projection of one expression evaluation, including the evidence that explains a
 /// partial or unknown answer.
 /// </summary>
@@ -91,6 +106,9 @@ public sealed record EvaluationReport
 
     /// <summary>Gets the stable diagnostics explaining a non-exact outcome.</summary>
     public ImmutableArray<DiagnosticRow> Diagnostics { get; init; } = [];
+
+    /// <summary>Gets the structured children of a compound value, for expandable display; empty for scalars.</summary>
+    public ImmutableArray<ValueChildRow> Children { get; init; } = [];
 
     /// <summary>Gets the wall-clock duration of the evaluation.</summary>
     public TimeSpan Duration { get; init; }

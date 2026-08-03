@@ -88,6 +88,9 @@ public static partial class ConstantExpressionEvaluator
             case OperandKind.Null:
                 // A null interpolation value contributes an empty segment, exactly as string.Format defines.
                 return FoldOutcome.Folded(Operand.FromString(string.Empty));
+            case OperandKind.Tuple when format is null:
+                // ValueTuple is not IFormattable in the shapes the evaluator folds; ToString renders.
+                return FoldOutcome.Folded(Operand.FromString(TupleToStringInvariant(operand)));
             case OperandKind.String:
                 // string is not IFormattable, so a format clause is ignored, matching string.Format.
                 return FoldOutcome.Folded(operand);

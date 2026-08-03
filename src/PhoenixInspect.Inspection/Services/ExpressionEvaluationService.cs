@@ -606,6 +606,9 @@ public static class ExpressionEvaluationService
                 constant.ValueText!,
                 $"{constant.ValueTypeName} · virtual array "
                 + $"(length {constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})"),
+            ConstantValueKind.Tuple => (
+                constant.ValueText!,
+                $"{constant.ValueTypeName} · tuple"),
             _ => (
                 constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture),
                 isLiteralField
@@ -648,8 +651,18 @@ public static class ExpressionEvaluationService
             Facts = facts.ToImmutable(),
             Duration = duration,
             Sha256 = constant.Sha256,
+            Children = MapChildren(constant.Children),
         };
     }
+
+    private static ImmutableArray<ValueChildRow> MapChildren(ImmutableArray<ConstantValueChild> children) =>
+        children.IsDefaultOrEmpty
+            ? []
+            : [.. children.Select(static child => new ValueChildRow(
+                child.Name,
+                child.ValueText,
+                child.ValueTypeName,
+                MapChildren(child.Children)))];
 
     private static string ShortTypeName(string fullName)
     {

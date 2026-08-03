@@ -78,6 +78,19 @@ public sealed class WatchEvaluationIntegrationTests
             Assert.Equal(EvaluationSeverity.Exact, constantWatch.Severity);
             Assert.Equal("20", constantWatch.Value);
 
+            // Compound values carry structured children, so a host can expand them like Visual Studio.
+            var arrayWatch = ExpressionEvaluationService.EvaluateWatch(
+                session, "root.RecentDispatchDurationsMs.ToArray()", withRoot);
+            Assert.Equal(EvaluationSeverity.Exact, arrayWatch.Severity);
+            Assert.True(arrayWatch.Children.Length >= 1);
+            Assert.Equal("[0]", arrayWatch.Children[0].Name);
+
+            var tupleWatch = ExpressionEvaluationService.EvaluateWatch(
+                session, "(peak: root.RecentDispatchDurationsMs.Max(), unit: \"ms\")", withRoot);
+            Assert.Equal(EvaluationSeverity.Exact, tupleWatch.Severity);
+            Assert.Equal(["peak", "unit"], tupleWatch.Children.Select(static child => child.Name).ToArray());
+            Assert.Equal("\"ms\"", tupleWatch.Children[1].Value);
+
             var staticWatch = ExpressionEvaluationService.EvaluateWatch(
                 session, "Contoso.OrderService.Diagnostics.ServiceState.Dispatcher", withRoot);
             Assert.Equal("Static field expression", staticWatch.Path);

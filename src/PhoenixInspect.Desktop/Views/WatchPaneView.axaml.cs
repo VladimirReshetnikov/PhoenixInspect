@@ -40,4 +40,12 @@ public partial class WatchPaneView : UserControl
             tool.Panel.Remove(entry);
         }
     }
+
+    private void OnToggleExpand(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: WatchRow row } && Tool is { } tool)
+        {
+            tool.Panel.ToggleExpand(row);
+        }
+    }
 }

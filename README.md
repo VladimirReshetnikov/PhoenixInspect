@@ -133,6 +133,11 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   the trailing row, delete by clearing, and every row re-evaluates when the adopted frame context or expression
   root changes. Routing between the static-field and root-relative paths is one deterministic API rule, and every
   row carries the full evidence report behind its value.
+- **Expandable compound values, and tuples.** Arrays and tuples expand in the Watch grid the way Visual Studio
+  expands them — `[i]` child rows for elements, `ItemN` or the declared name for tuple elements, recursively for
+  nested compounds — with the children realized by the API as a bounded projection of the same evidence the
+  rendered value shows. Tuple literals fold with C#'s exact semantics: element names, `ItemN` access, element-wise
+  equality, and invariant `ToString`.
 - **Answers you can audit.** Every result carries its status (`[exact]`, `[absent]`, `[partial]`, `[stopped]`,
   `[rejected]`), the binding facts and raw reads behind it, stable diagnostic codes, and a canonical replay
   digest. An exhaustively proven absence and a bounded partial read are reported as the distinct facts they are.

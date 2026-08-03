@@ -32,7 +32,7 @@
                        FontSize="10"
                        TextWrapping="Wrap" />
         </Border>
-        <DataGrid ItemsSource="{Binding Panel.Entries}"
+        <DataGrid ItemsSource="{Binding Panel.Rows}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   CanUserResizeColumns="True"
@@ -52,21 +52,44 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <!-- The expression cell is a live editor, not an edit-mode cell: every watch stays directly
-                     editable in place, and the trailing placeholder row adds a new watch on commit. -->
+                     editable in place, and the trailing placeholder row adds a new watch on commit. Child rows
+                     of an expanded compound value render read-only with a tree indent, like Visual Studio. -->
                 <DataGridTemplateColumn Header="Name" Width="300">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBox Text="{Binding Expression, Mode=TwoWay}"
-                                     PlaceholderText="Add item to watch"
-                                     FontSize="12"
-                                     FontFamily="Cascadia Mono,Consolas,monospace"
-                                     BorderThickness="0"
-                                     Background="Transparent"
-                                     Padding="4,2"
-                                     VerticalContentAlignment="Center"
-                                     AutomationProperties.AutomationId="WatchExpressionBox"
-                                     KeyDown="OnExpressionKeyDown"
-                                     LostFocus="OnExpressionLostFocus" />
+                            <DockPanel Margin="{Binding NameIndent}">
+                                <!-- The fixed-width host keeps name text aligned whether or not a chevron shows. -->
+                                <Border DockPanel.Dock="Left" Width="18">
+                                    <Button Content="{Binding ExpanderGlyph}"
+                                            FontSize="10"
+                                            Padding="2,0"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding HasChildren}"
+                                            AutomationProperties.AutomationId="ExpandWatch"
+                                            Click="OnToggleExpand" />
+                                </Border>
+                                <TextBox Text="{Binding Expression, Mode=TwoWay}"
+                                         PlaceholderText="Add item to watch"
+                                         FontSize="12"
+                                         FontFamily="Cascadia Mono,Consolas,monospace"
+                                         BorderThickness="0"
+                                         Background="Transparent"
+                                         Padding="4,2"
+                                         VerticalContentAlignment="Center"
+                                         IsVisible="{Binding IsEditable}"
+                                         AutomationProperties.AutomationId="WatchExpressionBox"
+                                         KeyDown="OnExpressionKeyDown"
+                                         LostFocus="OnExpressionLostFocus" />
+                                <TextBlock Text="{Binding NameText}"
+                                           FontSize="12"
+                                           FontFamily="Cascadia Mono,Consolas,monospace"
+                                           Padding="4,2"
+                                           VerticalAlignment="Center"
+                                           IsVisible="{Binding !IsEditable}" />
+                            </DockPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

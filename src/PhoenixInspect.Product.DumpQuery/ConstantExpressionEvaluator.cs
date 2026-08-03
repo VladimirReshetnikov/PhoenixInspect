@@ -95,7 +95,30 @@ public enum ConstantValueKind
     /// <see cref="ConstantExpressionEvaluation.ValueText"/>.
     /// </summary>
     Type = 11,
+
+    /// <summary>
+    /// A tuple value folded from a tuple literal, with C#'s element-wise semantics. The shape is named by
+    /// <see cref="ConstantExpressionEvaluation.ValueTypeName"/> (such as <c>(Int32, String)</c>), the rendered
+    /// form by <see cref="ConstantExpressionEvaluation.ValueText"/>, and the elements are exposed as structured
+    /// <see cref="ConstantExpressionEvaluation.Children"/>.
+    /// </summary>
+    Tuple = 12,
 }
+
+/// <summary>
+/// One structured child of a compound constant value — a sequence element or tuple element — realized for
+/// expandable display: <c>[i]</c> rows for sequences, <c>ItemN</c> or declared-name rows for tuples, recursively
+/// for nested compounds.
+/// </summary>
+/// <param name="Name">The child's display name.</param>
+/// <param name="ValueText">The child's rendered value.</param>
+/// <param name="ValueTypeName">The child's display type name, or null for a null element.</param>
+/// <param name="Children">The child's own structured children; empty for scalars.</param>
+public sealed record ConstantValueChild(
+    string Name,
+    string ValueText,
+    string? ValueTypeName,
+    ImmutableArray<ConstantValueChild> Children);
 
 /// <summary>The complete outcome of one constant-expression evaluation attempt.</summary>
 /// <remarks>
@@ -130,11 +153,13 @@ public sealed class ConstantExpressionEvaluation
         string? diagnosticMessage,
         string? valueTypeName = null,
         string? valueText = null,
-        int dumpValuesConsumed = 0)
+        int dumpValuesConsumed = 0,
+        ImmutableArray<ConstantValueChild> children = default)
     {
         ValueTypeName = valueTypeName;
         ValueText = valueText;
         DumpValuesConsumed = dumpValuesConsumed;
+        Children = children.IsDefault ? [] : children;
         Status = status;
         Expression = expression;
         Kind = kind;
@@ -225,6 +250,13 @@ public sealed class ConstantExpressionEvaluation
 
     /// <summary>Gets how many values extracted from the dump a composed expression consumed as operands.</summary>
     public int DumpValuesConsumed { get; }
+
+    /// <summary>
+    /// Gets the structured children of a compound value — sequence elements and tuple elements — realized for
+    /// expandable display; empty for scalar values. Children are a bounded projection of the same payload the
+    /// rendered <see cref="ValueText"/> shows, so they never affect the canonical replay digest.
+    /// </summary>
+    public ImmutableArray<ConstantValueChild> Children { get; }
 
     /// <summary>Gets the stable diagnostic code for an invalid outcome; otherwise null.</summary>
     public string? DiagnosticCode { get; }
@@ -874,6 +906,7 @@ public static partial class ConstantExpressionEvaluator
         Temporal,
         BclValue,
         Type,
+        Tuple,
     }
 
     private readonly record struct Operand(
@@ -911,6 +944,9 @@ public static partial class ConstantExpressionEvaluator
 
         internal static Operand FromType(TypeRef type) =>
             new(OperandKind.Type, 0, false, '\0', null, null, null, default, type);
+
+        internal static Operand FromTuple(TuplePayload payload) =>
+            new(OperandKind.Tuple, 0, false, '\0', null, null, null, default, payload);
 
         internal long EnumBits => Box is long bits ? bits : Int32;
 
@@ -1021,6 +1057,12 @@ public static partial class ConstantExpressionEvaluator
                 valueText = RenderSequence(payload);
                 underlying = valueTypeName;
                 break;
+            case OperandKind.Tuple:
+                kind = ConstantValueKind.Tuple;
+                valueTypeName = TupleTypeName(operand);
+                valueText = RenderTuple(operand);
+                underlying = valueTypeName;
+                break;
             case OperandKind.Temporal:
                 kind = ConstantValueKind.Temporal;
                 valueTypeName = operand.TemporalKind.ToString();
@@ -1072,7 +1114,8 @@ public static partial class ConstantExpressionEvaluator
             diagnosticMessage: null,
             valueTypeName,
             valueText,
-            context.DumpValuesConsumed);
+            context.DumpValuesConsumed,
+            ChildrenOf(operand));
     }
 
     private static FoldOutcome Fold(ExpressionSyntax syntax, FoldContext context)
@@ -1152,6 +1195,8 @@ public static partial class ConstantExpressionEvaluator
                 return FoldTypeOf(typeOf, context);
             case CollectionExpressionSyntax collection:
                 return FoldCollectionExpression(collection, context);
+            case TupleExpressionSyntax tuple:
+                return FoldTuple(tuple, context);
             case PostfixUnaryExpressionSyntax postfix
                 when postfix.IsKind(SyntaxKind.SuppressNullableWarningExpression):
                 // The null-forgiving operator is a compile-time annotation with no run-time effect.
@@ -1320,6 +1365,11 @@ public static partial class ConstantExpressionEvaluator
         if (leftOperand.Kind == OperandKind.BclValue || rightOperand.Kind == OperandKind.BclValue)
         {
             return ComputeBclValueBinary(kind, leftOperand, rightOperand);
+        }
+
+        if (leftOperand.Kind == OperandKind.Tuple || rightOperand.Kind == OperandKind.Tuple)
+        {
+            return ComputeTupleBinary(kind, leftOperand, rightOperand);
         }
 
         if (leftOperand.Kind == OperandKind.Type || rightOperand.Kind == OperandKind.Type)
@@ -1671,6 +1721,8 @@ public static partial class ConstantExpressionEvaluator
                 DispatchBclValueProperty(receiver.Operand, valueProperty),
             (OperandKind.Type, var typeProperty) =>
                 DispatchTypeRefProperty(receiver.Operand, typeProperty),
+            (OperandKind.Tuple, var tupleMember) =>
+                DispatchTupleProperty(receiver.Operand, tupleMember),
             _ => qualifiedOutcome ?? FoldOutcome.Error(
                 MemberUnsupportedCode,
                 $"'{member.Identifier.ValueText}' is not an admitted deterministic constant member."),
@@ -1826,6 +1878,7 @@ public static partial class ConstantExpressionEvaluator
                 : MemberUnsupported(name),
             OperandKind.Enum => DispatchEnumMethod(receiver.Operand, name, arguments),
             OperandKind.Type => DispatchTypeRefMethod(receiver.Operand, name, arguments),
+            OperandKind.Tuple => DispatchTupleMethod(receiver.Operand, name, arguments),
             _ => MemberUnsupported(name),
         };
     }
