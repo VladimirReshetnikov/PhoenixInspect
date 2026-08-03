@@ -70,11 +70,8 @@ public sealed class LocalsViewModel : ObservableObject
             session => DumpInspectionService.DescribeFrameVariables(
                 session,
                 node,
-                explicitCandidates
-                    .Concat(SourceNavigationService.DiscoverPortablePdbCandidates(session))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Take(64)
-                    .ToImmutableArray())).ConfigureAwait(true);
+                SourceNavigationService.AssemblePortablePdbCandidates(
+                    session, explicitCandidates))).ConfigureAwait(true);
         if (projection is null || !ReferenceEquals(frame, node))
         {
             return;

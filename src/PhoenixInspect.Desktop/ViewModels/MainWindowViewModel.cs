@@ -189,7 +189,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
     /// <inheritdoc />
     public ImmutableArray<string> ExplicitPortablePdbCandidates =>
-        EvaluateViewModel.ParseCandidates(Evaluate.PortablePdbCandidates);
+        SourceNavigationService.ParseCandidateList(Evaluate.PortablePdbCandidates);
 
     /// <inheritdoc />
     public async Task ShowThreadCallStackAsync(CallStackThreadNode thread, bool activatePane)
@@ -216,7 +216,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
     public async Task ShowFrameSourceAsync(CallStackFrameNode frame)
     {
         ArgumentNullException.ThrowIfNull(frame);
-        var explicitCandidates = EvaluateViewModel.ParseCandidates(Evaluate.PortablePdbCandidates);
+        var explicitCandidates = ExplicitPortablePdbCandidates;
         var produced = await RunAsync(
             "Resolving and verifying the frame's source…",
             session => SourceNavigationService.ResolveFrameSource(

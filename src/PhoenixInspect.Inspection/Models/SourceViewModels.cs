@@ -84,6 +84,16 @@ public sealed record SourceViewResult
     /// <summary>Gets what was proven about the on-disk file before any content was shown.</summary>
     public SourceContentVerification Verification { get; init; } = SourceContentVerification.NotApplicable;
 
+    /// <summary>
+    /// Gets whether <see cref="Verification"/> permits presenting <see cref="Lines"/> as content. This is the
+    /// single statement of which verification outcomes may show source; every front end renders by it.
+    /// </summary>
+    public bool IsContentDisplayable => Verification is
+        SourceContentVerification.VerifiedExact or
+        SourceContentVerification.EmbeddedInMatchingPdb or
+        SourceContentVerification.SourceLinkVerified or
+        SourceContentVerification.DecompiledFromValidatedAssembly;
+
     /// <summary>Gets the rendered lines; empty unless <see cref="Verification"/> permits showing content.</summary>
     public ImmutableArray<SourceLineRow> Lines { get; init; } = [];
 

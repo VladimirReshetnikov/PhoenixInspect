@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using PhoenixInspect.Inspection;
-using PhoenixInspect.Product.DumpDebugging;
 
 namespace PhoenixInspect.Desktop.ViewModels;
 
@@ -29,9 +28,9 @@ public sealed class EvaluateViewModel : ObservableObject
     private string rootIdentifier = "root";
     private bool admitMemberChain = true;
     private bool useModeledMethods;
-    private long instructionLimit = 100_000;
-    private int logicalDepthLimit = 8;
-    private int traversalLimit = CounterfactualMethodRequest.MaximumTraversalUnits;
+    private long instructionLimit = RootRelativeEvaluationOptions.DefaultInstructionLimit;
+    private int logicalDepthLimit = RootRelativeEvaluationOptions.DefaultLogicalDepthLimit;
+    private int traversalLimit = ExpressionEvaluationService.MaximumTraversalUnits;
     private CallStackFrameNode? contextFrame;
     private RootSelection? rootSelection;
     private EvaluationReport? report;
@@ -202,19 +201,19 @@ public sealed class EvaluateViewModel : ObservableObject
     public int LogicalDepthLimit
     {
         get => logicalDepthLimit;
-        set => Set(ref logicalDepthLimit, Math.Clamp(value, 0, CounterfactualMethodRequest.MaximumLogicalCallDepth));
+        set => Set(ref logicalDepthLimit, Math.Clamp(value, 0, ExpressionEvaluationService.MaximumLogicalCallDepth));
     }
 
     /// <summary>Gets a caption stating the hard caps the product enforces on the configurable budgets.</summary>
     public string LimitsCaption =>
-        $"Call depth is capped at {CounterfactualMethodRequest.MaximumLogicalCallDepth} and traversal at "
-        + $"{CounterfactualMethodRequest.MaximumTraversalUnits} units by the product, independently of this pane.";
+        $"Call depth is capped at {ExpressionEvaluationService.MaximumLogicalCallDepth} and traversal at "
+        + $"{ExpressionEvaluationService.MaximumTraversalUnits} units by the product, independently of this pane.";
 
     /// <summary>Gets or sets the graph-preparation traversal budget.</summary>
     public int TraversalLimit
     {
         get => traversalLimit;
-        set => Set(ref traversalLimit, Math.Clamp(value, 0, CounterfactualMethodRequest.MaximumTraversalUnits));
+        set => Set(ref traversalLimit, Math.Clamp(value, 0, ExpressionEvaluationService.MaximumTraversalUnits));
     }
 
     /// <summary>Gets the frame adopted as name context, or null when only fully qualified names may bind.</summary>
@@ -365,17 +364,6 @@ public sealed class EvaluateViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(sample);
         Expression = sample.Text;
     }
-
-    /// <summary>Parses the newline-separated candidate text into a bounded path array.</summary>
-    /// <param name="text">The raw editor text, possibly empty.</param>
-    /// <returns>The trimmed non-empty paths, capped at the adapter's candidate bound.</returns>
-    internal static ImmutableArray<string> ParseCandidates(string text) =>
-        string.IsNullOrWhiteSpace(text)
-            ? []
-            : text
-                .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Take(64)
-                .ToImmutableArray();
 
     private void ApplyReportDetails(EvaluationReport? value)
     {
@@ -546,31 +534,28 @@ public sealed class EvaluateViewModel : ObservableObject
             // The shell probes hint-derived Portable-PDB candidates automatically, exactly as the source view does;
             // only the console host makes that probe an explicit command ('pdb auto'). Identity is still validated
             // per candidate before any name binds through it.
-            var explicitCandidates = ParseCandidates(portablePdbCandidates);
+            var explicitCandidates = SourceNavigationService.ParseCandidateList(portablePdbCandidates);
             produced = await shell.RunAsync(
                 "Evaluating static-field expression…",
                 session => ExpressionEvaluationService.EvaluateStaticField(
                     session,
                     submitted,
                     selector,
-                    explicitCandidates
-                        .Concat(SourceNavigationService.DiscoverPortablePdbCandidates(session))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .Take(64)
-                        .ToImmutableArray())).ConfigureAwait(true);
+                    SourceNavigationService.AssemblePortablePdbCandidates(
+                        session, explicitCandidates))).ConfigureAwait(true);
         }
         else
         {
             var root = rootSelection!;
             var identifier = rootIdentifier.Trim();
-            var policy = DumpExpressionPolicy.Create(
-                useModeledMethods ? DumpMethodEvaluationMode.Modeled : DumpMethodEvaluationMode.Interpreted,
-                instructionLimit,
-                logicalDepthLimit,
-                traversalLimit);
-            var profile = admitMemberChain
-                ? DumpExpressionLanguageProfile.MemberChainV2
-                : DumpExpressionLanguageProfile.FrozenW5;
+            var options = new RootRelativeEvaluationOptions
+            {
+                UseModeledMethods = useModeledMethods,
+                AdmitMemberChain = admitMemberChain,
+                InstructionLimit = instructionLimit,
+                LogicalDepthLimit = logicalDepthLimit,
+                TraversalLimit = traversalLimit,
+            };
             produced = await shell.RunAsync(
                 "Evaluating root-relative expression…",
                 session => ExpressionEvaluationService.EvaluateRootRelative(
@@ -578,8 +563,7 @@ public sealed class EvaluateViewModel : ObservableObject
                     submitted,
                     root,
                     identifier,
-                    policy,
-                    profile)).ConfigureAwait(true);
+                    options)).ConfigureAwait(true);
         }
 
         if (produced is null)

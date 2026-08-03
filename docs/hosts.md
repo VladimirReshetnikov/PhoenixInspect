@@ -14,7 +14,11 @@ objects the snapshot actually contains.
 Neither host adds analysis of its own. Every fact both render comes from an existing public contract by way of
 [`src/PhoenixInspect.Inspection`](../src/PhoenixInspect.Inspection), the shared host-independent projection layer, and
 is rendered verbatim — including the product's own status, issue, completeness, evidence, bound, and diagnostic
-vocabulary.
+vocabulary. Cross-cutting behaviors live there too, never in a host: Portable-PDB candidate parsing, discovery, and
+the bounded explicit-first merge (`SourceNavigationService.ParseCandidateList` /
+`AssemblePortablePdbCandidates`), the module-list filter contract (`ModuleRow.Matches`), and the single statement of
+which source-verification outcomes permit showing content (`SourceViewResult.IsContentDisplayable`). A host decides
+layout, selection, and phrasing — everything a host *computes* is available to any API consumer.
 
 ## The resemblance, and where it stops
 

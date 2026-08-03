@@ -63,10 +63,7 @@ public partial class SourceDocumentView : UserControl
     private void Apply()
     {
         var result = document?.Result;
-        var showable = result?.Verification is SourceContentVerification.VerifiedExact
-            or SourceContentVerification.EmbeddedInMatchingPdb
-            or SourceContentVerification.SourceLinkVerified
-            or SourceContentVerification.DecompiledFromValidatedAssembly;
+        var showable = result?.IsContentDisplayable == true;
         Editor.IsVisible = showable;
         VerificationBadge.Text = result?.Verification switch
         {

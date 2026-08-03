@@ -30,7 +30,19 @@ public sealed record ModuleRow(
     string MetadataLength,
     string Layout,
     string TargetPathHint,
-    string SymbolHint = "");
+    string SymbolHint = "")
+{
+    /// <summary>
+    /// Applies the module-list filter contract: a blank filter admits every row; otherwise the filter must appear
+    /// as a case-insensitive substring of the module name or the target path hint.
+    /// </summary>
+    /// <param name="filter">The raw filter text, possibly null or blank.</param>
+    /// <returns>Whether this row satisfies the filter.</returns>
+    public bool Matches(string? filter) =>
+        string.IsNullOrWhiteSpace(filter)
+        || Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+        || TargetPathHint.Contains(filter, StringComparison.OrdinalIgnoreCase);
+}
 
 /// <summary>One strong-handle-rooted heap object projected for the object grid.</summary>
 /// <param name="Object">The originating adapter evidence, retained so it can become an expression root.</param>

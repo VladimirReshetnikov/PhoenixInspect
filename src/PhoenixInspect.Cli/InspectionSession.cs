@@ -446,16 +446,10 @@ public sealed class InspectionSession
         // Target path hints are target-side strings, not identity. This command says out loud that it is probing
         // paths derived from them on the analysis machine, and offering a file changes nothing on its own: the
         // product still validates a candidate's identity against the module before any name binds through it.
-        var hints = await host.QueryAsync(static session => session.Modules
-            .Select(static module => module.TargetPathHint)
-            .Where(static hint => !string.IsNullOrEmpty(hint))
-            .Select(static hint => Path.ChangeExtension(hint!, ".pdb"))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToImmutableArray()).ConfigureAwait(false);
-
-        var discovered = hints.Where(File.Exists).ToImmutableArray();
+        var (discovered, probed) = await host.QueryAsync(
+            static session => SourceNavigationService.ProbePortablePdbCandidates(session)).ConfigureAwait(false);
         renderer.Note(
-            $"  Probed {hints.Length} path(s) derived from target-side module hints on this machine; "
+            $"  Probed {probed} path(s) derived from target-side module hints on this machine; "
             + $"{discovered.Length} exist.");
         if (discovered.Length == 0)
         {

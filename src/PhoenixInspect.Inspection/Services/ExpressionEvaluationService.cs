@@ -26,6 +26,35 @@ public enum ExpressionPath
 }
 
 /// <summary>
+/// The host-facing evaluation options of the root-relative path, expressed without product-layer vocabulary. The
+/// service maps them onto the product's policy and language-profile contracts, so no front end assembles those
+/// itself.
+/// </summary>
+public sealed record RootRelativeEvaluationOptions
+{
+    /// <summary>The default interpreter instruction-unit budget offered by front ends.</summary>
+    public const long DefaultInstructionLimit = 100_000;
+
+    /// <summary>The default logical call-depth budget offered by front ends.</summary>
+    public const int DefaultLogicalDepthLimit = 8;
+
+    /// <summary>Gets whether an admitted method call replaces its helper with an exact versioned pure model.</summary>
+    public bool UseModeledMethods { get; init; }
+
+    /// <summary>Gets whether the opt-in member-chain grammar of unlimited depth is admitted.</summary>
+    public bool AdmitMemberChain { get; init; } = true;
+
+    /// <summary>Gets the interpreter instruction-unit budget.</summary>
+    public long InstructionLimit { get; init; } = DefaultInstructionLimit;
+
+    /// <summary>Gets the logical call-depth budget, capped by the product independently of the caller.</summary>
+    public int LogicalDepthLimit { get; init; } = DefaultLogicalDepthLimit;
+
+    /// <summary>Gets the graph-preparation traversal budget, capped by the product independently of the caller.</summary>
+    public int TraversalLimit { get; init; } = ExpressionEvaluationService.MaximumTraversalUnits;
+}
+
+/// <summary>
 /// Invokes the implemented expression entry points and projects their complete results into display reports.
 /// </summary>
 /// <remarks>
@@ -35,6 +64,43 @@ public enum ExpressionPath
 /// </remarks>
 public static class ExpressionEvaluationService
 {
+    /// <summary>The hard call-depth cap the product enforces, re-exported so hosts need no product reference.</summary>
+    public const int MaximumLogicalCallDepth = CounterfactualMethodRequest.MaximumLogicalCallDepth;
+
+    /// <summary>The hard traversal cap the product enforces, re-exported so hosts need no product reference.</summary>
+    public const int MaximumTraversalUnits = CounterfactualMethodRequest.MaximumTraversalUnits;
+
+    /// <summary>Evaluates a root-relative expression using host-facing options.</summary>
+    /// <param name="session">The open dump session.</param>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="root">The selected root, resolved to a product binding on the session thread.</param>
+    /// <param name="rootIdentifier">The case-sensitive identifier the expression uses for the root.</param>
+    /// <param name="options">The evaluation options; the service maps them onto product policy contracts.</param>
+    /// <returns>A complete display report for whichever path the classifier selected.</returns>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    public static EvaluationReport EvaluateRootRelative(
+        ClrmdDumpSession session,
+        string expression,
+        RootSelection root,
+        string rootIdentifier,
+        RootRelativeEvaluationOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return EvaluateRootRelative(
+            session,
+            expression,
+            root,
+            rootIdentifier,
+            DumpExpressionPolicy.Create(
+                options.UseModeledMethods ? DumpMethodEvaluationMode.Modeled : DumpMethodEvaluationMode.Interpreted,
+                options.InstructionLimit,
+                Math.Clamp(options.LogicalDepthLimit, 0, MaximumLogicalCallDepth),
+                Math.Clamp(options.TraversalLimit, 0, MaximumTraversalUnits)),
+            options.AdmitMemberChain
+                ? DumpExpressionLanguageProfile.MemberChainV2
+                : DumpExpressionLanguageProfile.FrozenW5);
+    }
+
     /// <summary>Evaluates a static-field expression, optionally consulting one selected frame for name context.</summary>
     /// <param name="session">The open dump session.</param>
     /// <param name="expression">The raw expression text, submitted without normalization.</param>

@@ -139,11 +139,8 @@ public sealed class CallStacksViewModel : ObservableObject
                 session,
                 node,
                 frameCap,
-                explicitCandidates
-                    .Concat(SourceNavigationService.DiscoverPortablePdbCandidates(session))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Take(64)
-                    .ToImmutableArray())).ConfigureAwait(true);
+                SourceNavigationService.AssemblePortablePdbCandidates(
+                    session, explicitCandidates))).ConfigureAwait(true);
         if (frames.IsDefault || !ReferenceEquals(thread, node))
         {
             return;

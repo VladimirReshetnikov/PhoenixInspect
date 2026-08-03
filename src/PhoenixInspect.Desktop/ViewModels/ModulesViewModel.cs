@@ -86,9 +86,7 @@ public sealed class ModulesViewModel : ObservableObject
         View.Clear();
         foreach (var row in all)
         {
-            if (string.IsNullOrWhiteSpace(filter)
-                || row.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
-                || row.TargetPathHint.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            if (row.Matches(filter))
             {
                 View.Add(row);
             }

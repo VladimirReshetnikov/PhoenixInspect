@@ -26,6 +26,9 @@ public static class SourceNavigationService
     /// <summary>The maximum on-disk source-file size read for display and verification.</summary>
     public const int MaximumSourceFileBytes = 10 * 1024 * 1024;
 
+    /// <summary>The maximum number of Portable-PDB candidate paths offered to the adapter per operation.</summary>
+    public const int MaximumPortablePdbCandidates = 64;
+
     /// <summary>The Portable-PDB SHA-256 document-checksum algorithm GUID.</summary>
     private static readonly Guid Sha256Algorithm = new("8829d00f-11b8-4213-878b-770e8597ac16");
 
@@ -42,17 +45,70 @@ public static class SourceNavigationService
     /// module's CodeView record before anything binds through it. This mirrors the console host's <c>pdb auto</c>.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
-    public static ImmutableArray<string> DiscoverPortablePdbCandidates(ClrmdDumpSession session)
+    public static ImmutableArray<string> DiscoverPortablePdbCandidates(ClrmdDumpSession session) =>
+        ProbePortablePdbCandidates(session).Existing;
+
+    /// <summary>
+    /// Derives Portable-PDB candidate paths from target-side module path hints and probes their existence,
+    /// reporting both how many paths were probed and which of them exist on this machine.
+    /// </summary>
+    /// <param name="session">The open dump session.</param>
+    /// <returns>The existing derived paths and the number of distinct paths probed.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
+    public static (ImmutableArray<string> Existing, int Probed) ProbePortablePdbCandidates(
+        ClrmdDumpSession session)
     {
         ArgumentNullException.ThrowIfNull(session);
-        return session.Modules
+        var derived = session.Modules
             .Select(static module => module.TargetPathHint)
             .Where(static hint => !string.IsNullOrEmpty(hint))
             .Select(static hint => Path.ChangeExtension(hint!, ".pdb"))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Where(File.Exists)
             .ToImmutableArray();
+        return (derived.Where(File.Exists).ToImmutableArray(), derived.Length);
     }
+
+    /// <summary>Parses newline-separated candidate text into a trimmed, bounded path list.</summary>
+    /// <param name="text">The raw multi-line text, possibly null or blank.</param>
+    /// <returns>The trimmed non-empty paths, capped at <see cref="MaximumPortablePdbCandidates"/>.</returns>
+    public static ImmutableArray<string> ParseCandidateList(string? text) =>
+        string.IsNullOrWhiteSpace(text)
+            ? []
+            : text
+                .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Take(MaximumPortablePdbCandidates)
+                .ToImmutableArray();
+
+    /// <summary>
+    /// Assembles the complete bounded candidate list one operation offers to the adapter: the caller's explicit
+    /// paths first, then paths discovered from target-side module hints, deduplicated case-insensitively.
+    /// </summary>
+    /// <param name="session">The open dump session.</param>
+    /// <param name="explicitCandidates">Caller-supplied candidate paths, possibly empty.</param>
+    /// <returns>The merged list, capped at <see cref="MaximumPortablePdbCandidates"/>.</returns>
+    /// <remarks>
+    /// Explicit paths come first so a caller's deliberate offer is never displaced by discovery when the bound
+    /// bites. Every candidate is still identity-validated against its module before anything binds through it.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
+    public static ImmutableArray<string> AssemblePortablePdbCandidates(
+        ClrmdDumpSession session,
+        ImmutableArray<string> explicitCandidates)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        return MergeCandidates(explicitCandidates, DiscoverPortablePdbCandidates(session));
+    }
+
+    /// <summary>The single merge rule behind every bounded candidate list: explicit first, then discovered.</summary>
+    private static ImmutableArray<string> MergeCandidates(
+        ImmutableArray<string> explicitCandidates,
+        ImmutableArray<string> discovered) =>
+        (explicitCandidates.IsDefault ? [] : explicitCandidates)
+            .Concat(discovered)
+            .Where(static path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(MaximumPortablePdbCandidates)
+            .ToImmutableArray();
 
     /// <summary>Resolves one frame to its verified source view.</summary>
     /// <param name="session">The open dump session.</param>
@@ -79,12 +135,7 @@ public static class SourceNavigationService
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(frame);
         var discovered = DiscoverPortablePdbCandidates(session);
-        var candidates = explicitCandidates
-            .Concat(discovered)
-            .Where(static path => !string.IsNullOrWhiteSpace(path))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(64)
-            .ToImmutableArray();
+        var candidates = MergeCandidates(explicitCandidates, discovered);
 
         var observation = session.SelectExpressionFrame(frame.Selector);
         var resolution = session.ResolveFrameSourceLocation(observation, candidates);
