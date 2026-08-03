@@ -458,6 +458,34 @@ public sealed class EvaluateViewModel : ObservableObject
                 "Lambda pipeline",
                 "Enumerable.Range(1, 10).Where(x => x % 2 == 1).Select(x => x * x).Sum()",
                 ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Date arithmetic",
+                "new DateTime(2026, 7, 30) + TimeSpan.FromHours(6)",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Guid and Version",
+                "new Version(10, 0, 26300) > Version.Parse(\"10.0\")",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Enum API",
+                "Enum.GetNames(typeof(System.ConsoleColor)).Count(name => name.StartsWith(\"Dark\", StringComparison.Ordinal))",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Array API",
+                "Array.BinarySearch([1, .. new[] { 3, 5 }, 7], 5)",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Type API",
+                "typeof(System.DayOfWeek).GetEnumUnderlyingType().MakeArrayType().FullName",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Type relationships",
+                "typeof(IEnumerable<object>).IsAssignableFrom(typeof(string[]))",
+                ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Generic construction",
+                "typeof(Dictionary<,>).MakeGenericType(typeof(string), typeof(List<int>)) == typeof(Dictionary<string, List<int>>)",
+                ExpressionPath.StaticField));
             return;
         }
 
@@ -486,6 +514,10 @@ public sealed class EvaluateViewModel : ObservableObject
         Samples.Add(new ExpressionSample(
             "Lambda over a dump array",
             $"{identifier}.RecentDispatchDurationsMs.Where(ms => ms > 1000).Select(ms => ms / 1000.0).ToArray()",
+            ExpressionPath.RootRelative));
+        Samples.Add(new ExpressionSample(
+            "TimeSpan from a dump value",
+            $"TimeSpan.FromMilliseconds({identifier}.RecentDispatchDurationsMs.Max())",
             ExpressionPath.RootRelative));
         Samples.Add(new ExpressionSample(
             "Pattern over a dump value",

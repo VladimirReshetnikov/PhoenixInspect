@@ -98,8 +98,18 @@ public static partial class ConstantExpressionEvaluator
             case OperandKind.Int32:
             case OperandKind.Numeric:
                 return NumericToString(operand, format);
+            case OperandKind.Temporal:
+                return TemporalToString(operand, format);
+            case OperandKind.BclValue when operand.BclValueKind == BclValueKind.Guid:
+                return FoldOutcome.Folded(Operand.FromString(((Guid)operand.Box!).ToString(
+                    format ?? "D",
+                    System.Globalization.CultureInfo.InvariantCulture)));
+            case OperandKind.BclValue when format is null:
+                return FoldOutcome.Folded(Operand.FromString(RenderBclValue(operand)));
             case OperandKind.Enum when format is null:
                 return FoldOutcome.Folded(Operand.FromString(operand.EnumMemberName!));
+            case OperandKind.Enum:
+                return EnumToStringWithFormat(operand, format);
             default:
                 return FoldOutcome.Error(
                     OperandTypeCode,

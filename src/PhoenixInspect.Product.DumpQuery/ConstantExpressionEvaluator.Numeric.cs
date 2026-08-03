@@ -44,6 +44,8 @@ public static partial class ConstantExpressionEvaluator
     private static NumericKind NumericKindOf(Operand operand) => operand.Kind switch
     {
         OperandKind.Numeric => operand.NumericKind,
+        // An enum participates in arithmetic as its exact underlying type, matching the C# conversions.
+        OperandKind.Enum => operand.NumericKind,
         _ => NumericKind.Int32,
     };
 
@@ -51,7 +53,21 @@ public static partial class ConstantExpressionEvaluator
     {
         OperandKind.Numeric => operand.Box!,
         OperandKind.Char => (int)operand.Char,
+        OperandKind.Enum => BoxEnumBits(operand.NumericKind, operand.EnumBits),
         _ => operand.Int32,
+    };
+
+    /// <summary>Boxes an enum's raw bits as its exact underlying CLR type.</summary>
+    private static object BoxEnumBits(NumericKind underlying, long bits) => underlying switch
+    {
+        NumericKind.SByte => (sbyte)bits,
+        NumericKind.Byte => (byte)bits,
+        NumericKind.Int16 => (short)bits,
+        NumericKind.UInt16 => (ushort)bits,
+        NumericKind.UInt32 => (uint)bits,
+        NumericKind.Int64 => bits,
+        NumericKind.UInt64 => unchecked((ulong)bits),
+        _ => (int)bits,
     };
 
     private static BigInteger ToBigInteger(NumericKind kind, object box) => kind switch
@@ -841,7 +857,7 @@ public static partial class ConstantExpressionEvaluator
     {
         if (!TryResolveCastType(cast.Type, out var target, out var numericKind, out var nullable))
         {
-            return FoldOutcome.NotArithmetic();
+            return FoldEnumCast(cast, context);
         }
 
         var operand = Fold(cast.Expression, context);
@@ -907,12 +923,18 @@ public static partial class ConstantExpressionEvaluator
         Math,
         Enumerable,
         KnownEnum,
+        Temporal,
+        BclValue,
+        SystemEnum,
+        SystemArray,
     }
 
     private readonly record struct TypeReceiver(
         TypeReceiverCategory Category,
         NumericKind Numeric,
-        string? EnumTypeFullName = null);
+        string? EnumTypeFullName = null,
+        TemporalKind Temporal = default,
+        BclValueKind Value = default);
 
     /// <summary>
     /// The small closed set of BCL argument enums recognized without dump metadata, so comparison and split
@@ -931,6 +953,16 @@ public static partial class ConstantExpressionEvaluator
             ("System.StringSplitOptions", "None") => 0,
             ("System.StringSplitOptions", "RemoveEmptyEntries") => 1,
             ("System.StringSplitOptions", "TrimEntries") => 2,
+            ("System.DateTimeKind", "Unspecified") => 0,
+            ("System.DateTimeKind", "Utc") => 1,
+            ("System.DateTimeKind", "Local") => 2,
+            ("System.DayOfWeek", "Sunday") => 0,
+            ("System.DayOfWeek", "Monday") => 1,
+            ("System.DayOfWeek", "Tuesday") => 2,
+            ("System.DayOfWeek", "Wednesday") => 3,
+            ("System.DayOfWeek", "Thursday") => 4,
+            ("System.DayOfWeek", "Friday") => 5,
+            ("System.DayOfWeek", "Saturday") => 6,
             _ => null,
         };
         return value is { } resolved
@@ -1026,6 +1058,40 @@ public static partial class ConstantExpressionEvaluator
             case "StringSplitOptions":
                 receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, "System.StringSplitOptions");
                 return true;
+            case "DateTimeKind":
+                receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, "System.DateTimeKind");
+                return true;
+            case "DayOfWeek":
+                receiver = new TypeReceiver(TypeReceiverCategory.KnownEnum, default, "System.DayOfWeek");
+                return true;
+            case "DateTime":
+                receiver = new TypeReceiver(TypeReceiverCategory.Temporal, default, Temporal: TemporalKind.DateTime);
+                return true;
+            case "DateTimeOffset":
+                receiver = new TypeReceiver(
+                    TypeReceiverCategory.Temporal, default, Temporal: TemporalKind.DateTimeOffset);
+                return true;
+            case "TimeSpan":
+                receiver = new TypeReceiver(TypeReceiverCategory.Temporal, default, Temporal: TemporalKind.TimeSpan);
+                return true;
+            case "DateOnly":
+                receiver = new TypeReceiver(TypeReceiverCategory.Temporal, default, Temporal: TemporalKind.DateOnly);
+                return true;
+            case "TimeOnly":
+                receiver = new TypeReceiver(TypeReceiverCategory.Temporal, default, Temporal: TemporalKind.TimeOnly);
+                return true;
+            case "Guid":
+                receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Guid);
+                return true;
+            case "Version":
+                receiver = new TypeReceiver(TypeReceiverCategory.BclValue, default, Value: BclValueKind.Version);
+                return true;
+            case "Enum":
+                receiver = new TypeReceiver(TypeReceiverCategory.SystemEnum, default);
+                return true;
+            case "Array":
+                receiver = new TypeReceiver(TypeReceiverCategory.SystemArray, default);
+                return true;
             default:
                 var target = CastTarget.Numeric;
                 var kind = NumericKind.Int32;
@@ -1066,6 +1132,16 @@ public static partial class ConstantExpressionEvaluator
                 return DispatchKnownEnum(receiver.EnumTypeFullName!, member);
             case TypeReceiverCategory.Enumerable:
                 return MemberUnsupported($"Enumerable.{member}");
+            case TypeReceiverCategory.Temporal:
+                return DispatchTemporalStaticProperty(receiver.Temporal, member);
+            case TypeReceiverCategory.BclValue:
+                return DispatchBclValueStaticProperty(receiver.Value, member);
+            case TypeReceiverCategory.SystemEnum:
+                return MemberUnsupported($"Enum.{member}");
+            case TypeReceiverCategory.SystemArray:
+                return member == "MaxLength"
+                    ? FoldOutcome.Folded(Operand.FromInt32(ArrayMaxLength))
+                    : MemberUnsupported($"Array.{member}");
             default:
                 return DispatchNumericTypeStatic(receiver.Numeric, member);
         }

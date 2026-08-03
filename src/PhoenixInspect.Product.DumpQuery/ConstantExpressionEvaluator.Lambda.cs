@@ -154,14 +154,30 @@ public static partial class ConstantExpressionEvaluator
             && context.IsBound(receiverName);
         if (!receiverIsBound &&
             TryReadTypeReceiver(receiverExpression, out var typeReceiver) &&
-            typeReceiver.Category == TypeReceiverCategory.Enumerable)
+            typeReceiver.Category is TypeReceiverCategory.Enumerable or TypeReceiverCategory.SystemArray)
         {
             if (argumentList.Arguments is not
                 [{ Expression: { } staticSource }, { Expression: LambdaExpressionSyntax staticLambda }])
             {
                 return FoldOutcome.Error(
                     LambdaUnsupportedCode,
-                    $"Enumerable.{name} takes the source sequence and one lambda.");
+                    $"{(typeReceiver.Category == TypeReceiverCategory.Enumerable ? "Enumerable" : "Array")}.{name} "
+                    + "takes the source sequence and one lambda.");
+            }
+
+            // The Array delegate family maps onto the sequence operators with identical semantics.
+            if (typeReceiver.Category == TypeReceiverCategory.SystemArray)
+            {
+                name = name switch
+                {
+                    "Exists" => "Any",
+                    "TrueForAll" => "All",
+                    "Find" => "FirstOrDefault",
+                    "FindLast" => "LastOrDefault",
+                    "FindAll" => "Where",
+                    "ConvertAll" => "Select",
+                    _ => name,
+                };
             }
 
             sourceExpression = staticSource;
@@ -309,6 +325,28 @@ public static partial class ConstantExpressionEvaluator
                 }
 
                 return FoldOutcome.Folded(Operand.FromInt32(matches));
+            case "FindIndex":
+            case "FindLastIndex":
+                var matchedIndex = -1;
+                for (var index = 0; index < items.Length; index++)
+                {
+                    var verdict = InvokePredicate(lambda, items[index], index, context);
+                    if (verdict.Disposition != FoldDisposition.Folded)
+                    {
+                        return verdict;
+                    }
+
+                    if (verdict.Operand.Boolean)
+                    {
+                        matchedIndex = index;
+                        if (name == "FindIndex")
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                return FoldOutcome.Folded(Operand.FromInt32(matchedIndex));
             case "First":
             case "FirstOrDefault":
             case "Last":
@@ -430,9 +468,12 @@ public static partial class ConstantExpressionEvaluator
                     "an explicit ordinal transformation; default string ordering is culture-sensitive");
             }
 
-            if (!key.Operand.IsNumeric && key.Operand.Kind != OperandKind.Boolean)
+            if (!key.Operand.IsNumeric &&
+                key.Operand.Kind is not (OperandKind.Boolean or OperandKind.Temporal or OperandKind.BclValue))
             {
-                return FoldOutcome.Error(OperandTypeCode, "Ordering keys must be numeric, char, or Boolean.");
+                return FoldOutcome.Error(
+                    OperandTypeCode,
+                    "Ordering keys must be numeric, char, Boolean, date/time, Guid, or Version values.");
             }
 
             keys[index] = key.Operand;
@@ -451,6 +492,16 @@ public static partial class ConstantExpressionEvaluator
             if (leftKey.Kind == OperandKind.Boolean && rightKey.Kind == OperandKind.Boolean)
             {
                 return leftKey.Boolean.CompareTo(rightKey.Boolean);
+            }
+
+            if (TryCompareTemporal(leftKey, rightKey, out var temporalComparison))
+            {
+                return temporalComparison;
+            }
+
+            if (TryCompareBclValue(leftKey, rightKey, out var valueComparison))
+            {
+                return valueComparison;
             }
 
             if (leftKey.IsNumeric && rightKey.IsNumeric)

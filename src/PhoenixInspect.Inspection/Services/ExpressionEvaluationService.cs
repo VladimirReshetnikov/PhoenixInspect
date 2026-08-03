@@ -425,7 +425,7 @@ public static class ExpressionEvaluationService
         {
             ConstantValueKind.EnumMember => (
                 $"{ShortTypeName(constant.EnumTypeFullName!)}.{constant.EnumMemberName} "
-                + $"({constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})",
+                + $"({constant.ValueText ?? constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture)})",
                 $"Enum {constant.EnumTypeFullName} · underlying {constant.UnderlyingTypeName}"),
             ConstantValueKind.String => (
                 DisplayFormatting.QuotedString(constant.StringValue!),
@@ -439,6 +439,15 @@ public static class ExpressionEvaluationService
             ConstantValueKind.Numeric => (
                 constant.ValueText!,
                 $"{constant.ValueTypeName} constant"),
+            ConstantValueKind.Temporal => (
+                constant.ValueText!,
+                $"{constant.ValueTypeName} · invariant round-trip form"),
+            ConstantValueKind.BclValue => (
+                constant.ValueText!,
+                $"{constant.ValueTypeName} · invariant form"),
+            ConstantValueKind.Type => (
+                constant.ValueText!,
+                "Type · evaluator type reference"),
             ConstantValueKind.Null => (
                 "null",
                 "Exactly null"),

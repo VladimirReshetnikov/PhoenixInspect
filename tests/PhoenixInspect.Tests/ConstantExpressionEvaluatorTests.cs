@@ -311,7 +311,7 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("   ")]
     [InlineData("root.Field")]
     [InlineData("Some.Namespace.Type.Field")]
-    [InlineData("System.DayOfWeek.Monday")]
+    [InlineData("System.ConsoleColor.Red")]
     [InlineData("1 + x")]
     [InlineData("x + 1")]
     [InlineData("1 +")]
@@ -529,7 +529,7 @@ public sealed class ConstantExpressionEvaluatorTests
     /// <param name="expression">The erroneous sequence expression.</param>
     /// <param name="expectedCode">The stable diagnostic code.</param>
     [Theory]
-    [InlineData("new int[0].First()", null)]
+    [InlineData("new int[0].First()", "System.InvalidOperationException")]
     [InlineData("new[] { 1, 2 }.Skip(5).First()", "System.InvalidOperationException")]
     [InlineData("new[] { 1, 2 }.Single()", "System.InvalidOperationException")]
     [InlineData("new[] { 1, 2 }.Skip(9).Max()", "System.InvalidOperationException")]
@@ -542,18 +542,9 @@ public sealed class ConstantExpressionEvaluatorTests
     [InlineData("new[] { \"b\", \"a\" }.Max()", "CONSTANT_CULTURE_SENSITIVE_UNSUPPORTED")]
     [InlineData("new[] { \"a\", 'b' }", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("new[] { \"a\" }.Sum()", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
-    [InlineData("new int[] { }", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
-    public void Sequence_errors_are_typed_stops(string expression, string? expectedCode)
+    public void Sequence_errors_are_typed_stops(string expression, string expectedCode)
     {
         var result = ConstantExpressionEvaluator.Evaluate(session: null, expression);
-        if (expectedCode is null)
-        {
-            // Shapes with no inferable elements stay not-constant, so the frozen paths keep rejecting them with
-            // their own vocabulary.
-            Assert.Equal(ConstantExpressionStatus.NotConstant, result.Status);
-            return;
-        }
-
         Assert.Equal(ConstantExpressionStatus.Invalid, result.Status);
         Assert.Equal(expectedCode, result.DiagnosticCode);
     }

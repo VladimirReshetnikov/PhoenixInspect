@@ -70,6 +70,31 @@ public enum ConstantValueKind
     /// <see cref="ConstantExpressionEvaluation.ValueText"/>.
     /// </summary>
     Sequence = 8,
+
+    /// <summary>
+    /// A date or time value: <see cref="System.DateTime"/>, <see cref="System.DateTimeOffset"/>,
+    /// <see cref="System.TimeSpan"/>, <see cref="System.DateOnly"/>, or <see cref="System.TimeOnly"/>, computed
+    /// with the exact BCL semantics under the invariant culture. The exact kind is named by
+    /// <see cref="ConstantExpressionEvaluation.ValueTypeName"/> and the round-trip text by
+    /// <see cref="ConstantExpressionEvaluation.ValueText"/>.
+    /// </summary>
+    Temporal = 9,
+
+    /// <summary>
+    /// A deterministic BCL value outside the other domains — <see cref="System.Guid"/> or
+    /// <see cref="System.Version"/> — computed with the exact BCL semantics and rendered in its invariant text
+    /// form. The exact kind is named by <see cref="ConstantExpressionEvaluation.ValueTypeName"/> and the text by
+    /// <see cref="ConstantExpressionEvaluation.ValueText"/>.
+    /// </summary>
+    BclValue = 10,
+
+    /// <summary>
+    /// A <c>typeof(...)</c> reference to a type the evaluator models: a primitive, string, char, Boolean, a date
+    /// or time kind, <see cref="System.Guid"/>, <see cref="System.Version"/>, or an enum — including enums
+    /// declared in dump modules. The display text is <c>typeof(...)</c> with the C# spelling in
+    /// <see cref="ConstantExpressionEvaluation.ValueText"/>.
+    /// </summary>
+    Type = 11,
 }
 
 /// <summary>The complete outcome of one constant-expression evaluation attempt.</summary>
@@ -604,11 +629,13 @@ public static partial class ConstantExpressionEvaluator
 
         // A bare qualified-name chain keeps its dedicated literal-field path so the result retains complete
         // module and token facts; a stored static field keeps falling through to the frozen pipeline. A chain
-        // whose receiver is a known BCL type — 'Int32.MaxValue', 'System.Math.PI' — folds instead, because those
-        // members are type statics, not metadata literals declared in dump modules; and a chain ending in
-        // '.Length' folds so an array or string field's length can answer.
+        // whose receiver or head is a known BCL type — 'Int32.MaxValue', 'System.Math.PI',
+        // 'Guid.Empty.Version' — folds instead, because those members are type statics and their values, not
+        // metadata literals declared in dump modules; and a chain ending in '.Length' folds so an array or
+        // string field's length can answer.
         if (TryReadQualifiedName(syntax, out var nameParts) &&
             nameParts[^1] != "Length" &&
+            !IsKnownTypeHead(nameParts) &&
             !(syntax is MemberAccessExpressionSyntax typeStaticCandidate &&
                 TryReadTypeReceiver(typeStaticCandidate.Expression, out _)))
         {
@@ -646,6 +673,10 @@ public static partial class ConstantExpressionEvaluator
 
         internal int DumpValuesConsumed { get; set; }
 
+        /// <summary>Caches enum-shape resolutions so one expression scans module metadata at most once per name.</summary>
+        internal Dictionary<string, (EnumShape? Shape, FoldOutcome? Error)> EnumShapes { get; } =
+            new(StringComparer.Ordinal);
+
         internal void PushBinding(string name, Operand value) => bindings.Add((name, value));
 
         internal void PopBindings(int count) => bindings.RemoveRange(bindings.Count - count, count);
@@ -678,6 +709,16 @@ public static partial class ConstantExpressionEvaluator
             return false;
         }
     }
+
+    /// <summary>States whether a dotted chain is anchored at a known BCL type name, optionally System-qualified.</summary>
+    /// <remarks>
+    /// Such a chain can never be a namespace-rooted static field of a dump module without shadowing a BCL type
+    /// name, which the two-segment type-static shortcut already precludes; folding it keeps 'Guid.Empty.Version'
+    /// and 'DateTime.MaxValue.Year' in the constant domain.
+    /// </remarks>
+    private static bool IsKnownTypeHead(ImmutableArray<string> parts) =>
+        TryMapReceiverName(parts[0], out _) ||
+        (parts.Length > 1 && parts[0] == "System" && TryMapReceiverName(parts[1], out _));
 
     /// <summary>Returns the leftmost identifier of an access chain, stepping through every access shape.</summary>
     private static string? LeftmostIdentifier(ExpressionSyntax syntax)
@@ -830,6 +871,9 @@ public static partial class ConstantExpressionEvaluator
         Numeric,
         Null,
         Sequence,
+        Temporal,
+        BclValue,
+        Type,
     }
 
     private readonly record struct Operand(
@@ -841,7 +885,9 @@ public static partial class ConstantExpressionEvaluator
         string? EnumTypeFullName,
         string? EnumMemberName,
         NumericKind NumericKind,
-        object? Box)
+        object? Box,
+        TemporalKind TemporalKind = default,
+        BclValueKind BclValueKind = default)
     {
         internal static Operand FromInt32(int value) =>
             new(OperandKind.Int32, value, false, '\0', null, null, null, NumericKind.Int32, null);
@@ -856,7 +902,17 @@ public static partial class ConstantExpressionEvaluator
             new(OperandKind.String, 0, false, '\0', value, null, null, default, null);
 
         internal static Operand FromEnum(int value, string typeFullName, string memberName) =>
-            new(OperandKind.Enum, value, false, '\0', null, typeFullName, memberName, default, null);
+            FromEnum(value, NumericKind.Int32, typeFullName, memberName);
+
+        // Enum values carry their raw bits and exact underlying kind, so byte-, long-, and ulong-underlying
+        // enums box and unbox with C# semantics; the Int32 mirror keeps the narrow consumers working.
+        internal static Operand FromEnum(long bits, NumericKind underlying, string typeFullName, string memberName) =>
+            new(OperandKind.Enum, unchecked((int)bits), false, '\0', null, typeFullName, memberName, underlying, bits);
+
+        internal static Operand FromType(TypeRef type) =>
+            new(OperandKind.Type, 0, false, '\0', null, null, null, default, type);
+
+        internal long EnumBits => Box is long bits ? bits : Int32;
 
         // Plain Int32 stays a first-class kind so the value composes with the string/char surface unchanged;
         // every other numeric domain rides in the boxed representation with its exact kind.
@@ -869,6 +925,14 @@ public static partial class ConstantExpressionEvaluator
 
         internal static Operand FromSequence(SequencePayload payload) =>
             new(OperandKind.Sequence, 0, false, '\0', null, null, null, default, payload);
+
+        // The boxed value is the exact BCL struct; every temporal computation unboxes, computes with the real
+        // BCL member, and reboxes, so the semantics are the BCL's own rather than a re-implementation.
+        internal static Operand FromTemporal(TemporalKind kind, object value) =>
+            new(OperandKind.Temporal, 0, false, '\0', null, null, null, default, value, kind);
+
+        internal static Operand FromBclValue(BclValueKind kind, object value) =>
+            new(OperandKind.BclValue, 0, false, '\0', null, null, null, default, value, default, kind);
 
         internal bool IsNumeric =>
             Kind is OperandKind.Int32 or OperandKind.Char or OperandKind.Enum or OperandKind.Numeric;
@@ -957,12 +1021,33 @@ public static partial class ConstantExpressionEvaluator
                 valueText = RenderSequence(payload);
                 underlying = valueTypeName;
                 break;
+            case OperandKind.Temporal:
+                kind = ConstantValueKind.Temporal;
+                valueTypeName = operand.TemporalKind.ToString();
+                valueText = RenderTemporal(operand);
+                underlying = valueTypeName;
+                break;
+            case OperandKind.BclValue:
+                kind = ConstantValueKind.BclValue;
+                valueTypeName = operand.BclValueKind.ToString();
+                valueText = RenderBclValue(operand);
+                underlying = valueTypeName;
+                break;
+            case OperandKind.Type:
+                kind = ConstantValueKind.Type;
+                valueTypeName = "Type";
+                valueText = $"typeof({((TypeRef)operand.Box!).CSharpName})";
+                underlying = valueTypeName;
+                break;
             default:
                 kind = ConstantValueKind.EnumMember;
-                int32 = operand.Int32;
+                int32 = operand.EnumBits >= int.MinValue && operand.EnumBits <= int.MaxValue
+                    ? unchecked((int)operand.EnumBits)
+                    : null;
                 enumType = operand.EnumTypeFullName;
                 enumMember = operand.EnumMemberName;
-                underlying = "Int32";
+                underlying = operand.NumericKind.ToString();
+                valueText = FormatEnumBitsInvariant(operand.NumericKind, operand.EnumBits);
                 break;
         }
         return new ConstantExpressionEvaluation(
@@ -1061,6 +1146,12 @@ public static partial class ConstantExpressionEvaluator
                 return FoldSizeOf(sizeOf);
             case CheckedExpressionSyntax checkedExpression:
                 return FoldCheckedExpression(checkedExpression, context);
+            case ObjectCreationExpressionSyntax objectCreation:
+                return FoldObjectCreation(objectCreation, context);
+            case TypeOfExpressionSyntax typeOf:
+                return FoldTypeOf(typeOf, context);
+            case CollectionExpressionSyntax collection:
+                return FoldCollectionExpression(collection, context);
             case PostfixUnaryExpressionSyntax postfix
                 when postfix.IsKind(SyntaxKind.SuppressNullableWarningExpression):
                 // The null-forgiving operator is a compile-time annotation with no run-time effect.
@@ -1169,6 +1260,12 @@ public static partial class ConstantExpressionEvaluator
             return FoldOutcome.Error(OperandTypeCode, "Unary arithmetic requires one numeric operand.");
         }
 
+        // The bitwise complement of an enum keeps the enum type, masked to its underlying width.
+        if (unary.IsKind(SyntaxKind.BitwiseNotExpression) && operand.Operand.Kind == OperandKind.Enum)
+        {
+            return ComputeEnumComplement(operand.Operand, context);
+        }
+
         return ComputeNumericUnary(unary.Kind(), operand.Operand);
     }
 
@@ -1211,6 +1308,44 @@ public static partial class ConstantExpressionEvaluator
         if (leftOperand.Kind == OperandKind.Null || rightOperand.Kind == OperandKind.Null)
         {
             return FoldNullLifted(kind, leftOperand, rightOperand);
+        }
+
+        // Date and time operands carry their own operator algebra — DateTime − DateTime is a TimeSpan, TimeSpan
+        // scales by a number — so they dispatch before the numeric tower sees them.
+        if (leftOperand.Kind == OperandKind.Temporal || rightOperand.Kind == OperandKind.Temporal)
+        {
+            return ComputeTemporalBinary(kind, leftOperand, rightOperand);
+        }
+
+        if (leftOperand.Kind == OperandKind.BclValue || rightOperand.Kind == OperandKind.BclValue)
+        {
+            return ComputeBclValueBinary(kind, leftOperand, rightOperand);
+        }
+
+        if (leftOperand.Kind == OperandKind.Type || rightOperand.Kind == OperandKind.Type)
+        {
+            if (kind is (SyntaxKind.EqualsExpression or SyntaxKind.NotEqualsExpression) &&
+                leftOperand.Kind == OperandKind.Type && rightOperand.Kind == OperandKind.Type)
+            {
+                var sameType = string.Equals(
+                    ((TypeRef)leftOperand.Box!).FullName,
+                    ((TypeRef)rightOperand.Box!).FullName,
+                    StringComparison.Ordinal);
+                return FoldOutcome.Folded(Operand.FromBoolean(
+                    kind == SyntaxKind.EqualsExpression ? sameType : !sameType));
+            }
+
+            return FoldOutcome.Error(OperandTypeCode, "Type references define equality only.");
+        }
+
+        // Enum operators that keep the enum type dispatch first; everything else falls through to the numeric
+        // tower, which already gives E − E its underlying result and comparisons their meaning.
+        if (leftOperand.Kind == OperandKind.Enum || rightOperand.Kind == OperandKind.Enum)
+        {
+            if (TryComputeEnumBinary(kind, leftOperand, rightOperand, context) is { } enumOutcome)
+            {
+                return enumOutcome;
+            }
         }
 
         if (kind == SyntaxKind.AddExpression &&
@@ -1499,13 +1634,15 @@ public static partial class ConstantExpressionEvaluator
         }
 
         // A whole qualified chain resolves first, so metadata literals and stored fields keep their answers. When
-        // the member is 'Length' and the whole chain has no value of its own, the receiver's value gets a chance:
-        // that is how 'Some.Type.Field.Length' answers over a stored array or string.
+        // the whole chain has no value of its own, the receiver's value gets a chance: that is how
+        // 'Some.Type.Field.Length' answers over a stored array or string and 'Guid.Empty.Version' over a folded
+        // value. A chain neither path can value stays not-constant, so the frozen pipelines keep rejecting it
+        // with their own vocabulary.
         FoldOutcome? qualifiedOutcome = null;
         if (!leftmostBound && TryReadQualifiedName(memberAccess, out var parts))
         {
             var qualified = FoldQualifiedName(parts, context);
-            if (qualified.Disposition == FoldDisposition.Folded || member.Identifier.ValueText != "Length")
+            if (qualified.Disposition != FoldDisposition.NotArithmetic)
             {
                 return qualified;
             }
@@ -1524,6 +1661,16 @@ public static partial class ConstantExpressionEvaluator
             (OperandKind.String, "Length") => FoldOutcome.Folded(Operand.FromInt32(receiver.Operand.String!.Length)),
             (OperandKind.Sequence, "Length") => FoldOutcome.Folded(Operand.FromInt32(
                 PayloadOf(receiver.Operand).Items.Length)),
+            (OperandKind.Sequence, "LongLength") => FoldOutcome.Folded(Operand.FromNumeric(
+                NumericKind.Int64,
+                (long)PayloadOf(receiver.Operand).Items.Length)),
+            (OperandKind.Sequence, "Rank") => FoldOutcome.Folded(Operand.FromInt32(1)),
+            (OperandKind.Temporal, var temporalProperty) =>
+                DispatchTemporalProperty(receiver.Operand, temporalProperty),
+            (OperandKind.BclValue, var valueProperty) =>
+                DispatchBclValueProperty(receiver.Operand, valueProperty),
+            (OperandKind.Type, var typeProperty) =>
+                DispatchTypeRefProperty(receiver.Operand, typeProperty),
             _ => qualifiedOutcome ?? FoldOutcome.Error(
                 MemberUnsupportedCode,
                 $"'{member.Identifier.ValueText}' is not an admitted deterministic constant member."),
@@ -1575,8 +1722,19 @@ public static partial class ConstantExpressionEvaluator
             {
                 RawKind: (int)SyntaxKind.SimpleMemberAccessExpression,
                 Expression: { } receiverExpression,
-                Name: IdentifierNameSyntax method,
+                Name: SimpleNameSyntax method,
             })
+        {
+            return FoldOutcome.NotArithmetic();
+        }
+
+        // A generic method name is admitted only on the System.Enum and System.Array surfaces —
+        // Enum.GetNames<T>(), Array.Empty<T>() — so every other generic invocation keeps its existing
+        // not-constant path.
+        var typeArguments = (method as GenericNameSyntax)?.TypeArgumentList.Arguments ?? default;
+        if (typeArguments.Count > 0 &&
+            !(TryReadTypeReceiver(receiverExpression, out var genericReceiver) &&
+                genericReceiver.Category is TypeReceiverCategory.SystemEnum or TypeReceiverCategory.SystemArray))
         {
             return FoldOutcome.NotArithmetic();
         }
@@ -1622,6 +1780,14 @@ public static partial class ConstantExpressionEvaluator
                 TypeReceiverCategory.Math => DispatchMath(name, arguments),
                 TypeReceiverCategory.Enumerable => DispatchEnumerable(name, arguments),
                 TypeReceiverCategory.KnownEnum => MemberUnsupported(name),
+                TypeReceiverCategory.Temporal =>
+                    DispatchTemporalStaticMethod(typeReceiver.Temporal, name, arguments),
+                TypeReceiverCategory.BclValue =>
+                    DispatchBclValueStaticMethod(typeReceiver.Value, name, arguments),
+                TypeReceiverCategory.SystemEnum =>
+                    DispatchSystemEnum(name, typeArguments, arguments, context),
+                TypeReceiverCategory.SystemArray =>
+                    DispatchSystemArray(name, typeArguments, arguments, context),
                 _ => DispatchNumericTypeMethod(typeReceiver.Numeric, name, arguments),
             };
         }
@@ -1650,15 +1816,16 @@ public static partial class ConstantExpressionEvaluator
         {
             OperandKind.String => DispatchInstanceString(receiver.Operand.String!, name, arguments),
             OperandKind.Sequence => DispatchSequence(receiver.Operand, name, arguments),
+            OperandKind.Temporal => DispatchTemporalMethod(receiver.Operand, name, arguments),
+            OperandKind.BclValue => DispatchBclValueMethod(receiver.Operand, name, arguments),
             OperandKind.Char => name == "ToString" && arguments.Count == 0
                 ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.Char.ToString()))
                 : MemberUnsupported(name),
             OperandKind.Boolean => name == "ToString" && arguments.Count == 0
                 ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.Boolean ? "True" : "False"))
                 : MemberUnsupported(name),
-            OperandKind.Enum => name == "ToString" && arguments.Count == 0
-                ? FoldOutcome.Folded(Operand.FromString(receiver.Operand.EnumMemberName!))
-                : MemberUnsupported(name),
+            OperandKind.Enum => DispatchEnumMethod(receiver.Operand, name, arguments),
+            OperandKind.Type => DispatchTypeRefMethod(receiver.Operand, name, arguments),
             _ => MemberUnsupported(name),
         };
     }

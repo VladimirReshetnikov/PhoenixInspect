@@ -85,21 +85,6 @@ public static partial class ConstantExpressionEvaluator
 
     // ---- Array creation expressions ---------------------------------------------------------------------------------
 
-    private static FoldOutcome FoldArrayCreation(ArrayCreationExpressionSyntax creation, FoldContext context)
-    {
-        // Only single-rank creation with an explicit initializer is a value: 'new T[n]' would fabricate default
-        // elements the expression never stated.
-        if (creation.Initializer is not { } initializer ||
-            creation.Type.RankSpecifiers.Count != 1 ||
-            creation.Type.RankSpecifiers[0].Sizes.Count != 1 ||
-            creation.Type.RankSpecifiers[0].Sizes[0] is not OmittedArraySizeExpressionSyntax)
-        {
-            return FoldOutcome.NotArithmetic();
-        }
-
-        return FoldInitializer(initializer, context);
-    }
-
     private static FoldOutcome FoldInitializer(InitializerExpressionSyntax initializer, FoldContext context)
     {
         var items = ImmutableArray.CreateBuilder<Operand>(initializer.Expressions.Count);
@@ -140,6 +125,38 @@ public static partial class ConstantExpressionEvaluator
         if (items.All(static item => item.Kind == OperandKind.Boolean))
         {
             return CreateSequence(new SequencePayload(items, OperandKind.Boolean, default, "Boolean"));
+        }
+
+        if (items[0].Kind == OperandKind.Temporal &&
+            items.All(item => item.Kind == OperandKind.Temporal && item.TemporalKind == items[0].TemporalKind))
+        {
+            return CreateSequence(new SequencePayload(
+                items,
+                OperandKind.Temporal,
+                default,
+                items[0].TemporalKind.ToString()));
+        }
+
+        if (items[0].Kind == OperandKind.BclValue &&
+            items.All(item => item.Kind == OperandKind.BclValue && item.BclValueKind == items[0].BclValueKind))
+        {
+            return CreateSequence(new SequencePayload(
+                items,
+                OperandKind.BclValue,
+                default,
+                items[0].BclValueKind.ToString()));
+        }
+
+        if (items[0].Kind == OperandKind.Enum &&
+            items.All(item => item.Kind == OperandKind.Enum &&
+                string.Equals(item.EnumTypeFullName, items[0].EnumTypeFullName, StringComparison.Ordinal)))
+        {
+            var enumSeparator = items[0].EnumTypeFullName!.LastIndexOf('.');
+            return CreateSequence(new SequencePayload(
+                items,
+                OperandKind.Enum,
+                items[0].NumericKind,
+                enumSeparator < 0 ? items[0].EnumTypeFullName! : items[0].EnumTypeFullName![(enumSeparator + 1)..]));
         }
 
         if (items.All(static item => item.IsNumeric && item.Kind != OperandKind.Enum))
@@ -302,6 +319,34 @@ public static partial class ConstantExpressionEvaluator
                         "System.InvalidOperationException",
                         "Sequence contains more than one element."),
                 };
+            case "GetValue" when arguments is [{ } valueAt] && TryImplicitInt32(valueAt, out var valueIndex):
+                return valueIndex >= 0 && valueIndex < items.Length
+                    ? FoldOutcome.Folded(items[valueIndex])
+                    : FoldOutcome.Error(
+                        "System.IndexOutOfRangeException",
+                        $"Index {valueIndex.ToString(CultureInfo.InvariantCulture)} is outside the array of "
+                        + $"length {items.Length.ToString(CultureInfo.InvariantCulture)}.");
+            case "GetLength" when arguments is [{ } lengthDimension] &&
+                TryImplicitInt32(lengthDimension, out var lengthOf):
+                return lengthOf == 0
+                    ? FoldOutcome.Folded(Operand.FromInt32(items.Length))
+                    : FoldOutcome.Error(
+                        "System.IndexOutOfRangeException",
+                        "A virtual sequence is one-dimensional; only dimension 0 exists.");
+            case "GetLowerBound" when arguments is [{ } lowerDimension] &&
+                TryImplicitInt32(lowerDimension, out var lowerOf):
+                return lowerOf == 0
+                    ? FoldOutcome.Folded(Operand.FromInt32(0))
+                    : FoldOutcome.Error(
+                        "System.IndexOutOfRangeException",
+                        "A virtual sequence is one-dimensional; only dimension 0 exists.");
+            case "GetUpperBound" when arguments is [{ } upperDimension] &&
+                TryImplicitInt32(upperDimension, out var upperOf):
+                return upperOf == 0
+                    ? FoldOutcome.Folded(Operand.FromInt32(items.Length - 1))
+                    : FoldOutcome.Error(
+                        "System.IndexOutOfRangeException",
+                        "A virtual sequence is one-dimensional; only dimension 0 exists.");
             case "ElementAt" when arguments is [{ } at] && TryImplicitInt32(at, out var index):
                 return index >= 0 && index < items.Length
                     ? FoldOutcome.Folded(items[index])
@@ -371,6 +416,11 @@ public static partial class ConstantExpressionEvaluator
         OperandKind.Numeric => Operand.FromNumeric(payload.ElementNumeric, BoxFromBigInteger(
             payload.ElementNumeric,
             0)),
+        OperandKind.Enum when payload.Items.Length > 0 => Operand.FromEnum(
+            0,
+            payload.Items[0].NumericKind,
+            payload.Items[0].EnumTypeFullName!,
+            "0"),
         _ => Operand.FromInt32(0),
     };
 
@@ -394,6 +444,24 @@ public static partial class ConstantExpressionEvaluator
             return FoldOutcome.Folded(Operand.FromBoolean(left.Boolean == right.Boolean));
         }
 
+        if (left.Kind == OperandKind.Type && right.Kind == OperandKind.Type)
+        {
+            return FoldOutcome.Folded(Operand.FromBoolean(string.Equals(
+                ((TypeRef)left.Box!).FullName,
+                ((TypeRef)right.Box!).FullName,
+                StringComparison.Ordinal)));
+        }
+
+        if (TryCompareTemporal(left, right, out var temporalComparison))
+        {
+            return FoldOutcome.Folded(Operand.FromBoolean(temporalComparison == 0));
+        }
+
+        if (TryCompareBclValue(left, right, out var valueComparison))
+        {
+            return FoldOutcome.Folded(Operand.FromBoolean(valueComparison == 0));
+        }
+
         if (left.IsNumeric && right.IsNumeric)
         {
             return ComputeNumericComparison(SyntaxKind.EqualsExpression, left, right);
@@ -401,7 +469,7 @@ public static partial class ConstantExpressionEvaluator
 
         return FoldOutcome.Error(
             OperandTypeCode,
-            "Elements can only be compared within one domain: numeric, string, char, or Boolean.");
+            "Elements can only be compared within one domain: numeric, string, char, Boolean, or one date/time kind.");
     }
 
     private static FoldOutcome SequenceDistinct(SequencePayload payload)
@@ -514,6 +582,16 @@ public static partial class ConstantExpressionEvaluator
             if (left.Kind == OperandKind.Boolean && right.Kind == OperandKind.Boolean)
             {
                 return left.Boolean.CompareTo(right.Boolean);
+            }
+
+            if (TryCompareTemporal(left, right, out var temporalComparison))
+            {
+                return temporalComparison;
+            }
+
+            if (TryCompareBclValue(left, right, out var valueComparison))
+            {
+                return valueComparison;
             }
 
             if (left.IsNumeric && right.IsNumeric)
@@ -640,6 +718,26 @@ public static partial class ConstantExpressionEvaluator
             return CultureSensitive(
                 $"{(wantMin ? "Min" : "Max")} over strings",
                 "an explicit ordinal transformation; default string ordering is culture-sensitive");
+        }
+
+        if (payload.ElementKind is OperandKind.Temporal or OperandKind.BclValue)
+        {
+            var best = payload.Items[0];
+            foreach (var item in payload.Items)
+            {
+                if (!TryCompareTemporal(item, best, out var comparison) &&
+                    !TryCompareBclValue(item, best, out comparison))
+                {
+                    return FoldOutcome.Error(OperandTypeCode, "The aggregate requires one comparable element kind.");
+                }
+
+                if (wantMin ? comparison < 0 : comparison > 0)
+                {
+                    best = item;
+                }
+            }
+
+            return FoldOutcome.Folded(best);
         }
 
         if (!TryCommonNumericKind(payload, out var common, out var error))
@@ -827,6 +925,9 @@ public static partial class ConstantExpressionEvaluator
         OperandKind.Boolean => item.Boolean ? "true" : "false",
         OperandKind.Null => "null",
         OperandKind.Enum => item.EnumMemberName!,
+        OperandKind.Temporal => RenderTemporal(item),
+        OperandKind.BclValue => RenderBclValue(item),
+        OperandKind.Type => $"typeof({((TypeRef)item.Box!).CSharpName})",
         _ => FormatNumeric(NumericKindOf(item), BoxOf(item)),
     };
 }

@@ -100,6 +100,30 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   `xs.Count(x => x is > 1 and < 9)`, `xs.OrderBy(x => -x)`, `xs.Sum(x => x * x)`.
 - **Dump values compose with constants.** `root.QueueDepth * 2 + 1` resolves the dump value through the same
   frozen pipeline that answers it alone, then folds the arithmetic.
+- **Date and time computations.** `DateTime`, `DateTimeOffset`, `TimeSpan`, `DateOnly`, and `TimeOnly` with
+  exact BCL semantics: constructors and ticks, deterministic factories, calendar/clock members, the full
+  operator algebra (`end - start`, `span * 2`, comparisons), and invariant formatting —
+  `TimeSpan.FromMilliseconds(root.DurationsMs.Max()).TotalSeconds`. `Now`, local-time-zone conversions, and
+  culture-dependent parsing are typed stops, because a post-mortem answer must never depend on when or where
+  the dump is inspected.
+- **Deterministic BCL values.** `Guid` and `Version` with fixed-grammar construction and parsing, comparisons,
+  and invariant formats — `Guid.Parse(root.Batch.Id) == new Guid("…")`-style checks without leaving the
+  evidence domain; `Guid.NewGuid()` is a typed stop, because a freshly generated value is not evidence.
+- **Full enum semantics, `typeof`, and the `System.Enum` API.** Casts both ways, the flags algebra
+  (`a \| b`, `~x`, `HasFlag`), enum formats, `typeof(...)` references, and
+  `Enum.GetNames`/`GetValues`/`IsDefined`/`Parse` in generic and `typeof` spellings — with enum shapes read
+  from the dump module's own metadata, so `(Contoso.Status)2` names the member the captured assembly declares.
+- **Array creation and the pure `System.Array`/`System.Type` API.** Every creation spelling — sized with C#'s
+  zero-fill semantics (`new int[3]`), initializers, typed empties, collection expressions with spreads
+  (`[1, .. root.DurationsMs, 9]`), `Array.Empty<T>()` — plus `Array.IndexOf`/`BinarySearch`/`Find`-family
+  statics, instance members like `Rank`/`GetValue`/`GetUpperBound`, and the deterministic `Type` surface
+  (`IsValueType`, `GetElementType`, `MakeArrayType`, `GetEnumNames`). Mutators such as `Array.Sort` are typed
+  stops: the evaluator observes evidence, it never rearranges it.
+- **Type relationships and generic construction.** The runtime's exact assignability relation —
+  `IsAssignableFrom`/`IsAssignableTo` with base chains, `Nullable<T>` lifting, array covariance, implemented
+  interfaces, and declared variance — plus `IsSubclassOf`, `BaseType`, `IsInstanceOfType`, and generic types in
+  both spellings: `typeof(List<int>)`/`typeof(List<>)` and `MakeGenericType` with the BCL's failure semantics,
+  alongside `GetGenericTypeDefinition` and the `IsGenericType` introspection family.
 - **Modern C# expression forms.** Interpolated strings with invariant formatting and alignment
   (`$"depth {root.QueueDepth,4}"`), `is` patterns and `switch` expressions over constant, relational, and
   `and`/`or`/`not` patterns (`root.QueueDepth switch { > 10 => "busy", _ => "idle" }`), plus `nameof`,
