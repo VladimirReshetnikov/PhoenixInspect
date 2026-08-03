@@ -26,6 +26,15 @@ public interface IShellServices
     /// </returns>
     Task<TResult?> RunAsync<TResult>(string busyMessage, Func<ClrmdDumpSession, TResult> work);
 
+    /// <summary>
+    /// Runs a read-only projection on the session thread without the busy indicator or the error banner, for
+    /// ambient work such as completion catalogs that must never interrupt typing.
+    /// </summary>
+    /// <typeparam name="TResult">The immutable projection produced by <paramref name="work"/>.</typeparam>
+    /// <param name="work">The projection to run on the session thread.</param>
+    /// <returns>The projection result, or <see langword="default"/> when no dump is open or the adapter threw.</returns>
+    Task<TResult?> RunQuietAsync<TResult>(Func<ClrmdDumpSession, TResult> work);
+
     /// <summary>Replaces the status-bar message.</summary>
     /// <param name="message">The new status text.</param>
     void SetStatus(string message);

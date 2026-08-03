@@ -5,6 +5,40 @@
              Background="{DynamicResource Phoenix.PaneBackground}">
     <!-- DataContext: WatchTool -->
     <DockPanel>
+        <!-- The completion drop-down: one popup shared by every expression editor, placed under the active one.
+             Items come from ExpressionCompletionService through the pane view model; the view only renders. -->
+        <Popup x:Name="CompletionPopup"
+               DockPanel.Dock="Top"
+               Placement="BottomEdgeAlignedLeft"
+               IsLightDismissEnabled="False"
+               ShouldUseOverlayLayer="True">
+            <Border Background="{DynamicResource Phoenix.PaneBackground}"
+                    BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                    BorderThickness="1"
+                    MinWidth="260"
+                    MaxHeight="220">
+                <ListBox x:Name="CompletionList"
+                         AutomationProperties.AutomationId="WatchCompletionList"
+                         Background="Transparent"
+                         PointerReleased="OnCompletionPointerReleased">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding Detail}"
+                                           Classes="secondary"
+                                           FontSize="10"
+                                           Margin="12,0,0,0"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Text}"
+                                           FontSize="12"
+                                           FontFamily="Cascadia Mono,Consolas,monospace" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </Popup>
         <Border DockPanel.Dock="Top"
                 BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
                 BorderThickness="0,0,0,1"
@@ -82,6 +116,7 @@
                                          IsVisible="{Binding IsEditable}"
                                          AutomationProperties.AutomationId="WatchExpressionBox"
                                          KeyDown="OnExpressionKeyDown"
+                                         TextChanged="OnExpressionTextChanged"
                                          LostFocus="OnExpressionLostFocus" />
                                 <TextBlock Text="{Binding NameText}"
                                            FontSize="12"

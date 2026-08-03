@@ -822,6 +822,79 @@ public sealed partial class ClrmdDumpSession : IDisposable
     }
 
     /// <summary>
+    /// Lists the declared instance-field names of one heap object's validated runtime type, for name completion.
+    /// </summary>
+    /// <param name="obj">Object selected from this session.</param>
+    /// <returns>
+    /// The declared field names with their runtime-reported field type names, in declaration order, bounded by the
+    /// deterministic instance-field traversal cap; or typed conflict/unavailable/invalid evidence. Names are
+    /// metadata facts of the runtime type catalog — no field value is read.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="obj"/> is <see langword="null"/>.</exception>
+    public ClrmdEvidenceResult<ClrmdInstanceFieldNameList> ListInstanceFieldNames(ClrmdHeapObjectInfo obj)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(obj);
+        if (obj.Snapshot != Snapshot)
+        {
+            return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.SnapshotMismatch);
+        }
+
+        try
+        {
+            var runtimeObject = _runtime.Heap.GetObject(obj.Address);
+            var runtimeType = runtimeObject.Type;
+            if (!runtimeObject.IsValid || runtimeType is null)
+            {
+                return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                    ClrmdEvidenceStatus.Unavailable,
+                    ClrmdValueIssue.ObjectUnavailable);
+            }
+
+            if (runtimeType.MethodTable != obj.MethodTable ||
+                runtimeType.MetadataToken != obj.TypeMetadataToken ||
+                !string.Equals(runtimeType.Name, obj.TypeName, StringComparison.Ordinal))
+            {
+                return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                    ClrmdEvidenceStatus.Conflict,
+                    ClrmdValueIssue.TypeMismatch);
+            }
+
+            var names = ImmutableArray.CreateBuilder<(string Name, string? TypeName)>();
+            foreach (var field in runtimeType.Fields)
+            {
+                if (names.Count >= MaximumRuntimeInstanceFieldCount)
+                {
+                    break;
+                }
+
+                // Compiler-generated backing fields are not spellable in the admitted expression grammar.
+                if (field.Name is not { Length: > 0 } name || name.Contains('<', StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                names.Add((name, field.Type?.Name));
+            }
+
+            return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                ClrmdEvidenceStatus.Exact,
+                ClrmdValueIssue.None,
+                new ClrmdInstanceFieldNameList(names.ToImmutable()),
+                appliedBounds: InstanceFieldTraversalBounds);
+        }
+        catch (Exception exception) when (
+            exception is ClrDiagnosticsException or InvalidDataException or ArgumentOutOfRangeException)
+        {
+            return ClrmdEvidenceResult<ClrmdInstanceFieldNameList>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData);
+        }
+    }
+
+    /// <summary>
     /// Reads and decodes one Int32 instance field from counted raw dump-memory evidence.
     /// </summary>
     /// <param name="obj">Object selected from this session.</param>

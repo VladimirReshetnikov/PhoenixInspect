@@ -87,6 +87,20 @@ public sealed class RootSelection
             binding);
     }
 
+    /// <summary>
+    /// Resolves this selection to its heap object for metadata-only projections such as member-name completion.
+    /// </summary>
+    /// <param name="session">The open dump session.</param>
+    /// <returns>The heap object, or null when the typed object could not be projected.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
+    public ClrmdHeapObjectInfo? TryResolveHeapObject(ClrmdDumpSession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        return Kind == RootSelectionKind.StrongHandle
+            ? handleObject
+            : session.ProjectExactObjectForInstanceEvaluation(objectReference!).Value;
+    }
+
     /// <summary>Resolves this selection into the product's root binding.</summary>
     /// <param name="session">The open dump session; a typed object binding needs one direct heap lookup.</param>
     /// <param name="identifier">The case-sensitive identifier the expression uses for the root.</param>

@@ -133,6 +133,10 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   the trailing row, delete by clearing, and every row re-evaluates when the adopted frame context or expression
   root changes. Routing between the static-field and root-relative paths is one deterministic API rule, and every
   row carries the full evidence report behind its value.
+- **Completion as you type, from evidence.** The Watch window offers a Visual Studio-style drop-down: C# keywords,
+  the evaluator's modeled types and their members, the adopted root's declared fields read from its validated
+  runtime type, and namespaces, types, and static fields enumerated from dump-module metadata. The candidate
+  universe is exactly the evaluator's own — completion never suggests a name the product cannot answer about.
 - **Expandable compound values, and tuples.** Arrays and tuples expand in the Watch grid the way Visual Studio
   expands them — `[i]` child rows for elements, `ItemN` or the declared name for tuple elements, recursively for
   nested compounds — with the children realized by the API as a bounded projection of the same evidence the

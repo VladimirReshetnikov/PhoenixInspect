@@ -226,6 +226,8 @@ public sealed class WatchViewModel : ObservableObject
     private readonly IShellServices shell;
     private readonly EvaluateViewModel evaluate;
     private readonly RelayCommand refreshCommand;
+    private readonly HashSet<string> pendingTypeMemberFetches = new(StringComparer.Ordinal);
+    private CompletionCatalog completionCatalog = CompletionCatalog.Empty;
 
     /// <summary>Creates the watch pane.</summary>
     /// <param name="shell">The shell services used for serialized session access.</param>
@@ -245,6 +247,9 @@ public sealed class WatchViewModel : ObservableObject
 
     /// <summary>Gets the command that commits pending edits and re-evaluates every watch.</summary>
     public RelayCommand RefreshCommand => refreshCommand;
+
+    /// <summary>Raised when the completion catalog gained facts, so an open drop-down can recompute.</summary>
+    public event EventHandler? CompletionCatalogChanged;
 
     /// <summary>Gets the pane caption.</summary>
     public static string Caption =>
@@ -286,9 +291,69 @@ public sealed class WatchViewModel : ObservableObject
 
         Raise(nameof(Summary));
         refreshCommand.RaiseCanExecuteChanged();
+        _ = RebuildCompletionCatalogAsync();
         if (shell.IsDumpOpen && HasCommittedEntries)
         {
             _ = RefreshAllAsync();
+        }
+    }
+
+    /// <summary>
+    /// Computes drop-down completions for one expression editor. The heavy facts — root fields and metadata type
+    /// names — come from the cached catalog; when a metadata type's members are not realized yet, the fetch runs
+    /// quietly and <see cref="CompletionCatalogChanged"/> lets the open drop-down recompute.
+    /// </summary>
+    /// <param name="text">The expression text being edited.</param>
+    /// <param name="caretOffset">The caret offset within <paramref name="text"/>.</param>
+    /// <returns>The completion result, possibly empty.</returns>
+    public CompletionResult GetCompletions(string text, int caretOffset)
+    {
+        var result = ExpressionCompletionService.Complete(completionCatalog, text ?? string.Empty, caretOffset);
+        if (result.PendingTypeMembers is { } typeFullName)
+        {
+            _ = FetchTypeMembersAsync(typeFullName);
+        }
+
+        return result;
+    }
+
+    private async Task RebuildCompletionCatalogAsync()
+    {
+        if (!shell.IsDumpOpen)
+        {
+            completionCatalog = CompletionCatalog.Empty;
+            return;
+        }
+
+        var root = evaluate.RootSelection;
+        var identifier = evaluate.RootIdentifier;
+        var built = await shell.RunQuietAsync(
+            session => ExpressionCompletionService.BuildCatalog(session, root, identifier)).ConfigureAwait(true);
+        if (built is not null)
+        {
+            completionCatalog = built;
+            CompletionCatalogChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private async Task FetchTypeMembersAsync(string typeFullName)
+    {
+        if (!shell.IsDumpOpen || !pendingTypeMemberFetches.Add(typeFullName))
+        {
+            return;
+        }
+
+        var members = await shell.RunQuietAsync(
+            session => ExpressionCompletionService.ListStaticMemberCompletions(session, typeFullName))
+            .ConfigureAwait(true);
+        pendingTypeMemberFetches.Remove(typeFullName);
+        if (!members.IsDefault)
+        {
+            completionCatalog = completionCatalog with
+            {
+                TypeMembers = completionCatalog.TypeMembers.SetItem(typeFullName, members),
+            };
+            CompletionCatalogChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -428,6 +493,7 @@ public sealed class WatchViewModel : ObservableObject
         }
 
         Raise(nameof(Summary));
+        _ = RebuildCompletionCatalogAsync();
         if (shell.IsDumpOpen && HasCommittedEntries)
         {
             _ = RefreshAllAsync();

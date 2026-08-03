@@ -1,7 +1,15 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Text;
 
 namespace PhoenixInspect.Host.Dump.ClrMD;
+
+/// <summary>
+/// The declared instance-field names of one heap object's validated runtime type, with the runtime-reported field
+/// type names, in declaration order. Names are metadata facts of the runtime type catalog; no value is read.
+/// </summary>
+/// <param name="Fields">The declared fields, bounded by the instance-field traversal cap.</param>
+public sealed record ClrmdInstanceFieldNameList(ImmutableArray<(string Name, string? TypeName)> Fields);
 
 /// <summary>
 /// Describes the runtime-selected storage location of one instance field in one dump object.

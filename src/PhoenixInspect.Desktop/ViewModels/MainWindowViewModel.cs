@@ -279,6 +279,26 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         }
     }
 
+    /// <inheritdoc />
+    public async Task<TResult?> RunQuietAsync<TResult>(Func<ClrmdDumpSession, TResult> work)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        if (!host.IsOpen)
+        {
+            return default;
+        }
+
+        try
+        {
+            return await host.QueryAsync(work).ConfigureAwait(true);
+        }
+        catch (Exception)
+        {
+            // Ambient projections never surface errors; the caller simply keeps its previous facts.
+            return default;
+        }
+    }
+
     /// <summary>Opens a specific dump file and reloads every pane.</summary>
     /// <param name="dumpPath">The full path of the dump file to open.</param>
     /// <returns>A task that completes once the panes reflect the new session.</returns>
