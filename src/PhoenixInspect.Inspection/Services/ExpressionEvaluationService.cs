@@ -55,6 +55,28 @@ public sealed record RootRelativeEvaluationOptions
 }
 
 /// <summary>
+/// The complete name-binding and routing context one watch expression evaluates under: the optional selected-frame
+/// name context, the Portable-PDB candidates, the optional adopted root, and the root-relative options.
+/// </summary>
+public sealed record WatchEvaluationContext
+{
+    /// <summary>Gets the frame whose namespace, import, and alias facts may bind a contextual name, or null.</summary>
+    public DumpSelectedFrameSelector? ContextSelector { get; init; }
+
+    /// <summary>Gets the Portable-PDB candidate paths offered to contextual name binding.</summary>
+    public ImmutableArray<string> PortablePdbCandidates { get; init; } = [];
+
+    /// <summary>Gets the adopted expression root, or null when only the static-field path can answer.</summary>
+    public RootSelection? Root { get; init; }
+
+    /// <summary>Gets the case-sensitive identifier a root-relative expression uses for the root.</summary>
+    public string RootIdentifier { get; init; } = "root";
+
+    /// <summary>Gets the root-relative evaluation options.</summary>
+    public RootRelativeEvaluationOptions Options { get; init; } = new();
+}
+
+/// <summary>
 /// Invokes the implemented expression entry points and projects their complete results into display reports.
 /// </summary>
 /// <remarks>
@@ -99,6 +121,69 @@ public static class ExpressionEvaluationService
             options.AdmitMemberChain
                 ? DumpExpressionLanguageProfile.MemberChainV2
                 : DumpExpressionLanguageProfile.FrozenW5);
+    }
+
+    /// <summary>
+    /// Evaluates one watch expression, routing it to the entry point its text and context select: the root-relative
+    /// path when a root is adopted and the expression references the root identifier as a standalone token, and the
+    /// static-field path otherwise.
+    /// </summary>
+    /// <param name="session">The open dump session.</param>
+    /// <param name="expression">The raw expression text, submitted without normalization.</param>
+    /// <param name="context">The complete watch context: name context, candidates, root, and options.</param>
+    /// <returns>A complete display report from whichever entry point answered.</returns>
+    /// <remarks>
+    /// The routing rule is deliberately lexical and total: it never parses, so it can never fail, and the report
+    /// itself states which path answered. The root-relative path also resolves context-free static names, so a
+    /// mixed expression such as <c>Some.Type.Count + root.Depth</c> routes there and both operands bind.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    public static EvaluationReport EvaluateWatch(
+        ClrmdDumpSession session,
+        string expression,
+        WatchEvaluationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(context);
+        var identifier = context.RootIdentifier.Trim();
+        return context.Root is { } root && identifier.Length > 0 && ReferencesIdentifier(expression, identifier)
+            ? EvaluateRootRelative(session, expression, root, identifier, context.Options)
+            : EvaluateStaticField(session, expression, context.ContextSelector, context.PortablePdbCandidates);
+    }
+
+    /// <summary>
+    /// States whether the expression text contains the identifier as a standalone token: an occurrence not
+    /// preceded by an identifier character, <c>.</c>, or <c>@</c>, and not followed by an identifier character.
+    /// </summary>
+    /// <param name="expression">The raw expression text.</param>
+    /// <param name="identifier">The case-sensitive identifier to find.</param>
+    /// <returns>Whether a standalone occurrence exists.</returns>
+    /// <remarks>
+    /// The scan is purely lexical — an occurrence inside a string literal counts. That keeps interpolated watches
+    /// such as <c>$"{root.Depth} queued"</c> routing to the root path, and a stray literal occurrence merely
+    /// selects the root path, whose resolvers answer everything the static path answers.
+    /// </remarks>
+    public static bool ReferencesIdentifier(string expression, string identifier)
+    {
+        if (string.IsNullOrEmpty(expression) || string.IsNullOrEmpty(identifier))
+        {
+            return false;
+        }
+
+        for (var index = 0; (index = expression.IndexOf(identifier, index, StringComparison.Ordinal)) >= 0; index++)
+        {
+            var before = index == 0 ? '\0' : expression[index - 1];
+            var after = index + identifier.Length >= expression.Length
+                ? '\0'
+                : expression[index + identifier.Length];
+            if (before is not ('.' or '@') && !char.IsLetterOrDigit(before) && before != '_'
+                && !char.IsLetterOrDigit(after) && after != '_')
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Evaluates a static-field expression, optionally consulting one selected frame for name context.</summary>

@@ -1,0 +1,96 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:PhoenixInspect.Desktop.Converters"
+             x:Class="PhoenixInspect.Desktop.Views.WatchPaneView"
+             Background="{DynamicResource Phoenix.PaneBackground}">
+    <!-- DataContext: WatchTool -->
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                BorderThickness="0,0,0,1"
+                Padding="8,4">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Content="Refresh"
+                        FontSize="11"
+                        Padding="8,2"
+                        Command="{Binding Panel.RefreshCommand}"
+                        AutomationProperties.AutomationId="RefreshWatches" />
+                <TextBlock Classes="secondary"
+                           Text="{Binding Panel.Caption}"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+        <Border DockPanel.Dock="Bottom"
+                BorderBrush="{DynamicResource Phoenix.SubtleBorder}"
+                BorderThickness="0,1,0,0"
+                Padding="8,4">
+            <TextBlock Text="{Binding Panel.Summary}"
+                       Classes="secondary"
+                       FontSize="10"
+                       TextWrapping="Wrap" />
+        </Border>
+        <DataGrid ItemsSource="{Binding Panel.Entries}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserResizeColumns="True"
+                  HeadersVisibility="Column"
+                  Margin="4,2">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Width="30">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Ellipse Width="9" Height="9"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     IsVisible="{Binding HasReport}"
+                                     Fill="{Binding Severity, Converter={x:Static conv:SeverityToBrushConverter.Instance}}"
+                                     ToolTip.Tip="{Binding Status}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!-- The expression cell is a live editor, not an edit-mode cell: every watch stays directly
+                     editable in place, and the trailing placeholder row adds a new watch on commit. -->
+                <DataGridTemplateColumn Header="Name" Width="300">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Expression, Mode=TwoWay}"
+                                     PlaceholderText="Add item to watch"
+                                     FontSize="12"
+                                     FontFamily="Cascadia Mono,Consolas,monospace"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     Padding="4,2"
+                                     VerticalContentAlignment="Center"
+                                     AutomationProperties.AutomationId="WatchExpressionBox"
+                                     KeyDown="OnExpressionKeyDown"
+                                     LostFocus="OnExpressionLostFocus" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="330" FontSize="12" FontFamily="Cascadia Mono,Consolas,monospace" />
+                <DataGridTextColumn Header="Kind" Binding="{Binding ValueKind}" Width="Auto" FontSize="12" />
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="Auto" FontSize="12" />
+                <DataGridTemplateColumn Width="34">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="✕"
+                                    FontSize="10"
+                                    Padding="5,1"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    IsVisible="{Binding ShowsDelete}"
+                                    ToolTip.Tip="Delete watch"
+                                    AutomationProperties.AutomationId="DeleteWatch"
+                                    Click="OnDeleteClick" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

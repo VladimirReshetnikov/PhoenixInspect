@@ -40,6 +40,24 @@ public sealed class ThreadsTool : Tool
     public ThreadsViewModel Panel { get; }
 }
 
+/// <summary>The dockable Watch tool pane.</summary>
+public sealed class WatchTool : Tool
+{
+    /// <summary>Creates the pane over its view model.</summary>
+    /// <param name="panel">The watch pane view model.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="panel"/> is null.</exception>
+    public WatchTool(WatchViewModel panel)
+    {
+        Panel = panel ?? throw new ArgumentNullException(nameof(panel));
+        Id = "Watch";
+        Title = "Watch 1";
+        CanClose = false;
+    }
+
+    /// <summary>Gets the pane view model the view binds to.</summary>
+    public WatchViewModel Panel { get; }
+}
+
 /// <summary>The dockable Locals tool pane.</summary>
 public sealed class LocalsTool : Tool
 {

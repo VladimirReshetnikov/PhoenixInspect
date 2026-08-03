@@ -20,6 +20,7 @@ public sealed class InspectionDockFactory : Factory
     private readonly CallStackTool callStack;
     private readonly ThreadsTool threads;
     private readonly LocalsTool locals;
+    private readonly WatchTool watch;
     private readonly ModulesTool modules;
     private readonly HeapSearchTool heapSearch;
     private readonly EvaluateTool evaluate;
@@ -30,6 +31,7 @@ public sealed class InspectionDockFactory : Factory
     /// <param name="callStack">The call-stack tool pane.</param>
     /// <param name="threads">The threads tool pane.</param>
     /// <param name="locals">The locals tool pane.</param>
+    /// <param name="watch">The watch tool pane.</param>
     /// <param name="modules">The modules tool pane.</param>
     /// <param name="heapSearch">The heap-search tool pane.</param>
     /// <param name="evaluate">The evaluation-console tool pane.</param>
@@ -40,6 +42,7 @@ public sealed class InspectionDockFactory : Factory
         CallStackTool callStack,
         ThreadsTool threads,
         LocalsTool locals,
+        WatchTool watch,
         ModulesTool modules,
         HeapSearchTool heapSearch,
         EvaluateTool evaluate,
@@ -49,6 +52,7 @@ public sealed class InspectionDockFactory : Factory
         this.callStack = callStack ?? throw new ArgumentNullException(nameof(callStack));
         this.threads = threads ?? throw new ArgumentNullException(nameof(threads));
         this.locals = locals ?? throw new ArgumentNullException(nameof(locals));
+        this.watch = watch ?? throw new ArgumentNullException(nameof(watch));
         this.modules = modules ?? throw new ArgumentNullException(nameof(modules));
         this.heapSearch = heapSearch ?? throw new ArgumentNullException(nameof(heapSearch));
         this.evaluate = evaluate ?? throw new ArgumentNullException(nameof(evaluate));
@@ -121,8 +125,8 @@ public sealed class InspectionDockFactory : Factory
                     Id = "BottomLeftTools",
                     Proportion = 0.55,
                     Alignment = Alignment.Bottom,
-                    // Locals tabs with the watch-style console, mirroring Visual Studio's bottom-left group.
-                    VisibleDockables = CreateList<IDockable>(evaluate, locals),
+                    // Watch and Locals tab with the console, mirroring Visual Studio's bottom-left group.
+                    VisibleDockables = CreateList<IDockable>(evaluate, watch, locals),
                     ActiveDockable = evaluate,
                     DockCapabilityPolicy = new DockCapabilityPolicy(),
                 },
@@ -169,6 +173,7 @@ public sealed class InspectionDockFactory : Factory
             [callStack.Id] = () => callStack,
             [threads.Id] = () => threads,
             [locals.Id] = () => locals,
+            [watch.Id] = () => watch,
             [modules.Id] = () => modules,
             [heapSearch.Id] = () => heapSearch,
             [evaluate.Id] = () => evaluate,

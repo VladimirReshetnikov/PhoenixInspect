@@ -40,11 +40,13 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         Locals = new LocalsViewModel(this);
         HeapObjects = new HeapObjectsViewModel(this);
         Evaluate = new EvaluateViewModel(this);
+        Watch = new WatchViewModel(this, Evaluate);
 
         factory = new InspectionDockFactory(
             new CallStackTool(CallStacks),
             new ThreadsTool(Threads),
             new LocalsTool(Locals),
+            new WatchTool(Watch),
             new ModulesTool(Modules),
             new HeapSearchTool(HeapObjects),
             new EvaluateTool(Evaluate),
@@ -60,6 +62,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         Locals.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
+        Watch.Reset();
         LoadRecentDumps();
     }
 
@@ -93,6 +96,9 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
     /// <summary>Gets the evaluation pane shared by the console and the evidence view.</summary>
     public EvaluateViewModel Evaluate { get; }
+
+    /// <summary>Gets the watch pane.</summary>
+    public WatchViewModel Watch { get; }
 
     /// <summary>Gets the command that prompts for and opens a dump file.</summary>
     public RelayCommand OpenDumpCommand => openCommand;
@@ -314,6 +320,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();
+        Watch.Reset();
         factory.CloseSourceDocuments();
 
         var length = host.DumpLength ?? 0;
@@ -432,6 +439,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         CallStacks.Reset();
         HeapObjects.Reset();
         Evaluate.Reset();
+        Watch.Reset();
         factory.CloseSourceDocuments();
         Raise(nameof(IsDumpOpen));
         closeCommand.RaiseCanExecuteChanged();

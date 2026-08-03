@@ -129,6 +129,10 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   `and`/`or`/`not` patterns (`root.QueueDepth switch { > 10 => "busy", _ => "idle" }`), plus `nameof`,
   `default(T)`, `sizeof(T)`, and `checked`/`unchecked` wrappers — all deterministic, with unsupported pattern
   kinds reported as typed stops.
+- **A Watch window with editable expressions.** Visual Studio's shape: edit any row in place, add a watch through
+  the trailing row, delete by clearing, and every row re-evaluates when the adopted frame context or expression
+  root changes. Routing between the static-field and root-relative paths is one deterministic API rule, and every
+  row carries the full evidence report behind its value.
 - **Answers you can audit.** Every result carries its status (`[exact]`, `[absent]`, `[partial]`, `[stopped]`,
   `[rejected]`), the binding facts and raw reads behind it, stable diagnostic codes, and a canonical replay
   digest. An exhaustively proven absence and a bounded partial read are reported as the distinct facts they are.

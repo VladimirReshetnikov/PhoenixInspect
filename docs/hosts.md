@@ -82,6 +82,7 @@ header.
 | Modules | `Modules`, `ReadModuleContentIdentity` | Every managed module instance with its reported length and image layout. Selecting one reads its counted metadata from dump memory and reports the MVID, counted length, metadata digest, raw reads, and applied bounds. |
 | Heap Search | `FindStrongHandleObjectsByTypeName` | A bounded strong-handle search over an exact ordinal type-name predicate, with the traversal counters and caps that say how exhaustive the result actually was. A match can be adopted as an expression root. |
 | Evaluate | `StaticFieldExpressionEvaluator`, `DumpExpressionEvaluator` | Both implemented expression entry points behind one immediate-window-style input, with a watch-style history grid. Selecting a history row drives the evidence pane. |
+| Watch 1 | `ExpressionEvaluationService.EvaluateWatch` | Editable watch expressions, like Visual Studio's Watch window: every row's expression edits in place, the trailing row adds a new watch, and rows re-evaluate when the adopted frame context, root, or root identifier changes. Which entry point answers is the API's single lexical rule — an expression referencing the adopted root's identifier evaluates root-relatively, everything else through the static-field path — and each row keeps its complete report. Expressions survive dump close and reopen. |
 | Result | — | The complete evidence behind the selected answer: status, stage, value, binding facts, raw reads, applied bounds, stable diagnostics, and canonical replay digest. |
 
 ## Source, verified before it is shown
