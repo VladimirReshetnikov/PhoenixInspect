@@ -51,7 +51,7 @@
                 <DataGridTextColumn Header="Managed ID" Binding="{Binding ManagedThreadId}" Width="Auto" FontSize="11" />
                 <DataGridTextColumn Header="Thread" Binding="{Binding RuntimeThreadAddress}" Width="Auto" FontSize="11"
                                     FontFamily="Cascadia Mono,Consolas,monospace" />
-                <DataGridTemplateColumn Header="Location (frame 0)" Width="*">
+                <DataGridTemplateColumn Header="Location (frame 0)" Width="340">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Classes="mono"

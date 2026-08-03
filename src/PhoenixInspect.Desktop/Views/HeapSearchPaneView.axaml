@@ -68,7 +68,7 @@
                       Margin="4,0">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Address" Binding="{Binding Address}" Width="Auto" />
-                    <DataGridTextColumn Header="Runtime type" Binding="{Binding TypeName}" Width="*" />
+                    <DataGridTextColumn Header="Runtime type" Binding="{Binding TypeName}" Width="300" />
                     <DataGridTextColumn Header="Handle" Binding="{Binding RootKind}" Width="Auto" />
                 </DataGrid.Columns>
             </DataGrid>

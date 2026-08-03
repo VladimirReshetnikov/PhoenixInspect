@@ -94,7 +94,7 @@
                             <DataGridTextColumn Header="Req" Binding="{Binding Requested}" Width="Auto" />
                             <DataGridTextColumn Header="Obs" Binding="{Binding Observed}" Width="Auto" />
                             <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="Auto" />
-                            <DataGridTextColumn Header="Bytes" Binding="{Binding Preview}" Width="*" FontFamily="Cascadia Mono,Consolas,monospace" />
+                            <DataGridTextColumn Header="Bytes" Binding="{Binding Preview}" Width="240" FontFamily="Cascadia Mono,Consolas,monospace" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </TabItem>
@@ -105,7 +105,7 @@
                               HeadersVisibility="Column"
                               GridLinesVisibility="None">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Bound" Binding="{Binding Name}" Width="*" FontFamily="Cascadia Mono,Consolas,monospace" />
+                            <DataGridTextColumn Header="Bound" Binding="{Binding Name}" Width="220" FontFamily="Cascadia Mono,Consolas,monospace" />
                             <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="Auto" />
                         </DataGrid.Columns>
                     </DataGrid>

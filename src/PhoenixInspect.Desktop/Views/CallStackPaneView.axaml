@@ -45,7 +45,7 @@
             <DataGrid.Columns>
                 <!-- Text columns pin the template columns' font size so every cell shares one row metric. -->
                 <DataGridTextColumn Header="#" Binding="{Binding FrameOrdinal}" Width="Auto" FontSize="11" />
-                <DataGridTemplateColumn Header="Name" Width="3*">
+                <DataGridTemplateColumn Header="Name" Width="420">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Classes="mono"
@@ -58,7 +58,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Source" Width="1.4*">
+                <DataGridTemplateColumn Header="Source" Width="200">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock FontSize="11"
