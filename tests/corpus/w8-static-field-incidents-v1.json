@@ -910,8 +910,8 @@
       },
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "binds-the-owner-name-exact-under-real-scoped-context-then-stops-at-the-declared-contextual-route-closed-construction-boundary-because-the-spelling-carries-type-arguments"
+        "status": "executed",
+        "reason": "contextual-owner-and-its-namespace-aliased-type-argument-both-bind-through-the-selected-frames-own-import-scope-over-one-real-full-dump"
       },
       "representative": false
     },
@@ -1178,8 +1178,8 @@
       },
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "converges-the-two-same-level-imports-on-one-exact-owner-name-once-the-referenced-forwarder-and-alias-modules-are-composed-then-stops-at-the-declared-contextual-route-closed-construction-boundary"
+        "status": "executed",
+        "reason": "two-same-level-imports-converge-on-one-owner-whose-type-argument-binds-through-the-same-scope-over-one-real-full-dump"
       },
       "representative": false
     },

@@ -569,30 +569,29 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(produced.Result.Sha256, control.Result.Sha256);
         }
 
-        // Incident 7 coordinator-namespace-alias-in-type-argument: the aliased spelling binds one exact owner name
-        // under the real import scope and then stops at the declared contextual closed-construction boundary, because
-        // a contextual spelling that itself carries type arguments still needs the import-scoped argument
-        // construction a later slice owns.
-        var aliasArgument = manifest.Incidents.Single(
-            static incident => incident.Id == "coordinator-namespace-alias-in-type-argument");
-        Assert.Equal("manifest-only", aliasArgument.RunnerExecutionStatus);
-        using (var snapshot = W8CorpusSnapshot.Materialize(aliasArgument))
-        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, aliasArgument.Shape))
+        // Incident 2 batch-typespec-alias-whole-owner: the whole owner is spelled through a TypeSpec alias whose
+        // target stays physically retained and undecoded, so the contextual binder can never make it a bound head and
+        // the row stops on the type-binding axis. Its argument-carrying siblings now execute end to end; this one
+        // waits on the decoded alias target rather than on any scope evidence.
+        var wholeOwnerAlias = manifest.Incidents.Single(
+            static incident => incident.Id == "batch-typespec-alias-whole-owner");
+        Assert.Equal("manifest-only", wholeOwnerAlias.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(wholeOwnerAlias))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, wholeOwnerAlias.Shape))
         {
             var produced = world.Evaluate(
-                aliasArgument.Expression,
-                aliasArgument.ReadWidth,
+                wholeOwnerAlias.Expression,
+                wholeOwnerAlias.ReadWidth,
                 null,
                 world.PausedFrameScopedContext());
             Assert.Equal(
-                "Admitted/Exact/NotRequired/NotRequired/Exact/Unsupported/NotReached/NotReached/NotReached/" +
-                "NotReached/NotReached/NoAnswer",
+                "Admitted/Exact/NotRequired/NotRequired/Partial/NotReached/NotReached/NotReached/NotReached/" +
+                "NotReached/NotReached/Partial",
                 Describe(produced.Result.Axes));
-            Assert.Contains(
-                StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred,
-                produced.Result.Provenance.DeclaredCoverageBoundaries);
+            Assert.Equal(DumpExpressionContextOutcome.Exact, produced.Result.Axes.Context);
+            Assert.Equal(DumpExpressionTypeBindingOutcome.Partial, produced.Result.Axes.TypeBinding);
             Assert.Null(produced.Result.SignedValue);
-            Assert.NotEqual(aliasArgument.PredeclaredAxes, produced.Result.Axes);
+            Assert.NotEqual(wholeOwnerAlias.PredeclaredAxes, produced.Result.Axes);
         }
 
         // Incident 29 request-active-local-shadows-bare-import: the projected lexical envelope produces exactly the
@@ -695,6 +694,13 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         incident.CounterfactualAction switch
         {
             "withhold-runtime-evidence" => world.EvaluateWithoutRuntimeEvidence(incident.Expression),
+
+            // The contextual route's own counterfactual: the same spelling with no scoped-context seam at all, which
+            // must stop on the context axis rather than silently resolving the name some other way.
+            "withhold-scoped-context" => world.Evaluate(
+                incident.Expression,
+                incident.ReadWidth,
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null),
             "evaluate-fully-qualified-control" => world.Evaluate(
                 incident.ControlExpression!,
                 incident.ReadWidth),

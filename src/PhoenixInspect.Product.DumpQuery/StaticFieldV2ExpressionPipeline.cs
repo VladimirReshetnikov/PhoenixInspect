@@ -76,7 +76,11 @@ public enum StaticFieldV2PipelineCoverageBoundary
     /// <summary>The declared field type is derived only from a ground primitive FieldSig.</summary>
     DeclaredFieldTypeLimitedToGroundPrimitiveSignature = 4,
 
-    /// <summary>A contextual or bare route binds an owner definition rather than a closed construction.</summary>
+    /// <summary>
+    /// A bare <c>using static</c> route binds an owner definition rather than a closed construction. The contextual
+    /// route no longer declares this: it constructs its owner through the scope that bound it, and the one head an
+    /// alias can leave unconstructed is the binder's own typed unsupported stop.
+    /// </summary>
     ContextualRouteClosedConstructionDeferred = 5,
 
     /// <summary>The unchanged W2/W6 suffix evaluator is rooted at the resolved reference through one caller seam.</summary>
@@ -2161,17 +2165,10 @@ public static class StaticFieldV2ExpressionPipeline
                         return TypeBindingStop(MapContextualBinding(contextualBinding.ResultKind));
                     }
 
-                    // A contextual spelling that itself carries type arguments still needs the import-scoped
-                    // argument construction a later slice owns, so that path keeps its declared deferred boundary.
-                    // An argument-free contextual owner now freezes its exact construction through the guarded
-                    // contextual issuer, tagged as contextually bound in the outcome's canonical bytes.
-                    if (RequiresClosedConstruction(descriptor!))
-                    {
-                        boundaries.Add(
-                            StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred);
-                        return ConstructionStop(DumpExpressionTypeConstructionOutcome.Unsupported);
-                    }
-
+                    // A contextual owner now freezes its exact construction through the guarded contextual issuer
+                    // whether or not the spelling carries type arguments: those arguments bind through the same
+                    // scope that bound the owner. Only a head an alias contributed can still need the undecoded
+                    // alias-target TypeSpec, and the issuer reports that as its own typed unsupported stop.
                     ownerConstruction = StaticFieldV2ClosedConstructionBinder.BindContextualOwnerConstruction(
                         contextualBinding,
                         request.AncestryPortfolio,
@@ -2252,6 +2249,9 @@ public static class StaticFieldV2ExpressionPipeline
 
         private StaticFieldV2ExpressionResult? BindBareRoot()
         {
+            // The bare route reaches its owner through the lexical envelope's using-static facts and binds that
+            // owner as a definition; unlike the contextual route it never closes a construction over it.
+            boundaries.Add(StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred);
             var partition = descriptor!.Partitions[0];
             suffix = partition.Suffix;
             if (request.ScopedContext is not { SuppliesLexicalEnvelope: true } source)
@@ -2559,18 +2559,6 @@ public static class StaticFieldV2ExpressionPipeline
                 }
             }
             return null;
-        }
-
-        private static bool RequiresClosedConstruction(StaticFieldV2ExpressionDescriptor projected)
-        {
-            foreach (var segment in projected.Segments)
-            {
-                if (segment.Arity != 0)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         private static readonly BoundedEcmaSignatureLimits FieldSignatureLimits = new(

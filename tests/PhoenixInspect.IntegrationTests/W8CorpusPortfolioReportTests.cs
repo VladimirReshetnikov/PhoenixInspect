@@ -38,12 +38,17 @@ public sealed class W8CorpusPortfolioReportTests
             Encoding.UTF8.GetBytes(first.HumanReport).AsSpan()
                 .SequenceEqual(Encoding.UTF8.GetBytes(second.HumanReport)));
 
+        // The report summarizes the manifest, so its digests are re-frozen whenever a row's runner-execution status
+        // legitimately changes. That status is runner bookkeeping, never a predeclared axis: this pair records
+        // thirteen executed and twenty-two manifest-only rows after scope-precise type-argument binding landed.
         Assert.Equal(
-            "18b3c1448653a375ced875ebccfb67f6c3adfc56219d63eed585df8d9b950499",
+            "edadd88f3b2879bbb1671aa618fc198f39761e16bfe6200b35f2c58bef41c390",
             Digest(first.MachineReport));
         Assert.Equal(
-            "828dce6d6651f48e788ffd9cd5efa5625bdfd571d0c43feec8dfd438098d8e35",
+            "1b5190b1408d15d34ab72ca659f736ddc32904a6f48e1acf78964e16cd928981",
             Digest(first.HumanReport));
+        Assert.Equal(13, first.ExecutedCount);
+        Assert.Equal(22, first.ManifestOnlyCount);
     }
 
     /// <summary>

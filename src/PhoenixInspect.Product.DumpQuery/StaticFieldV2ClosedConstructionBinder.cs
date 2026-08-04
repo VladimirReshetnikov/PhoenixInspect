@@ -850,11 +850,17 @@ public static class StaticFieldV2ClosedConstructionBinder
     /// <remarks>
     /// The contextual route binds its owner through scoped aliases, imports, and namespace levels rather than a
     /// metadata-global name, so the retained binding evidence of the issued outcome is the contextual binding
-    /// itself, tagged as such in the canonical bytes. This slice constructs a definition-bound contextual owner at
-    /// arity zero from the selected candidate's exact authority chain and validates its substituted constraints
-    /// exactly as the explicit route does. A generic contextual owner needs the decoded whole-owner alias-target
-    /// construction, which a later slice supplies; until then it is the declared typed unsupported stop rather
-    /// than a guessed construction.
+    /// itself, tagged as such in the canonical bytes. Type arguments the spelling itself carries are bound through
+    /// the same scope that bound the owner, so an argument named through a namespace alias or an import resolves the
+    /// way the source wrote it and never through a metadata-global fallback; a <c>global::</c>-qualified argument
+    /// keeps the explicit resolution it names.
+    /// <para>
+    /// Arities are matched innermost-first, because a C# spelling always ends at the innermost named type: the last
+    /// spelled owner segment supplies the innermost chain segment's arguments, the one before it the next outer, and
+    /// so on. Any chain segment left unspelled — the head an alias contributed — must introduce no generic parameter
+    /// at all, because its arguments could only come from the alias target's still-undecoded TypeSpec. That case
+    /// stays the declared typed unsupported stop rather than a guessed construction.
+    /// </para>
     /// </remarks>
     /// <param name="contextualBinding">The exact contextual binding whose selected candidate names the owner.</param>
     /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
@@ -914,15 +920,24 @@ public static class StaticFieldV2ClosedConstructionBinder
         }
 
         var ownerChain = classificationChain.MoveToImmutable();
-        if (candidate.FinalTypeDefinition.TotalGenericArity != 0)
+        if (!TryBindContextualArguments(
+                context,
+                contextualBinding.Expression,
+                candidate.Candidates[0],
+                chainSegments,
+                out var flattened))
+        {
+            return context.Stopped();
+        }
+
+        if (flattened.Length != candidate.FinalTypeDefinition.TotalGenericArity)
         {
             return context.Stopped(
-                StaticFieldV2ClosedConstructionResultKind.Unsupported,
-                StaticFieldV2ClosedConstructionIssue.ContextualConstructionRequiresDecodedAliasTarget,
+                StaticFieldV2ClosedConstructionResultKind.Invalid,
+                StaticFieldV2ClosedConstructionIssue.ArityDisagreement,
                 candidate.FinalTypeDefinitionToken);
         }
 
-        var flattened = ImmutableArray<MetadataClosedTypeIdentity>.Empty;
         if (!TryAdmitNamed(context, ownerChain, flattened, candidate.FinalTypeDefinitionToken))
         {
             return context.Stopped();
@@ -946,6 +961,98 @@ public static class StaticFieldV2ClosedConstructionBinder
             context.CumulativeArgumentCount,
             candidate.FinalTypeDefinitionToken,
             contextualBinding);
+    }
+
+    /// <summary>
+    /// Binds every closed argument a contextual owner spelling carries, matching arities innermost-first against the
+    /// selected candidate's authority chain.
+    /// </summary>
+    /// <remarks>
+    /// The spelled owner segments of the winning partition end at the innermost named type, so the two sequences are
+    /// aligned from their inner ends. Segments the spelling consumed as namespace text simply run out, which is why
+    /// the walk stops at the shorter of the two. A chain segment that outlives the spelling is a head an alias
+    /// contributed: it may introduce no generic parameter, because the only place its arguments could come from is
+    /// the alias target's undecoded TypeSpec.
+    /// </remarks>
+    /// <param name="context">The binding context, carrying the owner's exact scope.</param>
+    /// <param name="expression">The descriptor whose owner segments carry the spelled arguments.</param>
+    /// <param name="candidate">The winning contextual candidate naming the spelled partition.</param>
+    /// <param name="chainSegments">The selected candidate's outer-to-inner authority chain.</param>
+    /// <param name="flattened">The ordered outer-to-inner closed arguments on success.</param>
+    /// <returns><see langword="true"/> when every argument bound exactly.</returns>
+    private static bool TryBindContextualArguments(
+        BindContext context,
+        StaticFieldV2ExpressionDescriptor expression,
+        StaticFieldV2ContextualCandidateIdentity candidate,
+        ImmutableArray<MetadataNamedTypeDefinitionChainSegmentIdentity> chainSegments,
+        out ImmutableArray<MetadataClosedTypeIdentity> flattened)
+    {
+        flattened = ImmutableArray<MetadataClosedTypeIdentity>.Empty;
+        var segments = expression.Segments;
+        var spelledCount = expression.Partitions[candidate.PartitionIndex].FieldSegmentIndex;
+        var aligned = Math.Min(chainSegments.Length, spelledCount);
+        var unspelled = chainSegments.Length - aligned;
+
+        for (var index = 0; index < unspelled; index++)
+        {
+            if (chainSegments[index].IntroducedGenericArity is not 0)
+            {
+                context.Stop(
+                    StaticFieldV2ClosedConstructionResultKind.Unsupported,
+                    StaticFieldV2ClosedConstructionIssue.ContextualConstructionRequiresDecodedAliasTarget,
+                    null,
+                    0,
+                    chainSegments[index].TypeDefinitionToken);
+                return false;
+            }
+        }
+
+        var builder = ImmutableArray.CreateBuilder<MetadataClosedTypeIdentity>();
+        for (var index = 0; index < aligned; index++)
+        {
+            var chainSegment = chainSegments[unspelled + index];
+            var syntaxSegment = segments[spelledCount - aligned + index];
+            var syntaxArguments = syntaxSegment.TypeArguments;
+            if (chainSegment.IntroducedGenericArity is not { } introducedArity)
+            {
+                context.Stop(
+                    StaticFieldV2ClosedConstructionResultKind.NonExact,
+                    StaticFieldV2ClosedConstructionIssue.DefinitionClassificationAbsent,
+                    null,
+                    0,
+                    chainSegment.TypeDefinitionToken);
+                return false;
+            }
+
+            if (introducedArity != syntaxArguments.Length)
+            {
+                // An unspelled generic head is the alias-target case; anything else genuinely disagrees on arity.
+                context.Stop(
+                    syntaxArguments.IsEmpty
+                        ? StaticFieldV2ClosedConstructionResultKind.Unsupported
+                        : StaticFieldV2ClosedConstructionResultKind.Invalid,
+                    syntaxArguments.IsEmpty
+                        ? StaticFieldV2ClosedConstructionIssue.ContextualConstructionRequiresDecodedAliasTarget
+                        : StaticFieldV2ClosedConstructionIssue.ArityDisagreement,
+                    null,
+                    0,
+                    chainSegment.TypeDefinitionToken);
+                return false;
+            }
+
+            foreach (var syntaxArgument in syntaxArguments)
+            {
+                var bound = BindType(context, syntaxArgument);
+                if (bound is null)
+                {
+                    return false;
+                }
+                builder.Add(bound);
+            }
+        }
+
+        flattened = builder.ToImmutable();
+        return true;
     }
 
     private static MetadataClosedTypeIdentity? BindType(BindContext context, StaticFieldV2TypeSyntax syntax) =>
@@ -987,7 +1094,7 @@ public static class StaticFieldV2ClosedConstructionBinder
         }
 
         var nameSegments = syntax.NameSegments;
-        if (!TryResolveNamedArgument(context, nameSegments, out var module, out var chain, out var namespaceCount))
+        if (!TryResolveArgumentName(context, syntax, nameSegments, out var module, out var chain, out var namespaceCount))
         {
             return null;
         }
@@ -1185,6 +1292,62 @@ public static class StaticFieldV2ClosedConstructionBinder
             }
         }
         return true;
+    }
+
+    /// <summary>
+    /// Resolves one spelled type-argument name by the route its own spelling and its owner's route select.
+    /// </summary>
+    /// <remarks>
+    /// A <c>global::</c>-qualified argument is metadata-global by definition and always takes the explicit
+    /// resolution. Every other argument of a contextually bound owner resolves through that owner's scope and
+    /// through nothing else — there is no metadata-global fallback, because a name that the scope does not reach is
+    /// not the name the source wrote.
+    /// </remarks>
+    private static bool TryResolveArgumentName(
+        BindContext context,
+        StaticFieldV2TypeSyntax syntax,
+        ImmutableArray<StaticFieldV2TypeNameSegment> nameSegments,
+        out StaticFieldMetadataModuleIdentity module,
+        out MetadataNamedTypeDefinitionChainIdentity chain,
+        out int namespaceSegmentCount)
+    {
+        if (context.ScopedContext is not { } scopedContext ||
+            syntax.AliasQualifier is { Kind: StaticFieldV2AliasKind.Global })
+        {
+            return TryResolveNamedArgument(context, nameSegments, out module, out chain, out namespaceSegmentCount);
+        }
+
+        module = null!;
+        chain = null!;
+        namespaceSegmentCount = 0;
+        var resolution = StaticFieldV2ScopedContextBinder.ResolveScopedTypeName(
+            scopedContext,
+            syntax.AliasQualifier,
+            nameSegments);
+        switch (resolution.ResultKind)
+        {
+            case StaticFieldV2ContextualBindingResultKind.Exact:
+                module = resolution.SourceModule!;
+                chain = resolution.Chain!;
+                namespaceSegmentCount = resolution.NamespacePartCount;
+                return true;
+            case StaticFieldV2ContextualBindingResultKind.Ambiguous:
+                context.Stop(
+                    StaticFieldV2ClosedConstructionResultKind.Invalid,
+                    StaticFieldV2ClosedConstructionIssue.TypeArgumentAmbiguous,
+                    null,
+                    0,
+                    null);
+                return false;
+            default:
+                context.Stop(
+                    StaticFieldV2ClosedConstructionResultKind.NonExact,
+                    StaticFieldV2ClosedConstructionIssue.TypeArgumentAbsent,
+                    null,
+                    0,
+                    null);
+                return false;
+        }
     }
 
     private static bool TryResolveNamedArgument(
@@ -1799,6 +1962,16 @@ public static class StaticFieldV2ClosedConstructionBinder
         }
 
         internal MetadataAncestryAuthorityPortfolioIdentity Ancestry { get; }
+
+        /// <summary>
+        /// Gets the exact scoped context of a contextual construction, or null for the metadata-global route.
+        /// </summary>
+        /// <remarks>
+        /// Its presence is what selects the resolution rule for an unqualified type argument: inside a scope a name
+        /// resolves by that scope's rules and never by a metadata-global lookup, so this is a route selector rather
+        /// than an optional extra source.
+        /// </remarks>
+        internal StaticFieldV2ScopedContextOutcome? ScopedContext => contextualBinding?.Context;
 
         internal MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementations { get; }
 

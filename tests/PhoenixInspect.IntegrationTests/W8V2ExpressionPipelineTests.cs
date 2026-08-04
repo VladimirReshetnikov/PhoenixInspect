@@ -92,6 +92,86 @@ public sealed class W8V2ExpressionPipelineTests
     }
 
     /// <summary>
+    /// Proves a contextual spelling that itself carries a type argument closes its owner construction through the
+    /// same scope that bound the owner, converging on the fully qualified spelling's construction identity, and that
+    /// an argument the scope cannot reach stops typed instead of falling back to a metadata-global lookup.
+    /// </summary>
+    /// <remarks>
+    /// The three spellings below share one namespace import. The first names its argument through that import, the
+    /// second names the same argument with an explicit <c>global::</c> qualifier the argument itself carries, and
+    /// the third names an argument the import does not reach at all. The first two must produce byte-identical owner
+    /// constructions; the third must stop, and the fully qualified control proves the stop is a scope fact rather
+    /// than the argument being unbindable anywhere.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Contextual_owner_arguments_bind_through_the_owner_scope_and_never_fall_back()
+    {
+        var world = BuildWorld();
+        var qualified = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "global::Pipe.App.GenericSlot<global::Pipe.App.Holder>.Current",
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        var contextual = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "GenericSlot<Holder>.Current",
+            scopedContext: NamespaceImportContext(world, "Pipe.App"),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        var mixed = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "GenericSlot<global::Pipe.App.Holder>.Current",
+            scopedContext: NamespaceImportContext(world, "Pipe.App"),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+
+        foreach (var result in new[] { qualified, contextual, mixed })
+        {
+            AssertExactAxes(result);
+            Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, result.Axes.TypeConstruction);
+            Assert.Equal(42, result.SignedValue);
+        }
+
+        Assert.Equal(StaticFieldV2ExpressionRoute.ExplicitMetadataGlobal, qualified.Route);
+        Assert.Equal(StaticFieldV2ExpressionRoute.Contextual, contextual.Route);
+        Assert.Equal(StaticFieldV2ExpressionRoute.Contextual, mixed.Route);
+
+        // One construction identity, three spellings; the retained binding evidence still distinguishes the routes.
+        var qualifiedOwner = qualified.Provenance.OwnerConstruction!;
+        var contextualOwner = contextual.Provenance.OwnerConstruction!;
+        Assert.Equal(qualifiedOwner.OwnerConstruction!.Sha256, contextualOwner.OwnerConstruction!.Sha256);
+        Assert.Equal(
+            qualifiedOwner.OwnerConstruction.Sha256,
+            mixed.Provenance.OwnerConstruction!.OwnerConstruction!.Sha256);
+        Assert.Single(contextualOwner.FlattenedArguments);
+        Assert.NotNull(qualifiedOwner.NameBinding);
+        Assert.Null(qualifiedOwner.ContextualBinding);
+        Assert.Null(contextualOwner.NameBinding);
+        Assert.NotNull(contextualOwner.ContextualBinding);
+        Assert.NotEqual(qualified.Sha256, contextual.Sha256);
+        Assert.DoesNotContain(
+            StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred,
+            contextual.Provenance.DeclaredCoverageBoundaries);
+
+        // An argument outside the imported namespace is a typed stop, never a metadata-global fallback.
+        var unreachable = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "GenericSlot<LibHolder>.Current",
+            scopedContext: NamespaceImportContext(world, "Pipe.App"),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        Assert.Equal(DumpExpressionTypeBindingOutcome.Exact, unreachable.Axes.TypeBinding);
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Partial, unreachable.Axes.TypeConstruction);
+        Assert.Equal(
+            StaticFieldV2ClosedConstructionIssue.TypeArgumentAbsent,
+            unreachable.Provenance.OwnerConstruction!.Issue);
+        Assert.Null(unreachable.SignedValue);
+
+        var reachableControl = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "global::Pipe.App.GenericSlot<global::Pipe.Lib.LibHolder>.Current",
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, reachableControl.Axes.TypeConstruction);
+    }
+
+    /// <summary>
     /// Proves an extern-alias contextual route reaches the identical owner and field identity as the fully qualified
     /// spelling of the same declaration while retaining materially different provenance.
     /// </summary>
@@ -801,6 +881,16 @@ public sealed class W8V2ExpressionPipelineTests
             0x7000,
             0x8000,
             arguments);
+
+    private static StaticFieldV2ScopedContextSource NamespaceImportContext(PipelineWorld world, string imported) =>
+        StaticFieldV2ScopedContextSource.Create(() => ContextRequest(
+            world,
+            Scopes([DumpPortablePdbImportFact.NamespaceImport(
+                ScopeToken(1),
+                0,
+                1,
+                imported,
+                [0xAB, 0x02])])));
 
     private static StaticFieldV2ScopedContextSource ExternAliasContext(PipelineWorld world) =>
         StaticFieldV2ScopedContextSource.Create(() => ExternAliasContextRequest(world));

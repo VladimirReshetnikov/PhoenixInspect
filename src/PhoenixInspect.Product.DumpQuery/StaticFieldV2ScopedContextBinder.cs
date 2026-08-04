@@ -1877,6 +1877,64 @@ public sealed class StaticFieldV2ContextualBindingOutcome : IEquatable<StaticFie
             observedCount);
 }
 
+/// <summary>Freezes the only two facts scoped name resolution reads from one spelled dotted name part.</summary>
+/// <remarks>
+/// An owner spelling and a type-argument spelling are separate syntax contracts, but scope resolution consults
+/// exactly the same two facts of each part: its decoded simple name and its segment-local generic arity. Projecting
+/// both onto this view is what lets one level walk — one alias-shadowing, first-viable-level, same-level accumulation
+/// and convergence rule — answer both, instead of a second rule drifting out of step with the first.
+/// </remarks>
+/// <param name="Name">The exact decoded simple name of this part.</param>
+/// <param name="Arity">The exact segment-local generic arity of this part.</param>
+internal readonly record struct StaticFieldV2ScopedNamePart(string Name, int Arity)
+{
+    /// <summary>Projects the owner segments of one expression descriptor.</summary>
+    /// <param name="segments">The descriptor's ordered name segments.</param>
+    /// <returns>The ordered name-part view of those segments.</returns>
+    internal static ImmutableArray<StaticFieldV2ScopedNamePart> From(
+        ImmutableArray<StaticFieldV2ExpressionNameSegment> segments)
+    {
+        var parts = ImmutableArray.CreateBuilder<StaticFieldV2ScopedNamePart>(segments.Length);
+        foreach (var segment in segments)
+        {
+            parts.Add(new StaticFieldV2ScopedNamePart(segment.Identifier.DecodedText, segment.Arity));
+        }
+
+        return parts.MoveToImmutable();
+    }
+
+    /// <summary>Projects the name segments of one source type-argument spelling.</summary>
+    /// <param name="segments">The argument's ordered name segments.</param>
+    /// <returns>The ordered name-part view of those segments.</returns>
+    internal static ImmutableArray<StaticFieldV2ScopedNamePart> From(
+        ImmutableArray<StaticFieldV2TypeNameSegment> segments)
+    {
+        var parts = ImmutableArray.CreateBuilder<StaticFieldV2ScopedNamePart>(segments.Length);
+        foreach (var segment in segments)
+        {
+            parts.Add(new StaticFieldV2ScopedNamePart(segment.Identifier.DecodedText, segment.Arity));
+        }
+
+        return parts.MoveToImmutable();
+    }
+}
+
+/// <summary>Freezes the outcome of resolving one spelled type name through an exact scoped context.</summary>
+/// <remarks>
+/// This is the argument-side counterpart of the owner-side contextual binding: same level walk, same typed
+/// dispositions, but no retained partition or level record, because a type argument is a component of one owner
+/// construction rather than an independently reported binding.
+/// </remarks>
+/// <param name="ResultKind">The typed disposition of the resolution.</param>
+/// <param name="SourceModule">The module whose chain catalog produced the exact chain, or null when non-exact.</param>
+/// <param name="Chain">The exact matched outer-to-inner named-TypeDef chain, or null when non-exact.</param>
+/// <param name="NamespacePartCount">The count of leading spelled parts the exact match consumed as namespace text.</param>
+internal readonly record struct StaticFieldV2ScopedTypeNameResolution(
+    StaticFieldV2ContextualBindingResultKind ResultKind,
+    StaticFieldMetadataModuleIdentity? SourceModule,
+    MetadataNamedTypeDefinitionChainIdentity? Chain,
+    int NamespacePartCount);
+
 /// <summary>Projects one exact active ImportScope chain and binds contextual owner names through it.</summary>
 /// <remarks>
 /// This binder owns the contextual route only: an absent alias qualifier or a named alias qualifier. The exact
@@ -2417,8 +2475,55 @@ public static class StaticFieldV2ScopedContextBinder
         bool named,
         ImmutableArray<StaticFieldV2ScopedImportProjection> aliasProjections)
     {
-        var segments = expression.Segments;
         var ownerSegmentCount = partition.FieldSegmentIndex;
+        var walk = WalkLevels(
+            context,
+            state,
+            StaticFieldV2ScopedNamePart.From(expression.Segments),
+            ownerSegmentCount,
+            partitionIndex,
+            named,
+            aliasProjections);
+        if (walk is not { } completed)
+        {
+            return null;
+        }
+
+        var groups = GroupCandidates(completed.Winners);
+        if (groups.Length > StaticFieldV2ContextualBindingOutcome.MaximumGroupedPhysicalCandidateCount)
+        {
+            state.StopWithGroupBound();
+            return null;
+        }
+
+        return StaticFieldV2ContextualBindingOutcome.IssuePartitionResult(
+            partitionIndex,
+            partition.CandidateKind,
+            ownerSegmentCount,
+            completed.Levels,
+            groups.IsEmpty ? null : completed.SelectedLevelIndex,
+            groups);
+    }
+
+    /// <summary>
+    /// Walks the scope levels once for one spelled name and returns every winning candidate of the first viable
+    /// level, or null when the walk stopped.
+    /// </summary>
+    /// <remarks>
+    /// This is the single landed level rule: an innermost-first walk in which a same-level alias hides a same-level
+    /// declaration, a level's own declarations are examined before that level's namespace imports, every source at
+    /// one level accumulates before the walk stops, and the first level producing any candidate ends the walk. Owner
+    /// spellings and type-argument spellings both resolve through exactly this method.
+    /// </remarks>
+    private static LevelWalk? WalkLevels(
+        StaticFieldV2ScopedContextOutcome context,
+        BindingState state,
+        ImmutableArray<StaticFieldV2ScopedNamePart> segments,
+        int ownerSegmentCount,
+        int partitionIndex,
+        bool named,
+        ImmutableArray<StaticFieldV2ScopedImportProjection> aliasProjections)
+    {
         var levels = ImmutableArray.CreateBuilder<StaticFieldV2ContextualLevelResult>();
         var winning = new List<StaticFieldV2ContextualCandidateIdentity>();
         int? selectedLevelIndex = null;
@@ -2478,7 +2583,7 @@ public static class StaticFieldV2ScopedContextBinder
                     {
                         if (import.IsShadowed ||
                             import.Alias is not { } alias ||
-                            !string.Equals(alias, segments[0].Identifier.DecodedText, StringComparison.Ordinal) ||
+                            !string.Equals(alias, segments[0].Name, StringComparison.Ordinal) ||
                             segments[0].Arity != 0 ||
                             import.Kind == StaticFieldV2ScopedImportKind.ExternAlias)
                         {
@@ -2566,21 +2671,94 @@ public static class StaticFieldV2ScopedContextBinder
             }
         }
 
-        var groups = GroupCandidates(winning);
-        if (groups.Length > StaticFieldV2ContextualBindingOutcome.MaximumGroupedPhysicalCandidateCount)
+        return new LevelWalk(levels.ToImmutable(), winning, selectedLevelIndex);
+    }
+
+    /// <summary>Resolves one spelled type-argument name through an exact scoped context.</summary>
+    /// <remarks>
+    /// A type argument spelled inside a scope resolves by that scope's rules and by nothing else, so this runs the
+    /// same level walk the owner spelling runs and never falls back to a metadata-global lookup. A caller holding a
+    /// <c>global::</c>-qualified spelling must not call here at all: that spelling is metadata-global by definition
+    /// and the explicit resolution owns it.
+    /// </remarks>
+    /// <param name="context">The exact projected scoped context.</param>
+    /// <param name="aliasQualifier">The argument's own alias qualifier, or null when it carries none.</param>
+    /// <param name="nameSegments">The argument's ordered spelled name segments.</param>
+    /// <returns>One exact module and chain, or a typed non-exact disposition.</returns>
+    internal static StaticFieldV2ScopedTypeNameResolution ResolveScopedTypeName(
+        StaticFieldV2ScopedContextOutcome context,
+        StaticFieldV2AliasQualifier? aliasQualifier,
+        ImmutableArray<StaticFieldV2TypeNameSegment> nameSegments)
+    {
+        if (context.ResultKind != StaticFieldV2ScopedContextResultKind.Exact ||
+            aliasQualifier is { Kind: StaticFieldV2AliasKind.Global } ||
+            nameSegments.IsDefaultOrEmpty)
         {
-            state.StopWithGroupBound();
-            return null;
+            return new StaticFieldV2ScopedTypeNameResolution(
+                StaticFieldV2ContextualBindingResultKind.NonExact,
+                null,
+                null,
+                0);
         }
 
-        return StaticFieldV2ContextualBindingOutcome.IssuePartitionResult(
-            partitionIndex,
-            partition.CandidateKind,
-            ownerSegmentCount,
-            levels.ToImmutable(),
-            groups.IsEmpty ? null : selectedLevelIndex,
-            groups);
+        var named = aliasQualifier is { Kind: StaticFieldV2AliasKind.Named };
+        var aliasProjections = named
+            ? context.ActiveAliasProjections(aliasQualifier!.Alias!.DecodedText)
+            : [];
+        var walk = WalkLevels(
+            context,
+            new BindingState(context),
+            StaticFieldV2ScopedNamePart.From(nameSegments),
+            nameSegments.Length,
+            partitionIndex: 0,
+            named,
+            aliasProjections);
+        if (walk is not { } completed)
+        {
+            return new StaticFieldV2ScopedTypeNameResolution(
+                StaticFieldV2ContextualBindingResultKind.NonExact,
+                null,
+                null,
+                0);
+        }
+
+        var groups = GroupCandidates(completed.Winners);
+        if (groups.IsEmpty)
+        {
+            // An absence is claimable only over exhaustive evidence; retained non-exact imports keep it non-exact.
+            return new StaticFieldV2ScopedTypeNameResolution(
+                context.IsExhaustive
+                    ? StaticFieldV2ContextualBindingResultKind.Absent
+                    : StaticFieldV2ContextualBindingResultKind.NonExact,
+                null,
+                null,
+                0);
+        }
+        if (groups.Length > 1)
+        {
+            return new StaticFieldV2ScopedTypeNameResolution(
+                StaticFieldV2ContextualBindingResultKind.Ambiguous,
+                null,
+                null,
+                0);
+        }
+
+        var candidate = groups[0].Candidates[0];
+        return new StaticFieldV2ScopedTypeNameResolution(
+            StaticFieldV2ContextualBindingResultKind.Exact,
+            groups[0].SourceModule,
+            candidate.Chain,
+            candidate.NamespaceSegmentCount);
     }
+
+    /// <summary>Carries one completed level walk: its level record, its winners, and the level that produced them.</summary>
+    /// <param name="Levels">The ordered per-level record of every examined level.</param>
+    /// <param name="Winners">Every candidate the first viable level produced, in accumulation order.</param>
+    /// <param name="SelectedLevelIndex">The level that produced the winners, or null when none did.</param>
+    private readonly record struct LevelWalk(
+        ImmutableArray<StaticFieldV2ContextualLevelResult> Levels,
+        List<StaticFieldV2ContextualCandidateIdentity> Winners,
+        int? SelectedLevelIndex);
 
     private static int InnerLevelOf(
         StaticFieldV2ScopedContextOutcome context,
@@ -2594,7 +2772,7 @@ public static class StaticFieldV2ScopedContextBinder
         BindingState state,
         LevelCollector collector,
         StaticFieldV2ScopedImportProjection alias,
-        ImmutableArray<StaticFieldV2ExpressionNameSegment> segments,
+        ImmutableArray<StaticFieldV2ScopedNamePart> segments,
         int start,
         int count,
         bool allowExternAlias)
@@ -2668,7 +2846,7 @@ public static class StaticFieldV2ScopedContextBinder
         BindingState state,
         LevelCollector collector,
         StaticFieldV2ScopedImportProjection alias,
-        ImmutableArray<StaticFieldV2ExpressionNameSegment> segments,
+        ImmutableArray<StaticFieldV2ScopedNamePart> segments,
         int start,
         int count)
     {
@@ -2764,7 +2942,7 @@ public static class StaticFieldV2ScopedContextBinder
         StaticFieldMetadataModuleIdentity? restrictedModule,
         StaticFieldV2ContextualCandidateSource source,
         StaticFieldV2ScopedImportProjection? contributingImport,
-        ImmutableArray<StaticFieldV2ExpressionNameSegment> segments,
+        ImmutableArray<StaticFieldV2ScopedNamePart> segments,
         int start,
         int count)
     {
@@ -2839,7 +3017,7 @@ public static class StaticFieldV2ScopedContextBinder
     private static StaticFieldV2ContextualRejectionReason? ExamineSegments(
         ImmutableArray<MetadataNamedTypeDefinitionChainSegmentIdentity> chainSegments,
         int chainStart,
-        ImmutableArray<StaticFieldV2ExpressionNameSegment> segments,
+        ImmutableArray<StaticFieldV2ScopedNamePart> segments,
         int segmentStart,
         int count)
     {
@@ -2854,7 +3032,7 @@ public static class StaticFieldV2ScopedContextBinder
             }
             if (!string.Equals(
                     projection.ProjectedSimpleName,
-                    syntaxSegment.Identifier.DecodedText,
+                    syntaxSegment.Name,
                     StringComparison.Ordinal))
             {
                 return StaticFieldV2ContextualRejectionReason.SimpleNameMismatch;
@@ -2873,7 +3051,7 @@ public static class StaticFieldV2ScopedContextBinder
 
     private static string CombineNamespace(
         string prefix,
-        ImmutableArray<StaticFieldV2ExpressionNameSegment> segments,
+        ImmutableArray<StaticFieldV2ScopedNamePart> segments,
         int start,
         int count)
     {
@@ -2885,7 +3063,7 @@ public static class StaticFieldV2ScopedContextBinder
         var parts = new string[count];
         for (var index = 0; index < count; index++)
         {
-            parts[index] = segments[start + index].Identifier.DecodedText;
+            parts[index] = segments[start + index].Name;
         }
         var joined = string.Join('.', parts);
         return prefix.Length == 0 ? joined : $"{prefix}.{joined}";

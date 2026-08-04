@@ -1102,10 +1102,21 @@ argument-free contextual owner freezes its exact arity-zero construction through
 `BindContextualOwnerConstruction` issuer with the same constraint validation the explicit route applies. The explicit
 and contextual spellings of one owner now converge on one constructed identity with distinct binding provenance,
 discharging that W8.5 exit-gate statement at the composition layer. The five W8-internal result goldens embedding the
-outcome's bytes were re-frozen as this change's declared content; W1-W7 goldens are untouched. The deferred boundary
-remains only for a contextual spelling that itself carries type arguments and for generic alias-target constructions,
-which need the decoded whole-owner alias TypeSpec a later slice supplies as the declared
-`ContextualConstructionRequiresDecodedAliasTarget` stop.
+outcome's bytes were re-frozen as this change's declared content; W1-W7 goldens are untouched.
+
+The contextual route now closes a construction whether or not the spelling carries type arguments, so the pipeline
+boundary that named the deferral is retired for that route and retained only for the bare `using static` route, which
+still binds an owner definition. Arguments a contextual spelling carries bind through the same scope that bound the
+owner: one level walk — one alias-shadowing, first-viable-level, same-level accumulation and convergence rule —
+answers the owner spelling and the argument spelling alike, because both are projected onto the same two facts each
+name part contributes, its decoded simple name and its segment-local arity. A `global::`-qualified argument keeps the
+explicit metadata-global resolution it names; every other argument resolves through the scope and through nothing
+else, so an argument the scope cannot reach is the typed `TypeArgumentAbsent` stop rather than a metadata-global
+fallback. Arities are matched innermost-first, because a C# spelling always ends at the innermost named type; a chain
+segment an alias contributed and the spelling never named must introduce no generic parameter, and otherwise stays
+the declared `ContextualConstructionRequiresDecodedAliasTarget` stop, since its arguments could come only from the
+alias target's still-undecoded TypeSpec. A whole-owner TypeSpec alias remains blocked at name binding for the same
+undecoded-target reason.
 
 The W2/W6 suffix is now evaluated end to end at `727dbdb7d`: the pipeline hands the resolved non-null static-field
 reference address and the frozen suffix descriptor to a caller-supplied member-chain evidence seam
@@ -1212,19 +1223,24 @@ reader does not surface from the physical nondecreasing-list invariant. It also 
 module a profile actually loaded, so the forwarder and alias modules the batch and workflow imports converge through
 enter their portfolios; a companion a profile never loaded is a physical fact of that profile and is not fabricated.
 
-**Remaining, with every recorded reason now replaced by a produced finding.** Under those projections the contextual
-and bare rows reach materially further, and each stops at one named landed boundary rather than at a runner gap:
-an argument-free contextual owner reaches its predeclared exact terminal, with the fully qualified control converging
-on the same construction identity and value through the explicit route and the two outcomes carrying distinct binding
-provenance — the W8.5 convergence statement, now proved over a real dump; a contextual spelling that carries type
-arguments binds one exact owner name and stops at the declared `ContextualRouteClosedConstructionDeferred` boundary;
-a whole-owner or ground TypeSpec alias stops at `Partial` because the alias target stays undecoded; the bare
-`using static` rows certify a complete lexical envelope and then stop at the constructed using-static target or, for
-the property-shares-a-name row, at a declaration absence because no landed catalog models the Property table; and the
-active-local row produces exactly the predeclared `Shadowed` certificate. Every one of these rows stays manifest-only
-because at least one produced axis differs from its frozen predeclaration, and each divergence is asserted as a
-finding rather than retuned. The three W8.1-admitted branches are covered: thread-relative and frame-value execute end
-to end, and the RVA branch reaches its predeclared exact value over the corrected fixture (below).
+**Two more incidents execute, and every remaining recorded reason is now a produced finding.** With scope-precise
+argument binding landed, `coordinator-namespace-alias-in-type-argument` and `batch-import-forwarder-convergence`
+execute end to end over their own real dumps with all twelve produced axes equal to their predeclared rows and passing
+counterfactuals, raising the executed count to thirteen of thirty-five. The first binds an owner and a
+namespace-aliased type argument through the selected frame's own import scope; the second converges two same-level
+imports on one owner whose argument binds through that same scope.
+
+The rows that stay manifest-only each stop at one named landed boundary rather than at a runner gap: an argument-free
+contextual owner reaches its predeclared exact terminal, with the fully qualified control converging on the same
+construction identity and value through the explicit route and the two outcomes carrying distinct binding provenance —
+the W8.5 convergence statement, proved over a real dump — but its predeclared row spelled `typeConstruction` as
+`NotRequired`; a whole-owner or ground TypeSpec alias stops at `Partial` because the alias target stays undecoded; the
+bare `using static` rows certify a complete lexical envelope and then stop at the constructed using-static target or,
+for the property-shares-a-name row, at a declaration absence because no landed catalog models the Property table; and
+the active-local row produces exactly the predeclared `Shadowed` certificate under a context axis its predeclaration
+spelled `NotRequired`. Each divergence is asserted as a finding rather than retuned. The three W8.1-admitted branches
+are covered: thread-relative and frame-value execute end to end, and the RVA branch reaches its predeclared exact
+value over the corrected fixture (below).
 
 The owner-`VAR` field-signature decoder landed at `0b6bc7a69` and, in doing so, disproved the reason previously
 recorded against the two generic-`VAR` incidents. Real runs show neither is blocked by the decoder: the nullable
