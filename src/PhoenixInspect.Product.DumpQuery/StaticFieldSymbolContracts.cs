@@ -5767,11 +5767,109 @@ public sealed class StaticFieldNameExpansion : IEquatable<StaticFieldNameExpansi
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
+/// <summary>
+/// Freezes the three physical declaration-side table row counts observed alongside one exact module search.
+/// </summary>
+/// <remarks>
+/// The bundle is all-or-nothing: its presence asserts that every count in it was independently observed from the
+/// same image the surrounding search fact describes, and its absence asserts that none of them was. That is why the
+/// counts are non-nullable here and the bundle itself is the optional thing — a per-count option would let one
+/// observed and two unobserved counts masquerade as a complete observation.
+/// <para>
+/// These three tables are counted but never enumerated, because the shared metadata reader projects no rows for any
+/// of them. A count is still exact physical evidence: it is what lets a catalog built from the parent side prove
+/// that it collected every row rather than merely many rows.
+/// </para>
+/// </remarks>
+public sealed class StaticFieldModuleDeclaredMemberRowCounts :
+    IEquatable<StaticFieldModuleDeclaredMemberRowCounts>
+{
+    /// <summary>Gets the maximum admitted row count for any one counted declaration-side table.</summary>
+    public const int MaximumRowCount = 0x00FF_FFFF;
+
+    private const string CanonicalDomain = "static-field-module-declared-member-row-counts";
+    private const int CanonicalSchemaVersion = 1;
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    private StaticFieldModuleDeclaredMemberRowCounts(
+        int constantRowCount,
+        int propertyMapRowCount,
+        int propertyPointerRowCount)
+    {
+        ConstantRowCount = constantRowCount;
+        PropertyMapRowCount = propertyMapRowCount;
+        PropertyPointerRowCount = propertyPointerRowCount;
+
+        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
+        writer.WriteInt32(constantRowCount);
+        writer.WriteInt32(propertyMapRowCount);
+        writer.WriteInt32(propertyPointerRowCount);
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets the exact physical Constant (0x0B) table row count.</summary>
+    public int ConstantRowCount { get; }
+
+    /// <summary>Gets the exact physical PropertyMap (0x15) table row count.</summary>
+    public int PropertyMapRowCount { get; }
+
+    /// <summary>Gets the exact physical PropertyPtr (0x16) table row count.</summary>
+    public int PropertyPointerRowCount { get; }
+
+    /// <summary>Gets a defensive copy of the canonical bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
+
+    /// <summary>Gets the lowercase SHA-256 digest of <see cref="CanonicalBytes"/>.</summary>
+    public string Sha256 { get; }
+
+    /// <summary>Creates one complete declaration-side row-count bundle.</summary>
+    /// <param name="constantRowCount">The exact Constant table row count.</param>
+    /// <param name="propertyMapRowCount">The exact PropertyMap table row count.</param>
+    /// <param name="propertyPointerRowCount">The exact PropertyPtr table row count.</param>
+    /// <returns>An immutable all-or-nothing count bundle.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">A count is negative or above the admitted maximum.</exception>
+    public static StaticFieldModuleDeclaredMemberRowCounts Create(
+        int constantRowCount,
+        int propertyMapRowCount,
+        int propertyPointerRowCount)
+    {
+        ValidateCount(constantRowCount, nameof(constantRowCount));
+        ValidateCount(propertyMapRowCount, nameof(propertyMapRowCount));
+        ValidateCount(propertyPointerRowCount, nameof(propertyPointerRowCount));
+        return new StaticFieldModuleDeclaredMemberRowCounts(
+            constantRowCount,
+            propertyMapRowCount,
+            propertyPointerRowCount);
+    }
+
+    /// <summary>Determines content equality from canonical bytes.</summary>
+    /// <param name="other">The bundle to compare.</param>
+    /// <returns><see langword="true"/> when every counted end is equal.</returns>
+    public bool Equals(StaticFieldModuleDeclaredMemberRowCounts? other) =>
+        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj) => Equals(obj as StaticFieldModuleDeclaredMemberRowCounts);
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
+
+    private static void ValidateCount(int value, string parameterName)
+    {
+        if (value is < 0 or > MaximumRowCount)
+        {
+            throw new ArgumentOutOfRangeException(parameterName);
+        }
+    }
+}
+
 /// <summary>Records the complete counted result of searching one physical runtime module instance.</summary>
 public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSearchFact>
 {
     private const string CanonicalDomain = "static-field-module-search-fact";
     private const int CanonicalSchemaVersion = 4;
+    private const int DeclaredMemberRowCountsFieldTag = 1;
     private readonly ImmutableArray<ModuleContentIdentity> moduleContents;
     private readonly ImmutableArray<byte> canonicalBytes;
 
@@ -5804,7 +5902,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         int? genericParameterConstraintRowCount,
         int? fieldPointerRowCount,
         int? methodPointerRowCount,
-        int? parameterPointerRowCount)
+        int? parameterPointerRowCount,
+        StaticFieldModuleDeclaredMemberRowCounts? declaredMemberRowCounts)
     {
         Module = module;
         Status = status;
@@ -5835,6 +5934,7 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         FieldPointerRowCount = fieldPointerRowCount;
         MethodPointerRowCount = methodPointerRowCount;
         ParameterPointerRowCount = parameterPointerRowCount;
+        DeclaredMemberRowCounts = declaredMemberRowCounts;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteLengthPrefixedBytes(module.CanonicalBytes.AsSpan());
@@ -5871,9 +5971,29 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         StaticFieldSymbolContractEncoding.WriteOptionalInt32(writer, fieldPointerRowCount);
         StaticFieldSymbolContractEncoding.WriteOptionalInt32(writer, methodPointerRowCount);
         StaticFieldSymbolContractEncoding.WriteOptionalInt32(writer, parameterPointerRowCount);
+
+        // Absence-preserving tagged trailer: a fact that observed no declaration-side counts writes nothing at all
+        // here, so every already-frozen search-fact digest - and every source-end and catalog digest that embeds one
+        // - stays byte-identical. A present bundle is written behind its own field tag so the trailer can never be
+        // confused with a positional column of the schema above it.
+        if (declaredMemberRowCounts is { } declaredMembers)
+        {
+            writer.WriteInt32(DeclaredMemberRowCountsFieldTag);
+            writer.WriteLengthPrefixedBytes(declaredMembers.CanonicalBytes.AsSpan());
+        }
+
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
+
+    /// <summary>
+    /// Gets the complete declaration-side row-count bundle, or null when none was observed.
+    /// </summary>
+    /// <remarks>
+    /// Null is a statement about this observation, not about the image: it says the search did not count the
+    /// Constant, PropertyMap, and PropertyPtr tables, never that those tables are empty.
+    /// </remarks>
+    public StaticFieldModuleDeclaredMemberRowCounts? DeclaredMemberRowCounts { get; }
 
     /// <summary>Gets the exact physical runtime module instance that was searched.</summary>
     public StaticFieldModuleInstanceIdentity Module { get; }
@@ -6006,6 +6126,7 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
     /// <param name="fieldPointerRowCount">The complete FieldPtr table row count.</param>
     /// <param name="methodPointerRowCount">The complete MethodPtr table row count.</param>
     /// <param name="parameterPointerRowCount">The complete ParamPtr table row count.</param>
+    /// <param name="declaredMemberRowCounts">The complete declaration-side row-count bundle, or null when none was observed.</param>
     /// <returns>An exact fact with no issue and complete content identity.</returns>
     public static StaticFieldModuleSearchFact Exact(
         StaticFieldModuleInstanceIdentity module,
@@ -6034,7 +6155,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         int genericParameterConstraintRowCount = 0,
         int fieldPointerRowCount = 0,
         int methodPointerRowCount = 0,
-        int parameterPointerRowCount = 0) =>
+        int parameterPointerRowCount = 0,
+        StaticFieldModuleDeclaredMemberRowCounts? declaredMemberRowCounts = null) =>
         Create(module, StaticFieldModuleSearchStatus.Exact, StaticFieldModuleSearchIssue.None,
             ImmutableArray.Create(moduleContent),
             typeDefinitionsExamined, fieldDefinitionsExamined,
@@ -6060,7 +6182,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
             genericParameterConstraintRowCount,
             fieldPointerRowCount,
             methodPointerRowCount,
-            parameterPointerRowCount);
+            parameterPointerRowCount,
+            declaredMemberRowCounts);
 
     /// <summary>Creates a partial per-module search fact without a complete metadata-content payload.</summary>
     /// <param name="module">The physical module instance attempted.</param>
@@ -6165,7 +6288,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
         int? genericParameterConstraintRowCount = null,
         int? fieldPointerRowCount = null,
         int? methodPointerRowCount = null,
-        int? parameterPointerRowCount = null)
+        int? parameterPointerRowCount = null,
+        StaticFieldModuleDeclaredMemberRowCounts? declaredMemberRowCounts = null)
     {
         ArgumentNullException.ThrowIfNull(module);
         ValidateRowCount(typeDefinitionsExamined, nameof(typeDefinitionsExamined));
@@ -6308,7 +6432,8 @@ public sealed class StaticFieldModuleSearchFact : IEquatable<StaticFieldModuleSe
             genericParameterConstraintRowCount,
             fieldPointerRowCount,
             methodPointerRowCount,
-            parameterPointerRowCount);
+            parameterPointerRowCount,
+            declaredMemberRowCounts);
     }
 
     private static void ValidateOptionalCount(int? count, string parameterName)
