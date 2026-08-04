@@ -40,6 +40,24 @@ public sealed class ThreadsTool : Tool
     public ThreadsViewModel Panel { get; }
 }
 
+/// <summary>The dockable Immediate tool pane.</summary>
+public sealed class ImmediateTool : Tool
+{
+    /// <summary>Creates the pane over its view model.</summary>
+    /// <param name="panel">The immediate pane view model.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="panel"/> is null.</exception>
+    public ImmediateTool(ImmediateViewModel panel)
+    {
+        Panel = panel ?? throw new ArgumentNullException(nameof(panel));
+        Id = "Immediate";
+        Title = "Immediate";
+        CanClose = false;
+    }
+
+    /// <summary>Gets the pane view model the view binds to.</summary>
+    public ImmediateViewModel Panel { get; }
+}
+
 /// <summary>The dockable Watch tool pane.</summary>
 public sealed class WatchTool : Tool
 {

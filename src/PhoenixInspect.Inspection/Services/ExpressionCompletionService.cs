@@ -50,6 +50,20 @@ public sealed record CompletionResult(
 {
     /// <summary>Gets the empty result.</summary>
     public static CompletionResult Empty { get; } = new([], 0, 0);
+
+    /// <summary>Applies one accepted item to the text this result was computed over.</summary>
+    /// <param name="text">The expression text the completion query ran against.</param>
+    /// <param name="item">The accepted item.</param>
+    /// <returns>The new text with the partial token replaced, and the caret offset after the insertion.</returns>
+    /// <exception cref="ArgumentNullException">An argument is null.</exception>
+    public (string NewText, int NewCaretOffset) Apply(string text, CompletionItem item)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(item);
+        var start = Math.Clamp(ReplaceStart, 0, text.Length);
+        var end = Math.Clamp(start + ReplaceLength, start, text.Length);
+        return (text[..start] + item.Text + text[end..], start + item.Text.Length);
+    }
 }
 
 /// <summary>

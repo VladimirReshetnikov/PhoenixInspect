@@ -19,8 +19,7 @@
                     MaxHeight="220">
                 <ListBox x:Name="CompletionList"
                          AutomationProperties.AutomationId="WatchCompletionList"
-                         Background="Transparent"
-                         PointerReleased="OnCompletionPointerReleased">
+                         Background="Transparent">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <DockPanel>

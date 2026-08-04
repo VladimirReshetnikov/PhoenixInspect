@@ -91,6 +91,17 @@ public sealed class ExpressionCompletionTests
         Assert.Empty(ExpressionCompletionService.Complete(SampleCatalog, "mystery.", 8).Items);
     }
 
+    /// <summary>Proves acceptance rewrites exactly the partial token and reports the caret after it.</summary>
+    [Fact]
+    public void Acceptance_replaces_the_partial_token()
+    {
+        var result = ExpressionCompletionService.Complete(CompletionCatalog.Empty, "1 + Math.Sq + 2", 11);
+        var item = Assert.Single(result.Items);
+        var (newText, newCaret) = result.Apply("1 + Math.Sq + 2", item);
+        Assert.Equal("1 + Math.Sqrt + 2", newText);
+        Assert.Equal(13, newCaret);
+    }
+
     /// <summary>Proves namespace drill-down and the pending type-member handshake.</summary>
     [Fact]
     public void Namespaces_drill_down_and_type_members_realize_on_demand()

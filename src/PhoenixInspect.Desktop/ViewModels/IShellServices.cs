@@ -35,6 +35,12 @@ public interface IShellServices
     /// <returns>The projection result, or <see langword="default"/> when no dump is open or the adapter threw.</returns>
     Task<TResult?> RunQuietAsync<TResult>(Func<ClrmdDumpSession, TResult> work);
 
+    /// <summary>
+    /// Gets the one shared completion state every expression editor queries. All completion logic lives in the
+    /// Inspection layer; panes only render the items it returns.
+    /// </summary>
+    CompletionSessionState Completion { get; }
+
     /// <summary>Replaces the status-bar message.</summary>
     /// <param name="message">The new status text.</param>
     void SetStatus(string message);

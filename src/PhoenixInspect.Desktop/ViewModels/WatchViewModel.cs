@@ -226,8 +226,6 @@ public sealed class WatchViewModel : ObservableObject
     private readonly IShellServices shell;
     private readonly EvaluateViewModel evaluate;
     private readonly RelayCommand refreshCommand;
-    private readonly HashSet<string> pendingTypeMemberFetches = new(StringComparer.Ordinal);
-    private CompletionCatalog completionCatalog = CompletionCatalog.Empty;
 
     /// <summary>Creates the watch pane.</summary>
     /// <param name="shell">The shell services used for serialized session access.</param>
@@ -248,33 +246,17 @@ public sealed class WatchViewModel : ObservableObject
     /// <summary>Gets the command that commits pending edits and re-evaluates every watch.</summary>
     public RelayCommand RefreshCommand => refreshCommand;
 
-    /// <summary>Raised when the completion catalog gained facts, so an open drop-down can recompute.</summary>
-    public event EventHandler? CompletionCatalogChanged;
+    /// <summary>Gets the shell's shared completion state; the drop-down renders exactly what it returns.</summary>
+    public CompletionSessionState Completion => shell.Completion;
 
     /// <summary>Gets the pane caption.</summary>
     public static string Caption =>
         "Type an expression and press Enter. Compound values expand; rows re-evaluate when the context changes.";
 
     /// <summary>Gets a statement of the context watches currently evaluate under.</summary>
-    public string Summary
-    {
-        get
-        {
-            if (!shell.IsDumpOpen)
-            {
-                return "No dump is open. Watch expressions are kept and re-evaluate when a dump opens.";
-            }
-
-            var identifier = evaluate.RootIdentifier.Trim();
-            var rootPart = evaluate.RootSelection is { } root
-                ? $"Expressions mentioning '{identifier}' evaluate against the adopted root: {root.Description}"
-                : "No root is adopted, so every expression binds through the static-field path.";
-            var contextPart = evaluate.ContextFrame is null
-                ? " Static names must be fully qualified until a frame is adopted as name context."
-                : " Contextual static names may bind through the adopted frame.";
-            return rootPart + contextPart;
-        }
-    }
+    public string Summary => shell.IsDumpOpen
+        ? evaluate.WatchContextSummary
+        : "No dump is open. Watch expressions are kept and re-evaluate when a dump opens.";
 
     private IEnumerable<WatchEntry> Entries => Rows.OfType<WatchEntry>();
 
@@ -291,69 +273,9 @@ public sealed class WatchViewModel : ObservableObject
 
         Raise(nameof(Summary));
         refreshCommand.RaiseCanExecuteChanged();
-        _ = RebuildCompletionCatalogAsync();
         if (shell.IsDumpOpen && HasCommittedEntries)
         {
             _ = RefreshAllAsync();
-        }
-    }
-
-    /// <summary>
-    /// Computes drop-down completions for one expression editor. The heavy facts — root fields and metadata type
-    /// names — come from the cached catalog; when a metadata type's members are not realized yet, the fetch runs
-    /// quietly and <see cref="CompletionCatalogChanged"/> lets the open drop-down recompute.
-    /// </summary>
-    /// <param name="text">The expression text being edited.</param>
-    /// <param name="caretOffset">The caret offset within <paramref name="text"/>.</param>
-    /// <returns>The completion result, possibly empty.</returns>
-    public CompletionResult GetCompletions(string text, int caretOffset)
-    {
-        var result = ExpressionCompletionService.Complete(completionCatalog, text ?? string.Empty, caretOffset);
-        if (result.PendingTypeMembers is { } typeFullName)
-        {
-            _ = FetchTypeMembersAsync(typeFullName);
-        }
-
-        return result;
-    }
-
-    private async Task RebuildCompletionCatalogAsync()
-    {
-        if (!shell.IsDumpOpen)
-        {
-            completionCatalog = CompletionCatalog.Empty;
-            return;
-        }
-
-        var root = evaluate.RootSelection;
-        var identifier = evaluate.RootIdentifier;
-        var built = await shell.RunQuietAsync(
-            session => ExpressionCompletionService.BuildCatalog(session, root, identifier)).ConfigureAwait(true);
-        if (built is not null)
-        {
-            completionCatalog = built;
-            CompletionCatalogChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
-    private async Task FetchTypeMembersAsync(string typeFullName)
-    {
-        if (!shell.IsDumpOpen || !pendingTypeMemberFetches.Add(typeFullName))
-        {
-            return;
-        }
-
-        var members = await shell.RunQuietAsync(
-            session => ExpressionCompletionService.ListStaticMemberCompletions(session, typeFullName))
-            .ConfigureAwait(true);
-        pendingTypeMemberFetches.Remove(typeFullName);
-        if (!members.IsDefault)
-        {
-            completionCatalog = completionCatalog with
-            {
-                TypeMembers = completionCatalog.TypeMembers.SetItem(typeFullName, members),
-            };
-            CompletionCatalogChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -493,7 +415,6 @@ public sealed class WatchViewModel : ObservableObject
         }
 
         Raise(nameof(Summary));
-        _ = RebuildCompletionCatalogAsync();
         if (shell.IsDumpOpen && HasCommittedEntries)
         {
             _ = RefreshAllAsync();
@@ -519,33 +440,14 @@ public sealed class WatchViewModel : ObservableObject
         }
 
         var expressions = targets.Select(static entry => entry.Expression).ToImmutableArray();
-        var contextSelector = evaluate.ContextFrame?.Selector;
-        var root = evaluate.RootSelection;
-        var rootIdentifier = evaluate.RootIdentifier;
-        var options = new RootRelativeEvaluationOptions
-        {
-            UseModeledMethods = evaluate.UseModeledMethods,
-            AdmitMemberChain = evaluate.AdmitMemberChain,
-            InstructionLimit = evaluate.InstructionLimit,
-            LogicalDepthLimit = evaluate.LogicalDepthLimit,
-            TraversalLimit = evaluate.TraversalLimit,
-        };
-        var explicitCandidates = shell.ExplicitPortablePdbCandidates;
+        var contextFactory = evaluate.CreateWatchContextFactory();
         var reports = await shell.RunAsync(
             targets.Count == 1
                 ? "Evaluating watch expression…"
                 : $"Refreshing {targets.Count} watch expressions…",
             session =>
             {
-                var context = new WatchEvaluationContext
-                {
-                    ContextSelector = contextSelector,
-                    PortablePdbCandidates = SourceNavigationService.AssemblePortablePdbCandidates(
-                        session, explicitCandidates),
-                    Root = root,
-                    RootIdentifier = rootIdentifier,
-                    Options = options,
-                };
+                var context = contextFactory(session);
                 return expressions
                     .Select(expression => ExpressionEvaluationService.EvaluateWatch(session, expression, context))
                     .ToImmutableArray();

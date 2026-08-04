@@ -15,7 +15,7 @@ namespace PhoenixInspect.Desktop.ViewModels;
 /// The shell is the only component that talks to <see cref="DumpSessionHost"/>. Panes receive it as
 /// <see cref="IShellServices"/> so every adapter call is serialized, timed, and reported the same way.
 /// </remarks>
-public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDisposable
+public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICompletionQueryExecutor, IDisposable
 {
     private readonly DumpSessionHost host = new();
     private readonly InspectionDockFactory factory;
@@ -33,6 +33,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
     /// <summary>Creates the shell, its panes, and the docking layout.</summary>
     public MainWindowViewModel()
     {
+        Completion = new CompletionSessionState(this);
         Overview = new OverviewViewModel();
         Modules = new ModulesViewModel(this);
         CallStacks = new CallStacksViewModel(this);
@@ -41,12 +42,14 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         HeapObjects = new HeapObjectsViewModel(this);
         Evaluate = new EvaluateViewModel(this);
         Watch = new WatchViewModel(this, Evaluate);
+        Immediate = new ImmediateViewModel(this, Evaluate);
 
         factory = new InspectionDockFactory(
             new CallStackTool(CallStacks),
             new ThreadsTool(Threads),
             new LocalsTool(Locals),
             new WatchTool(Watch),
+            new ImmediateTool(Immediate),
             new ModulesTool(Modules),
             new HeapSearchTool(HeapObjects),
             new EvaluateTool(Evaluate),
@@ -57,12 +60,20 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
         openCommand = new RelayCommand(() => OpenDumpRequested?.Invoke(this, EventArgs.Empty), () => !IsBusy);
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
+        Evaluate.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(EvaluateViewModel.RootSelection) or nameof(EvaluateViewModel.RootIdentifier))
+            {
+                _ = Completion.RebuildAsync(Evaluate.RootSelection, Evaluate.RootIdentifier);
+            }
+        };
         Evaluate.Reset();
         Threads.Reset();
         Locals.Reset();
         CallStacks.Reset();
         HeapObjects.Reset();
         Watch.Reset();
+        Immediate.Reset();
         LoadRecentDumps();
     }
 
@@ -99,6 +110,15 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
     /// <summary>Gets the watch pane.</summary>
     public WatchViewModel Watch { get; }
+
+    /// <summary>Gets the immediate pane.</summary>
+    public ImmediateViewModel Immediate { get; }
+
+    /// <inheritdoc />
+    public CompletionSessionState Completion { get; }
+
+    /// <inheritdoc />
+    bool ICompletionQueryExecutor.IsSessionOpen => host.IsOpen;
 
     /// <summary>Gets the command that prompts for and opens a dump file.</summary>
     public RelayCommand OpenDumpCommand => openCommand;
@@ -341,6 +361,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         HeapObjects.Reset();
         Evaluate.Reset();
         Watch.Reset();
+        Immediate.Reset();
         factory.CloseSourceDocuments();
 
         var length = host.DumpLength ?? 0;
@@ -354,6 +375,8 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
             SnapshotDigest = DisplayFormatting.ShortDigest(snapshot.SnapshotSha256);
             TargetSummary = $"{snapshot.TargetPlatform} · {snapshot.TargetArchitecture}";
         }
+
+        _ = Completion.RebuildAsync(Evaluate.RootSelection, Evaluate.RootIdentifier);
 
         // A debugger surfaces the stopped threads without being asked; the probe stays re-runnable from the pane.
         // Probing also selects the first thread, which loads its call stack into the Call Stack pane.
@@ -448,6 +471,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
 
     private void ClearSessionState()
     {
+        Completion.Clear();
         DumpFileName = null;
         DumpDirectory = null;
         SnapshotDigest = null;
@@ -460,6 +484,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, IDis
         HeapObjects.Reset();
         Evaluate.Reset();
         Watch.Reset();
+        Immediate.Reset();
         factory.CloseSourceDocuments();
         Raise(nameof(IsDumpOpen));
         closeCommand.RaiseCanExecuteChanged();

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using PhoenixInspect.Host.Dump.ClrMD;
 using PhoenixInspect.Inspection;
 
 namespace PhoenixInspect.Desktop.ViewModels;
@@ -354,6 +355,57 @@ public sealed class EvaluateViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(root);
         RootSelection = root;
         Path = ExpressionPath.RootRelative;
+    }
+
+    /// <summary>
+    /// Captures the current evaluation context — adopted frame, root, identifier, and options — as a factory the
+    /// watch-style entry point runs under. The snapshot is taken now; only candidate assembly needs the session.
+    /// </summary>
+    /// <returns>A factory producing the complete watch context for one session query.</returns>
+    public Func<ClrmdDumpSession, WatchEvaluationContext> CreateWatchContextFactory()
+    {
+        var selector = contextFrame?.Selector;
+        var root = rootSelection;
+        var identifier = rootIdentifier;
+        var options = new RootRelativeEvaluationOptions
+        {
+            UseModeledMethods = useModeledMethods,
+            AdmitMemberChain = admitMemberChain,
+            InstructionLimit = instructionLimit,
+            LogicalDepthLimit = logicalDepthLimit,
+            TraversalLimit = traversalLimit,
+        };
+        var explicitCandidates = SourceNavigationService.ParseCandidateList(portablePdbCandidates);
+        return session => new WatchEvaluationContext
+        {
+            ContextSelector = selector,
+            PortablePdbCandidates = SourceNavigationService.AssemblePortablePdbCandidates(
+                session, explicitCandidates),
+            Root = root,
+            RootIdentifier = identifier,
+            Options = options,
+        };
+    }
+
+    /// <summary>Gets a statement of the context watch-style evaluations currently run under.</summary>
+    public string WatchContextSummary
+    {
+        get
+        {
+            if (!shell.IsDumpOpen)
+            {
+                return "No dump is open.";
+            }
+
+            var identifier = rootIdentifier.Trim();
+            var rootPart = rootSelection is { } root
+                ? $"Expressions mentioning '{identifier}' evaluate against the adopted root: {root.Description}"
+                : "No root is adopted, so every expression binds through the static-field path.";
+            var contextPart = contextFrame is null
+                ? " Static names must be fully qualified until a frame is adopted as name context."
+                : " Contextual static names may bind through the adopted frame.";
+            return rootPart + contextPart;
+        }
     }
 
     /// <summary>Replaces the editor content with a ready-made template.</summary>

@@ -133,6 +133,10 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   the trailing row, delete by clearing, and every row re-evaluates when the adopted frame context or expression
   root changes. Routing between the static-field and root-relative paths is one deterministic API rule, and every
   row carries the full evidence report behind its value.
+- **An Immediate window.** A prompt-and-transcript console beside the Watch window: expressions evaluate through
+  the same routed entry point, answers append to a C#-syntax-colored transcript with their kind as a trailing
+  comment, and explained stops render as comments rather than bare errors. History recall and the shared
+  completion drop-down included.
 - **Completion as you type, from evidence.** The Watch window offers a Visual Studio-style drop-down: C# keywords,
   the evaluator's modeled types and their members, the adopted root's declared fields read from its validated
   runtime type, and namespaces, types, and static fields enumerated from dump-module metadata. The candidate
