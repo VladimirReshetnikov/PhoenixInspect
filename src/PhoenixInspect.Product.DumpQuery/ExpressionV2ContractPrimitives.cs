@@ -95,6 +95,9 @@ public static class ExpressionV2ContractLimits
     /// <summary>Gets the maximum Constant-row count examined in one complete metadata table.</summary>
     public const int MaximumConstantRowCount = 65_536;
 
+    /// <summary>Gets the maximum Property-row count examined in one complete metadata table.</summary>
+    public const int MaximumPropertyRowCount = 65_536;
+
     /// <summary>Gets the maximum FieldPtr-row count examined in one complete metadata table.</summary>
     public const int MaximumFieldPointerRowCount = 65_536;
 
@@ -220,6 +223,7 @@ public static class ExpressionV2ContractLimits
     internal const string FieldDefinitionRowCountBoundName = "expression-v2.metadata.field-rows";
     internal const string MethodDefinitionRowCountBoundName = "expression-v2.metadata.methoddef-rows";
     internal const string ConstantRowCountBoundName = "expression-v2.metadata.constant-rows";
+    internal const string PropertyRowCountBoundName = "expression-v2.metadata.property-rows";
     internal const string FieldPointerRowCountBoundName = "expression-v2.metadata.fieldptr-rows";
     internal const string MethodPointerRowCountBoundName = "expression-v2.metadata.methodptr-rows";
     internal const string InterfaceImplementationRowCountBoundName = "expression-v2.metadata.interfaceimpl-rows";
@@ -277,6 +281,7 @@ public static class ExpressionV2ContractLimits
             new EvaluationDeterministicBound(LocalConstantCountBoundName, MaximumLocalConstantCount),
             new EvaluationDeterministicBound(LocalCountBoundName, MaximumLocalCount),
             new EvaluationDeterministicBound(ConstantRowCountBoundName, MaximumConstantRowCount),
+            new EvaluationDeterministicBound(PropertyRowCountBoundName, MaximumPropertyRowCount),
             new EvaluationDeterministicBound(FieldDefinitionRowCountBoundName, MaximumFieldDefinitionRowCount),
             new EvaluationDeterministicBound(FieldPointerRowCountBoundName, MaximumFieldPointerRowCount),
             new EvaluationDeterministicBound(FieldCountPerConstructionBoundName, MaximumFieldCountPerConstruction),
@@ -406,6 +411,9 @@ public static class StaticFieldV2Limits
 
     /// <summary>Gets the maximum Constant-row count examined in one complete metadata table.</summary>
     public const int MaximumConstantRowCount = ExpressionV2ContractLimits.MaximumConstantRowCount;
+
+    /// <summary>Gets the maximum Property-row count examined in one complete metadata table.</summary>
+    public const int MaximumPropertyRowCount = ExpressionV2ContractLimits.MaximumPropertyRowCount;
 
     /// <summary>Gets the maximum FieldPtr-row count examined in one complete metadata table.</summary>
     public const int MaximumFieldPointerRowCount = ExpressionV2ContractLimits.MaximumFieldPointerRowCount;
