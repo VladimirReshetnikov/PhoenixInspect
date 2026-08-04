@@ -40,15 +40,18 @@ public sealed class W8CorpusPortfolioReportTests
 
         // The report summarizes the manifest, so its digests are re-frozen whenever a row's runner-execution status
         // legitimately changes. That status is runner bookkeeping, never a predeclared axis: this pair records
-        // thirteen executed and twenty-two manifest-only rows after scope-precise type-argument binding landed.
+        // fourteen executed and twenty-one manifest-only rows after the declared-member table catalogs landed. Exactly
+        // one row became drivable: the bare-name property row, whose blocker was the missing Property table. The
+        // derived-hiding row stayed manifest-only because its measured blocker turned out to be a second definition of
+        // its own owner, not the table. No predeclared axis moved with either.
         Assert.Equal(
-            "edadd88f3b2879bbb1671aa618fc198f39761e16bfe6200b35f2c58bef41c390",
+            "389333b8c8f5c0069b5a186de53c967928ba6febb2e5c1f5a3c15f4c8926d5e3",
             Digest(first.MachineReport));
         Assert.Equal(
-            "1b5190b1408d15d34ab72ca659f736ddc32904a6f48e1acf78964e16cd928981",
+            "00ebcbaddadd087c0c891abc96ef86e7225ad702202328ee9130a6ccc1c1eb63",
             Digest(first.HumanReport));
-        Assert.Equal(13, first.ExecutedCount);
-        Assert.Equal(22, first.ManifestOnlyCount);
+        Assert.Equal(14, first.ExecutedCount);
+        Assert.Equal(21, first.ManifestOnlyCount);
     }
 
     /// <summary>

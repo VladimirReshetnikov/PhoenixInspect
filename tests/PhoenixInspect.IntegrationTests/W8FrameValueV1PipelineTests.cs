@@ -16,7 +16,7 @@ public sealed class W8FrameValueV1PipelineTests
 {
     // Captured from a real run (never hand-computed): the canonical result digest of the memory-homed local answer.
     private const string MemoryHomedLocalGoldenSha256 =
-        "4e742f643c0eda81317ea3f4c80f2da8ab17be495fc4c49989e7535bc4a6d296";
+        "53d99770311cddadd43e30268412a6d4274e5c53654592295838963768abbfbb";
 
     private const int MemoryHomedLocalValue = 1_090_520_099;
 

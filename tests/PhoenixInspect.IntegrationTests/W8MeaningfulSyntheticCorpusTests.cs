@@ -280,7 +280,11 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             {
                 disagreements.Add(
                     $"{incident.Id}: predeclared {Describe(incident.PredeclaredAxes)} but produced " +
-                    $"{Describe(produced.Result.Axes)}.");
+                    $"{Describe(produced.Result.Axes)} (owner construction " +
+                    $"{produced.Result.Provenance.OwnerConstruction?.ResultKind.ToString() ?? "absent"}/" +
+                    $"{produced.Result.Provenance.OwnerConstruction?.Issue.ToString() ?? "none"}, member lookup " +
+                    $"{produced.Result.Provenance.MemberLookup?.ResultKind.ToString() ?? "absent"}/" +
+                    $"{produced.Result.Provenance.MemberLookup?.Issue.ToString() ?? "none"}).");
                 continue;
             }
 
@@ -634,32 +638,42 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(localShadow.PredeclaredAxes, produced.Result.Axes);
         }
 
-        // Incident 31 coordinator-property-shares-bare-name: the envelope certifies Complete and the bare route runs,
-        // but the shared spelling is owned by a property and no landed catalog models the Property table, so the
-        // route reports a declaration absence where the predeclared row expected the typed hiding stop.
-        var propertyName = manifest.Incidents.Single(
-            static incident => incident.Id == "coordinator-property-shares-bare-name");
-        Assert.Equal("manifest-only", propertyName.RunnerExecutionStatus);
-        using (var snapshot = W8CorpusSnapshot.Materialize(propertyName))
-        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, propertyName.Shape))
+        // Incident 31 coordinator-property-shares-bare-name now executes and reaches its predeclared axes, so it is
+        // asserted by the executed-incident path rather than here. What replaces it is incident 12, whose blocker the
+        // Property table turned out not to be.
+        //
+        // Incident 12 workflow-derived-unsupported-member-hides-base: the derived property does own the spelling, but
+        // the answer never reaches a member stage to say so. Every workflow-shape profile loads the target's own
+        // assembly into a second AssemblyLoadContext before selecting a profile, so both definitions of the derived
+        // owner are in the snapshot and type binding stops Ambiguous first. That is a second, independent gap this
+        // slice does not close, and the produced divergence below is the finding. Do not read it as evidence about
+        // the Property table either way.
+        var memberHiding = manifest.Incidents.Single(
+            static incident => incident.Id == "workflow-derived-unsupported-member-hides-base");
+        Assert.Equal("manifest-only", memberHiding.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(memberHiding))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, memberHiding.Shape))
         {
-            var produced = world.Evaluate(
-                propertyName.Expression,
-                propertyName.ReadWidth,
-                null,
-                world.PausedFrameScopedContext());
+            var produced = world.Evaluate(memberHiding.Expression, memberHiding.ReadWidth);
             Assert.Equal(
-                "Admitted/Exact/NotRequired/Complete/NotRequired/NotRequired/Absent/NotReached/NotReached/" +
-                "NotReached/NotReached/NoAnswer",
+                "Admitted/NotRequired/NotRequired/NotRequired/Ambiguous/NotReached/NotReached/NotReached/" +
+                "NotReached/NotReached/NotReached/NoAnswer",
                 Describe(produced.Result.Axes));
-            Assert.Equal(
-                DumpExpressionLexicalCompletenessOutcome.Complete,
-                produced.Result.Axes.LexicalCompleteness);
+
+            // The stop is upstream of every member stage: neither an owner construction nor a member lookup ran.
+            Assert.Null(produced.Result.Provenance.OwnerConstruction);
+            Assert.Null(produced.Result.Provenance.MemberLookup);
             Assert.Equal(
                 DumpExpressionMemberLookupOutcome.HiddenByUnsupportedMember,
-                DecodeMemberLookup(propertyName));
-            Assert.Equal(DumpExpressionMemberLookupOutcome.Absent, produced.Result.Axes.MemberLookup);
-            Assert.NotEqual(propertyName.PredeclaredAxes, produced.Result.Axes);
+                DecodeMemberLookup(memberHiding));
+            Assert.NotEqual(memberHiding.PredeclaredAxes, produced.Result.Axes);
+
+            // The declared counterfactual would spell the base field, and it stops identically: the ambiguity is the
+            // owner's, not the member's, which is exactly why this row cannot be driven yet.
+            var counterfactual = world.Evaluate(memberHiding.CounterfactualExpression!, memberHiding.ReadWidth);
+            Assert.Equal(
+                DumpExpressionTypeBindingOutcome.Ambiguous,
+                counterfactual.Result.Axes.TypeBinding);
         }
     }
 
@@ -715,6 +729,14 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             "substitute-closed-type-argument" => world.Evaluate(
                 incident.CounterfactualExpression ?? incident.Expression,
                 incident.ReadWidth),
+
+            // A property owns the spelling the incident asks for; the counterfactual asks for the field instead, by
+            // its own declared name. The reachable field is a different member, not a fallback for the same one.
+            "request-declared-field-instead-of-property" => world.Evaluate(
+                incident.CounterfactualExpression!,
+                incident.ReadWidth,
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null,
+                incident.RequestsPausedFrameThread ? world.PausedFrameScopedContext() : null),
 
             // The bare route's own counterfactual: the same spelling under the same exact scoped context, with the
             // caller-owned lexical seam withheld so no envelope can be acquired at all.
@@ -783,6 +805,7 @@ public sealed record W8CorpusCategoryTally(
 public sealed class W8CorpusIncident
 {
     private readonly Dictionary<string, string> expectedAxes;
+    private readonly string? counterfactualExpression;
 
     internal W8CorpusIncident(JsonElement element)
     {
@@ -830,6 +853,9 @@ public sealed class W8CorpusIncident
         DecisionSummary = W8CorpusManifest.RequiredString(decision.GetProperty("rationale"), "summary");
         var counterfactual = decision.GetProperty("counterfactual");
         CounterfactualAction = W8CorpusManifest.RequiredString(counterfactual, "action");
+        counterfactualExpression = counterfactual.TryGetProperty("counterfactualExpression", out var substitute)
+            ? substitute.GetString()
+            : null;
         CounterfactualChangedAxes = W8CorpusManifest.ReadStrings(counterfactual.GetProperty("expectedChangedAxes"));
         CounterfactualDifference = W8CorpusManifest.RequiredString(counterfactual, "expectedDifference");
 
@@ -957,10 +983,14 @@ public sealed class W8CorpusIncident
         ? sizeof(long)
         : sizeof(int);
 
-    /// <summary>Gets the substituted expression a closed-argument counterfactual evaluates, when one applies.</summary>
+    /// <summary>Gets the expression this incident's counterfactual evaluates in place of its own, when one applies.</summary>
+    /// <remarks>
+    /// A closed-argument substitution is a mechanical edit of the incident's own spelling and stays derived. Every
+    /// other action naming a different member supplies that member in the manifest, so the runner never invents one.
+    /// </remarks>
     public string? CounterfactualExpression => CounterfactualAction == "substitute-closed-type-argument"
         ? SubstituteClosedArgument()
-        : null;
+        : counterfactualExpression;
 
     /// <summary>Gets the sealed twelve-axis aggregate the manifest predeclares for this incident.</summary>
     public DumpExpressionV2OutcomeAxes PredeclaredAxes => DumpExpressionV2OutcomeAxes.Create(
@@ -1212,6 +1242,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         string dumpPath,
         ImmutableArray<ProducedModule> modules,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
+        ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs,
         MetadataNamedTypeDefinitionChainPortfolioIdentity chainPortfolio,
         MetadataAncestryAuthorityPortfolioIdentity ancestry,
         MetadataConstraintTargetResolutionPortfolioIdentity constraints,
@@ -1223,6 +1255,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         this.dumpPath = dumpPath;
         this.modules = modules;
         FieldCatalogs = fieldCatalogs;
+        ConstantCatalogs = constantCatalogs;
+        PropertyCatalogs = propertyCatalogs;
         Bindings = [.. modules.Select(static module => module.Binding)];
         ChainPortfolio = chainPortfolio;
         Ancestry = ancestry;
@@ -1233,6 +1267,10 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     internal StaticFieldV2RuntimeAcquisitionSession Session { get; }
 
     internal ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs { get; }
+
+    internal ImmutableArray<MetadataConstantTableCatalogIdentity> ConstantCatalogs { get; }
+
+    internal ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogs { get; }
 
     internal ImmutableArray<StaticFieldV2RuntimeModuleBinding> Bindings { get; }
 
@@ -1316,6 +1354,14 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                         [
                             core.FieldCatalog,
                             .. produced.Select(static module => module.Outcome.FieldDefinitions!),
+                        ],
+                        [
+                            core.ConstantCatalog,
+                            .. produced.Select(static module => module.Outcome.Constants!),
+                        ],
+                        [
+                            core.PropertyCatalog,
+                            .. produced.Select(static module => module.Outcome.Properties!),
                         ],
                         chainPortfolio,
                         ancestry,
@@ -1600,6 +1646,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             FieldCatalogs,
             scopedContext: scopedContext,
             runtimeEvidence: evidence,
+            constantCatalogs: ConstantCatalogs,
+            propertyCatalogs: PropertyCatalogs,
             capabilityProbes: probes,
             signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
         return new W8CorpusEvaluation(result, acquiredSlotAddress);
@@ -1614,6 +1662,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             Ancestry,
             Constraints,
             FieldCatalogs,
+            constantCatalogs: ConstantCatalogs,
+            propertyCatalogs: PropertyCatalogs,
             capabilityProbes: probes,
             signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
         return new W8CorpusEvaluation(result, null);
@@ -1673,6 +1723,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             Ancestry,
             Constraints,
             FieldCatalogs,
+            constantCatalogs: ConstantCatalogs,
+            propertyCatalogs: PropertyCatalogs,
             capabilityProbes: probes,
             frameRootEvaluation: frameSeam));
         return new W8CorpusEvaluation(result, acquiredAddress);
@@ -2179,7 +2231,11 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 typeDefinitionsExamined: namedTypes.Length + 1,
                 fieldDefinitionsExamined: 0,
                 typeDefinitionRowCount: namedTypes.Length + 1,
-                fieldDefinitionRowCount: 0));
+                fieldDefinitionRowCount: 0,
+                declaredMemberRowCounts: StaticFieldModuleDeclaredMemberRowCounts.Create(
+                    constantRowCount: 0,
+                    propertyMapRowCount: 0,
+                    propertyPointerRowCount: 0)));
         var typeRows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionRowObservationIdentity>(
             namedTypes.Length + 1);
         typeRows.Add(MetadataTypeDefinitionRowObservationIdentity.Create(
@@ -2267,7 +2323,26 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         var fieldCatalog = MetadataFieldDefinitionTableCatalogIdentity.Create(
             authority,
             ImmutableArray<MetadataFieldDefinitionRowObservationIdentity>.Empty);
-        return new SyntheticCoreModule(module, compatibility, chainCatalog, tables, constraints, fieldCatalog);
+        var declaredMemberSourceEnds = MetadataDeclaredMemberSourceEndIdentity.Create(sourceEnds);
+        var constantCatalog = MetadataConstantTableCatalogIdentity.Create(
+            declaredMemberSourceEnds,
+            fieldCatalog,
+            ImmutableArray<MetadataConstantRowObservationIdentity>.Empty);
+        Assert.Equal(MetadataConstantTableResultKind.Exact, constantCatalog.ResultKind);
+        var propertyCatalog = MetadataPropertyTableCatalogIdentity.Create(
+            declaredMemberSourceEnds,
+            authority,
+            ImmutableArray<MetadataPropertyRowObservationIdentity>.Empty);
+        Assert.Equal(MetadataPropertyTableResultKind.Exact, propertyCatalog.ResultKind);
+        return new SyntheticCoreModule(
+            module,
+            compatibility,
+            chainCatalog,
+            tables,
+            constraints,
+            fieldCatalog,
+            constantCatalog,
+            propertyCatalog);
     }
 
     private static StaticFieldAssemblyDefinitionIdentity ReadSharedFrameworkAssemblyDefinition(string fileName)
@@ -2300,7 +2375,9 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         MetadataNamedTypeDefinitionChainCatalogIdentity ChainCatalog,
         MetadataModuleReferenceTableSetIdentity Tables,
         MetadataGenericParameterConstraintPhysicalTableCatalogIdentity Constraints,
-        MetadataFieldDefinitionTableCatalogIdentity FieldCatalog);
+        MetadataFieldDefinitionTableCatalogIdentity FieldCatalog,
+        MetadataConstantTableCatalogIdentity ConstantCatalog,
+        MetadataPropertyTableCatalogIdentity PropertyCatalog);
 
     /// <summary>Produces the composed metadata authority of one real module observed in the dump.</summary>
     /// <remarks>This is physical scaffolding and not a product contract.</remarks>

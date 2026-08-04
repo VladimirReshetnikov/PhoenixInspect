@@ -39,7 +39,7 @@ public sealed class W8V2ExpressionPipelineTests
     private const int LibAssemblyReferenceToken = 0x2300_0002;
 
     private const string ConstructedSlotGoldenSha256 =
-        "bd3496cacbd56cf24a139ca8ac08efa682603c4ed915b51361170e8f366fb62e";
+        "dd8b353c79d1b14fa614b26b639a4467c0de957700cee39ce773a18e57ec5ccd";
 
     /// <summary>
     /// Proves a fully qualified constructed-generic static field reaches an exact value while calling no context
@@ -612,6 +612,57 @@ public sealed class W8V2ExpressionPipelineTests
     }
 
     /// <summary>
+    /// Proves an uninitialized Property catalog vector and an empty one are different requests with different
+    /// canonical bytes, because they reach member lookup as different typed stops.
+    /// </summary>
+    /// <remarks>
+    /// The two are not interchangeable: a caller that supplied no vector at all is told so, and a caller that
+    /// supplied one covering no module is told that instead. Encoding both as length zero would give two requests
+    /// with materially different answers a single replay digest, which is the one thing a canonical encoding exists
+    /// to prevent.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Uninitialized_and_empty_property_vectors_are_distinct_requests()
+    {
+        var world = BuildWorld();
+        const string expression = "global::Pipe.App.Holder.Answer";
+
+        var uninitialized = StaticFieldV2ExpressionRequest.Create(
+            expression,
+            DumpExpressionProfileKind.StaticFieldExpressionV2,
+            world.Ancestry,
+            world.Constraints,
+            world.FieldCatalogs,
+            null,
+            StaticFieldV2AccessibilityMode.QualifiedInspectionBypass);
+        var empty = StaticFieldV2ExpressionRequest.Create(
+            expression,
+            DumpExpressionProfileKind.StaticFieldExpressionV2,
+            world.Ancestry,
+            world.Constraints,
+            world.FieldCatalogs,
+            null,
+            StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
+            propertyCatalogs: ImmutableArray<MetadataPropertyTableCatalogIdentity>.Empty);
+
+        Assert.False(uninitialized.IsPropertyCatalogVectorInitialized);
+        Assert.True(empty.IsPropertyCatalogVectorInitialized);
+        Assert.NotEqual(uninitialized.Sha256, empty.Sha256);
+        Assert.NotEqual(uninitialized, empty);
+
+        // The distinction is not decorative: the two reach member lookup as different stops.
+        Assert.Equal(
+            StaticFieldV2MemberLookupIssue.PropertyCatalogVectorUninitialized,
+            StaticFieldV2ExpressionPipeline.Evaluate(uninitialized)
+                .Provenance.MemberLookup!.Issue);
+        Assert.Equal(
+            StaticFieldV2MemberLookupIssue.PropertyCatalogSlotsIncomplete,
+            StaticFieldV2ExpressionPipeline.Evaluate(empty)
+                .Provenance.MemberLookup!.Issue);
+    }
+
+    /// <summary>
     /// Proves canonical replay across two independently built worlds, defensive copies, the closed public
     /// surface, the frozen result digest, and emitted XML documentation.
     /// </summary>
@@ -811,7 +862,8 @@ public sealed class W8V2ExpressionPipelineTests
         StaticFieldV2SuffixEvaluationSource? suffixEvaluation = null,
         ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs = default,
         MetadataClosedTypeIdentity? referenceTargetType = null,
-        ExpressionV2CapabilityProbeSet? capabilityProbes = null) =>
+        ExpressionV2CapabilityProbeSet? capabilityProbes = null,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs = default) =>
         StaticFieldV2ExpressionRequest.Create(
             expressionText,
             profile,
@@ -826,6 +878,7 @@ public sealed class W8V2ExpressionPipelineTests
             runtimeEvidence,
             suffixEvaluation,
             constantCatalogs,
+            propertyCatalogs.IsDefault ? world.PropertyCatalogs : propertyCatalogs,
             referenceTargetType,
             capabilityProbes);
 
@@ -1149,6 +1202,8 @@ public sealed class W8V2ExpressionPipelineTests
             [.. order.Select(module => byModule[module].Constraints)]);
         Assert.Equal(MetadataConstraintTargetResolutionPortfolioResultKind.Exact, constraints.ResultKind);
         var fieldCatalogs = ImmutableArray.CreateRange(order.Select(module => byModule[module].FieldCatalog));
+        var propertyCatalogs = ImmutableArray.CreateRange(
+            order.Select(module => byModule[module].PropertyCatalog));
 
         return new PipelineWorld(
             app.Ancestry.Module,
@@ -1156,6 +1211,7 @@ public sealed class W8V2ExpressionPipelineTests
             ancestryWorld.Ancestry,
             constraints,
             fieldCatalogs,
+            propertyCatalogs,
             app.Ancestry.ChainCatalog.ExactChainOrDefault(AppHostToken)!.FinalTypeDefinition);
     }
 
@@ -1204,6 +1260,8 @@ public sealed class W8V2ExpressionPipelineTests
             [.. order.Select(module => byModule[module].Constraints)]);
         Assert.Equal(MetadataConstraintTargetResolutionPortfolioResultKind.Exact, constraints.ResultKind);
         var fieldCatalogs = ImmutableArray.CreateRange(order.Select(module => byModule[module].FieldCatalog));
+        var propertyCatalogs = ImmutableArray.CreateRange(
+            order.Select(module => byModule[module].PropertyCatalog));
 
         return new PipelineWorld(
             app.Ancestry.Module,
@@ -1211,6 +1269,7 @@ public sealed class W8V2ExpressionPipelineTests
             ancestryWorld.Ancestry,
             constraints,
             fieldCatalogs,
+            propertyCatalogs,
             app.Ancestry.ChainCatalog.ExactChainOrDefault(AppGenericSlotToken)!.FinalTypeDefinition);
     }
 
@@ -1418,6 +1477,12 @@ public sealed class W8V2ExpressionPipelineTests
             fieldObservations.Count == 0 ? default : fieldObservations.ToImmutable());
         Assert.Equal(MetadataFieldDefinitionTableResultKind.Exact, fieldCatalog.ResultKind);
 
+        var propertyCatalog = MetadataPropertyTableCatalogIdentity.Create(
+            MetadataDeclaredMemberSourceEndIdentity.Create(sourceEnds),
+            authority,
+            ImmutableArray<MetadataPropertyRowObservationIdentity>.Empty);
+        Assert.Equal(MetadataPropertyTableResultKind.Exact, propertyCatalog.ResultKind);
+
         return new PipeModule(
             new W8MetadataAncestryAuthorityContractTests.AncestryModule(
                 module,
@@ -1425,7 +1490,8 @@ public sealed class W8V2ExpressionPipelineTests
                 chainCatalog,
                 tables),
             constraintCatalog,
-            fieldCatalog);
+            fieldCatalog,
+            propertyCatalog);
     }
 
     private static ImmutableArray<StaticFieldTypeDefinitionIdentity?> NullCandidateSlots(
@@ -1459,7 +1525,8 @@ public sealed class W8V2ExpressionPipelineTests
     private sealed record PipeModule(
         W8MetadataAncestryAuthorityContractTests.AncestryModule Ancestry,
         MetadataGenericParameterConstraintPhysicalTableCatalogIdentity Constraints,
-        MetadataFieldDefinitionTableCatalogIdentity FieldCatalog);
+        MetadataFieldDefinitionTableCatalogIdentity FieldCatalog,
+        MetadataPropertyTableCatalogIdentity PropertyCatalog);
 
     internal sealed record PipelineWorld(
         StaticFieldMetadataModuleIdentity App,
@@ -1467,5 +1534,6 @@ public sealed class W8V2ExpressionPipelineTests
         MetadataAncestryAuthorityPortfolioIdentity Ancestry,
         MetadataConstraintTargetResolutionPortfolioIdentity Constraints,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogs,
         MetadataTypeDefinitionAuthorityIdentity HostType);
 }

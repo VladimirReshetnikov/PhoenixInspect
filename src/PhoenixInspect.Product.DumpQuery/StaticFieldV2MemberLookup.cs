@@ -151,6 +151,42 @@ public enum StaticFieldV2MemberLookupIssue
 
     /// <summary>The constructed base chain revisited one physical TypeDef coordinate.</summary>
     GenericBaseCycleDetected = 31,
+
+    /// <summary>A consulted level declared a property owning the requested name.</summary>
+    HiddenByDeclaredProperty = 32,
+
+    /// <summary>No Property catalog vector was supplied at all.</summary>
+    PropertyCatalogVectorUninitialized = 33,
+
+    /// <summary>The supplied Property catalog vector exceeded the declared module bound.</summary>
+    PropertyCatalogModuleCountBoundReached = 34,
+
+    /// <summary>The supplied Property catalog vector held fewer slots than the portfolio declares modules.</summary>
+    PropertyCatalogSlotsIncomplete = 35,
+
+    /// <summary>The supplied Property catalog vector held more slots than the portfolio declares modules.</summary>
+    PropertyCatalogSlotCountConflict = 36,
+
+    /// <summary>One supplied Property catalog slot was null.</summary>
+    PropertyCatalogMissing = 37,
+
+    /// <summary>One supplied Property catalog stopped non-exactly.</summary>
+    PropertyCatalogNonExact = 38,
+
+    /// <summary>One supplied Property catalog retained contradictory evidence.</summary>
+    PropertyCatalogInvalid = 39,
+
+    /// <summary>More than one supplied Property catalog named the same exact metadata module.</summary>
+    DuplicatePropertyCatalogModule = 40,
+
+    /// <summary>A supplied Property catalog named no module in the exact ancestry portfolio.</summary>
+    PropertyCatalogModuleNotInPortfolio = 41,
+
+    /// <summary>A Property catalog's source ends differed from its module's authority source ends.</summary>
+    PropertyCatalogSourceEndsMismatch = 42,
+
+    /// <summary>A Property catalog's definition authority differed from its module's portfolio authority.</summary>
+    PropertyCatalogAuthorityMismatch = 43,
 }
 
 /// <summary>Classifies the physical storage shape of one selected static-field declaration.</summary>
@@ -174,8 +210,9 @@ public enum StaticFieldV2FieldStorageShape
 /// </remarks>
 public enum StaticFieldV2MemberLookupCoverageBoundary
 {
-    /// <summary>The physical Property and Event tables are not modeled, so same-name accessors cannot block.</summary>
-    PropertyAndEventTablesNotModeled = 1,
+    // Value 1, PropertyAndEventTablesNotModeled, is retired: the Property table is modeled now, so the claim is
+    // no longer true as stated. The number is left as a hole. Renumbering a narrower boundary onto it would keep
+    // every already-recorded digest byte-identical while silently changing what the recorded evidence asserts.
 
     /// <summary>An interface owner examined only itself because no interface-implementation portfolio was supplied.</summary>
     InterfaceAncestryNotModeled = 2,
@@ -185,6 +222,15 @@ public enum StaticFieldV2MemberLookupCoverageBoundary
 
     /// <summary>Qualified inspection bypassed every accessibility rule for every examined declaration.</summary>
     AccessibilityBypassApplied = 4,
+
+    /// <summary>The physical Event and EventMap tables are not modeled, so a same-name event cannot block.</summary>
+    EventTablesNotModeled = 5,
+
+    /// <summary>
+    /// MethodSemantics is not modeled, so a same-name property blocks without any test of whether its accessors are
+    /// reachable from the use site.
+    /// </summary>
+    PropertyAccessorSemanticsNotModeled = 6,
 }
 
 /// <summary>Freezes one caller-supplied friend-assembly grant of a single defining assembly identity.</summary>
@@ -444,7 +490,7 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
 public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFieldV2MemberLookupLevelIdentity>
 {
     private const string CanonicalDomain = "static-field-v2-member-lookup-level";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2MemberLookupLevelIdentity(
@@ -452,12 +498,14 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
         MetadataTypeDefinitionAuthorityIdentity declaringTypeDefinition,
         int examinedFieldCount,
         int examinedMethodCount,
+        int examinedPropertyCount,
         int accessibleCandidateCount)
     {
         LevelIndex = levelIndex;
         DeclaringTypeDefinition = declaringTypeDefinition;
         ExaminedFieldCount = examinedFieldCount;
         ExaminedMethodCount = examinedMethodCount;
+        ExaminedPropertyCount = examinedPropertyCount;
         AccessibleCandidateCount = accessibleCandidateCount;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
@@ -465,6 +513,7 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
         writer.WriteSha256(declaringTypeDefinition.Sha256, nameof(declaringTypeDefinition));
         writer.WriteInt32(examinedFieldCount);
         writer.WriteInt32(examinedMethodCount);
+        writer.WriteInt32(examinedPropertyCount);
         writer.WriteInt32(accessibleCandidateCount);
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -482,7 +531,10 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
     /// <summary>Gets the count of declared MethodDef rows examined at this level.</summary>
     public int ExaminedMethodCount { get; }
 
-    /// <summary>Gets the count of accessible same-name field and method declarations found at this level.</summary>
+    /// <summary>Gets the count of declared Property rows examined at this level.</summary>
+    public int ExaminedPropertyCount { get; }
+
+    /// <summary>Gets the count of accessible same-name field, method, and property declarations at this level.</summary>
     public int AccessibleCandidateCount { get; }
 
     /// <summary>Gets the exact TypeDef token of the declaring type consulted at this level.</summary>
@@ -515,6 +567,7 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
         MetadataTypeDefinitionAuthorityIdentity declaringTypeDefinition,
         int examinedFieldCount,
         int examinedMethodCount,
+        int examinedPropertyCount,
         int accessibleCandidateCount)
     {
         if (!StaticFieldV2MemberLookupOutcome.OwnsRowMintCapability(mintCapability))
@@ -528,12 +581,14 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
         ArgumentOutOfRangeException.ThrowIfNegative(levelIndex);
         ArgumentOutOfRangeException.ThrowIfNegative(examinedFieldCount);
         ArgumentOutOfRangeException.ThrowIfNegative(examinedMethodCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(examinedPropertyCount);
         ArgumentOutOfRangeException.ThrowIfNegative(accessibleCandidateCount);
         return new StaticFieldV2MemberLookupLevelIdentity(
             levelIndex,
             declaringTypeDefinition,
             examinedFieldCount,
             examinedMethodCount,
+            examinedPropertyCount,
             accessibleCandidateCount);
     }
 }
@@ -555,10 +610,11 @@ public sealed class StaticFieldV2MemberLookupLevelIdentity : IEquatable<StaticFi
 public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2MemberLookupRequest>
 {
     private const string CanonicalDomain = "static-field-v2-member-lookup-request";
-    private const int CanonicalSchemaVersion = 2;
+    private const int CanonicalSchemaVersion = 3;
     private const int TokenResolutionCatalogsFieldTag = 1;
     private const int OwnerClosedConstructionFieldTag = 2;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
+    private readonly ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
     private readonly ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenResolutionCatalogs;
     private readonly ImmutableArray<byte> canonicalBytes;
@@ -569,6 +625,7 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         DumpExpressionIdentifier fieldName,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs,
         StaticFieldV2AccessibilityMode accessibilityMode,
         StaticFieldContainingAssemblyIdentity? requestingAssembly,
         ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants,
@@ -581,6 +638,7 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         FieldName = fieldName;
         AncestryPortfolio = ancestryPortfolio;
         this.fieldCatalogs = fieldCatalogs;
+        this.propertyCatalogs = propertyCatalogs;
         AccessibilityMode = accessibilityMode;
         RequestingAssembly = requestingAssembly;
         this.friendAssemblyGrants = friendAssemblyGrants;
@@ -597,6 +655,14 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         if (!fieldCatalogs.IsDefault)
         {
             foreach (var catalog in fieldCatalogs)
+            {
+                ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
+            }
+        }
+        writer.WriteInt32(propertyCatalogs.IsDefault ? -1 : propertyCatalogs.Length);
+        if (!propertyCatalogs.IsDefault)
+        {
+            foreach (var catalog in propertyCatalogs)
             {
                 ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
             }
@@ -649,6 +715,13 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// <summary>Gets whether the supplied FieldDef catalog vector was explicitly initialized.</summary>
     public bool IsFieldCatalogVectorInitialized => !fieldCatalogs.IsDefault;
 
+    /// <summary>Gets a defensive copy of the supplied per-module Property catalog vector, default when absent.</summary>
+    public ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogs =>
+        propertyCatalogs.IsDefault ? default : ExpressionV2ContractEncoding.Copy(propertyCatalogs);
+
+    /// <summary>Gets whether the supplied Property catalog vector was explicitly initialized.</summary>
+    public bool IsPropertyCatalogVectorInitialized => !propertyCatalogs.IsDefault;
+
     /// <summary>Gets the caller-declared accessibility certificate that governs every admission decision.</summary>
     public StaticFieldV2AccessibilityMode AccessibilityMode { get; }
 
@@ -693,6 +766,11 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// Exactly one FieldDef catalog per ancestry-portfolio module in any order. A default array is admitted here and
     /// becomes a typed vector-shape stop rather than an exception, so callers can replay malformed input.
     /// </param>
+    /// <param name="propertyCatalogs">
+    /// Exactly one Property catalog per ancestry-portfolio module in any order, on the same terms as
+    /// <paramref name="fieldCatalogs"/>. The vector is required: without it a level cannot prove that no property
+    /// owns the requested name, and answering as though none did would be a fallback.
+    /// </param>
     /// <param name="accessibilityMode">The caller-declared accessibility certificate.</param>
     /// <param name="requestingAssembly">
     /// The requesting assembly, required exactly for <see cref="StaticFieldV2AccessibilityMode.UseSiteCertificate"/>.
@@ -724,6 +802,7 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         DumpExpressionIdentifier fieldName,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs,
         StaticFieldV2AccessibilityMode accessibilityMode,
         StaticFieldContainingAssemblyIdentity? requestingAssembly = null,
         ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants = default,
@@ -768,12 +847,16 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         var catalogs = fieldCatalogs.IsDefault
             ? default
             : ImmutableArray.CreateRange(fieldCatalogs);
+        var properties = propertyCatalogs.IsDefault
+            ? default
+            : ImmutableArray.CreateRange(propertyCatalogs);
         return new StaticFieldV2MemberLookupRequest(
             ownerModule,
             ownerTypeDefinitionToken,
             fieldName,
             ancestryPortfolio,
             catalogs,
+            properties,
             accessibilityMode,
             requestingAssembly,
             grants,
@@ -798,6 +881,8 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogsCore => fieldCatalogs;
+
+    internal ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogsCore => propertyCatalogs;
 
     internal ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> FriendAssemblyGrantsCore =>
         friendAssemblyGrants;
@@ -981,6 +1066,7 @@ public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2M
         MetadataTypeDefinitionAuthorityIdentity declaringTypeDefinition,
         int examinedFieldCount,
         int examinedMethodCount,
+        int examinedPropertyCount,
         int accessibleCandidateCount) =>
         StaticFieldV2MemberLookupLevelIdentity.Create(
             RowMintCapability,
@@ -988,6 +1074,7 @@ public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2M
             declaringTypeDefinition,
             examinedFieldCount,
             examinedMethodCount,
+            examinedPropertyCount,
             accessibleCandidateCount);
 
     internal static StaticFieldV2MemberLookupOutcome IssueComplete(
@@ -1125,6 +1212,16 @@ public static class StaticFieldV2MemberLookup
             return vector;
         }
 
+        var propertyVector = ValidatePropertyCatalogVector(
+            request,
+            boundaries,
+            authorityByModule,
+            out var propertyCatalogsByModule);
+        if (propertyVector is not null)
+        {
+            return propertyVector;
+        }
+
         if (!authorityByModule.ContainsKey(request.OwnerModule))
         {
             return Stop(
@@ -1180,6 +1277,7 @@ public static class StaticFieldV2MemberLookup
             chain,
             plan,
             catalogsByModule,
+            propertyCatalogsByModule,
             authorityByModule,
             allowGenericBaseContinuation: !isInterfaceOwner && !request.TokenResolutionCatalogsCore.IsDefault);
     }
@@ -1235,6 +1333,7 @@ public static class StaticFieldV2MemberLookup
         MetadataTypeDefinitionAncestryChainIdentity chain,
         LevelPlan plan,
         Dictionary<StaticFieldMetadataModuleIdentity, MetadataFieldDefinitionTableCatalogIdentity> catalogsByModule,
+        Dictionary<StaticFieldMetadataModuleIdentity, MetadataPropertyTableCatalogIdentity> propertyCatalogsByModule,
         Dictionary<StaticFieldMetadataModuleIdentity, MetadataDefinitionAuthorityCatalogIdentity> authorityByModule,
         bool allowGenericBaseContinuation)
     {
@@ -1244,6 +1343,7 @@ public static class StaticFieldV2MemberLookup
         var winningStaticFields = new List<StaticFieldV2MemberCandidateIdentity>();
         StaticFieldV2MemberCandidateIdentity? winningInstanceField = null;
         var winningMethodToken = 0;
+        var winningPropertyToken = 0;
         var decisionCount = 0;
         var observedCount = 0;
         var resolved = false;
@@ -1268,10 +1368,12 @@ public static class StaticFieldV2MemberLookup
             var authority = authorityByModule[walkModule];
             var fieldRows = catalog.RowsForDeclaringTypeOrEmpty(walkType);
             var methodTokens = walkType.MethodDefinitionTokens;
+            var propertyRows = propertyCatalogsByModule[walkModule].RowsForDeclaringTypeOrEmpty(walkType);
             var accessibleCandidateCount = 0;
             var levelStaticFields = new List<StaticFieldV2MemberCandidateIdentity>();
             StaticFieldV2MemberCandidateIdentity? levelInstanceField = null;
             var levelMethodToken = 0;
+            var levelPropertyToken = 0;
 
             foreach (var fieldRow in fieldRows)
             {
@@ -1342,11 +1444,33 @@ public static class StaticFieldV2MemberLookup
                 }
             }
 
+            // The third pass. A property blocks by name alone: MethodSemantics is not modeled, so nothing here can
+            // ask whether its accessors are reachable, and the declared PropertyAccessorSemanticsNotModeled boundary
+            // states exactly that. The pass charges no accessibility decision, because it makes none - charging the
+            // decision counter would make the accessibility-check bound assert work that never happened. A property's
+            // accessors are named get_P and set_P and so can never have matched the method pass above: this is
+            // genuinely new blocking, not a second reading of evidence already consulted.
+            foreach (var propertyRow in propertyRows)
+            {
+                if (!string.Equals(propertyRow.Name, name, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                observedCount++;
+                accessibleCandidateCount++;
+                if (levelPropertyToken == 0)
+                {
+                    levelPropertyToken = propertyRow.PropertyToken;
+                }
+            }
+
             levels.Add(StaticFieldV2MemberLookupOutcome.IssueLevel(
                 levelIndex,
                 walkType,
                 fieldRows.Length,
                 methodTokens.Length,
+                propertyRows.Length,
                 accessibleCandidateCount));
 
             if (accessibleCandidateCount > 0)
@@ -1354,6 +1478,7 @@ public static class StaticFieldV2MemberLookup
                 winningStaticFields.AddRange(levelStaticFields);
                 winningInstanceField = levelInstanceField;
                 winningMethodToken = levelMethodToken;
+                winningPropertyToken = levelPropertyToken;
                 resolved = true;
                 break;
             }
@@ -1451,6 +1576,26 @@ public static class StaticFieldV2MemberLookup
                 winningStaticFields[0].FieldDefinitionToken);
         }
 
+        // Last, deliberately. HiddenByDeclaredMethod, HiddenByInstanceField, AmbiguousStaticDeclarations, Absent and
+        // Partial all keep their exact issue values; the only answer this branch changes is a level where a property
+        // owns the name and nothing nearer claimed it. A level declaring both an accessible static field and a
+        // same-name property is illegal in C# but legal in IL, and there the property is reported: the conservative
+        // answer, since the field cannot be shown to be the one a use site would bind.
+        if (winningPropertyToken != 0)
+        {
+            return StaticFieldV2MemberLookupOutcome.IssueComplete(
+                StaticFieldV2MemberLookupResultKind.HiddenByUnsupportedMember,
+                StaticFieldV2MemberLookupIssue.HiddenByDeclaredProperty,
+                request,
+                null,
+                consultedLevels,
+                [.. examined],
+                currentChain.TerminalKind,
+                boundaries,
+                observedCount,
+                winningPropertyToken);
+        }
+
         var selected = winningStaticFields[0];
         var rejected = ImmutableArray.CreateBuilder<StaticFieldV2MemberCandidateIdentity>();
         foreach (var candidate in examined)
@@ -1471,6 +1616,157 @@ public static class StaticFieldV2MemberLookup
             boundaries,
             observedCount,
             selected.FieldDefinitionToken);
+    }
+
+    private static StaticFieldV2MemberLookupOutcome? ValidatePropertyCatalogVector(
+        StaticFieldV2MemberLookupRequest request,
+        ImmutableArray<StaticFieldV2MemberLookupCoverageBoundary> boundaries,
+        Dictionary<StaticFieldMetadataModuleIdentity, MetadataDefinitionAuthorityCatalogIdentity> authorityByModule,
+        out Dictionary<StaticFieldMetadataModuleIdentity, MetadataPropertyTableCatalogIdentity> propertyCatalogsByModule)
+    {
+        propertyCatalogsByModule = [];
+
+        var entries = request.AncestryPortfolio.Entries;
+        var catalogs = request.PropertyCatalogsCore;
+        if (catalogs.IsDefault)
+        {
+            return Stop(
+                request,
+                StaticFieldV2MemberLookupResultKind.NonExact,
+                StaticFieldV2MemberLookupIssue.PropertyCatalogVectorUninitialized,
+                boundaries,
+                null,
+                0,
+                null);
+        }
+        if (catalogs.Length > StaticFieldV2Limits.MaximumModuleCount)
+        {
+            return Stop(
+                request,
+                StaticFieldV2MemberLookupResultKind.NonExact,
+                StaticFieldV2MemberLookupIssue.PropertyCatalogModuleCountBoundReached,
+                boundaries,
+                new EvaluationDeterministicBound(
+                    ExpressionV2ContractLimits.ModuleCountBoundName,
+                    StaticFieldV2Limits.MaximumModuleCount),
+                StaticFieldV2Limits.MaximumModuleCount + 1,
+                null);
+        }
+        if (catalogs.Length < entries.Length)
+        {
+            return Stop(
+                request,
+                StaticFieldV2MemberLookupResultKind.NonExact,
+                StaticFieldV2MemberLookupIssue.PropertyCatalogSlotsIncomplete,
+                boundaries,
+                null,
+                catalogs.Length,
+                null);
+        }
+        if (catalogs.Length > entries.Length)
+        {
+            return Stop(
+                request,
+                StaticFieldV2MemberLookupResultKind.Invalid,
+                StaticFieldV2MemberLookupIssue.PropertyCatalogSlotCountConflict,
+                boundaries,
+                null,
+                catalogs.Length,
+                null);
+        }
+        foreach (var catalog in catalogs)
+        {
+            if (catalog is null)
+            {
+                return Stop(
+                    request,
+                    StaticFieldV2MemberLookupResultKind.NonExact,
+                    StaticFieldV2MemberLookupIssue.PropertyCatalogMissing,
+                    boundaries,
+                    null,
+                    catalogs.Length,
+                    null);
+            }
+        }
+        foreach (var catalog in catalogs)
+        {
+            if (catalog.ResultKind == MetadataPropertyTableResultKind.NonExact)
+            {
+                return Stop(
+                    request,
+                    StaticFieldV2MemberLookupResultKind.NonExact,
+                    StaticFieldV2MemberLookupIssue.PropertyCatalogNonExact,
+                    boundaries,
+                    catalog.ReachedBound,
+                    catalog.ObservedCount,
+                    catalog.RelatedMetadataToken);
+            }
+        }
+        foreach (var catalog in catalogs)
+        {
+            if (catalog.ResultKind == MetadataPropertyTableResultKind.Invalid)
+            {
+                return Stop(
+                    request,
+                    StaticFieldV2MemberLookupResultKind.Invalid,
+                    StaticFieldV2MemberLookupIssue.PropertyCatalogInvalid,
+                    boundaries,
+                    null,
+                    catalog.ObservedCount,
+                    catalog.RelatedMetadataToken);
+            }
+        }
+
+        foreach (var catalog in catalogs)
+        {
+            var module = catalog.DeclaredMemberSourceEnds.SourceModule;
+            if (!propertyCatalogsByModule.TryAdd(module, catalog))
+            {
+                return Stop(
+                    request,
+                    StaticFieldV2MemberLookupResultKind.Invalid,
+                    StaticFieldV2MemberLookupIssue.DuplicatePropertyCatalogModule,
+                    boundaries,
+                    null,
+                    catalogs.Length,
+                    null);
+            }
+            if (!authorityByModule.TryGetValue(module, out var authority))
+            {
+                return Stop(
+                    request,
+                    StaticFieldV2MemberLookupResultKind.Invalid,
+                    StaticFieldV2MemberLookupIssue.PropertyCatalogModuleNotInPortfolio,
+                    boundaries,
+                    null,
+                    catalogs.Length,
+                    null);
+            }
+            if (!catalog.DeclaredMemberSourceEnds.DefinitionSourceEnds.Equals(authority.SourceEnds))
+            {
+                return Stop(
+                    request,
+                    StaticFieldV2MemberLookupResultKind.Invalid,
+                    StaticFieldV2MemberLookupIssue.PropertyCatalogSourceEndsMismatch,
+                    boundaries,
+                    null,
+                    catalogs.Length,
+                    null);
+            }
+            if (!catalog.DefinitionAuthority.Equals(authority))
+            {
+                return Stop(
+                    request,
+                    StaticFieldV2MemberLookupResultKind.Invalid,
+                    StaticFieldV2MemberLookupIssue.PropertyCatalogAuthorityMismatch,
+                    boundaries,
+                    null,
+                    catalogs.Length,
+                    null);
+            }
+        }
+
+        return null;
     }
 
     private static StaticFieldV2MemberLookupOutcome? ValidateCatalogVector(
@@ -1666,11 +1962,13 @@ public static class StaticFieldV2MemberLookup
         StaticFieldV2MemberLookupRequest request) =>
         request.AccessibilityMode == StaticFieldV2AccessibilityMode.UseSiteCertificate
             ? [
-                StaticFieldV2MemberLookupCoverageBoundary.PropertyAndEventTablesNotModeled,
+                StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
+                StaticFieldV2MemberLookupCoverageBoundary.PropertyAccessorSemanticsNotModeled,
                 StaticFieldV2MemberLookupCoverageBoundary.FriendAssemblyAttributesNotModeled,
             ]
             : [
-                StaticFieldV2MemberLookupCoverageBoundary.PropertyAndEventTablesNotModeled,
+                StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
+                StaticFieldV2MemberLookupCoverageBoundary.PropertyAccessorSemanticsNotModeled,
                 StaticFieldV2MemberLookupCoverageBoundary.AccessibilityBypassApplied,
             ];
 

@@ -419,12 +419,18 @@ open result, malformed signatures, or incompatible value-shape claims remain dis
 `MVAR` is never legal in a FieldDef signature and is `Invalid`. Selected-frame method arguments are also non-admitted
 for closing an expression owner/type tree.
 
-Literal projection reads the FieldDef literal flag, exact field signature, and Constant row plus the pinned-compiler
-literal attribute encodings proven by W8.1. Primitive, enum-underlying, floating-bit, string, null, and exact `decimal` constants
-produce canonical V2 values with runtime construction and storage marked `NotRequired`; malformed, duplicate,
-type-incompatible, or unknown literal encodings stop before any runtime capability call.
+Literal projection reads the FieldDef literal flag, exact field signature, and a Constant row issued by the module's
+complete Constant table catalog, plus the pinned-compiler literal attribute encodings proven by W8.1. Primitive,
+enum-underlying, floating-bit, string, and null constants produce canonical V2 values with runtime construction and
+storage marked `NotRequired`; malformed, duplicate, type-incompatible, or unknown literal encodings stop before any
+runtime capability call. **Correction to this document's original claim:** `decimal` is *not* among them. The C#
+compiler emits a `decimal` constant as a `DecimalConstantAttribute`, not a Constant row — the field carries no
+`HasDefault` flag at all, which `W8CompilerPhysicalTruthTests` proves against the real emitted assembly. `decimal`
+therefore has no literal kind, no primitive kind, and no admitted Constant type code, and a named value type without a
+declared instance `value__` field stops as attribute-encoded rather than decoding. Reading it requires modeling the
+CustomAttribute table, which remains a declared coverage boundary.
 
-Literal primitive/enum/decimal/non-null-string values are direct results. A metadata literal has no fabricated target
+Literal primitive/enum/non-null-string values are direct results. A metadata literal has no fabricated target
 address, so a suffix that needs object navigation is `Unsupported`; an exact null reference may still take the unchanged
 W2/W6 conditional-null or compatible-fallback path without a read. Literal provenance distinguishes that semantic
 short-circuit from a heap-backed reference.

@@ -398,3 +398,43 @@ Steps 6 and 7 each move goldens *within* the step, so the matrix is green at eve
 8. **Roslyn's Property attribute bits.** `PropertyAttributesNotAdmitted` rejects anything outside `0x0200 | 0x0400 | 0x1000`. Verify against the real compiled targets that no fixture property carries another bit before making this Invalid rather than a recorded profile.
 9. **Public-surface guard drift.** `W8V2ExpressionPipelineTests` pins an exact array of public types including `StaticFieldV2LiteralConstantFact`; `W8V2StorageStrategyTests.cs:665-712` pins seventeen public types. Both must be edited in steps 6 and 7 respectively or the build fails on an unrelated-looking assertion.
 10. **The Dump lane needs `CI=true` builds, and rebuilding `W8CoordinatorShapeTarget` invalidates the PDB identity of previously captured demo dumps.** Incident 31's pinned snapshot therefore needs a **fresh capture**, not a rerun, in step 8.
+---
+
+# 10. OUTCOME — what landed, and where this plan was wrong
+
+The nine steps landed as written except for the two corrections below. Both are recorded here rather than edited
+into the sections above, so the plan stays readable as what was predicted and this section as what was measured.
+
+**Correction 1 — incident 12 did not flip.** Section 4.8 asserted that `workflow-derived-unsupported-member-hides-base`
+would flip `manifest-only → executed` once the Property table landed, and risk 7 asked only whether
+`BaseStage.Sentinel` was a real static field. It is. That was the wrong question. `WorkflowShapeGate.Run` calls
+`MaterializeSecondDefinition()` **unconditionally**, before selecting a profile, so every workflow-shape snapshot loads
+the target's own assembly into a second `AssemblyLoadContext`. Both definitions of `HidingStage` are therefore in the
+snapshot and the answer stops at `typeBinding: Ambiguous`, before any member stage runs — measured, not inferred: the
+produced provenance carries neither an owner construction nor a member lookup. The declared counterfactual stops
+identically, which is the proof that the ambiguity is the owner's and not the member's. The row stays `manifest-only`
+with a corrected reason, and the divergence is asserted in `Attempted_incidents_stop_at_their_landed_pipeline_boundaries`.
+**Do not cite incident 12 as evidence about the Property table in either direction.** Exactly one row became drivable:
+incident 31, `coordinator-property-shares-bare-name`, whose blocker really was the missing table. Executed rows went
+13 → 14, not 13 → 15.
+
+**Correction 2 — `withhold-literal-constant-source` was not wired.** Section 4.8 called for adding it to
+`ApplyCounterfactual`. The only row declaring that action is incident 32, which section 4.8 itself says stays
+`manifest-only`, so the arm would have been unreachable code asserting nothing. It is deliberately absent. When
+incident 32's own blocker — the undecoded ground TypeSpec alias — is closed, the arm goes in with it.
+
+**Deviation, stated plainly.** Section 7 called for a new Fast file `W8V2PropertyNameHidingTests`. The hiding tests
+live in `W8V2MemberLookupTests` instead, because `LookupWorld` and its module builder are private to that file and a
+separate file would have had to duplicate roughly four hundred lines of world construction to earn its name. The
+coverage the section asked for is present: property-blocks-inherited-field, property-outranks-same-level-field,
+overloaded indexers admitted, every prior issue value unmoved, both boundaries declared in both accessibility modes,
+and all eleven Property-vector shape stops. The lexical property pass is covered in `W8V2LexicalCompletenessTests`
+through a `PropertyHost` whose declared property owns the bare spelling.
+
+**Deferred, and owned.** MethodSemantics (0x18) is still not modeled. A same-name property therefore blocks by name
+alone, with no test of whether its accessors are reachable from the use site, and no way to distinguish a
+get-only property from a set-only one. This is declared unconditionally as
+`StaticFieldV2MemberLookupCoverageBoundary.PropertyAccessorSemanticsNotModeled = 6` and
+`StaticFieldV2LexicalCoverageBoundary.PropertyAccessorSemanticsNotModeled = 9`, in both accessibility modes. Event
+(0x14) and EventMap (0x12) are likewise unmodeled, declared as `EventTablesNotModeled` on both axes. Closing either is
+a separately owned slice; until then the boundaries are the honest price of this one.

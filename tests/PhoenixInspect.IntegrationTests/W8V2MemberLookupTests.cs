@@ -50,6 +50,9 @@ public sealed class W8V2MemberLookupTests
     private const int MethodOnlyClashRid = 19;
     private const int ShapeBaseRid = 20;
     private const int ShapeUnresolvedRid = 21;
+    private const int PropertyHiderRid = 22;
+    private const int PropertyAndFieldRid = 23;
+    private const int IndexerOwnerRid = 24;
 
     private const int LibBaseRid = 2;
 
@@ -60,6 +63,188 @@ public sealed class W8V2MemberLookupTests
     private const int GenDerivedPointerRid = 6;
     private const int GenCycleARid = 7;
     private const int GenCycleBRid = 8;
+
+    /// <summary>
+    /// Proves a declared property owning the requested name blocks the answer, outranks a same-level static field,
+    /// leaves every other issue value untouched, and is metered on its own examined-count axis.
+    /// </summary>
+    /// <remarks>
+    /// The property blocks by name alone. MethodSemantics is not modeled, so nothing here can ask whether the
+    /// property's accessors are reachable from the use site, and the declared PropertyAccessorSemanticsNotModeled
+    /// boundary says exactly that rather than the answer pretending to more than it proved.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Declared_property_owning_the_name_blocks_the_field_it_would_otherwise_reach()
+    {
+        var world = BuildWorld();
+
+        // Without the property the same spelling reaches the base field two levels up, so the block is the property's
+        // doing and not an artifact of the walk.
+        var reachable = Lookup(world, world.App, DerivedRid, "RootOnly");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Exact, reachable.ResultKind);
+
+        var hidden = Lookup(world, world.App, PropertyHiderRid, "Shared");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.HiddenByUnsupportedMember, hidden.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.HiddenByDeclaredProperty, hidden.Issue);
+        Assert.Equal(0x1700_0001, hidden.RelatedMetadataToken);
+        Assert.Null(hidden.SelectedCandidate);
+
+        // Level zero declares the property and is decisive: the base level that owns the field is never consulted.
+        var level = Assert.Single(hidden.Levels);
+        Assert.Equal(0, level.LevelIndex);
+        Assert.Equal(TypeToken(PropertyHiderRid), level.DeclaringTypeDefinitionToken);
+        Assert.Equal(0, level.ExaminedFieldCount);
+        Assert.Equal(1, level.ExaminedPropertyCount);
+        Assert.Equal(1, level.AccessibleCandidateCount);
+
+        // A level declaring both reports the property. Reporting the field would answer a declaration the use site
+        // cannot be shown to bind.
+        var both = Lookup(world, world.App, PropertyAndFieldRid, "Both");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.HiddenByUnsupportedMember, both.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.HiddenByDeclaredProperty, both.Issue);
+        Assert.Equal(1, Assert.Single(both.Levels).ExaminedFieldCount);
+        Assert.Equal(1, Assert.Single(both.Levels).ExaminedPropertyCount);
+
+        // Two indexers legally share one name, so the catalog admits them and neither claims an unrelated field.
+        var unclaimed = Lookup(world, world.App, IndexerOwnerRid, "Unclaimed");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Exact, unclaimed.ResultKind);
+        Assert.Equal(2, Assert.Single(unclaimed.Levels).ExaminedPropertyCount);
+        var indexer = Lookup(world, world.App, IndexerOwnerRid, "Item");
+        Assert.Equal(StaticFieldV2MemberLookupIssue.HiddenByDeclaredProperty, indexer.Issue);
+
+        // A same-name method still reports its own issue value: the property branch sits last and changes nothing
+        // that a nearer answer already claimed.
+        Assert.Equal(
+            StaticFieldV2MemberLookupIssue.HiddenByDeclaredMethod,
+            Lookup(world, world.App, MethodClashRid, "Twin").Issue);
+        Assert.Equal(
+            StaticFieldV2MemberLookupIssue.HiddenByInstanceField,
+            Lookup(world, world.App, InstanceShadowRid, "Shared").Issue);
+        Assert.Equal(
+            StaticFieldV2MemberLookupIssue.AmbiguousStaticDeclarations,
+            Lookup(world, world.App, DuplicateHolderRid, "Twin2").Issue);
+        Assert.Equal(
+            StaticFieldV2MemberLookupResultKind.Absent,
+            Lookup(world, world.App, PropertyHiderRid, "NoSuchName").ResultKind);
+
+        // Both accessibility modes declare the two narrower boundaries that replaced the retired combined claim.
+        Assert.Contains(
+            StaticFieldV2MemberLookupCoverageBoundary.PropertyAccessorSemanticsNotModeled,
+            hidden.DeclaredCoverageBoundaries);
+        Assert.Contains(
+            StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
+            hidden.DeclaredCoverageBoundaries);
+        var useSite = Lookup(
+            world,
+            world.App,
+            PropertyHiderRid,
+            "Shared",
+            StaticFieldV2AccessibilityMode.UseSiteCertificate,
+            world.AppAssembly);
+        Assert.Contains(
+            StaticFieldV2MemberLookupCoverageBoundary.PropertyAccessorSemanticsNotModeled,
+            useSite.DeclaredCoverageBoundaries);
+        Assert.Contains(
+            StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
+            useSite.DeclaredCoverageBoundaries);
+    }
+
+    /// <summary>
+    /// Proves the supplied Property catalog vector is validated on exactly the terms the FieldDef vector is, before
+    /// any level is consulted, and that every shape failure is a typed stop rather than a thrown exception.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Property_catalog_vector_shape_is_proven_before_any_level_is_consulted()
+    {
+        var world = BuildWorld();
+        var name = DumpExpressionIdentifier.Create("Shared");
+
+        AssertStop(
+            Select(world, world.App, BaseRid, name, world.FieldCatalogs, withoutPropertyCatalogs: true),
+            StaticFieldV2MemberLookupResultKind.NonExact,
+            StaticFieldV2MemberLookupIssue.PropertyCatalogVectorUninitialized);
+        AssertStop(
+            Select(world, world.App, BaseRid, name, world.FieldCatalogs, [world.PropertyCatalogs[0]]),
+            StaticFieldV2MemberLookupResultKind.NonExact,
+            StaticFieldV2MemberLookupIssue.PropertyCatalogSlotsIncomplete);
+        AssertStop(
+            Select(
+                world,
+                world.App,
+                BaseRid,
+                name,
+                world.FieldCatalogs,
+                world.PropertyCatalogs.Add(world.PropertyCatalogs[0])),
+            StaticFieldV2MemberLookupResultKind.Invalid,
+            StaticFieldV2MemberLookupIssue.PropertyCatalogSlotCountConflict);
+        AssertStop(
+            Select(
+                world,
+                world.App,
+                BaseRid,
+                name,
+                world.FieldCatalogs,
+                world.PropertyCatalogs.SetItem(0, null!)),
+            StaticFieldV2MemberLookupResultKind.NonExact,
+            StaticFieldV2MemberLookupIssue.PropertyCatalogMissing);
+        AssertStop(
+            Select(
+                world,
+                world.App,
+                BaseRid,
+                name,
+                world.FieldCatalogs,
+                world.PropertyCatalogs.SetItem(0, world.PropertyCatalogs[1])),
+            StaticFieldV2MemberLookupResultKind.Invalid,
+            StaticFieldV2MemberLookupIssue.DuplicatePropertyCatalogModule);
+
+        // A catalog minted over a module the portfolio never named cannot stand in for one it did.
+        var stranger = BuildWorld(0x7100).PropertyCatalogs[0];
+        AssertStop(
+            Select(world, world.App, BaseRid, name, world.FieldCatalogs, world.PropertyCatalogs.SetItem(0, stranger)),
+            StaticFieldV2MemberLookupResultKind.Invalid,
+            StaticFieldV2MemberLookupIssue.PropertyCatalogModuleNotInPortfolio);
+
+        // A non-exact catalog is a non-exact answer, never a level that quietly examines no properties.
+        var appIndex = world.PropertyCatalogs.IndexOf(world.AppCatalogs.PropertyCatalog);
+        Assert.True(appIndex >= 0);
+        var nonExact = MetadataPropertyTableCatalogIdentity.Create(
+            world.AppCatalogs.PropertyCatalog.DeclaredMemberSourceEnds,
+            world.AppCatalogs.Authority,
+            default);
+        Assert.Equal(MetadataPropertyTableResultKind.NonExact, nonExact.ResultKind);
+        AssertStop(
+            Select(
+                world,
+                world.App,
+                BaseRid,
+                name,
+                world.FieldCatalogs,
+                world.PropertyCatalogs.SetItem(appIndex, nonExact)),
+            StaticFieldV2MemberLookupResultKind.NonExact,
+            StaticFieldV2MemberLookupIssue.PropertyCatalogNonExact);
+
+        // A row whose owner the module's own PropertyMap cannot express is contradictory evidence, not a gap.
+        var invalid = MetadataPropertyTableCatalogIdentity.Create(
+            world.CoreCatalogs.PropertyCatalog.DeclaredMemberSourceEnds,
+            world.CoreCatalogs.Authority,
+            [
+                MetadataPropertyRowObservationIdentity.Create(
+                    world.Core,
+                    0x1700_0001,
+                    0,
+                    "Impossible",
+                    [0x28, 0x00, 0x08],
+                    TypeToken(2)),
+            ]);
+        Assert.Equal(MetadataPropertyTableResultKind.Invalid, invalid.ResultKind);
+        AssertStop(
+            Select(world, world.App, BaseRid, name, world.FieldCatalogs, world.PropertyCatalogs.SetItem(0, invalid)),
+            StaticFieldV2MemberLookupResultKind.Invalid,
+            StaticFieldV2MemberLookupIssue.PropertyCatalogInvalid);
+    }
 
     /// <summary>
     /// Proves direct selection, two-level inherited selection with declaring-type retention, derived redeclaration
@@ -81,7 +266,7 @@ public sealed class W8V2MemberLookupTests
         Assert.Equal(MetadataAncestryChainTerminalKind.SystemObjectReached, direct.AncestryTerminal);
         Assert.Empty(direct.RejectedCandidates);
         Assert.Contains(
-            StaticFieldV2MemberLookupCoverageBoundary.PropertyAndEventTablesNotModeled,
+            StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
             direct.DeclaredCoverageBoundaries);
 
         var inherited = Lookup(world, world.App, DeeperRid, "RootOnly");
@@ -408,6 +593,7 @@ public sealed class W8V2MemberLookupTests
             DumpExpressionIdentifier.Create("BaseSentinel"),
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass));
         Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, withoutCatalogs.ResultKind);
         Assert.Equal(StaticFieldV2MemberLookupIssue.AncestryIncomplete, withoutCatalogs.Issue);
@@ -474,6 +660,7 @@ public sealed class W8V2MemberLookupTests
             DumpExpressionIdentifier.Create("BaseSentinel"),
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
             tokenResolutionCatalogs: ImmutableArray<MetadataSignatureTokenResolutionCatalog>.Empty));
         Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, noCatalog.ResultKind);
@@ -489,6 +676,7 @@ public sealed class W8V2MemberLookupTests
             DumpExpressionIdentifier.Create("BaseSentinel"),
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
             tokenResolutionCatalogs: [emptyCatalog]));
         Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, missingEntry.ResultKind);
@@ -691,6 +879,7 @@ public sealed class W8V2MemberLookupTests
                 name,
                 stoppedPortfolio,
                 world.FieldCatalogs,
+                world.PropertyCatalogs,
                 StaticFieldV2AccessibilityMode.QualifiedInspectionBypass)),
             StaticFieldV2MemberLookupResultKind.NonExact,
             StaticFieldV2MemberLookupIssue.AncestryPortfolioNonExact);
@@ -753,6 +942,7 @@ public sealed class W8V2MemberLookupTests
                 name,
                 world.Ancestry,
                 world.FieldCatalogs,
+                world.PropertyCatalogs,
                 StaticFieldV2AccessibilityMode.QualifiedInspectionBypass)),
             StaticFieldV2MemberLookupResultKind.Invalid,
             StaticFieldV2MemberLookupIssue.OwnerModuleNotInPortfolio);
@@ -782,7 +972,7 @@ public sealed class W8V2MemberLookupTests
         Assert.True(outcome.CanonicalBytes.AsSpan().SequenceEqual(replay.CanonicalBytes.AsSpan()));
         Assert.NotEqual(outcome, Lookup(world, world.App, DerivedRid, "Shared"));
         Assert.Equal(
-            "c8cc916736efd2d3ba4cb324b336ee3d7cf706f5a5b0cf9776068dd46f59d020",
+            "f262febf1572d6c094ccf88107ebf8cfc48d118660cd56567272fa9dafe3a6c1",
             outcome.Sha256);
 
         var originalBytes = outcome.CanonicalBytes;
@@ -810,7 +1000,7 @@ public sealed class W8V2MemberLookupTests
         Assert.Equal(originalSha, outcome.Sha256);
         Assert.True(originalBytes.AsSpan().SequenceEqual(outcome.CanonicalBytes.AsSpan()));
         Assert.Equal(
-            StaticFieldV2MemberLookupCoverageBoundary.PropertyAndEventTablesNotModeled,
+            StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
             outcome.DeclaredCoverageBoundaries[0]);
         Assert.Equal(originalFirstCatalog, outcome.Request.FieldCatalogs[0]);
         Assert.Equal(3, outcome.Request.FieldCatalogs.Length);
@@ -832,6 +1022,7 @@ public sealed class W8V2MemberLookupTests
             outcome.SelectedCandidate!.DeclaringTypeDefinition,
             0,
             0,
+            0,
             0));
         Assert.False(StaticFieldV2MemberLookupOutcome.OwnsRowMintCapability(new object()));
 
@@ -843,6 +1034,7 @@ public sealed class W8V2MemberLookupTests
             name,
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass));
         Assert.Throws<ArgumentOutOfRangeException>(() => StaticFieldV2MemberLookupRequest.Create(
             world.App,
@@ -850,6 +1042,7 @@ public sealed class W8V2MemberLookupTests
             name,
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass));
         Assert.Throws<ArgumentOutOfRangeException>(() => StaticFieldV2MemberLookupRequest.Create(
             world.App,
@@ -857,6 +1050,7 @@ public sealed class W8V2MemberLookupTests
             name,
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             (StaticFieldV2AccessibilityMode)7));
         Assert.Throws<ArgumentException>(() => StaticFieldV2MemberLookupRequest.Create(
             world.App,
@@ -864,6 +1058,7 @@ public sealed class W8V2MemberLookupTests
             name,
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.UseSiteCertificate));
         Assert.Throws<ArgumentException>(() => StaticFieldV2MemberLookupRequest.Create(
             world.App,
@@ -871,6 +1066,7 @@ public sealed class W8V2MemberLookupTests
             name,
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
             world.AppAssembly));
         Assert.Throws<ArgumentException>(() => StaticFieldV2MemberLookupRequest.Create(
@@ -879,6 +1075,7 @@ public sealed class W8V2MemberLookupTests
             name,
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
             null,
             [LibGrant(world)]));
@@ -1013,6 +1210,7 @@ public sealed class W8V2MemberLookupTests
             DumpExpressionIdentifier.Create(fieldName),
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             mode,
             requestingAssembly,
             grants));
@@ -1028,6 +1226,7 @@ public sealed class W8V2MemberLookupTests
             DumpExpressionIdentifier.Create(fieldName),
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
             null,
             default,
@@ -1038,13 +1237,18 @@ public sealed class W8V2MemberLookupTests
         StaticFieldMetadataModuleIdentity module,
         int typeRowId,
         DumpExpressionIdentifier fieldName,
-        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> catalogs) =>
+        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> catalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs = default,
+        bool withoutPropertyCatalogs = false) =>
         StaticFieldV2MemberLookup.SelectStaticField(StaticFieldV2MemberLookupRequest.Create(
             module,
             TypeToken(typeRowId),
             fieldName,
             world.Ancestry,
             catalogs,
+            withoutPropertyCatalogs
+                ? default
+                : propertyCatalogs.IsDefault ? world.PropertyCatalogs : propertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass));
 
     private static LookupWorld BuildWorld(ulong addressBase = 0x5000)
@@ -1211,6 +1415,34 @@ public sealed class W8V2MemberLookupTests
                         Field("BaseOnly", FieldPublic | FieldStatic),
                     ]),
                 Type("Synthetic.Lookup", "IShapeUnresolved", InterfaceAttributes, null),
+
+                // A derived owner whose property owns the spelling its base declares as a static field.
+                Type(
+                    "Synthetic.Lookup",
+                    "PropertyHider",
+                    PublicClass,
+                    TypeToken(BaseRid),
+                    properties: [Property("Shared")]),
+
+                // One level declaring both an accessible static field and a same-name property. Illegal in C#,
+                // legal in IL, and the conservative answer is the property.
+                Type(
+                    "Synthetic.Lookup",
+                    "PropertyAndField",
+                    PublicClass,
+                    0x0100_0001,
+                    fields: [Field("Both", FieldPublic | FieldStatic)],
+                    properties: [Property("Both")]),
+
+                // Two indexers legally sharing one name and differing only in signature, plus a static field whose
+                // own name no property claims.
+                Type(
+                    "Synthetic.Lookup",
+                    "IndexerOwner",
+                    PublicClass,
+                    0x0100_0001,
+                    fields: [Field("Unclaimed", FieldPublic | FieldStatic)],
+                    properties: [Property("Item"), Property("Item", returnType: 0x0E)]),
             ],
             typeReferences: module =>
             [
@@ -1269,6 +1501,8 @@ public sealed class W8V2MemberLookupTests
         var order = ancestry.Entries.Select(static entry => entry.SourceModule).ToArray();
         var byModule = new[] { core, lib, app }.ToDictionary(static built => built.Module);
         var catalogs = ImmutableArray.CreateRange(order.Select(module => byModule[module].FieldCatalog));
+        var propertyCatalogs = ImmutableArray.CreateRange(
+            order.Select(module => byModule[module].PropertyCatalog));
         var interfacePortfolio = MetadataInterfaceImplementationPortfolioIdentity.Create(
             ancestry,
             [.. order.Select(module => byModule[module].InterfaceCatalog)]);
@@ -1280,8 +1514,10 @@ public sealed class W8V2MemberLookupTests
             lib.Module,
             app.Module,
             core,
+            app,
             ancestry,
             catalogs,
+            propertyCatalogs,
             interfacePortfolio,
             app.Module.ContainingAssembly,
             lib.Module.ContainingAssembly,
@@ -1306,6 +1542,7 @@ public sealed class W8V2MemberLookupTests
             DumpExpressionIdentifier.Create(fieldName),
             world.Ancestry,
             world.FieldCatalogs,
+            world.PropertyCatalogs,
             StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
             tokenResolutionCatalogs: world.TokenCatalogs,
             ownerClosedConstruction: ownerClosedConstruction));
@@ -1414,6 +1651,8 @@ public sealed class W8V2MemberLookupTests
         var byModule = new[] { core, app }.ToDictionary(static built => built.Module);
         var catalogs = ImmutableArray.CreateRange(
             ancestry.Entries.Select(entry => byModule[entry.SourceModule].FieldCatalog));
+        var propertyCatalogs = ImmutableArray.CreateRange(
+            ancestry.Entries.Select(entry => byModule[entry.SourceModule].PropertyCatalog));
 
         // The token-resolution catalog supplies exactly the definitions the base blobs reference, the way a host
         // producer would derive them from the same authority evidence.
@@ -1437,6 +1676,7 @@ public sealed class W8V2MemberLookupTests
             app.Module,
             ancestry,
             catalogs,
+            propertyCatalogs,
             [tokenCatalog],
             appSourceEnds);
     }
@@ -1445,6 +1685,7 @@ public sealed class W8V2MemberLookupTests
         StaticFieldMetadataModuleIdentity App,
         MetadataAncestryAuthorityPortfolioIdentity Ancestry,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogs,
         ImmutableArray<MetadataSignatureTokenResolutionCatalog> TokenCatalogs,
         MetadataSourceEndIdentity AppSourceEnds);
 
@@ -1490,6 +1731,8 @@ public sealed class W8V2MemberLookupTests
         var byModule = new[] { core, deep }.ToDictionary(static built => built.Module);
         var catalogs = ImmutableArray.CreateRange(
             ancestry.Entries.Select(entry => byModule[entry.SourceModule].FieldCatalog));
+        var propertyCatalogs = ImmutableArray.CreateRange(
+            ancestry.Entries.Select(entry => byModule[entry.SourceModule].PropertyCatalog));
         var interfacePortfolio = MetadataInterfaceImplementationPortfolioIdentity.Create(
             ancestry,
             [.. ancestry.Entries.Select(entry => byModule[entry.SourceModule].InterfaceCatalog)]);
@@ -1498,8 +1741,10 @@ public sealed class W8V2MemberLookupTests
             deep.Module,
             deep.Module,
             core,
+            deep,
             ancestry,
             catalogs,
+            propertyCatalogs,
             interfacePortfolio,
             deep.Module.ContainingAssembly,
             core.Module.ContainingAssembly,
@@ -1558,6 +1803,8 @@ public sealed class W8V2MemberLookupTests
         var fieldObservations = ImmutableArray.CreateBuilder<MetadataFieldDefinitionRowObservationIdentity>();
         var methodObservations = ImmutableArray.CreateBuilder<MetadataMethodDefinitionRowObservationIdentity>();
         var nestedClassRows = ImmutableArray.CreateBuilder<MetadataNestedClassRowObservationIdentity>();
+        var propertyObservations = ImmutableArray.CreateBuilder<MetadataPropertyRowObservationIdentity>();
+        var propertyOwnerCount = 0;
         var fieldStarts = new int[totalTypeCount];
         var methodStarts = new int[totalTypeCount];
         fieldStarts[0] = 1;
@@ -1589,6 +1836,22 @@ public sealed class W8V2MemberLookupTests
                     signatureByteCount: 3,
                     parameterListRowId: 0));
             }
+            if (!row.Properties.IsEmpty)
+            {
+                // One contiguous block per owner, in TypeDef order, which is what a PropertyList range column can
+                // express and what the catalog proves.
+                propertyOwnerCount++;
+                foreach (var property in row.Properties)
+                {
+                    propertyObservations.Add(MetadataPropertyRowObservationIdentity.Create(
+                        module,
+                        0x1700_0000 | checked(propertyObservations.Count + 1),
+                        property.Attributes,
+                        property.Name,
+                        property.Signature,
+                        TypeToken(index + 2)));
+                }
+            }
             if (row.EnclosingTypeRowId is { } enclosingRowId)
             {
                 nestedClassRows.Add(MetadataNestedClassRowObservationIdentity.Create(
@@ -1608,6 +1871,11 @@ public sealed class W8V2MemberLookupTests
                 fieldDefinitionsExamined: fieldObservations.Count,
                 typeDefinitionRowCount: totalTypeCount,
                 fieldDefinitionRowCount: fieldObservations.Count,
+                propertyDefinitionRowCount: propertyObservations.Count,
+                declaredMemberRowCounts: StaticFieldModuleDeclaredMemberRowCounts.Create(
+                    constantRowCount: 0,
+                    propertyMapRowCount: propertyOwnerCount,
+                    propertyPointerRowCount: 0),
                 typeReferenceRowCount: typeReferenceRows.Length,
                 typeSpecificationRowCount: typeSpecificationRows.Length,
                 assemblyReferenceRowCount: assemblyReferenceRows.Length,
@@ -1669,6 +1937,12 @@ public sealed class W8V2MemberLookupTests
             fieldObservations.Count == 0 ? default : fieldObservations.ToImmutable());
         Assert.Equal(MetadataFieldDefinitionTableResultKind.Exact, fieldCatalog.ResultKind);
 
+        var propertyCatalog = MetadataPropertyTableCatalogIdentity.Create(
+            MetadataDeclaredMemberSourceEndIdentity.Create(sourceEnds),
+            authority,
+            propertyObservations.ToImmutable());
+        Assert.Equal(MetadataPropertyTableResultKind.Exact, propertyCatalog.ResultKind);
+
         var referenceEnds = MetadataReferenceSourceEndIdentity.Create(sourceEnds);
         var tables = MetadataModuleReferenceTableSetIdentity.Create(
             referenceEnds,
@@ -1699,6 +1973,7 @@ public sealed class W8V2MemberLookupTests
             module,
             authority,
             fieldCatalog,
+            propertyCatalog,
             compatibility,
             chainCatalog,
             tables,
@@ -1724,7 +1999,8 @@ public sealed class W8V2MemberLookupTests
         int? extendsMetadataToken,
         ImmutableArray<FieldSpec> fields = default,
         ImmutableArray<MethodSpec> methods = default,
-        int? enclosingTypeRowId = null) =>
+        int? enclosingTypeRowId = null,
+        ImmutableArray<PropertySpec> properties = default) =>
         new(
             namespaceName,
             typeName,
@@ -1732,17 +2008,23 @@ public sealed class W8V2MemberLookupTests
             extendsMetadataToken,
             fields.IsDefault ? [] : fields,
             methods.IsDefault ? [] : methods,
-            enclosingTypeRowId);
+            enclosingTypeRowId,
+            properties.IsDefault ? [] : properties);
 
     private static FieldSpec Field(string name, int attributes) => new(name, attributes);
 
     private static MethodSpec Method(string name, int attributes) => new(name, attributes);
+
+    private static PropertySpec Property(string name, byte returnType = 0x08, int attributes = 0) =>
+        new(name, attributes, [0x28, 0x00, returnType]);
 
     private static int TypeToken(int rowId) => 0x0200_0000 | rowId;
 
     private sealed record FieldSpec(string Name, int Attributes);
 
     private sealed record MethodSpec(string Name, int Attributes);
+
+    private sealed record PropertySpec(string Name, int Attributes, ImmutableArray<byte> Signature);
 
     private sealed record LookupTypeRow(
         string NamespaceName,
@@ -1751,12 +2033,14 @@ public sealed class W8V2MemberLookupTests
         int? ExtendsMetadataToken,
         ImmutableArray<FieldSpec> Fields,
         ImmutableArray<MethodSpec> Methods,
-        int? EnclosingTypeRowId);
+        int? EnclosingTypeRowId,
+        ImmutableArray<PropertySpec> Properties);
 
     private sealed record BuiltModule(
         StaticFieldMetadataModuleIdentity Module,
         MetadataDefinitionAuthorityCatalogIdentity Authority,
         MetadataFieldDefinitionTableCatalogIdentity FieldCatalog,
+        MetadataPropertyTableCatalogIdentity PropertyCatalog,
         MetadataW7TypeDefinitionCompatibilityCatalogIdentity Compatibility,
         MetadataNamedTypeDefinitionChainCatalogIdentity ChainCatalog,
         MetadataModuleReferenceTableSetIdentity Tables,
@@ -1767,8 +2051,10 @@ public sealed class W8V2MemberLookupTests
         StaticFieldMetadataModuleIdentity Lib,
         StaticFieldMetadataModuleIdentity App,
         BuiltModule CoreCatalogs,
+        BuiltModule AppCatalogs,
         MetadataAncestryAuthorityPortfolioIdentity Ancestry,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogs,
         MetadataInterfaceImplementationPortfolioIdentity InterfaceImplementations,
         StaticFieldContainingAssemblyIdentity AppAssembly,
         StaticFieldContainingAssemblyIdentity LibAssembly,

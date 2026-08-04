@@ -42,6 +42,7 @@ public sealed class W8V2LexicalCompletenessTests
     private const int ImportedDerivedRid = 18;
     private const int AmbiguousOwnerRid = 19;
     private const int HiddenOwnerRid = 20;
+    private const int PropertyHostRid = 21;
 
     private const int LibOwnerRid = 2;
 
@@ -150,6 +151,16 @@ public sealed class W8V2LexicalCompletenessTests
             world,
             MethodHostRid,
             Lexical(world, MethodHostRid, scopes),
+            scopes,
+            StaticFieldV2LexicalBlockerKind.TypeMemberName);
+
+        // A declared property owns the bare spelling on exactly the terms a field or method does. Without the
+        // Property table the same declaration would certify Absent, and the bare route would go looking elsewhere
+        // for a name its own declaring type already owns.
+        AssertShadowed(
+            world,
+            PropertyHostRid,
+            Lexical(world, PropertyHostRid, scopes),
             scopes,
             StaticFieldV2LexicalBlockerKind.TypeMemberName);
         AssertShadowed(
@@ -458,7 +469,8 @@ public sealed class W8V2LexicalCompletenessTests
                 foreignModule,
                 AppType(world, HostRid),
                 world.Ancestry,
-                world.FieldCatalogs)),
+                world.FieldCatalogs,
+                world.PropertyCatalogs)),
             StaticFieldV2LexicalCertificateResultKind.Invalid,
             StaticFieldV2LexicalCertificateIssue.SelectedModuleNotInPortfolio);
         AssertCertificateStop(
@@ -468,7 +480,8 @@ public sealed class W8V2LexicalCompletenessTests
                 world.App.Module,
                 LibType(world, LibOwnerRid),
                 world.Ancestry,
-                world.FieldCatalogs)),
+                world.FieldCatalogs,
+                world.PropertyCatalogs)),
             StaticFieldV2LexicalCertificateResultKind.Invalid,
             StaticFieldV2LexicalCertificateIssue.SelectedTypeDefinitionNotIssued);
         AssertCertificateStop(
@@ -634,7 +647,7 @@ public sealed class W8V2LexicalCompletenessTests
         Assert.Equal(outcome.Certificate, replay.Certificate);
         Assert.Equal(outcome.Request, replay.Request);
         Assert.Equal(
-            "8006dd4dcb035c0585ba9da0d70ea37937c4071152a1b57e253ef33519b1a104",
+            "29b50af0dd0494502de3621359568f822b91f7204d5c03c89461b467622d901b",
             outcome.Sha256);
 
         var certificate = outcome.Certificate;
@@ -651,7 +664,7 @@ public sealed class W8V2LexicalCompletenessTests
             StaticFieldV2LexicalCoverageBoundary.UsingStaticInheritedMembersNotImported;
         ImmutableCollectionsMarshal.AsArray(certificate.Blockers)![0] = null!;
         ImmutableCollectionsMarshal.AsArray(certificate.DeclaredCoverageBoundaries)![0] =
-            StaticFieldV2LexicalCoverageBoundary.ImportedMemberGroupBlockingNotModeled;
+            StaticFieldV2LexicalCoverageBoundary.ImportedEventGroupBlockingNotModeled;
         ImmutableCollectionsMarshal.AsArray(blocker.CanonicalBytes)![0] ^= 0x33;
         ImmutableCollectionsMarshal.AsArray(candidate.CanonicalBytes)![0] ^= 0x11;
         ImmutableCollectionsMarshal.AsArray(certificate.Request.FieldCatalogs)![0] = null!;
@@ -661,10 +674,10 @@ public sealed class W8V2LexicalCompletenessTests
         Assert.Equal(originalBlockers[0], certificate.Blockers[0]);
         Assert.Equal(originalCandidates[0], outcome.ImportCandidates[0]);
         Assert.Equal(
-            StaticFieldV2LexicalCoverageBoundary.PropertyAndEventTablesNotModeled,
+            StaticFieldV2LexicalCoverageBoundary.RangeAndPatternVariableNamesNotModeled,
             outcome.DeclaredCoverageBoundaries[0]);
         Assert.Equal(
-            StaticFieldV2LexicalCoverageBoundary.PropertyAndEventTablesNotModeled,
+            StaticFieldV2LexicalCoverageBoundary.RangeAndPatternVariableNamesNotModeled,
             certificate.DeclaredCoverageBoundaries[0]);
         Assert.NotNull(certificate.Request.FieldCatalogs[0]);
         Assert.Equal(outcome.Sha256, replay.Sha256);
@@ -875,14 +888,16 @@ public sealed class W8V2LexicalCompletenessTests
         string spelling,
         DumpSelectedMethodLexicalObservation evidence,
         MetadataAncestryAuthorityPortfolioIdentity ancestry,
-        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs) =>
+        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs = default) =>
         StaticFieldV2LexicalCertificateRequest.Create(
             evidence,
             Identifier(spelling),
             world.App.Module,
             AppType(world, hostRid),
             ancestry,
-            fieldCatalogs);
+            fieldCatalogs,
+            propertyCatalogs.IsDefault ? world.PropertyCatalogs : propertyCatalogs);
 
     private static StaticFieldV2LexicalCertificateOutcome CertifyWith(
         LexicalWorld world,
@@ -890,9 +905,10 @@ public sealed class W8V2LexicalCompletenessTests
         string spelling,
         DumpSelectedMethodLexicalObservation evidence,
         MetadataAncestryAuthorityPortfolioIdentity ancestry,
-        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs) =>
+        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs = default) =>
         StaticFieldV2LexicalCompleteness.CertifyBlockers(
-            CertifyRequest(world, hostRid, spelling, evidence, ancestry, fieldCatalogs));
+            CertifyRequest(world, hostRid, spelling, evidence, ancestry, fieldCatalogs, propertyCatalogs));
 
     private static StaticFieldV2LexicalCertificateOutcome Certify(
         LexicalWorld world,
@@ -1406,6 +1422,14 @@ public sealed class W8V2LexicalCompletenessTests
             ObjectTypeReferenceToken,
             fields: [Field("Blocked", FieldPublic)]));
 
+        // Appended last so every existing RID constant above keeps its value.
+        appTypes.Add(Type(
+            "Lexical.App",
+            "PropertyHost",
+            PublicClass,
+            ObjectTypeReferenceToken,
+            properties: ["Current"]));
+
         var app = BuildModule(
             W8CompilerNameMappingContractTests.CreateMetadataModule(0x9200, '3', "Lexical.App"),
             appTypes.ToImmutable(),
@@ -1453,7 +1477,17 @@ public sealed class W8V2LexicalCompletenessTests
         var byModule = new[] { core, lib, app }.ToDictionary(static built => built.Module);
         var catalogs = ImmutableArray.CreateRange(
             ancestry.Entries.Select(entry => byModule[entry.SourceModule].FieldCatalog));
-        return new LexicalWorld(core, lib, app, resolution, ancestry, catalogs, app.FieldCatalog);
+        var propertyCatalogs = ImmutableArray.CreateRange(
+            ancestry.Entries.Select(entry => byModule[entry.SourceModule].PropertyCatalog));
+        return new LexicalWorld(
+            core,
+            lib,
+            app,
+            resolution,
+            ancestry,
+            catalogs,
+            propertyCatalogs,
+            app.FieldCatalog);
     }
 
     private static LexicalModule BuildModule(
@@ -1471,6 +1505,8 @@ public sealed class W8V2LexicalCompletenessTests
         var fieldObservations = ImmutableArray.CreateBuilder<MetadataFieldDefinitionRowObservationIdentity>();
         var methodObservations = ImmutableArray.CreateBuilder<MetadataMethodDefinitionRowObservationIdentity>();
         var nestedClassRows = ImmutableArray.CreateBuilder<MetadataNestedClassRowObservationIdentity>();
+        var propertyObservations = ImmutableArray.CreateBuilder<MetadataPropertyRowObservationIdentity>();
+        var propertyOwnerCount = 0;
         var fieldStarts = new int[totalTypeCount];
         var methodStarts = new int[totalTypeCount];
         fieldStarts[0] = 1;
@@ -1480,6 +1516,20 @@ public sealed class W8V2LexicalCompletenessTests
             var row = namedTypes[index];
             fieldStarts[index + 1] = fieldObservations.Count + 1;
             methodStarts[index + 1] = methodObservations.Count + 1;
+            if (!row.Properties.IsEmpty)
+            {
+                propertyOwnerCount++;
+                foreach (var property in row.Properties)
+                {
+                    propertyObservations.Add(MetadataPropertyRowObservationIdentity.Create(
+                        module,
+                        0x1700_0000 | checked(propertyObservations.Count + 1),
+                        attributes: 0,
+                        property,
+                        [0x28, 0x00, 0x08],
+                        TypeToken(index + 2)));
+                }
+            }
             foreach (var field in row.Fields)
             {
                 fieldObservations.Add(MetadataFieldDefinitionRowObservationIdentity.Create(
@@ -1525,6 +1575,11 @@ public sealed class W8V2LexicalCompletenessTests
                 typeSpecificationRowCount: 0,
                 assemblyReferenceRowCount: assemblyReferenceRows.Length,
                 methodDefinitionRowCount: methodObservations.Count,
+                propertyDefinitionRowCount: propertyObservations.Count,
+                declaredMemberRowCounts: StaticFieldModuleDeclaredMemberRowCounts.Create(
+                    constantRowCount: 0,
+                    propertyMapRowCount: propertyOwnerCount,
+                    propertyPointerRowCount: 0),
                 nestedClassRowCount: nestedClassRows.Count));
 
         var typeRows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionRowObservationIdentity>(totalTypeCount);
@@ -1578,6 +1633,12 @@ public sealed class W8V2LexicalCompletenessTests
             fieldObservations.Count == 0 ? default : fieldObservations.ToImmutable());
         Assert.Equal(MetadataFieldDefinitionTableResultKind.Exact, fieldCatalog.ResultKind);
 
+        var propertyCatalog = MetadataPropertyTableCatalogIdentity.Create(
+            MetadataDeclaredMemberSourceEndIdentity.Create(sourceEnds),
+            authority,
+            propertyObservations.ToImmutable());
+        Assert.Equal(MetadataPropertyTableResultKind.Exact, propertyCatalog.ResultKind);
+
         var referenceEnds = MetadataReferenceSourceEndIdentity.Create(sourceEnds);
         var tables = MetadataModuleReferenceTableSetIdentity.Create(
             referenceEnds,
@@ -1603,7 +1664,14 @@ public sealed class W8V2LexicalCompletenessTests
         var mapping = MetadataCompilerNameMappingCatalogIdentity.Create(authority);
         var chainCatalog = MetadataNamedTypeDefinitionChainCatalogIdentity.Create(compatibility, mapping);
         Assert.Equal(MetadataNamedTypeDefinitionChainCatalogResultKind.Exact, chainCatalog.ResultKind);
-        return new LexicalModule(module, authority, fieldCatalog, compatibility, chainCatalog, tables);
+        return new LexicalModule(
+            module,
+            authority,
+            fieldCatalog,
+            propertyCatalog,
+            compatibility,
+            chainCatalog,
+            tables);
     }
 
     private static ImmutableArray<StaticFieldTypeDefinitionIdentity?> NullCandidateSlots(
@@ -1625,7 +1693,8 @@ public sealed class W8V2LexicalCompletenessTests
         int? extendsMetadataToken,
         ImmutableArray<LexicalFieldSpec> fields = default,
         ImmutableArray<LexicalMethodSpec> methods = default,
-        int? enclosingTypeRowId = null) =>
+        int? enclosingTypeRowId = null,
+        ImmutableArray<string> properties = default) =>
         new(
             namespaceName,
             typeName,
@@ -1633,7 +1702,8 @@ public sealed class W8V2LexicalCompletenessTests
             extendsMetadataToken,
             fields.IsDefault ? [] : fields,
             methods.IsDefault ? [] : methods,
-            enclosingTypeRowId);
+            enclosingTypeRowId,
+            properties.IsDefault ? [] : properties);
 
     private static LexicalFieldSpec Field(string name, int attributes) => new(name, attributes);
 
@@ -1652,12 +1722,14 @@ public sealed class W8V2LexicalCompletenessTests
         int? ExtendsMetadataToken,
         ImmutableArray<LexicalFieldSpec> Fields,
         ImmutableArray<LexicalMethodSpec> Methods,
-        int? EnclosingTypeRowId);
+        int? EnclosingTypeRowId,
+        ImmutableArray<string> Properties);
 
     private sealed record LexicalModule(
         StaticFieldMetadataModuleIdentity Module,
         MetadataDefinitionAuthorityCatalogIdentity Authority,
         MetadataFieldDefinitionTableCatalogIdentity FieldCatalog,
+        MetadataPropertyTableCatalogIdentity PropertyCatalog,
         MetadataW7TypeDefinitionCompatibilityCatalogIdentity Compatibility,
         MetadataNamedTypeDefinitionChainCatalogIdentity ChainCatalog,
         MetadataModuleReferenceTableSetIdentity Tables);
@@ -1669,5 +1741,6 @@ public sealed class W8V2LexicalCompletenessTests
         MetadataTypeReferenceResolutionPortfolioIdentity Resolution,
         MetadataAncestryAuthorityPortfolioIdentity Ancestry,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogs,
         MetadataFieldDefinitionTableCatalogIdentity AppFieldCatalog);
 }

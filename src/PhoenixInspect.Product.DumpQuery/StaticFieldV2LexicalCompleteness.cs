@@ -261,8 +261,8 @@ public enum StaticFieldV2BareRootIssue
 /// </remarks>
 public enum StaticFieldV2LexicalCoverageBoundary
 {
-    /// <summary>The physical Property and Event tables are not modeled, so same-name accessors cannot block.</summary>
-    PropertyAndEventTablesNotModeled = 1,
+    // Value 1, PropertyAndEventTablesNotModeled, is retired: the Property table is modeled now. The number is left
+    // as a hole rather than renumbered, so no already-recorded digest keeps its bytes while changing its meaning.
 
     /// <summary>Query range variables and pattern designations leave no physical row and are not modeled.</summary>
     RangeAndPatternVariableNamesNotModeled = 2,
@@ -276,8 +276,21 @@ public enum StaticFieldV2LexicalCoverageBoundary
     /// <summary>A <c>using static</c> import contributes only directly declared members, never inherited ones.</summary>
     UsingStaticInheritedMembersNotImported = 5,
 
-    /// <summary>A same-name imported property, event, or method group cannot block because those tables are absent.</summary>
-    ImportedMemberGroupBlockingNotModeled = 6,
+    // Value 6, ImportedMemberGroupBlockingNotModeled, is retired. Its text was already partly false: a same-name
+    // method declared directly on an imported owner does block today, through the level-zero fall-through into the
+    // shared member lookup. What remains genuinely unmodeled is narrower, and is stated as value 8.
+
+    /// <summary>The physical Event and EventMap tables are not modeled, so a same-name event cannot block.</summary>
+    EventTablesNotModeled = 7,
+
+    /// <summary>A same-name imported event cannot block, because the Event and EventMap tables are absent.</summary>
+    ImportedEventGroupBlockingNotModeled = 8,
+
+    /// <summary>
+    /// MethodSemantics is not modeled, so a same-name property blocks without any test of whether its accessors are
+    /// reachable from the use site.
+    /// </summary>
+    PropertyAccessorSemanticsNotModeled = 9,
 }
 
 /// <summary>Freezes one certified blocker-kind disposition for a single requested spelling.</summary>
@@ -416,8 +429,9 @@ public sealed class StaticFieldV2LexicalBlockerRow : IEquatable<StaticFieldV2Lex
 public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFieldV2LexicalCertificateRequest>
 {
     private const string CanonicalDomain = "static-field-v2-lexical-certificate-request";
-    private const int CanonicalSchemaVersion = 1;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
+    private readonly ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2LexicalCertificateRequest(
@@ -426,7 +440,8 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
         StaticFieldMetadataModuleIdentity selectedModule,
         MetadataTypeDefinitionAuthorityIdentity selectedTypeDefinition,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
-        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs)
+        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs)
     {
         LexicalEvidence = lexicalEvidence;
         Identifier = identifier;
@@ -434,6 +449,7 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
         SelectedTypeDefinition = selectedTypeDefinition;
         AncestryPortfolio = ancestryPortfolio;
         this.fieldCatalogs = fieldCatalogs;
+        this.propertyCatalogs = propertyCatalogs;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(lexicalEvidence.Sha256, nameof(lexicalEvidence));
@@ -445,6 +461,14 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
         if (!fieldCatalogs.IsDefault)
         {
             foreach (var catalog in fieldCatalogs)
+            {
+                ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
+            }
+        }
+        writer.WriteInt32(propertyCatalogs.IsDefault ? -1 : propertyCatalogs.Length);
+        if (!propertyCatalogs.IsDefault)
+        {
+            foreach (var catalog in propertyCatalogs)
             {
                 ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
             }
@@ -475,6 +499,13 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
     /// <summary>Gets whether the supplied FieldDef catalog vector was explicitly initialized.</summary>
     public bool IsFieldCatalogVectorInitialized => !fieldCatalogs.IsDefault;
 
+    /// <summary>Gets a defensive copy of the supplied per-module Property catalog vector, default when absent.</summary>
+    public ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogs =>
+        propertyCatalogs.IsDefault ? default : ExpressionV2ContractEncoding.Copy(propertyCatalogs);
+
+    /// <summary>Gets whether the supplied Property catalog vector was explicitly initialized.</summary>
+    public bool IsPropertyCatalogVectorInitialized => !propertyCatalogs.IsDefault;
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -491,6 +522,10 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
     /// One FieldDef catalog per ancestry-portfolio module in any order. A default or incomplete vector is admitted here
     /// and becomes a typed incomplete member-name disposition rather than an exception.
     /// </param>
+    /// <param name="propertyCatalogs">
+    /// One Property catalog per ancestry-portfolio module in any order, on the same terms as
+    /// <paramref name="fieldCatalogs"/>.
+    /// </param>
     /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     public static StaticFieldV2LexicalCertificateRequest Create(
@@ -499,7 +534,8 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
         StaticFieldMetadataModuleIdentity selectedModule,
         MetadataTypeDefinitionAuthorityIdentity selectedTypeDefinition,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
-        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs)
+        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs)
     {
         ArgumentNullException.ThrowIfNull(lexicalEvidence);
         ArgumentNullException.ThrowIfNull(identifier);
@@ -508,13 +544,15 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
 
         var catalogs = fieldCatalogs.IsDefault ? default : ImmutableArray.CreateRange(fieldCatalogs);
+        var properties = propertyCatalogs.IsDefault ? default : ImmutableArray.CreateRange(propertyCatalogs);
         return new StaticFieldV2LexicalCertificateRequest(
             lexicalEvidence,
             identifier,
             selectedModule,
             selectedTypeDefinition,
             ancestryPortfolio,
-            catalogs);
+            catalogs,
+            properties);
     }
 
     /// <summary>Tests canonical equality between two certificate requests.</summary>
@@ -533,6 +571,8 @@ public sealed class StaticFieldV2LexicalCertificateRequest : IEquatable<StaticFi
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogsCore => fieldCatalogs;
+
+    internal ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogsCore => propertyCatalogs;
 }
 
 /// <summary>Freezes the complete outcome of one lexical-blocker completeness certification.</summary>
@@ -1238,20 +1278,22 @@ public static class StaticFieldV2LexicalCompleteness
 {
     private static readonly ImmutableArray<StaticFieldV2LexicalCoverageBoundary> CertificateBoundaries =
     [
-        StaticFieldV2LexicalCoverageBoundary.PropertyAndEventTablesNotModeled,
         StaticFieldV2LexicalCoverageBoundary.RangeAndPatternVariableNamesNotModeled,
         StaticFieldV2LexicalCoverageBoundary.LocalFunctionParentRelationNotPhysical,
         StaticFieldV2LexicalCoverageBoundary.DirectlyDeclaredMemberSelectionDeferred,
+        StaticFieldV2LexicalCoverageBoundary.EventTablesNotModeled,
+        StaticFieldV2LexicalCoverageBoundary.PropertyAccessorSemanticsNotModeled,
     ];
 
     private static readonly ImmutableArray<StaticFieldV2LexicalCoverageBoundary> BareRootBoundaries =
     [
-        StaticFieldV2LexicalCoverageBoundary.PropertyAndEventTablesNotModeled,
         StaticFieldV2LexicalCoverageBoundary.RangeAndPatternVariableNamesNotModeled,
         StaticFieldV2LexicalCoverageBoundary.LocalFunctionParentRelationNotPhysical,
         StaticFieldV2LexicalCoverageBoundary.DirectlyDeclaredMemberSelectionDeferred,
         StaticFieldV2LexicalCoverageBoundary.UsingStaticInheritedMembersNotImported,
-        StaticFieldV2LexicalCoverageBoundary.ImportedMemberGroupBlockingNotModeled,
+        StaticFieldV2LexicalCoverageBoundary.EventTablesNotModeled,
+        StaticFieldV2LexicalCoverageBoundary.ImportedEventGroupBlockingNotModeled,
+        StaticFieldV2LexicalCoverageBoundary.PropertyAccessorSemanticsNotModeled,
     ];
 
     private static readonly ImmutableArray<StaticFieldV2LexicalBlockerKind> BlockerKinds =
@@ -1370,13 +1412,14 @@ public static class StaticFieldV2LexicalCompleteness
 
         var declarationChain = EnclosingChain(issued, authority);
         var fieldCatalog = SelectedFieldCatalog(request);
+        var propertyCatalog = SelectedPropertyCatalog(request);
         var name = request.Identifier.DecodedText;
         var rows = ImmutableArray.CreateBuilder<StaticFieldV2LexicalBlockerRow>(BlockerKinds.Length);
         var examined = 0;
 
         foreach (var kind in BlockerKinds)
         {
-            var certified = CertifyKind(kind, name, facts, declarationChain, authority, fieldCatalog);
+            var certified = CertifyKind(kind, name, facts, declarationChain, authority, fieldCatalog, propertyCatalog);
             examined += certified.ExaminedNameCount;
             if (examined > StaticFieldV2LexicalCertificateOutcome.MaximumLexicalBlockerCount)
             {
@@ -1861,6 +1904,7 @@ public static class StaticFieldV2LexicalCompleteness
             request.CertificateRequest.Identifier,
             request.CertificateRequest.AncestryPortfolio,
             request.CertificateRequest.FieldCatalogsCore,
+            request.CertificateRequest.PropertyCatalogsCore,
             request.AccessibilityMode,
             request.RequestingAssembly,
             request.FriendAssemblyGrantsCore));
@@ -1877,7 +1921,8 @@ public static class StaticFieldV2LexicalCompleteness
         DumpSelectedMethodLexicalFacts facts,
         ImmutableArray<MetadataTypeDefinitionAuthorityIdentity> declarationChain,
         MetadataDefinitionAuthorityCatalogIdentity authority,
-        MetadataFieldDefinitionTableCatalogIdentity? fieldCatalog) => kind switch
+        MetadataFieldDefinitionTableCatalogIdentity? fieldCatalog,
+        MetadataPropertyTableCatalogIdentity? propertyCatalog) => kind switch
         {
             StaticFieldV2LexicalBlockerKind.LocalVariable => CertifyLocalVariables(name, facts),
             StaticFieldV2LexicalBlockerKind.LocalConstant => CertifyLocalConstants(name, facts),
@@ -1885,7 +1930,7 @@ public static class StaticFieldV2LexicalCompleteness
             StaticFieldV2LexicalBlockerKind.TypeParameter => CertifyTypeParameters(name, facts),
             StaticFieldV2LexicalBlockerKind.LocalFunction => CertifyLocalFunctions(name, facts),
             StaticFieldV2LexicalBlockerKind.TypeMemberName =>
-                CertifyTypeMemberNames(name, declarationChain, authority, fieldCatalog),
+                CertifyTypeMemberNames(name, declarationChain, authority, fieldCatalog, propertyCatalog),
             _ => CertifyNestedTypeNames(name, declarationChain, authority),
         };
 
@@ -2094,9 +2139,17 @@ public static class StaticFieldV2LexicalCompleteness
         string name,
         ImmutableArray<MetadataTypeDefinitionAuthorityIdentity> declarationChain,
         MetadataDefinitionAuthorityCatalogIdentity authority,
-        MetadataFieldDefinitionTableCatalogIdentity? fieldCatalog)
+        MetadataFieldDefinitionTableCatalogIdentity? fieldCatalog,
+        MetadataPropertyTableCatalogIdentity? propertyCatalog)
     {
         if (fieldCatalog is null)
+        {
+            return Incomplete(
+                StaticFieldV2LexicalBlockerKind.TypeMemberName,
+                StaticFieldV2LexicalIncompletenessSource.MemberCatalogMissing,
+                0);
+        }
+        if (propertyCatalog is null)
         {
             return Incomplete(
                 StaticFieldV2LexicalBlockerKind.TypeMemberName,
@@ -2134,6 +2187,18 @@ public static class StaticFieldV2LexicalCompleteness
                         examined,
                         method.TableRow.Observation.Name,
                         methodToken);
+                }
+            }
+            foreach (var property in propertyCatalog.RowsForDeclaringTypeOrEmpty(owner))
+            {
+                examined++;
+                if (string.Equals(property.Name, name, StringComparison.Ordinal))
+                {
+                    return Owned(
+                        StaticFieldV2LexicalBlockerKind.TypeMemberName,
+                        examined,
+                        property.Name,
+                        property.PropertyToken);
                 }
             }
         }
@@ -2238,6 +2303,26 @@ public static class StaticFieldV2LexicalCompleteness
             if (catalog is not null &&
                 catalog.ResultKind == MetadataFieldDefinitionTableResultKind.Exact &&
                 catalog.SourceEnds.SourceModule.Equals(request.SelectedModule))
+            {
+                return catalog;
+            }
+        }
+        return null;
+    }
+
+    private static MetadataPropertyTableCatalogIdentity? SelectedPropertyCatalog(
+        StaticFieldV2LexicalCertificateRequest request)
+    {
+        var catalogs = request.PropertyCatalogsCore;
+        if (catalogs.IsDefault)
+        {
+            return null;
+        }
+        foreach (var catalog in catalogs)
+        {
+            if (catalog is not null &&
+                catalog.ResultKind == MetadataPropertyTableResultKind.Exact &&
+                catalog.DeclaredMemberSourceEnds.SourceModule.Equals(request.SelectedModule))
             {
                 return catalog;
             }

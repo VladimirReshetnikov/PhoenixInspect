@@ -1334,6 +1334,7 @@
         },
         "counterfactual": {
           "action": "request-declared-field-instead-of-property",
+          "counterfactualExpression": "global::PhoenixInspect.W8WorkflowShapeTarget.BaseStage.Sentinel",
           "expectedChangedAxes": [
             "memberLookup",
             "runtimeConstruction",
@@ -1353,7 +1354,7 @@
       "supportsSuccessorCategory": "static-property-or-method-execution",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-the-declared-field-over-property-counterfactual-the-runner-does-not-drive"
+        "reason": "the-workflow-shape-gate-loads-its-own-assembly-into-a-second-load-context-for-every-profile-so-the-derived-owner-binds-ambiguous-before-any-member-stage-runs-which-the-property-table-catalog-does-not-close"
       },
       "representative": false
     },
@@ -3012,6 +3013,7 @@
         },
         "counterfactual": {
           "action": "request-declared-field-instead-of-property",
+          "counterfactualExpression": "DeclaredRegionTotal",
           "expectedChangedAxes": [
             "memberLookup",
             "runtimeConstruction",
@@ -3030,8 +3032,8 @@
       },
       "supportsSuccessorCategory": "static-property-or-method-execution",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "certifies-a-complete-lexical-envelope-then-reports-a-bare-declaration-absence-because-no-landed-catalog-models-the-property-table-that-owns-the-shared-name"
+        "status": "executed",
+        "reason": "the-landed-property-table-catalog-owns-the-shared-bare-name-so-the-certificate-reports-the-property-and-the-runner-drives-the-declared-field-counterfactual"
       },
       "representative": false
     },

@@ -945,12 +945,13 @@ public sealed class StaticFieldV2FrameRootEvaluationSource
 public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2ExpressionRequest>
 {
     private const string CanonicalDomain = "static-field-v2-expression-pipeline-request";
-    private const int CanonicalSchemaVersion = 3;
+    private const int CanonicalSchemaVersion = 4;
     private const int SignatureTokenResolutionCatalogsFieldTag = 2;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
     private readonly ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs;
     private readonly ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs;
+    private readonly ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2ExpressionRequest(
@@ -967,6 +968,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         StaticFieldV2RuntimeEvidenceSource? runtimeEvidence,
         StaticFieldV2SuffixEvaluationSource? suffixEvaluation,
         ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs,
         MetadataClosedTypeIdentity? referenceTargetType,
         ExpressionV2CapabilityProbeSet? capabilityProbes,
         StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation,
@@ -985,6 +987,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         RuntimeEvidence = runtimeEvidence;
         SuffixEvaluation = suffixEvaluation;
         this.constantCatalogs = constantCatalogs;
+        this.propertyCatalogs = propertyCatalogs;
         ReferenceTargetType = referenceTargetType;
         CapabilityProbes = capabilityProbes;
         FrameRootEvaluation = frameRootEvaluation;
@@ -1018,6 +1021,19 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             writer,
             constantCatalogs.IsDefault ? [] : constantCatalogs,
             static catalog => catalog.CanonicalBytes);
+        // Written the way the member-lookup and lexical requests write theirs, with a negative length for an
+        // uninitialized vector, because here the two are NOT the same request. A default vector reaches member lookup
+        // as PropertyCatalogVectorUninitialized and an empty one as PropertyCatalogSlotsIncomplete, so collapsing
+        // both to length zero would give two requests with different answers one digest. The Constant vector above
+        // can collapse them safely: an absent catalog and no catalog for the module are the same Unavailable there.
+        writer.WriteInt32(propertyCatalogs.IsDefault ? -1 : propertyCatalogs.Length);
+        if (!propertyCatalogs.IsDefault)
+        {
+            foreach (var catalog in propertyCatalogs)
+            {
+                ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
+            }
+        }
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, referenceTargetType?.Sha256);
         writer.WriteBoolean(capabilityProbes is not null);
 
@@ -1088,6 +1104,19 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <summary>Gets the complete Constant catalogs without copying, for internal projection only.</summary>
     internal ImmutableArray<MetadataConstantTableCatalogIdentity> ConstantCatalogsCore => constantCatalogs;
 
+    /// <summary>Gets a defensive copy of the complete Property table catalogs of every composed module.</summary>
+    public ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogs =>
+        propertyCatalogs.IsDefault ? default : ExpressionV2ContractEncoding.Copy(propertyCatalogs);
+
+    /// <summary>Gets whether the supplied Property catalog vector was explicitly initialized.</summary>
+    /// <remarks>
+    /// An uninitialized vector and an empty one are different requests: the first supplied nothing, the second
+    /// supplied a vector covering no module, and member lookup answers each with its own typed stop.
+    /// </remarks>
+    public bool IsPropertyCatalogVectorInitialized => !propertyCatalogs.IsDefault;
+
+    internal ImmutableArray<MetadataPropertyTableCatalogIdentity> PropertyCatalogsCore => propertyCatalogs;
+
     /// <summary>Gets whether this request supplies a reference-target type for assignability validation.</summary>
     public bool SuppliesReferenceTargetType => ReferenceTargetType is not null;
 
@@ -1136,6 +1165,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <param name="runtimeEvidence">The optional caller-owned runtime-evidence seam.</param>
     /// <param name="suffixEvaluation">The optional caller-owned unchanged W2/W6 suffix-evaluation seam.</param>
     /// <param name="constantCatalogs">The complete Constant table catalogs of every composed module.</param>
+    /// <param name="propertyCatalogs">The complete Property table catalogs of every composed module.</param>
     /// <param name="referenceTargetType">The optional exact target type of reference-target validation.</param>
     /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained ledger.</param>
     /// <param name="frameRootEvaluation">The optional caller-owned frame-root evaluation seam.</param>
@@ -1163,6 +1193,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         StaticFieldV2RuntimeEvidenceSource? runtimeEvidence = null,
         StaticFieldV2SuffixEvaluationSource? suffixEvaluation = null,
         ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs = default,
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs = default,
         MetadataClosedTypeIdentity? referenceTargetType = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null,
         StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation = null,
@@ -1215,6 +1246,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             runtimeEvidence,
             suffixEvaluation,
             constantCatalogs,
+            propertyCatalogs,
             referenceTargetType,
             capabilityProbes,
             frameRootEvaluation,
@@ -2122,6 +2154,7 @@ public static class StaticFieldV2ExpressionPipeline
                 descriptor.Segments[partition.FieldSegmentIndex].Identifier,
                 request.AncestryPortfolio,
                 request.FieldCatalogsCore,
+                request.PropertyCatalogsCore,
                 request.AccessibilityMode,
                 request.RequestingAssembly,
                 request.FriendAssemblyGrantsCore,
@@ -2193,7 +2226,8 @@ public static class StaticFieldV2ExpressionPipeline
                 scopedContext!.Request.SelectedModule,
                 scopedContext.Request.SelectedTypeDefinition,
                 request.AncestryPortfolio,
-                request.FieldCatalogsCore);
+                request.FieldCatalogsCore,
+                request.PropertyCatalogsCore);
             bareRoot = StaticFieldV2LexicalCompleteness.BindBareStaticRoot(StaticFieldV2BareRootRequest.Create(
                 certificateRequest,
                 scopedContext,
