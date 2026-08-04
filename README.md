@@ -84,6 +84,10 @@ behind the exact answer: binding facts, raw reads, reached bounds, and the canon
 Everything below is backed by executable tests over real dumps, and nothing is listed that is not. The
 [preview quickstart](docs/preview-quickstart.md) is the complete, authoritative statement of the supported surface.
 
+- **Dump files or a live process.** Open an immutable dump, or attach to a running .NET process — suspended for the
+  lifetime of the session, resumed when it closes — and ask it exactly the same questions. The Snapshot pane states
+  which source answered and what that means for identity: a dump has a content digest that replays anywhere, a live
+  session has an attach-circumstances digest that replays within the session.
 - **Static fields by name, no debugger context needed.** A fully qualified name
   (`Some.Namespace.Type.Field`) binds from module metadata alone; adopting a stack frame and its
   identity-validated Portable PDB additionally lets names be written the way the source writes them.

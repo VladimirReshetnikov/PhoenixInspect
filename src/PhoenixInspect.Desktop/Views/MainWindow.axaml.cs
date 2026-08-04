@@ -29,6 +29,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = model;
         model.OpenDumpRequested += OnOpenDumpRequested;
+        model.AttachToProcessRequested += OnAttachToProcessRequested;
         Closed += (_, _) => model.Dispose();
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
@@ -97,6 +98,15 @@ public partial class MainWindow : Window
         if (files is [{ } file, ..] && file.TryGetLocalPath() is { Length: > 0 } path)
         {
             await model.OpenDumpAsync(path);
+        }
+    }
+
+    private async void OnAttachToProcessRequested(object? sender, EventArgs e)
+    {
+        var pid = await new AttachProcessWindow().ShowDialog<int?>(this);
+        if (pid is > 0)
+        {
+            await model.AttachToProcessAsync(pid.Value);
         }
     }
 

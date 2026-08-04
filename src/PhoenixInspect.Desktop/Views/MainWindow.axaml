@@ -16,6 +16,7 @@
         <Menu DockPanel.Dock="Top" Padding="4,2">
             <MenuItem Header="_File">
                 <MenuItem Header="_Open dump…" Command="{Binding OpenDumpCommand}" InputGesture="Ctrl+O" />
+                <MenuItem Header="_Attach to process…" Command="{Binding AttachToProcessCommand}" />
                 <MenuItem x:Name="RecentDumpsMenu"
                           Header="Open _recent"
                           ItemsSource="{Binding RecentDumps}"
@@ -48,10 +49,16 @@
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
                     <Button Content="Close dump"
                             Command="{Binding CloseDumpCommand}"
+                            AutomationProperties.AutomationId="CloseSession"
                             IsVisible="{Binding IsDumpOpen}" />
+                    <Button Content="Attach…"
+                            ToolTip.Tip="Attach to a running .NET process, suspended for the session"
+                            Command="{Binding AttachToProcessCommand}"
+                            AutomationProperties.AutomationId="AttachToProcess" />
                     <Button Content="Open dump…"
                             Classes="accent"
-                            Command="{Binding OpenDumpCommand}" />
+                            Command="{Binding OpenDumpCommand}"
+                            AutomationProperties.AutomationId="OpenDump" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
                     <Border Width="24" Height="24" CornerRadius="6"

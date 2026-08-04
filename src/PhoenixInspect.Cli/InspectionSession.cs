@@ -82,10 +82,11 @@ public sealed class InspectionSession
     /// <returns>A task that completes when the overview has been written.</returns>
     public async Task ShowOverviewAsync()
     {
-        var path = host.DumpPath!;
+        var path = host.DumpPath;
         var length = host.DumpLength ?? 0;
-        var snapshot = await host.QueryAsync(session =>
-            DumpInspectionService.LoadSnapshot(session, path, length)).ConfigureAwait(false);
+        var snapshot = await host.QueryAsync(session => session.IsLiveAttach
+            ? DumpInspectionService.LoadLiveSnapshot(session)
+            : DumpInspectionService.LoadSnapshot(session, path!, length)).ConfigureAwait(false);
         modules = snapshot.Modules;
         renderer.Heading("Session");
         renderer.Properties(snapshot.Properties, includeDetail: true);
@@ -182,7 +183,7 @@ public sealed class InspectionSession
     private CommandOutcome ShowStatus()
     {
         renderer.Heading("Session state");
-        renderer.Pair("Dump", host.DumpPath ?? "<none>");
+        renderer.Pair("Source", host.DumpPath ?? "<live attach>");
         renderer.Pair("Root", root?.Description ?? "<none adopted>");
         renderer.Pair("Root identifier", rootIdentifier);
         renderer.Pair(

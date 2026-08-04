@@ -3,14 +3,16 @@ using System.Collections.Immutable;
 namespace PhoenixInspect.Cli;
 
 /// <summary>Carries one validated console invocation.</summary>
-/// <param name="DumpPath">The dump file to open.</param>
+/// <param name="DumpPath">The dump file to open, or null when attaching to a process.</param>
+/// <param name="AttachProcessId">The process id to attach to, or null when opening a dump.</param>
 /// <param name="Commands">
 /// The session commands to run in order. An empty array means the session should prompt interactively.
 /// </param>
 /// <param name="Verbose">Whether every answer should also print its complete evidence.</param>
 /// <param name="Styled">Whether ANSI styling may be emitted.</param>
 public sealed record CommandLineOptions(
-    string DumpPath,
+    string? DumpPath,
+    int? AttachProcessId,
     ImmutableArray<string> Commands,
     bool Verbose,
     bool Styled)
@@ -33,6 +35,7 @@ public sealed record CommandLineOptions(
         error = null;
 
         string? dumpPath = null;
+        int? attachProcessId = null;
         var commands = ImmutableArray.CreateBuilder<string>();
         var verbose = false;
         var styled = ShouldStyleByDefault();
@@ -61,6 +64,19 @@ public sealed record CommandLineOptions(
                     }
 
                     commands.Add("eval " + expression);
+                    break;
+
+                case "--attach":
+                    if (!TryTakeValue(args, ref index, out var pidText) ||
+                        !int.TryParse(pidText, System.Globalization.NumberStyles.None,
+                            System.Globalization.CultureInfo.InvariantCulture, out var pid) ||
+                        pid <= 0)
+                    {
+                        error = "--attach requires a positive process id.";
+                        return false;
+                    }
+
+                    attachProcessId = pid;
                     break;
 
                 case "--command" or "-c":
@@ -107,20 +123,27 @@ public sealed record CommandLineOptions(
             }
         }
 
-        if (dumpPath is null)
+        if (dumpPath is null && attachProcessId is null)
         {
-            error = "a dump file path is required.";
+            error = "a dump file path or --attach <pid> is required.";
             return false;
         }
 
-        if (!File.Exists(dumpPath))
+        if (dumpPath is not null && attachProcessId is not null)
+        {
+            error = "open a dump file or attach to a process, not both.";
+            return false;
+        }
+
+        if (dumpPath is not null && !File.Exists(dumpPath))
         {
             error = $"the dump file '{dumpPath}' does not exist.";
             return false;
         }
 
         options = new CommandLineOptions(
-            Path.GetFullPath(dumpPath),
+            dumpPath is null ? null : Path.GetFullPath(dumpPath),
+            attachProcessId,
             commands.ToImmutable(),
             verbose,
             styled);

@@ -20,6 +20,27 @@ the bounded explicit-first merge (`SourceNavigationService.ParseCandidateList` /
 which source-verification outcomes permit showing content (`SourceViewResult.IsContentDisplayable`). A host decides
 layout, selection, and phrasing — everything a host *computes* is available to any API consumer.
 
+## Two evidence sources: dump files and live attach
+
+Both hosts open either an immutable dump file or a **running .NET process**, suspended for the lifetime of the
+session (`phoenixinspect --attach <pid>`; File → Attach to process… in the shell). Everything above the adapter is
+identical: the same expression surface, the same panes, the same counted-evidence reporting — a live session is a
+different *source*, not a different product.
+
+The two sources differ in exactly one way the product states out loud, in the Snapshot pane and in every memory
+read's provenance:
+
+| | Dump file | Live attach |
+|---|---|---|
+| Identity | SHA-256 of the file contents (`dump-sha256:…`) — reopen it anywhere, get the same identity and the same replay digests | SHA-256 of the attach circumstances (`live-attach-sha256:…`): machine, process, process start time, attach time |
+| Replay | Across sessions and machines, forever | Within the session, because the target is suspended; a fresh attach is a different snapshot |
+| Completeness | Whatever the dump writer captured — a filtered dump can be missing pages | Everything currently mapped in the target |
+| Requirements | Any machine with a compatible reader | Same machine, matching architecture, sufficient privileges |
+
+Suspension is the whole point: with every target thread frozen, memory does not move underneath a heap walk, so
+reads are repeatable and the evidence model holds unchanged. Closing the session detaches and resumes the process.
+Live attach remains inspection-only — nothing is stepped, mutated, or executed, exactly as with a dump.
+
 ## The resemblance, and where it stops
 
 A dump is not a live process. The hosts deliberately borrow a debugger's shape because that is the shape a

@@ -20,6 +20,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
     private readonly DumpSessionHost host = new();
     private readonly InspectionDockFactory factory;
     private readonly RelayCommand openCommand;
+    private readonly RelayCommand attachCommand;
     private readonly RelayCommand closeCommand;
     private int busyDepth;
     private string busyMessage = string.Empty;
@@ -59,6 +60,9 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         factory.InitLayout(Layout);
 
         openCommand = new RelayCommand(() => OpenDumpRequested?.Invoke(this, EventArgs.Empty), () => !IsBusy);
+        attachCommand = new RelayCommand(
+            () => AttachToProcessRequested?.Invoke(this, EventArgs.Empty),
+            () => !IsBusy);
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
         Evaluate.PropertyChanged += (_, e) =>
         {
@@ -83,6 +87,9 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
     /// <summary>Raised when the user asks to open a dump; the view shows the platform file picker.</summary>
     /// <remarks>File dialogs need a top-level window, so the view owns the picker and calls back with a path.</remarks>
     public event EventHandler? OpenDumpRequested;
+
+    /// <summary>Raised when the user asks to attach to a process; the view shows the process picker.</summary>
+    public event EventHandler? AttachToProcessRequested;
 
     /// <summary>Gets the docking layout rendered by the window's DockControl.</summary>
     public IRootDock Layout { get; }
@@ -122,6 +129,9 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
 
     /// <summary>Gets the command that prompts for and opens a dump file.</summary>
     public RelayCommand OpenDumpCommand => openCommand;
+
+    /// <summary>Gets the command that prompts for and attaches to a running .NET process.</summary>
+    public RelayCommand AttachToProcessCommand => attachCommand;
 
     /// <summary>Gets the command that closes the current dump session.</summary>
     public RelayCommand CloseDumpCommand => closeCommand;
@@ -384,6 +394,70 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         SetStatus(outcome.Message);
     }
 
+    /// <summary>
+    /// Attaches to a running .NET process, suspending it for the session, and reloads every pane. Closing the
+    /// session detaches and resumes the process.
+    /// </summary>
+    /// <param name="processId">The id of the process to attach to.</param>
+    /// <returns>A task that completes once the panes reflect the live session.</returns>
+    public async Task AttachToProcessAsync(int processId)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(processId);
+        DismissError();
+        EnterBusy($"Attaching to process {processId}…");
+        DumpOpenOutcome outcome;
+        try
+        {
+            outcome = await host.AttachAsync(processId).ConfigureAwait(true);
+        }
+        catch (Exception exception)
+        {
+            outcome = new DumpOpenOutcome(false, null, null, exception.Message);
+        }
+        finally
+        {
+            ExitBusy();
+        }
+
+        if (!outcome.IsOpen)
+        {
+            ClearSessionState();
+            ReportError(outcome.Message);
+            return;
+        }
+
+        DumpFileName = $"PID {processId} (live, suspended)";
+        DumpDirectory = null;
+        Raise(nameof(IsDumpOpen));
+        closeCommand.RaiseCanExecuteChanged();
+
+        Threads.Reset();
+        Locals.Reset();
+        CallStacks.Reset();
+        HeapObjects.Reset();
+        Evaluate.Reset();
+        Watch.Reset();
+        Immediate.Reset();
+        factory.CloseSourceDocuments();
+
+        var live = await RunAsync(
+            "Reading live session facts…",
+            session => (Projection: DumpInspectionService.LoadLiveSnapshot(session),
+                ProcessName: session.TargetProcessName)).ConfigureAwait(true);
+        if (live.Projection is { } projection)
+        {
+            Overview.Load(projection.Properties);
+            Modules.Load(projection.Modules);
+            SnapshotDigest = DisplayFormatting.ShortDigest(projection.SnapshotSha256);
+            TargetSummary = $"{projection.TargetPlatform} · {projection.TargetArchitecture} · live";
+            DumpFileName = $"{live.ProcessName} (PID {processId}, live)";
+        }
+
+        _ = Completion.RebuildAsync(Evaluate.RootSelection, Evaluate.RootIdentifier);
+        await Threads.ProbeAsync().ConfigureAwait(true);
+        SetStatus(outcome.Message);
+    }
+
     /// <summary>Closes the current session and clears every pane.</summary>
     /// <returns>A task that completes once the session is closed.</returns>
     public async Task CloseDumpAsync()
@@ -501,6 +575,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         {
             Raise(nameof(IsBusy));
             openCommand.RaiseCanExecuteChanged();
+            attachCommand.RaiseCanExecuteChanged();
             closeCommand.RaiseCanExecuteChanged();
         }
     }
@@ -513,6 +588,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
             BusyMessage = string.Empty;
             Raise(nameof(IsBusy));
             openCommand.RaiseCanExecuteChanged();
+            attachCommand.RaiseCanExecuteChanged();
             closeCommand.RaiseCanExecuteChanged();
         }
     }

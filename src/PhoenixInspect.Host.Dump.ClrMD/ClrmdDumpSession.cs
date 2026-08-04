@@ -1,8 +1,11 @@
 using System.Buffers.Binary;
 using System.Collections.Immutable;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
+using System.Text;
 using PhoenixInspect.Core.Abstractions;
 using PhoenixInspect.Host.Abstractions;
 using Microsoft.Diagnostics.Runtime;
@@ -54,7 +57,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
         ImmutableArray.Create(new EvaluationDeterministicBound(
             "dump.instance-fields.traversed",
             MaximumRuntimeInstanceFieldCount));
-    private readonly Stream _dumpStream;
+    private readonly Stream? _dumpStream;
     private readonly DataTarget _dataTarget;
     private readonly ClrRuntime _runtime;
     private readonly ClrmdProcessMemoryReader _memory;
@@ -63,14 +66,17 @@ public sealed partial class ClrmdDumpSession : IDisposable
     private bool _disposed;
 
     private ClrmdDumpSession(
-        Stream dumpStream,
+        Stream? dumpStream,
         DataTarget dataTarget,
         ClrRuntime runtime,
         ClrmdSnapshotIdentity snapshot,
         ClrmdProcessMemoryReader memory,
         ImmutableArray<ClrmdModuleInfo> modules,
         IReadOnlyDictionary<ClrmdRuntimeModuleIdentity, ClrModule> runtimeModules,
-        IReadOnlyDictionary<(ulong AppDomainAddress, ulong ModuleAddress), ClrmdModuleInfo> moduleInfos)
+        IReadOnlyDictionary<(ulong AppDomainAddress, ulong ModuleAddress), ClrmdModuleInfo> moduleInfos,
+        int? targetProcessId = null,
+        string? targetProcessName = null,
+        DateTime? attachedAtUtc = null)
     {
         _dumpStream = dumpStream;
         _dataTarget = dataTarget;
@@ -80,6 +86,9 @@ public sealed partial class ClrmdDumpSession : IDisposable
         Modules = modules;
         _runtimeModules = runtimeModules;
         _moduleInfos = moduleInfos;
+        TargetProcessId = targetProcessId;
+        TargetProcessName = targetProcessName;
+        AttachedAtUtc = attachedAtUtc;
         TargetPlatform = dataTarget.DataReader.TargetPlatform.ToString();
         TargetArchitecture = dataTarget.DataReader.Architecture.ToString();
     }
@@ -98,6 +107,18 @@ public sealed partial class ClrmdDumpSession : IDisposable
     /// Gets the content identity of the loaded dump.
     /// </summary>
     public ClrmdSnapshotIdentity Snapshot { get; }
+
+    /// <summary>Gets whether this session inspects a suspended live process rather than a dump file.</summary>
+    public bool IsLiveAttach => Snapshot.IsLiveAttach;
+
+    /// <summary>Gets the attached process id, or null for a dump session.</summary>
+    public int? TargetProcessId { get; }
+
+    /// <summary>Gets the attached process name, or null for a dump session.</summary>
+    public string? TargetProcessName { get; }
+
+    /// <summary>Gets the UTC moment the live process was suspended and attached, or null for a dump session.</summary>
+    public DateTime? AttachedAtUtc { get; }
 
     /// <summary>
     /// Gets the target operating-system name reported by the dump reader.
@@ -229,6 +250,99 @@ public sealed partial class ClrmdDumpSession : IDisposable
     }
 
     /// <summary>
+    /// Attaches to a running .NET process through a structured evidence boundary, suspending every target thread
+    /// for the lifetime of the session.
+    /// </summary>
+    /// <param name="processId">The id of the process to attach to.</param>
+    /// <returns>
+    /// An exact result owning an attached session, or a typed unavailable, invalid, or unsupported-runtime result.
+    /// Disposing the session detaches and resumes the process.
+    /// </returns>
+    /// <remarks>
+    /// The session identity is a digest of the attach circumstances — machine, process, process start time, and
+    /// attach time — never a content identity: a live process has no immutable content. Reads replay within the
+    /// session because the target is suspended; a fresh attach is a different snapshot. Attaching requires the
+    /// same machine, a matching architecture, and sufficient privileges.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="processId"/> is not positive.</exception>
+    public static ClrmdEvidenceResult<ClrmdDumpSession> AttachToProcess(int processId)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(processId);
+        try
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Exact,
+                ClrmdValueIssue.None,
+                AttachCore(processId));
+        }
+        catch (NotSupportedException)
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.RuntimeUnsupported);
+        }
+        catch (InvalidDataException)
+        {
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.ArtifactInvalid);
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or InvalidOperationException or IOException or
+            UnauthorizedAccessException or Win32Exception or ClrDiagnosticsException)
+        {
+            // No such process, exited mid-attach, access denied, architecture mismatch, or a reader failure:
+            // the process is not attachable evidence right now.
+            return ClrmdEvidenceResult<ClrmdDumpSession>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.ArtifactUnavailable);
+        }
+    }
+
+    private static ClrmdDumpSession AttachCore(int processId)
+    {
+        string? processName = null;
+        DateTime? processStartedUtc = null;
+        using (var process = Process.GetProcessById(processId))
+        {
+            processName = process.ProcessName;
+            try
+            {
+                processStartedUtc = process.StartTime.ToUniversalTime();
+            }
+            catch (Exception exception) when (exception is Win32Exception or InvalidOperationException)
+            {
+                // The start time needs process-query access the attach itself may not; identity falls back to
+                // the attach moment alone, which still separates sessions.
+            }
+        }
+
+        var attachedAtUtc = DateTime.UtcNow;
+        var identityMaterial = string.Join(
+            '|',
+            "live-attach",
+            Environment.MachineName,
+            processId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            processName,
+            (processStartedUtc?.Ticks ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            attachedAtUtc.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var snapshot = new ClrmdSnapshotIdentity(
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identityMaterial))).ToLowerInvariant(),
+            isLiveAttach: true);
+
+        var dataTarget = DataTarget.AttachToProcess(processId, suspend: true);
+        try
+        {
+            return BuildSession(dataTarget, dumpStream: null, snapshot, processId, processName, attachedAtUtc);
+        }
+        catch
+        {
+            dataTarget.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Loads a named local dump fixture, validates that it contains exactly one CLR runtime, and builds a deterministic module catalog.
     /// </summary>
     /// <param name="dumpPath">Path to the immutable dump file to open.</param>
@@ -295,15 +409,41 @@ public sealed partial class ClrmdDumpSession : IDisposable
                 leaveOpen: true,
                 dataTargetOptions);
 
+            return BuildSession(dataTarget, dumpStream, snapshot, null, null, null);
+        }
+        catch
+        {
+            runtime?.Dispose();
+            dataTarget?.Dispose();
+            dumpStream.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Validates the single-runtime contract and builds the deterministic module catalog over one data target,
+    /// whether its memory comes from a dump stream or a suspended live process.
+    /// </summary>
+    private static ClrmdDumpSession BuildSession(
+        DataTarget dataTarget,
+        Stream? dumpStream,
+        ClrmdSnapshotIdentity snapshot,
+        int? targetProcessId,
+        string? targetProcessName,
+        DateTime? attachedAtUtc)
+    {
+        ClrRuntime? runtime = null;
+        try
+        {
             if (dataTarget.ClrVersions.Length == 0)
             {
-                throw new InvalidDataException("The dump contains no discoverable CLR runtime.");
+                throw new InvalidDataException("The target contains no discoverable CLR runtime.");
             }
 
             if (dataTarget.ClrVersions.Length != 1)
             {
                 throw new NotSupportedException(
-                    $"The walking-skeleton adapter requires one CLR runtime, but the dump contains {dataTarget.ClrVersions.Length}.");
+                    $"The walking-skeleton adapter requires one CLR runtime, but the target contains {dataTarget.ClrVersions.Length}.");
             }
 
             runtime = dataTarget.ClrVersions[0].CreateRuntime();
@@ -314,7 +454,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
                 if (projectedModules.Count == MaximumRuntimeModuleCount)
                 {
                     throw new NotSupportedException(
-                        $"The dump exceeds the {MaximumRuntimeModuleCount}-module adapter catalog limit.");
+                        $"The target exceeds the {MaximumRuntimeModuleCount}-module adapter catalog limit.");
                 }
 
                 var identity = new ClrmdRuntimeModuleIdentity(
@@ -354,13 +494,14 @@ public sealed partial class ClrmdDumpSession : IDisposable
                 memory,
                 modules,
                 runtimeModules,
-                moduleInfos);
+                moduleInfos,
+                targetProcessId,
+                targetProcessName,
+                attachedAtUtc);
         }
         catch
         {
             runtime?.Dispose();
-            dataTarget?.Dispose();
-            dumpStream.Dispose();
             throw;
         }
     }
@@ -1896,11 +2037,12 @@ public sealed partial class ClrmdDumpSession : IDisposable
         {
             try
             {
+                // For a live-attach session, disposing the data target detaches and resumes the process.
                 _dataTarget.Dispose();
             }
             finally
             {
-                _dumpStream.Dispose();
+                _dumpStream?.Dispose();
             }
         }
     }

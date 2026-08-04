@@ -43,7 +43,9 @@ public static class Program
         renderer.Banner(Version);
 
         using var host = new DumpSessionHost();
-        var opened = await host.OpenAsync(options.DumpPath).ConfigureAwait(false);
+        var opened = options.AttachProcessId is { } attachPid
+            ? await host.AttachAsync(attachPid).ConfigureAwait(false)
+            : await host.OpenAsync(options.DumpPath!).ConfigureAwait(false);
         renderer.Line();
         if (!opened.IsOpen)
         {
@@ -132,7 +134,9 @@ public static class Program
     {
         renderer.Line();
         renderer.Line("usage: phoenixinspect <dump-file> [options]");
+        renderer.Line("       phoenixinspect --attach <pid> [options]");
         renderer.Line();
+        renderer.Pair("--attach <pid>", "Attach to a running .NET process, suspended for the session.", 30);
         renderer.Pair("--eval <expression>", "Evaluate one expression, then continue. May be repeated.", 30);
         renderer.Pair("--command <text>", "Run one session command. May be repeated; order is preserved.", 30);
         renderer.Pair("--script <path>", "Run session commands from a file, one per line; '#' starts a comment.", 30);

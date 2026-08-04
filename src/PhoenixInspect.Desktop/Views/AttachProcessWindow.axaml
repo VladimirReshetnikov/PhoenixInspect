@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="PhoenixInspect.Desktop.Views.AttachProcessWindow"
+        Title="Attach to Process"
+        Width="520" Height="560"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Phoenix.PaneBackground}">
+    <DockPanel Margin="12">
+        <TextBlock DockPanel.Dock="Top"
+                   Classes="secondary"
+                   FontSize="11"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"
+                   Text="Attaching suspends every thread of the target for the lifetime of the session; closing the session resumes it. The process must be a running .NET process of the same architecture." />
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <Button DockPanel.Dock="Right"
+                    Content="Refresh"
+                    FontSize="11"
+                    Padding="8,3"
+                    Margin="8,0,0,0"
+                    Click="OnRefreshClick" />
+            <TextBox x:Name="FilterBox"
+                     PlaceholderText="Filter by process name…"
+                     FontSize="12"
+                     TextChanged="OnFilterChanged" />
+        </DockPanel>
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <Button DockPanel.Dock="Right"
+                    Content="Cancel"
+                    FontSize="12"
+                    Padding="12,4"
+                    Margin="8,0,0,0"
+                    Click="OnCancelClick" />
+            <Button DockPanel.Dock="Right"
+                    x:Name="AttachButton"
+                    Content="Attach"
+                    FontSize="12"
+                    Padding="12,4"
+                    IsEnabled="False"
+                    AutomationProperties.AutomationId="AttachConfirm"
+                    Click="OnAttachClick" />
+            <TextBlock Text="PID:"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0" />
+            <TextBox x:Name="PidBox"
+                     Width="110"
+                     FontSize="12"
+                     HorizontalAlignment="Left"
+                     PlaceholderText="process id"
+                     AutomationProperties.AutomationId="AttachPidBox"
+                     TextChanged="OnPidChanged" />
+        </DockPanel>
+        <ListBox x:Name="ProcessList"
+                 FontSize="12"
+                 AutomationProperties.AutomationId="AttachProcessList"
+                 SelectionChanged="OnSelectionChanged"
+                 DoubleTapped="OnListDoubleTapped">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="{Binding Pid}"
+                                   Classes="secondary"
+                                   FontSize="11"
+                                   FontFamily="Cascadia Mono,Consolas,monospace"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Name}" FontSize="12" />
+                    </DockPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>

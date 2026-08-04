@@ -110,6 +110,54 @@ public sealed class DumpSessionHost : IDisposable
         });
     }
 
+    /// <summary>
+    /// Closes any current session and attaches to a running .NET process on the adapter thread, suspending the
+    /// target for the lifetime of the session. Closing the session detaches and resumes it.
+    /// </summary>
+    /// <param name="processId">The id of the process to attach to.</param>
+    /// <returns>A display-ready outcome; a non-exact attach leaves the host closed.</returns>
+    public Task<DumpOpenOutcome> AttachAsync(int processId)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(processId);
+        return InvokeAsync(() =>
+        {
+            CloseCore();
+            ClrmdEvidenceResult<ClrmdDumpSession> attached;
+            try
+            {
+                attached = ClrmdDumpSession.AttachToProcess(processId);
+            }
+            catch (Exception exception)
+            {
+                return new DumpOpenOutcome(
+                    false,
+                    null,
+                    null,
+                    $"The adapter threw while attaching to process {processId}: {exception.Message}");
+            }
+
+            if (attached.Status != ClrmdEvidenceStatus.Exact || attached.Value is null)
+            {
+                return new DumpOpenOutcome(
+                    false,
+                    attached.Status,
+                    attached.Issue,
+                    $"Process {processId} could not be attached exactly ({attached.Status}, {attached.Issue}). "
+                    + "Attaching needs a running .NET process of the same architecture and sufficient privileges.");
+            }
+
+            session = attached.Value;
+            DumpPath = null;
+            DumpLength = null;
+            return new DumpOpenOutcome(
+                true,
+                attached.Status,
+                attached.Issue,
+                $"Attached to {session.TargetProcessName} (PID {processId}), suspended, with "
+                + $"{session.Modules.Length} managed module instances. Closing the session resumes it.");
+        });
+    }
+
     /// <summary>Closes the current session, if any, on the adapter thread.</summary>
     /// <returns>A task that completes once the session has been disposed.</returns>
     public Task CloseAsync() => InvokeAsync(() =>

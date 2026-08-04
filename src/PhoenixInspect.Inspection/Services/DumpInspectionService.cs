@@ -74,6 +74,44 @@ public static class DumpInspectionService
             session.TargetArchitecture);
     }
 
+    /// <summary>Projects a suspended live-attach session: process facts instead of file facts.</summary>
+    /// <param name="session">The open live-attach session.</param>
+    /// <returns>The complete display projection.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
+    public static SnapshotProjection LoadLiveSnapshot(ClrmdDumpSession session)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        var rows = ImmutableArray.CreateBuilder<PropertyRow>();
+        rows.Add(new PropertyRow(
+            "Live session",
+            "Process",
+            $"{session.TargetProcessName} (PID {session.TargetProcessId})",
+            "Every thread of the target is suspended for the lifetime of this session; closing it resumes them."));
+        if (session.AttachedAtUtc is { } attachedAt)
+        {
+            rows.Add(new PropertyRow(
+                "Live session",
+                "Attached at (UTC)",
+                attachedAt.ToString("O", CultureInfo.InvariantCulture)));
+        }
+
+        rows.Add(new PropertyRow(
+            "Live session",
+            "Session identity",
+            session.Snapshot.Sha256,
+            "SHA-256 of the attach circumstances - machine, process, start time, attach time. A live process has "
+            + "no immutable content identity: reads replay within this session because the target is suspended, "
+            + "but a fresh attach is a different snapshot."));
+        rows.Add(new PropertyRow("Live session", "Memory source", session.Snapshot.MemorySourceId));
+        AddTargetAndBounds(rows, session);
+        return new SnapshotProjection(
+            rows.ToImmutable(),
+            DescribeModules(session),
+            session.Snapshot.Sha256,
+            session.TargetPlatform,
+            session.TargetArchitecture);
+    }
+
     /// <summary>Describes the immutable snapshot, the adapter's declared caps, and the enabled evaluation profiles.</summary>
     /// <param name="session">The open dump session.</param>
     /// <param name="dumpPath">The path the session was opened from; it is display provenance, never identity.</param>
@@ -97,6 +135,15 @@ public static class DumpInspectionService
             "SHA-256 of the complete dump file. Identity excludes the local path, so reopening the same dump "
             + "elsewhere produces the same identity."));
         rows.Add(new PropertyRow("Snapshot", "Memory source", session.Snapshot.MemorySourceId));
+        AddTargetAndBounds(rows, session);
+        return rows.ToImmutable();
+    }
+
+    /// <summary>Adds the target, declared-bound, and profile facts shared by dump and live-attach sessions.</summary>
+    private static void AddTargetAndBounds(
+        ImmutableArray<PropertyRow>.Builder rows,
+        ClrmdDumpSession session)
+    {
         rows.Add(new PropertyRow("Target", "Platform", session.TargetPlatform));
         rows.Add(new PropertyRow("Target", "Architecture", session.TargetArchitecture));
         rows.Add(new PropertyRow(
@@ -121,8 +168,6 @@ public static class DumpInspectionService
             StaticFieldExpressionDescriptor.ProfileId,
             "Context-independent fully qualified static fields bind without stack or PDB evidence; contextual names "
             + "additionally require selected-frame and Portable-PDB import facts."));
-
-        return rows.ToImmutable();
     }
 
     /// <summary>Projects every managed module instance reported by the runtime.</summary>
