@@ -97,6 +97,15 @@ public enum MetadataModuleAcquisitionStage
 
     /// <summary>The six-table module reference table set stopped.</summary>
     ModuleReferenceTableSet = 22,
+
+    /// <summary>The declaration-side source-end extension was rejected.</summary>
+    DeclaredMemberSourceEnds = 23,
+
+    /// <summary>The complete Property table catalog stopped.</summary>
+    PropertyTable = 24,
+
+    /// <summary>The complete Constant table catalog stopped.</summary>
+    ConstantTable = 25,
 }
 
 /// <summary>Identifies why one module acquisition stopped at its named stage.</summary>
@@ -265,6 +274,9 @@ public sealed class MetadataModuleAcquisitionOutcome : IEquatable<MetadataModule
         GenericParameterAuthority = draft.GenericParameterAuthority;
         GenericParameterConstraints = draft.GenericParameterConstraints;
         FieldDefinitions = draft.FieldDefinitions;
+        DeclaredMemberSourceEnds = draft.DeclaredMemberSourceEnds;
+        Properties = draft.Properties;
+        Constants = draft.Constants;
         CompilerNameMappings = draft.CompilerNameMappings;
         Compatibility = draft.Compatibility;
         ChainCatalog = draft.ChainCatalog;
@@ -292,6 +304,9 @@ public sealed class MetadataModuleAcquisitionOutcome : IEquatable<MetadataModule
         WriteOptionalDigest(writer, GenericParameterAuthority?.Sha256);
         WriteOptionalDigest(writer, GenericParameterConstraints?.Sha256);
         WriteOptionalDigest(writer, FieldDefinitions?.Sha256);
+        WriteOptionalDigest(writer, DeclaredMemberSourceEnds?.Sha256);
+        WriteOptionalDigest(writer, Properties?.Sha256);
+        WriteOptionalDigest(writer, Constants?.Sha256);
         WriteOptionalDigest(writer, CompilerNameMappings?.Sha256);
         WriteOptionalDigest(writer, Compatibility?.Sha256);
         WriteOptionalDigest(writer, ChainCatalog?.Sha256);
@@ -348,6 +363,15 @@ public sealed class MetadataModuleAcquisitionOutcome : IEquatable<MetadataModule
 
     /// <summary>Gets the FieldDef table catalog, or null when acquisition stopped earlier.</summary>
     public MetadataFieldDefinitionTableCatalogIdentity? FieldDefinitions { get; }
+
+    /// <summary>Gets the declaration-side source-end extension, or null when the module stopped before it.</summary>
+    public MetadataDeclaredMemberSourceEndIdentity? DeclaredMemberSourceEnds { get; }
+
+    /// <summary>Gets the complete Property table catalog, or null when the module stopped before it.</summary>
+    public MetadataPropertyTableCatalogIdentity? Properties { get; }
+
+    /// <summary>Gets the complete Constant table catalog, or null when the module stopped before it.</summary>
+    public MetadataConstantTableCatalogIdentity? Constants { get; }
 
     /// <summary>Gets the compiler-name mapping catalog, or null when acquisition stopped earlier.</summary>
     public MetadataCompilerNameMappingCatalogIdentity? CompilerNameMappings { get; }
@@ -440,6 +464,9 @@ public sealed class MetadataModuleAcquisitionOutcome : IEquatable<MetadataModule
         }
 
         internal MetadataFieldDefinitionTableCatalogIdentity? FieldDefinitions { get; set; }
+        internal MetadataDeclaredMemberSourceEndIdentity? DeclaredMemberSourceEnds { get; set; }
+        internal MetadataPropertyTableCatalogIdentity? Properties { get; set; }
+        internal MetadataConstantTableCatalogIdentity? Constants { get; set; }
         internal MetadataCompilerNameMappingCatalogIdentity? CompilerNameMappings { get; set; }
         internal MetadataW7TypeDefinitionCompatibilityCatalogIdentity? Compatibility { get; set; }
         internal MetadataNamedTypeDefinitionChainCatalogIdentity? ChainCatalog { get; set; }
@@ -1104,6 +1131,48 @@ public static class MetadataAuthorityProducer
                 draft);
         }
 
+        // The declaration-side tables come last because both catalogs need the complete FieldDef table: the Constant
+        // catalog pairs against it bidirectionally, and both bind to the same exact source ends it inherits.
+        stage = MetadataModuleAcquisitionStage.DeclaredMemberSourceEnds;
+        var declaredMemberSourceEnds = MetadataDeclaredMemberSourceEndIdentity.Create(sourceEnds);
+        draft.DeclaredMemberSourceEnds = declaredMemberSourceEnds;
+
+        stage = MetadataModuleAcquisitionStage.PropertyTable;
+        var propertyRowCount = declaredMemberSourceEnds.PropertyRowCount;
+        var properties = MetadataPropertyTableCatalogIdentity.Create(
+            declaredMemberSourceEnds,
+            definitionAuthority,
+
+            // An image that redirects ownership through PropertyPtr is refused by the catalog itself, so no row is
+            // read from a table whose ownership this composition cannot follow.
+            declaredMemberSourceEnds.PropertyPointerRowCount == 0
+                ? ReadPropertyRows(module, reader, propertyRowCount)
+                : default);
+        draft.Properties = properties;
+        if (properties.ResultKind != MetadataPropertyTableResultKind.Exact)
+        {
+            return CatalogStopped(
+                properties.ResultKind == MetadataPropertyTableResultKind.Invalid,
+                stage,
+                module,
+                draft);
+        }
+
+        stage = MetadataModuleAcquisitionStage.ConstantTable;
+        var constants = MetadataConstantTableCatalogIdentity.Create(
+            declaredMemberSourceEnds,
+            fieldDefinitions,
+            ReadConstantRows(module, reader, declaredMemberSourceEnds));
+        draft.Constants = constants;
+        if (constants.ResultKind != MetadataConstantTableResultKind.Exact)
+        {
+            return CatalogStopped(
+                constants.ResultKind == MetadataConstantTableResultKind.Invalid,
+                stage,
+                module,
+                draft);
+        }
+
         stage = MetadataModuleAcquisitionStage.CompilerNameMappingCatalog;
         var compilerNameMappings = MetadataCompilerNameMappingCatalogIdentity.Create(definitionAuthority);
         draft.CompilerNameMappings = compilerNameMappings;
@@ -1451,6 +1520,94 @@ public static class MetadataAuthorityProducer
                 (int)fieldDefinition.Attributes,
                 reader.GetString(fieldDefinition.Name),
                 ReadBlob(reader, fieldDefinition.Signature)));
+        }
+
+        return builder.MoveToImmutable();
+    }
+
+    private static ImmutableArray<MetadataPropertyRowObservationIdentity> ReadPropertyRows(
+        StaticFieldMetadataModuleIdentity module,
+        MetadataReader reader,
+        int rowCount)
+    {
+        var builder = ImmutableArray.CreateBuilder<MetadataPropertyRowObservationIdentity>(rowCount);
+        for (var rowId = 1; rowId <= rowCount; rowId++)
+        {
+            var handle = MetadataTokens.PropertyDefinitionHandle(rowId);
+            var property = reader.GetPropertyDefinition(handle);
+            var declaringType = property.GetDeclaringType();
+            builder.Add(MetadataPropertyRowObservationIdentity.Create(
+                module,
+                MetadataTokens.GetToken(handle),
+                (int)property.Attributes,
+                reader.GetString(property.Name),
+                ReadBlob(reader, property.Signature),
+
+                // A nil owner is retained as the nil token so the catalog reports it as an unissued owner rather
+                // than throwing here; the reader resolves this through PropertyMap, which projects no rows itself.
+                declaringType.IsNil ? 0x0200_0000 : MetadataTokens.GetToken(declaringType)));
+        }
+
+        return builder.MoveToImmutable();
+    }
+
+    /// <summary>
+    /// Collects every physical Constant row from the parent side, in ascending Constant RID order.
+    /// </summary>
+    /// <remarks>
+    /// The shared reader projects no Constant rows, so the table is reached only through its parents. Every Constant
+    /// row has exactly one parent among FieldDef, Param, and Property, and all three of those tables enumerate, so
+    /// sweeping them collects provably every row. The collection is then sorted into physical RID order, which is
+    /// what lets the catalog check contiguity; whether the parents themselves ascend is recorded by the catalog as a
+    /// profile rather than assumed here.
+    /// </remarks>
+    private static ImmutableArray<MetadataConstantRowObservationIdentity> ReadConstantRows(
+        StaticFieldMetadataModuleIdentity module,
+        MetadataReader reader,
+        MetadataDeclaredMemberSourceEndIdentity declaredMemberSourceEnds)
+    {
+        var collected = new SortedDictionary<int, ConstantHandle>();
+        for (var rowId = 1; rowId <= declaredMemberSourceEnds.FieldDefinitionRowCount; rowId++)
+        {
+            var handle = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(rowId)).GetDefaultValue();
+            if (!handle.IsNil)
+            {
+                collected[MetadataTokens.GetRowNumber(handle)] = handle;
+            }
+        }
+
+        for (var rowId = 1; rowId <= declaredMemberSourceEnds.PropertyRowCount; rowId++)
+        {
+            var handle = reader.GetPropertyDefinition(MetadataTokens.PropertyDefinitionHandle(rowId))
+                .GetDefaultValue();
+            if (!handle.IsNil)
+            {
+                collected[MetadataTokens.GetRowNumber(handle)] = handle;
+            }
+        }
+
+        foreach (var methodHandle in reader.MethodDefinitions)
+        {
+            foreach (var parameterHandle in reader.GetMethodDefinition(methodHandle).GetParameters())
+            {
+                var handle = reader.GetParameter(parameterHandle).GetDefaultValue();
+                if (!handle.IsNil)
+                {
+                    collected[MetadataTokens.GetRowNumber(handle)] = handle;
+                }
+            }
+        }
+
+        var builder = ImmutableArray.CreateBuilder<MetadataConstantRowObservationIdentity>(collected.Count);
+        foreach (var handle in collected.Values)
+        {
+            var constant = reader.GetConstant(handle);
+            builder.Add(MetadataConstantRowObservationIdentity.Create(
+                module,
+                MetadataTokens.GetToken(handle),
+                (int)constant.TypeCode,
+                MetadataTokens.GetToken(constant.Parent),
+                ReadBlob(reader, constant.Value)));
         }
 
         return builder.MoveToImmutable();

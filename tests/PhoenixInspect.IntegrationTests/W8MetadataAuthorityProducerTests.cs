@@ -67,6 +67,53 @@ public sealed class W8MetadataAuthorityProducerTests
             reader.GetTableRowCount(TableIndex.InterfaceImpl),
             sourceEnds.InterfaceImplementationRowCount);
 
+        // The declaration-side ends are the counts the shared reader can give for tables it cannot enumerate.
+        var declaredEnds =
+            Assert.IsType<MetadataDeclaredMemberSourceEndIdentity>(outcome.DeclaredMemberSourceEnds);
+        Assert.Equal(reader.GetTableRowCount(TableIndex.Property), declaredEnds.PropertyRowCount);
+        Assert.Equal(reader.GetTableRowCount(TableIndex.Constant), declaredEnds.ConstantRowCount);
+        Assert.Equal(reader.GetTableRowCount(TableIndex.PropertyMap), declaredEnds.PropertyMapRowCount);
+        Assert.Equal(reader.GetTableRowCount(TableIndex.PropertyPtr), declaredEnds.PropertyPointerRowCount);
+
+        var properties = Assert.IsType<MetadataPropertyTableCatalogIdentity>(outcome.Properties);
+        Assert.Equal(MetadataPropertyTableResultKind.Exact, properties.ResultKind);
+        Assert.Equal(reader.GetTableRowCount(TableIndex.Property), properties.Rows.Length);
+
+        // Every property's owner agrees with the reader's own PropertyMap resolution, and each owner holds exactly
+        // one contiguous run - the two ownership facts that remain derivable without a PropertyMap row walk.
+        foreach (var propertyRow in properties.Rows)
+        {
+            var handle = MetadataTokens.PropertyDefinitionHandle(
+                propertyRow.PropertyToken & 0x00FF_FFFF);
+            var declaringType = reader.GetPropertyDefinition(handle).GetDeclaringType();
+            Assert.Equal(
+                MetadataTokens.GetToken(declaringType),
+                propertyRow.DeclaringTypeDefinition.TypeDefinitionToken);
+        }
+
+        // The Constant table is never walked, so this is the assertion that the parent-side sweep collected it all.
+        var constants = Assert.IsType<MetadataConstantTableCatalogIdentity>(outcome.Constants);
+        Assert.Equal(MetadataConstantTableResultKind.Exact, constants.ResultKind);
+        Assert.Equal(reader.GetTableRowCount(TableIndex.Constant), constants.Rows.Length);
+        foreach (var constantRow in constants.Rows)
+        {
+            var handle = MetadataTokens.ConstantHandle(constantRow.ConstantToken & 0x00FF_FFFF);
+            var constant = reader.GetConstant(handle);
+            Assert.Equal((int)constant.TypeCode, constantRow.ConstantTypeCode);
+            Assert.Equal(MetadataTokens.GetToken(constant.Parent), constantRow.ParentMetadataToken);
+        }
+
+        // Every literal field's default value is present and joined; every other field's absence is proven.
+        foreach (var fieldRow in Assert
+            .IsType<MetadataFieldDefinitionTableCatalogIdentity>(outcome.FieldDefinitions).Rows)
+        {
+            var expected = fieldRow.HasDefault
+                ? MetadataConstantDisposition.Present
+                : MetadataConstantDisposition.AbsentByDeclaredAttributes;
+            Assert.Equal(expected, constants.DispositionForField(fieldRow, out var constantRow));
+            Assert.Equal(fieldRow.HasDefault, constantRow is not null);
+        }
+
         var referenceSourceEnds = Assert.IsType<MetadataReferenceSourceEndIdentity>(outcome.ReferenceSourceEnds);
         Assert.Equal(reader.GetTableRowCount(TableIndex.ModuleRef), referenceSourceEnds.ModuleReferenceRowCount);
         Assert.Equal(reader.GetTableRowCount(TableIndex.AssemblyRef), referenceSourceEnds.AssemblyReferenceRowCount);
