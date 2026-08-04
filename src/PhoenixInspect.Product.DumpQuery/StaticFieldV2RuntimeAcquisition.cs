@@ -197,6 +197,12 @@ public enum StaticFieldV2RuntimeAcquisitionBoundary
 
     /// <summary>The selected frame's receiver is identified by the legacy interface's own argument name.</summary>
     FrameReceiverIdentifiedByLegacyArgumentName = 10,
+
+    /// <summary>
+    /// An argument-free construction's method table came from the declaring module's physical TypeDef map, because a
+    /// module's available-type-parameter hash holds constructed type parameters only.
+    /// </summary>
+    DefinitionMethodTableSuppliedByTypeDefinitionMap = 11,
 }
 
 /// <summary>Names the frame-value root families one selected-frame request may name.</summary>
@@ -2306,6 +2312,14 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
     /// construction over a type declared elsewhere. A visited entry contributes a candidate only when its method table
     /// names the bound definition module and TypeDef token; every such entry whose loader module, containing assembly,
     /// or ordered argument cannot be projected through the landed authority is counted and excluded.
+    /// <para>
+    /// A module's available-type table holds constructed type parameters only, so an argument-free construction is
+    /// physically absent from every one of them. Such a request therefore additionally sweeps the declaring module's
+    /// own physical TypeDef method-table map, whose entry for a loaded definition is that definition's one exact
+    /// method table, and declares that source as a coverage boundary. A construction that carries arguments keeps the
+    /// unchanged available-type sweep, so a generic acquisition observes no new entry and no new boundary: the open
+    /// definition's canonical method table can never be mistaken for one of its instantiations.
+    /// </para>
     /// </remarks>
     /// <returns>A sealed immutable outcome carrying the emitted rows and the landed selection.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
@@ -2352,6 +2366,17 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
         }
 
         var bindings = BuildBindingMap(request.ModuleBindingsCore);
+
+        // An argument-free construction is physically absent from every available-type-parameter hash, so its one
+        // exact method table is looked up in the declaring module's TypeDef map instead. The extra source is declared
+        // exactly where it is consulted and never engages for a construction that carries arguments.
+        var sweepsDefinitionMap = request.MetadataConstruction.FlattenedArguments.IsDefaultOrEmpty;
+        if (sweepsDefinitionMap)
+        {
+            boundaries = boundaries.Add(
+                StaticFieldV2RuntimeAcquisitionBoundary.DefinitionMethodTableSuppliedByTypeDefinitionMap);
+        }
+
         var owner = request.MetadataConstruction.OwnerConstruction!;
         var definitionModule = owner.FinalClassification!.SourceModule;
         var typeDefinitionToken = owner.FinalClassification!.TypeDefinition.TypeDefinitionToken;
@@ -2389,7 +2414,10 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
                     loaderBinding = null;
                 }
 
-                foreach (var typeHandle in ReadAvailableTypeHandles(reader, module.Address))
+                foreach (var typeHandle in ReadCandidateTypeHandles(
+                    reader,
+                    module,
+                    sweepsDefinitionMap && module.Address == definitionBinding.RuntimeModuleAddress))
                 {
                     examinedEntryCount = checked(examinedEntryCount + 1);
                     if (!TryReadMethodTableIdentity(reader, typeHandle, out var identity) ||
@@ -3044,6 +3072,52 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
                 $"The pinned runtime descriptor does not define {typeName}.{fieldName}.");
         }
         return offset;
+    }
+
+    /// <summary>
+    /// Enumerates every method-table handle one module can contribute: its constructed available-type parameters
+    /// always, and — only when this module is the argument-free request's own declaring module — the definitions its
+    /// TypeDef map has loaded.
+    /// </summary>
+    /// <remarks>
+    /// A module's TypeDef map is indexed by that module's own TypeDef RIDs, so a definition's method table can appear
+    /// in no other module's map; sweeping only the declaring module is exact rather than a narrowing heuristic. The
+    /// two physical sources are disjoint by construction, but the union is deduplicated anyway so that one handle is
+    /// examined exactly once and the counted same-definition, candidate, and unprojectable totals keep accounting for
+    /// entries rather than for repeated reads of one entry.
+    /// </remarks>
+    private ImmutableArray<ulong> ReadCandidateTypeHandles(
+        ExactSnapshotReader reader,
+        ClrModule module,
+        bool includeDefinitionMap)
+    {
+        var available = ReadAvailableTypeHandles(reader, module.Address);
+        if (!includeDefinitionMap)
+        {
+            return available;
+        }
+
+        var handles = ImmutableArray.CreateBuilder<ulong>(available.Length);
+        handles.AddRange(available);
+        var visited = new HashSet<ulong>(available);
+        foreach (var (methodTable, _) in module.EnumerateTypeDefToMethodTableMap())
+        {
+            if (methodTable == 0 || !visited.Add(methodTable))
+            {
+                continue;
+            }
+
+            if (handles.Count == MaximumHashEntryCount)
+            {
+                throw new StaticFieldV2RuntimeAcquisitionException(
+                    StaticFieldV2RuntimeAcquisitionCodes.AvailableTypeTableUnreadableCode,
+                    $"Module 0x{module.Address:x} contributes more than {MaximumHashEntryCount} method tables.");
+            }
+
+            handles.Add(methodTable);
+        }
+
+        return handles.ToImmutable();
     }
 
     private ImmutableArray<ulong> ReadAvailableTypeHandles(ExactSnapshotReader reader, ulong moduleAddress)

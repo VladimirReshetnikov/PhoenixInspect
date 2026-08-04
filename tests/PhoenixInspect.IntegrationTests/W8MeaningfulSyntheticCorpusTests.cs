@@ -508,6 +508,162 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         }
     }
 
+    /// <summary>
+    /// Documents what the real scoped-context and lexical-envelope projections now reach for the contextual and bare
+    /// rows, and the exact produced-versus-predeclared divergence that keeps each of them manifest-only.
+    /// </summary>
+    /// <remarks>
+    /// The runner selects the frame that physically spelled each expression — the caller of the shape's sole pause —
+    /// and projects that method's complete lexical envelope from the module's own metadata tables and the shape's
+    /// identity-validated Portable PDB. Every assertion here is a produced physical fact captured from a real run.
+    /// No manifest row is retuned; the divergence is the reported finding.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8MeaningfulSyntheticV1")]
+    public void Contextual_and_bare_incidents_stop_at_their_landed_scope_boundaries()
+    {
+        var manifest = W8CorpusManifest.Load();
+
+        // Incident 9 request-inner-alias-shadows-outer-alias: the inner namespace-level alias shadows the identically
+        // spelled compilation-unit alias, the contextual owner construction freezes at arity zero, and the row reaches
+        // its predeclared exact terminal over a real dump. The fully qualified control binds the same owner through
+        // the explicit route and reaches the same value, so both spellings converge on one construction identity with
+        // distinct binding provenance. The one remaining divergence is the predeclared row's conflation of the two
+        // construction axes as NotRequired where the pipeline reports typeConstruction Exact — the same conflation the
+        // module-RVA and derived-base rows already document.
+        var innerAlias = manifest.Incidents.Single(
+            static incident => incident.Id == "request-inner-alias-shadows-outer-alias");
+        Assert.Equal("manifest-only", innerAlias.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(innerAlias))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, innerAlias.Shape))
+        {
+            var produced = world.Evaluate(
+                innerAlias.Expression,
+                innerAlias.ReadWidth,
+                null,
+                world.PausedFrameScopedContext());
+            Assert.Equal(
+                "Admitted/Exact/NotRequired/NotRequired/Exact/Exact/Exact/Exact/Exact/ExactValue/NotRequested/Complete",
+                Describe(produced.Result.Axes));
+            Assert.Equal(1358954761L, produced.Result.SignedValue);
+            Assert.Equal(
+                DumpExpressionTypeConstructionOutcome.NotRequired,
+                innerAlias.PredeclaredAxes.TypeConstruction);
+            Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, produced.Result.Axes.TypeConstruction);
+            Assert.NotEqual(innerAlias.PredeclaredAxes, produced.Result.Axes);
+
+            // The contextual outcome retains its contextual binding; the explicit control retains its name binding.
+            var contextual = produced.Result.Provenance.OwnerConstruction!;
+            Assert.NotNull(contextual.ContextualBinding);
+            Assert.Null(contextual.NameBinding);
+            var control = world.Evaluate(
+                "global::PhoenixInspect.W8RequestShapeTarget.Inner.InnerScopedSlot.Sentinel",
+                innerAlias.ReadWidth);
+            Assert.Equal(produced.Result.SignedValue, control.Result.SignedValue);
+            Assert.Equal(
+                contextual.OwnerConstruction,
+                control.Result.Provenance.OwnerConstruction!.OwnerConstruction);
+            Assert.NotNull(control.Result.Provenance.OwnerConstruction.NameBinding);
+            Assert.Null(control.Result.Provenance.OwnerConstruction.ContextualBinding);
+            Assert.NotEqual(produced.Result.Sha256, control.Result.Sha256);
+        }
+
+        // Incident 7 coordinator-namespace-alias-in-type-argument: the aliased spelling binds one exact owner name
+        // under the real import scope and then stops at the declared contextual closed-construction boundary, because
+        // a contextual spelling that itself carries type arguments still needs the import-scoped argument
+        // construction a later slice owns.
+        var aliasArgument = manifest.Incidents.Single(
+            static incident => incident.Id == "coordinator-namespace-alias-in-type-argument");
+        Assert.Equal("manifest-only", aliasArgument.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(aliasArgument))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, aliasArgument.Shape))
+        {
+            var produced = world.Evaluate(
+                aliasArgument.Expression,
+                aliasArgument.ReadWidth,
+                null,
+                world.PausedFrameScopedContext());
+            Assert.Equal(
+                "Admitted/Exact/NotRequired/NotRequired/Exact/Unsupported/NotReached/NotReached/NotReached/" +
+                "NotReached/NotReached/NoAnswer",
+                Describe(produced.Result.Axes));
+            Assert.Contains(
+                StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred,
+                produced.Result.Provenance.DeclaredCoverageBoundaries);
+            Assert.Null(produced.Result.SignedValue);
+            Assert.NotEqual(aliasArgument.PredeclaredAxes, produced.Result.Axes);
+        }
+
+        // Incident 29 request-active-local-shadows-bare-import: the projected lexical envelope produces exactly the
+        // predeclared Shadowed certificate over the real frame, and every later axis stays NotReached. The only
+        // divergence is the context axis: the bare route reads its selected module and current type from the scoped
+        // context, so context can never be NotRequired there as the predeclared row spelled it.
+        var localShadow = manifest.Incidents.Single(
+            static incident => incident.Id == "request-active-local-shadows-bare-import");
+        Assert.Equal("manifest-only", localShadow.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(localShadow))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, localShadow.Shape))
+        {
+            var produced = world.Evaluate(
+                localShadow.Expression,
+                localShadow.ReadWidth,
+                null,
+                world.PausedFrameScopedContext());
+            Assert.Equal(
+                "Admitted/Exact/NotRequired/Shadowed/NotReached/NotReached/NotReached/NotReached/NotReached/" +
+                "NotReached/NotReached/NoAnswer",
+                Describe(produced.Result.Axes));
+            Assert.Equal(
+                DumpExpressionLexicalCompletenessOutcome.Shadowed,
+                produced.Result.Axes.LexicalCompleteness);
+            Assert.Equal(
+                DumpExpressionContextOutcome.NotRequired,
+                Enum.Parse<DumpExpressionContextOutcome>(localShadow.ExpectedAxisText("context")));
+            Assert.Equal(DumpExpressionContextOutcome.Exact, produced.Result.Axes.Context);
+
+            // Withholding the envelope is the row's own declared counterfactual and changes the lexical axis.
+            var withheld = world.Evaluate(
+                localShadow.Expression,
+                localShadow.ReadWidth,
+                null,
+                world.PausedFrameScopedContext(suppliesLexicalEnvelope: false));
+            Assert.Equal(
+                DumpExpressionLexicalCompletenessOutcome.Partial,
+                withheld.Result.Axes.LexicalCompleteness);
+            Assert.NotEqual(produced.Result.Sha256, withheld.Result.Sha256);
+            Assert.NotEqual(localShadow.PredeclaredAxes, produced.Result.Axes);
+        }
+
+        // Incident 31 coordinator-property-shares-bare-name: the envelope certifies Complete and the bare route runs,
+        // but the shared spelling is owned by a property and no landed catalog models the Property table, so the
+        // route reports a declaration absence where the predeclared row expected the typed hiding stop.
+        var propertyName = manifest.Incidents.Single(
+            static incident => incident.Id == "coordinator-property-shares-bare-name");
+        Assert.Equal("manifest-only", propertyName.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(propertyName))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, propertyName.Shape))
+        {
+            var produced = world.Evaluate(
+                propertyName.Expression,
+                propertyName.ReadWidth,
+                null,
+                world.PausedFrameScopedContext());
+            Assert.Equal(
+                "Admitted/Exact/NotRequired/Complete/NotRequired/NotRequired/Absent/NotReached/NotReached/" +
+                "NotReached/NotReached/NoAnswer",
+                Describe(produced.Result.Axes));
+            Assert.Equal(
+                DumpExpressionLexicalCompletenessOutcome.Complete,
+                produced.Result.Axes.LexicalCompleteness);
+            Assert.Equal(
+                DumpExpressionMemberLookupOutcome.HiddenByUnsupportedMember,
+                DecodeMemberLookup(propertyName));
+            Assert.Equal(DumpExpressionMemberLookupOutcome.Absent, produced.Result.Axes.MemberLookup);
+            Assert.NotEqual(propertyName.PredeclaredAxes, produced.Result.Axes);
+        }
+    }
+
     private static DumpExpressionMemberLookupOutcome DecodeMemberLookup(W8CorpusIncident incident) =>
         Enum.Parse<DumpExpressionMemberLookupOutcome>(incident.ExpectedAxisText("memberLookup"));
 
@@ -553,6 +709,14 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             "substitute-closed-type-argument" => world.Evaluate(
                 incident.CounterfactualExpression ?? incident.Expression,
                 incident.ReadWidth),
+
+            // The bare route's own counterfactual: the same spelling under the same exact scoped context, with the
+            // caller-owned lexical seam withheld so no envelope can be acquired at all.
+            "withhold-lexical-envelope" => world.Evaluate(
+                incident.Expression,
+                incident.ReadWidth,
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null,
+                world.PausedFrameScopedContext(suppliesLexicalEnvelope: false)),
             "select-different-thread" => world.Evaluate(
                 incident.Expression,
                 incident.ReadWidth,
@@ -1075,7 +1239,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 var produced = ImmutableArray.CreateBuilder<ProducedModule>();
                 try
                 {
-                    foreach (var artifactPath in artifacts)
+                    foreach (var (artifactPath, required) in artifacts)
                     {
                         var artifact = ReadArtifactContent(W8ShapeTargetPaths.RequireArtifact(artifactPath));
                         var observations = session.Modules
@@ -1088,7 +1252,13 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                                     .Equals(artifact.Content))
                             .OrderBy(static candidate => candidate.ModuleAddress)
                             .ToArray();
-                        Assert.NotEmpty(observations);
+
+                        // A referenced companion is composed only for the profiles whose own execution actually
+                        // loaded it. Its absence from a snapshot is a physical fact of that profile, never a reason
+                        // to fabricate an authority entry; the shape's own module always remains required.
+                        Assert.True(
+                            observations.Length > 0 || !required,
+                            $"The snapshot loads no module matching the required artifact {artifactPath}.");
                         foreach (var observation in observations)
                         {
                             produced.Add(ProducedModule.Bind(session, observation));
@@ -1163,10 +1333,17 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     /// observation becomes the stop. Nothing is fabricated.
     /// </summary>
     /// <param name="mode">The incident's declared context-acquisition circumstances.</param>
+    /// <param name="suppliesLexicalEnvelope">
+    /// Whether the seam can also project the selected method's lexical envelope. Withholding it is the bare route's
+    /// declared counterfactual, not a runner limitation.
+    /// </param>
     /// <returns>A caller-owned seam producing one typed scoped-context acquisition per call.</returns>
     internal StaticFieldV2ScopedContextSource PausedFrameScopedContext(
-        W8CorpusContextMode mode = W8CorpusContextMode.Exact) =>
-        StaticFieldV2ScopedContextSource.CreateFromAcquisition(() => AcquireScopedContext(mode));
+        W8CorpusContextMode mode = W8CorpusContextMode.Exact,
+        bool suppliesLexicalEnvelope = true) =>
+        StaticFieldV2ScopedContextSource.CreateFromAcquisition(
+            () => AcquireScopedContext(mode),
+            suppliesLexicalEnvelope ? AcquireLexicalEnvelope : null);
 
     private StaticFieldV2ScopedContextAcquisition AcquireScopedContext(W8CorpusContextMode mode)
     {
@@ -1185,17 +1362,14 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 StaticFieldV2ScopedContextAcquisitionDisposition.Unavailable);
         }
 
-        var pauseMethodToken = FindMethodToken(Primary.Reader, PrimaryNamespace(), shape + "Pause", "WaitForDump");
-        var frame = SelectPausedFrame(contextSession, pauseMethodToken);
+        var frame = SelectSpellingFrame(contextSession);
         if (frame is null)
         {
             return StaticFieldV2ScopedContextAcquisition.Stopped(
                 StaticFieldV2ScopedContextAcquisitionDisposition.Unavailable);
         }
 
-        var pdbPath = Path.ChangeExtension(
-            W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8" + shape + "ShapeTarget"),
-            ".pdb");
+        var pdbPath = ShapePortablePdbPath();
         var observation = mode switch
         {
             // The truncated companion is realized through the session's own resolver seam: the real shape PDB is
@@ -1233,8 +1407,17 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             });
         }
 
-        var declaringTypeToken = FindTypeToken(Primary.Reader, PrimaryNamespace(), shape + "Pause");
-        var classification = Ancestry.ExactClassificationOrDefault(Primary.MetadataModule, declaringTypeToken)!;
+        // The selected declaring type is the spelling frame's own physical owner, never a hardcoded one: the
+        // contextual and bare routes resolve current-type members against exactly the type the frame is inside.
+        var classification = Ancestry.ExactClassificationOrDefault(
+            Primary.MetadataModule,
+            frame.Frame!.DeclaringTypeDefinitionToken);
+        if (classification is null)
+        {
+            return StaticFieldV2ScopedContextAcquisition.Stopped(
+                StaticFieldV2ScopedContextAcquisitionDisposition.Partial);
+        }
+
         return StaticFieldV2ScopedContextAcquisition.Exact(StaticFieldV2ScopedContextRequest.Create(
             Primary.MetadataModule,
             facts.ImportScopes,
@@ -1242,6 +1425,42 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             Ancestry,
             Ancestry.ResolutionPortfolio));
     }
+
+    /// <summary>
+    /// Projects the selected frame's complete lexical envelope from the module's own physical metadata tables and
+    /// the shape's identity-validated Portable PDB, exactly as a host would before answering a bare spelling.
+    /// </summary>
+    /// <returns>The typed observation, or a factless unavailable one when the spelling frame cannot be selected.</returns>
+    private DumpSelectedMethodLexicalObservation AcquireLexicalEnvelope()
+    {
+        var opened = ClrmdDumpSession.Open(dumpPath);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
+        using var contextSession = opened.Value!;
+        var frame = SelectSpellingFrame(contextSession);
+        Assert.NotNull(frame);
+
+        var pdbPath = W8ShapeTargetPaths.RequireArtifact(ShapePortablePdbPath());
+        var observation = contextSession.ReadExpressionPortablePdbContext(frame!, [pdbPath]);
+        if (observation.Status != DumpContextEvidenceStatus.Exact ||
+            observation.Facts is not DumpPortablePdbContextFacts facts)
+        {
+            return DumpSelectedMethodLexicalObservation.Unavailable(
+                frame!.Frame!,
+                DumpContextEvidenceIssue.PrerequisiteUnavailable,
+                []);
+        }
+
+        return W8CorpusLexicalEnvelope.Project(
+            Primary.Reader,
+            W8ShapeTargetPaths.RequireArtifact(PrimaryArtifactPath()),
+            pdbPath,
+            facts);
+    }
+
+    private string ShapePortablePdbPath() => Path.ChangeExtension(PrimaryArtifactPath(), ".pdb");
+
+    private string PrimaryArtifactPath() =>
+        W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8" + shape + "ShapeTarget");
 
     /// <summary>
     /// Realizes the truncated-portable-pdb companion contract: the real shape PDB is resolved but only a short
@@ -1258,8 +1477,19 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         }
     }
 
-    private DumpSelectedFrameObservation? SelectPausedFrame(ClrmdDumpSession contextSession, int pauseMethodToken)
+    /// <summary>
+    /// Selects the frame that physically spelled the incident's expression: the caller of the shape's sole pause.
+    /// </summary>
+    /// <remarks>
+    /// Every truth-gate profile enters its pause from exactly one probe or gate method, and that caller frame is the
+    /// one whose ImportScope chain, aliases, <c>using static</c> imports, current type, and active locals the
+    /// contextual and bare routes must read. Selecting the pause frame itself would resolve names inside the pause
+    /// helper, which declares none of them. The caller is found physically — one frame outward on the same thread —
+    /// rather than from a per-profile table, so no incident's frame is declared by this runner.
+    /// </remarks>
+    private DumpSelectedFrameObservation? SelectSpellingFrame(ClrmdDumpSession contextSession)
     {
+        var pauseMethodToken = FindMethodToken(Primary.Reader, PrimaryNamespace(), shape + "Pause", "WaitForDump");
         const int maximumThreadOrdinals = 64;
         const int maximumFrameOrdinals = 16;
         for (var threadOrdinal = 0; threadOrdinal < maximumThreadOrdinals; threadOrdinal++)
@@ -1274,7 +1504,14 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                     candidate.RuntimeModule.ModuleAddress == Primary.Binding.RuntimeModuleAddress &&
                     candidate.MethodDefinitionToken == pauseMethodToken)
                 {
-                    return observation;
+                    var caller = contextSession.SelectExpressionFrame(DumpSelectedFrameSelector.Create(
+                        contextSession.Snapshot,
+                        threadOrdinal,
+                        frameOrdinal + 1));
+                    return caller.Frame is { } callerFrame &&
+                        callerFrame.RuntimeModule.ModuleAddress == Primary.Binding.RuntimeModuleAddress
+                        ? caller
+                        : null;
                 }
 
                 if (frameOrdinal > 0 &&
@@ -1530,20 +1767,30 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         return new ArtifactContent(bytes, mvid, ModuleContentIdentity.FromMetadata(mvid, bytes.AsSpan()));
     }
 
-    private static ImmutableArray<string> ShapeArtifacts(string shape) =>
+    private static ImmutableArray<(string Path, bool Required)> ShapeArtifacts(string shape) =>
         shape switch
         {
-            "Request" => [W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8RequestShapeTarget")],
+            "Request" => [(W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8RequestShapeTarget"), true)],
 
-            // The batch shape references the named-RVA module that owns the module-RVA storage; both are composed so
-            // that owner type is present in every portfolio the module-RVA incident consults.
+            // The batch shape references the named-RVA module that owns the module-RVA storage, and the forwarder
+            // and alias modules its two same-level imports converge through; every referenced module is composed so
+            // the owner types those incidents name are present in each portfolio they consult.
             "Batch" =>
             [
-                W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8BatchShapeTarget"),
-                W8ShapeTargetPaths.ResolveNamedRvaFixture(),
+                (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8BatchShapeTarget"), true),
+                (W8ShapeTargetPaths.ResolveNamedRvaFixture(), true),
+                (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8ForwarderTarget"), false),
+                (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8AliasTarget"), false),
             ],
-            "Coordinator" => [W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8CoordinatorShapeTarget")],
-            "Workflow" => [W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8WorkflowShapeTarget")],
+            "Coordinator" => [(W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8CoordinatorShapeTarget"), true)],
+
+            // The workflow shape's extern-alias incident names a type the alias module declares, so that referenced
+            // module is composed alongside the shape's own.
+            "Workflow" =>
+            [
+                (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8WorkflowShapeTarget"), true),
+                (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8AliasTarget"), false),
+            ],
             _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, "The shape is not one of the four."),
         };
 

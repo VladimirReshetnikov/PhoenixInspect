@@ -1384,6 +1384,46 @@ public sealed class W8V2ContractFoundationTests
                 (int)issue is >= 1 and < 100);
     }
 
+    /// <summary>
+    /// Proves no public non-flags enum of the dump-query product aliases two members onto one underlying value.
+    /// </summary>
+    /// <remarks>
+    /// These enums name declared boundaries, typed issues, and outcome axes that are written into canonical replay
+    /// bytes and asserted by name. Two members sharing a value compile silently and then make one declared fact
+    /// indistinguishable from another in both the bytes and every containment assertion, so the distinctness is a
+    /// contract rather than a style preference.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Public_product_enums_never_alias_two_members_onto_one_value()
+    {
+        var aliased = new List<string>();
+        foreach (var type in typeof(StaticFieldV2ExpressionResult).Assembly.GetExportedTypes())
+        {
+            if (!type.IsEnum || type.IsDefined(typeof(FlagsAttribute), inherit: false))
+            {
+                continue;
+            }
+
+            var names = Enum.GetNames(type);
+            var values = Enum.GetValuesAsUnderlyingType(type);
+            var byValue = new Dictionary<object, string>();
+            for (var index = 0; index < names.Length; index++)
+            {
+                var value = values.GetValue(index)!;
+                if (byValue.TryGetValue(value, out var first))
+                {
+                    aliased.Add($"{type.Name}.{first} and {type.Name}.{names[index]} both equal {value}.");
+                    continue;
+                }
+
+                byValue.Add(value, names[index]);
+            }
+        }
+
+        Assert.True(aliased.Count == 0, string.Join(" ", aliased));
+    }
+
     private sealed record ComplexSyntaxData(
         string RawExpression,
         StaticFieldV2AliasQualifier Alias,

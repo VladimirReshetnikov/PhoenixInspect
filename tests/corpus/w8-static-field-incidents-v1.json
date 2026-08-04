@@ -482,7 +482,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+        "reason": "projects-real-scoped-context-from-the-spelling-frame-but-the-whole-owner-typespec-alias-target-stays-undecoded-so-type-binding-produces-partial"
       },
       "representative": false
     },
@@ -911,7 +911,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+        "reason": "binds-the-owner-name-exact-under-real-scoped-context-then-stops-at-the-declared-contextual-route-closed-construction-boundary-because-the-spelling-carries-type-arguments"
       },
       "representative": false
     },
@@ -1001,7 +1001,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+        "reason": "composes-the-referenced-alias-module-and-projects-real-scoped-context-but-the-extern-alias-qualified-owner-name-produces-partial"
       },
       "representative": false
     },
@@ -1090,7 +1090,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+        "reason": "reaches-the-predeclared-exact-value-through-the-inner-alias-with-the-fully-qualified-control-converging-on-one-identity-but-owner-typeconstruction-produces-exact-at-arity-zero-where-the-predeclared-row-conflated-the-construction-axes-as-notrequired-documented-in-attempted-boundary-test"
       },
       "representative": false
     },
@@ -1179,7 +1179,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+        "reason": "converges-the-two-same-level-imports-on-one-exact-owner-name-once-the-referenced-forwarder-and-alias-modules-are-composed-then-stops-at-the-declared-contextual-route-closed-construction-boundary"
       },
       "representative": false
     },
@@ -1443,7 +1443,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-lexical-envelope-the-runner-does-not-yet-project"
+        "reason": "certifies-a-complete-lexical-envelope-over-the-real-spelling-frame-then-stops-at-member-lookup-partial-retaining-the-unresolved-constructed-using-static-target"
       },
       "representative": false
     },
@@ -1532,7 +1532,7 @@
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-lexical-envelope-and-a-suffix-evaluator"
+        "reason": "the-dotted-bare-head-partitions-as-a-contextual-owner-name-so-the-using-static-nested-head-route-is-never-entered"
       },
       "representative": false
     },
@@ -2066,7 +2066,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+        "reason": "the-spelling-frames-own-import-scope-declares-one-alias-so-the-context-is-exact-and-the-row-reaches-a-value-where-the-predeclared-row-expected-an-ambiguous-context-documented-in-attempted-boundary-test"
       },
       "representative": false
     },
@@ -2856,7 +2856,7 @@
       "supportsSuccessorCategory": "evidence-backed-stack-value-root",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-lexical-envelope-the-runner-does-not-yet-project"
+        "reason": "produces-the-predeclared-lexical-shadowed-stop-over-the-real-frame-but-context-is-exact-because-the-bare-route-requires-scoped-context-where-the-predeclared-row-spelled-notrequired-documented-in-attempted-boundary-test"
       },
       "representative": false
     },
@@ -2944,7 +2944,7 @@
       "supportsSuccessorCategory": "evidence-backed-stack-value-root",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-lexical-envelope-the-runner-does-not-yet-project"
+        "reason": "the-rows-own-declared-partial-portable-pdb-input-stops-the-context-axis-before-any-lexical-envelope-where-the-predeclared-row-spelled-context-notrequired"
       },
       "representative": false
     },
@@ -3031,7 +3031,7 @@
       "supportsSuccessorCategory": "static-property-or-method-execution",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-lexical-envelope-the-runner-does-not-yet-project"
+        "reason": "certifies-a-complete-lexical-envelope-then-reports-a-bare-declaration-absence-because-no-landed-catalog-models-the-property-table-that-owns-the-shared-name"
       },
       "representative": false
     },
@@ -3118,7 +3118,7 @@
       "supportsSuccessorCategory": "broader-frame-generic-context",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-scoped-context-source-and-a-metadata-constant-row-source"
+        "reason": "projects-real-scoped-context-but-the-ground-typespec-alias-target-stays-undecoded-so-type-binding-produces-partial-before-any-constant-row-source-is-consulted"
       },
       "representative": false
     },

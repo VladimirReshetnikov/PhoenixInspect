@@ -184,6 +184,76 @@ public sealed class W8V2RuntimeAcquisitionTests : IClassFixture<W8V2RuntimeAcqui
     }
 
     /// <summary>
+    /// Proves an argument-free construction reaches its exact method table, static slot, and decoded value, that the
+    /// physical source of that method table is declared, and that a construction carrying arguments neither consults
+    /// nor declares that source.
+    /// </summary>
+    /// <remarks>
+    /// A module's available-type-parameter hash physically holds constructed type parameters only, so before this
+    /// evidence landed every non-generic static owner — the ordinary shape of a static field in real code — reached
+    /// the absent stop no matter how exactly its metadata construction had been bound. The generic control keeps the
+    /// unchanged sweep: an open definition's canonical method table lives in that same map and must never be mistaken
+    /// for one of its instantiations.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8V2RuntimeAcquisitionV1")]
+    public void Argument_free_constructions_are_acquired_from_the_physical_type_definition_map()
+    {
+        using var world = W8V2RuntimeAcquisitionWorld.Open(fixture.DumpPath);
+
+        var imported = world.AcquireExpression(
+            $"global::{TargetNamespace}.NonGenericImports.NonGenericImportedSentinel",
+            world.TargetFieldToken("NonGenericImports", "NonGenericImportedSentinel"),
+            world.TargetTypeToken("NonGenericImports"));
+        var primitive = world.AcquireExpression(
+            $"global::{TargetNamespace}.PrimitiveStorage.Int32",
+            world.TargetFieldToken("PrimitiveStorage", "Int32"),
+            world.TargetTypeToken("PrimitiveStorage"));
+
+        foreach (var acquired in new[] { imported, primitive })
+        {
+            Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.Exact, acquired.Construction.ResultKind);
+            Assert.Equal(
+                StaticFieldV2RuntimeConstructionSelectionKind.Exact,
+                acquired.Construction.Selection!.ResultKind);
+            Assert.Equal(1, acquired.Construction.SameDefinitionEntryCount);
+            Assert.Equal(0, acquired.Construction.UnprojectableCandidateCount);
+            Assert.Contains(
+                StaticFieldV2RuntimeAcquisitionBoundary.DefinitionMethodTableSuppliedByTypeDefinitionMap,
+                acquired.Construction.DeclaredBoundaries);
+            Assert.Equal(StaticFieldV2StaticSlotResultKind.Exact, acquired.Slot!.SlotOutcome!.ResultKind);
+            Assert.Equal(StaticFieldV2RuntimeValueResultKind.Exact, acquired.Value!.ValueOutcome!.ResultKind);
+        }
+
+        Assert.Equal(unchecked((int)0xBB0B7A02), imported.Value!.ValueOutcome!.SignedValue);
+        Assert.Equal(unchecked((int)0x81A2B3C4), primitive.Value!.ValueOutcome!.SignedValue);
+        Assert.NotEqual(
+            imported.Construction.Selection!.SelectedCandidate!.MethodTableAddress,
+            primitive.Construction.Selection!.SelectedCandidate!.MethodTableAddress);
+
+        // The late runtime oracle agrees with the raw-memory read.
+        Assert.Equal(
+            unchecked((int)0xBB0B7A02),
+            W8V2RuntimeAcquisitionWorld.ReadStaticInt32ThroughRuntime(
+                fixture.DumpPath,
+                imported.Construction.Selection.SelectedCandidate.MethodTableAddress,
+                world.TargetFieldToken("NonGenericImports", "NonGenericImportedSentinel")));
+
+        var generic = world.AcquireSentinel(
+            "RequestContext",
+            world.TargetFieldToken("GenericSlot`1", "Sentinel"),
+            world.TargetTypeToken("GenericSlot`1"));
+        Assert.Equal(StaticFieldV2RuntimeAcquisitionResultKind.Exact, generic.Construction.ResultKind);
+        Assert.DoesNotContain(
+            StaticFieldV2RuntimeAcquisitionBoundary.DefinitionMethodTableSuppliedByTypeDefinitionMap,
+            generic.Construction.DeclaredBoundaries);
+        Assert.True(
+            imported.Construction.ExaminedEntryCount > generic.Construction.ExaminedEntryCount,
+            "The argument-free sweep must examine the definition-map entries the generic sweep never sees.");
+    }
+
+    /// <summary>
     /// Proves a thread-relative slot selects one exact thread by its token-keyed frame predicate, acquires that
     /// thread's own slot address, and decodes the construction-specific value from the copied bytes.
     /// </summary>
@@ -1068,14 +1138,22 @@ internal sealed class W8V2RuntimeAcquisitionWorld : IDisposable
         return construction;
     }
 
-    internal AcquiredStaticField AcquireSentinel(string argumentTypeName, int fieldToken, int declaringTypeToken)
+    internal AcquiredStaticField AcquireSentinel(string argumentTypeName, int fieldToken, int declaringTypeToken) =>
+        AcquireExpression(
+            $"global::{W8V2RuntimeAcquisitionTests.TargetNamespace}.GenericSlot<" +
+            $"global::{W8V2RuntimeAcquisitionTests.TargetNamespace}.{argumentTypeName}>.Sentinel",
+            fieldToken,
+            declaringTypeToken);
+
+    internal AcquiredStaticField AcquireExpression(
+        string expressionText,
+        int fieldToken,
+        int declaringTypeToken)
     {
         var probes = ExpressionV2CapabilityProbeSet.Create();
         var strategy = ClassifyTargetStrategy(fieldToken, declaringTypeToken);
         Assert.Equal(StaticFieldV2StorageStrategy.ConstructedSlot, strategy.Strategy);
-        var construction = BindConstruction(
-            $"global::{W8V2RuntimeAcquisitionTests.TargetNamespace}.GenericSlot<" +
-            $"global::{W8V2RuntimeAcquisitionTests.TargetNamespace}.{argumentTypeName}>.Sentinel");
+        var construction = BindConstruction(expressionText);
         var acquiredConstruction = Session.AcquireConstruction(
             StaticFieldV2RuntimeConstructionAcquisitionRequest.Create(
                 construction,

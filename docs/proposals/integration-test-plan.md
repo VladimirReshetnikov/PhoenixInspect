@@ -45,13 +45,14 @@ The [`Post-W7 Path Forward`](../plans/post-w7-path-forward.md) is the sole activ
 locally validated under its [`physical-truth disposition`](../plans/w8-1-physical-truth-disposition.md). It proves exact
 compiler/PDB, construction, storage, literal, frame-root, assignability, and replay facts before V2 contracts.
 Constructed/thread-relative/RVA/literal/exact memory-frame branches are admitted; context-relative storage and
-selected-frame generic arguments are typed non-admitted, and register homes are unproven. W8.2 is active. Its landed
-proof contracts through `5fd87a3e5` cover shared-grammar TypeSpec/FieldSig projection, exact source ends/token
-catalogs, TypeSpec graphs, FieldSig anchors, GenericParam ownership/bindings, edge aggregates, provisional
-classification, and Nullable topology. These objects are not yet mandatory consumer inputs. Later generated coverage
-and a thirty-five-incident minimum remain required for nested and closed constructed owners, scoped
-imports and aliases, exact runtime-construction identity, stored/literal values, evidence-qualified bare fields, and
-the separate admitted frame-value profile.
+selected-frame generic arguments are typed non-admitted, and register homes are unproven. W8.2 through W8.8 are closed,
+and W8.9 — the thirty-five-incident meaningful synthetic portfolio — is the active checkpoint; the plan document is
+authoritative on each checkpoint's exact landed scope and declared boundaries. Its corpus lane executes one independent
+hidden full dump per executable incident across four materially distinct application shapes, and reports every
+produced-versus-predeclared divergence of an attempted incident as a finding rather than retuning the frozen
+predeclaration. Coverage still required by that minimum spans nested and closed constructed owners, scoped imports and
+aliases, exact runtime-construction identity, stored/literal values, evidence-qualified bare fields, and the separate
+admitted frame-value profile.
 Dump-free parser/admission, root, plan-identity, SRM projection, activation/admission,
 memory-law, and CoreCLR differential checks remain fast because they require no DAC, process, dump, clock, or network.
 Caveat: the current lanes establish behavior only for the named generated fixtures and explicitly admitted input

@@ -968,7 +968,10 @@ first-viable-level namespace resolution, same-level import accumulation and conv
 restriction, and the retained-evidence absence guard have landed. The `using static` bare-member route that consumes
 the retained using-static facts is W8.7, TypeSpec alias targets stay undecoded until the construction slice consumes
 them, and selection between the W7 metadata-global compatibility route and this contextual route belongs to the
-W8.8 composition slice; each is a declared coverage boundary rather than a silent gap.
+W8.8 composition slice; each is a declared coverage boundary rather than a silent gap. The first exit-gate statement
+is discharged over a real dump by the W8.9 corpus: an inner namespace-level alias that shadows an identically spelled
+compilation-unit alias reaches the same value and the byte-identical owner construction as the fully qualified control
+does through the explicit route, with the two outcomes retaining their distinct tagged binding provenance.
 
 Interpret exact active ImportScope chains, TypeSpec aliases, namespace/type alias hiding, namespace imports, global
 imports when physically present, constructed `using static` owners/imported nested types, use-site accessibility, and
@@ -997,6 +1000,16 @@ obedience, and pure value decoding over copied bytes. **W8.6c is complete at `c1
 production adapter acquires constructions, slots, counted reads, and values from a real full dump, and frame roots
 attribute `this`, parameters, and active locals to exact memory homes with the register-home and frame-generic
 non-admissions held.
+
+An undeclared acquisition gap is since closed: a module's available-type-parameter hash physically holds constructed
+type parameters only, so an argument-free construction — the ordinary shape of a static field in real code — was
+absent from every table the sweep read and reached the absent stop no matter how exactly its metadata construction had
+bound. An arity-zero request now additionally sweeps the declaring module's own physical TypeDef method-table map —
+exact rather than heuristic, because that map is indexed by that module's own TypeDef RIDs and no other module's map
+can hold the entry — whose entry for a loaded definition is that definition's one exact method table, and declares
+`DefinitionMethodTableSuppliedByTypeDefinitionMap` exactly where that source is consulted. A construction carrying
+arguments keeps the unchanged sweep and declares no new boundary, so an open definition's canonical method table can
+never be mistaken for one of its instantiations and every frozen generic acquisition is byte-identical.
 
 One coverage limit is recorded rather than obscured: every root of every managed frame across all six truth-gate
 profiles is memory-homed, because the targets compile without optimization, so the register-home refusal branch is
@@ -1189,11 +1202,29 @@ pre-ImportScope prefix, and restoring the complete bytes changes the answer), an
 CodeView identity, and restoring the matching artifact changes the answer). Both Portable-PDB companions are realized
 exactly as their frozen contracts declare — resolver inputs over real artifacts, never fabricated observations.
 
-**Remaining:** the exact-context alias successes additionally need the contextual-route closed construction the
-composition still declares as the `ContextualRouteClosedConstructionDeferred` boundary; the `using static` incidents
-need the lexical-envelope projection; the remaining companion artifacts and cap injections stay manifest-only with
-precise recorded reasons. The three W8.1-admitted branches are now covered: thread-relative and frame-value execute
-end to end, and the RVA branch reaches its predeclared exact value over the corrected fixture (below).
+The runner now projects the remaining host-side scope evidence from real artifacts. It selects the frame that
+physically spelled each expression — the caller of the shape's sole pause, found one frame outward on the same thread
+rather than from a per-profile table — because that frame, not the pause helper, owns the ImportScope chain, aliases,
+`using static` imports, current type, and active locals the contextual and bare routes read. It projects that method's
+complete lexical envelope from the module's own MethodDef/Param/GenericParam/StandAloneSig tables and the shape's
+identity-validated Portable-PDB LocalScope/LocalVariable/LocalConstant tables, recovering the child-list start RIDs the
+reader does not surface from the physical nondecreasing-list invariant. It also composes every referenced companion
+module a profile actually loaded, so the forwarder and alias modules the batch and workflow imports converge through
+enter their portfolios; a companion a profile never loaded is a physical fact of that profile and is not fabricated.
+
+**Remaining, with every recorded reason now replaced by a produced finding.** Under those projections the contextual
+and bare rows reach materially further, and each stops at one named landed boundary rather than at a runner gap:
+an argument-free contextual owner reaches its predeclared exact terminal, with the fully qualified control converging
+on the same construction identity and value through the explicit route and the two outcomes carrying distinct binding
+provenance — the W8.5 convergence statement, now proved over a real dump; a contextual spelling that carries type
+arguments binds one exact owner name and stops at the declared `ContextualRouteClosedConstructionDeferred` boundary;
+a whole-owner or ground TypeSpec alias stops at `Partial` because the alias target stays undecoded; the bare
+`using static` rows certify a complete lexical envelope and then stop at the constructed using-static target or, for
+the property-shares-a-name row, at a declaration absence because no landed catalog models the Property table; and the
+active-local row produces exactly the predeclared `Shadowed` certificate. Every one of these rows stays manifest-only
+because at least one produced axis differs from its frozen predeclaration, and each divergence is asserted as a
+finding rather than retuned. The three W8.1-admitted branches are covered: thread-relative and frame-value execute end
+to end, and the RVA branch reaches its predeclared exact value over the corrected fixture (below).
 
 The owner-`VAR` field-signature decoder landed at `0b6bc7a69` and, in doing so, disproved the reason previously
 recorded against the two generic-`VAR` incidents. Real runs show neither is blocked by the decoder: the nullable
@@ -1205,8 +1236,14 @@ divergences are documented with real-run axes. Correcting a stale recorded reaso
 predeclared axis would not be.
 
 Produced-vs-predeclared divergences are documented as findings through the
-`Attempted_incidents_stop_at_their_landed_pipeline_boundaries` test with axes captured from real runs, and the manifest
-rows stay frozen (never retuned). The batch module-RVA cross-module construction boundary is closed, and its earlier
+`Attempted_incidents_stop_at_their_landed_pipeline_boundaries` and
+`Contextual_and_bare_incidents_stop_at_their_landed_scope_boundaries` tests with axes captured from real runs, and the
+manifest rows stay frozen (never retuned). Three of those rows now diverge on one axis only, and on the same axis: the
+inner-alias, module-RVA, and derived-base rows each predeclared `typeConstruction = NotRequired` for an owner the
+pipeline constructs `Exact` at arity zero, so the frozen corpus conflated the two construction axes wherever a
+non-generic owner appears. That is one finding about the predeclaration, not three about the pipeline.
+
+The batch module-RVA cross-module construction boundary is closed, and its earlier
 "pipeline-side work" hypothesis is corrected by diagnosis: the owner type-construction produced `Partial` because the
 checked-in named-RVA IL fixture's `System.Runtime` extern carried no public key token — a form no compiler output
 reproduces — and a token-free reference cannot identity-bind the strong-named framework definition under the product's
