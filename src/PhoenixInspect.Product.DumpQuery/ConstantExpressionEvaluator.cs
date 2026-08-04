@@ -103,6 +103,14 @@ public enum ConstantValueKind
     /// <see cref="ConstantExpressionEvaluation.Children"/>.
     /// </summary>
     Tuple = 12,
+
+    /// <summary>
+    /// An anonymous object folded from <c>new { … }</c>, with C#'s member semantics. The shape is named by
+    /// <see cref="ConstantExpressionEvaluation.ValueTypeName"/> (such as <c>new { Name, Total }</c>), the
+    /// rendered form by <see cref="ConstantExpressionEvaluation.ValueText"/>, and the members are exposed as
+    /// structured <see cref="ConstantExpressionEvaluation.Children"/>.
+    /// </summary>
+    Anonymous = 13,
 }
 
 /// <summary>
@@ -907,6 +915,8 @@ public static partial class ConstantExpressionEvaluator
         BclValue,
         Type,
         Tuple,
+        Anonymous,
+        Grouping,
     }
 
     private readonly record struct Operand(
@@ -947,6 +957,12 @@ public static partial class ConstantExpressionEvaluator
 
         internal static Operand FromTuple(TuplePayload payload) =>
             new(OperandKind.Tuple, 0, false, '\0', null, null, null, default, payload);
+
+        internal static Operand FromAnonymous(AnonymousPayload payload) =>
+            new(OperandKind.Anonymous, 0, false, '\0', null, null, null, default, payload);
+
+        internal static Operand FromGrouping(GroupingPayload payload) =>
+            new(OperandKind.Grouping, 0, false, '\0', null, null, null, default, payload);
 
         internal long EnumBits => Box is long bits ? bits : Int32;
 
@@ -1061,6 +1077,19 @@ public static partial class ConstantExpressionEvaluator
                 kind = ConstantValueKind.Tuple;
                 valueTypeName = TupleTypeName(operand);
                 valueText = RenderTuple(operand);
+                underlying = valueTypeName;
+                break;
+            case OperandKind.Anonymous:
+                kind = ConstantValueKind.Anonymous;
+                valueTypeName = AnonymousTypeName(operand);
+                valueText = RenderAnonymous(operand);
+                underlying = valueTypeName;
+                break;
+            case OperandKind.Grouping:
+                kind = ConstantValueKind.Sequence;
+                int32 = PayloadOfGrouping(operand).Items.Items.Length;
+                valueTypeName = "IGrouping";
+                valueText = RenderGrouping(operand);
                 underlying = valueTypeName;
                 break;
             case OperandKind.Temporal:
@@ -1197,6 +1226,10 @@ public static partial class ConstantExpressionEvaluator
                 return FoldCollectionExpression(collection, context);
             case TupleExpressionSyntax tuple:
                 return FoldTuple(tuple, context);
+            case AnonymousObjectCreationExpressionSyntax anonymous:
+                return FoldAnonymousObject(anonymous, context);
+            case QueryExpressionSyntax query:
+                return FoldQuery(query, context);
             case PostfixUnaryExpressionSyntax postfix
                 when postfix.IsKind(SyntaxKind.SuppressNullableWarningExpression):
                 // The null-forgiving operator is a compile-time annotation with no run-time effect.
@@ -1365,6 +1398,11 @@ public static partial class ConstantExpressionEvaluator
         if (leftOperand.Kind == OperandKind.BclValue || rightOperand.Kind == OperandKind.BclValue)
         {
             return ComputeBclValueBinary(kind, leftOperand, rightOperand);
+        }
+
+        if (leftOperand.Kind == OperandKind.Anonymous || rightOperand.Kind == OperandKind.Anonymous)
+        {
+            return ComputeAnonymousBinary(kind);
         }
 
         if (leftOperand.Kind == OperandKind.Tuple || rightOperand.Kind == OperandKind.Tuple)
@@ -1723,6 +1761,10 @@ public static partial class ConstantExpressionEvaluator
                 DispatchTypeRefProperty(receiver.Operand, typeProperty),
             (OperandKind.Tuple, var tupleMember) =>
                 DispatchTupleProperty(receiver.Operand, tupleMember),
+            (OperandKind.Anonymous, var anonymousMember) =>
+                DispatchAnonymousProperty(receiver.Operand, anonymousMember),
+            (OperandKind.Grouping, "Key") =>
+                FoldOutcome.Folded(PayloadOfGrouping(receiver.Operand).Key),
             _ => qualifiedOutcome ?? FoldOutcome.Error(
                 MemberUnsupportedCode,
                 $"'{member.Identifier.ValueText}' is not an admitted deterministic constant member."),
@@ -1879,6 +1921,9 @@ public static partial class ConstantExpressionEvaluator
             OperandKind.Enum => DispatchEnumMethod(receiver.Operand, name, arguments),
             OperandKind.Type => DispatchTypeRefMethod(receiver.Operand, name, arguments),
             OperandKind.Tuple => DispatchTupleMethod(receiver.Operand, name, arguments),
+            OperandKind.Anonymous => DispatchAnonymousMethod(receiver.Operand, name, arguments),
+            OperandKind.Grouping => DispatchSequence(
+                Operand.FromSequence(PayloadOfGrouping(receiver.Operand).Items), name, arguments),
             _ => MemberUnsupported(name),
         };
     }

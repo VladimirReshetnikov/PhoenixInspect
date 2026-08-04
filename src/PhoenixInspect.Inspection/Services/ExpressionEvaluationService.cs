@@ -609,6 +609,9 @@ public static class ExpressionEvaluationService
             ConstantValueKind.Tuple => (
                 constant.ValueText!,
                 $"{constant.ValueTypeName} · tuple"),
+            ConstantValueKind.Anonymous => (
+                constant.ValueText!,
+                $"{constant.ValueTypeName} · anonymous type"),
             _ => (
                 constant.Int32Value!.Value.ToString(CultureInfo.InvariantCulture),
                 isLiteralField

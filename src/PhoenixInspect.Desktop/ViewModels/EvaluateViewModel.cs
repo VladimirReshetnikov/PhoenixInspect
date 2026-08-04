@@ -526,6 +526,10 @@ public sealed class EvaluateViewModel : ObservableObject
                 "Generic construction",
                 "typeof(Dictionary<,>).MakeGenericType(typeof(string), typeof(List<int>)) == typeof(Dictionary<string, List<int>>)",
                 ExpressionPath.StaticField));
+            Samples.Add(new ExpressionSample(
+                "Query expression",
+                "from x in Enumerable.Range(1, 10) where x % 2 == 1 orderby x descending select new { x, Square = x * x }",
+                ExpressionPath.StaticField));
             return;
         }
 

@@ -21,6 +21,16 @@ public static partial class ConstantExpressionEvaluator
     private const string SequenceBoundCode = "CONSTANT_SEQUENCE_BOUND_EXCEEDED";
     private const string EmptySequenceMessage = "Sequence contains no elements.";
 
+    /// <summary>
+    /// The ordering evidence an <c>OrderBy</c> family sort leaves on its result: the per-item key vectors and the
+    /// per-level directions, aligned with the sorted items so <c>ThenBy</c> can refine without re-deriving keys.
+    /// </summary>
+    /// <param name="KeysPerItem">One key vector per item, aligned with the sequence items.</param>
+    /// <param name="Descending">The direction of each key level.</param>
+    private sealed record SequenceOrdering(
+        ImmutableArray<ImmutableArray<Operand>> KeysPerItem,
+        ImmutableArray<bool> Descending);
+
     /// <summary>Describes the element domain of one sequence, so defaults and displays stay typed.</summary>
     private sealed class SequencePayload
     {
@@ -28,12 +38,14 @@ public static partial class ConstantExpressionEvaluator
             ImmutableArray<Operand> items,
             OperandKind elementKind,
             NumericKind elementNumeric,
-            string displayName)
+            string displayName,
+            SequenceOrdering? ordering = null)
         {
             Items = items;
             ElementKind = elementKind;
             ElementNumeric = elementNumeric;
             DisplayName = displayName;
+            Ordering = ordering;
         }
 
         internal ImmutableArray<Operand> Items { get; }
@@ -44,6 +56,10 @@ public static partial class ConstantExpressionEvaluator
 
         internal string DisplayName { get; }
 
+        /// <summary>Gets the ordering evidence, present only on the direct result of an OrderBy-family sort.</summary>
+        internal SequenceOrdering? Ordering { get; }
+
+        // Any other operation drops the ordering evidence: its items no longer align with the key vectors.
         internal SequencePayload With(ImmutableArray<Operand> items) =>
             new(items, ElementKind, ElementNumeric, DisplayName);
     }
@@ -157,6 +173,28 @@ public static partial class ConstantExpressionEvaluator
                 OperandKind.Enum,
                 items[0].NumericKind,
                 enumSeparator < 0 ? items[0].EnumTypeFullName! : items[0].EnumTypeFullName![(enumSeparator + 1)..]));
+        }
+
+        if (items.All(static item => item.Kind == OperandKind.Tuple))
+        {
+            return CreateSequence(new SequencePayload(items, OperandKind.Tuple, default, TupleTypeName(items[0])));
+        }
+
+        if (items.All(static item => item.Kind == OperandKind.Anonymous))
+        {
+            return CreateSequence(new SequencePayload(
+                items, OperandKind.Anonymous, default, AnonymousTypeName(items[0])));
+        }
+
+        if (items.All(static item => item.Kind == OperandKind.Grouping))
+        {
+            return CreateSequence(new SequencePayload(items, OperandKind.Grouping, default, "IGrouping"));
+        }
+
+        if (items.All(static item => item.Kind == OperandKind.Sequence))
+        {
+            return CreateSequence(new SequencePayload(
+                items, OperandKind.Sequence, default, PayloadOf(items[0]).DisplayName + "[]"));
         }
 
         if (items.All(static item => item.IsNumeric && item.Kind != OperandKind.Enum))
@@ -421,6 +459,10 @@ public static partial class ConstantExpressionEvaluator
             payload.Items[0].NumericKind,
             payload.Items[0].EnumTypeFullName!,
             "0"),
+        // Anonymous types, groupings, and nested sequences are reference-shaped; their default is null. A tuple's
+        // true default would be a zeroed tuple, but with no elements observed there is no shape to zero.
+        OperandKind.Tuple or OperandKind.Anonymous or OperandKind.Grouping or OperandKind.Sequence =>
+            Operand.Null(),
         _ => Operand.FromInt32(0),
     };
 
@@ -450,6 +492,16 @@ public static partial class ConstantExpressionEvaluator
                 ((TypeRef)left.Box!).FullName,
                 ((TypeRef)right.Box!).FullName,
                 StringComparison.Ordinal)));
+        }
+
+        if (left.Kind == OperandKind.Tuple && right.Kind == OperandKind.Tuple)
+        {
+            return TuplesEqual(left, right);
+        }
+
+        if (left.Kind == OperandKind.Anonymous && right.Kind == OperandKind.Anonymous)
+        {
+            return AnonymousEquals(left, right);
         }
 
         if (TryCompareTemporal(left, right, out var temporalComparison))
@@ -928,6 +980,10 @@ public static partial class ConstantExpressionEvaluator
         OperandKind.Temporal => RenderTemporal(item),
         OperandKind.BclValue => RenderBclValue(item),
         OperandKind.Type => $"typeof({((TypeRef)item.Box!).CSharpName})",
+        OperandKind.Tuple => RenderTuple(item),
+        OperandKind.Anonymous => RenderAnonymous(item),
+        OperandKind.Grouping => RenderGrouping(item),
+        OperandKind.Sequence => RenderSequence(PayloadOf(item)),
         _ => FormatNumeric(NumericKindOf(item), BoxOf(item)),
     };
 }

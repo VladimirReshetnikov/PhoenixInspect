@@ -124,6 +124,10 @@ Everything below is backed by executable tests over real dumps, and nothing is l
   interfaces, and declared variance — plus `IsSubclassOf`, `BaseType`, `IsInstanceOfType`, and generic types in
   both spellings: `typeof(List<int>)`/`typeof(List<>)` and `MakeGenericType` with the BCL's failure semantics,
   alongside `GetGenericTypeDefinition` and the `IsGenericType` introspection family.
+- **C# query expressions and anonymous types.** The full query grammar — `from`, `where`, `let`, `orderby`,
+  `group … into` with real groupings, `join`/`join … into`, continuations, and range-variable casts — translated
+  by the specification's own rules onto the folded operator surface, with anonymous objects (`new { x, Total }`)
+  as a first-class value domain: projected names, value equality, invariant `ToString`, and expandable members.
 - **Modern C# expression forms.** Interpolated strings with invariant formatting and alignment
   (`$"depth {root.QueueDepth,4}"`), `is` patterns and `switch` expressions over constant, relational, and
   `and`/`or`/`not` patterns (`root.QueueDepth switch { > 10 => "busy", _ => "idle" }`), plus `nameof`,

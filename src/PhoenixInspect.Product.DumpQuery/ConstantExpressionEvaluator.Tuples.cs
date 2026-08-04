@@ -189,6 +189,8 @@ public static partial class ConstantExpressionEvaluator
     {
         OperandKind.Sequence => RenderSequence(PayloadOf(operand)),
         OperandKind.Tuple => RenderTuple(operand),
+        OperandKind.Anonymous => RenderAnonymous(operand),
+        OperandKind.Grouping => RenderGrouping(operand),
         _ => RenderElement(operand),
     };
 
@@ -208,6 +210,8 @@ public static partial class ConstantExpressionEvaluator
         OperandKind.BclValue => operand.BclValueKind.ToString(),
         OperandKind.Sequence => PayloadOf(operand).DisplayName + "[]",
         OperandKind.Tuple => TupleTypeName(operand),
+        OperandKind.Anonymous => AnonymousTypeName(operand),
+        OperandKind.Grouping => "IGrouping",
         OperandKind.Type => "Type",
         _ => string.Empty,
     };
@@ -254,6 +258,16 @@ public static partial class ConstantExpressionEvaluator
                 }
 
                 return tupleRows.MoveToImmutable();
+            case OperandKind.Anonymous:
+                return [.. PayloadOfAnonymous(operand).Members
+                    .Select(static member => ChildOf(member.Name, member.Value))];
+            case OperandKind.Grouping:
+                var grouping = PayloadOfGrouping(operand);
+                return
+                [
+                    ChildOf("Key", grouping.Key),
+                    .. ChildrenOf(Operand.FromSequence(grouping.Items)),
+                ];
             default:
                 return [];
         }

@@ -91,6 +91,8 @@ public static partial class ConstantExpressionEvaluator
             case OperandKind.Tuple when format is null:
                 // ValueTuple is not IFormattable in the shapes the evaluator folds; ToString renders.
                 return FoldOutcome.Folded(Operand.FromString(TupleToStringInvariant(operand)));
+            case OperandKind.Anonymous when format is null:
+                return FoldOutcome.Folded(Operand.FromString(AnonymousToStringInvariant(operand)));
             case OperandKind.String:
                 // string is not IFormattable, so a format clause is ignored, matching string.Format.
                 return FoldOutcome.Folded(operand);

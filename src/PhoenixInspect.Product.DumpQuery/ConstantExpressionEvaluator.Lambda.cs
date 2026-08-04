@@ -149,20 +149,19 @@ public static partial class ConstantExpressionEvaluator
         }
 
         ExpressionSyntax sourceExpression;
-        ExpressionSyntax lambdaExpression;
+        IReadOnlyList<ExpressionSyntax> operatorArguments;
         var receiverIsBound = receiverExpression is IdentifierNameSyntax { Identifier.ValueText: { } receiverName }
             && context.IsBound(receiverName);
         if (!receiverIsBound &&
             TryReadTypeReceiver(receiverExpression, out var typeReceiver) &&
             typeReceiver.Category is TypeReceiverCategory.Enumerable or TypeReceiverCategory.SystemArray)
         {
-            if (argumentList.Arguments is not
-                [{ Expression: { } staticSource }, { Expression: LambdaExpressionSyntax staticLambda }])
+            if (argumentList.Arguments.Count < 2)
             {
                 return FoldOutcome.Error(
                     LambdaUnsupportedCode,
                     $"{(typeReceiver.Category == TypeReceiverCategory.Enumerable ? "Enumerable" : "Array")}.{name} "
-                    + "takes the source sequence and one lambda.");
+                    + "takes the source sequence and at least one lambda.");
             }
 
             // The Array delegate family maps onto the sequence operators with identical semantics.
@@ -180,19 +179,13 @@ public static partial class ConstantExpressionEvaluator
                 };
             }
 
-            sourceExpression = staticSource;
-            lambdaExpression = staticLambda;
-        }
-        else if (argumentList.Arguments is [{ Expression: LambdaExpressionSyntax instanceLambda }])
-        {
-            sourceExpression = receiverExpression;
-            lambdaExpression = instanceLambda;
+            sourceExpression = argumentList.Arguments[0].Expression;
+            operatorArguments = [.. argumentList.Arguments.Skip(1).Select(static argument => argument.Expression)];
         }
         else
         {
-            return FoldOutcome.Error(
-                LambdaUnsupportedCode,
-                $"'{name}' takes exactly one lambda argument on the sequence surface.");
+            sourceExpression = receiverExpression;
+            operatorArguments = [.. argumentList.Arguments.Select(static argument => argument.Expression)];
         }
 
         var source = Fold(sourceExpression, context);
@@ -201,11 +194,23 @@ public static partial class ConstantExpressionEvaluator
             return source;
         }
 
-        if (source.Operand.Kind != OperandKind.Sequence)
+        if (!TryAsSequence(source.Operand, out var sourcePayload))
         {
             return FoldOutcome.Error(
                 LambdaUnsupportedCode,
                 "Lambda operators need an array-like sequence receiver; a string becomes one via ToCharArray().");
+        }
+
+        if (name is "SelectMany" or "GroupBy" or "Join" or "GroupJoin" or "ThenBy" or "ThenByDescending")
+        {
+            return DispatchMultiLambdaOperator(sourcePayload, name, operatorArguments, context);
+        }
+
+        if (operatorArguments is not [LambdaExpressionSyntax lambdaExpression])
+        {
+            return FoldOutcome.Error(
+                LambdaUnsupportedCode,
+                $"'{name}' takes exactly one lambda argument on the sequence surface.");
         }
 
         var maximumParameters = name is "Select" or "Where" ? 2 : 1;
@@ -214,7 +219,7 @@ public static partial class ConstantExpressionEvaluator
             return lambdaError;
         }
 
-        return DispatchSequenceLambda(PayloadOf(source.Operand), name, lambda, context);
+        return DispatchSequenceLambda(sourcePayload, name, lambda, context);
     }
 
     /// <summary>The lambda-taking operator set over one sequence, with real <c>Enumerable</c> semantics.</summary>
@@ -450,9 +455,22 @@ public static partial class ConstantExpressionEvaluator
         SequencePayload payload,
         LambdaShape lambda,
         bool descending,
+        FoldContext context) =>
+        SequenceOrderByLevels(payload, lambda, descending, priorOrdering: null, context);
+
+    /// <summary>
+    /// Sorts by a new key level after any carried levels, exactly as <c>OrderBy…ThenBy</c> chains compose: the
+    /// sort is stable, each level compares in its own domain with its own direction, and the result carries the
+    /// combined ordering evidence so a further <c>ThenBy</c> can refine it.
+    /// </summary>
+    private static FoldOutcome SequenceOrderByLevels(
+        SequencePayload payload,
+        LambdaShape lambda,
+        bool descending,
+        SequenceOrdering? priorOrdering,
         FoldContext context)
     {
-        var keys = new Operand[payload.Items.Length];
+        var newKeys = new Operand[payload.Items.Length];
         for (var index = 0; index < payload.Items.Length; index++)
         {
             var key = InvokeLambda(lambda, payload.Items[index], index, context);
@@ -476,65 +494,97 @@ public static partial class ConstantExpressionEvaluator
                     "Ordering keys must be numeric, char, Boolean, date/time, Guid, or Version values.");
             }
 
-            keys[index] = key.Operand;
+            newKeys[index] = key.Operand;
         }
+
+        var levels = priorOrdering?.Descending.Length + 1 ?? 1;
+        var keysPerItem = new ImmutableArray<Operand>[payload.Items.Length];
+        for (var index = 0; index < payload.Items.Length; index++)
+        {
+            keysPerItem[index] = priorOrdering is null
+                ? [newKeys[index]]
+                : [.. priorOrdering.KeysPerItem[index], newKeys[index]];
+        }
+
+        var directions = priorOrdering is null
+            ? ImmutableArray.Create(descending)
+            : priorOrdering.Descending.Add(descending);
 
         string? failure = null;
         int Compare(int left, int right)
         {
-            if (failure is not null)
+            for (var level = 0; level < levels && failure is null; level++)
             {
-                return 0;
-            }
-
-            var leftKey = keys[left];
-            var rightKey = keys[right];
-            if (leftKey.Kind == OperandKind.Boolean && rightKey.Kind == OperandKind.Boolean)
-            {
-                return leftKey.Boolean.CompareTo(rightKey.Boolean);
-            }
-
-            if (TryCompareTemporal(leftKey, rightKey, out var temporalComparison))
-            {
-                return temporalComparison;
-            }
-
-            if (TryCompareBclValue(leftKey, rightKey, out var valueComparison))
-            {
-                return valueComparison;
-            }
-
-            if (leftKey.IsNumeric && rightKey.IsNumeric)
-            {
-                if (!TryPromote(leftKey, rightKey, out var target, out _))
+                var comparison = CompareOrderingKeys(
+                    keysPerItem[left][level],
+                    keysPerItem[right][level],
+                    ref failure);
+                if (comparison != 0)
                 {
-                    failure = "The keys mix numeric domains that no comparison combines.";
-                    return 0;
+                    return directions[level] ? -comparison : comparison;
                 }
-
-                return target switch
-                {
-                    NumericKind.Single or NumericKind.Double => Comparer<double>.Default.Compare(
-                        ToDoubleValue(NumericKindOf(leftKey), BoxOf(leftKey)),
-                        ToDoubleValue(NumericKindOf(rightKey), BoxOf(rightKey))),
-                    NumericKind.Decimal => ToDecimalValue(leftKey).CompareTo(ToDecimalValue(rightKey)),
-                    _ => ToBigInteger(NumericKindOf(leftKey), BoxOf(leftKey)).CompareTo(
-                        ToBigInteger(NumericKindOf(rightKey), BoxOf(rightKey))),
-                };
             }
 
-            failure = "The keys mix value domains that no comparison combines.";
             return 0;
         }
 
-        // Enumerable.OrderBy is a stable sort, and stability is part of the published semantics.
+        // Enumerable.OrderBy is a stable sort, and stability is part of the published semantics. Every level is
+        // applied in one comparison, so refinement never disturbs the primary order.
         var indices = Enumerable.Range(0, payload.Items.Length);
-        var ordered = descending
-            ? indices.OrderByDescending(static index => index, Comparer<int>.Create(Compare))
-            : indices.OrderBy(static index => index, Comparer<int>.Create(Compare));
+        var ordered = indices.OrderBy(static index => index, Comparer<int>.Create(Compare)).ToArray();
+        if (failure is not null)
+        {
+            return FoldOutcome.Error(OperandTypeCode, failure);
+        }
+
         var materialized = ordered.Select(index => payload.Items[index]).ToImmutableArray();
-        return failure is null
-            ? CreateSequence(payload.With(materialized))
-            : FoldOutcome.Error(OperandTypeCode, failure);
+        var orderedKeys = ordered.Select(index => keysPerItem[index]).ToImmutableArray();
+        return CreateSequence(new SequencePayload(
+            materialized,
+            payload.ElementKind,
+            payload.ElementNumeric,
+            payload.DisplayName,
+            new SequenceOrdering(orderedKeys, directions)));
+    }
+
+    /// <summary>Compares two ordering keys in their shared domain; a mix reports a failure.</summary>
+    private static int CompareOrderingKeys(Operand leftKey, Operand rightKey, ref string? failure)
+    {
+        if (leftKey.Kind == OperandKind.Boolean && rightKey.Kind == OperandKind.Boolean)
+        {
+            return leftKey.Boolean.CompareTo(rightKey.Boolean);
+        }
+
+        if (TryCompareTemporal(leftKey, rightKey, out var temporalComparison))
+        {
+            return temporalComparison;
+        }
+
+        if (TryCompareBclValue(leftKey, rightKey, out var valueComparison))
+        {
+            return valueComparison;
+        }
+
+        if (leftKey.IsNumeric && rightKey.IsNumeric)
+        {
+            if (!TryPromote(leftKey, rightKey, out var target, out _))
+            {
+                failure = "The keys mix numeric domains that no comparison combines.";
+                return 0;
+            }
+
+            return target switch
+            {
+                NumericKind.Single or NumericKind.Double => Comparer<double>.Default.Compare(
+                    ToDoubleValue(NumericKindOf(leftKey), BoxOf(leftKey)),
+                    ToDoubleValue(NumericKindOf(rightKey), BoxOf(rightKey))),
+                NumericKind.Decimal => ToDecimalValue(leftKey).CompareTo(ToDecimalValue(rightKey)),
+                _ => ToBigInteger(NumericKindOf(leftKey), BoxOf(leftKey)).CompareTo(
+                    ToBigInteger(NumericKindOf(rightKey), BoxOf(rightKey))),
+            };
+        }
+
+        failure = "The keys mix value domains that no comparison combines.";
+        return 0;
     }
 }
