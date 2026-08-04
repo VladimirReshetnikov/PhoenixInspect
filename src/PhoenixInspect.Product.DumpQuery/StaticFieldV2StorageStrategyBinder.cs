@@ -101,9 +101,6 @@ public enum StaticFieldV2StorageCoverageBoundary
     /// <summary>The context-relative marker was a caller-supplied decoded fact rather than a decoded row.</summary>
     ContextStaticAttributeSuppliedByCaller = 3,
 
-    /// <summary>The physical Constant row was supplied by the caller rather than decoded from a modeled table.</summary>
-    ConstantTableSuppliedByCaller = 4,
-
     /// <summary>An enum underlying type was derived from the declared instance <c>value__</c> field alone.</summary>
     EnumUnderlyingDerivedFromInstanceValueField = 5,
 }
@@ -202,6 +199,12 @@ public enum StaticFieldV2LiteralValueIssue
 
     /// <summary>The named value type is not an enum, so its constant is compiler-attribute encoded.</summary>
     AttributeEncodedLiteralNotModeled = 8,
+
+    /// <summary>The supplied Constant row named a different FieldDef than the field being projected.</summary>
+    ConstantRowParentMismatch = 9,
+
+    /// <summary>The proven Constant value blob crossed the admitted per-projection byte count.</summary>
+    ConstantValueBoundReached = 10,
 }
 
 /// <summary>Freezes the per-capability requirement vector of one static-field storage strategy.</summary>
@@ -856,27 +859,23 @@ public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFie
     public const int MaximumConstantValueByteCount = 2 * (StaticFieldV2Limits.MaximumStringCharacterCount + 1);
 
     private const string CanonicalDomain = "static-field-v2-literal-projection-request";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<byte> constantValueBlob;
+    private const int CanonicalSchemaVersion = 2;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2LiteralProjectionRequest(
         MetadataFieldDefinitionTableRowIdentity fieldRow,
-        int constantTypeCode,
-        ImmutableArray<byte> constantValueBlob,
+        MetadataConstantTableRowIdentity constantRow,
         MetadataFieldDefinitionTableCatalogIdentity? namedLiteralTypeCatalog,
         ExpressionV2CapabilityProbeSet? capabilityProbes)
     {
         FieldRow = fieldRow;
-        ConstantTypeCode = constantTypeCode;
-        this.constantValueBlob = constantValueBlob;
+        ConstantRow = constantRow;
         NamedLiteralTypeCatalog = namedLiteralTypeCatalog;
         CapabilityProbes = capabilityProbes;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(fieldRow.Sha256, nameof(fieldRow));
-        writer.WriteInt32(constantTypeCode);
-        writer.WriteLengthPrefixedBytes(constantValueBlob.AsSpan());
+        writer.WriteSha256(constantRow.Sha256, nameof(constantRow));
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, namedLiteralTypeCatalog?.Sha256);
         writer.WriteBoolean(capabilityProbes is not null);
         canonicalBytes = writer.ToImmutableArray();
@@ -886,11 +885,14 @@ public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFie
     /// <summary>Gets the exact physical FieldDef row whose literal value is projected.</summary>
     public MetadataFieldDefinitionTableRowIdentity FieldRow { get; }
 
-    /// <summary>Gets the physical Constant table type code supplied for the row.</summary>
-    public int ConstantTypeCode { get; }
+    /// <summary>Gets the exact physical Constant row a complete Constant table proved for this field.</summary>
+    public MetadataConstantTableRowIdentity ConstantRow { get; }
 
-    /// <summary>Gets a defensive copy of the raw physical Constant value blob of the row.</summary>
-    public ImmutableArray<byte> ConstantValueBlob => ExpressionV2ContractEncoding.Copy(constantValueBlob);
+    /// <summary>Gets the physical Constant table type code of the proven row.</summary>
+    public int ConstantTypeCode => ConstantRow.ConstantTypeCode;
+
+    /// <summary>Gets a defensive copy of the raw physical Constant value blob of the proven row.</summary>
+    public ImmutableArray<byte> ConstantValueBlob => ConstantRow.ConstantValueBlob;
 
     /// <summary>Gets the FieldDef catalog supplying named-type evidence, or null when none was supplied.</summary>
     public MetadataFieldDefinitionTableCatalogIdentity? NamedLiteralTypeCatalog { get; }
@@ -906,8 +908,7 @@ public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFie
 
     /// <summary>Creates one complete static-field metadata-literal projection request.</summary>
     /// <param name="fieldRow">The exact physical FieldDef row selected by definition-side member lookup.</param>
-    /// <param name="constantTypeCode">The physical Constant table type code, an unsigned eight-bit value.</param>
-    /// <param name="constantValueBlob">The raw physical Constant value blob, bounded by the admitted byte count.</param>
+    /// <param name="constantRow">The exact Constant row a complete Constant table proved for that field.</param>
     /// <param name="namedLiteralTypeCatalog">
     /// The FieldDef catalog of the module declaring a named signature type, used only to derive an enum's underlying
     /// primitive from its declared instance <c>value__</c> field.
@@ -915,35 +916,24 @@ public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFie
     /// <param name="capabilityProbes">
     /// Caller-owned probes that this metadata-only projection never invokes; their counters become the outcome ledger.
     /// </param>
-    /// <returns>A sealed immutable request with a defensively copied Constant blob.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="fieldRow"/> is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">The Constant type code is outside its physical byte column.</exception>
-    /// <exception cref="ArgumentException">The Constant value blob is default or over the admitted byte count.</exception>
+    /// <returns>A sealed immutable request over one proven physical Constant row.</returns>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    /// <remarks>
+    /// The type code and value blob are no longer supplied separately and can no longer be malformed: both are
+    /// projections of a row a complete Constant table already validated. Whether that row belongs to this field is
+    /// still checked, as a typed stop rather than a throw, because a caller can pair a valid row with a wrong field.
+    /// </remarks>
     public static StaticFieldV2LiteralProjectionRequest Create(
         MetadataFieldDefinitionTableRowIdentity fieldRow,
-        int constantTypeCode,
-        ImmutableArray<byte> constantValueBlob,
+        MetadataConstantTableRowIdentity constantRow,
         MetadataFieldDefinitionTableCatalogIdentity? namedLiteralTypeCatalog = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null)
     {
         ArgumentNullException.ThrowIfNull(fieldRow);
-        if (constantTypeCode is < 0 or > byte.MaxValue)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(constantTypeCode),
-                "The physical Constant type code must fit its unsigned eight-bit column.");
-        }
-        if (constantValueBlob.IsDefault || constantValueBlob.Length > MaximumConstantValueByteCount)
-        {
-            throw new ArgumentException(
-                $"An initialized Constant value blob of at most {MaximumConstantValueByteCount} bytes is required.",
-                nameof(constantValueBlob));
-        }
-
+        ArgumentNullException.ThrowIfNull(constantRow);
         return new StaticFieldV2LiteralProjectionRequest(
             fieldRow,
-            constantTypeCode,
-            ExpressionV2ContractEncoding.Copy(constantValueBlob),
+            constantRow,
             namedLiteralTypeCatalog,
             capabilityProbes);
     }
@@ -963,7 +953,7 @@ public sealed class StaticFieldV2LiteralProjectionRequest : IEquatable<StaticFie
     /// <returns>A hash code for this canonical request.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
-    internal ImmutableArray<byte> ConstantValueBlobCore => constantValueBlob;
+    internal ImmutableArray<byte> ConstantValueBlobCore => ConstantRow.ConstantValueBlobCore;
 }
 
 /// <summary>Freezes the complete outcome of one static-field metadata-literal projection.</summary>
@@ -1285,8 +1275,39 @@ public static class StaticFieldV2StorageStrategyBinder
 
         var boundaries = ImmutableArray.Create(
             StaticFieldV2StorageCoverageBoundary.CustomAttributeTableNotModeled,
-            StaticFieldV2StorageCoverageBoundary.ConstantTableSuppliedByCaller);
+            StaticFieldV2StorageCoverageBoundary.CustomAttributeTableNotModeled);
         var row = request.FieldRow;
+
+        // A complete Constant table already proved this row's encoding, but not that the caller paired it with the
+        // right field. That is the one thing still worth checking here, and it is a per-field typed stop.
+        if (request.ConstantRow.ParentKind != MetadataConstantParentKind.FieldDefinition ||
+            request.ConstantRow.ParentMetadataToken != row.Observation.FieldDefinitionToken)
+        {
+            return Stop(
+                request,
+                StaticFieldV2LiteralValueResultKind.Invalid,
+                StaticFieldV2LiteralValueIssue.ConstantRowParentMismatch,
+                boundaries,
+                null,
+                request.ConstantRow.ParentMetadataToken);
+        }
+
+        // Deliberately a per-field bound rather than a catalog one: one over-long constant must not make every other
+        // literal in the same module unanswerable.
+        if (request.ConstantRow.ConstantValueByteCount >
+            StaticFieldV2LiteralProjectionRequest.MaximumConstantValueByteCount)
+        {
+            return Stop(
+                request,
+                StaticFieldV2LiteralValueResultKind.NonExact,
+                StaticFieldV2LiteralValueIssue.ConstantValueBoundReached,
+                boundaries,
+                new EvaluationDeterministicBound(
+                    ExpressionV2ContractLimits.StaticStringCharacterCountBoundName,
+                    StaticFieldV2Limits.MaximumStringCharacterCount),
+                request.ConstantRow.ConstantValueByteCount);
+        }
+
         if (!row.IsLiteral)
         {
             return Stop(

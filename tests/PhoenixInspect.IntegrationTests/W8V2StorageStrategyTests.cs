@@ -338,9 +338,14 @@ public sealed class W8V2StorageStrategyTests
             Assert.Equal(4, nullOutcome.ObservedCount);
         }
 
-        Assert.Equal(
-            StaticFieldV2LiteralValueIssue.LiteralBlobInvalid,
-            Project(world, "LitObject", ConstantClass, [0x00, 0x00, 0x00, 0x01]).Issue);
+        // A null-reference encoding whose four bytes are not all zero is not a reference value, and the complete
+        // table says so before any projection is reached.
+        AssertTableRejects(
+            world,
+            "LitObject",
+            ConstantClass,
+            [0x00, 0x00, 0x00, 0x01],
+            MetadataConstantTableIssue.NullReferenceValueNonZero);
         Assert.Equal(
             StaticFieldV2LiteralValueIssue.LiteralTypeDisagreement,
             Project(world, "LitI4", ConstantClass, [0x00, 0x00, 0x00, 0x00]).Issue);
@@ -434,14 +439,18 @@ public sealed class W8V2StorageStrategyTests
             StaticFieldV2LiteralValueIssue.LiteralTypeDisagreement,
             Project(world, "LitString", ConstantInt32, [0x00, 0x00, 0x00, 0x00]).Issue);
 
-        AssertInvalidBlob(Project(world, "LitI4", ConstantInt32, [0x2A, 0x00, 0x00]));
-        AssertInvalidBlob(Project(world, "LitI4", ConstantInt32, [0x2A, 0x00, 0x00, 0x00, 0x00]));
-        AssertInvalidBlob(Project(world, "LitI8", ConstantInt64, [0x2A]));
-        AssertInvalidBlob(Project(world, "LitR4", ConstantSingle, [0x00, 0x00]));
-        AssertInvalidBlob(Project(world, "LitChar", ConstantChar, [0x41]));
+        // A blob whose width its type code fixes can no longer reach a projection at all: the complete Constant
+        // table rejects it, so the stop now belongs one layer earlier. Each is still proven, against the table.
+        AssertTableRejects(world, "LitI4", ConstantInt32, [0x2A, 0x00, 0x00]);
+        AssertTableRejects(world, "LitI4", ConstantInt32, [0x2A, 0x00, 0x00, 0x00, 0x00]);
+        AssertTableRejects(world, "LitI8", ConstantInt64, [0x2A]);
+        AssertTableRejects(world, "LitR4", ConstantSingle, [0x00, 0x00]);
+        AssertTableRejects(world, "LitChar", ConstantChar, [0x41]);
+        AssertTableRejects(world, "LitString", ConstantString, [0x41, 0x00, 0x42]);
+        AssertTableRejects(world, "LitClass", ConstantClass, [0x00, 0x00, 0x00]);
+
+        // A Boolean wider than one is a width the table admits, so this one is still the projection's to reject.
         AssertInvalidBlob(Project(world, "LitBool", ConstantBoolean, [0x02]));
-        AssertInvalidBlob(Project(world, "LitString", ConstantString, [0x41, 0x00, 0x42]));
-        AssertInvalidBlob(Project(world, "LitClass", ConstantClass, [0x00, 0x00, 0x00]));
     }
 
     /// <summary>Proves unknown Constant codes and non-admitted signature forms are typed non-admissions.</summary>
@@ -451,17 +460,20 @@ public sealed class W8V2StorageStrategyTests
     {
         var world = BuildWorld();
 
-        var unknownCode = Project(
+        // A type code outside the admitted ECMA encoding set is rejected by the complete table, so no projection
+        // ever observes one. The non-admission is proven there instead.
+        AssertTableRejects(
             world,
             "LitI4",
             ConstantNativeInt,
-            [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-        Assert.Equal(StaticFieldV2LiteralValueResultKind.Unsupported, unknownCode.ResultKind);
-        Assert.Equal(StaticFieldV2LiteralValueIssue.LiteralEncodingUnsupported, unknownCode.Issue);
-        Assert.Equal(ConstantNativeInt, unknownCode.ObservedCount);
-        Assert.Equal(
-            StaticFieldV2LiteralValueIssue.LiteralEncodingUnsupported,
-            Project(world, "LitI4", 0x00, [0x00, 0x00, 0x00, 0x00]).Issue);
+            [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            MetadataConstantTableIssue.ConstantTypeCodeNotAdmitted);
+        AssertTableRejects(
+            world,
+            "LitI4",
+            0x00,
+            [0x00, 0x00, 0x00, 0x00],
+            MetadataConstantTableIssue.ConstantTypeCodeNotAdmitted);
 
         Assert.Equal(
             StaticFieldV2LiteralValueIssue.LiteralEncodingUnsupported,
@@ -492,9 +504,32 @@ public sealed class W8V2StorageStrategyTests
             Enum.GetNames<MetadataPrimitiveTypeKind>(),
             static name => name.Contains("Decimal", StringComparison.OrdinalIgnoreCase));
 
-        var notLiteral = Project(world, "PlainStatic", ConstantInt32, [0x00, 0x00, 0x00, 0x00]);
-        Assert.Equal(StaticFieldV2LiteralValueResultKind.Unsupported, notLiteral.ResultKind);
-        Assert.Equal(StaticFieldV2LiteralValueIssue.FieldNotLiteral, notLiteral.Issue);
+        // A field that declares no default value cannot own a Constant row at all: the complete table's pairing
+        // rejects it, so the projection's own FieldNotLiteral branch is now unreachable from valid evidence and the
+        // refusal is proven one layer earlier.
+        var plainStatic = Row(world, "PlainStatic");
+        Assert.False(plainStatic.HasDefault);
+        // The table is otherwise complete - the declared end is met - so the pairing is what rejects it, not a count.
+        var defaults = world.FieldCatalog.Rows.Where(static row => row.HasDefault).ToArray();
+        var rePaired = ImmutableArray.CreateBuilder<MetadataConstantRowObservationIdentity>(defaults.Length);
+        for (var index = 0; index < defaults.Length; index++)
+        {
+            rePaired.Add(MetadataConstantRowObservationIdentity.Create(
+                metadataModule: world.Module,
+                constantToken: 0x0B00_0000 | (index + 1),
+                constantTypeCode: ConstantInt32,
+                parentMetadataToken: index == 0
+                    ? plainStatic.Observation.FieldDefinitionToken
+                    : defaults[index].Observation.FieldDefinitionToken,
+                constantValueBlob: [0x00, 0x00, 0x00, 0x00]));
+        }
+
+        var pairedToPlain = MetadataConstantTableCatalogIdentity.Create(
+            world.DeclaredMemberSourceEnds,
+            world.FieldCatalog,
+            rePaired.MoveToImmutable());
+        Assert.Equal(MetadataConstantTableResultKind.Invalid, pairedToPlain.ResultKind);
+        Assert.Equal(MetadataConstantTableIssue.FieldParentWithoutDefaultFlag, pairedToPlain.Issue);
     }
 
     /// <summary>
@@ -516,8 +551,7 @@ public sealed class W8V2StorageStrategyTests
         var outcome = StaticFieldV2StorageStrategyBinder.ProjectLiteral(
             StaticFieldV2LiteralProjectionRequest.Create(
                 Row(world, "LitI4"),
-                ConstantInt32,
-                [0x2A, 0x00, 0x00, 0x00],
+                ConstantRowFor(world, "LitI4", ConstantInt32, [0x2A, 0x00, 0x00, 0x00]),
                 world.FieldCatalog,
                 poisoned));
         Assert.Equal(StaticFieldV2LiteralValueResultKind.Exact, outcome.ResultKind);
@@ -535,8 +569,7 @@ public sealed class W8V2StorageStrategyTests
         var stop = StaticFieldV2StorageStrategyBinder.ProjectLiteral(
             StaticFieldV2LiteralProjectionRequest.Create(
                 Row(world, "LitPointer"),
-                ConstantInt32,
-                [0x00, 0x00, 0x00, 0x00],
+                ConstantRowFor(world, "LitPointer", ConstantInt32, [0x00, 0x00, 0x00, 0x00]),
                 world.FieldCatalog,
                 poisoned));
         Assert.Equal(StaticFieldV2LiteralValueResultKind.Unsupported, stop.ResultKind);
@@ -592,7 +625,7 @@ public sealed class W8V2StorageStrategyTests
         // ends. Those ends are embedded in every FieldDef row identity and so reach this outcome; the literal
         // decoding itself is unchanged, and the value assertions above pin that independently of the digest.
         Assert.Equal(
-            "939ffdfc436c9626c3c58fcc89b03362ca0a98aba14c66448d90b61fc47dea9c",
+            "e8d7ff99105fd963802a9dfb8cb5667e9223dc2ffa694577828428d482a61da2",
             literal.Sha256);
 
         var originalBoundaries = literal.DeclaredCoverageBoundaries;
@@ -647,20 +680,21 @@ public sealed class W8V2StorageStrategyTests
             Row(world, "PlainStatic").DeclaringTypeDefinition));
         Assert.Throws<ArgumentNullException>(() => StaticFieldV2LiteralProjectionRequest.Create(
             null!,
-            ConstantInt32,
-            [0x00, 0x00, 0x00, 0x00]));
-        Assert.Throws<ArgumentOutOfRangeException>(() => StaticFieldV2LiteralProjectionRequest.Create(
+            ConstantRowFor(world, "LitI4", ConstantInt32, [0x00, 0x00, 0x00, 0x00])));
+        Assert.Throws<ArgumentNullException>(() => StaticFieldV2LiteralProjectionRequest.Create(
             Row(world, "LitI4"),
-            0x1_0000,
-            [0x00, 0x00, 0x00, 0x00]));
-        Assert.Throws<ArgumentException>(() => StaticFieldV2LiteralProjectionRequest.Create(
-            Row(world, "LitI4"),
-            ConstantInt32,
-            default));
-        Assert.Throws<ArgumentException>(() => StaticFieldV2LiteralProjectionRequest.Create(
-            Row(world, "LitString"),
-            ConstantString,
-            [.. new byte[StaticFieldV2LiteralProjectionRequest.MaximumConstantValueByteCount + 1]]));
+            null!));
+
+        // A malformed type code or blob is no longer representable here: the request carries a row a complete
+        // Constant table already validated. The one thing a caller can still get wrong is pairing a valid row with
+        // the wrong field, and that is a typed stop rather than a throw.
+        Assert.Equal(
+            StaticFieldV2LiteralValueIssue.ConstantRowParentMismatch,
+            StaticFieldV2StorageStrategyBinder.ProjectLiteral(
+                StaticFieldV2LiteralProjectionRequest.Create(
+                    Row(world, "LitI4"),
+                    ConstantRowFor(world, "LitI8", ConstantInt64, [0, 0, 0, 0, 0, 0, 0, 0]),
+                    world.FieldCatalog)).Issue);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             strategy.CapabilityRequirements.For((StaticFieldV2StorageCapability)9));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -830,9 +864,22 @@ public sealed class W8V2StorageStrategyTests
         StaticFieldV2StorageStrategyBinder.ProjectLiteral(
             StaticFieldV2LiteralProjectionRequest.Create(
                 Row(world, fieldName),
-                constantTypeCode,
-                constantValueBlob,
+                ConstantRowFor(world, fieldName, constantTypeCode, constantValueBlob),
                 withCatalog ? world.FieldCatalog : null));
+
+    /// <summary>Asserts the complete Constant table refuses one physical encoding before any projection sees it.</summary>
+    private static void AssertTableRejects(
+        StorageWorld world,
+        string fieldName,
+        int constantTypeCode,
+        ImmutableArray<byte> constantValueBlob,
+        MetadataConstantTableIssue expected = MetadataConstantTableIssue.ConstantValueWidthInvalid)
+    {
+        var catalog = ConstantCatalogFor(world, fieldName, constantTypeCode, constantValueBlob);
+        Assert.Equal(MetadataConstantTableResultKind.Invalid, catalog.ResultKind);
+        Assert.Equal(expected, catalog.Issue);
+        Assert.Empty(catalog.Rows);
+    }
 
     private static MetadataFieldDefinitionTableRowIdentity Row(StorageWorld world, string fieldName) =>
         Assert.Single(world.FieldCatalog.Rows, row => string.Equals(row.Name, fieldName, StringComparison.Ordinal));
@@ -1042,5 +1089,31 @@ public sealed class W8V2StorageStrategyTests
             observations.MoveToImmutable());
         Assert.Equal(MetadataConstantTableResultKind.Exact, catalog.ResultKind);
         return catalog.Rows[requestedIndex];
+    }
+
+    private static MetadataConstantTableCatalogIdentity ConstantCatalogFor(
+        StorageWorld world,
+        string fieldName,
+        int constantTypeCode,
+        ImmutableArray<byte> constantValueBlob)
+    {
+        var defaultFields = world.FieldCatalog.Rows.Where(static row => row.HasDefault).ToArray();
+        var observations = ImmutableArray.CreateBuilder<MetadataConstantRowObservationIdentity>(defaultFields.Length);
+        for (var index = 0; index < defaultFields.Length; index++)
+        {
+            var fieldRow = defaultFields[index];
+            var isRequested = string.Equals(fieldRow.Name, fieldName, StringComparison.Ordinal);
+            observations.Add(MetadataConstantRowObservationIdentity.Create(
+                metadataModule: world.Module,
+                constantToken: 0x0B00_0000 | (index + 1),
+                constantTypeCode: isRequested ? constantTypeCode : ConstantInt32,
+                parentMetadataToken: fieldRow.Observation.FieldDefinitionToken,
+                constantValueBlob: isRequested ? constantValueBlob : [0x00, 0x00, 0x00, 0x00]));
+        }
+
+        return MetadataConstantTableCatalogIdentity.Create(
+            world.DeclaredMemberSourceEnds,
+            world.FieldCatalog,
+            observations.MoveToImmutable());
     }
 }

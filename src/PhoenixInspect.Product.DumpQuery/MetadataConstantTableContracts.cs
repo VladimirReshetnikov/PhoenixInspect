@@ -306,6 +306,9 @@ public sealed class MetadataConstantTableRowIdentity : IEquatable<MetadataConsta
     /// <summary>Gets the complete Constant value byte count.</summary>
     public int ConstantValueByteCount => Observation.ConstantValueBlobCore.Length;
 
+    /// <summary>Gets the complete Constant value blob without copying, for internal projection only.</summary>
+    internal ImmutableArray<byte> ConstantValueBlobCore => Observation.ConstantValueBlobCore;
+
     /// <summary>Gets a defensive copy of the canonical derived row bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 

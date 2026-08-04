@@ -544,6 +544,83 @@ public sealed class W8CompilerPhysicalTruthTests
     }
 
     /// <summary>
+    /// Proves the emitted Constant table is exactly the set of declared defaults: one row per HasConstant parent, RIDs
+    /// contiguous from one, ordered by the coded parent index, and no property-table indirection over the parents.
+    /// </summary>
+    /// <remarks>
+    /// These are the physical facts a complete Constant catalog rests on. The table carries no owner-side list and SRM
+    /// exposes no row enumeration over it, so the only honest way to read it whole is to sweep the three parent tables
+    /// and prove the sweep saw every row - which is what the count agreement and the RID contiguity below establish.
+    /// Sortedness is asserted rather than assumed because II.24.2.6 lists Constant among the sorted tables, and the
+    /// catalog's parent-uniqueness proof would be vacuous over an unordered table.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Constant_table_covers_every_declared_default_in_coded_parent_order()
+    {
+        using var artifact = PeArtifact.Open(RequireArtifact(W8TestTargetPaths.ResolveAssembly()));
+        var reader = artifact.Reader;
+
+        // Sweep the three HasConstant parent tables in coded-index order: FieldDef tag 0, Param tag 1, Property tag 2.
+        var sweep = new List<(long CodedIndex, int ConstantRowId)>();
+        foreach (var handle in reader.FieldDefinitions)
+        {
+            var defaultValue = reader.GetFieldDefinition(handle).GetDefaultValue();
+            if (!defaultValue.IsNil)
+            {
+                sweep.Add((((long)MetadataTokens.GetRowNumber(handle) << 2) | 0, MetadataTokens.GetRowNumber(defaultValue)));
+            }
+        }
+
+        for (var row = 1; row <= reader.GetTableRowCount(TableIndex.Param); row++)
+        {
+            var handle = MetadataTokens.ParameterHandle(row);
+            var defaultValue = reader.GetParameter(handle).GetDefaultValue();
+            if (!defaultValue.IsNil)
+            {
+                sweep.Add((((long)row << 2) | 1, MetadataTokens.GetRowNumber(defaultValue)));
+            }
+        }
+
+        for (var row = 1; row <= reader.GetTableRowCount(TableIndex.Property); row++)
+        {
+            var handle = MetadataTokens.PropertyDefinitionHandle(row);
+            var defaultValue = reader.GetPropertyDefinition(handle).GetDefaultValue();
+            if (!defaultValue.IsNil)
+            {
+                sweep.Add((((long)row << 2) | 2, MetadataTokens.GetRowNumber(defaultValue)));
+            }
+        }
+
+        // The sweep is complete: it saw as many rows as the table declares, and their RIDs are exactly one..count.
+        var constantRowCount = reader.GetTableRowCount(TableIndex.Constant);
+        Assert.Equal(constantRowCount, sweep.Count);
+        Assert.Equal(
+            Enumerable.Range(1, constantRowCount),
+            sweep.Select(static entry => entry.ConstantRowId).Order());
+
+        // The table is sorted by the coded parent index, so sweeping parents in that order walks RIDs upward.
+        var codedOrder = sweep.OrderBy(static entry => entry.CodedIndex).Select(static entry => entry.ConstantRowId).ToArray();
+        Assert.Equal(codedOrder.Order(), codedOrder);
+
+        // Field-side pairing holds in both directions: the flag is set exactly when a row exists, and every literal
+        // declares one. A field carrying the flag without a row would leave a projection with nothing to read.
+        foreach (var handle in reader.FieldDefinitions)
+        {
+            var field = reader.GetFieldDefinition(handle);
+            var hasDefaultFlag = (field.Attributes & FieldAttributes.HasDefault) != 0;
+            Assert.Equal(hasDefaultFlag, !field.GetDefaultValue().IsNil);
+            if ((field.Attributes & FieldAttributes.Literal) != 0)
+            {
+                Assert.True(hasDefaultFlag, $"Literal field '{reader.GetString(field.Name)}' declares no default value.");
+            }
+        }
+
+        // No PropertyPtr indirection: property RIDs above address the Property table directly.
+        Assert.Equal(0, reader.GetTableRowCount(TableIndex.PropertyPtr));
+    }
+
+    /// <summary>
     /// Proves the named IL fixture retains two non-overlapping FieldRVA rows, exact four/eight-byte signatures and
     /// payloads, section-relative geometry, and agreement between mapped RVA bytes and raw file bytes.
     /// </summary>

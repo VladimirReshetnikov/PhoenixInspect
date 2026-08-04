@@ -39,7 +39,7 @@ public sealed class W8V2ExpressionPipelineTests
     private const int LibAssemblyReferenceToken = 0x2300_0002;
 
     private const string ConstructedSlotGoldenSha256 =
-        "0fca3a0b3d380df96ab1b2ab1635916f088fd92199a732637c4bd4cedb52562e";
+        "bd3496cacbd56cf24a139ca8ac08efa682603c4ed915b51361170e8f366fb62e";
 
     /// <summary>
     /// Proves a fully qualified constructed-generic static field reaches an exact value while calling no context
@@ -183,12 +183,12 @@ public sealed class W8V2ExpressionPipelineTests
         var qualified = StaticFieldV2ExpressionPipeline.Evaluate(Request(
             world,
             "global::Pipe.Lib.LibHolder.LibAnswer",
-            literalConstantSource: LiteralSource(7)));
+            constantCatalogs: LiteralCatalogs(world, 7)));
         var aliased = StaticFieldV2ExpressionPipeline.Evaluate(Request(
             world,
             "lib::Pipe.Lib.LibHolder.LibAnswer",
             scopedContext: ExternAliasContext(world),
-            literalConstantSource: LiteralSource(7)));
+            constantCatalogs: LiteralCatalogs(world, 7)));
 
         AssertExactAxes(qualified);
         AssertExactAxes(aliased);
@@ -251,7 +251,7 @@ public sealed class W8V2ExpressionPipelineTests
             world,
             "Bare",
             scopedContext: UsingStaticContext(world),
-            literalConstantSource: LiteralSource(11)));
+            constantCatalogs: LiteralCatalogs(world, 11)));
 
         Assert.Equal(StaticFieldV2ExpressionRoute.BareStaticMember, result.Route);
         AssertExactAxes(result);
@@ -292,7 +292,7 @@ public sealed class W8V2ExpressionPipelineTests
             world,
             "global::Pipe.App.Holder.Answer",
             runtimeEvidence: PoisonedRuntimeEvidence(),
-            literalConstantSource: LiteralSource(99),
+            constantCatalogs: LiteralCatalogs(world, 99),
             capabilityProbes: poisoned));
 
         AssertExactAxes(result);
@@ -309,12 +309,18 @@ public sealed class W8V2ExpressionPipelineTests
         var ledger = result.Provenance.EvidenceLedger;
         Assert.Equal(0, ledger.RuntimeCallCount);
         Assert.Equal(0, ledger.ContextCallCount);
-        Assert.Equal(1, ledger.MetadataConstantRowCallCount);
+
+        // The literal answer now calls no seam at all: its Constant row comes from a landed catalog carried by the
+        // request, so the whole ledger is zero rather than merely zero on the runtime and context axes.
+        Assert.True(ledger.IsZero);
         Assert.True(result.Provenance.CapabilityCallLedger!.IsZero);
         Assert.Null(result.Provenance.RuntimeConstruction);
         Assert.Null(result.Provenance.StaticSlot);
         Assert.True(result.Provenance.RawValueBytes.IsDefault);
-        Assert.NotNull(result.Provenance.LiteralConstant);
+        Assert.NotNull(result.Provenance.LiteralConstantRow);
+        Assert.Equal(
+            MetadataConstantParentKind.FieldDefinition,
+            result.Provenance.LiteralConstantRow!.ParentKind);
     }
 
     /// <summary>
@@ -467,7 +473,7 @@ public sealed class W8V2ExpressionPipelineTests
             "lib::Pipe.Lib.LibHolder.LibAnswer",
             scopedContext: StaticFieldV2ScopedContextSource.CreateFromAcquisition(
                 () => StaticFieldV2ScopedContextAcquisition.Exact(ExternAliasContextRequest(world))),
-            literalConstantSource: LiteralSource(7)));
+            constantCatalogs: LiteralCatalogs(world, 7)));
         Assert.Equal(DumpExpressionContextOutcome.Exact, exact.Axes.Context);
         Assert.Equal(7, exact.SignedValue);
 
@@ -527,7 +533,7 @@ public sealed class W8V2ExpressionPipelineTests
         var accepted = StaticFieldV2ExpressionPipeline.Evaluate(Request(
             world,
             "global::Pipe.App.Holder.Answer",
-            literalConstantSource: LiteralSource(99)));
+            constantCatalogs: LiteralCatalogs(world, 99)));
         AssertExactAxes(accepted);
         Assert.NotEqual(accepted.Sha256, frameThroughStatic.Sha256);
     }
@@ -544,7 +550,7 @@ public sealed class W8V2ExpressionPipelineTests
         var result = StaticFieldV2ExpressionPipeline.Evaluate(Request(
             world,
             "global::Pipe.App.Holder.Answer",
-            literalConstantSource: LiteralSource(99)));
+            constantCatalogs: LiteralCatalogs(world, 99)));
 
         Assert.Equal(DumpExpressionSuffixOutcome.NotRequested, result.Axes.Suffix);
         var suffix = Assert.IsType<DumpExpressionSuffixDescriptor>(result.Provenance.Suffix);
@@ -659,7 +665,6 @@ public sealed class W8V2ExpressionPipelineTests
         Assert.Throws<ArgumentNullException>(() => StaticFieldV2ExpressionPipeline.Evaluate(null!));
         Assert.Throws<ArgumentNullException>(() => StaticFieldV2ExpressionPipeline.EvaluateFrameValue(null!));
         Assert.Throws<ArgumentNullException>(() => StaticFieldV2ScopedContextSource.Create(null!));
-        Assert.Throws<ArgumentException>(() => StaticFieldV2LiteralConstantFact.Create(ConstantInt32, default));
         Assert.Throws<ArgumentOutOfRangeException>(() => StaticFieldV2RuntimeSlotFacts.Create(0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             result.Provenance.EvidenceLedger.CallCount((StaticFieldV2PipelineEvidenceKind)9));
@@ -687,7 +692,6 @@ public sealed class W8V2ExpressionPipelineTests
             typeof(StaticFieldV2ScopedContextAcquisition),
             typeof(StaticFieldV2ScopedContextSource),
             typeof(StaticFieldV2RuntimeSlotFacts),
-            typeof(StaticFieldV2LiteralConstantFact),
             typeof(StaticFieldV2RuntimeEvidenceSource),
             typeof(StaticFieldV2SuffixEvaluationRequest),
             typeof(StaticFieldV2SuffixEvaluationSource),
@@ -719,7 +723,6 @@ public sealed class W8V2ExpressionPipelineTests
                 Assert.Equal(["Exact", "Stopped"], publicStatics);
             }
             else if (type == typeof(StaticFieldV2RuntimeSlotFacts) ||
-                     type == typeof(StaticFieldV2LiteralConstantFact) ||
                      type == typeof(StaticFieldV2RuntimeEvidenceSource) ||
                      type == typeof(StaticFieldV2SuffixEvaluationSource) ||
                      type == typeof(StaticFieldV2ExpressionRequest))
@@ -806,7 +809,7 @@ public sealed class W8V2ExpressionPipelineTests
         StaticFieldV2ScopedContextSource? scopedContext = null,
         StaticFieldV2RuntimeEvidenceSource? runtimeEvidence = null,
         StaticFieldV2SuffixEvaluationSource? suffixEvaluation = null,
-        Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource = null,
+        ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs = default,
         MetadataClosedTypeIdentity? referenceTargetType = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null) =>
         StaticFieldV2ExpressionRequest.Create(
@@ -822,20 +825,54 @@ public sealed class W8V2ExpressionPipelineTests
             scopedContext,
             runtimeEvidence,
             suffixEvaluation,
-            literalConstantSource,
+            constantCatalogs,
             referenceTargetType,
             capabilityProbes);
 
-    private static Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?> LiteralSource(
-        int value) =>
-        _ => StaticFieldV2LiteralConstantFact.Create(
-            ConstantInt32,
-            [
-                (byte)(value & 0xFF),
-                (byte)((value >> 8) & 0xFF),
-                (byte)((value >> 16) & 0xFF),
-                (byte)((value >> 24) & 0xFF),
-            ]);
+    /// <summary>
+    /// Builds one exact Constant catalog per composed module, giving every literal field the requested value.
+    /// </summary>
+    /// <remarks>
+    /// A complete Constant table proves its pairing in both directions, so a catalog cannot cover only the field a
+    /// test happens to read: every field declaring a default value needs a row. Giving them one shared value keeps
+    /// the fixture honest without making each test carry a table.
+    /// </remarks>
+    private static ImmutableArray<MetadataConstantTableCatalogIdentity> LiteralCatalogs(
+        PipelineWorld world,
+        int value)
+    {
+        var catalogs = ImmutableArray.CreateBuilder<MetadataConstantTableCatalogIdentity>(
+            world.FieldCatalogs.Length);
+        foreach (var fieldCatalog in world.FieldCatalogs)
+        {
+            var defaults = fieldCatalog.Rows.Where(static row => row.HasDefault).ToArray();
+            var observations = ImmutableArray.CreateBuilder<MetadataConstantRowObservationIdentity>(defaults.Length);
+            for (var index = 0; index < defaults.Length; index++)
+            {
+                observations.Add(MetadataConstantRowObservationIdentity.Create(
+                    metadataModule: fieldCatalog.SourceEnds.SourceModule,
+                    constantToken: 0x0B00_0000 | (index + 1),
+                    constantTypeCode: ConstantInt32,
+                    parentMetadataToken: defaults[index].Observation.FieldDefinitionToken,
+                    constantValueBlob:
+                    [
+                        (byte)(value & 0xFF),
+                        (byte)((value >> 8) & 0xFF),
+                        (byte)((value >> 16) & 0xFF),
+                        (byte)((value >> 24) & 0xFF),
+                    ]));
+            }
+
+            var catalog = MetadataConstantTableCatalogIdentity.Create(
+                MetadataDeclaredMemberSourceEndIdentity.Create(fieldCatalog.SourceEnds),
+                fieldCatalog,
+                observations.MoveToImmutable());
+            Assert.Equal(MetadataConstantTableResultKind.Exact, catalog.ResultKind);
+            catalogs.Add(catalog);
+        }
+
+        return catalogs.MoveToImmutable();
+    }
 
     private static StaticFieldV2ScopedContextSource PoisonedContext() =>
         StaticFieldV2ScopedContextSource.Create(
@@ -1286,7 +1323,14 @@ public sealed class W8V2ExpressionPipelineTests
                 typeReferenceRowCount: typeReferenceRows.Count,
                 assemblyReferenceRowCount: assemblyReferenceRows.Count,
                 methodDefinitionRowCount: methodObservations.Count,
-                genericParameterRowCount: genericParameterRows.Count));
+                genericParameterRowCount: genericParameterRows.Count,
+
+                // One Constant row per field declaring a default value: the end a complete Constant table must meet.
+                declaredMemberRowCounts: StaticFieldModuleDeclaredMemberRowCounts.Create(
+                    constantRowCount: fieldObservations.Count(
+                        static field => ((FieldAttributes)field.Attributes & FieldAttributes.HasDefault) != 0),
+                    propertyMapRowCount: 0,
+                    propertyPointerRowCount: 0)));
 
         var typeRows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionRowObservationIdentity>(totalTypeCount);
         typeRows.Add(MetadataTypeDefinitionRowObservationIdentity.Create(

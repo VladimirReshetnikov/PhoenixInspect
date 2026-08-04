@@ -12,7 +12,7 @@ namespace PhoenixInspect.IntegrationTests;
 public sealed class W8V2SuffixEvaluationTests
 {
     private const string DirectMemberSuffixGoldenSha256 =
-        "1f4bc39fc29db0e8c5881f32c5b01118ecd4d46c30c1247cb8890a526870a7d4";
+        "220f5c20d7d2ac516c929f88150bbe9caebf1bb0a4253eec66987b7d07e072e0";
 
     private const ulong ExactReferenceAddress = 0x4030_2010UL;
 

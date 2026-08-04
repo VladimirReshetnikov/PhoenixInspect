@@ -38,9 +38,6 @@ public enum StaticFieldV2PipelineEvidenceKind
     /// <summary>The caller-supplied selected-method lexical envelope seam.</summary>
     LexicalEnvelope = 2,
 
-    /// <summary>The caller-supplied metadata Constant-row seam consulted for a literal declaration.</summary>
-    MetadataConstantRow = 3,
-
     /// <summary>The caller-supplied runtime construction candidate seam.</summary>
     RuntimeConstructionCandidates = 4,
 
@@ -69,9 +66,6 @@ public enum StaticFieldV2PipelineCoverageBoundary
 
     /// <summary>The runtime construction, slot geometry, and raw bytes are supplied by the caller through one seam.</summary>
     RuntimeEvidenceSuppliedByCallerSeam = 2,
-
-    /// <summary>The metadata Constant row of a literal declaration is supplied by the caller through one seam.</summary>
-    MetadataConstantRowSuppliedByCallerSeam = 3,
 
     /// <summary>The declared field type is derived only from a ground primitive FieldSig.</summary>
     DeclaredFieldTypeLimitedToGroundPrimitiveSignature = 4,
@@ -104,13 +98,12 @@ public enum StaticFieldV2PipelineCoverageBoundary
 public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticFieldV2PipelineEvidenceLedger>
 {
     private const string CanonicalDomain = "static-field-v2-pipeline-evidence-ledger";
-    private const int CanonicalSchemaVersion = 2;
+    private const int CanonicalSchemaVersion = 3;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2PipelineEvidenceLedger(
         int scopedContextProjection,
         int lexicalEnvelope,
-        int metadataConstantRow,
         int runtimeConstructionCandidates,
         int runtimeSlotFacts,
         int rawMemoryRead,
@@ -119,7 +112,6 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
     {
         ScopedContextProjectionCallCount = scopedContextProjection;
         LexicalEnvelopeCallCount = lexicalEnvelope;
-        MetadataConstantRowCallCount = metadataConstantRow;
         RuntimeConstructionCandidatesCallCount = runtimeConstructionCandidates;
         RuntimeSlotFactsCallCount = runtimeSlotFacts;
         RawMemoryReadCallCount = rawMemoryRead;
@@ -129,7 +121,6 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32(scopedContextProjection);
         writer.WriteInt32(lexicalEnvelope);
-        writer.WriteInt32(metadataConstantRow);
         writer.WriteInt32(runtimeConstructionCandidates);
         writer.WriteInt32(runtimeSlotFacts);
         writer.WriteInt32(rawMemoryRead);
@@ -150,9 +141,6 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
 
     /// <summary>Gets how many times the lexical envelope seam was called.</summary>
     public int LexicalEnvelopeCallCount { get; }
-
-    /// <summary>Gets how many times the metadata Constant-row seam was called.</summary>
-    public int MetadataConstantRowCallCount { get; }
 
     /// <summary>Gets how many times the runtime construction candidate seam was called.</summary>
     public int RuntimeConstructionCandidatesCallCount { get; }
@@ -178,7 +166,7 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
 
     /// <summary>Gets the total seam calls this evaluation performed.</summary>
     public int TotalCallCount =>
-        ContextCallCount + MetadataConstantRowCallCount + RuntimeCallCount + SuffixChainEvaluationCallCount +
+        ContextCallCount + RuntimeCallCount + SuffixChainEvaluationCallCount +
         FrameRootEvaluationCallCount;
 
     /// <summary>Gets whether this evaluation called no caller-supplied seam at all.</summary>
@@ -198,7 +186,6 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
     {
         StaticFieldV2PipelineEvidenceKind.ScopedContextProjection => ScopedContextProjectionCallCount,
         StaticFieldV2PipelineEvidenceKind.LexicalEnvelope => LexicalEnvelopeCallCount,
-        StaticFieldV2PipelineEvidenceKind.MetadataConstantRow => MetadataConstantRowCallCount,
         StaticFieldV2PipelineEvidenceKind.RuntimeConstructionCandidates => RuntimeConstructionCandidatesCallCount,
         StaticFieldV2PipelineEvidenceKind.RuntimeSlotFacts => RuntimeSlotFactsCallCount,
         StaticFieldV2PipelineEvidenceKind.RawMemoryRead => RawMemoryReadCallCount,
@@ -225,7 +212,6 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
     internal static StaticFieldV2PipelineEvidenceLedger Issue(
         int scopedContextProjection,
         int lexicalEnvelope,
-        int metadataConstantRow,
         int runtimeConstructionCandidates,
         int runtimeSlotFacts,
         int rawMemoryRead,
@@ -234,7 +220,6 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
         new(
             scopedContextProjection,
             lexicalEnvelope,
-            metadataConstantRow,
             runtimeConstructionCandidates,
             runtimeSlotFacts,
             rawMemoryRead,
@@ -539,75 +524,6 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
 
     /// <summary>Computes a deterministic hash code from immutable canonical fact content.</summary>
     /// <returns>A hash code for this canonical fact set.</returns>
-    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
-}
-
-/// <summary>Freezes one caller-supplied metadata Constant-row fact for a literal declaration.</summary>
-/// <remarks>
-/// Metadata remains the sole literal value source. The physical Constant table is not modeled by the landed
-/// catalogs, so the exact row is admitted here as a caller-supplied metadata fact and never as a runtime read.
-/// </remarks>
-public sealed class StaticFieldV2LiteralConstantFact : IEquatable<StaticFieldV2LiteralConstantFact>
-{
-    private const string CanonicalDomain = "static-field-v2-pipeline-literal-constant-fact";
-    private const int CanonicalSchemaVersion = 1;
-    private readonly ImmutableArray<byte> constantValueBlob;
-    private readonly ImmutableArray<byte> canonicalBytes;
-
-    private StaticFieldV2LiteralConstantFact(int constantTypeCode, ImmutableArray<byte> constantValueBlob)
-    {
-        ConstantTypeCode = constantTypeCode;
-        this.constantValueBlob = constantValueBlob;
-
-        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
-        writer.WriteInt32(constantTypeCode);
-        writer.WriteLengthPrefixedBytes(constantValueBlob.AsSpan());
-        canonicalBytes = writer.ToImmutableArray();
-        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
-    }
-
-    /// <summary>Gets the exact ECMA Constant type code of the retained row.</summary>
-    public int ConstantTypeCode { get; }
-
-    /// <summary>Gets a defensive copy of the exact Constant value blob of the retained row.</summary>
-    public ImmutableArray<byte> ConstantValueBlob => ExpressionV2ContractEncoding.Copy(constantValueBlob);
-
-    /// <summary>Gets a defensive copy of the fixed-reference canonical fact bytes.</summary>
-    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
-
-    /// <summary>Gets the lowercase SHA-256 digest of the canonical fact.</summary>
-    public string Sha256 { get; }
-
-    /// <summary>Creates one caller-supplied metadata Constant-row fact.</summary>
-    /// <param name="constantTypeCode">The exact ECMA Constant type code of the physical row.</param>
-    /// <param name="constantValueBlob">The exact initialized Constant value blob of the physical row.</param>
-    /// <returns>A sealed immutable fact with a defensively copied blob.</returns>
-    /// <exception cref="ArgumentException">The supplied blob is not initialized.</exception>
-    public static StaticFieldV2LiteralConstantFact Create(int constantTypeCode, ImmutableArray<byte> constantValueBlob)
-    {
-        if (constantValueBlob.IsDefault)
-        {
-            throw new ArgumentException("An initialized Constant value blob is required.", nameof(constantValueBlob));
-        }
-
-        return new StaticFieldV2LiteralConstantFact(
-            constantTypeCode,
-            ExpressionV2ContractEncoding.Copy(constantValueBlob));
-    }
-
-    /// <summary>Tests canonical equality between two metadata Constant-row facts.</summary>
-    /// <param name="other">The other fact.</param>
-    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
-    public bool Equals(StaticFieldV2LiteralConstantFact? other) =>
-        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
-
-    /// <summary>Tests metadata Constant-row fact equality against an arbitrary object.</summary>
-    /// <param name="obj">The object to compare.</param>
-    /// <returns><see langword="true"/> only for a fact with identical canonical content.</returns>
-    public override bool Equals(object? obj) => Equals(obj as StaticFieldV2LiteralConstantFact);
-
-    /// <summary>Computes a deterministic hash code from immutable canonical fact content.</summary>
-    /// <returns>A hash code for this canonical fact.</returns>
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
@@ -1029,11 +945,12 @@ public sealed class StaticFieldV2FrameRootEvaluationSource
 public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2ExpressionRequest>
 {
     private const string CanonicalDomain = "static-field-v2-expression-pipeline-request";
-    private const int CanonicalSchemaVersion = 2;
+    private const int CanonicalSchemaVersion = 3;
     private const int SignatureTokenResolutionCatalogsFieldTag = 2;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
     private readonly ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs;
+    private readonly ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2ExpressionRequest(
@@ -1049,7 +966,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         StaticFieldV2ScopedContextSource? scopedContext,
         StaticFieldV2RuntimeEvidenceSource? runtimeEvidence,
         StaticFieldV2SuffixEvaluationSource? suffixEvaluation,
-        Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource,
+        ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs,
         MetadataClosedTypeIdentity? referenceTargetType,
         ExpressionV2CapabilityProbeSet? capabilityProbes,
         StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation,
@@ -1067,7 +984,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         ScopedContext = scopedContext;
         RuntimeEvidence = runtimeEvidence;
         SuffixEvaluation = suffixEvaluation;
-        LiteralConstantSource = literalConstantSource;
+        this.constantCatalogs = constantCatalogs;
         ReferenceTargetType = referenceTargetType;
         CapabilityProbes = capabilityProbes;
         FrameRootEvaluation = frameRootEvaluation;
@@ -1097,7 +1014,10 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         writer.WriteBoolean(scopedContext is not null);
         writer.WriteBoolean(runtimeEvidence is not null);
         writer.WriteBoolean(suffixEvaluation is not null);
-        writer.WriteBoolean(literalConstantSource is not null);
+        ExpressionV2ContractEncoding.WriteCanonicalArray(
+            writer,
+            constantCatalogs.IsDefault ? [] : constantCatalogs,
+            static catalog => catalog.CanonicalBytes);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, referenceTargetType?.Sha256);
         writer.WriteBoolean(capabilityProbes is not null);
 
@@ -1162,10 +1082,11 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     public StaticFieldV2SuffixEvaluationSource? SuffixEvaluation { get; }
 
     /// <summary>Gets the optional caller-owned metadata Constant-row seam, or null when none was supplied.</summary>
-    public Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? LiteralConstantSource
-    {
-        get;
-    }
+    public ImmutableArray<MetadataConstantTableCatalogIdentity> ConstantCatalogs =>
+        constantCatalogs.IsDefault ? default : ExpressionV2ContractEncoding.Copy(constantCatalogs);
+
+    /// <summary>Gets the complete Constant catalogs without copying, for internal projection only.</summary>
+    internal ImmutableArray<MetadataConstantTableCatalogIdentity> ConstantCatalogsCore => constantCatalogs;
 
     /// <summary>Gets whether this request supplies a reference-target type for assignability validation.</summary>
     public bool SuppliesReferenceTargetType => ReferenceTargetType is not null;
@@ -1214,7 +1135,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <param name="scopedContext">The optional caller-owned scoped-context seam.</param>
     /// <param name="runtimeEvidence">The optional caller-owned runtime-evidence seam.</param>
     /// <param name="suffixEvaluation">The optional caller-owned unchanged W2/W6 suffix-evaluation seam.</param>
-    /// <param name="literalConstantSource">The optional caller-owned metadata Constant-row seam.</param>
+    /// <param name="constantCatalogs">The complete Constant table catalogs of every composed module.</param>
     /// <param name="referenceTargetType">The optional exact target type of reference-target validation.</param>
     /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained ledger.</param>
     /// <param name="frameRootEvaluation">The optional caller-owned frame-root evaluation seam.</param>
@@ -1241,7 +1162,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         StaticFieldV2ScopedContextSource? scopedContext = null,
         StaticFieldV2RuntimeEvidenceSource? runtimeEvidence = null,
         StaticFieldV2SuffixEvaluationSource? suffixEvaluation = null,
-        Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource = null,
+        ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs = default,
         MetadataClosedTypeIdentity? referenceTargetType = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null,
         StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation = null,
@@ -1293,7 +1214,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             scopedContext,
             runtimeEvidence,
             suffixEvaluation,
-            literalConstantSource,
+            constantCatalogs,
             referenceTargetType,
             capabilityProbes,
             frameRootEvaluation,
@@ -1332,7 +1253,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
 public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2ExpressionProvenance>
 {
     private const string CanonicalDomain = "static-field-v2-expression-pipeline-provenance";
-    private const int CanonicalSchemaVersion = 2;
+    private const int CanonicalSchemaVersion = 3;
     private readonly ImmutableArray<byte> rawValueBytes;
     private readonly ImmutableArray<StaticFieldV2PipelineCoverageBoundary> declaredCoverageBoundaries;
     private readonly ImmutableArray<byte> canonicalBytes;
@@ -1353,7 +1274,7 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         StaticFieldV2RuntimeConstructionSelection? runtimeConstruction,
         StaticFieldV2StaticSlotOutcome? staticSlot,
         ImmutableArray<byte> rawValueBytes,
-        StaticFieldV2LiteralConstantFact? literalConstant,
+        MetadataConstantTableRowIdentity? literalConstantRow,
         StaticFieldV2LiteralValueOutcome? literalValue,
         StaticFieldV2RuntimeValueOutcome? runtimeValue,
         StaticFieldV2AssignabilityOutcome? referenceTargetValidation,
@@ -1379,7 +1300,7 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         RuntimeConstruction = runtimeConstruction;
         StaticSlot = staticSlot;
         this.rawValueBytes = rawValueBytes;
-        LiteralConstant = literalConstant;
+        LiteralConstantRow = literalConstantRow;
         LiteralValue = literalValue;
         RuntimeValue = runtimeValue;
         ReferenceTargetValidation = referenceTargetValidation;
@@ -1412,7 +1333,7 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
         {
             writer.WriteLengthPrefixedBytes(rawValueBytes.AsSpan());
         }
-        ExpressionV2ContractEncoding.WriteOptionalDigest(writer, literalConstant?.Sha256);
+        ExpressionV2ContractEncoding.WriteOptionalDigest(writer, literalConstantRow?.Sha256);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, literalValue?.Sha256);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, runtimeValue?.Sha256);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, referenceTargetValidation?.Sha256);
@@ -1486,8 +1407,8 @@ public sealed class StaticFieldV2ExpressionProvenance : IEquatable<StaticFieldV2
     public ImmutableArray<byte> RawValueBytes =>
         rawValueBytes.IsDefault ? default : ExpressionV2ContractEncoding.Copy(rawValueBytes);
 
-    /// <summary>Gets the consulted metadata Constant-row fact, or null when none was consulted.</summary>
-    public StaticFieldV2LiteralConstantFact? LiteralConstant { get; }
+    /// <summary>Gets the proven metadata Constant row, or null when the answer needed none.</summary>
+    public MetadataConstantTableRowIdentity? LiteralConstantRow { get; }
 
     /// <summary>Gets the projected metadata-literal value, or null when none was projected.</summary>
     public StaticFieldV2LiteralValueOutcome? LiteralValue { get; }
@@ -1688,7 +1609,6 @@ public static class StaticFieldV2ExpressionPipeline
         private int completedStep;
         private int scopedContextCalls;
         private int lexicalEnvelopeCalls;
-        private int constantRowCalls;
         private int constructionCandidateCalls;
         private int slotFactCalls;
         private int memoryReadCalls;
@@ -1712,7 +1632,8 @@ public static class StaticFieldV2ExpressionPipeline
         private StaticFieldV2RuntimeConstructionSelection? runtimeConstruction;
         private StaticFieldV2StaticSlotOutcome? staticSlot;
         private ImmutableArray<byte> rawValueBytes;
-        private StaticFieldV2LiteralConstantFact? literalConstant;
+        private MetadataConstantTableRowIdentity? literalConstantRow;
+        private DumpExpressionValueOutcome? literalConstantStop;
         private StaticFieldV2LiteralValueOutcome? literalValue;
         private StaticFieldV2RuntimeValueOutcome? runtimeValue;
         private StaticFieldV2AssignabilityOutcome? referenceTargetValidation;
@@ -1813,7 +1734,7 @@ public static class StaticFieldV2ExpressionPipeline
             }
             if (fieldRow.IsLiteral && fieldRow.HasDefault)
             {
-                literalConstant = AcquireConstantRow(fieldRow);
+                literalConstantRow = AcquireConstantRow(fieldRow, out literalConstantStop);
             }
 
             // Step 10: freeze the storage strategy and acquire only its required runtime identity.
@@ -2326,29 +2247,74 @@ public static class StaticFieldV2ExpressionPipeline
             };
         }
 
-        private StaticFieldV2LiteralConstantFact? AcquireConstantRow(MetadataFieldDefinitionTableRowIdentity fieldRow)
+        /// <summary>
+        /// Projects the proven Constant row of one literal field from the complete Constant table of its own module.
+        /// </summary>
+        /// <remarks>
+        /// This is reached only for a field that already declares both Literal and HasDefault, so over an exact
+        /// catalog a proven absence is a contradiction rather than a missing lookup - the catalog has shown that
+        /// every field declaring a default value owns exactly one row. A catalog that is itself non-exact can prove
+        /// neither presence nor absence and stops on the disposition it reports.
+        /// </remarks>
+        private MetadataConstantTableRowIdentity? AcquireConstantRow(
+            MetadataFieldDefinitionTableRowIdentity fieldRow,
+            out DumpExpressionValueOutcome? stop)
         {
-            if (request.LiteralConstantSource is not { } source)
+            stop = null;
+            if (ConstantCatalogFor(fieldRow) is not { } catalog)
+            {
+                stop = DumpExpressionValueOutcome.Unavailable;
+                return null;
+            }
+
+            switch (catalog.DispositionForField(fieldRow, out var row))
+            {
+                case MetadataConstantDisposition.Present:
+                    return row;
+                case MetadataConstantDisposition.AbsentByDeclaredAttributes:
+                    stop = DumpExpressionValueOutcome.Invalid;
+                    return null;
+                case MetadataConstantDisposition.CatalogNonExact:
+                    stop = catalog.ResultKind == MetadataConstantTableResultKind.Invalid
+                        ? DumpExpressionValueOutcome.Invalid
+                        : DumpExpressionValueOutcome.Unavailable;
+                    return null;
+                default:
+                    stop = DumpExpressionValueOutcome.Unavailable;
+                    return null;
+            }
+        }
+
+        private MetadataConstantTableCatalogIdentity? ConstantCatalogFor(
+            MetadataFieldDefinitionTableRowIdentity fieldRow)
+        {
+            if (request.ConstantCatalogsCore.IsDefaultOrEmpty)
             {
                 return null;
             }
-            boundaries.Add(StaticFieldV2PipelineCoverageBoundary.MetadataConstantRowSuppliedByCallerSeam);
-            constantRowCalls++;
-            return source(fieldRow);
+
+            foreach (var catalog in request.ConstantCatalogsCore)
+            {
+                if (catalog.DeclaredMemberSourceEnds.SourceModule.Equals(fieldRow.SourceEnds.SourceModule))
+                {
+                    return catalog;
+                }
+            }
+
+            return null;
         }
 
         private DumpExpressionValueOutcome ProjectLiteral(MetadataFieldDefinitionTableRowIdentity fieldRow)
         {
-            if (literalConstant is not { } constant)
+            if (literalConstantRow is not { } constantRow)
             {
-                return DumpExpressionValueOutcome.Unavailable;
+                return literalConstantStop ?? DumpExpressionValueOutcome.Unavailable;
             }
 
             literalValue = StaticFieldV2StorageStrategyBinder.ProjectLiteral(
                 StaticFieldV2LiteralProjectionRequest.Create(
                     fieldRow,
-                    constant.ConstantTypeCode,
-                    constant.ConstantValueBlob,
+                    constantRow,
                     FieldCatalogFor(fieldRow),
                     request.CapabilityProbes));
             capabilityCallLedger = literalValue.CapabilityCallLedger;
@@ -3054,7 +3020,7 @@ public static class StaticFieldV2ExpressionPipeline
                     runtimeConstruction,
                     staticSlot,
                     rawValueBytes,
-                    literalConstant,
+                    literalConstantRow,
                     literalValue,
                     runtimeValue,
                     referenceTargetValidation,
@@ -3063,7 +3029,6 @@ public static class StaticFieldV2ExpressionPipeline
                     StaticFieldV2PipelineEvidenceLedger.Issue(
                         scopedContextCalls,
                         lexicalEnvelopeCalls,
-                        constantRowCalls,
                         constructionCandidateCalls,
                         slotFactCalls,
                         memoryReadCalls,
