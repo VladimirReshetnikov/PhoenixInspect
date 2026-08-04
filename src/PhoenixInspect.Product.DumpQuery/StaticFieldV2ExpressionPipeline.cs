@@ -2160,11 +2160,26 @@ public static class StaticFieldV2ExpressionPipeline
                     {
                         return TypeBindingStop(MapContextualBinding(contextualBinding.ResultKind));
                     }
-                    boundaries.Add(
-                        StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred);
-                    return RequiresClosedConstruction(descriptor!)
-                        ? ConstructionStop(DumpExpressionTypeConstructionOutcome.Unsupported)
-                        : null;
+
+                    // A contextual spelling that itself carries type arguments still needs the import-scoped
+                    // argument construction a later slice owns, so that path keeps its declared deferred boundary.
+                    // An argument-free contextual owner now freezes its exact construction through the guarded
+                    // contextual issuer, tagged as contextually bound in the outcome's canonical bytes.
+                    if (RequiresClosedConstruction(descriptor!))
+                    {
+                        boundaries.Add(
+                            StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred);
+                        return ConstructionStop(DumpExpressionTypeConstructionOutcome.Unsupported);
+                    }
+
+                    ownerConstruction = StaticFieldV2ClosedConstructionBinder.BindContextualOwnerConstruction(
+                        contextualBinding,
+                        request.AncestryPortfolio,
+                        request.ConstraintPortfolio,
+                        request.InterfaceImplementationPortfolio);
+                    return ownerConstruction.ResultKind == StaticFieldV2ClosedConstructionResultKind.Exact
+                        ? null
+                        : ConstructionStop(MapConstruction(ownerConstruction.ResultKind));
 
                 default:
                     return null;

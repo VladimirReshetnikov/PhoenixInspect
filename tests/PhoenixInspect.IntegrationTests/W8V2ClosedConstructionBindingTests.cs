@@ -502,7 +502,7 @@ public sealed class W8V2ClosedConstructionBindingTests
             absent,
             StaticFieldV2ClosedConstructionResultKind.NonExact,
             StaticFieldV2ClosedConstructionIssue.NameBindingAbsent);
-        Assert.Equal(StaticFieldV2TypeNameBindingResultKind.Absent, absent.NameBinding.ResultKind);
+        Assert.Equal(StaticFieldV2TypeNameBindingResultKind.Absent, absent.NameBinding!.ResultKind);
         Assert.Contains(
             absent.NameBinding.PartitionResults,
             static result => result.FirstRejectionReason == StaticFieldV2TypeNameRejectionReason.ArityMismatch);
@@ -682,7 +682,7 @@ public sealed class W8V2ClosedConstructionBindingTests
         Assert.Equal(outcome.GetHashCode(), replay.GetHashCode());
         Assert.Equal(outcome.Sha256, replay.Sha256);
         Assert.Equal(
-            "12c353850571085aef047c2c964dff4fe42517fe00a685dd721eda6c8bbc375f",
+            "7163f6176c7b490c883d34242d757e5baff239703ecc5c2c6280d37ab634cd7c",
             outcome.Sha256);
 
         var originalBytes = outcome.CanonicalBytes;
@@ -711,6 +711,25 @@ public sealed class W8V2ClosedConstructionBindingTests
             check.ConstraintTarget,
             check.Reason));
 
+        // An explicit-route outcome carries exactly the name-binding evidence arm; issuing with no arm at all is
+        // rejected by the tagged-union invariant, so no construction can ever hide which route produced it.
+        Assert.NotNull(outcome.NameBinding);
+        Assert.Null(outcome.ContextualBinding);
+        Assert.Throws<ArgumentException>(() => StaticFieldV2ClosedConstructionOutcome.IssueExact(
+            null,
+            outcome.AncestryPortfolio,
+            outcome.ConstraintPortfolio,
+            outcome.InterfaceImplementationPortfolio,
+            outcome.OwnerConstruction!,
+            outcome.FlattenedArguments,
+            outcome.ConstraintChecks,
+            outcome.ObservedCount,
+            outcome.RelatedMetadataToken!.Value));
+        Assert.Throws<ArgumentNullException>(() => StaticFieldV2ClosedConstructionBinder.BindContextualOwnerConstruction(
+            null!,
+            outcome.AncestryPortfolio,
+            outcome.ConstraintPortfolio));
+
         var publicTypes = new[]
         {
             typeof(StaticFieldV2ClosedConstructionResultKind),
@@ -731,7 +750,9 @@ public sealed class W8V2ClosedConstructionBindingTests
                 .ToArray();
             if (type == typeof(StaticFieldV2ClosedConstructionBinder))
             {
-                Assert.Equal(["BindOwnerConstruction", "BindDeclaringBaseConstruction"], publicStatics);
+                Assert.Equal(
+                    ["BindOwnerConstruction", "BindDeclaringBaseConstruction", "BindContextualOwnerConstruction"],
+                    publicStatics);
             }
             else if (!type.IsEnum)
             {

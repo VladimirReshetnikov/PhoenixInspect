@@ -1082,6 +1082,18 @@ Three boundaries are declared rather than hidden: a contextual or bare route bin
 when the spelling carries type arguments, the declared field type is read from a ground primitive signature until
 substitution is wired, and the Constant row is a caller seam because no landed catalog models that table.
 
+The contextual construction boundary is since narrowed: the closed-construction outcome's canonical identity is now a
+version-3 tagged binding-evidence union — a construction retains exactly one of its name binding or its contextual
+binding, tagged in the canonical bytes so replay provenance never infers which route produced it — and an
+argument-free contextual owner freezes its exact arity-zero construction through the guarded
+`BindContextualOwnerConstruction` issuer with the same constraint validation the explicit route applies. The explicit
+and contextual spellings of one owner now converge on one constructed identity with distinct binding provenance,
+discharging that W8.5 exit-gate statement at the composition layer. The five W8-internal result goldens embedding the
+outcome's bytes were re-frozen as this change's declared content; W1-W7 goldens are untouched. The deferred boundary
+remains only for a contextual spelling that itself carries type arguments and for generic alias-target constructions,
+which need the decoded whole-owner alias TypeSpec a later slice supplies as the declared
+`ContextualConstructionRequiresDecodedAliasTarget` stop.
+
 The W2/W6 suffix is now evaluated end to end at `727dbdb7d`: the pipeline hands the resolved non-null static-field
 reference address and the frozen suffix descriptor to a caller-supplied member-chain evidence seam
 (`StaticFieldV2SuffixEvaluationSource`) that speaks only the Core evaluation result and the query value, so the pipeline

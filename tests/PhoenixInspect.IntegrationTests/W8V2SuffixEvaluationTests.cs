@@ -12,7 +12,7 @@ namespace PhoenixInspect.IntegrationTests;
 public sealed class W8V2SuffixEvaluationTests
 {
     private const string DirectMemberSuffixGoldenSha256 =
-        "c76f486ffe483b410d1315c1178feddcb9989b3d807841bea5cbfcac4d44aef2";
+        "1f4bc39fc29db0e8c5881f32c5b01118ecd4d46c30c1247cb8890a526870a7d4";
 
     private const ulong ExactReferenceAddress = 0x4030_2010UL;
 
@@ -67,7 +67,6 @@ public sealed class W8V2SuffixEvaluationTests
         Assert.Equal(DumpQueryValueKind.Int32, suffixValue.Kind);
         Assert.Equal(123, suffixValue.Int32Value);
         Assert.Same(result.SuffixValue, result.Provenance.SuffixValue);
-
         Assert.Equal(DirectMemberSuffixGoldenSha256, result.Sha256);
     }
 

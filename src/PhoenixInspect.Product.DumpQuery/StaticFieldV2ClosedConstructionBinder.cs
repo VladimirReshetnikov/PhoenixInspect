@@ -112,6 +112,9 @@ public enum StaticFieldV2ClosedConstructionIssue
 
     /// <summary>The supplied interface-implementation authority portfolio prerequisite was invalid.</summary>
     InterfaceImplementationPortfolioInvalid = 26,
+
+    /// <summary>A generic contextual owner requires its decoded alias-target construction, which is not supplied.</summary>
+    ContextualConstructionRequiresDecodedAliasTarget = 27,
 }
 
 /// <summary>Classifies the disposition of one substituted generic-constraint obligation.</summary>
@@ -253,7 +256,9 @@ public sealed class StaticFieldV2ConstraintCheckIdentity : IEquatable<StaticFiel
 public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFieldV2ClosedConstructionOutcome>
 {
     private const string CanonicalDomain = "static-field-v2-closed-construction-outcome";
-    private const int CanonicalSchemaVersion = 2;
+    private const int CanonicalSchemaVersion = 3;
+    private const int NameBindingEvidenceKind = 1;
+    private const int ContextualBindingEvidenceKind = 2;
     private static readonly object RowMintCapability = new();
     private readonly ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments;
     private readonly ImmutableArray<StaticFieldV2ConstraintCheckIdentity> constraintChecks;
@@ -262,7 +267,8 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
     private StaticFieldV2ClosedConstructionOutcome(
         StaticFieldV2ClosedConstructionResultKind resultKind,
         StaticFieldV2ClosedConstructionIssue issue,
-        StaticFieldV2TypeNameBindingOutcome nameBinding,
+        StaticFieldV2TypeNameBindingOutcome? nameBinding,
+        StaticFieldV2ContextualBindingOutcome? contextualBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
         MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
@@ -273,9 +279,17 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         int observedCount,
         int? relatedMetadataToken)
     {
+        if ((nameBinding is null) == (contextualBinding is null))
+        {
+            throw new ArgumentException(
+                "A closed-construction outcome carries exactly one binding evidence arm.",
+                nameof(nameBinding));
+        }
+
         ResultKind = resultKind;
         Issue = issue;
         NameBinding = nameBinding;
+        ContextualBinding = contextualBinding;
         AncestryPortfolio = ancestryPortfolio;
         ConstraintPortfolio = constraintPortfolio;
         InterfaceImplementationPortfolio = interfaceImplementationPortfolio;
@@ -286,10 +300,15 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         ObservedCount = observedCount;
         RelatedMetadataToken = relatedMetadataToken;
 
+        // Version 3 encodes the binding evidence as a tagged union, so a replay reader can always distinguish a
+        // name-bound construction from a contextually bound one without inferring semantics from a bare digest.
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32((int)resultKind);
         writer.WriteInt32((int)issue);
-        writer.WriteSha256(nameBinding.Sha256, nameof(nameBinding));
+        writer.WriteInt32(nameBinding is not null ? NameBindingEvidenceKind : ContextualBindingEvidenceKind);
+        writer.WriteSha256(
+            nameBinding is not null ? nameBinding.Sha256 : contextualBinding!.Sha256,
+            "bindingEvidence");
         writer.WriteSha256(ancestryPortfolio.Sha256, nameof(ancestryPortfolio));
         writer.WriteSha256(constraintPortfolio.Sha256, nameof(constraintPortfolio));
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, interfaceImplementationPortfolio?.Sha256);
@@ -336,8 +355,16 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
     /// <summary>Gets the typed construction issue, or none for an exact outcome.</summary>
     public StaticFieldV2ClosedConstructionIssue Issue { get; }
 
-    /// <summary>Gets the retained owner name-binding outcome that supplied the owner head.</summary>
-    public StaticFieldV2TypeNameBindingOutcome NameBinding { get; }
+    /// <summary>Gets the retained owner name-binding outcome, or null for a contextually bound construction.</summary>
+    /// <remarks>
+    /// Exactly one binding-evidence arm is present: an explicit-route construction retains the name binding that
+    /// supplied the owner head, and a contextual-route construction retains the contextual binding instead. The
+    /// canonical bytes tag which arm produced the construction, so replay provenance never has to infer it.
+    /// </remarks>
+    public StaticFieldV2TypeNameBindingOutcome? NameBinding { get; }
+
+    /// <summary>Gets the retained contextual binding outcome, or null for a name-bound construction.</summary>
+    public StaticFieldV2ContextualBindingOutcome? ContextualBinding { get; }
 
     /// <summary>Gets the retained ancestry authority portfolio prerequisite.</summary>
     public MetadataAncestryAuthorityPortfolioIdentity AncestryPortfolio { get; }
@@ -361,7 +388,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
 
     /// <summary>Gets the exact metadata module of the bound owner, or null for a stop before owner selection.</summary>
     public StaticFieldMetadataModuleIdentity? SourceModule =>
-        NameBinding.SelectedCandidate?.SourceModule;
+        NameBinding?.SelectedCandidate?.SourceModule ?? ContextualBinding?.SelectedCandidate?.SourceModule;
 
     /// <summary>Gets the declared bound reached at cap plus one, otherwise null.</summary>
     public EvaluationDeterministicBound? ReachedBound { get; }
@@ -411,7 +438,7 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
             reason);
 
     internal static StaticFieldV2ClosedConstructionOutcome IssueExact(
-        StaticFieldV2TypeNameBindingOutcome nameBinding,
+        StaticFieldV2TypeNameBindingOutcome? nameBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
         MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
@@ -419,11 +446,13 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
         ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments,
         ImmutableArray<StaticFieldV2ConstraintCheckIdentity> constraintChecks,
         int observedCount,
-        int relatedMetadataToken) =>
+        int relatedMetadataToken,
+        StaticFieldV2ContextualBindingOutcome? contextualBinding = null) =>
         new(
             StaticFieldV2ClosedConstructionResultKind.Exact,
             StaticFieldV2ClosedConstructionIssue.None,
             nameBinding,
+            contextualBinding,
             ancestryPortfolio,
             constraintPortfolio,
             interfaceImplementationPortfolio,
@@ -437,18 +466,20 @@ public sealed class StaticFieldV2ClosedConstructionOutcome : IEquatable<StaticFi
     internal static StaticFieldV2ClosedConstructionOutcome IssueStop(
         StaticFieldV2ClosedConstructionResultKind resultKind,
         StaticFieldV2ClosedConstructionIssue issue,
-        StaticFieldV2TypeNameBindingOutcome nameBinding,
+        StaticFieldV2TypeNameBindingOutcome? nameBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
         MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
         EvaluationDeterministicBound? reachedBound,
         int observedCount,
         int? relatedMetadataToken,
-        StaticFieldV2ConstraintCheckIdentity? decisiveCheck = null) =>
+        StaticFieldV2ConstraintCheckIdentity? decisiveCheck = null,
+        StaticFieldV2ContextualBindingOutcome? contextualBinding = null) =>
         new(
             resultKind,
             issue,
             nameBinding,
+            contextualBinding,
             ancestryPortfolio,
             constraintPortfolio,
             interfaceImplementationPortfolio,
@@ -781,7 +812,8 @@ public static class StaticFieldV2ClosedConstructionBinder
             ownerConstruction.NameBinding,
             ownerConstruction.AncestryPortfolio,
             ownerConstruction.ConstraintPortfolio,
-            ownerConstruction.InterfaceImplementationPortfolio);
+            ownerConstruction.InterfaceImplementationPortfolio,
+            ownerConstruction.ContextualBinding);
         var declaringModule = target.SourceModule;
         if (!context.HasModule(declaringModule))
         {
@@ -810,7 +842,110 @@ public static class StaticFieldV2ClosedConstructionBinder
             flattenedArguments,
             checks.Value,
             context.CumulativeArgumentCount,
-            target.TypeDefinition.TypeDefinitionToken);
+            target.TypeDefinition.TypeDefinitionToken,
+            ownerConstruction.ContextualBinding);
+    }
+
+    /// <summary>Freezes the exact closed construction of one contextually bound owner.</summary>
+    /// <remarks>
+    /// The contextual route binds its owner through scoped aliases, imports, and namespace levels rather than a
+    /// metadata-global name, so the retained binding evidence of the issued outcome is the contextual binding
+    /// itself, tagged as such in the canonical bytes. This slice constructs a definition-bound contextual owner at
+    /// arity zero from the selected candidate's exact authority chain and validates its substituted constraints
+    /// exactly as the explicit route does. A generic contextual owner needs the decoded whole-owner alias-target
+    /// construction, which a later slice supplies; until then it is the declared typed unsupported stop rather
+    /// than a guessed construction.
+    /// </remarks>
+    /// <param name="contextualBinding">The exact contextual binding whose selected candidate names the owner.</param>
+    /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
+    /// <param name="constraintPortfolio">The constraint-target resolution portfolio prerequisite.</param>
+    /// <param name="interfaceImplementationPortfolio">The optional interface-implementation portfolio.</param>
+    /// <returns>A sealed immutable outcome carrying the contextual construction, or one prefix-free typed stop.</returns>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    /// <exception cref="ArgumentException">The contextual binding is not exact with one selected candidate.</exception>
+    public static StaticFieldV2ClosedConstructionOutcome BindContextualOwnerConstruction(
+        StaticFieldV2ContextualBindingOutcome contextualBinding,
+        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
+        MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null)
+    {
+        ArgumentNullException.ThrowIfNull(contextualBinding);
+        ArgumentNullException.ThrowIfNull(ancestryPortfolio);
+        ArgumentNullException.ThrowIfNull(constraintPortfolio);
+        if (contextualBinding.ResultKind != StaticFieldV2ContextualBindingResultKind.Exact ||
+            contextualBinding.SelectedCandidate is not { } candidate)
+        {
+            throw new ArgumentException(
+                "A contextual owner construction requires one exact contextual binding with a selected candidate.",
+                nameof(contextualBinding));
+        }
+
+        var context = new BindContext(
+            null,
+            ancestryPortfolio,
+            constraintPortfolio,
+            interfaceImplementationPortfolio,
+            contextualBinding);
+        var ownerModule = candidate.SourceModule;
+        if (!context.HasModule(ownerModule))
+        {
+            return context.Stopped(
+                StaticFieldV2ClosedConstructionResultKind.Invalid,
+                StaticFieldV2ClosedConstructionIssue.OwnerModuleNotInPortfolio,
+                candidate.FinalTypeDefinitionToken);
+        }
+
+        var chainSegments = candidate.Candidates[0].Chain.Segments;
+        var classificationChain = ImmutableArray.CreateBuilder<MetadataTypeDefinitionSemanticClassificationIdentity>(
+            chainSegments.Length);
+        foreach (var chainSegment in chainSegments)
+        {
+            var classification = ancestryPortfolio.ExactClassificationOrDefault(
+                ownerModule,
+                chainSegment.TypeDefinitionToken);
+            if (classification is not { Role: not null })
+            {
+                return context.Stopped(
+                    StaticFieldV2ClosedConstructionResultKind.NonExact,
+                    StaticFieldV2ClosedConstructionIssue.DefinitionClassificationAbsent,
+                    chainSegment.TypeDefinitionToken);
+            }
+            classificationChain.Add(classification);
+        }
+
+        var ownerChain = classificationChain.MoveToImmutable();
+        if (candidate.FinalTypeDefinition.TotalGenericArity != 0)
+        {
+            return context.Stopped(
+                StaticFieldV2ClosedConstructionResultKind.Unsupported,
+                StaticFieldV2ClosedConstructionIssue.ContextualConstructionRequiresDecodedAliasTarget,
+                candidate.FinalTypeDefinitionToken);
+        }
+
+        var flattened = ImmutableArray<MetadataClosedTypeIdentity>.Empty;
+        if (!TryAdmitNamed(context, ownerChain, flattened, candidate.FinalTypeDefinitionToken))
+        {
+            return context.Stopped();
+        }
+
+        var ownerConstruction = MetadataClosedTypeIdentity.ConstructNamed(ownerChain, flattened);
+        var checks = ValidateConstraints(context, ownerModule, ownerChain, flattened);
+        if (checks is null)
+        {
+            return context.Stopped();
+        }
+
+        return StaticFieldV2ClosedConstructionOutcome.IssueExact(
+            null,
+            ancestryPortfolio,
+            constraintPortfolio,
+            interfaceImplementationPortfolio,
+            ownerConstruction,
+            flattened,
+            checks.Value,
+            context.CumulativeArgumentCount,
+            candidate.FinalTypeDefinitionToken,
+            contextualBinding);
     }
 
     private static MetadataClosedTypeIdentity? BindType(BindContext context, StaticFieldV2TypeSyntax syntax) =>
@@ -1621,7 +1756,8 @@ public static class StaticFieldV2ClosedConstructionBinder
 
     private sealed class BindContext
     {
-        private readonly StaticFieldV2TypeNameBindingOutcome nameBinding;
+        private readonly StaticFieldV2TypeNameBindingOutcome? nameBinding;
+        private readonly StaticFieldV2ContextualBindingOutcome? contextualBinding;
         private readonly MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio;
         private readonly Dictionary<string, ImmutableArray<MetadataConstraintTargetResolutionIdentity>> targetsByModule;
         private StaticFieldV2ClosedConstructionResultKind stopResultKind;
@@ -1632,12 +1768,14 @@ public static class StaticFieldV2ClosedConstructionBinder
         private StaticFieldV2ConstraintCheckIdentity? stopCheck;
 
         internal BindContext(
-            StaticFieldV2TypeNameBindingOutcome nameBinding,
+            StaticFieldV2TypeNameBindingOutcome? nameBinding,
             MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
             MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
-            MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio)
+            MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
+            StaticFieldV2ContextualBindingOutcome? contextualBinding = null)
         {
             this.nameBinding = nameBinding;
+            this.contextualBinding = contextualBinding;
             Ancestry = ancestryPortfolio;
             this.constraintPortfolio = constraintPortfolio;
             InterfaceImplementations = interfaceImplementationPortfolio;
@@ -1781,7 +1919,8 @@ public static class StaticFieldV2ClosedConstructionBinder
                 stopBound,
                 stopObservedCount,
                 stopRelatedMetadataToken,
-                stopCheck);
+                stopCheck,
+                contextualBinding);
         }
     }
 

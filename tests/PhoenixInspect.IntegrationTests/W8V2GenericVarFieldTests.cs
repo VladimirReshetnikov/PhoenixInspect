@@ -16,7 +16,7 @@ public sealed class W8V2GenericVarFieldTests
 
     // Captured from a real run of Owner_var_substituted_result_replays_to_a_stable_digest below.
     private const string OwnerVarInt32GoldenSha256 =
-        "ddce088ccb9f2d63a3a1da3739c355e0213403afd3793556b3f804e2524861c6";
+        "2d8a82713bb85603df039f40715af46b36e8fa0ade6578391b2d0e0eaf396aff";
 
     /// <summary>
     /// Proves an owner <c>VAR 0</c> field signature over a closed <c>Slot&lt;int&gt;</c> construction is substituted to

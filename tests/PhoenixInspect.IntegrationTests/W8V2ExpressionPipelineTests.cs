@@ -39,7 +39,7 @@ public sealed class W8V2ExpressionPipelineTests
     private const int LibAssemblyReferenceToken = 0x2300_0002;
 
     private const string ConstructedSlotGoldenSha256 =
-        "c7872a08d2ea8039e1f886b54c699ce58875c86ebd14b473ac7eefa58172bc60";
+        "0fca3a0b3d380df96ab1b2ab1635916f088fd92199a732637c4bd4cedb52562e";
 
     /// <summary>
     /// Proves a fully qualified constructed-generic static field reaches an exact value while calling no context
@@ -135,11 +135,25 @@ public sealed class W8V2ExpressionPipelineTests
         Assert.Null(qualified.Provenance.ContextualBinding);
         Assert.Null(aliased.Provenance.ExplicitNameBinding);
         Assert.NotNull(aliased.Provenance.ContextualBinding);
-        Assert.NotNull(qualified.Provenance.OwnerConstruction);
-        Assert.Null(aliased.Provenance.OwnerConstruction);
         Assert.NotEqual(qualified.Provenance.Sha256, aliased.Provenance.Sha256);
         Assert.NotEqual(qualified.Sha256, aliased.Sha256);
-        Assert.Contains(
+
+        // Both routes now freeze an exact owner construction, tagged with the binding evidence that produced it:
+        // the explicit construction retains the name binding and the contextual construction retains the
+        // contextual binding, so the constructed identities converge while their binding provenance never does.
+        var qualifiedConstruction = qualified.Provenance.OwnerConstruction!;
+        var aliasedConstruction = aliased.Provenance.OwnerConstruction!;
+        Assert.NotNull(aliasedConstruction);
+        Assert.Equal(
+            qualifiedConstruction.OwnerConstruction!.Sha256,
+            aliasedConstruction.OwnerConstruction!.Sha256);
+        Assert.NotNull(qualifiedConstruction.NameBinding);
+        Assert.Null(qualifiedConstruction.ContextualBinding);
+        Assert.Null(aliasedConstruction.NameBinding);
+        Assert.NotNull(aliasedConstruction.ContextualBinding);
+        Assert.NotEqual(qualifiedConstruction.Sha256, aliasedConstruction.Sha256);
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, aliased.Axes.TypeConstruction);
+        Assert.DoesNotContain(
             StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred,
             aliased.Provenance.DeclaredCoverageBoundaries);
     }
