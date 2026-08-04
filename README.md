@@ -261,7 +261,4 @@ and the [documentation index](docs/README.md) lists the contracts in force.
 
 ## License
 
-This repository is released into the **public domain** under [the Unlicense](https://unlicense.org/) in
-jurisdictions that recognize and permit that dedication. Where such a dedication is not legally effective, the
-**MIT No Attribution (MIT-0)** license applies instead. See [`LICENSE`](LICENSE) for both texts and how they
-compose. In SPDX terms: `Unlicense OR MIT-0`.
+[`MIT-0`](LICENSE).
