@@ -964,7 +964,15 @@ public static class MetadataAuthorityProducer
             genericParameterConstraintRowCount: genericParameterConstraintRowCount,
             fieldPointerRowCount: fieldPointerRowCount,
             methodPointerRowCount: methodPointerRowCount,
-            parameterPointerRowCount: parameterPointerRowCount);
+            parameterPointerRowCount: parameterPointerRowCount,
+
+            // The declaration-side tables are counted here and enumerated nowhere: the shared reader projects no rows
+            // for any of the three. Counting them is what later lets a catalog assembled from the parent side prove
+            // it collected every row by agreeing with an end it did not produce.
+            declaredMemberRowCounts: StaticFieldModuleDeclaredMemberRowCounts.Create(
+                constantRowCount: reader.GetTableRowCount(TableIndex.Constant),
+                propertyMapRowCount: reader.GetTableRowCount(TableIndex.PropertyMap),
+                propertyPointerRowCount: reader.GetTableRowCount(TableIndex.PropertyPtr)));
         var sourceEnds = MetadataSourceEndIdentity.Create(module, searchFact);
         draft.SourceEnds = sourceEnds;
 

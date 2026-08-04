@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using PhoenixInspect.Core.Abstractions;
 using PhoenixInspect.Product.DumpQuery;
 using Xunit;
@@ -91,6 +92,145 @@ public sealed class W8DeclaredMemberRowCountContractTests
         Assert.Equal(
             withCounts.Sha256,
             ExactFact(StaticFieldModuleDeclaredMemberRowCounts.Create(39, 13, 0)).Sha256);
+    }
+
+
+    /// <summary>
+    /// Proves the declaration-side source-end extension binds to one exact landed source end by digest, projects
+    /// every count from that same retained observation, and refuses an observation that counted nothing.
+    /// </summary>
+    /// <remarks>
+    /// Binding by digest rather than by copied evidence is what stops this extension from becoming a second source
+    /// of truth about the same image: it cannot describe ends that disagree with the source ends it names, because
+    /// it does not carry its own copy of them.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Declared_member_source_ends_extend_one_exact_source_end_by_digest()
+    {
+        var counted = SourceEnds(StaticFieldModuleDeclaredMemberRowCounts.Create(39, 13, 0));
+        var extension = MetadataDeclaredMemberSourceEndIdentity.Create(counted);
+
+        Assert.Same(counted, extension.DefinitionSourceEnds);
+        Assert.Equal(counted.SourceModule, extension.SourceModule);
+        Assert.Equal(counted.FieldDefinitionRowCount, extension.FieldDefinitionRowCount);
+        Assert.Equal(counted.ParameterDefinitionRowCount, extension.ParameterDefinitionRowCount);
+        Assert.Equal(7, extension.PropertyRowCount);
+        Assert.Equal(39, extension.ConstantRowCount);
+        Assert.Equal(13, extension.PropertyMapRowCount);
+        Assert.Equal(0, extension.PropertyPointerRowCount);
+        Assert.Equal(extension, MetadataDeclaredMemberSourceEndIdentity.Create(counted));
+
+        // An observation that counted no declaration-side table cannot be extended at all.
+        var uncounted = SourceEnds(declaredMemberRowCounts: null);
+        Assert.Throws<ArgumentException>(() => MetadataDeclaredMemberSourceEndIdentity.Create(uncounted));
+
+        // A differing counted end is a different identity, and the bound source-end digest participates.
+        Assert.NotEqual(
+            extension.Sha256,
+            MetadataDeclaredMemberSourceEndIdentity
+                .Create(SourceEnds(StaticFieldModuleDeclaredMemberRowCounts.Create(39, 13, 1)))
+                .Sha256);
+    }
+
+    /// <summary>
+    /// Proves the HasConstant parent decoding admits exactly the three coded-index tables, each only in range.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Has_constant_parent_tokens_decode_only_the_three_coded_index_tables_in_range()
+    {
+        var extension = MetadataDeclaredMemberSourceEndIdentity.Create(
+            SourceEnds(StaticFieldModuleDeclaredMemberRowCounts.Create(39, 13, 0)));
+
+        Assert.True(extension.ContainsHasConstantParentToken(0x0400_0001, out var field));
+        Assert.Equal(MetadataConstantParentKind.FieldDefinition, field);
+        Assert.True(extension.ContainsHasConstantParentToken(0x0800_0001, out var parameter));
+        Assert.Equal(MetadataConstantParentKind.ParameterDefinition, parameter);
+        Assert.True(extension.ContainsHasConstantParentToken(0x1700_0007, out var property));
+        Assert.Equal(MetadataConstantParentKind.PropertyDefinition, property);
+
+        // Out of range on each table, the nil row, and a table that is not a HasConstant parent at all.
+        Assert.False(extension.ContainsHasConstantParentToken(0x1700_0008, out _));
+        Assert.False(extension.ContainsHasConstantParentToken(0x0400_0000, out _));
+        Assert.False(extension.ContainsHasConstantParentToken(0x0600_0001, out _));
+        Assert.False(extension.ContainsHasConstantParentToken(0x0200_0001, out _));
+
+        Assert.True(extension.ContainsPropertyToken(0x1700_0007));
+        Assert.False(extension.ContainsPropertyToken(0x1700_0008));
+        Assert.False(extension.ContainsPropertyToken(0x0400_0001));
+    }
+
+    private static MetadataSourceEndIdentity SourceEnds(
+        StaticFieldModuleDeclaredMemberRowCounts? declaredMemberRowCounts)
+    {
+        var instance = StaticFieldModuleInstanceIdentity.Create(
+            new string('a', 64),
+            sizeof(ulong),
+            applicationDomainAddress: 0x1000,
+            moduleAddress: 0x2000,
+            imageBase: 0x0040_0000,
+            imageSize: 0x0001_8000);
+        var content = ModuleContentIdentity.FromDigest(
+            mvid: Guid.Parse("10213243-5465-7687-98a9-bacbdcedfe0f"),
+            metadataLength: 4096,
+            metadataSha256: ModuleDigest);
+        var moduleDefinition = StaticFieldModuleDefinitionIdentity.Create(
+            generation: 0,
+            name: "declared-member-source-ends.dll",
+            mvid: content.Mvid,
+            encId: Guid.Empty,
+            encBaseId: Guid.Empty);
+        var assembly = StaticFieldContainingAssemblyIdentity.Create(
+            instance,
+            content,
+            moduleDefinition,
+            StaticFieldAssemblyDefinitionIdentity.Create(
+                name: "Synthetic.DeclaredMemberSourceEnds",
+                majorVersion: 1,
+                minorVersion: 0,
+                buildNumber: 0,
+                revisionNumber: 0,
+                culture: string.Empty,
+                flags: 0,
+                hashAlgorithm: 0x8004,
+                publicKey: ImmutableArray<byte>.Empty));
+        var module = StaticFieldMetadataModuleIdentity.ForManifestModule(
+            instance,
+            content,
+            moduleDefinition,
+            assembly);
+        return MetadataSourceEndIdentity.Create(
+            sourceModule: module,
+            sourceModuleFact: StaticFieldModuleSearchFact.Exact(
+                module: module.Module,
+                moduleContent: module.ModuleContent,
+                typeDefinitionsExamined: 13,
+                fieldDefinitionsExamined: 41,
+                typeDefinitionRowCount: 13,
+                fieldDefinitionRowCount: 41,
+                typeReferenceRowCount: 0,
+                typeSpecificationRowCount: 0,
+                assemblyReferenceRowCount: 0,
+                methodDefinitionRowCount: 5,
+                parameterDefinitionRowCount: 3,
+                propertyDefinitionRowCount: 7,
+                eventDefinitionRowCount: 0,
+                moduleDefinitionRowCount: 1,
+                assemblyDefinitionRowCount: 1,
+                interfaceImplementationRowCount: 0,
+                memberReferenceRowCount: 0,
+                customAttributeRowCount: 0,
+                moduleReferenceRowCount: 0,
+                fileRowCount: 0,
+                exportedTypeRowCount: 0,
+                nestedClassRowCount: 0,
+                genericParameterRowCount: 0,
+                genericParameterConstraintRowCount: 0,
+                fieldPointerRowCount: 0,
+                methodPointerRowCount: 0,
+                parameterPointerRowCount: 0,
+                declaredMemberRowCounts: declaredMemberRowCounts));
     }
 
     private static StaticFieldModuleSearchFact ExactFact(
