@@ -1791,8 +1791,8 @@
       },
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "requires-a-scoped-context-source-the-runner-does-not-yet-project"
+        "status": "executed",
+        "reason": "the-runner-requests-the-declared-absent-frame-from-the-real-session-and-the-unavailable-acquisition-is-the-typed-context-stop"
       },
       "representative": false
     },

@@ -488,12 +488,25 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             : world.Evaluate(
                 incident.Expression,
                 incident.ReadWidth,
-                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null);
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null,
+                RequestsScopedContext(incident)
+                    ? world.PausedFrameScopedContext(incident.SelectedFrameMode == "requested-but-absent")
+                    : null);
+
+    // A contextual spelling under a declared selected frame consults the scoped-context seam; a fully qualified
+    // spelling never does, exactly as the frozen route rule states, so the seam is not even supplied there.
+    private static bool RequestsScopedContext(W8CorpusIncident incident) =>
+        incident.LanguageProfile == "StaticFieldExpressionV2" &&
+        incident.SelectedFrameMode != "none" &&
+        !incident.Expression.StartsWith("global::", StringComparison.Ordinal);
 
     private static W8CorpusEvaluation ApplyCounterfactual(W8CorpusEvaluationWorld world, W8CorpusIncident incident) =>
         incident.CounterfactualAction switch
         {
             "withhold-runtime-evidence" => world.EvaluateWithoutRuntimeEvidence(incident.Expression),
+            "evaluate-fully-qualified-control" => world.Evaluate(
+                incident.ControlExpression!,
+                incident.ReadWidth),
             "substitute-closed-type-argument" => world.Evaluate(
                 incident.CounterfactualExpression ?? incident.Expression,
                 incident.ReadWidth),
@@ -567,6 +580,9 @@ public sealed class W8CorpusIncident
         SnapshotKind = W8CorpusManifest.RequiredString(element, "snapshotKind");
         SnapshotIdentity = W8CorpusManifest.RequiredString(element, "snapshotIdentity");
         Expression = W8CorpusManifest.RequiredString(element, "expression");
+        ControlExpression = element.GetProperty("controlExpression").ValueKind == JsonValueKind.Null
+            ? null
+            : element.GetProperty("controlExpression").GetString();
         LanguageProfile = W8CorpusManifest.RequiredString(element, "languageProfile");
         ExpectedFirstBoundary = W8CorpusManifest.RequiredString(element, "expectedFirstBoundary");
         SupportsSuccessorCategory = W8CorpusManifest.RequiredString(element, "supportsSuccessorCategory");
@@ -634,6 +650,9 @@ public sealed class W8CorpusIncident
 
     /// <summary>Gets the predeclared expression text.</summary>
     public string Expression { get; }
+
+    /// <summary>Gets the predeclared fully qualified control expression, or null when the row declares none.</summary>
+    public string? ControlExpression { get; }
 
     /// <summary>Gets the explicitly selected language profile.</summary>
     public string LanguageProfile { get; }
@@ -936,11 +955,13 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     private readonly ImmutableArray<ProducedModule> modules;
     private readonly DataTarget rawReadTarget;
     private readonly string shape;
+    private readonly string dumpPath;
 
     private W8CorpusEvaluationWorld(
         StaticFieldV2RuntimeAcquisitionSession session,
         DataTarget rawReadTarget,
         string shape,
+        string dumpPath,
         ImmutableArray<ProducedModule> modules,
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
         MetadataNamedTypeDefinitionChainPortfolioIdentity chainPortfolio,
@@ -951,6 +972,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         Session = session;
         this.rawReadTarget = rawReadTarget;
         this.shape = shape;
+        this.dumpPath = dumpPath;
         this.modules = modules;
         FieldCatalogs = fieldCatalogs;
         Bindings = [.. modules.Select(static module => module.Binding)];
@@ -1035,6 +1057,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                         session,
                         rawReadTarget,
                         shape,
+                        dumpPath,
                         produced.ToImmutable(),
                         [
                             core.FieldCatalog,
@@ -1068,15 +1091,114 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         }
     }
 
+    /// <summary>
+    /// Builds the scoped-context seam for one incident the way the host would: a real frame selection and
+    /// Portable-PDB read over the incident's own dump, mapped into the typed acquisition envelope. A frame the
+    /// incident declares as requested-but-absent is actually requested from the session and its unavailable
+    /// observation becomes the typed acquisition stop; nothing is fabricated.
+    /// </summary>
+    /// <param name="frameAbsent">Whether the incident declares a requested-but-absent selected frame.</param>
+    /// <returns>A caller-owned seam producing one typed scoped-context acquisition per call.</returns>
+    internal StaticFieldV2ScopedContextSource PausedFrameScopedContext(bool frameAbsent = false) =>
+        StaticFieldV2ScopedContextSource.CreateFromAcquisition(() => AcquireScopedContext(frameAbsent));
+
+    private StaticFieldV2ScopedContextAcquisition AcquireScopedContext(bool frameAbsent)
+    {
+        var opened = ClrmdDumpSession.Open(dumpPath);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
+        using var contextSession = opened.Value!;
+
+        if (frameAbsent)
+        {
+            var absent = contextSession.SelectExpressionFrame(DumpSelectedFrameSelector.Create(
+                contextSession.Snapshot,
+                threadOrdinal: int.MaxValue,
+                frameOrdinal: 0));
+            Assert.NotEqual(DumpContextEvidenceStatus.Exact, absent.Status);
+            return StaticFieldV2ScopedContextAcquisition.Stopped(
+                StaticFieldV2ScopedContextAcquisitionDisposition.Unavailable);
+        }
+
+        var pauseMethodToken = FindMethodToken(Primary.Reader, PrimaryNamespace(), shape + "Pause", "WaitForDump");
+        var frame = SelectPausedFrame(contextSession, pauseMethodToken);
+        if (frame is null)
+        {
+            return StaticFieldV2ScopedContextAcquisition.Stopped(
+                StaticFieldV2ScopedContextAcquisitionDisposition.Unavailable);
+        }
+
+        var pdbPath = Path.ChangeExtension(
+            W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8" + shape + "ShapeTarget"),
+            ".pdb");
+        var observation = contextSession.ReadExpressionPortablePdbContext(
+            frame,
+            [W8ShapeTargetPaths.RequireArtifact(pdbPath)]);
+        if (observation.Status != DumpContextEvidenceStatus.Exact ||
+            observation.Facts is not DumpPortablePdbContextFacts facts)
+        {
+            return StaticFieldV2ScopedContextAcquisition.Stopped(observation.Status switch
+            {
+                DumpContextEvidenceStatus.Conflict =>
+                    StaticFieldV2ScopedContextAcquisitionDisposition.Conflict,
+                DumpContextEvidenceStatus.Unavailable =>
+                    StaticFieldV2ScopedContextAcquisitionDisposition.Unavailable,
+                DumpContextEvidenceStatus.Invalid =>
+                    StaticFieldV2ScopedContextAcquisitionDisposition.Invalid,
+                _ => StaticFieldV2ScopedContextAcquisitionDisposition.Partial,
+            });
+        }
+
+        var declaringTypeToken = FindTypeToken(Primary.Reader, PrimaryNamespace(), shape + "Pause");
+        var classification = Ancestry.ExactClassificationOrDefault(Primary.MetadataModule, declaringTypeToken)!;
+        return StaticFieldV2ScopedContextAcquisition.Exact(StaticFieldV2ScopedContextRequest.Create(
+            Primary.MetadataModule,
+            facts.ImportScopes,
+            classification.TypeDefinition,
+            Ancestry,
+            Ancestry.ResolutionPortfolio));
+    }
+
+    private DumpSelectedFrameObservation? SelectPausedFrame(ClrmdDumpSession contextSession, int pauseMethodToken)
+    {
+        const int maximumThreadOrdinals = 64;
+        const int maximumFrameOrdinals = 16;
+        for (var threadOrdinal = 0; threadOrdinal < maximumThreadOrdinals; threadOrdinal++)
+        {
+            for (var frameOrdinal = 0; frameOrdinal < maximumFrameOrdinals; frameOrdinal++)
+            {
+                var observation = contextSession.SelectExpressionFrame(DumpSelectedFrameSelector.Create(
+                    contextSession.Snapshot,
+                    threadOrdinal,
+                    frameOrdinal));
+                if (observation.Frame is { } candidate &&
+                    candidate.RuntimeModule.ModuleAddress == Primary.Binding.RuntimeModuleAddress &&
+                    candidate.MethodDefinitionToken == pauseMethodToken)
+                {
+                    return observation;
+                }
+
+                if (frameOrdinal > 0 &&
+                    observation.Status == DumpContextEvidenceStatus.Unavailable &&
+                    observation.Issue == DumpContextEvidenceIssue.FrameUnavailable)
+                {
+                    break;
+                }
+            }
+        }
+        return null;
+    }
+
     /// <summary>Evaluates one predeclared expression through the unchanged composed V2 pipeline.</summary>
     /// <param name="expression">The predeclared expression text.</param>
     /// <param name="readWidth">The counted read width in bytes.</param>
     /// <param name="threadSelector">The declared selected-thread predicate, or null when the row declares none.</param>
+    /// <param name="scopedContext">The incident's scoped-context seam, or null when the row declares none.</param>
     /// <returns>The produced evaluation together with the acquired physical address, when one exists.</returns>
     internal W8CorpusEvaluation Evaluate(
         string expression,
         int readWidth,
-        StaticFieldV2RuntimeThreadSelector? threadSelector = null)
+        StaticFieldV2RuntimeThreadSelector? threadSelector = null,
+        StaticFieldV2ScopedContextSource? scopedContext = null)
     {
         var probes = ExpressionV2CapabilityProbeSet.Create();
         ulong? acquiredSlotAddress = null;
@@ -1118,6 +1240,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             Ancestry,
             Constraints,
             FieldCatalogs,
+            scopedContext: scopedContext,
             runtimeEvidence: evidence,
             capabilityProbes: probes,
             signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
