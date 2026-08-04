@@ -1095,6 +1095,21 @@ internal static class W8ShapeTargetPaths
     internal static string ResolveAssembly(string assemblyName) =>
         Path.Combine(ResolveOutputDirectory(assemblyName), assemblyName + ".dll");
 
+    /// <summary>
+    /// Resolves a referenced companion assembly from the consuming shape target's own output directory.
+    /// </summary>
+    /// <remarks>
+    /// The companion must be the copy the target process actually loads, not the copy in the companion project's own
+    /// output. The two are byte-identical only while both are freshly built; after an incremental build they can
+    /// differ, and resolving the wrong one makes the module silently fail content matching, so the composition drops
+    /// it and the incident's answer degrades instead of failing loudly.
+    /// </remarks>
+    /// <param name="shapeAssemblyName">The shape target whose output directory the process runs from.</param>
+    /// <param name="companionAssemblyName">The referenced companion assembly to resolve.</param>
+    /// <returns>The complete path of the companion copy the shape target loads.</returns>
+    internal static string ResolveCompanionAssembly(string shapeAssemblyName, string companionAssemblyName) =>
+        Path.Combine(ResolveOutputDirectory(shapeAssemblyName), companionAssemblyName + ".dll");
+
     internal static string ResolveNamedRvaFixture() =>
         RepositoryPath("tests/PhoenixInspect.W8TestTarget/NamedRvaFixture/PhoenixInspect.W8NamedRvaTarget.dll");
 
@@ -1785,8 +1800,12 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             [
                 (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8BatchShapeTarget"), true),
                 (W8ShapeTargetPaths.ResolveNamedRvaFixture(), true),
-                (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8ForwarderTarget"), false),
-                (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8AliasTarget"), false),
+                (W8ShapeTargetPaths.ResolveCompanionAssembly(
+                    "PhoenixInspect.W8BatchShapeTarget",
+                    "PhoenixInspect.W8ForwarderTarget"), false),
+                (W8ShapeTargetPaths.ResolveCompanionAssembly(
+                    "PhoenixInspect.W8BatchShapeTarget",
+                    "PhoenixInspect.W8AliasTarget"), false),
             ],
             "Coordinator" => [(W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8CoordinatorShapeTarget"), true)],
 
@@ -1795,7 +1814,9 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             "Workflow" =>
             [
                 (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8WorkflowShapeTarget"), true),
-                (W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8AliasTarget"), false),
+                (W8ShapeTargetPaths.ResolveCompanionAssembly(
+                    "PhoenixInspect.W8WorkflowShapeTarget",
+                    "PhoenixInspect.W8AliasTarget"), false),
             ],
             _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, "The shape is not one of the four."),
         };
