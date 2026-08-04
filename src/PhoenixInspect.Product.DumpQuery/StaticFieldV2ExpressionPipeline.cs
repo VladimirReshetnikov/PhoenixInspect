@@ -238,6 +238,117 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
             frameRootEvaluation);
 }
 
+/// <summary>Classifies one caller-owned scoped-context acquisition before any projection runs.</summary>
+/// <remarks>
+/// The disposition states how the host's own frame, thread, and Portable-PDB acquisition ended. Only an exact
+/// acquisition carries a projection request; every other disposition is a typed context-axis stop that the
+/// composition records without calling the projection binder, so a missing frame is never conflated with a
+/// projection defect.
+/// </remarks>
+public enum StaticFieldV2ScopedContextAcquisitionDisposition
+{
+    /// <summary>The frame, thread, and Portable-PDB evidence are exact and the projection request is present.</summary>
+    Exact = 1,
+
+    /// <summary>Some required context evidence is present but the set is incomplete.</summary>
+    Partial = 2,
+
+    /// <summary>A required context artifact - the selected frame, thread, or Portable PDB - is unavailable.</summary>
+    Unavailable = 3,
+
+    /// <summary>More than one distinct context candidate survives and none can be selected.</summary>
+    Ambiguous = 4,
+
+    /// <summary>Required context sources disagree, such as a Portable PDB whose identity contradicts the module.</summary>
+    Conflict = 5,
+
+    /// <summary>A required context artifact is malformed.</summary>
+    Invalid = 6,
+}
+
+/// <summary>Freezes one caller-owned scoped-context acquisition: a typed disposition and, when exact, the request.</summary>
+/// <remarks>
+/// The envelope carries what the host actually established before projection. An exact acquisition retains one
+/// complete projection request; a non-exact acquisition retains only its disposition, because a partially
+/// acquired context must stop on the context axis rather than pretend to be a projectable chain.
+/// </remarks>
+public sealed class StaticFieldV2ScopedContextAcquisition : IEquatable<StaticFieldV2ScopedContextAcquisition>
+{
+    private const string CanonicalDomain = "static-field-v2-pipeline-scoped-context-acquisition";
+    private const int CanonicalSchemaVersion = 1;
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    private StaticFieldV2ScopedContextAcquisition(
+        StaticFieldV2ScopedContextAcquisitionDisposition disposition,
+        StaticFieldV2ScopedContextRequest? request)
+    {
+        Disposition = disposition;
+        Request = request;
+
+        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
+        writer.WriteInt32((int)disposition);
+        ExpressionV2ContractEncoding.WriteOptionalDigest(writer, request?.Sha256);
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets how the host's own context acquisition ended.</summary>
+    public StaticFieldV2ScopedContextAcquisitionDisposition Disposition { get; }
+
+    /// <summary>Gets the complete projection request only for an exact acquisition, otherwise null.</summary>
+    public StaticFieldV2ScopedContextRequest? Request { get; }
+
+    /// <summary>Gets a defensive copy of the fixed-reference canonical acquisition bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
+
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical acquisition.</summary>
+    public string Sha256 { get; }
+
+    /// <summary>Tests canonical equality between two acquisition envelopes.</summary>
+    /// <param name="other">The other acquisition.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
+    public bool Equals(StaticFieldV2ScopedContextAcquisition? other) =>
+        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
+
+    /// <summary>Tests acquisition envelope equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for an acquisition with identical canonical content.</returns>
+    public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ScopedContextAcquisition);
+
+    /// <summary>Computes a deterministic hash code from immutable canonical acquisition content.</summary>
+    /// <returns>A hash code for this canonical acquisition.</returns>
+    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
+
+    /// <summary>Creates one exact acquisition carrying its complete projection request.</summary>
+    /// <param name="request">The complete scoped-context projection request.</param>
+    /// <returns>A sealed exact acquisition envelope.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="request"/> is null.</exception>
+    public static StaticFieldV2ScopedContextAcquisition Exact(StaticFieldV2ScopedContextRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return new StaticFieldV2ScopedContextAcquisition(
+            StaticFieldV2ScopedContextAcquisitionDisposition.Exact,
+            request);
+    }
+
+    /// <summary>Creates one typed non-exact acquisition carrying no projection request.</summary>
+    /// <param name="disposition">The non-exact acquisition disposition.</param>
+    /// <returns>A sealed non-exact acquisition envelope.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The disposition is undefined or exact.</exception>
+    public static StaticFieldV2ScopedContextAcquisition Stopped(
+        StaticFieldV2ScopedContextAcquisitionDisposition disposition)
+    {
+        ExpressionV2ContractEncoding.RequireDefined(disposition, nameof(disposition));
+        if (disposition == StaticFieldV2ScopedContextAcquisitionDisposition.Exact)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(disposition),
+                "An exact acquisition requires its projection request.");
+        }
+        return new StaticFieldV2ScopedContextAcquisition(disposition, null);
+    }
+}
+
 /// <summary>Freezes one caller-supplied scoped-context seam that this composition never acquires itself.</summary>
 /// <remarks>
 /// The seam is a pair of caller-owned delegates rather than eager data, so an explicit route can prove it never
@@ -246,21 +357,21 @@ public sealed class StaticFieldV2PipelineEvidenceLedger : IEquatable<StaticField
 public sealed class StaticFieldV2ScopedContextSource
 {
     private const string CanonicalDomain = "static-field-v2-pipeline-scoped-context-source";
-    private readonly Func<StaticFieldV2ScopedContextRequest> scopedContextRequest;
+    private readonly Func<StaticFieldV2ScopedContextAcquisition> scopedContextAcquisition;
     private readonly Func<DumpSelectedMethodLexicalObservation>? lexicalEnvelope;
 
     private StaticFieldV2ScopedContextSource(
-        Func<StaticFieldV2ScopedContextRequest> scopedContextRequest,
+        Func<StaticFieldV2ScopedContextAcquisition> scopedContextAcquisition,
         Func<DumpSelectedMethodLexicalObservation>? lexicalEnvelope)
     {
-        this.scopedContextRequest = scopedContextRequest;
+        this.scopedContextAcquisition = scopedContextAcquisition;
         this.lexicalEnvelope = lexicalEnvelope;
     }
 
     /// <summary>Gets whether this seam can supply a selected-method lexical envelope.</summary>
     public bool SuppliesLexicalEnvelope => lexicalEnvelope is not null;
 
-    /// <summary>Creates one caller-owned scoped-context seam.</summary>
+    /// <summary>Creates one caller-owned scoped-context seam over an always-exact acquisition.</summary>
     /// <param name="scopedContextRequest">Produces the complete scoped-context projection request.</param>
     /// <param name="lexicalEnvelope">Produces the selected-method lexical envelope, or null when absent.</param>
     /// <returns>A sealed seam whose calls this composition meters.</returns>
@@ -270,10 +381,32 @@ public sealed class StaticFieldV2ScopedContextSource
         Func<DumpSelectedMethodLexicalObservation>? lexicalEnvelope = null)
     {
         ArgumentNullException.ThrowIfNull(scopedContextRequest);
-        return new StaticFieldV2ScopedContextSource(scopedContextRequest, lexicalEnvelope);
+        return new StaticFieldV2ScopedContextSource(
+            () => StaticFieldV2ScopedContextAcquisition.Exact(scopedContextRequest()),
+            lexicalEnvelope);
     }
 
-    internal StaticFieldV2ScopedContextRequest AcquireScopedContextRequest() => scopedContextRequest();
+    /// <summary>Creates one caller-owned scoped-context seam over a typed acquisition envelope.</summary>
+    /// <remarks>
+    /// This factory is named rather than overloaded on <see cref="Create"/> because a delegate whose body only
+    /// throws converts to both delegate shapes, and a poisoned seam must stay unambiguous to declare.
+    /// </remarks>
+    /// <param name="scopedContextAcquisition">
+    /// Produces the host's typed acquisition: an exact envelope carrying the projection request, or a non-exact
+    /// disposition that becomes the recorded context-axis stop without any projection call.
+    /// </param>
+    /// <param name="lexicalEnvelope">Produces the selected-method lexical envelope, or null when absent.</param>
+    /// <returns>A sealed seam whose calls this composition meters.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="scopedContextAcquisition"/> is null.</exception>
+    public static StaticFieldV2ScopedContextSource CreateFromAcquisition(
+        Func<StaticFieldV2ScopedContextAcquisition> scopedContextAcquisition,
+        Func<DumpSelectedMethodLexicalObservation>? lexicalEnvelope = null)
+    {
+        ArgumentNullException.ThrowIfNull(scopedContextAcquisition);
+        return new StaticFieldV2ScopedContextSource(scopedContextAcquisition, lexicalEnvelope);
+    }
+
+    internal StaticFieldV2ScopedContextAcquisition AcquireScopedContext() => scopedContextAcquisition();
 
     internal DumpSelectedMethodLexicalObservation? AcquireLexicalEnvelope() => lexicalEnvelope?.Invoke();
 }
@@ -1969,7 +2102,27 @@ public static class StaticFieldV2ExpressionPipeline
             }
 
             scopedContextCalls++;
-            scopedContext = StaticFieldV2ScopedContextBinder.ProjectContext(source.AcquireScopedContextRequest());
+            var acquisition = source.AcquireScopedContext();
+            if (acquisition.Disposition != StaticFieldV2ScopedContextAcquisitionDisposition.Exact ||
+                acquisition.Request is null)
+            {
+                // A non-exact host acquisition is the recorded context-axis stop itself; the projection binder is
+                // never called over a frame, thread, or Portable PDB the host could not establish exactly.
+                return ContextStop(acquisition.Disposition switch
+                {
+                    StaticFieldV2ScopedContextAcquisitionDisposition.Unavailable =>
+                        DumpExpressionContextOutcome.Unavailable,
+                    StaticFieldV2ScopedContextAcquisitionDisposition.Ambiguous =>
+                        DumpExpressionContextOutcome.Ambiguous,
+                    StaticFieldV2ScopedContextAcquisitionDisposition.Conflict =>
+                        DumpExpressionContextOutcome.Conflict,
+                    StaticFieldV2ScopedContextAcquisitionDisposition.Invalid =>
+                        DumpExpressionContextOutcome.Invalid,
+                    _ => DumpExpressionContextOutcome.Partial,
+                });
+            }
+
+            scopedContext = StaticFieldV2ScopedContextBinder.ProjectContext(acquisition.Request);
             return scopedContext.ResultKind switch
             {
                 StaticFieldV2ScopedContextResultKind.Exact => null,

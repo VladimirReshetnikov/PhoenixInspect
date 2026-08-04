@@ -329,6 +329,66 @@ public sealed class W8V2ExpressionPipelineTests
     }
 
     /// <summary>
+    /// Proves a non-exact host context acquisition is its own typed context-axis stop: every non-exact disposition
+    /// maps onto the independent context axis, the projection binder never runs over evidence the host could not
+    /// establish, the metered seam count still proves the acquisition was consulted exactly once, and an exact
+    /// envelope behaves identically to the always-exact request seam.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Context_acquisition_dispositions_map_onto_the_independent_context_axis()
+    {
+        var world = BuildWorld();
+        var expectations = new[]
+        {
+            (StaticFieldV2ScopedContextAcquisitionDisposition.Partial, DumpExpressionContextOutcome.Partial),
+            (StaticFieldV2ScopedContextAcquisitionDisposition.Unavailable, DumpExpressionContextOutcome.Unavailable),
+            (StaticFieldV2ScopedContextAcquisitionDisposition.Ambiguous, DumpExpressionContextOutcome.Ambiguous),
+            (StaticFieldV2ScopedContextAcquisitionDisposition.Conflict, DumpExpressionContextOutcome.Conflict),
+            (StaticFieldV2ScopedContextAcquisitionDisposition.Invalid, DumpExpressionContextOutcome.Invalid),
+        };
+        foreach (var (disposition, outcome) in expectations)
+        {
+            var stopped = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+                world,
+                "lib::Pipe.Lib.LibHolder.LibAnswer",
+                scopedContext: StaticFieldV2ScopedContextSource.CreateFromAcquisition(
+                    () => StaticFieldV2ScopedContextAcquisition.Stopped(disposition))));
+            Assert.Equal(outcome, stopped.Axes.Context);
+            Assert.Equal(1, stopped.Provenance.EvidenceLedger.ContextCallCount);
+            Assert.Null(stopped.Provenance.ScopedContext);
+
+            // A partial acquisition retains partial completeness; every other stop is a complete non-answer.
+            var expectNoAnswer = disposition != StaticFieldV2ScopedContextAcquisitionDisposition.Partial;
+            AssertNotReachedFrom(stopped, 1, expectNoAnswer);
+            if (!expectNoAnswer)
+            {
+                Assert.Equal(DumpExpressionCompletenessOutcome.Partial, stopped.Axes.Completeness);
+            }
+        }
+
+        // An exact acquisition envelope reaches the same terminal as the always-exact request seam.
+        var exact = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "lib::Pipe.Lib.LibHolder.LibAnswer",
+            scopedContext: StaticFieldV2ScopedContextSource.CreateFromAcquisition(
+                () => StaticFieldV2ScopedContextAcquisition.Exact(ExternAliasContextRequest(world))),
+            literalConstantSource: LiteralSource(7)));
+        Assert.Equal(DumpExpressionContextOutcome.Exact, exact.Axes.Context);
+        Assert.Equal(7, exact.SignedValue);
+
+        Assert.Throws<ArgumentNullException>(() =>
+            StaticFieldV2ScopedContextSource.CreateFromAcquisition(null!));
+        Assert.Throws<ArgumentNullException>(() => StaticFieldV2ScopedContextAcquisition.Exact(null!));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            StaticFieldV2ScopedContextAcquisition.Stopped(
+                StaticFieldV2ScopedContextAcquisitionDisposition.Exact));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            StaticFieldV2ScopedContextAcquisition.Stopped(
+                (StaticFieldV2ScopedContextAcquisitionDisposition)9));
+    }
+
+    /// <summary>
     /// Proves the two profiles are isolated entry points: a static request can never produce a frame answer and a
     /// frame request can never reach the static binders, and neither rejection performs any parse.
     /// </summary>
@@ -529,6 +589,8 @@ public sealed class W8V2ExpressionPipelineTests
             typeof(StaticFieldV2PipelineEvidenceKind),
             typeof(StaticFieldV2PipelineCoverageBoundary),
             typeof(StaticFieldV2PipelineEvidenceLedger),
+            typeof(StaticFieldV2ScopedContextAcquisitionDisposition),
+            typeof(StaticFieldV2ScopedContextAcquisition),
             typeof(StaticFieldV2ScopedContextSource),
             typeof(StaticFieldV2RuntimeSlotFacts),
             typeof(StaticFieldV2LiteralConstantFact),
@@ -554,8 +616,15 @@ public sealed class W8V2ExpressionPipelineTests
             {
                 Assert.Equal(["Evaluate", "EvaluateFrameValue"], publicStatics);
             }
-            else if (type == typeof(StaticFieldV2ScopedContextSource) ||
-                     type == typeof(StaticFieldV2RuntimeSlotFacts) ||
+            else if (type == typeof(StaticFieldV2ScopedContextSource))
+            {
+                Assert.Equal(["Create", "CreateFromAcquisition"], publicStatics);
+            }
+            else if (type == typeof(StaticFieldV2ScopedContextAcquisition))
+            {
+                Assert.Equal(["Exact", "Stopped"], publicStatics);
+            }
+            else if (type == typeof(StaticFieldV2RuntimeSlotFacts) ||
                      type == typeof(StaticFieldV2LiteralConstantFact) ||
                      type == typeof(StaticFieldV2RuntimeEvidenceSource) ||
                      type == typeof(StaticFieldV2SuffixEvaluationSource) ||
@@ -720,7 +789,10 @@ public sealed class W8V2ExpressionPipelineTests
             arguments);
 
     private static StaticFieldV2ScopedContextSource ExternAliasContext(PipelineWorld world) =>
-        StaticFieldV2ScopedContextSource.Create(() => ContextRequest(
+        StaticFieldV2ScopedContextSource.Create(() => ExternAliasContextRequest(world));
+
+    private static StaticFieldV2ScopedContextRequest ExternAliasContextRequest(PipelineWorld world) =>
+        ContextRequest(
             world,
             Scopes([DumpPortablePdbImportFact.ExternAlias(
                 ScopeToken(1),
@@ -728,7 +800,7 @@ public sealed class W8V2ExpressionPipelineTests
                 6,
                 "lib",
                 [0xAB, 0x00],
-                LibAssemblyReferenceToken)])));
+                LibAssemblyReferenceToken)]));
 
     private static StaticFieldV2ScopedContextSource UsingStaticContext(PipelineWorld world)
     {
