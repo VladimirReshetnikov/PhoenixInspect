@@ -2333,7 +2333,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "one-parameter-generic-head-spelled-with-two-arguments-pending-the-invalid-arity-diagnosis"
+        "reason": "the-landed-name-binder-refuses-the-arity-disagreement-as-a-complete-absent-answer-retaining-typed-aritymismatch-rejection-evidence-diverging-from-the-predeclared-invalid-documented-in-attempted-boundary-test"
       },
       "representative": false
     },

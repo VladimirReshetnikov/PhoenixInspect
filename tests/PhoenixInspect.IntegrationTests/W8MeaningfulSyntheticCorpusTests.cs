@@ -452,6 +452,35 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(nullableArgument.PredeclaredAxes, produced.Result.Axes);
         }
 
+        // Incident 23 coordinator-generic-head-arity-disagreement: the pending invalid-arity diagnosis is resolved
+        // by the landed W8.4 decision, not by this runner. The name binder deliberately refuses a source arity that
+        // disagrees with the introduced physical arity as a COMPLETE ABSENT answer that retains its typed
+        // ArityMismatch rejection evidence per partition — richer diagnosable evidence than the prefix-free Invalid
+        // stop the row predeclared before implementation. The produced divergence (typeBinding Absent versus
+        // predeclared Invalid) is the finding; the landed contract and the predeclared row both stay unchanged.
+        var arityDisagreement = manifest.Incidents.Single(
+            static incident => incident.Id == "coordinator-generic-head-arity-disagreement");
+        Assert.Equal("manifest-only", arityDisagreement.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(arityDisagreement))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, arityDisagreement.Shape))
+        {
+            var produced = world.Evaluate(arityDisagreement.Expression, arityDisagreement.ReadWidth);
+            Assert.Equal(
+                "Admitted/NotRequired/NotRequired/NotRequired/Absent/NotReached/NotReached/NotReached/NotReached/" +
+                "NotReached/NotReached/NoAnswer",
+                Describe(produced.Result.Axes));
+            Assert.Equal(DumpExpressionTypeBindingOutcome.Absent, produced.Result.Axes.TypeBinding);
+            Assert.Equal(
+                DumpExpressionTypeBindingOutcome.Invalid,
+                Enum.Parse<DumpExpressionTypeBindingOutcome>(arityDisagreement.ExpectedAxisText("typeBinding")));
+            Assert.Contains(
+                produced.Result.Provenance.ExplicitNameBinding!.PartitionResults,
+                static result =>
+                    result.FirstRejectionReason == StaticFieldV2TypeNameRejectionReason.ArityMismatch);
+            Assert.Null(produced.Result.SignedValue);
+            Assert.NotEqual(arityDisagreement.PredeclaredAxes, produced.Result.Axes);
+        }
+
         // Incident 16 workflow-array-nested-argument-exact-null: the Workflow shape target materializes a second
         // definition of its whole module in a separate collectible load context, and the runner composes every module
         // observation whose content matches the on-disk artifact. Both copies therefore enter the authority, so the
