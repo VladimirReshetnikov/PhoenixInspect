@@ -1165,10 +1165,23 @@ decoded; and the `FrameValueExpressionV1` profile is composed through the pipeli
 its exact memory home and value on the Workflow shape while register-home and frame-generic roots stay typed executable
 non-admissions.
 
-**Remaining:** incidents pending scoped-context/PDB projection, companion poison artifacts, and the wired suffix over a
-real member chain stay manifest-only with precise recorded reasons. The three W8.1-admitted branches are now covered:
-thread-relative and frame-value execute end to end, and the RVA branch reaches its predeclared exact value over the
-corrected fixture (below).
+Scoped-context projection landed in the runner: the evaluation world acquires the paused truth-gate frame and the
+shape's identity-validated Portable PDB through a real `ClrmdDumpSession` exactly as a host would, and maps the
+produced dispositions into the typed scoped-context acquisition envelope the composition added for this purpose. Three
+context incidents now execute with produced axes equal to their predeclared rows and passing counterfactuals, raising
+the executed count to ten: `request-missing-frame-blocks-alias-route` (the declared absent frame is genuinely requested
+and its unavailable observation is the context stop, while the fully qualified control reaches its exact value),
+`batch-partial-pdb-bytes` (the real shape PDB is read through the session's resolver seam observing only a
+pre-ImportScope prefix, and restoring the complete bytes changes the answer), and
+`coordinator-pdb-module-identity-conflict` (the request shape's PDB physically contradicts the coordinator module's
+CodeView identity, and restoring the matching artifact changes the answer). Both Portable-PDB companions are realized
+exactly as their frozen contracts declare — resolver inputs over real artifacts, never fabricated observations.
+
+**Remaining:** the exact-context alias successes additionally need the contextual-route closed construction the
+composition still declares as the `ContextualRouteClosedConstructionDeferred` boundary; the `using static` incidents
+need the lexical-envelope projection; the remaining companion artifacts and cap injections stay manifest-only with
+precise recorded reasons. The three W8.1-admitted branches are now covered: thread-relative and frame-value execute
+end to end, and the RVA branch reaches its predeclared exact value over the corrected fixture (below).
 
 The owner-`VAR` field-signature decoder landed at `0b6bc7a69` and, in doing so, disproved the reason previously
 recorded against the two generic-`VAR` incidents. Real runs show neither is blocked by the decoder: the nullable

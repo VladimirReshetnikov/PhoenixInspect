@@ -1883,8 +1883,8 @@
       },
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "requires-the-truncated-portable-pdb-companion-artifact"
+        "status": "executed",
+        "reason": "the-runner-reads-the-real-shape-pdb-through-the-session-resolver-observing-only-a-pre-importscope-prefix-and-the-partial-acquisition-is-the-typed-context-stop"
       },
       "representative": false
     },
@@ -1975,8 +1975,8 @@
       },
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "requires-the-identity-mismatching-portable-pdb-companion-artifact"
+        "status": "executed",
+        "reason": "the-runner-reads-the-request-shape-pdb-whose-codeview-identity-contradicts-the-coordinator-module-and-the-conflicting-acquisition-is-the-typed-context-stop"
       },
       "representative": false
     },
@@ -2423,8 +2423,8 @@
       },
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "requires-the-second-load-context-companion-artifact"
+        "status": "executed",
+        "reason": "the-workflow-target-loads-its-second-collectible-context-definition-before-the-pause-and-the-double-composed-authority-binds-the-qualified-spelling-ambiguous"
       },
       "representative": false
     },

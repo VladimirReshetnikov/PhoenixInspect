@@ -490,7 +490,7 @@ public sealed class W8MeaningfulSyntheticCorpusTests
                 incident.ReadWidth,
                 incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null,
                 RequestsScopedContext(incident)
-                    ? world.PausedFrameScopedContext(incident.SelectedFrameMode == "requested-but-absent")
+                    ? world.PausedFrameScopedContext(ContextMode(incident))
                     : null);
 
     // A contextual spelling under a declared selected frame consults the scoped-context seam; a fully qualified
@@ -500,6 +500,12 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         incident.SelectedFrameMode != "none" &&
         !incident.Expression.StartsWith("global::", StringComparison.Ordinal);
 
+    private static W8CorpusContextMode ContextMode(W8CorpusIncident incident) =>
+        incident.SelectedFrameMode == "requested-but-absent" ? W8CorpusContextMode.FrameAbsent
+        : incident.PortablePdbInput == "partial" ? W8CorpusContextMode.TruncatedPdb
+        : incident.PortablePdbInput == "conflicting" ? W8CorpusContextMode.MismatchedPdb
+        : W8CorpusContextMode.Exact;
+
     private static W8CorpusEvaluation ApplyCounterfactual(W8CorpusEvaluationWorld world, W8CorpusIncident incident) =>
         incident.CounterfactualAction switch
         {
@@ -507,6 +513,14 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             "evaluate-fully-qualified-control" => world.Evaluate(
                 incident.ControlExpression!,
                 incident.ReadWidth),
+
+            // Restoring the poisoned Portable-PDB companion re-runs the same spelling under the exact context
+            // acquisition, so the recorded difference is the context poison and nothing else.
+            "restore-complete-pdb-bytes" or "restore-matching-module-identity" => world.Evaluate(
+                incident.Expression,
+                incident.ReadWidth,
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null,
+                world.PausedFrameScopedContext()),
             "substitute-closed-type-argument" => world.Evaluate(
                 incident.CounterfactualExpression ?? incident.Expression,
                 incident.ReadWidth),
@@ -596,6 +610,7 @@ public sealed class W8CorpusIncident
         var inputs = element.GetProperty("inputs");
         ArtifactInputs = W8CorpusManifest.ReadStrings(inputs.GetProperty("artifactInputs"));
         SelectedFrameMode = W8CorpusManifest.RequiredString(inputs.GetProperty("selectedFrame"), "mode");
+        PortablePdbInput = W8CorpusManifest.RequiredString(inputs, "portablePdb");
         ExpectedTerminal = element.GetProperty("expectedTerminal").ValueKind == JsonValueKind.Null
             ? null
             : element.GetProperty("expectedTerminal").GetString();
@@ -680,6 +695,9 @@ public sealed class W8CorpusIncident
 
     /// <summary>Gets the predeclared selected-frame input mode of the incident.</summary>
     public string SelectedFrameMode { get; }
+
+    /// <summary>Gets the predeclared Portable-PDB input disposition of the incident.</summary>
+    public string PortablePdbInput { get; }
 
     /// <summary>Gets whether the row declares the paused truth-gate frame's thread as a required input.</summary>
     public bool RequestsPausedFrameThread => SelectedFrameMode == "managed-thread-and-frame";
@@ -947,6 +965,22 @@ internal readonly record struct W8CorpusEvaluation(StaticFieldV2ExpressionResult
 /// bounded ECMA signature grammar. The batch shape additionally binds the referenced named-RVA module that owns the
 /// module-RVA storage. This scaffolding is physical evidence, not a product discovery rule.
 /// </remarks>
+/// <summary>Names the declared context-acquisition circumstances one corpus incident evaluates under.</summary>
+internal enum W8CorpusContextMode
+{
+    /// <summary>The paused truth-gate frame and the shape's own Portable PDB are acquired exactly.</summary>
+    Exact = 1,
+
+    /// <summary>The declared selected frame is requested from the session and is genuinely absent.</summary>
+    FrameAbsent = 2,
+
+    /// <summary>The truncated Portable-PDB companion is read and only a pre-ImportScope prefix is observed.</summary>
+    TruncatedPdb = 3,
+
+    /// <summary>The identity-mismatching Portable-PDB companion from another shape target is read.</summary>
+    MismatchedPdb = 4,
+}
+
 internal sealed class W8CorpusEvaluationWorld : IDisposable
 {
     private const int PublicClassAttributes = 0x0000_0001;
@@ -1095,20 +1129,23 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     /// Builds the scoped-context seam for one incident the way the host would: a real frame selection and
     /// Portable-PDB read over the incident's own dump, mapped into the typed acquisition envelope. A frame the
     /// incident declares as requested-but-absent is actually requested from the session and its unavailable
-    /// observation becomes the typed acquisition stop; nothing is fabricated.
+    /// observation becomes the typed acquisition stop; a declared truncated or identity-mismatching Portable-PDB
+    /// companion is actually read through the session's own resolver path and its partial or conflicting
+    /// observation becomes the stop. Nothing is fabricated.
     /// </summary>
-    /// <param name="frameAbsent">Whether the incident declares a requested-but-absent selected frame.</param>
+    /// <param name="mode">The incident's declared context-acquisition circumstances.</param>
     /// <returns>A caller-owned seam producing one typed scoped-context acquisition per call.</returns>
-    internal StaticFieldV2ScopedContextSource PausedFrameScopedContext(bool frameAbsent = false) =>
-        StaticFieldV2ScopedContextSource.CreateFromAcquisition(() => AcquireScopedContext(frameAbsent));
+    internal StaticFieldV2ScopedContextSource PausedFrameScopedContext(
+        W8CorpusContextMode mode = W8CorpusContextMode.Exact) =>
+        StaticFieldV2ScopedContextSource.CreateFromAcquisition(() => AcquireScopedContext(mode));
 
-    private StaticFieldV2ScopedContextAcquisition AcquireScopedContext(bool frameAbsent)
+    private StaticFieldV2ScopedContextAcquisition AcquireScopedContext(W8CorpusContextMode mode)
     {
         var opened = ClrmdDumpSession.Open(dumpPath);
         Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
         using var contextSession = opened.Value!;
 
-        if (frameAbsent)
+        if (mode == W8CorpusContextMode.FrameAbsent)
         {
             var absent = contextSession.SelectExpressionFrame(DumpSelectedFrameSelector.Create(
                 contextSession.Snapshot,
@@ -1130,9 +1167,28 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         var pdbPath = Path.ChangeExtension(
             W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8" + shape + "ShapeTarget"),
             ".pdb");
-        var observation = contextSession.ReadExpressionPortablePdbContext(
-            frame,
-            [W8ShapeTargetPaths.RequireArtifact(pdbPath)]);
+        var observation = mode switch
+        {
+            // The truncated companion is realized through the session's own resolver seam: the real shape PDB is
+            // read but only a prefix ending before the ImportScope table is observed, so the session's partial
+            // classification is the physical evidence.
+            W8CorpusContextMode.TruncatedPdb => contextSession.ReadExpressionPortablePdbContext(
+                frame,
+                new TruncatedPortablePdbResolver(W8ShapeTargetPaths.RequireArtifact(pdbPath))),
+
+            // The identity-mismatching companion is the request shape's real PDB, whose CodeView identity cannot
+            // match this shape's module, exactly as the companion contract declares.
+            W8CorpusContextMode.MismatchedPdb => contextSession.ReadExpressionPortablePdbContext(
+                frame,
+                [
+                    W8ShapeTargetPaths.RequireArtifact(Path.ChangeExtension(
+                        W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8RequestShapeTarget"),
+                        ".pdb")),
+                ]),
+            _ => contextSession.ReadExpressionPortablePdbContext(
+                frame,
+                [W8ShapeTargetPaths.RequireArtifact(pdbPath)]),
+        };
         if (observation.Status != DumpContextEvidenceStatus.Exact ||
             observation.Facts is not DumpPortablePdbContextFacts facts)
         {
@@ -1156,6 +1212,21 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             classification.TypeDefinition,
             Ancestry,
             Ancestry.ResolutionPortfolio));
+    }
+
+    /// <summary>
+    /// Realizes the truncated-portable-pdb companion contract: the real shape PDB is resolved but only a short
+    /// prefix ending before the ImportScope table is observed, so the session classifies the read as partial
+    /// source evidence rather than this runner asserting partiality.
+    /// </summary>
+    private sealed class TruncatedPortablePdbResolver(string pdbPath) : IDumpPortablePdbArtifactResolver
+    {
+        public ImmutableArray<DumpPortablePdbArtifactRead> Resolve(
+            DumpPortablePdbArtifactResolutionRequest request)
+        {
+            var bytes = ImmutableArray.CreateRange(File.ReadAllBytes(pdbPath));
+            return [DumpPortablePdbArtifactRead.Partial("corpus:truncated-portable-pdb", bytes.Length, bytes[..113])];
+        }
     }
 
     private DumpSelectedFrameObservation? SelectPausedFrame(ClrmdDumpSession contextSession, int pauseMethodToken)
