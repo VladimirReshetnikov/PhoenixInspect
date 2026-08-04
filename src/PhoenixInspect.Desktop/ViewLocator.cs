@@ -36,6 +36,7 @@ public sealed class ViewLocator : IDataTemplate
             WatchTool => new WatchPaneView(),
             ImmediateTool => new ImmediatePaneView(),
             ModulesTool => new ModulesPaneView(),
+            ProcessesTool => new ProcessesPaneView(),
             HeapSearchTool => new HeapSearchPaneView(),
             EvaluateTool => new EvaluatePaneView(),
             ResultTool => new ResultPaneView(),
@@ -55,6 +56,6 @@ public sealed class ViewLocator : IDataTemplate
 
     /// <inheritdoc />
     public bool Match(object? data) => data is
-        CallStackTool or ThreadsTool or LocalsTool or WatchTool or ImmediateTool or ModulesTool or HeapSearchTool
-        or EvaluateTool or ResultTool or WelcomeDocument or SourceDocument;
+        CallStackTool or ThreadsTool or LocalsTool or WatchTool or ImmediateTool or ModulesTool or ProcessesTool
+        or HeapSearchTool or EvaluateTool or ResultTool or WelcomeDocument or SourceDocument;
 }

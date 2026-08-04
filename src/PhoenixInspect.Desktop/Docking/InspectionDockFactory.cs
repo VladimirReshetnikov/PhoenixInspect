@@ -23,6 +23,7 @@ public sealed class InspectionDockFactory : Factory
     private readonly WatchTool watch;
     private readonly ImmediateTool immediate;
     private readonly ModulesTool modules;
+    private readonly ProcessesTool processes;
     private readonly HeapSearchTool heapSearch;
     private readonly EvaluateTool evaluate;
     private readonly ResultTool resultPane;
@@ -35,6 +36,7 @@ public sealed class InspectionDockFactory : Factory
     /// <param name="watch">The watch tool pane.</param>
     /// <param name="immediate">The immediate tool pane.</param>
     /// <param name="modules">The modules tool pane.</param>
+    /// <param name="processes">The processes tool pane.</param>
     /// <param name="heapSearch">The heap-search tool pane.</param>
     /// <param name="evaluate">The evaluation-console tool pane.</param>
     /// <param name="resultPane">The evidence tool pane.</param>
@@ -47,6 +49,7 @@ public sealed class InspectionDockFactory : Factory
         WatchTool watch,
         ImmediateTool immediate,
         ModulesTool modules,
+        ProcessesTool processes,
         HeapSearchTool heapSearch,
         EvaluateTool evaluate,
         ResultTool resultPane,
@@ -58,6 +61,7 @@ public sealed class InspectionDockFactory : Factory
         this.watch = watch ?? throw new ArgumentNullException(nameof(watch));
         this.immediate = immediate ?? throw new ArgumentNullException(nameof(immediate));
         this.modules = modules ?? throw new ArgumentNullException(nameof(modules));
+        this.processes = processes ?? throw new ArgumentNullException(nameof(processes));
         this.heapSearch = heapSearch ?? throw new ArgumentNullException(nameof(heapSearch));
         this.evaluate = evaluate ?? throw new ArgumentNullException(nameof(evaluate));
         this.resultPane = resultPane ?? throw new ArgumentNullException(nameof(resultPane));
@@ -87,7 +91,7 @@ public sealed class InspectionDockFactory : Factory
             Id = "LeftTools",
             Proportion = 0.22,
             Alignment = Alignment.Left,
-            VisibleDockables = CreateList<IDockable>(modules, heapSearch),
+            VisibleDockables = CreateList<IDockable>(modules, processes, heapSearch),
             ActiveDockable = modules,
             DockCapabilityPolicy = new DockCapabilityPolicy(),
         };
@@ -180,6 +184,7 @@ public sealed class InspectionDockFactory : Factory
             [watch.Id] = () => watch,
             [immediate.Id] = () => immediate,
             [modules.Id] = () => modules,
+            [processes.Id] = () => processes,
             [heapSearch.Id] = () => heapSearch,
             [evaluate.Id] = () => evaluate,
             [resultPane.Id] = () => resultPane,
@@ -194,6 +199,9 @@ public sealed class InspectionDockFactory : Factory
 
     /// <summary>Brings the Call Stack pane to the front of its tab group.</summary>
     public void ActivateCallStackPane() => SetActiveDockable(callStack);
+
+    /// <summary>Brings the Processes pane to the front of its tab group.</summary>
+    public void ActivateProcessesPane() => SetActiveDockable(processes);
 
     /// <summary>Adds a source document to the document dock and activates it.</summary>
     /// <param name="document">The document to show.</param>

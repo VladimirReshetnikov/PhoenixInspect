@@ -71,4 +71,11 @@ public interface IShellServices
     /// <param name="frame">The selected frame.</param>
     /// <returns>A task that completes once the pane reflects the frame.</returns>
     Task ShowFrameVariablesAsync(CallStackFrameNode frame);
+
+    /// <summary>
+    /// Attaches to a running .NET process, suspending it for the lifetime of the session, and reloads every pane.
+    /// </summary>
+    /// <param name="processId">The id of the process to attach to.</param>
+    /// <returns>A task that completes once the panes reflect the live session.</returns>
+    Task AttachToProcessAsync(int processId);
 }

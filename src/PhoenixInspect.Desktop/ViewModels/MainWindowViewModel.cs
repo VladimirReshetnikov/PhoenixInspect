@@ -37,6 +37,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         Completion = new CompletionSessionState(this);
         Overview = new OverviewViewModel();
         Modules = new ModulesViewModel(this);
+        Processes = new ProcessesViewModel(this);
         CallStacks = new CallStacksViewModel(this);
         Threads = new ThreadsViewModel(this);
         Locals = new LocalsViewModel(this);
@@ -52,6 +53,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
             new WatchTool(Watch),
             new ImmediateTool(Immediate),
             new ModulesTool(Modules),
+            new ProcessesTool(Processes),
             new HeapSearchTool(HeapObjects),
             new EvaluateTool(Evaluate),
             new ResultTool(Evaluate),
@@ -60,9 +62,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         factory.InitLayout(Layout);
 
         openCommand = new RelayCommand(() => OpenDumpRequested?.Invoke(this, EventArgs.Empty), () => !IsBusy);
-        attachCommand = new RelayCommand(
-            () => AttachToProcessRequested?.Invoke(this, EventArgs.Empty),
-            () => !IsBusy);
+        attachCommand = new RelayCommand(ShowProcesses, () => !IsBusy);
         closeCommand = new RelayCommand(() => _ = CloseDumpAsync(), () => IsDumpOpen && !IsBusy);
         Evaluate.PropertyChanged += (_, e) =>
         {
@@ -88,9 +88,6 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
     /// <remarks>File dialogs need a top-level window, so the view owns the picker and calls back with a path.</remarks>
     public event EventHandler? OpenDumpRequested;
 
-    /// <summary>Raised when the user asks to attach to a process; the view shows the process picker.</summary>
-    public event EventHandler? AttachToProcessRequested;
-
     /// <summary>Gets the docking layout rendered by the window's DockControl.</summary>
     public IRootDock Layout { get; }
 
@@ -99,6 +96,9 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
 
     /// <summary>Gets the modules pane.</summary>
     public ModulesViewModel Modules { get; }
+
+    /// <summary>Gets the processes pane listing attachable .NET processes.</summary>
+    public ProcessesViewModel Processes { get; }
 
     /// <summary>Gets the call-stack pane.</summary>
     public CallStacksViewModel CallStacks { get; }
@@ -130,8 +130,15 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
     /// <summary>Gets the command that prompts for and opens a dump file.</summary>
     public RelayCommand OpenDumpCommand => openCommand;
 
-    /// <summary>Gets the command that prompts for and attaches to a running .NET process.</summary>
+    /// <summary>Gets the command that brings the Processes pane forward with a fresh listing.</summary>
     public RelayCommand AttachToProcessCommand => attachCommand;
+
+    /// <summary>Lists running .NET processes and brings the Processes pane to the front of its tab group.</summary>
+    public void ShowProcesses()
+    {
+        Processes.Refresh();
+        factory.ActivateProcessesPane();
+    }
 
     /// <summary>Gets the command that closes the current dump session.</summary>
     public RelayCommand CloseDumpCommand => closeCommand;
@@ -477,7 +484,7 @@ public sealed class MainWindowViewModel : ObservableObject, IShellServices, ICom
         }
 
         ClearSessionState();
-        SetStatus("Dump session closed.");
+        SetStatus("Session closed. A live-attached process has been resumed.");
     }
 
     /// <inheritdoc />
