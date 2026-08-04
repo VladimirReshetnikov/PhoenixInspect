@@ -588,8 +588,11 @@ public sealed class W8V2StorageStrategyTests
         Assert.Equal(literal.Request, replayLiteral.Request);
         Assert.Equal(literal.CapabilityCallLedger, replayLiteral.CapabilityCallLedger);
         Assert.NotEqual(literal, Project(world, "LitEnum", ConstantInt32, [0x08, 0x00, 0x00, 0x00], withCatalog: true));
+        // Re-frozen when this world's source ends began recording the Constant, PropertyMap, and PropertyPtr table
+        // ends. Those ends are embedded in every FieldDef row identity and so reach this outcome; the literal
+        // decoding itself is unchanged, and the value assertions above pin that independently of the digest.
         Assert.Equal(
-            "9452ab47de754999f808a7d14b51c89485ee681a117cf0e3230a3d2f2ffcc4a8",
+            "939ffdfc436c9626c3c58fcc89b03362ca0a98aba14c66448d90b61fc47dea9c",
             literal.Sha256);
 
         var originalBoundaries = literal.DeclaredCoverageBoundaries;
@@ -922,7 +925,14 @@ public sealed class W8V2StorageStrategyTests
                 typeDefinitionsExamined: totalTypeCount,
                 fieldDefinitionsExamined: fieldObservations.Count,
                 typeDefinitionRowCount: totalTypeCount,
-                fieldDefinitionRowCount: fieldObservations.Count));
+                fieldDefinitionRowCount: fieldObservations.Count,
+
+                // One Constant row per field that declares a default value: the count the catalog must agree with.
+                declaredMemberRowCounts: StaticFieldModuleDeclaredMemberRowCounts.Create(
+                    constantRowCount: fieldObservations.Count(
+                        static field => ((FieldAttributes)field.Attributes & FieldAttributes.HasDefault) != 0),
+                    propertyMapRowCount: 0,
+                    propertyPointerRowCount: 0)));
 
         var typeRows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionRowObservationIdentity>(totalTypeCount);
         typeRows.Add(MetadataTypeDefinitionRowObservationIdentity.Create(
@@ -970,7 +980,11 @@ public sealed class W8V2StorageStrategyTests
         Assert.True(
             fieldCatalog.ResultKind == MetadataFieldDefinitionTableResultKind.Exact,
             $"FieldCatalog={fieldCatalog.ResultKind}/{fieldCatalog.Issue} at {fieldCatalog.RelatedMetadataToken:X8}.");
-        return new StorageWorld(module, authority, fieldCatalog);
+        return new StorageWorld(
+            module,
+            authority,
+            fieldCatalog,
+            MetadataDeclaredMemberSourceEndIdentity.Create(sourceEnds));
     }
 
     private sealed record StorageFieldRow(string Name, int Attributes, ImmutableArray<byte> Signature);
@@ -983,5 +997,50 @@ public sealed class W8V2StorageStrategyTests
     private sealed record StorageWorld(
         StaticFieldMetadataModuleIdentity Module,
         MetadataDefinitionAuthorityCatalogIdentity Authority,
-        MetadataFieldDefinitionTableCatalogIdentity FieldCatalog);
+        MetadataFieldDefinitionTableCatalogIdentity FieldCatalog,
+        MetadataDeclaredMemberSourceEndIdentity DeclaredMemberSourceEnds);
+
+    /// <summary>
+    /// Builds one exact Constant table over this world, giving the named field the requested physical encoding.
+    /// </summary>
+    /// <remarks>
+    /// A complete Constant table proves the pairing in both directions, so every field declaring a default value must
+    /// own a row - not only the field under test. The other rows carry an admissible four-byte Int32 encoding, which
+    /// is all the catalog checks: whether a row's encoding agrees with its field's signature is the projection's
+    /// question, not the table's, and keeping it that way is what lets one fixture serve every literal case.
+    /// </remarks>
+    private static MetadataConstantTableRowIdentity ConstantRowFor(
+        StorageWorld world,
+        string fieldName,
+        int constantTypeCode,
+        ImmutableArray<byte> constantValueBlob)
+    {
+        var defaultFields = world.FieldCatalog.Rows.Where(static row => row.HasDefault).ToArray();
+        var observations = ImmutableArray.CreateBuilder<MetadataConstantRowObservationIdentity>(defaultFields.Length);
+        var requestedIndex = -1;
+        for (var index = 0; index < defaultFields.Length; index++)
+        {
+            var fieldRow = defaultFields[index];
+            var isRequested = string.Equals(fieldRow.Name, fieldName, StringComparison.Ordinal);
+            if (isRequested)
+            {
+                requestedIndex = index;
+            }
+
+            observations.Add(MetadataConstantRowObservationIdentity.Create(
+                metadataModule: world.Module,
+                constantToken: 0x0B00_0000 | (index + 1),
+                constantTypeCode: isRequested ? constantTypeCode : ConstantInt32,
+                parentMetadataToken: fieldRow.Observation.FieldDefinitionToken,
+                constantValueBlob: isRequested ? constantValueBlob : [0x00, 0x00, 0x00, 0x00]));
+        }
+
+        Assert.True(requestedIndex >= 0, $"The world declares no default-valued field named {fieldName}.");
+        var catalog = MetadataConstantTableCatalogIdentity.Create(
+            world.DeclaredMemberSourceEnds,
+            world.FieldCatalog,
+            observations.MoveToImmutable());
+        Assert.Equal(MetadataConstantTableResultKind.Exact, catalog.ResultKind);
+        return catalog.Rows[requestedIndex];
+    }
 }
