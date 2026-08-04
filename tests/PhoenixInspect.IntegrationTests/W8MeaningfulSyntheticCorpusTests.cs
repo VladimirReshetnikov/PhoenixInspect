@@ -353,28 +353,30 @@ public sealed class W8MeaningfulSyntheticCorpusTests
     {
         var manifest = W8CorpusManifest.Load();
 
-        // Incident 34 batch-module-rva-storage: the named-RVA owner module is composed into every portfolio, which
-        // lifts the owner name binding to Exact, but the pipeline's owner type-construction stage still produces
-        // Partial for the cross-module RVA owner over the composed authority, so member lookup and the proven RVA read
-        // are never reached. This diverges both from the predeclared row (a bound Exact member reaching ExactValue)
-        // and from the design decision's intended typeConstruction Exact. Composing the module was necessary but not
-        // sufficient; lifting the cross-module owner construction to Exact is pipeline-side work outside this runner.
-        // Per the corpus discipline the predeclaration is never retuned; the produced divergence is the finding.
+        // Incident 34 batch-module-rva-storage: the named-RVA fixture now declares the framework public key token
+        // its System.Runtime extern always should have carried, so the cross-module owner's System.Object base
+        // resolves, its classification carries a role, the owner constructs Exact at arity zero, member lookup
+        // selects the RVA field, and the separately-proven image-backed read reaches the predeclared exact value
+        // with runtime construction NotRequired. The one remaining divergence is the predeclared row's conflation
+        // of the two construction axes as NotRequired where the pipeline reports the intended typeConstruction
+        // Exact. Per the corpus discipline the predeclaration is never retuned; the produced single-axis divergence
+        // is the finding.
         var moduleRva = manifest.Incidents.Single(static incident => incident.Id == "batch-module-rva-storage");
         using (var snapshot = W8CorpusSnapshot.Materialize(moduleRva))
         using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, moduleRva.Shape))
         {
             var produced = world.Evaluate(moduleRva.Expression, moduleRva.ReadWidth);
             Assert.Equal(
-                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Partial/NotReached/NotReached/NotReached/" +
-                "NotReached/NotReached/Partial",
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/NotRequired/Exact/" +
+                "ExactValue/NotRequested/Complete",
                 Describe(produced.Result.Axes));
             Assert.Equal(DumpExpressionTypeBindingOutcome.Exact, produced.Result.Axes.TypeBinding);
-            Assert.Equal(DumpExpressionTypeConstructionOutcome.Partial, produced.Result.Axes.TypeConstruction);
+            Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, produced.Result.Axes.TypeConstruction);
             Assert.Equal(DumpExpressionTypeConstructionOutcome.NotRequired, moduleRva.PredeclaredAxes.TypeConstruction);
-            Assert.Equal(DumpExpressionMemberLookupOutcome.NotReached, produced.Result.Axes.MemberLookup);
-            Assert.Equal(DumpExpressionValueOutcome.NotReached, produced.Result.Axes.Value);
-            Assert.Null(produced.Result.SignedValue);
+            Assert.Equal(
+                DumpExpressionRuntimeConstructionOutcome.NotRequired,
+                produced.Result.Axes.RuntimeConstruction);
+            Assert.Equal(553941601L, produced.Result.SignedValue);
             Assert.NotEqual(moduleRva.PredeclaredAxes, produced.Result.Axes);
         }
 

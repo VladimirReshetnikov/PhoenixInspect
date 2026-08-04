@@ -1167,8 +1167,8 @@ non-admissions.
 
 **Remaining:** incidents pending scoped-context/PDB projection, companion poison artifacts, and the wired suffix over a
 real member chain stay manifest-only with precise recorded reasons. The three W8.1-admitted branches are now covered:
-thread-relative and frame-value execute end to end, and the RVA branch reaches a documented owner-construction
-boundary (below).
+thread-relative and frame-value execute end to end, and the RVA branch reaches its predeclared exact value over the
+corrected fixture (below).
 
 The owner-`VAR` field-signature decoder landed at `0b6bc7a69` and, in doing so, disproved the reason previously
 recorded against the two generic-`VAR` incidents. Real runs show neither is blocked by the decoder: the nullable
@@ -1179,18 +1179,18 @@ Both `runnerExecution` reasons are corrected to those findings, their predeclare
 divergences are documented with real-run axes. Correcting a stale recorded reason is bookkeeping; retuning a
 predeclared axis would not be.
 
-Two produced-vs-predeclared divergences are documented as findings through the
+Produced-vs-predeclared divergences are documented as findings through the
 `Attempted_incidents_stop_at_their_landed_pipeline_boundaries` test with axes captured from real runs, and the manifest
-rows stay frozen (never retuned). The batch module-RVA incident's owner name-binding lifts to `Exact` once the
-named-RVA owner module is composed (proving composition was necessary), but the pipeline's owner **type-construction
-stays `Partial`** for the cross-module RVA owner over the composed authority, so member lookup and the
-separately-proven RVA read are never reached — composition was necessary but not sufficient, and lifting the
-cross-module owner construction to `Exact` is remaining pipeline-side work. This also refines the earlier design note:
-the twelve axes separate metadata `typeConstruction` from `runtimeConstruction`, and while the intended terminal for a
-`ModuleRva` field on a non-generic owner is `typeConstruction = Exact` / `runtimeConstruction = NotRequired` /
-`storage = Exact` / `value = ExactValue`, the current composed pipeline produces `typeConstruction = Partial`; the
-divergence from both the predeclared row (which conflated the two construction axes as `NotRequired`) and the intended
-terminal is recorded rather than hidden.
+rows stay frozen (never retuned). The batch module-RVA cross-module construction boundary is closed, and its earlier
+"pipeline-side work" hypothesis is corrected by diagnosis: the owner type-construction produced `Partial` because the
+checked-in named-RVA IL fixture's `System.Runtime` extern carried no public key token — a form no compiler output
+reproduces — and a token-free reference cannot identity-bind the strong-named framework definition under the product's
+exact AssemblyRef matching rule, so the fixture owner's `System.Object` base resolved to no composed module and its
+classification carried no role. The fixture is corrected to declare the framework token exactly as compiled references
+do (its deterministic reassembly digest is re-recorded), the matching rule is deliberately unchanged, and the incident
+now reaches its predeclared exact value `i32:553941601` with the intended terminal `typeConstruction = Exact` /
+`runtimeConstruction = NotRequired` / `storage = Exact` / `value = ExactValue`. The row's one remaining divergence is
+the predeclared conflation of the two construction axes as `NotRequired`, recorded rather than hidden.
 
 The constructed-base member-lookup boundary is lifted: member lookup now decodes a retained generic TypeSpec base
 through caller-supplied per-module signature token-resolution catalogs, continues the bounded walk through the exact

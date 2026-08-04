@@ -3289,7 +3289,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "module-rva-owner-composed-lifts-typebinding-to-exact-but-owner-typeconstruction-stays-partial-diverging-from-predeclared-documented-in-attempted-boundary-test"
+        "reason": "reaches-the-predeclared-exact-value-over-the-corrected-public-key-token-fixture-but-owner-typeconstruction-produces-the-intended-exact-where-the-predeclared-row-conflated-the-construction-axes-as-notrequired-documented-in-attempted-boundary-test"
       },
       "representative": false
     },
