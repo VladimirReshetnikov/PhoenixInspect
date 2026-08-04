@@ -1547,6 +1547,8 @@ public sealed class W8MetadataConstructionContractTests
                 "StaticFieldV2ClosedConstructionOutcome.FlattenedArguments",
                 "StaticFieldV2ClosedConstructionOutcome.OwnerConstruction",
                 "StaticFieldV2ConstraintCheckIdentity.Argument",
+                "StaticFieldV2MemberCandidateIdentity.DeclaringConstruction",
+                "StaticFieldV2MemberLookupRequest.OwnerClosedConstruction",
                 "StaticFieldV2RuntimeConstructionCandidate.ClosedArguments",
                 "StaticFieldV2RuntimeValueAcquisitionRequest.DeclaredType",
                 "StaticFieldV2RuntimeValueRequest.DeclaredType",

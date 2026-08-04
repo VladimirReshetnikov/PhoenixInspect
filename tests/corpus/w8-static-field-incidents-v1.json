@@ -1266,7 +1266,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "member-lookup-into-the-constructed-generic-base-produces-partial-diverging-from-predeclared-exact-documented-in-attempted-boundary-test"
+        "reason": "reaches-the-predeclared-exact-value-through-the-declaring-base-construction-but-owner-typeconstruction-produces-exact-at-arity-zero-where-the-predeclared-row-conflated-the-construction-axes-as-notrequired-documented-in-attempted-boundary-test"
       },
       "representative": false
     },

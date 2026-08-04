@@ -53,6 +53,14 @@ public sealed class W8V2MemberLookupTests
 
     private const int LibBaseRid = 2;
 
+    private const int GenRegistryBaseRid = 2;
+    private const int GenDerivedRid = 3;
+    private const int GenDerivedOpenRid = 4;
+    private const int GenDerivedMvarRid = 5;
+    private const int GenDerivedPointerRid = 6;
+    private const int GenCycleARid = 7;
+    private const int GenCycleBRid = 8;
+
     /// <summary>
     /// Proves direct selection, two-level inherited selection with declaring-type retention, derived redeclaration
     /// hiding, per-level provenance, and every physical storage shape of one selected static declaration.
@@ -357,6 +365,157 @@ public sealed class W8V2MemberLookupTests
         Assert.Equal(
             MetadataAncestryAuthorityPortfolioIdentity.MaximumAncestryDepth + 1,
             depthBound.Levels.Length);
+    }
+
+    /// <summary>
+    /// Proves the generic-base continuation: with supplied token-resolution catalogs the walk decodes the retained
+    /// ground base TypeSpec, selects the field physically declared on the substituted base construction, retains
+    /// that declaring construction on the winning candidate, and completes the chain to System.Object — while the
+    /// same request without catalogs keeps the previous incomplete-ancestry partial answer, and a nearer same-name
+    /// declaration still wins without any continuation.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Generic_base_continuation_selects_the_base_declared_field_with_its_construction()
+    {
+        var world = BuildGenericBaseWorld();
+
+        var inherited = LookupGeneric(world, GenDerivedRid, "BaseSentinel");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Exact, inherited.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.None, inherited.Issue);
+        Assert.Equal(MetadataAncestryChainTerminalKind.SystemObjectReached, inherited.AncestryTerminal);
+        Assert.Equal(
+            [TypeToken(GenDerivedRid), TypeToken(GenRegistryBaseRid)],
+            inherited.Levels.Select(static level => level.DeclaringTypeDefinitionToken).ToArray());
+        Assert.Equal([0, 1], inherited.Levels.Select(static level => level.LevelIndex).ToArray());
+
+        var candidate = inherited.SelectedCandidate!;
+        Assert.Equal(TypeToken(GenRegistryBaseRid), candidate.DeclaringTypeDefinition.TypeDefinitionToken);
+        var construction = candidate.DeclaringConstruction!;
+        Assert.NotNull(construction);
+        Assert.Equal(MetadataClosedTypeKind.Named, construction.Kind);
+        Assert.Equal(
+            TypeToken(GenRegistryBaseRid),
+            construction.FinalClassification!.TypeDefinition.TypeDefinitionToken);
+        Assert.Single(construction.FlattenedArguments);
+        Assert.Equal(MetadataClosedTypeKind.Primitive, construction.FlattenedArguments[0].Kind);
+        Assert.Equal(MetadataPrimitiveTypeKind.Int32, construction.FlattenedArguments[0].PrimitiveKind);
+
+        // Without catalogs the same request keeps the previous incomplete-ancestry partial answer.
+        var withoutCatalogs = StaticFieldV2MemberLookup.SelectStaticField(StaticFieldV2MemberLookupRequest.Create(
+            world.App,
+            TypeToken(GenDerivedRid),
+            DumpExpressionIdentifier.Create("BaseSentinel"),
+            world.Ancestry,
+            world.FieldCatalogs,
+            StaticFieldV2AccessibilityMode.QualifiedInspectionBypass));
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, withoutCatalogs.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.AncestryIncomplete, withoutCatalogs.Issue);
+        Assert.Equal(MetadataAncestryChainTerminalKind.GenericBaseReached, withoutCatalogs.AncestryTerminal);
+
+        // A nearer same-name declaration wins on the derived level itself and carries no declaring construction.
+        var nearer = LookupGeneric(world, GenDerivedRid, "Shared");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Exact, nearer.ResultKind);
+        Assert.Single(nearer.Levels);
+        Assert.Equal(TypeToken(GenDerivedRid), nearer.SelectedCandidate!.DeclaringTypeDefinition.TypeDefinitionToken);
+        Assert.Null(nearer.SelectedCandidate.DeclaringConstruction);
+
+        // A complete continued chain that declares the name nowhere is a proven absence, not a partial answer.
+        var absent = LookupGeneric(world, GenDerivedRid, "NeverDeclared");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Absent, absent.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.DeclarationAbsent, absent.Issue);
+        Assert.Equal(3, absent.Levels.Length);
+    }
+
+    /// <summary>
+    /// Proves an owner variable inside a generic base TypeSpec binds only through the supplied owner construction:
+    /// without one the walk stops typed as unbound, and with one the variable substitutes to the exact ordered
+    /// closed argument and the declaring construction carries the substituted vector.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Generic_base_variable_arguments_bind_only_through_the_owner_construction()
+    {
+        var world = BuildGenericBaseWorld();
+
+        var unbound = LookupGeneric(world, GenDerivedOpenRid, "BaseSentinel");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, unbound.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.GenericBaseArgumentUnbound, unbound.Issue);
+        Assert.Null(unbound.SelectedCandidate);
+        Assert.Single(unbound.Levels);
+
+        var ownerClassification = world.Ancestry.ExactClassificationOrDefault(
+            world.App,
+            TypeToken(GenDerivedOpenRid))!;
+        var ownerConstruction = MetadataClosedTypeIdentity.ConstructNamed(
+            [ownerClassification],
+            [MetadataClosedTypeIdentity.Primitive(MetadataPrimitiveTypeKind.String)]);
+        var bound = LookupGeneric(world, GenDerivedOpenRid, "BaseSentinel", ownerConstruction);
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Exact, bound.ResultKind);
+        var construction = bound.SelectedCandidate!.DeclaringConstruction!;
+        Assert.Equal(MetadataPrimitiveTypeKind.String, construction.FlattenedArguments[0].PrimitiveKind);
+    }
+
+    /// <summary>
+    /// Proves every generic-base continuation failure is a distinct typed partial answer: an absent or empty
+    /// token-resolution catalog, an MVAR or pointer form inside the base TypeSpec, and a constructed base cycle
+    /// each stop with their own issue, and none of them claims absence or selects a candidate.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Generic_base_continuation_failures_are_distinct_typed_partial_answers()
+    {
+        var world = BuildGenericBaseWorld();
+
+        // An initialized catalog vector that supplies no catalog for the module cannot decode the base.
+        var noCatalog = StaticFieldV2MemberLookup.SelectStaticField(StaticFieldV2MemberLookupRequest.Create(
+            world.App,
+            TypeToken(GenDerivedRid),
+            DumpExpressionIdentifier.Create("BaseSentinel"),
+            world.Ancestry,
+            world.FieldCatalogs,
+            StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
+            tokenResolutionCatalogs: ImmutableArray<MetadataSignatureTokenResolutionCatalog>.Empty));
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, noCatalog.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.GenericBaseTokenResolutionUnavailable, noCatalog.Issue);
+
+        // A catalog without the referenced definition entry is an incomplete-resolution decode, not a guess.
+        var emptyCatalog = MetadataSignatureTokenResolutionCatalog.Create(
+            world.AppSourceEnds,
+            ImmutableArray<MetadataSignatureTokenResolutionEntry>.Empty);
+        var missingEntry = StaticFieldV2MemberLookup.SelectStaticField(StaticFieldV2MemberLookupRequest.Create(
+            world.App,
+            TypeToken(GenDerivedRid),
+            DumpExpressionIdentifier.Create("BaseSentinel"),
+            world.Ancestry,
+            world.FieldCatalogs,
+            StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
+            tokenResolutionCatalogs: [emptyCatalog]));
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, missingEntry.ResultKind);
+        Assert.Equal(
+            StaticFieldV2MemberLookupIssue.GenericBaseTokenResolutionUnavailable,
+            missingEntry.Issue);
+
+        // An MVAR is never legal in a base TypeSpec position.
+        var methodVariable = LookupGeneric(world, GenDerivedMvarRid, "BaseSentinel");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, methodVariable.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.GenericBaseSignatureInvalid, methodVariable.Issue);
+
+        // A pointer type argument is valid metadata outside the admitted closed base grammar.
+        var pointer = LookupGeneric(world, GenDerivedPointerRid, "BaseSentinel");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, pointer.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.GenericBaseSignatureUnsupported, pointer.Issue);
+
+        // A constructed base chain that revisits a TypeDef coordinate is a typed cycle, not an endless walk.
+        var cycle = LookupGeneric(world, GenCycleARid, "BaseSentinel");
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.Partial, cycle.ResultKind);
+        Assert.Equal(StaticFieldV2MemberLookupIssue.GenericBaseCycleDetected, cycle.Issue);
+
+        foreach (var outcome in new[] { noCatalog, missingEntry, methodVariable, pointer, cycle })
+        {
+            Assert.Null(outcome.SelectedCandidate);
+            Assert.NotEmpty(outcome.Levels);
+        }
     }
 
     /// <summary>Proves two accessible same-name static declarations at one level remain ambiguous.</summary>
@@ -665,7 +824,8 @@ public sealed class W8V2MemberLookupTests
             0,
             true,
             MetadataFieldAccessibility.Public,
-            StaticFieldV2FieldStorageShape.StoredSlot));
+            StaticFieldV2FieldStorageShape.StoredSlot,
+            null));
         Assert.Throws<ArgumentException>(() => StaticFieldV2MemberLookupLevelIdentity.Create(
             new object(),
             0,
@@ -1135,6 +1295,159 @@ public sealed class W8V2MemberLookupTests
                 "Synthetic.LookupStranger").ContainingAssembly);
     }
 
+    private static StaticFieldV2MemberLookupOutcome LookupGeneric(
+        GenericBaseWorld world,
+        int typeRowId,
+        string fieldName,
+        MetadataClosedTypeIdentity? ownerClosedConstruction = null) =>
+        StaticFieldV2MemberLookup.SelectStaticField(StaticFieldV2MemberLookupRequest.Create(
+            world.App,
+            TypeToken(typeRowId),
+            DumpExpressionIdentifier.Create(fieldName),
+            world.Ancestry,
+            world.FieldCatalogs,
+            StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
+            tokenResolutionCatalogs: world.TokenCatalogs,
+            ownerClosedConstruction: ownerClosedConstruction));
+
+    private static GenericBaseWorld BuildGenericBaseWorld()
+    {
+        var core = BuildModule(
+            W8CompilerNameMappingContractTests.CreateMetadataModule(0x6800, '1', "Synthetic.LookupCore"),
+            [
+                Type("System", "Object", PublicClass, null),
+                Type("System", "ValueType", PublicClass, TypeToken(2)),
+                Type("System", "Enum", PublicClass, TypeToken(3)),
+                Type("System", "Delegate", PublicClass, TypeToken(2)),
+                Type("System", "MulticastDelegate", PublicClass, TypeToken(5)),
+            ]);
+
+        // Base TypeSpec blobs: GENERICINST CLASS TypeDef(RegistryBase`1) with one I4, VAR 0, MVAR 0, or PTR I4
+        // argument, and GENERICINST CLASS TypeDef(CycleB`1) with one I4 argument for the constructed cycle.
+        var app = BuildModule(
+            W8CompilerNameMappingContractTests.CreateMetadataModule(0x6900, '7', "Synthetic.LookupGen"),
+            [
+                Type(
+                    "Synthetic.LookupGen",
+                    "RegistryBase`1",
+                    PublicClass,
+                    0x0100_0001,
+                    fields:
+                    [
+                        Field("BaseSentinel", FieldPublic | FieldStatic),
+                        Field("Shared", FieldPublic | FieldStatic),
+                    ]),
+                Type(
+                    "Synthetic.LookupGen",
+                    "DerivedRegistry",
+                    PublicClass,
+                    0x1B00_0001,
+                    fields: [Field("Shared", FieldPublic | FieldStatic)]),
+                Type("Synthetic.LookupGen", "DerivedOpen`1", PublicClass, 0x1B00_0002),
+                Type("Synthetic.LookupGen", "DerivedMvar", PublicClass, 0x1B00_0003),
+                Type("Synthetic.LookupGen", "DerivedPointer", PublicClass, 0x1B00_0004),
+                Type("Synthetic.LookupGen", "CycleA", PublicClass, 0x1B00_0005),
+                Type("Synthetic.LookupGen", "CycleB`1", PublicClass, TypeToken(GenCycleARid)),
+            ],
+            typeReferences: module =>
+            [
+                W8MetadataAncestryAuthorityContractTests.TypeReferenceRow(
+                    module,
+                    1,
+                    "System",
+                    "Object",
+                    0x2300_0001),
+            ],
+            assemblyReferences: module =>
+            [
+                W8MetadataAncestryAuthorityContractTests.AssemblyReferenceRow(module, 1, "Synthetic.LookupCore"),
+            ],
+            typeSpecifications: module =>
+            [
+                MetadataTypeSpecificationRowObservationIdentity.Create(
+                    module,
+                    0x1B00_0001,
+                    [0x15, 0x12, 0x08, 0x01, 0x08]),
+                MetadataTypeSpecificationRowObservationIdentity.Create(
+                    module,
+                    0x1B00_0002,
+                    [0x15, 0x12, 0x08, 0x01, 0x13, 0x00]),
+                MetadataTypeSpecificationRowObservationIdentity.Create(
+                    module,
+                    0x1B00_0003,
+                    [0x15, 0x12, 0x08, 0x01, 0x1E, 0x00]),
+                MetadataTypeSpecificationRowObservationIdentity.Create(
+                    module,
+                    0x1B00_0004,
+                    [0x15, 0x12, 0x08, 0x01, 0x0F, 0x08]),
+                MetadataTypeSpecificationRowObservationIdentity.Create(
+                    module,
+                    0x1B00_0005,
+                    [0x15, 0x12, 0x20, 0x01, 0x08]),
+            ],
+            genericParameters: module =>
+            [
+                MetadataGenericParameterRowObservationIdentity.Create(
+                    module,
+                    0x2A00_0001,
+                    number: 0,
+                    flags: 0,
+                    ownerMetadataToken: TypeToken(GenRegistryBaseRid),
+                    name: "TRegion"),
+                MetadataGenericParameterRowObservationIdentity.Create(
+                    module,
+                    0x2A00_0002,
+                    number: 0,
+                    flags: 0,
+                    ownerMetadataToken: TypeToken(GenDerivedOpenRid),
+                    name: "T"),
+                MetadataGenericParameterRowObservationIdentity.Create(
+                    module,
+                    0x2A00_0003,
+                    number: 0,
+                    flags: 0,
+                    ownerMetadataToken: TypeToken(GenCycleBRid),
+                    name: "TC"),
+            ]);
+
+        var ancestry = BuildAncestry(core, app);
+        var byModule = new[] { core, app }.ToDictionary(static built => built.Module);
+        var catalogs = ImmutableArray.CreateRange(
+            ancestry.Entries.Select(entry => byModule[entry.SourceModule].FieldCatalog));
+
+        // The token-resolution catalog supplies exactly the definitions the base blobs reference, the way a host
+        // producer would derive them from the same authority evidence.
+        var registryClassification = ancestry.ExactClassificationOrDefault(
+            app.Module,
+            TypeToken(GenRegistryBaseRid))!;
+        var cycleClassification = ancestry.ExactClassificationOrDefault(app.Module, TypeToken(GenCycleBRid))!;
+        var appSourceEnds = app.Authority.SourceEnds;
+        var tokenCatalog = MetadataSignatureTokenResolutionCatalog.Create(
+            appSourceEnds,
+            [
+                MetadataSignatureTokenResolutionEntry.Named(
+                    MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(registryClassification),
+                    [registryClassification]),
+                MetadataSignatureTokenResolutionEntry.Named(
+                    MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(cycleClassification),
+                    [cycleClassification]),
+            ]);
+        Assert.Equal(MetadataSignatureTokenResolutionCatalogResultKind.Exact, tokenCatalog.ResultKind);
+        return new GenericBaseWorld(
+            app.Module,
+            ancestry,
+            catalogs,
+            [tokenCatalog],
+            appSourceEnds);
+    }
+
+    private sealed record GenericBaseWorld(
+        StaticFieldMetadataModuleIdentity App,
+        MetadataAncestryAuthorityPortfolioIdentity Ancestry,
+        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> FieldCatalogs,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> TokenCatalogs,
+        MetadataSourceEndIdentity AppSourceEnds);
+
     private static LookupWorld BuildDepthBoundWorld()
     {
         const int depthCap = MetadataAncestryAuthorityPortfolioIdentity.MaximumAncestryDepth;
@@ -1231,12 +1544,15 @@ public sealed class W8V2MemberLookupTests
         Func<StaticFieldMetadataModuleIdentity,
             ImmutableArray<MetadataTypeSpecificationRowObservationIdentity>>? typeSpecifications = null,
         Func<StaticFieldMetadataModuleIdentity,
-            ImmutableArray<MetadataInterfaceImplementationRowObservationIdentity>>? interfaceImplementations = null)
+            ImmutableArray<MetadataInterfaceImplementationRowObservationIdentity>>? interfaceImplementations = null,
+        Func<StaticFieldMetadataModuleIdentity,
+            ImmutableArray<MetadataGenericParameterRowObservationIdentity>>? genericParameters = null)
     {
         var typeReferenceRows = typeReferences?.Invoke(module) ?? [];
         var assemblyReferenceRows = assemblyReferences?.Invoke(module) ?? [];
         var typeSpecificationRows = typeSpecifications?.Invoke(module) ?? [];
         var interfaceRows = interfaceImplementations?.Invoke(module) ?? [];
+        var genericParameterRows = genericParameters?.Invoke(module) ?? [];
         var totalTypeCount = namedTypes.Length + 1;
 
         var fieldObservations = ImmutableArray.CreateBuilder<MetadataFieldDefinitionRowObservationIdentity>();
@@ -1297,7 +1613,8 @@ public sealed class W8V2MemberLookupTests
                 assemblyReferenceRowCount: assemblyReferenceRows.Length,
                 methodDefinitionRowCount: methodObservations.Count,
                 interfaceImplementationRowCount: interfaceRows.Length,
-                nestedClassRowCount: nestedClassRows.Count));
+                nestedClassRowCount: nestedClassRows.Count,
+                genericParameterRowCount: genericParameterRows.Length));
 
         var typeRows = ImmutableArray.CreateBuilder<MetadataTypeDefinitionRowObservationIdentity>(totalTypeCount);
         typeRows.Add(MetadataTypeDefinitionRowObservationIdentity.Create(
@@ -1333,7 +1650,9 @@ public sealed class W8V2MemberLookupTests
             sourceEnds,
             typeDefinitions,
             nestedClassRows.ToImmutable());
-        var genericParameters = MetadataGenericParameterPhysicalTableCatalogIdentity.Create(sourceEnds, default);
+        var genericParameterCatalog = MetadataGenericParameterPhysicalTableCatalogIdentity.Create(
+            sourceEnds,
+            genericParameterRows.IsEmpty ? default : genericParameterRows);
         var methods = MetadataMethodDefinitionTableCatalogIdentity.Create(
             typeDefinitions,
             methodObservations.Count == 0 ? default : methodObservations.ToImmutable());
@@ -1341,7 +1660,7 @@ public sealed class W8V2MemberLookupTests
         var authority = MetadataDefinitionAuthorityCatalogIdentity.Create(
             typeDefinitions,
             nestedClasses,
-            genericParameters,
+            genericParameterCatalog,
             methods);
         Assert.Equal(MetadataDefinitionAuthorityResultKind.Exact, authority.ResultKind);
 

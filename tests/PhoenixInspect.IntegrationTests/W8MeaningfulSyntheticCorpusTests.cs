@@ -378,10 +378,13 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(moduleRva.PredeclaredAxes, produced.Result.Axes);
         }
 
-        // Incident 11 coordinator-derived-owner-base-field: the non-generic derived owner constructs Exact at arity
-        // zero, but member lookup of the field inherited from its closed generic base produces Partial over the landed
-        // authority, so the run stops before the base slot is read. The row predeclares typeConstruction NotRequired
-        // and an Exact member reaching ExactValue; the produced divergence is the reported finding.
+        // Incident 11 coordinator-derived-owner-base-field: member lookup now crosses the closed generic base
+        // through the supplied token-resolution catalogs, selects BaseSentinel with its declaring construction
+        // RegistryBase<WestRegion>, targets that construction for runtime selection and storage, and reaches the
+        // predeclared exact value. The one remaining divergence is the predeclared row's conflation of the two
+        // construction axes as NotRequired: the pipeline constructs the non-generic spelled owner Exact at arity
+        // zero, exactly as the module-RVA incident documents for its owner. The predeclaration is never retuned;
+        // the produced single-axis divergence is the finding.
         var derivedBase = manifest.Incidents.Single(
             static incident => incident.Id == "coordinator-derived-owner-base-field");
         using (var snapshot = W8CorpusSnapshot.Materialize(derivedBase))
@@ -389,12 +392,26 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         {
             var produced = world.Evaluate(derivedBase.Expression, derivedBase.ReadWidth);
             Assert.Equal(
-                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Partial/NotReached/NotReached/" +
-                "NotReached/NotReached/Partial",
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/Exact/Exact/" +
+                "ExactValue/NotRequested/Complete",
                 Describe(produced.Result.Axes));
-            Assert.Equal(DumpExpressionMemberLookupOutcome.Partial, produced.Result.Axes.MemberLookup);
+            Assert.Equal(DumpExpressionMemberLookupOutcome.Exact, produced.Result.Axes.MemberLookup);
             Assert.Equal(DumpExpressionMemberLookupOutcome.Exact, DecodeMemberLookup(derivedBase));
-            Assert.Null(produced.Result.SignedValue);
+            Assert.Equal(
+                DumpExpressionTypeConstructionOutcome.NotRequired,
+                derivedBase.PredeclaredAxes.TypeConstruction);
+            Assert.Equal(
+                DumpExpressionTypeConstructionOutcome.Exact,
+                produced.Result.Axes.TypeConstruction);
+            Assert.Equal(1895826187L, produced.Result.SignedValue);
+
+            // The winning candidate retains the exact substituted declaring construction of the generic base.
+            var declaring = produced.Result.Provenance.MemberLookup!.SelectedCandidate!.DeclaringConstruction!;
+            Assert.NotNull(declaring);
+            Assert.EndsWith(
+                "RegistryBase`1",
+                declaring.FinalClassification!.TypeDefinition.TableRow.Observation.TypeName,
+                StringComparison.Ordinal);
             Assert.NotEqual(derivedBase.PredeclaredAxes, produced.Result.Axes);
         }
 
@@ -926,7 +943,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs,
         MetadataNamedTypeDefinitionChainPortfolioIdentity chainPortfolio,
         MetadataAncestryAuthorityPortfolioIdentity ancestry,
-        MetadataConstraintTargetResolutionPortfolioIdentity constraints)
+        MetadataConstraintTargetResolutionPortfolioIdentity constraints,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenResolutionCatalogs)
     {
         Session = session;
         this.rawReadTarget = rawReadTarget;
@@ -937,6 +955,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         ChainPortfolio = chainPortfolio;
         Ancestry = ancestry;
         Constraints = constraints;
+        TokenResolutionCatalogs = tokenResolutionCatalogs;
     }
 
     internal StaticFieldV2RuntimeAcquisitionSession Session { get; }
@@ -950,6 +969,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     internal MetadataAncestryAuthorityPortfolioIdentity Ancestry { get; }
 
     internal MetadataConstraintTargetResolutionPortfolioIdentity Constraints { get; }
+
+    internal ImmutableArray<MetadataSignatureTokenResolutionCatalog> TokenResolutionCatalogs { get; }
 
     private ProducedModule Primary => modules[0];
 
@@ -1019,7 +1040,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                         ],
                         chainPortfolio,
                         ancestry,
-                        constraints);
+                        constraints,
+                        BuildTokenResolutionCatalogs(ancestry));
                 }
                 catch
                 {
@@ -1095,7 +1117,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             Constraints,
             FieldCatalogs,
             runtimeEvidence: evidence,
-            capabilityProbes: probes));
+            capabilityProbes: probes,
+            signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
         return new W8CorpusEvaluation(result, acquiredSlotAddress);
     }
 
@@ -1108,7 +1131,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             Ancestry,
             Constraints,
             FieldCatalogs,
-            capabilityProbes: probes));
+            capabilityProbes: probes,
+            signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
         return new W8CorpusEvaluation(result, null);
     }
 
@@ -1484,6 +1508,128 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
 
         throw new InvalidOperationException(
             $"The shape type {namespaceName}.{typeName} declares no method {methodName}.");
+    }
+
+    private static readonly BoundedEcmaSignatureLimits TokenScanLimits = new(
+        StaticFieldV2Limits.MaximumTypeSpecificationByteCount,
+        StaticFieldV2Limits.MaximumTypeSpecificationDepth,
+        StaticFieldV2Limits.MaximumRawTypeSignatureNodeCount,
+        StaticFieldV2Limits.MaximumTypeSpecificationArgumentCount,
+        StaticFieldV2Limits.MaximumGenericParameterCount,
+        StaticFieldV2Limits.MaximumParameterCount,
+        StaticFieldV2Limits.MaximumLocalCount,
+        StaticFieldV2Limits.MaximumArrayRank);
+
+    /// <summary>
+    /// Builds one signature token-resolution catalog per portfolio module that retains a generic TypeSpec base,
+    /// supplying exactly the entries those base blobs reference. This is the host-side acquisition role: the
+    /// catalogs are derived from the already-produced authority portfolios and the physical blob bytes, so member
+    /// lookup can decode a retained generic base without any new metadata read.
+    /// </summary>
+    private static ImmutableArray<MetadataSignatureTokenResolutionCatalog> BuildTokenResolutionCatalogs(
+        MetadataAncestryAuthorityPortfolioIdentity ancestry)
+    {
+        var catalogs = ImmutableArray.CreateBuilder<MetadataSignatureTokenResolutionCatalog>();
+        foreach (var entry in ancestry.Entries)
+        {
+            var module = entry.SourceModule;
+            var tokens = new SortedSet<int>();
+            foreach (var baseEdge in entry.BaseEdges)
+            {
+                if (baseEdge.GenericBaseRow is { } baseRow)
+                {
+                    CollectSignatureTokens(baseRow.Observation.SignatureBytes, tokens);
+                }
+            }
+            if (tokens.Count == 0)
+            {
+                continue;
+            }
+
+            var entries = ImmutableArray.CreateBuilder<MetadataSignatureTokenResolutionEntry>();
+            foreach (var token in tokens)
+            {
+                if (ResolveTokenEntry(ancestry, module, token) is { } resolved)
+                {
+                    entries.Add(resolved);
+                }
+            }
+            var authority = entry.ResolutionEntry.ChainEntry.ChainCatalog.DefinitionAuthority;
+            catalogs.Add(MetadataSignatureTokenResolutionCatalog.Create(
+                authority.SourceEnds,
+                entries.ToImmutable()));
+        }
+        return catalogs.ToImmutable();
+    }
+
+    private static void CollectSignatureTokens(ImmutableArray<byte> signatureBytes, SortedSet<int> tokens)
+    {
+        var sink = new TokenCollectingSink(tokens);
+        BoundedEcmaSignatureProjection.Decode(
+            signatureBytes.AsSpan(),
+            BoundedEcmaSignatureForm.TypeSpecification,
+            TokenScanLimits,
+            sink);
+    }
+
+    private static MetadataSignatureTokenResolutionEntry? ResolveTokenEntry(
+        MetadataAncestryAuthorityPortfolioIdentity ancestry,
+        StaticFieldMetadataModuleIdentity module,
+        int token) =>
+        (token >> 24) switch
+        {
+            0x02 when BuildClassificationChain(ancestry, module, token) is { IsDefault: false } chain =>
+                MetadataSignatureTokenResolutionEntry.Named(
+                    MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(chain[^1]),
+                    chain),
+            0x01 when ancestry.ResolutionPortfolio.ExactResolutionOrDefault(module, token) is
+                {
+                    Disposition: MetadataTypeReferenceResolutionDispositionKind.Resolved,
+                    TargetModule: { } targetModule,
+                    TargetTypeDefinition: { } targetDefinition,
+                } resolution &&
+                BuildClassificationChain(ancestry, targetModule, targetDefinition.TypeDefinitionToken) is
+                { IsDefault: false } targetChain =>
+                MetadataSignatureTokenResolutionEntry.Named(
+                    MetadataTypeDefOrRefTargetIdentity.FromTypeReference(resolution, targetChain[^1]),
+                    targetChain),
+            0x1B => MetadataSignatureTokenResolutionEntry.TypeSpecification(
+                MetadataTypeSpecificationRowReferenceIdentity.Create(module, token)),
+            _ => null,
+        };
+
+    private static ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> BuildClassificationChain(
+        MetadataAncestryAuthorityPortfolioIdentity ancestry,
+        StaticFieldMetadataModuleIdentity module,
+        int typeDefinitionToken)
+    {
+        var chain = new List<MetadataTypeDefinitionSemanticClassificationIdentity>();
+        var current = ancestry.ExactClassificationOrDefault(module, typeDefinitionToken);
+        while (current is not null)
+        {
+            chain.Insert(0, current);
+            if (current.TypeDefinition.EnclosingTypeDefinitionToken is not { } enclosing)
+            {
+                return [.. chain];
+            }
+            current = ancestry.ExactClassificationOrDefault(module, enclosing);
+        }
+        return default;
+    }
+
+    private sealed class TokenCollectingSink : IBoundedEcmaSignatureNodeSink
+    {
+        private readonly SortedSet<int> tokens;
+
+        internal TokenCollectingSink(SortedSet<int> tokens) => this.tokens = tokens;
+
+        public void Add(in BoundedEcmaSignatureNodeEvent node)
+        {
+            if (node.MetadataToken != 0)
+            {
+                tokens.Add(node.MetadataToken);
+            }
+        }
     }
 
     private static SyntheticCoreModule BuildSyntheticCoreModule(

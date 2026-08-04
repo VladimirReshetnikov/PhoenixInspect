@@ -130,6 +130,27 @@ public enum StaticFieldV2MemberLookupIssue
 
     /// <summary>The supplied interface-implementation authority portfolio prerequisite was invalid.</summary>
     InterfaceImplementationPortfolioInvalid = 24,
+
+    /// <summary>A generic base hop needed a token-resolution catalog the request did not supply exactly.</summary>
+    GenericBaseTokenResolutionUnavailable = 25,
+
+    /// <summary>A retained generic base TypeSpec decoded as malformed or names a form invalid in a base position.</summary>
+    GenericBaseSignatureInvalid = 26,
+
+    /// <summary>A retained generic base TypeSpec names valid metadata outside the admitted closed base grammar.</summary>
+    GenericBaseSignatureUnsupported = 27,
+
+    /// <summary>A generic base TypeSpec references an owner variable the current construction does not bind.</summary>
+    GenericBaseArgumentUnbound = 28,
+
+    /// <summary>A generic base head resolved to a definition without an exact authority classification.</summary>
+    GenericBaseClassificationAbsent = 29,
+
+    /// <summary>The accumulated constructed base chain reached the declared ancestry depth bound.</summary>
+    GenericBaseDepthBoundReached = 30,
+
+    /// <summary>The constructed base chain revisited one physical TypeDef coordinate.</summary>
+    GenericBaseCycleDetected = 31,
 }
 
 /// <summary>Classifies the physical storage shape of one selected static-field declaration.</summary>
@@ -282,7 +303,8 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
         int levelIndex,
         bool isAccessible,
         MetadataFieldAccessibility effectiveAccessibility,
-        StaticFieldV2FieldStorageShape storageShape)
+        StaticFieldV2FieldStorageShape storageShape,
+        MetadataClosedTypeIdentity? declaringConstruction)
     {
         FieldRow = fieldRow;
         DeclaringTypeDefinition = declaringTypeDefinition;
@@ -290,6 +312,7 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
         IsAccessible = isAccessible;
         EffectiveAccessibility = effectiveAccessibility;
         StorageShape = storageShape;
+        DeclaringConstruction = declaringConstruction;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(fieldRow.Sha256, nameof(fieldRow));
@@ -298,6 +321,14 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
         writer.WriteBoolean(isAccessible);
         writer.WriteInt32((int)effectiveAccessibility);
         writer.WriteInt32((int)storageShape);
+
+        // The declaring construction is appended only when a constructed generic base level declared the candidate,
+        // so every candidate declared on a definition-only level keeps its exact version-1 bytes and frozen digest.
+        if (declaringConstruction is not null)
+        {
+            writer.WriteBoolean(true);
+            writer.WriteSha256(declaringConstruction.Sha256, nameof(declaringConstruction));
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -319,6 +350,15 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
 
     /// <summary>Gets the physical storage shape decoded from this candidate's FieldAttributes.</summary>
     public StaticFieldV2FieldStorageShape StorageShape { get; }
+
+    /// <summary>Gets the exact closed construction of the declaring generic base level, otherwise null.</summary>
+    /// <remarks>
+    /// A candidate declared on the requested owner or on a definition-only named base level retains null here,
+    /// because the spelled owner construction already carries its constructed identity. A non-null value names the
+    /// exact substituted construction of the generic TypeSpec base level that physically declared this candidate,
+    /// and later storage selection must target that construction rather than the spelled owner.
+    /// </remarks>
+    public MetadataClosedTypeIdentity? DeclaringConstruction { get; }
 
     /// <summary>Gets the exact physical FieldDef token of this candidate.</summary>
     public int FieldDefinitionToken => FieldRow.FieldDefinitionToken;
@@ -354,7 +394,8 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
         int levelIndex,
         bool isAccessible,
         MetadataFieldAccessibility effectiveAccessibility,
-        StaticFieldV2FieldStorageShape storageShape)
+        StaticFieldV2FieldStorageShape storageShape,
+        MetadataClosedTypeIdentity? declaringConstruction)
     {
         if (!StaticFieldV2MemberLookupOutcome.OwnsRowMintCapability(mintCapability))
         {
@@ -374,6 +415,14 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
                 "A member candidate must retain the physical declaring TypeDef of its FieldDef row.",
                 nameof(declaringTypeDefinition));
         }
+        if (declaringConstruction is not null &&
+            (declaringConstruction.FinalClassification is not { } finalClassification ||
+             !finalClassification.TypeDefinition.Equals(declaringTypeDefinition)))
+        {
+            throw new ArgumentException(
+                "A declaring construction must name the exact declaring TypeDef of its FieldDef row.",
+                nameof(declaringConstruction));
+        }
 
         return new StaticFieldV2MemberCandidateIdentity(
             fieldRow,
@@ -381,7 +430,8 @@ public sealed class StaticFieldV2MemberCandidateIdentity : IEquatable<StaticFiel
             levelIndex,
             isAccessible,
             effectiveAccessibility,
-            storageShape);
+            storageShape,
+            declaringConstruction);
     }
 }
 
@@ -506,8 +556,11 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
 {
     private const string CanonicalDomain = "static-field-v2-member-lookup-request";
     private const int CanonicalSchemaVersion = 2;
+    private const int TokenResolutionCatalogsFieldTag = 1;
+    private const int OwnerClosedConstructionFieldTag = 2;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
+    private readonly ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenResolutionCatalogs;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2MemberLookupRequest(
@@ -519,7 +572,9 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         StaticFieldV2AccessibilityMode accessibilityMode,
         StaticFieldContainingAssemblyIdentity? requestingAssembly,
         ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants,
-        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio)
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenResolutionCatalogs,
+        MetadataClosedTypeIdentity? ownerClosedConstruction)
     {
         OwnerModule = ownerModule;
         OwnerTypeDefinitionToken = ownerTypeDefinitionToken;
@@ -530,6 +585,8 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         RequestingAssembly = requestingAssembly;
         this.friendAssemblyGrants = friendAssemblyGrants;
         InterfaceImplementationPortfolio = interfaceImplementationPortfolio;
+        this.tokenResolutionCatalogs = tokenResolutionCatalogs;
+        OwnerClosedConstruction = ownerClosedConstruction;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(ownerModule.Sha256, nameof(ownerModule));
@@ -552,6 +609,23 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
             writer.WriteSha256(grant.Sha256, nameof(friendAssemblyGrants));
         }
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, interfaceImplementationPortfolio?.Sha256);
+
+        // The generic-base inputs are appended only when supplied, each behind its distinct field tag, so every
+        // request created without them keeps its exact version-2 byte content and its frozen digest unchanged.
+        if (!tokenResolutionCatalogs.IsDefault)
+        {
+            writer.WriteInt32(TokenResolutionCatalogsFieldTag);
+            writer.WriteInt32(tokenResolutionCatalogs.Length);
+            foreach (var catalog in tokenResolutionCatalogs)
+            {
+                ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
+            }
+        }
+        if (ownerClosedConstruction is not null)
+        {
+            writer.WriteInt32(OwnerClosedConstructionFieldTag);
+            writer.WriteSha256(ownerClosedConstruction.Sha256, nameof(ownerClosedConstruction));
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -588,6 +662,22 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// <summary>Gets the optional interface-implementation portfolio, or null when none was supplied.</summary>
     public MetadataInterfaceImplementationPortfolioIdentity? InterfaceImplementationPortfolio { get; }
 
+    /// <summary>Gets a defensive copy of the optional per-module token-resolution catalogs, default when absent.</summary>
+    /// <remarks>
+    /// The catalogs let this lookup decode a retained generic base TypeSpec and continue the walk through its
+    /// exact substituted construction. When they are absent the walk keeps its previous behavior and a generic
+    /// base terminal remains the incomplete-ancestry partial answer.
+    /// </remarks>
+    public ImmutableArray<MetadataSignatureTokenResolutionCatalog> TokenResolutionCatalogs =>
+        tokenResolutionCatalogs.IsDefault ? default : ExpressionV2ContractEncoding.Copy(tokenResolutionCatalogs);
+
+    /// <summary>Gets the optional exact closed construction of the requested owner, or null when absent.</summary>
+    /// <remarks>
+    /// The construction supplies the ordered closed arguments that bind owner variables inside the requested
+    /// owner's own generic base TypeSpec. A null value admits only fully ground base TypeSpecs on the first hop.
+    /// </remarks>
+    public MetadataClosedTypeIdentity? OwnerClosedConstruction { get; }
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -615,6 +705,15 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// coverage boundary and makes an interface owner examine only itself; supplying it walks the owner's bounded
     /// transitive interface closure after the owner itself.
     /// </param>
+    /// <param name="tokenResolutionCatalogs">
+    /// Optional per-module signature token-resolution catalogs. Supplying them lets the walk decode a retained
+    /// generic base TypeSpec and continue through its exact substituted construction; omitting them keeps the
+    /// previous incomplete-ancestry behavior at a generic base terminal.
+    /// </param>
+    /// <param name="ownerClosedConstruction">
+    /// The optional exact closed construction of the requested owner, supplying the ordered closed arguments
+    /// that bind owner variables inside the owner's own generic base TypeSpec.
+    /// </param>
     /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The owner token is not a TypeDef token or the mode is undefined.</exception>
@@ -628,7 +727,9 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         StaticFieldV2AccessibilityMode accessibilityMode,
         StaticFieldContainingAssemblyIdentity? requestingAssembly = null,
         ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants = default,
-        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null)
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenResolutionCatalogs = default,
+        MetadataClosedTypeIdentity? ownerClosedConstruction = null)
     {
         ArgumentNullException.ThrowIfNull(ownerModule);
         ArgumentNullException.ThrowIfNull(fieldName);
@@ -657,6 +758,13 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
                 nameof(friendAssemblyGrants));
         }
 
+        var resolutionCatalogs = tokenResolutionCatalogs.IsDefault
+            ? default
+            : ExpressionV2ContractEncoding.CopyRequired(
+                tokenResolutionCatalogs,
+                nameof(tokenResolutionCatalogs),
+                StaticFieldV2Limits.MaximumModuleCount);
+
         var catalogs = fieldCatalogs.IsDefault
             ? default
             : ImmutableArray.CreateRange(fieldCatalogs);
@@ -669,7 +777,9 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
             accessibilityMode,
             requestingAssembly,
             grants,
-            interfaceImplementationPortfolio);
+            interfaceImplementationPortfolio,
+            resolutionCatalogs,
+            ownerClosedConstruction);
     }
 
     /// <summary>Tests canonical equality between two member-lookup requests.</summary>
@@ -691,6 +801,9 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
 
     internal ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> FriendAssemblyGrantsCore =>
         friendAssemblyGrants;
+
+    internal ImmutableArray<MetadataSignatureTokenResolutionCatalog> TokenResolutionCatalogsCore =>
+        tokenResolutionCatalogs;
 }
 
 /// <summary>Freezes the complete outcome of one definition-side static-field member lookup.</summary>
@@ -851,7 +964,8 @@ public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2M
         int levelIndex,
         bool isAccessible,
         MetadataFieldAccessibility effectiveAccessibility,
-        StaticFieldV2FieldStorageShape storageShape) =>
+        StaticFieldV2FieldStorageShape storageShape,
+        MetadataClosedTypeIdentity? declaringConstruction = null) =>
         StaticFieldV2MemberCandidateIdentity.Create(
             RowMintCapability,
             fieldRow,
@@ -859,7 +973,8 @@ public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2M
             levelIndex,
             isAccessible,
             effectiveAccessibility,
-            storageShape);
+            storageShape,
+            declaringConstruction);
 
     internal static StaticFieldV2MemberLookupLevelIdentity IssueLevel(
         int levelIndex,
@@ -1059,7 +1174,14 @@ public static class StaticFieldV2MemberLookup
         var plan = isInterfaceOwner && request.InterfaceImplementationPortfolio is { } closurePortfolio
             ? InterfaceLevelPlan(request, chain, closurePortfolio, catalogsByModule)
             : ClassLevelPlan(chain);
-        return Walk(request, boundaries, chain, plan, catalogsByModule, authorityByModule);
+        return Walk(
+            request,
+            boundaries,
+            chain,
+            plan,
+            catalogsByModule,
+            authorityByModule,
+            allowGenericBaseContinuation: !isInterfaceOwner && !request.TokenResolutionCatalogsCore.IsDefault);
     }
 
     private static LevelPlan ClassLevelPlan(MetadataTypeDefinitionAncestryChainIdentity chain)
@@ -1113,7 +1235,8 @@ public static class StaticFieldV2MemberLookup
         MetadataTypeDefinitionAncestryChainIdentity chain,
         LevelPlan plan,
         Dictionary<StaticFieldMetadataModuleIdentity, MetadataFieldDefinitionTableCatalogIdentity> catalogsByModule,
-        Dictionary<StaticFieldMetadataModuleIdentity, MetadataDefinitionAuthorityCatalogIdentity> authorityByModule)
+        Dictionary<StaticFieldMetadataModuleIdentity, MetadataDefinitionAuthorityCatalogIdentity> authorityByModule,
+        bool allowGenericBaseContinuation)
     {
         var name = request.FieldName.DecodedText;
         var levels = ImmutableArray.CreateBuilder<StaticFieldV2MemberLookupLevelIdentity>();
@@ -1125,11 +1248,22 @@ public static class StaticFieldV2MemberLookup
         var observedCount = 0;
         var resolved = false;
 
-        var walkLevels = plan.Levels;
-        for (var levelIndex = 0; levelIndex < walkLevels.Length; levelIndex++)
+        var walkLevels = new List<LookupLevel>(plan.Levels);
+        var complete = plan.IsComplete;
+        var currentChain = chain;
+        var continuationIssue = StaticFieldV2MemberLookupIssue.AncestryIncomplete;
+        int? continuationToken = null;
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var level in walkLevels)
+        {
+            visited.Add(LevelKey(level.SourceModule, level.DeclaringTypeDefinition.TypeDefinitionToken));
+        }
+
+        for (var levelIndex = 0; levelIndex < walkLevels.Count; levelIndex++)
         {
             var walkModule = walkLevels[levelIndex].SourceModule;
             var walkType = walkLevels[levelIndex].DeclaringTypeDefinition;
+            var walkConstruction = walkLevels[levelIndex].DeclaringConstruction;
             var catalog = catalogsByModule[walkModule];
             var authority = authorityByModule[walkModule];
             var fieldRows = catalog.RowsForDeclaringTypeOrEmpty(walkType);
@@ -1160,7 +1294,8 @@ public static class StaticFieldV2MemberLookup
                     levelIndex,
                     accessible,
                     effective,
-                    StorageShape(fieldRow));
+                    StorageShape(fieldRow),
+                    walkConstruction);
                 examined.Add(candidate);
                 if (!accessible)
                 {
@@ -1222,27 +1357,55 @@ public static class StaticFieldV2MemberLookup
                 resolved = true;
                 break;
             }
+
+            // At the last known level, one generic-base continuation may extend the walk before it concludes. The
+            // continuation engages only when the caller supplied token-resolution catalogs, so every request without
+            // them keeps the previous incomplete-ancestry behavior at a generic base terminal.
+            if (levelIndex == walkLevels.Count - 1 &&
+                allowGenericBaseContinuation &&
+                !complete &&
+                currentChain.TerminalKind == MetadataAncestryChainTerminalKind.GenericBaseReached)
+            {
+                var extension = ExtendThroughGenericBase(
+                    request,
+                    currentChain,
+                    walkLevels,
+                    visited,
+                    catalogsByModule,
+                    authorityByModule);
+                if (extension.Issue != StaticFieldV2MemberLookupIssue.None)
+                {
+                    continuationIssue = extension.Issue;
+                    continuationToken = extension.RelatedMetadataToken;
+                    break;
+                }
+
+                walkLevels.AddRange(extension.Levels);
+                currentChain = extension.NextChain!;
+                complete = currentChain.TerminalKind is MetadataAncestryChainTerminalKind.SystemObjectReached
+                    or MetadataAncestryChainTerminalKind.InterfaceRoot
+                    or MetadataAncestryChainTerminalKind.ModulePseudoTypeRoot;
+            }
         }
 
         var consultedLevels = levels.ToImmutable();
         if (!resolved)
         {
-            var complete = plan.IsComplete;
             return StaticFieldV2MemberLookupOutcome.IssueComplete(
                 complete
                     ? StaticFieldV2MemberLookupResultKind.Absent
                     : StaticFieldV2MemberLookupResultKind.Partial,
                 complete
                     ? StaticFieldV2MemberLookupIssue.DeclarationAbsent
-                    : StaticFieldV2MemberLookupIssue.AncestryIncomplete,
+                    : continuationIssue,
                 request,
                 null,
                 consultedLevels,
                 [.. examined],
-                chain.TerminalKind,
+                currentChain.TerminalKind,
                 boundaries,
                 observedCount,
-                null);
+                continuationToken);
         }
 
         if (winningMethodToken != 0)
@@ -1254,7 +1417,7 @@ public static class StaticFieldV2MemberLookup
                 null,
                 consultedLevels,
                 [.. examined],
-                chain.TerminalKind,
+                currentChain.TerminalKind,
                 boundaries,
                 observedCount,
                 winningMethodToken);
@@ -1268,7 +1431,7 @@ public static class StaticFieldV2MemberLookup
                 null,
                 consultedLevels,
                 [.. examined],
-                chain.TerminalKind,
+                currentChain.TerminalKind,
                 boundaries,
                 observedCount,
                 winningInstanceField.FieldDefinitionToken);
@@ -1282,7 +1445,7 @@ public static class StaticFieldV2MemberLookup
                 null,
                 consultedLevels,
                 [.. examined],
-                chain.TerminalKind,
+                currentChain.TerminalKind,
                 boundaries,
                 observedCount,
                 winningStaticFields[0].FieldDefinitionToken);
@@ -1304,7 +1467,7 @@ public static class StaticFieldV2MemberLookup
             selected,
             consultedLevels,
             rejected.ToImmutable(),
-            chain.TerminalKind,
+            currentChain.TerminalKind,
             boundaries,
             observedCount,
             selected.FieldDefinitionToken);
@@ -1658,9 +1821,287 @@ public static class StaticFieldV2MemberLookup
         return MetadataFieldAccessibility.FamilyAndAssembly;
     }
 
+    private static string LevelKey(StaticFieldMetadataModuleIdentity module, int typeDefinitionToken) =>
+        module.Sha256 + "|" + typeDefinitionToken.ToString("x8", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static MetadataSignatureTokenResolutionCatalog? FindTokenResolutionCatalog(
+        StaticFieldV2MemberLookupRequest request,
+        StaticFieldMetadataModuleIdentity module)
+    {
+        foreach (var catalog in request.TokenResolutionCatalogsCore)
+        {
+            if (catalog is not null && catalog.SourceModule.Equals(module))
+            {
+                return catalog;
+            }
+        }
+        return null;
+    }
+
+    private static GenericBaseExtension ExtendThroughGenericBase(
+        StaticFieldV2MemberLookupRequest request,
+        MetadataTypeDefinitionAncestryChainIdentity currentChain,
+        List<LookupLevel> walkLevels,
+        HashSet<string> visited,
+        Dictionary<StaticFieldMetadataModuleIdentity, MetadataFieldDefinitionTableCatalogIdentity> catalogsByModule,
+        Dictionary<StaticFieldMetadataModuleIdentity, MetadataDefinitionAuthorityCatalogIdentity> authorityByModule)
+    {
+        var edges = currentChain.Edges;
+        var edge = edges.IsEmpty ? currentChain.SubjectEdge : edges[^1];
+        if (edge.Kind != MetadataImmediateBaseEdgeKind.TypeSpecification || edge.GenericBaseRow is not { } baseRow)
+        {
+            return GenericBaseExtension.Stopped(
+                StaticFieldV2MemberLookupIssue.GenericBaseSignatureInvalid,
+                edge.ExtendsMetadataToken);
+        }
+
+        var edgeModule = edge.SourceModule;
+        var tokenCatalog = FindTokenResolutionCatalog(request, edgeModule);
+        if (tokenCatalog is null ||
+            tokenCatalog.ResultKind != MetadataSignatureTokenResolutionCatalogResultKind.Exact)
+        {
+            return GenericBaseExtension.Stopped(
+                StaticFieldV2MemberLookupIssue.GenericBaseTokenResolutionUnavailable,
+                baseRow.TypeSpecificationToken);
+        }
+
+        var reference = MetadataTypeSpecificationRowReferenceIdentity.Create(
+            edgeModule,
+            baseRow.TypeSpecificationToken);
+        var decode = MetadataTypeSignatureDecoder.DecodeTypeSpecification(
+            reference,
+            baseRow.Observation.SignatureBytes,
+            tokenCatalog);
+        if (decode.Kind != MetadataSignatureDecodeResultKind.Exact || decode.Root is null)
+        {
+            var decodeIssue = decode.Kind == MetadataSignatureDecodeResultKind.Invalid
+                ? StaticFieldV2MemberLookupIssue.GenericBaseSignatureInvalid
+                : decode.ReachedBound is not null
+                    ? StaticFieldV2MemberLookupIssue.GenericBaseSignatureUnsupported
+                    : StaticFieldV2MemberLookupIssue.GenericBaseTokenResolutionUnavailable;
+            return GenericBaseExtension.Stopped(decodeIssue, baseRow.TypeSpecificationToken);
+        }
+
+        // The owner variables inside this base TypeSpec bind to the construction of the exact level that owns the
+        // physical Extends column: the requested owner's own supplied construction on the first hop, a previous hop's
+        // substituted construction on a deeper hop, and no arguments under a definition-only named level.
+        var owningLevel = walkLevels[^1];
+        var arguments = owningLevel.DeclaringConstruction is { } owningConstruction
+            ? owningConstruction.FlattenedArguments
+            : walkLevels.Count == 1 && request.OwnerClosedConstruction is { } ownerConstruction
+                ? ownerConstruction.FlattenedArguments
+                : ImmutableArray<MetadataClosedTypeIdentity>.Empty;
+
+        var issue = StaticFieldV2MemberLookupIssue.None;
+        var projected = ProjectBaseType(decode.Root, arguments, ref issue);
+        if (projected is null)
+        {
+            return GenericBaseExtension.Stopped(issue, baseRow.TypeSpecificationToken);
+        }
+        if (projected.Kind != MetadataClosedTypeKind.Named || projected.FinalClassification is not { } target)
+        {
+            return GenericBaseExtension.Stopped(
+                StaticFieldV2MemberLookupIssue.GenericBaseSignatureInvalid,
+                baseRow.TypeSpecificationToken);
+        }
+
+        var targetModule = target.SourceModule;
+        var targetToken = target.TypeDefinition.TypeDefinitionToken;
+        var targetClassification = request.AncestryPortfolio.ExactClassificationOrDefault(targetModule, targetToken);
+        var targetChain = request.AncestryPortfolio.ExactAncestryChainOrDefault(targetModule, targetToken);
+        if (targetClassification is not { Role: not null } || targetChain is null ||
+            !catalogsByModule.ContainsKey(targetModule) || !authorityByModule.ContainsKey(targetModule))
+        {
+            return GenericBaseExtension.Stopped(
+                StaticFieldV2MemberLookupIssue.GenericBaseClassificationAbsent,
+                targetToken);
+        }
+        if (targetClassification.Role == MetadataTypeDefinitionSemanticRole.ModulePseudoType)
+        {
+            return GenericBaseExtension.Stopped(
+                StaticFieldV2MemberLookupIssue.GenericBaseSignatureInvalid,
+                targetToken);
+        }
+
+        var appended = ImmutableArray.CreateBuilder<LookupLevel>(targetChain.Edges.Length + 1);
+        if (!visited.Add(LevelKey(targetModule, targetToken)))
+        {
+            return GenericBaseExtension.Stopped(
+                StaticFieldV2MemberLookupIssue.GenericBaseCycleDetected,
+                targetToken);
+        }
+        appended.Add(new LookupLevel(
+            targetModule,
+            targetClassification.TypeDefinition,
+            targetClassification.TypeDefinition.TotalGenericArity > 0 ? projected : null));
+        foreach (var chainEdge in targetChain.Edges)
+        {
+            if (!visited.Add(LevelKey(chainEdge.SourceModule, chainEdge.Owner.TypeDefinitionToken)))
+            {
+                return GenericBaseExtension.Stopped(
+                    StaticFieldV2MemberLookupIssue.GenericBaseCycleDetected,
+                    chainEdge.Owner.TypeDefinitionToken);
+            }
+            appended.Add(new LookupLevel(chainEdge.SourceModule, chainEdge.Owner));
+        }
+
+        if (walkLevels.Count + appended.Count > ExpressionV2ContractLimits.MaximumConstructedAncestryDepth + 1)
+        {
+            return GenericBaseExtension.Stopped(
+                StaticFieldV2MemberLookupIssue.GenericBaseDepthBoundReached,
+                targetToken);
+        }
+
+        return GenericBaseExtension.Extended(appended.ToImmutable(), targetChain);
+    }
+
+    private static MetadataClosedTypeIdentity? ProjectBaseType(
+        MetadataTypeSignatureNode node,
+        ImmutableArray<MetadataClosedTypeIdentity> ownerArguments,
+        ref StaticFieldV2MemberLookupIssue issue)
+    {
+        switch (node.Kind)
+        {
+            case MetadataTypeSignatureNodeKind.Primitive:
+                return MetadataClosedTypeIdentity.Primitive(node.PrimitiveKind!.Value);
+
+            case MetadataTypeSignatureNodeKind.OwnerTypeParameter:
+                var index = node.VariableIndex!.Value;
+                if (index < 0 || index >= ownerArguments.Length)
+                {
+                    issue = StaticFieldV2MemberLookupIssue.GenericBaseArgumentUnbound;
+                    return null;
+                }
+                return ownerArguments[index];
+
+            case MetadataTypeSignatureNodeKind.MethodTypeParameter:
+            case MetadataTypeSignatureNodeKind.TypeSpecificationIndirection:
+            case MetadataTypeSignatureNodeKind.Void:
+            case MetadataTypeSignatureNodeKind.TypedByReference:
+                issue = StaticFieldV2MemberLookupIssue.GenericBaseSignatureInvalid;
+                return null;
+
+            case MetadataTypeSignatureNodeKind.Named:
+                if (node.ContainsNonExactGenericMapping)
+                {
+                    issue = StaticFieldV2MemberLookupIssue.GenericBaseSignatureUnsupported;
+                    return null;
+                }
+                if (node.ContainsUnclassifiedTypeDefinition)
+                {
+                    issue = StaticFieldV2MemberLookupIssue.GenericBaseClassificationAbsent;
+                    return null;
+                }
+                if (node.NamedClassification!.TypeDefinition.TotalGenericArity != 0)
+                {
+                    issue = StaticFieldV2MemberLookupIssue.GenericBaseSignatureUnsupported;
+                    return null;
+                }
+                return ProjectClosedOrStop(
+                    () => MetadataClosedTypeIdentity.FromGroundSignature(node),
+                    ref issue);
+
+            case MetadataTypeSignatureNodeKind.GenericInstantiation:
+                if (node.ContainsNonExactGenericMapping)
+                {
+                    issue = StaticFieldV2MemberLookupIssue.GenericBaseSignatureUnsupported;
+                    return null;
+                }
+                var chain = node.NamedDefinitionChain;
+                foreach (var classification in chain)
+                {
+                    if (classification.Role is null)
+                    {
+                        issue = StaticFieldV2MemberLookupIssue.GenericBaseClassificationAbsent;
+                        return null;
+                    }
+                }
+                var childNodes = node.Children;
+                var argumentsBuilder = ImmutableArray.CreateBuilder<MetadataClosedTypeIdentity>(childNodes.Length);
+                foreach (var child in childNodes)
+                {
+                    var argument = ProjectBaseType(child, ownerArguments, ref issue);
+                    if (argument is null)
+                    {
+                        return null;
+                    }
+                    argumentsBuilder.Add(argument);
+                }
+                var flattened = argumentsBuilder.MoveToImmutable();
+                return ProjectClosedOrStop(
+                    () => MetadataClosedTypeIdentity.ConstructNamed(chain, flattened),
+                    ref issue);
+
+            case MetadataTypeSignatureNodeKind.SzArray:
+            case MetadataTypeSignatureNodeKind.MultidimensionalArray:
+                var element = ProjectBaseType(node.Children[0], ownerArguments, ref issue);
+                if (element is null)
+                {
+                    return null;
+                }
+                var arrayNode = node;
+                return ProjectClosedOrStop(
+                    () => arrayNode.Kind == MetadataTypeSignatureNodeKind.SzArray
+                        ? MetadataClosedTypeIdentity.SzArray(element)
+                        : MetadataClosedTypeIdentity.MultidimensionalArray(
+                            element,
+                            arrayNode.ArrayRank!.Value,
+                            arrayNode.ArraySizes,
+                            arrayNode.ArrayLowerBounds),
+                    ref issue);
+
+            default:
+                issue = StaticFieldV2MemberLookupIssue.GenericBaseSignatureUnsupported;
+                return null;
+        }
+    }
+
+    private static MetadataClosedTypeIdentity? ProjectClosedOrStop(
+        Func<MetadataClosedTypeIdentity> factory,
+        ref StaticFieldV2MemberLookupIssue issue)
+    {
+        try
+        {
+            return factory();
+        }
+        catch (MetadataClosedTypeBoundException)
+        {
+            issue = StaticFieldV2MemberLookupIssue.GenericBaseSignatureUnsupported;
+            return null;
+        }
+        catch (ArgumentException)
+        {
+            issue = StaticFieldV2MemberLookupIssue.GenericBaseSignatureInvalid;
+            return null;
+        }
+        catch (OverflowException)
+        {
+            issue = StaticFieldV2MemberLookupIssue.GenericBaseSignatureInvalid;
+            return null;
+        }
+    }
+
+    private readonly record struct GenericBaseExtension(
+        ImmutableArray<LookupLevel> Levels,
+        MetadataTypeDefinitionAncestryChainIdentity? NextChain,
+        StaticFieldV2MemberLookupIssue Issue,
+        int? RelatedMetadataToken)
+    {
+        internal static GenericBaseExtension Extended(
+            ImmutableArray<LookupLevel> levels,
+            MetadataTypeDefinitionAncestryChainIdentity nextChain) =>
+            new(levels, nextChain, StaticFieldV2MemberLookupIssue.None, null);
+
+        internal static GenericBaseExtension Stopped(
+            StaticFieldV2MemberLookupIssue issue,
+            int? relatedMetadataToken) =>
+            new([], null, issue, relatedMetadataToken);
+    }
+
     private readonly record struct LookupLevel(
         StaticFieldMetadataModuleIdentity SourceModule,
-        MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition);
+        MetadataTypeDefinitionAuthorityIdentity DeclaringTypeDefinition,
+        MetadataClosedTypeIdentity? DeclaringConstruction = null);
 
     private readonly record struct LevelPlan(ImmutableArray<LookupLevel> Levels, bool IsComplete);
 }

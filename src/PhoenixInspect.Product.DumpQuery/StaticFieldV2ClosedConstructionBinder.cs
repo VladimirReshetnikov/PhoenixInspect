@@ -743,6 +743,76 @@ public static class StaticFieldV2ClosedConstructionBinder
             finalToken);
     }
 
+    /// <summary>Issues the exact construction of a generic base level that declared the selected static field.</summary>
+    /// <remarks>
+    /// Member lookup can cross a closed generic TypeSpec base and select a field physically declared on that
+    /// substituted base construction. Storage selection must then target the declaring construction rather than
+    /// the spelled owner, so this issuer validates the declaring construction's substituted generic constraints
+    /// under the same retained binding evidence and portfolios and freezes one exact outcome around it. It never
+    /// reparses, rebinds, or widens the owner name binding: the spelled owner outcome supplies every prerequisite,
+    /// and a non-exact constraint disposition stops here exactly as it would for a spelled construction.
+    /// </remarks>
+    /// <param name="ownerConstruction">The exact spelled-owner construction outcome whose lookup selected the field.</param>
+    /// <param name="declaringConstruction">The exact substituted construction of the declaring generic base level.</param>
+    /// <returns>A sealed immutable outcome carrying the declaring construction, or one prefix-free typed stop.</returns>
+    /// <exception cref="ArgumentNullException">A required argument is null.</exception>
+    /// <exception cref="ArgumentException">The owner outcome is not exact or the declaring construction is not named.</exception>
+    public static StaticFieldV2ClosedConstructionOutcome BindDeclaringBaseConstruction(
+        StaticFieldV2ClosedConstructionOutcome ownerConstruction,
+        MetadataClosedTypeIdentity declaringConstruction)
+    {
+        ArgumentNullException.ThrowIfNull(ownerConstruction);
+        ArgumentNullException.ThrowIfNull(declaringConstruction);
+        if (ownerConstruction.ResultKind != StaticFieldV2ClosedConstructionResultKind.Exact ||
+            ownerConstruction.OwnerConstruction is null)
+        {
+            throw new ArgumentException(
+                "A declaring base construction requires one exact spelled-owner construction outcome.",
+                nameof(ownerConstruction));
+        }
+        if (declaringConstruction.FinalClassification is not { Role: not null } target)
+        {
+            throw new ArgumentException(
+                "A declaring base construction requires one named construction with an exact final classification.",
+                nameof(declaringConstruction));
+        }
+
+        var context = new BindContext(
+            ownerConstruction.NameBinding,
+            ownerConstruction.AncestryPortfolio,
+            ownerConstruction.ConstraintPortfolio,
+            ownerConstruction.InterfaceImplementationPortfolio);
+        var declaringModule = target.SourceModule;
+        if (!context.HasModule(declaringModule))
+        {
+            return context.Stopped(
+                StaticFieldV2ClosedConstructionResultKind.Invalid,
+                StaticFieldV2ClosedConstructionIssue.OwnerModuleNotInPortfolio,
+                target.TypeDefinition.TypeDefinitionToken);
+        }
+
+        var definitionChain = declaringConstruction.ConstructionSegments
+            .Select(static segment => segment.Classification)
+            .ToImmutableArray();
+        var flattenedArguments = declaringConstruction.FlattenedArguments;
+        var checks = ValidateConstraints(context, declaringModule, definitionChain, flattenedArguments);
+        if (checks is null)
+        {
+            return context.Stopped();
+        }
+
+        return StaticFieldV2ClosedConstructionOutcome.IssueExact(
+            ownerConstruction.NameBinding,
+            ownerConstruction.AncestryPortfolio,
+            ownerConstruction.ConstraintPortfolio,
+            ownerConstruction.InterfaceImplementationPortfolio,
+            declaringConstruction,
+            flattenedArguments,
+            checks.Value,
+            context.CumulativeArgumentCount,
+            target.TypeDefinition.TypeDefinitionToken);
+    }
+
     private static MetadataClosedTypeIdentity? BindType(BindContext context, StaticFieldV2TypeSyntax syntax) =>
         syntax.Kind switch
         {

@@ -893,8 +893,10 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
 {
     private const string CanonicalDomain = "static-field-v2-expression-pipeline-request";
     private const int CanonicalSchemaVersion = 2;
+    private const int SignatureTokenResolutionCatalogsFieldTag = 2;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
+    private readonly ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2ExpressionRequest(
@@ -913,7 +915,8 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource,
         MetadataClosedTypeIdentity? referenceTargetType,
         ExpressionV2CapabilityProbeSet? capabilityProbes,
-        StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation)
+        StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs)
     {
         ExpressionText = expressionText;
         Profile = profile;
@@ -931,6 +934,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         ReferenceTargetType = referenceTargetType;
         CapabilityProbes = capabilityProbes;
         FrameRootEvaluation = frameRootEvaluation;
+        this.signatureTokenResolutionCatalogs = signatureTokenResolutionCatalogs;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         ExpressionV2ContractEncoding.WriteOptionalString(writer, expressionText);
@@ -965,6 +969,18 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         if (frameRootEvaluation is not null)
         {
             writer.WriteBoolean(true);
+        }
+
+        // The token-resolution catalogs are appended only when supplied, behind their distinct field tag, so every
+        // request created without them keeps its exact previous byte content and its frozen digest unchanged.
+        if (!signatureTokenResolutionCatalogs.IsDefault)
+        {
+            writer.WriteInt32(SignatureTokenResolutionCatalogsFieldTag);
+            writer.WriteInt32(signatureTokenResolutionCatalogs.Length);
+            foreach (var catalog in signatureTokenResolutionCatalogs)
+            {
+                ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
+            }
         }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -1030,6 +1046,18 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// </remarks>
     public StaticFieldV2FrameRootEvaluationSource? FrameRootEvaluation { get; }
 
+    /// <summary>Gets a defensive copy of the optional per-module token-resolution catalogs, default when absent.</summary>
+    /// <remarks>
+    /// The catalogs let member lookup decode a retained generic base TypeSpec and continue the walk through its
+    /// exact substituted construction, so a field physically declared on a closed generic base binds with its
+    /// actual declaring construction. When they are absent the walk keeps its previous behavior and a generic base
+    /// terminal remains the incomplete-ancestry partial answer.
+    /// </remarks>
+    public ImmutableArray<MetadataSignatureTokenResolutionCatalog> SignatureTokenResolutionCatalogs =>
+        signatureTokenResolutionCatalogs.IsDefault
+            ? default
+            : ExpressionV2ContractEncoding.Copy(signatureTokenResolutionCatalogs);
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -1053,6 +1081,11 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// <param name="referenceTargetType">The optional exact target type of reference-target validation.</param>
     /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained ledger.</param>
     /// <param name="frameRootEvaluation">The optional caller-owned frame-root evaluation seam.</param>
+    /// <param name="signatureTokenResolutionCatalogs">
+    /// Optional per-module signature token-resolution catalogs. Supplying them lets member lookup decode a
+    /// retained generic base TypeSpec and continue through its exact substituted construction; omitting them keeps
+    /// the previous incomplete-ancestry behavior at a generic base terminal.
+    /// </param>
     /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An enum argument is undefined.</exception>
@@ -1074,7 +1107,8 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         Func<MetadataFieldDefinitionTableRowIdentity, StaticFieldV2LiteralConstantFact?>? literalConstantSource = null,
         MetadataClosedTypeIdentity? referenceTargetType = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null,
-        StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation = null)
+        StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation = null,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs = default)
     {
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
         ArgumentNullException.ThrowIfNull(constraintPortfolio);
@@ -1102,6 +1136,13 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
                 nameof(friendAssemblyGrants));
         }
 
+        var resolutionCatalogs = signatureTokenResolutionCatalogs.IsDefault
+            ? default
+            : ExpressionV2ContractEncoding.CopyRequired(
+                signatureTokenResolutionCatalogs,
+                nameof(signatureTokenResolutionCatalogs),
+                StaticFieldV2Limits.MaximumModuleCount);
+
         return new StaticFieldV2ExpressionRequest(
             expressionText,
             profile,
@@ -1118,7 +1159,8 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             literalConstantSource,
             referenceTargetType,
             capabilityProbes,
-            frameRootEvaluation);
+            frameRootEvaluation,
+            resolutionCatalogs);
     }
 
     /// <summary>Tests canonical equality between two composed evaluation requests.</summary>
@@ -1140,6 +1182,9 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
 
     internal ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> FriendAssemblyGrantsCore =>
         friendAssemblyGrants;
+
+    internal ImmutableArray<MetadataSignatureTokenResolutionCatalog> SignatureTokenResolutionCatalogsCore =>
+        signatureTokenResolutionCatalogs;
 }
 
 /// <summary>Retains only the evidence one composed static-field evaluation actually consulted.</summary>
@@ -1522,6 +1567,7 @@ public static class StaticFieldV2ExpressionPipeline
         private StaticFieldV2ContextualBindingOutcome? contextualBinding;
         private StaticFieldV2TypeNameBindingOutcome? explicitNameBinding;
         private StaticFieldV2ClosedConstructionOutcome? ownerConstruction;
+        private StaticFieldV2ClosedConstructionOutcome? declaringConstruction;
         private StaticFieldV2LexicalCertificateOutcome? lexicalCertificate;
         private StaticFieldV2BareRootOutcome? bareRoot;
         private StaticFieldV2MemberLookupOutcome? memberLookup;
@@ -1596,7 +1642,9 @@ public static class StaticFieldV2ExpressionPipeline
                 return binding;
             }
 
-            // Step 8: perform definition-kind-specific qualified, bare, or using-static member lookup.
+            // Step 8: perform definition-kind-specific qualified, bare, or using-static member lookup. A winner
+            // declared on a constructed generic base additionally freezes its declaring construction here, because
+            // §4.4 folds base instantiation into member selection and storage must target the declaring construction.
             EnterStep(8);
             var member = SelectMember();
             if (member is not null)
@@ -1605,6 +1653,12 @@ public static class StaticFieldV2ExpressionPipeline
             }
 
             var selected = SelectedCandidate();
+            var declaring = BindDeclaringConstruction(selected);
+            if (declaring is not null)
+            {
+                return declaring;
+            }
+
             var fieldRow = selected.FieldRow;
 
             // Step 9: instantiate the FieldDef signature and decode the literal Constant row when one applies.
@@ -1985,11 +2039,48 @@ public static class StaticFieldV2ExpressionPipeline
                 request.AccessibilityMode,
                 request.RequestingAssembly,
                 request.FriendAssemblyGrantsCore,
-                request.InterfaceImplementationPortfolio));
+                request.InterfaceImplementationPortfolio,
+                request.SignatureTokenResolutionCatalogsCore,
+                // The owner construction is consumed only by the generic-base continuation, so it is attached
+                // exactly when the caller supplied token-resolution catalogs; every request without them keeps
+                // its previous canonical bytes and frozen digest byte-identically.
+                !request.SignatureTokenResolutionCatalogsCore.IsDefault &&
+                ownerConstruction is { ResultKind: StaticFieldV2ClosedConstructionResultKind.Exact } bound
+                    ? bound.OwnerConstruction
+                    : null));
             return memberLookup.ResultKind == StaticFieldV2MemberLookupResultKind.Exact
                 ? null
                 : MemberStop(MapMemberLookup(memberLookup.ResultKind));
         }
+
+        private StaticFieldV2ExpressionResult? BindDeclaringConstruction(
+            StaticFieldV2MemberCandidateIdentity selected)
+        {
+            // Only a winner declared on a constructed generic base carries a declaring construction, and only an
+            // exact spelled-owner construction can supply the retained binding evidence the issuer freezes around
+            // it. Every other winner keeps the spelled owner construction as its storage target, exactly as before.
+            if (selected.DeclaringConstruction is not { } declaring ||
+                ownerConstruction is not { ResultKind: StaticFieldV2ClosedConstructionResultKind.Exact } owner)
+            {
+                return null;
+            }
+
+            declaringConstruction = StaticFieldV2ClosedConstructionBinder.BindDeclaringBaseConstruction(
+                owner,
+                declaring);
+            return declaringConstruction.ResultKind == StaticFieldV2ClosedConstructionResultKind.Exact
+                ? null
+                : MemberStop(declaringConstruction.ResultKind switch
+                {
+                    StaticFieldV2ClosedConstructionResultKind.Invalid => DumpExpressionMemberLookupOutcome.Invalid,
+                    StaticFieldV2ClosedConstructionResultKind.Unsupported =>
+                        DumpExpressionMemberLookupOutcome.Unsupported,
+                    _ => DumpExpressionMemberLookupOutcome.Partial,
+                });
+        }
+
+        private StaticFieldV2ClosedConstructionOutcome? StorageConstruction() =>
+            declaringConstruction ?? ownerConstruction;
 
         private StaticFieldV2ExpressionResult? BindBareRoot()
         {
@@ -2036,7 +2127,7 @@ public static class StaticFieldV2ExpressionPipeline
         private StaticFieldV2ExpressionResult? SelectRuntimeConstruction()
         {
             boundaries.Add(StaticFieldV2PipelineCoverageBoundary.RuntimeEvidenceSuppliedByCallerSeam);
-            if (ownerConstruction is not { } construction ||
+            if (StorageConstruction() is not { } construction ||
                 construction.ResultKind != StaticFieldV2ClosedConstructionResultKind.Exact)
             {
                 return RuntimeStop(DumpExpressionRuntimeConstructionOutcome.Unsupported);
@@ -2361,14 +2452,16 @@ public static class StaticFieldV2ExpressionPipeline
             }
 
             // Owner VAR substitution: an ELEMENT_TYPE_VAR (0x13) field signature over a bound closed owner
-            // construction is decoded to that construction's corresponding ordered closed argument. The owner
-            // construction was already bound in step seven and carries the recursively closed argument vector, so
-            // the argument (a primitive, closed nullable, array, or nested construction) flows unchanged into the
-            // existing storage and value decoding. Any owner-VAR index outside the bound owner's arity, or any
-            // signature shape this bounded reader does not project to a single owner VAR, is an incomplete decode
-            // returned as a typed non-answer (null), never an absence and never a fault.
+            // construction is decoded to that construction's corresponding ordered closed argument. The storage
+            // construction is the declaring generic base construction when member lookup crossed one, otherwise the
+            // owner construction bound in step seven; either way it carries the recursively closed argument vector
+            // the declared VAR indexes, so the argument (a primitive, closed nullable, array, or nested
+            // construction) flows unchanged into the existing storage and value decoding. Any owner-VAR index
+            // outside the bound arity, or any signature shape this bounded reader does not project to a single
+            // owner VAR, is an incomplete decode returned as a typed non-answer (null), never an absence and never
+            // a fault.
             if (!TryDecodeOwnerVariableIndex(signature, out var ownerVariableIndex) ||
-                ownerConstruction is not
+                StorageConstruction() is not
                 { ResultKind: StaticFieldV2ClosedConstructionResultKind.Exact } construction)
             {
                 return null;

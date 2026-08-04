@@ -1190,9 +1190,22 @@ the twelve axes separate metadata `typeConstruction` from `runtimeConstruction`,
 `ModuleRva` field on a non-generic owner is `typeConstruction = Exact` / `runtimeConstruction = NotRequired` /
 `storage = Exact` / `value = ExactValue`, the current composed pipeline produces `typeConstruction = Partial`; the
 divergence from both the predeclared row (which conflated the two construction axes as `NotRequired`) and the intended
-terminal is recorded rather than hidden. The `coordinator-derived-owner-base-field` incident constructs its non-generic
-derived owner `Exact` at arity zero but returns `Partial` member lookup for the field inherited from its closed generic
-base — a second documented boundary.
+terminal is recorded rather than hidden.
+
+The constructed-base member-lookup boundary is lifted: member lookup now decodes a retained generic TypeSpec base
+through caller-supplied per-module signature token-resolution catalogs, continues the bounded walk through the exact
+substituted base construction (owner `VAR` arguments bind only through the supplied owner construction), retains the
+winning candidate's declaring construction, validates that construction's substituted constraints, and targets it for
+runtime construction, storage, and owner-`VAR` field decoding. Every added input is absence-preserving additive
+encoding, so requests and outcomes without the new evidence keep their frozen digests byte-identically, and each
+continuation failure — an absent or non-exact catalog, a malformed or non-admitted base signature, an unbound owner
+variable, a missing classification, a constructed-base cycle, and the accumulated depth bound — is its own typed
+partial issue. The `coordinator-derived-owner-base-field` incident therefore now reaches its predeclared exact value
+`i32:1895826187` end to end over its real dump, with member lookup, runtime construction, and storage all `Exact`
+against the declaring construction `RegistryBase<WestRegion>`; its one remaining produced-vs-predeclared divergence is
+the same construction-axis conflation the module-RVA row documents — the predeclared row spelled `typeConstruction`
+as `NotRequired` while the pipeline constructs the non-generic spelled owner `Exact` at arity zero — so the row stays
+manifest-only with its corrected recorded reason and the divergence remains the finding.
 
 **Exit gate**
 
