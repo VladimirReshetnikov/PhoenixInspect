@@ -1,7 +1,9 @@
 # W8 declaration-side table catalogs: Constant and Property
 
-**Status:** design selected and preconditions verified; step 1 of section 8 landed. This document is the working plan
-for the remaining steps, not a closed milestone record.
+**Status:** design selected and preconditions verified; steps 1 through 5 of section 8 landed. This document is the
+working plan for the remaining steps, not a closed milestone record. A first pass through step 6 settled its product
+side and measured its test migration; see the [step 6 preparation notes](w8-declared-member-catalog-step6-notes.md),
+which also recommend one sequencing change to shorten the window in which the tree does not build.
 
 This plan was selected from three independent proposals written under different lenses, each refuted by three
 adversarial reviewers under the contract-discipline, physical-correctness, and frozen-artifact lenses. All three
