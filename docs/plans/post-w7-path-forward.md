@@ -1385,10 +1385,7 @@ and the suffix capability they name is proved separately by
 `Suffix_over_a_resolved_reference_reaches_its_terminal_through_the_host_route`.
 
 **Four rows predeclare an adverse condition their own snapshot does not contain**, and each was measured reaching an
-exact value instead of the negative outcome it names. `request-malformed-typespec-invalid` declares the
-`malformed-typespec-blob` companion as an artifact input that no runner supplies, so the request reads the target's
-unmodified signature; realizing that companion — a copied image with a mutated blob and the original retained — is
-the work it needs, exactly as the two Portable-PDB companions were realized for their rows.
+exact value instead of the negative outcome it names.
 `batch-typespec-depth-cap-plus-one` spells four nested levels against a declared depth cap far above four, so the
 frozen spelling is nowhere near cap plus one. `batch-runtime-candidate-cap-plus-one` observes fewer runtime candidates
 than the cap because its snapshot holds one construction of that owner, and handing the seam more would fabricate
@@ -1396,6 +1393,21 @@ evidence the dump does not contain. `coordinator-unavailable-static-slot` names 
 initializes before it pauses, so the slot is present and read; an absent slot needs a pause site the row's own profile
 does not freeze. All four `runnerExecution` reasons are corrected to those findings, their predeclared axes stay
 frozen, and each divergence is asserted from a real run rather than described.
+
+The fourth of those rows, `request-malformed-typespec-invalid`, first recorded that its declared
+`malformed-typespec-blob` companion was simply never supplied, and that realizing it — a copied image with a mutated
+TypeSpec blob and the original retained — was the work it needed, exactly as the two Portable-PDB companions were
+realized for their rows. The companion is now realized: the corpus runner hands the producer a copied metadata image
+whose `RequestSlot<RequestContext>` TypeSpec signature root byte is overwritten with `ELEMENT_TYPE_END`, locates that
+one blob by its complete length-prefixed byte sequence so nothing else is corrupted, and proves the corrupt row is
+composed and retained byte-for-byte in the physical TypeSpec catalog. Measured over its real dump, the row still
+reaches the identical exact value `i32:1358954753` over the malformed image, and the declared repair counterfactual
+changes no axis and no value. The disproof is architectural rather than a runner gap: the explicit fully qualified
+route builds its spelled construction from the authority chain catalogs and never decodes a TypeSpec row — TypeSpec
+signature bytes are decoded only where a physical TypeSpec is itself the evidence, namely an alias target, a
+constructed `using static` import, or a generic-base crossing in member lookup. The row's predeclared Invalid stop is
+therefore unreachable from its own fully qualified spelling; its recorded reason is corrected to that finding, its
+predeclared axes stay frozen, and the measurement is asserted by the dedicated realized-companion corpus test.
 
 Produced-vs-predeclared divergences are documented as findings through the
 `Attempted_incidents_stop_at_their_landed_pipeline_boundaries` and

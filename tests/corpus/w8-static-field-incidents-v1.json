@@ -2157,7 +2157,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "reaches-an-exact-value-because-the-declared-malformed-typespec-companion-is-not-supplied-to-the-producer-so-the-request-reads-the-targets-unmodified-signature"
+        "reason": "the-realized-companion-composes-the-mutated-typespec-row-as-retained-physical-evidence-yet-the-fully-qualified-route-still-reaches-the-identical-exact-value-because-it-never-decodes-a-typespec-row-so-the-predeclared-invalid-stop-is-unreachable-from-this-rows-own-spelling"
       },
       "representative": false
     },

@@ -441,6 +441,67 @@ public sealed class W8MeaningfulSyntheticCorpusTests
     }
 
     /// <summary>
+    /// Realizes the malformed-typespec-blob companion and measures the row over its real dump: the producer receives
+    /// the copied image whose <c>RequestSlot&lt;RequestContext&gt;</c> TypeSpec signature root is corrupted, and the
+    /// pipeline still reaches the identical exact value it reaches over the intact image.
+    /// </summary>
+    /// <remarks>
+    /// This is the measured disproof of the row's premise, recorded exactly as the corpus discipline demands. The
+    /// corrupt row is provably present and retained byte-for-byte in the composed physical TypeSpec catalog, yet the
+    /// explicit fully qualified route never decodes a TypeSpec row: it builds the spelled construction from the
+    /// authority chain catalogs, and TypeSpec signature bytes are decoded only where a physical TypeSpec is itself
+    /// the evidence — an alias target, a constructed <c>using static</c> import, or a generic-base crossing in member
+    /// lookup. The declared repair counterfactual therefore changes nothing, so the row's predeclared Invalid stop is
+    /// unreachable from its own fully qualified spelling; the manifest row stays frozen and this divergence is the
+    /// reported finding.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8MeaningfulSyntheticV1")]
+    public void Malformed_typespec_companion_is_realized_and_leaves_the_explicit_route_unconsulted()
+    {
+        var manifest = W8CorpusManifest.Load();
+        var row = manifest.Incidents.Single(
+            static incident => incident.Id == "request-malformed-typespec-invalid");
+        Assert.Equal("manifest-only", row.RunnerExecutionStatus);
+        using var snapshot = W8CorpusSnapshot.Materialize(row);
+
+        using (var world = W8CorpusEvaluationWorld.Open(
+            snapshot.DumpPath,
+            row.Shape,
+            suppliesMalformedTypeSpecCompanion: true))
+        {
+            // The corrupt evidence is physically composed: exactly one retained TypeSpec row carries the mutated
+            // ELEMENT_TYPE_END root, so the exact answer below is produced over the malformed image, not a repaired
+            // or unmutated one.
+            var mutated = Assert.Single(
+                world.PrimaryTypeSpecifications.Rows,
+                static specification => specification.Observation.SignatureBytes[0] == 0x00);
+            Assert.NotEmpty(mutated.Observation.SignatureBytes);
+
+            var produced = world.Evaluate(row.Expression, row.ReadWidth);
+            Assert.Equal(
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/Exact/Exact/" +
+                "ExactValue/NotRequested/Complete",
+                Describe(produced.Result.Axes));
+            Assert.Equal(1358954753L, produced.Result.SignedValue);
+            Assert.NotEqual(row.PredeclaredAxes, produced.Result.Axes);
+        }
+
+        // The declared repair counterfactual is the unmutated baseline composition over the same snapshot, and it
+        // changes no axis and no value — the corrupt blob was never consulted evidence for this spelling.
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, row.Shape))
+        {
+            Assert.DoesNotContain(
+                world.PrimaryTypeSpecifications.Rows,
+                static specification => specification.Observation.SignatureBytes[0] == 0x00);
+            var repaired = world.Evaluate(row.Expression, row.ReadWidth);
+            Assert.Equal(DumpExpressionValueOutcome.ExactValue, repaired.Result.Axes.Value);
+            Assert.Equal(1358954753L, repaired.Result.SignedValue);
+        }
+    }
+
+    /// <summary>
     /// Documents the honest produced-versus-predeclared divergence of one attempted incident the composed pipeline
     /// evaluates over a real dump but cannot carry to its predeclared axes.
     /// </summary>
@@ -455,14 +516,12 @@ public sealed class W8MeaningfulSyntheticCorpusTests
     {
         var manifest = W8CorpusManifest.Load();
 
-        // Four rows predeclare an adverse condition their own snapshot does not contain, and each reaches an exact
+        // Three rows predeclare an adverse condition their own snapshot does not contain, and each reaches an exact
         // value instead. Measured, not inferred: every one of them runs end to end here. The finding is about the
-        // predeclaration, so the manifest rows stay frozen and only their recorded reasons are corrected.
+        // predeclaration, so the manifest rows stay frozen and only their recorded reasons are corrected. A fourth
+        // row of this family, request-malformed-typespec-invalid, now has its companion realized and its measured
+        // disproof asserted by Malformed_typespec_companion_is_realized_and_leaves_the_explicit_route_unconsulted.
         //
-        //  * request-malformed-typespec-invalid declares the `malformed-typespec-blob` companion as an artifact
-        //    input. No runner supplies it, so the request reads the target's unmodified signature and answers. The
-        //    row needs that companion realized — a copied image with a mutated TypeSpec blob and the original
-        //    retained — exactly as the two Portable-PDB companions were realized for their rows.
         //  * batch-typespec-depth-cap-plus-one spells four nested `Wrap` levels against a declared depth cap far
         //    above four, so the spelling is nowhere near cap plus one and constructs exactly. Reaching the cap needs
         //    a spelling at the landed cap's own depth, which the frozen row does not contain.
@@ -474,7 +533,6 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         //    initialization, which is a different pause site than the one this row's profile freezes.
         foreach (var (id, expectedValue) in new[]
                  {
-                     ("request-malformed-typespec-invalid", 1358954753L),
                      ("batch-typespec-depth-cap-plus-one", 1627390470L),
                      ("batch-runtime-candidate-cap-plus-one", 1627390465L),
                      ("coordinator-unavailable-static-slot", 1895826179L),
@@ -1421,9 +1479,16 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
 
     internal ImmutableArray<MetadataSignatureTokenResolutionCatalog> TokenResolutionCatalogs { get; }
 
+    /// <summary>Gets the primary module's composed physical TypeSpec table, which retains raw signature bytes.</summary>
+    internal MetadataTypeSpecificationPhysicalTableCatalogIdentity PrimaryTypeSpecifications =>
+        Primary.Outcome.TypeSpecifications!;
+
     private ProducedModule Primary => modules[0];
 
-    internal static W8CorpusEvaluationWorld Open(string dumpPath, string shape)
+    internal static W8CorpusEvaluationWorld Open(
+        string dumpPath,
+        string shape,
+        bool suppliesMalformedTypeSpecCompanion = false)
     {
         var artifacts = ShapeArtifacts(shape);
         var session = StaticFieldV2RuntimeAcquisitionSession.Open(dumpPath);
@@ -1437,6 +1502,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 var produced = ImmutableArray.CreateBuilder<ProducedModule>();
                 try
                 {
+                    var isPrimary = true;
                     foreach (var (artifactPath, required) in artifacts)
                     {
                         var artifact = ReadArtifactContent(W8ShapeTargetPaths.RequireArtifact(artifactPath));
@@ -1459,8 +1525,15 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                             $"The snapshot loads no module matching the required artifact {artifactPath}.");
                         foreach (var observation in observations)
                         {
-                            produced.Add(ProducedModule.Bind(session, observation));
+                            produced.Add(ProducedModule.Bind(
+                                session,
+                                observation,
+                                isPrimary && suppliesMalformedTypeSpecCompanion
+                                    ? RealizeMalformedTypeSpecCompanion
+                                    : null));
                         }
+
+                        isPrimary = false;
                     }
 
                     var core = BuildSyntheticCoreModule(session, produced[0].MetadataModule);
@@ -1748,6 +1821,111 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
 
     private string PrimaryArtifactPath() =>
         W8ShapeTargetPaths.ResolveAssembly("PhoenixInspect.W8" + shape + "ShapeTarget");
+
+    /// <summary>
+    /// Realizes the malformed-typespec-blob companion contract: the producer receives a copied metadata image whose
+    /// <c>RequestSlot&lt;RequestContext&gt;</c> TypeSpec signature root byte is overwritten with the invalid
+    /// <c>ELEMENT_TYPE_END</c>, while the original image bytes stay untouched on disk and in the dump.
+    /// </summary>
+    /// <remarks>
+    /// The mutation is explicit test-owned signature corruption, exactly as the companion contract's acquisition
+    /// declares. It targets the one physical TypeSpec row the incident's spelling names, is applied to a copy so the
+    /// repair counterfactual is simply the unmutated baseline composition, and locates the blob by its complete
+    /// length-prefixed byte sequence, which must occur exactly once in the image so nothing else is corrupted.
+    /// </remarks>
+    /// <param name="metadataBytes">The primary module's metadata image as read from the dump.</param>
+    /// <returns>The copied image with the one mutated signature byte.</returns>
+    private static ImmutableArray<byte> RealizeMalformedTypeSpecCompanion(ImmutableArray<byte> metadataBytes)
+    {
+        using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+        var reader = provider.GetMetadataReader();
+        var requestSlotRow = MetadataTokens.GetRowNumber(FindTypeDefinitionHandle(
+            reader, "PhoenixInspect.W8RequestShapeTarget", "RequestSlot`1"));
+        var requestContextRow = MetadataTokens.GetRowNumber(FindTypeDefinitionHandle(
+            reader, "PhoenixInspect.W8RequestShapeTarget", "RequestContext"));
+
+        var blob = FindConstructionTypeSpecificationBlob(reader, requestSlotRow, requestContextRow);
+
+        // The blob is located physically: its complete length-prefixed byte sequence must appear exactly once in
+        // the image, so the single mutated byte is provably the root element of the intended signature.
+        Assert.True(blob.Length < 0x80, "The fixture TypeSpec blob must carry a single-byte length prefix.");
+        byte[] pattern = [(byte)blob.Length, .. blob];
+        var image = metadataBytes.ToArray();
+        var occurrence = -1;
+        for (var index = 0; index <= image.Length - pattern.Length; index++)
+        {
+            if (image.AsSpan(index, pattern.Length).SequenceEqual(pattern))
+            {
+                Assert.True(occurrence < 0, "The fixture TypeSpec blob must occur exactly once in the image.");
+                occurrence = index;
+            }
+        }
+
+        Assert.True(occurrence >= 0, "The fixture TypeSpec blob was not found in the metadata image.");
+        image[occurrence + 1] = 0x00;
+        return [.. image];
+    }
+
+    /// <summary>Finds the one TypeSpec blob spelling the closed single-argument fixture construction.</summary>
+    /// <param name="reader">The metadata reader over the unmutated image.</param>
+    /// <param name="genericDefinitionRow">The TypeDef row number of the generic definition head.</param>
+    /// <param name="argumentDefinitionRow">The TypeDef row number of the closed class argument.</param>
+    /// <returns>The complete signature bytes of the matching physical TypeSpec row.</returns>
+    private static ImmutableArray<byte> FindConstructionTypeSpecificationBlob(
+        MetadataReader reader,
+        int genericDefinitionRow,
+        int argumentDefinitionRow)
+    {
+        // GENERICINST CLASS <head> 1 CLASS <argument>, with both coded indices naming same-module TypeDefs; this is
+        // the exact shape the pinned compiler emits for the fixture spelling, decoded rather than pattern-guessed.
+        byte[] expected =
+        [
+            0x15,
+            0x12,
+            .. CompressTypeDefOrRef(genericDefinitionRow),
+            0x01,
+            0x12,
+            .. CompressTypeDefOrRef(argumentDefinitionRow),
+        ];
+        var matches = new List<ImmutableArray<byte>>();
+        for (var rowId = 1; rowId <= reader.GetTableRowCount(TableIndex.TypeSpec); rowId++)
+        {
+            var signature = reader.GetBlobBytes(
+                reader.GetTypeSpecification(MetadataTokens.TypeSpecificationHandle(rowId)).Signature);
+            if (signature.AsSpan().SequenceEqual(expected))
+            {
+                matches.Add([.. signature]);
+            }
+        }
+
+        return Assert.Single(matches);
+    }
+
+    /// <summary>Encodes one same-module TypeDef row as an ECMA-335 compressed TypeDefOrRef coded index.</summary>
+    /// <param name="rowNumber">The one-based TypeDef row number.</param>
+    /// <returns>The compressed coded-index bytes.</returns>
+    private static ImmutableArray<byte> CompressTypeDefOrRef(int rowNumber)
+    {
+        var value = (uint)(rowNumber << 2);
+        Assert.True(value <= 0x3FFF, "The fixture TypeDef row must fit a two-byte compressed coded index.");
+        return value <= 0x7F ? [(byte)value] : [(byte)(0x80 | (value >> 8)), (byte)value];
+    }
+
+    /// <summary>Finds one exact TypeDef handle by namespace and name.</summary>
+    /// <param name="reader">The metadata reader.</param>
+    /// <param name="namespaceName">The declaring namespace.</param>
+    /// <param name="typeName">The metadata type name.</param>
+    /// <returns>The single matching TypeDef handle.</returns>
+    private static TypeDefinitionHandle FindTypeDefinitionHandle(
+        MetadataReader reader,
+        string namespaceName,
+        string typeName) =>
+        Assert.Single(reader.TypeDefinitions, handle =>
+        {
+            var definition = reader.GetTypeDefinition(handle);
+            return reader.GetString(definition.Name) == typeName &&
+                reader.GetString(definition.Namespace) == namespaceName;
+        });
 
     /// <summary>
     /// Realizes the truncated-portable-pdb companion contract: the real shape PDB is resolved but only a short
@@ -2668,9 +2846,15 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
 
         internal static ProducedModule Bind(
             StaticFieldV2RuntimeAcquisitionSession session,
-            StaticFieldV2RuntimeModuleObservation observation)
+            StaticFieldV2RuntimeModuleObservation observation,
+            Func<ImmutableArray<byte>, ImmutableArray<byte>>? metadataMutation = null)
         {
             var metadataBytes = session.ReadModuleMetadata(observation.ModuleAddress);
+            if (metadataMutation is not null)
+            {
+                metadataBytes = metadataMutation(metadataBytes);
+            }
+
             var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
             try
             {
