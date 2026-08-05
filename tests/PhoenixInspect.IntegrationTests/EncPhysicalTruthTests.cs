@@ -303,6 +303,64 @@ public sealed class EncPhysicalTruthTests
         }
     }
 
+    /// <summary>
+    /// Measures the physical lineage chain of two stacked generations from their delta module rows alone: the
+    /// generation numbers, the shared Mvid, the distinct edit identifiers, and the base-identifier pairing that
+    /// joins each generation to its predecessor.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Stacked_generation_lineage_is_measured_from_the_delta_module_rows()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-stacked-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        try
+        {
+            EncDeltaCompiler.WriteStackedPayload(payloadDirectory);
+            Guid baselineMvid;
+            using (var stream = File.OpenRead(
+                Path.Combine(payloadDirectory, "PhoenixInspect.EncFixtureBaseline.dll")))
+            using (var peReader = new PEReader(stream))
+            {
+                var baselineReader = peReader.GetMetadataReader();
+                baselineMvid = baselineReader.GetGuid(baselineReader.GetModuleDefinition().Mvid);
+            }
+
+            using var oneProvider = MetadataReaderProvider.FromMetadataImage(
+                [.. File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.metadata-delta"))]);
+            using var twoProvider = MetadataReaderProvider.FromMetadataImage(
+                [.. File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-2.metadata-delta"))]);
+            var one = oneProvider.GetMetadataReader();
+            var two = twoProvider.GetMetadataReader();
+            var oneModule = one.GetModuleDefinition();
+            var twoModule = two.GetModuleDefinition();
+
+            // Measured lineage: each generation shares the baseline Mvid and carries its own distinct nonempty
+            // edit identifier; generation one's base identifier is empty because generation zero has no edit
+            // identifier at all, and generation two's base identifier equals generation one's edit identifier
+            // exactly. A lineage-chain join therefore pairs on (BaseGenerationId == predecessor's GenerationId)
+            // with an empty-identifier boundary condition at the chain root.
+            Assert.Equal(1, oneModule.Generation);
+            Assert.Equal(2, twoModule.Generation);
+            Assert.Equal(baselineMvid, one.GetGuid(oneModule.Mvid));
+            Assert.Equal(baselineMvid, two.GetGuid(twoModule.Mvid));
+            var generationOneId = one.GetGuid(oneModule.GenerationId);
+            var generationTwoId = two.GetGuid(twoModule.GenerationId);
+            Assert.NotEqual(Guid.Empty, generationOneId);
+            Assert.NotEqual(Guid.Empty, generationTwoId);
+            Assert.NotEqual(generationOneId, generationTwoId);
+            Assert.Equal(Guid.Empty, one.GetGuid(oneModule.BaseGenerationId));
+            Assert.Equal(generationOneId, two.GetGuid(twoModule.BaseGenerationId));
+        }
+        finally
+        {
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
     private static int FindSentinelToken(MetadataReader reader)
     {
         foreach (var handle in reader.MethodDefinitions)

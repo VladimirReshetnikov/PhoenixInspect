@@ -148,7 +148,13 @@ this surface, to be answered from the runtime's edit structures. Two compiler fa
 measurement: a pure Insert generation reports no updated methods, and the added-symbol predicate feeds
 `EmitDifference` from the Insert edits themselves. Probes 2, 7, and 8, the runtime-structure half of probe 3, the
 storage half of probe 6, the stacked-generation and extended-scope profiles, and the filtered-dump control remain
-open for the following slices.
+open for the following slices. The third slice landed the stacked-generation payload — two chained body-edit
+generations emitted against each predecessor's own baseline — and measured the lineage chain from the delta module
+rows alone: each generation shares the baseline Mvid and carries its own distinct nonempty edit identifier,
+generation one's base identifier is empty because generation zero has no edit identifier at all, and generation
+two's base identifier equals generation one's edit identifier exactly. Invariant 7's lineage join is therefore
+pairing on the predecessor's edit identifier with an empty-identifier boundary condition at the chain root, now a
+measured fact rather than a hypothesis.
 
 ### E2 — edit detection and typed non-admission
 

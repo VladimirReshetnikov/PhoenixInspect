@@ -92,6 +92,38 @@ internal static class EncDeltaCompiler
                 ];
             });
 
+    private const string GenerationTwoSource = """
+        namespace PhoenixInspect.EncFixtureBaseline;
+
+        /// <summary>Owns the sentinel the edited-process fixture reads before and after the applied delta.</summary>
+        public static class Probe
+        {
+            /// <summary>Returns the generation-two sentinel value.</summary>
+            public static int Sentinel() => 0x45_6E_C0_04;
+        }
+        """;
+
+    /// <summary>
+    /// Writes the stacked payload: the baseline plus two chained body-edit generations of the same sentinel,
+    /// each emitted against the preceding generation's baseline.
+    /// </summary>
+    /// <param name="payloadDirectory">The directory that will hold the payload files.</param>
+    internal static void WriteStackedPayload(string payloadDirectory) =>
+        WriteGenerationChain(
+            payloadDirectory,
+            new EncGeneration(
+                GenerationOneSource,
+                static (previous, current) =>
+                [
+                    new SemanticEdit(SemanticEditKind.Update, RequireSentinel(previous), RequireSentinel(current)),
+                ]),
+            new EncGeneration(
+                GenerationTwoSource,
+                static (previous, current) =>
+                [
+                    new SemanticEdit(SemanticEditKind.Update, RequireSentinel(previous), RequireSentinel(current)),
+                ]));
+
     /// <summary>
     /// Writes the smoke payload: the baseline assembly, its portable PDB, and the generation-one delta triple.
     /// </summary>
@@ -108,10 +140,20 @@ internal static class EncDeltaCompiler
                     RequireSentinel(generationOneCompilation)),
             ]);
 
+    /// <summary>One generation of the payload chain: the edited source and the edits that reach it.</summary>
+    /// <param name="Source">The complete edited source of this generation.</param>
+    /// <param name="CreateEdits">Builds the semantic edits from the previous generation's compilation to this one.</param>
+    private sealed record EncGeneration(
+        string Source,
+        Func<CSharpCompilation, CSharpCompilation, ImmutableArray<SemanticEdit>> CreateEdits);
+
     private static void WritePayload(
         string payloadDirectory,
         string generationOneSource,
-        Func<CSharpCompilation, CSharpCompilation, ImmutableArray<SemanticEdit>> createEdits)
+        Func<CSharpCompilation, CSharpCompilation, ImmutableArray<SemanticEdit>> createEdits) =>
+        WriteGenerationChain(payloadDirectory, new EncGeneration(generationOneSource, createEdits));
+
+    private static void WriteGenerationChain(string payloadDirectory, params EncGeneration[] generations)
     {
         var baselineCompilation = Compile("PhoenixInspect.EncFixtureBaseline", BaselineSource);
         using var imageStream = new MemoryStream();
@@ -143,35 +185,52 @@ internal static class EncDeltaCompiler
             method => ReadLocalSignature(peReader, method),
             hasPortableDebugInformation: true);
 
-        var generationOneCompilation = Compile("PhoenixInspect.EncFixtureBaseline", generationOneSource);
-        var edits = createEdits(baselineCompilation, generationOneCompilation);
-        var addedSymbols = edits
-            .Where(static edit => edit.Kind == SemanticEditKind.Insert)
-            .Select(static edit => edit.NewSymbol!)
-            .ToImmutableHashSet(SymbolEqualityComparer.Default);
-
-        using var metadataDelta = new MemoryStream();
-        using var ilDelta = new MemoryStream();
-        using var pdbDelta = new MemoryStream();
-        var difference = generationOneCompilation.EmitDifference(
-            baseline,
-            edits,
-            addedSymbols.Contains,
-            metadataDelta,
-            ilDelta,
-            pdbDelta,
-            CancellationToken.None);
-        Assert.True(
-            difference.Success,
-            "The pinned compiler must emit the delta: " + string.Join("; ", difference.Diagnostics));
-        // Measured: only Update edits surface in UpdatedMethods; a pure Insert generation reports none.
-        if (edits.Any(static edit => edit.Kind == SemanticEditKind.Update))
+        var previousCompilation = baselineCompilation;
+        var currentBaseline = baseline;
+        for (var index = 0; index < generations.Length; index++)
         {
-            Assert.NotEmpty(difference.UpdatedMethods);
+            var generationNumber = index + 1;
+            var compilation = Compile("PhoenixInspect.EncFixtureBaseline", generations[index].Source);
+            var edits = generations[index].CreateEdits(previousCompilation, compilation);
+            var addedSymbols = edits
+                .Where(static edit => edit.Kind == SemanticEditKind.Insert)
+                .Select(static edit => edit.NewSymbol!)
+                .ToImmutableHashSet(SymbolEqualityComparer.Default);
+
+            using var metadataDelta = new MemoryStream();
+            using var ilDelta = new MemoryStream();
+            using var pdbDelta = new MemoryStream();
+            var difference = compilation.EmitDifference(
+                currentBaseline,
+                edits,
+                addedSymbols.Contains,
+                metadataDelta,
+                ilDelta,
+                pdbDelta,
+                CancellationToken.None);
+            Assert.True(
+                difference.Success,
+                $"The pinned compiler must emit generation {generationNumber}: " +
+                string.Join("; ", difference.Diagnostics));
+            // Measured: only Update edits surface in UpdatedMethods; a pure Insert generation reports none.
+            if (edits.Any(static edit => edit.Kind == SemanticEditKind.Update))
+            {
+                Assert.NotEmpty(difference.UpdatedMethods);
+            }
+            File.WriteAllBytes(
+                Path.Combine(payloadDirectory, $"generation-{generationNumber}.metadata-delta"),
+                metadataDelta.ToArray());
+            File.WriteAllBytes(
+                Path.Combine(payloadDirectory, $"generation-{generationNumber}.il-delta"),
+                ilDelta.ToArray());
+            File.WriteAllBytes(
+                Path.Combine(payloadDirectory, $"generation-{generationNumber}.pdb-delta"),
+                pdbDelta.ToArray());
+
+            Assert.NotNull(difference.Baseline);
+            currentBaseline = difference.Baseline;
+            previousCompilation = compilation;
         }
-        File.WriteAllBytes(Path.Combine(payloadDirectory, "generation-1.metadata-delta"), metadataDelta.ToArray());
-        File.WriteAllBytes(Path.Combine(payloadDirectory, "generation-1.il-delta"), ilDelta.ToArray());
-        File.WriteAllBytes(Path.Combine(payloadDirectory, "generation-1.pdb-delta"), pdbDelta.ToArray());
     }
 
     private static CSharpCompilation Compile(string assemblyName, string source) =>
