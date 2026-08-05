@@ -645,6 +645,107 @@ public sealed class EncPhysicalTruthTests
         }
     }
 
+    /// <summary>
+    /// Hunts the applied-state detector in non-contract candidates: measures how the descriptor declares the
+    /// module's dynamic-metadata field and compares that field's pointer between the edited payload module and an
+    /// unedited module of the same dump.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Dynamic_metadata_field_is_measured_over_edited_and_unedited_modules()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-dyn-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-dyn-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteSmokePayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-smoke", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            var dumpBytes = File.ReadAllBytes(dumpPath);
+            var marker = "\"DynamicMetadata\""u8;
+            var found = dumpBytes.AsSpan().IndexOf(marker);
+            Assert.True(found >= 0, "The descriptor vocabulary names the dynamic-metadata field.");
+            var start = Math.Max(0, found - 120);
+            var snippet = System.Text.Encoding.ASCII.GetString(
+                dumpBytes.AsSpan(start, Math.Min(360, dumpBytes.Length - start)));
+
+            using var dataTarget = DataTarget.LoadDump(
+                dumpPath,
+                new DataTargetOptions { FileLocator = ClrmdOfflineFileLocator.Instance });
+            var runtime = dataTarget.ClrVersions.Single().CreateRuntime();
+            try
+            {
+                var edited = Assert.Single(
+                    runtime.EnumerateModules(),
+                    candidate => candidate.Name?.EndsWith(
+                        "PhoenixInspect.EncFixtureBaseline.dll",
+                        StringComparison.OrdinalIgnoreCase) == true);
+                var unedited = Assert.Single(
+                    runtime.EnumerateModules(),
+                    candidate => candidate.Name?.EndsWith(
+                        "PhoenixInspect.EncTestTarget.dll",
+                        StringComparison.OrdinalIgnoreCase) == true);
+                GC.KeepAlive(snippet);
+
+                var buffer = new byte[sizeof(ulong)];
+                ulong ReadPointerAt(ulong address)
+                {
+                    Assert.Equal(buffer.Length, dataTarget.DataReader.Read(address, buffer));
+                    return BitConverter.ToUInt64(buffer);
+                }
+
+                uint ReadUInt32At(ulong address)
+                {
+                    Assert.Equal(buffer.Length, dataTarget.DataReader.Read(address, buffer));
+                    return BitConverter.ToUInt32(buffer);
+                }
+
+                // Measured: the dynamic-metadata pointer is null for both modules, so that descriptor field does
+                // not carry edit state and is a recorded dead end. The module flags differ — 0x9019 for the edited
+                // module against 0x8811 for the optimized unedited one — which makes the flags word the live
+                // detector candidate, with one caveat this probe cannot discharge: the comparator is not
+                // edit-enabled, so the differing bits may mark enablement rather than applied edits. The next
+                // measurement adds an edit-enabled-but-unedited comparator to isolate the applied-state bit.
+                Assert.Equal(0ul, ReadPointerAt(edited.Address + 744));
+                Assert.Equal(0ul, ReadPointerAt(unedited.Address + 744));
+                var editedFlags = ReadUInt32At(edited.Address + 208);
+                var uneditedFlags = ReadUInt32At(unedited.Address + 208);
+                Assert.Equal(0x9019u, editedFlags);
+                Assert.Equal(0x8811u, uneditedFlags);
+                Assert.NotEqual(editedFlags, uneditedFlags);
+            }
+            finally
+            {
+                runtime.Dispose();
+            }
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
     /// <summary>One captured memory range of the dump: its virtual start, size, and position in the file.</summary>
     private readonly record struct DumpMemoryRange(ulong StartAddress, ulong Size, ulong FileOffset);
 

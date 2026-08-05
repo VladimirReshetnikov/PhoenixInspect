@@ -174,7 +174,13 @@ vocabulary, leaving non-contract runtime structures and the dynamic-metadata fie
 module as the open candidates. The sixth slice landed the filtered-dump control: the same paused edited process
 captured both fully and with the normal filtered type proves the delta copies locatable in the full capture are
 entirely absent from the filtered one, so delta evidence over a filtered dump is not degraded but gone, and
-invariant 6's typed unavailable disposition is the only honest answer there — now a physical fact.
+invariant 6's typed unavailable disposition is the only honest answer there — now a physical fact. The seventh
+slice opened the runtime-structure hunt itself: the descriptor's Module layout is fully declared in the captured
+JSON — every field name and offset, including the flags word and the dynamic-metadata pointer — and reading both
+over the edited and an unedited module of one dump measured the dynamic-metadata pointer null for both, a recorded
+dead end, while the module flags words differ. The flags word is the live applied-state detector candidate, with
+one caveat the probe records: the unedited comparator is not edit-enabled, so the next measurement adds an
+edit-enabled-but-unedited module to isolate the applied-state bit from the enablement bits.
 
 ### E2 — edit detection and typed non-admission
 
