@@ -171,7 +171,10 @@ the pinned runtime's captured bytes name no edit structure in the contract-descr
 edit module class nor an applied-changes count appears anywhere in the dump, while the descriptor's
 dynamic-metadata field name does — so applied-state detection cannot come from the descriptor's declared
 vocabulary, leaving non-contract runtime structures and the dynamic-metadata field's behavior over an edited
-module as the open candidates.
+module as the open candidates. The sixth slice landed the filtered-dump control: the same paused edited process
+captured both fully and with the normal filtered type proves the delta copies locatable in the full capture are
+entirely absent from the filtered one, so delta evidence over a filtered dump is not degraded but gone, and
+invariant 6's typed unavailable disposition is the only honest answer there — now a physical fact.
 
 ### E2 — edit detection and typed non-admission
 

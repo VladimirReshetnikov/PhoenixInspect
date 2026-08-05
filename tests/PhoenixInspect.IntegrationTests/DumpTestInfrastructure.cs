@@ -428,4 +428,19 @@ internal static class DumpWriter
         var diagnosticsClient = new DiagnosticsClient(pid);
         diagnosticsClient.WriteDump(DumpType.Full, dumpPath, logDumpGeneration: false);
     }
+
+    /// <summary>Writes a deliberately filtered capture whose memory coverage drops the managed heap.</summary>
+    /// <remarks>
+    /// This exists for evidence-shape controls: a probe that must prove what a filtered capture physically loses
+    /// captures the same paused process both ways and compares. It is never a substitute for the full dumps the
+    /// ordinary lanes consume.
+    /// </remarks>
+    /// <param name="pid">The paused target process.</param>
+    /// <param name="dumpPath">The destination path of the filtered capture.</param>
+    public static void WriteNormalDump(int pid, string dumpPath)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(dumpPath)!);
+        var diagnosticsClient = new DiagnosticsClient(pid);
+        diagnosticsClient.WriteDump(DumpType.Normal, dumpPath, logDumpGeneration: false);
+    }
 }

@@ -580,6 +580,71 @@ public sealed class EncPhysicalTruthTests
         }
     }
 
+    /// <summary>
+    /// Proves what a filtered capture physically loses: the same paused edited process is captured both fully and
+    /// with the normal filtered type, and the delta copies locatable in the full capture are gone from the
+    /// filtered one, so a filtered dump can only ever yield the typed unavailable answer for delta evidence.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Filtered_capture_of_the_edited_process_loses_the_delta_evidence()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-filter-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var fullDumpPath = Path.Combine(Path.GetTempPath(), $"enc-filter-full-{Guid.NewGuid():N}.dmp");
+        var normalDumpPath = Path.Combine(Path.GetTempPath(), $"enc-filter-normal-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteSmokePayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-smoke", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteFullDump(target.Pid, fullDumpPath);
+                DumpWriter.WriteNormalDump(target.Pid, normalDumpPath);
+            }
+
+            var fullBytes = File.ReadAllBytes(fullDumpPath);
+            var normalBytes = File.ReadAllBytes(normalDumpPath);
+            Assert.True(
+                normalBytes.Length < fullBytes.Length,
+                "The filtered capture must be materially smaller than the full capture.");
+
+            var metadataDelta = File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.metadata-delta"));
+            var pdbDelta = File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.pdb-delta"));
+
+            // The full capture holds the locatable residue the reachability probe measured; the filtered capture
+            // holds no copy of either substantive delta blob, so delta evidence over a filtered dump is not
+            // degraded but absent, and the only honest disposition there is the typed unavailable one.
+            Assert.True(fullBytes.AsSpan().IndexOf(metadataDelta) >= 0);
+            Assert.True(fullBytes.AsSpan().IndexOf(pdbDelta) >= 0);
+            Assert.True(normalBytes.AsSpan().IndexOf(metadataDelta) < 0);
+            Assert.True(normalBytes.AsSpan().IndexOf(pdbDelta) < 0);
+        }
+        finally
+        {
+            foreach (var path in new[] { fullDumpPath, normalDumpPath })
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
     /// <summary>One captured memory range of the dump: its virtual start, size, and position in the file.</summary>
     private readonly record struct DumpMemoryRange(ulong StartAddress, ulong Size, ulong FileOffset);
 
