@@ -909,9 +909,11 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
 /// or terminal, because a partial derivation is not evidence about the requested name.
 /// </para>
 /// <para>
-/// Declared coverage boundaries are informational facts retained by every outcome. The physical Property and Event
-/// tables are not modeled by this slice, so a same-name property or event can never block a field here; the
-/// physical InternalsVisibleTo CustomAttribute table is likewise not modeled, so friendship is caller-supplied.
+/// Declared coverage boundaries are informational facts retained by every outcome. A same-name property does block
+/// here, from the module's complete Property table, but MethodSemantics is not modeled, so nothing tests whether its
+/// accessors are reachable from the use site. The physical Event and EventMap tables are not modeled at all, so a
+/// same-name event cannot block; the physical InternalsVisibleTo CustomAttribute table is likewise not modeled, so
+/// friendship is caller-supplied.
 /// </para>
 /// </remarks>
 public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2MemberLookupOutcome>
@@ -1129,9 +1131,10 @@ public sealed class StaticFieldV2MemberLookupOutcome : IEquatable<StaticFieldV2M
 /// most-derived-first, applies the declared accessibility certificate before hiding is decided, refuses to skip a
 /// blocking same-name method or instance field, and never claims absence over an incomplete chain.
 /// <para>
-/// Declared coverage boundaries of this slice: the physical Property and Event tables are not modeled, so a
-/// same-name property or event cannot block a field here; and the physical InternalsVisibleTo CustomAttribute table
-/// is not modeled, so friend grants are caller-supplied certificates. Interface ancestry is not a class base chain:
+/// Declared coverage boundaries of this slice: a same-name property blocks by name alone, because MethodSemantics is
+/// not modeled and nothing can ask whether its accessors are reachable from the use site; the physical Event and
+/// EventMap tables are not modeled, so a same-name event cannot block at all; and the physical InternalsVisibleTo
+/// CustomAttribute table is not modeled, so friend grants are caller-supplied certificates. Interface ancestry is not a class base chain:
 /// an interface owner walks its bounded transitive interface closure when the request supplies an
 /// interface-implementation portfolio, and otherwise examines only itself under the declared interface-ancestry
 /// boundary. An interface closure whose terminal is not complete can never produce an absent answer, exactly as an
@@ -1961,15 +1964,19 @@ public static class StaticFieldV2MemberLookup
     private static ImmutableArray<StaticFieldV2MemberLookupCoverageBoundary> BaseBoundaries(
         StaticFieldV2MemberLookupRequest request) =>
         request.AccessibilityMode == StaticFieldV2AccessibilityMode.UseSiteCertificate
+            // Ascending, which DeclaredCoverageBoundaries documents and Add preserves by sorting. The two new
+            // values are numerically above the mode-specific one, so they are appended after it rather than
+            // before, or one boundary set would be recorded in a different byte order than the same set reached
+            // through the interface-ancestry path.
             ? [
+                StaticFieldV2MemberLookupCoverageBoundary.FriendAssemblyAttributesNotModeled,
                 StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
                 StaticFieldV2MemberLookupCoverageBoundary.PropertyAccessorSemanticsNotModeled,
-                StaticFieldV2MemberLookupCoverageBoundary.FriendAssemblyAttributesNotModeled,
             ]
             : [
+                StaticFieldV2MemberLookupCoverageBoundary.AccessibilityBypassApplied,
                 StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
                 StaticFieldV2MemberLookupCoverageBoundary.PropertyAccessorSemanticsNotModeled,
-                StaticFieldV2MemberLookupCoverageBoundary.AccessibilityBypassApplied,
             ];
 
     private static ImmutableArray<StaticFieldV2MemberLookupCoverageBoundary> Add(

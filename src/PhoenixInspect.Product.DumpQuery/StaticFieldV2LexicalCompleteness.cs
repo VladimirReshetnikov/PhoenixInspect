@@ -26,7 +26,11 @@ public enum StaticFieldV2LexicalBlockerKind
     /// <summary>A local function of the selected method, observed through its generated MethodDef name.</summary>
     LocalFunction = 5,
 
-    /// <summary>A field or method directly declared by the selected type or one of its enclosing types.</summary>
+    /// <summary>A field, method, or property directly declared by the selected type or an enclosing type.</summary>
+    /// <remarks>
+    /// The owning symbol token names whichever table declared it, so a property blocker carries a Property (0x17)
+    /// token where a field blocker carries a FieldDef (0x04) one.
+    /// </remarks>
     TypeMemberName = 6,
 
     /// <summary>A type directly nested in the selected type or one of its enclosing types.</summary>
@@ -1261,8 +1265,10 @@ public sealed class StaticFieldV2BareRootOutcome : IEquatable<StaticFieldV2BareR
 /// instruction, and only then applies C# precedence over the declaring-type chain and the active
 /// <c>using static</c> imports.
 /// <para>
-/// Declared coverage boundaries of this slice: the physical Property and Event tables are not modeled, so a
-/// same-name property or event can neither block a bare root nor block an import; query range variables and pattern
+/// Declared coverage boundaries of this slice: a same-name property does block a bare root and does block an import,
+/// from the module's complete Property table, but MethodSemantics is not modeled, so nothing tests whether its
+/// accessors are reachable; the physical Event and EventMap tables are not modeled, so a same-name event can block
+/// neither; query range variables and pattern
 /// designations leave no physical row and are not certified; a generated local-function MethodDef carries no physical
 /// parent relation, so attribution relies on the raw generated name alone; and selecting a directly declared member of
 /// the selected type is deferred to the separately owned qualified route, because this slice only decides whether the

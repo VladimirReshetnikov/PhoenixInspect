@@ -39,7 +39,7 @@ public sealed class W8V2ExpressionPipelineTests
     private const int LibAssemblyReferenceToken = 0x2300_0002;
 
     private const string ConstructedSlotGoldenSha256 =
-        "dd8b353c79d1b14fa614b26b639a4467c0de957700cee39ce773a18e57ec5ccd";
+        "1b9ddc6550ee983432f50ca7862993e7c5d291a1a3492e840b36f7e8686e78dd";
 
     /// <summary>
     /// Proves a fully qualified constructed-generic static field reaches an exact value while calling no context

@@ -151,6 +151,44 @@ public sealed class W8V2MemberLookupTests
     }
 
     /// <summary>
+    /// Proves every answer's declared coverage boundaries really are ascending and distinct, on both accessibility
+    /// modes and through both the base and the interface-ancestry path.
+    /// </summary>
+    /// <remarks>
+    /// <c>DeclaredCoverageBoundaries</c> documents an ascending copy, and the interface path reaches it by sorting an
+    /// extended list while the base path emits a literal array. Nothing but this test makes the two agree, so one
+    /// boundary set could otherwise be recorded in two different byte orders depending on which path produced it.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Declared_coverage_boundaries_are_ascending_on_every_path()
+    {
+        var world = BuildWorld();
+        var outcomes = new[]
+        {
+            Lookup(world, world.App, BaseRid, "Shared"),
+            Lookup(world, world.App, PropertyHiderRid, "Shared"),
+            Lookup(
+                world,
+                world.App,
+                BaseRid,
+                "Shared",
+                StaticFieldV2AccessibilityMode.UseSiteCertificate,
+                world.AppAssembly),
+            LookupWithInterfaces(world, ShapeInterfaceRid, "Shared"),
+            Select(world, world.App, BaseRid, DumpExpressionIdentifier.Create("Shared"), default),
+        };
+
+        foreach (var outcome in outcomes)
+        {
+            var declared = outcome.DeclaredCoverageBoundaries;
+            Assert.NotEmpty(declared);
+            Assert.Equal(declared.Order(), declared);
+            Assert.Equal(declared.Distinct().Count(), declared.Length);
+        }
+    }
+
+    /// <summary>
     /// Proves the supplied Property catalog vector is validated on exactly the terms the FieldDef vector is, before
     /// any level is consulted, and that every shape failure is a typed stop rather than a thrown exception.
     /// </summary>
@@ -972,7 +1010,7 @@ public sealed class W8V2MemberLookupTests
         Assert.True(outcome.CanonicalBytes.AsSpan().SequenceEqual(replay.CanonicalBytes.AsSpan()));
         Assert.NotEqual(outcome, Lookup(world, world.App, DerivedRid, "Shared"));
         Assert.Equal(
-            "f262febf1572d6c094ccf88107ebf8cfc48d118660cd56567272fa9dafe3a6c1",
+            "38aaf4368f60519d5306e1d7e910fd012b9090efbc929df640af805a9cf5661f",
             outcome.Sha256);
 
         var originalBytes = outcome.CanonicalBytes;
@@ -1000,7 +1038,7 @@ public sealed class W8V2MemberLookupTests
         Assert.Equal(originalSha, outcome.Sha256);
         Assert.True(originalBytes.AsSpan().SequenceEqual(outcome.CanonicalBytes.AsSpan()));
         Assert.Equal(
-            StaticFieldV2MemberLookupCoverageBoundary.EventTablesNotModeled,
+            StaticFieldV2MemberLookupCoverageBoundary.AccessibilityBypassApplied,
             outcome.DeclaredCoverageBoundaries[0]);
         Assert.Equal(originalFirstCatalog, outcome.Request.FieldCatalogs[0]);
         Assert.Equal(3, outcome.Request.FieldCatalogs.Length);

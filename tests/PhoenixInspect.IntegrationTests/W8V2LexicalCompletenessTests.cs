@@ -178,6 +178,31 @@ public sealed class W8V2LexicalCompletenessTests
     }
 
     /// <summary>
+    /// Proves the certificate's and the bare root's declared coverage boundaries really are ascending and distinct,
+    /// which their public documentation states and nothing else enforces.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Declared_coverage_boundaries_are_ascending_on_every_path()
+    {
+        var world = World();
+        var scopes = Chain([]);
+        var certificate = Certify(world, HostRid, "Current", Lexical(world, HostRid, scopes));
+        var bareRoot = Bind(world, HostRid, "Current", scopes);
+
+        foreach (var declared in new[]
+        {
+            certificate.DeclaredCoverageBoundaries,
+            bareRoot.DeclaredCoverageBoundaries,
+        })
+        {
+            Assert.NotEmpty(declared);
+            Assert.Equal(declared.Order(), declared);
+            Assert.Equal(declared.Distinct().Count(), declared.Length);
+        }
+    }
+
+    /// <summary>
     /// Proves every physical incompleteness source makes the whole certificate partial rather than absent, names the
     /// exact evidence gap, and refuses to bind any bare root.
     /// </summary>
@@ -647,7 +672,7 @@ public sealed class W8V2LexicalCompletenessTests
         Assert.Equal(outcome.Certificate, replay.Certificate);
         Assert.Equal(outcome.Request, replay.Request);
         Assert.Equal(
-            "29b50af0dd0494502de3621359568f822b91f7204d5c03c89461b467622d901b",
+            "f840271400491f702c6b933f9246781aae723bf419f5cca69dae7301e5647e2f",
             outcome.Sha256);
 
         var certificate = outcome.Certificate;
