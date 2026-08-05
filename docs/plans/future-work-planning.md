@@ -726,6 +726,7 @@ Research documents remain useful hypotheses. They become delivery work only thro
 | Virtual stepping | W4 method execution, deterministic instruction/frame/model events, and stop-on-throw are validated; a later stepping increment then defines pause semantics and source mapping. Debugger-grade Step Out additionally requires handler-transfer EH. |
 | Async/Task lifting | The interpreter supports the scenario-derived `MoveNext` opcode closure, generics, calls, and required EH behavior. |
 | Dynamic dispatch lifting | Direct call/binding behavior is validated and a concrete dump scenario justifies DLR-specific work. |
+| Edit-and-Continue / Hot Reload dumps | The [Edit-and-Continue Support Plan](edit-and-continue-support-plan.md) governs this area: its E1 physical truth gate is the sole entry checkpoint, and its E2 typed-refusal stride is the minimum shippable increment. Today an edited module's staleness is silent, which that plan's section 2 records as the measured baseline. |
 | CFG/fixpoint abstract analysis | At least two value domains share the same meaningful opcode semantics; lattice order and convergence laws are executable tests. |
 | Broad semantic registry/projections | Two independently implemented models demonstrate a repeated extension problem. |
 | Additional products | A second consumer proves reuse against the implemented core rather than the package diagram. |
