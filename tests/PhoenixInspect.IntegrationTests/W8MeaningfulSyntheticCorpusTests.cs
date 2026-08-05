@@ -1111,9 +1111,15 @@ public sealed class W8CorpusIncident
     /// <summary>Gets why the runner executes or defers the incident.</summary>
     public string RunnerExecutionReason { get; }
 
-    /// <summary>Gets the counted read width the predeclared terminal implies.</summary>
-    public int ReadWidth => ExpectedTerminal is { } terminal && terminal.StartsWith("i64:", StringComparison.Ordinal)
-        ? sizeof(long)
+    /// <summary>Gets the counted read width the row's own root implies.</summary>
+    /// <remarks>
+    /// A row that requests a suffix reads its root as a reference, so the counted root read is one pointer wide; the
+    /// terminal's own width belongs to the suffix evaluation rather than to the root. Only a row whose terminal is
+    /// the root itself takes its width from that terminal.
+    /// </remarks>
+    public int ReadWidth =>
+        !string.Equals(SuffixProfile, "None", StringComparison.Ordinal) ? sizeof(ulong)
+        : ExpectedTerminal is { } terminal && terminal.StartsWith("i64:", StringComparison.Ordinal) ? sizeof(long)
         : sizeof(int);
 
     /// <summary>Gets the expression this incident's counterfactual evaluates in place of its own, when one applies.</summary>

@@ -1532,8 +1532,8 @@
       },
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "the-parser-produces-both-readings-but-route-selection-prefers-the-qualified-owner-partition-so-the-bare-head-is-never-certified-which-the-recorded-decision-resolves-by-letting-the-lexical-step-choose-between-the-two-parsed-readings"
+        "status": "executed",
+        "reason": "the-lexical-certification-of-the-dotted-head-selects-the-bare-reading-the-language-selects-so-the-imported-nested-head-binds-its-arity-zero-owner-and-the-unchanged-w2-suffix-reads-its-terminal-over-one-real-full-dump"
       },
       "representative": false
     },

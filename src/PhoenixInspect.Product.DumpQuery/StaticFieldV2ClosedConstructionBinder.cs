@@ -899,11 +899,10 @@ public static class StaticFieldV2ClosedConstructionBinder
         ArgumentNullException.ThrowIfNull(importedOwner);
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
         ArgumentNullException.ThrowIfNull(constraintPortfolio);
-        if (importedOwner.TargetClosedConstruction is not { } construction ||
-            construction.FinalClassification is not { Role: not null } finalClassification)
+        if (!CanBindImportedOwner(importedOwner))
         {
             throw new ArgumentException(
-                "An imported owner construction requires one import whose target decoded to a named construction.",
+                "An imported owner construction requires a decoded target or an arity-zero owner definition.",
                 nameof(importedOwner));
         }
 
@@ -914,8 +913,8 @@ public static class StaticFieldV2ClosedConstructionBinder
             interfaceImplementationPortfolio,
             null,
             importedOwner);
-        var ownerModule = finalClassification.SourceModule;
-        var ownerToken = finalClassification.TypeDefinition.TypeDefinitionToken;
+        var ownerModule = importedOwner.TargetTypeModule!;
+        var ownerToken = importedOwner.TargetTypeDefinition!.TypeDefinitionToken;
         if (!context.HasModule(ownerModule))
         {
             return context.Stopped(
@@ -924,9 +923,21 @@ public static class StaticFieldV2ClosedConstructionBinder
                 ownerToken);
         }
 
-        var definitionChain = construction.ConstructionSegments
-            .Select(static segment => segment.Classification)
-            .ToImmutableArray();
+        // An arity-zero owner has no arguments for anything to say, so its construction is determined by the
+        // definition alone and is frozen here exactly as the contextual route freezes its own argument-free owner.
+        // A generic owner whose target never decoded keeps the declared boundary instead: nothing names its arguments.
+        var definitionChain = importedOwner.TargetClosedConstruction is { } construction
+            ? construction.ConstructionSegments
+                .Select(static segment => segment.Classification)
+                .ToImmutableArray()
+            : BuildArityZeroChain(ancestryPortfolio, ownerModule, importedOwner.TargetTypeDefinition!);
+        if (definitionChain.IsDefault)
+        {
+            return context.Stopped(
+                StaticFieldV2ClosedConstructionResultKind.NonExact,
+                StaticFieldV2ClosedConstructionIssue.DefinitionClassificationAbsent,
+                ownerToken);
+        }
         foreach (var classification in definitionChain)
         {
             if (ancestryPortfolio.ExactClassificationOrDefault(
@@ -941,10 +952,19 @@ public static class StaticFieldV2ClosedConstructionBinder
             }
         }
 
-        var flattened = construction.FlattenedArguments;
+        var flattened = importedOwner.TargetClosedConstruction is { } decoded
+            ? decoded.FlattenedArguments
+            : ImmutableArray<MetadataClosedTypeIdentity>.Empty;
         if (!context.TryAdmitArguments(flattened.Length))
         {
             return context.Stopped();
+        }
+        if (flattened.Length != definitionChain[^1].TypeDefinition.TotalGenericArity)
+        {
+            return context.Stopped(
+                StaticFieldV2ClosedConstructionResultKind.Invalid,
+                StaticFieldV2ClosedConstructionIssue.ArityDisagreement,
+                ownerToken);
         }
 
         var checks = ValidateConstraints(context, ownerModule, definitionChain, flattened);
@@ -953,18 +973,55 @@ public static class StaticFieldV2ClosedConstructionBinder
             return context.Stopped();
         }
 
+        var ownerConstruction = importedOwner.TargetClosedConstruction ??
+            MetadataClosedTypeIdentity.ConstructNamed(definitionChain, flattened);
         return StaticFieldV2ClosedConstructionOutcome.IssueExact(
             null,
             ancestryPortfolio,
             constraintPortfolio,
             interfaceImplementationPortfolio,
-            construction,
+            ownerConstruction,
             flattened,
             checks.Value,
             context.CumulativeArgumentCount,
             ownerToken,
             null,
             importedOwner);
+    }
+
+    /// <summary>Tests whether one import can supply an owner construction at all.</summary>
+    /// <param name="importedOwner">The exact <c>using static</c> import.</param>
+    /// <returns><see langword="true"/> for a decoded target or an arity-zero owner definition.</returns>
+    internal static bool CanBindImportedOwner(StaticFieldV2ScopedImportProjection importedOwner) =>
+        importedOwner.TargetTypeDefinition is { } definition &&
+        importedOwner.TargetTypeModule is not null &&
+        (importedOwner.TargetClosedConstruction is { FinalClassification.Role: not null } ||
+         definition.TotalGenericArity == 0);
+
+    private static ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> BuildArityZeroChain(
+        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
+        StaticFieldMetadataModuleIdentity ownerModule,
+        MetadataTypeDefinitionAuthorityIdentity ownerDefinition)
+    {
+        var chain = new List<MetadataTypeDefinitionSemanticClassificationIdentity>();
+        var current = ancestryPortfolio.ExactClassificationOrDefault(
+            ownerModule,
+            ownerDefinition.TypeDefinitionToken);
+        while (current is { Role: not null })
+        {
+            chain.Insert(0, current);
+            if (current.TypeDefinition.EnclosingTypeDefinitionToken is not { } enclosing)
+            {
+                return [.. chain];
+            }
+            if (chain.Count > StaticFieldV2Limits.MaximumNestedTypeDefinitionDepth + 1)
+            {
+                return default;
+            }
+            current = ancestryPortfolio.ExactClassificationOrDefault(ownerModule, enclosing);
+        }
+
+        return default;
     }
 
     /// <summary>Freezes the exact closed construction of one contextually bound owner.</summary>

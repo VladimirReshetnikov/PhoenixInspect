@@ -1653,6 +1653,8 @@ public static class StaticFieldV2ExpressionPipeline
         private StaticFieldV2FrameRootEvaluationResult? frameRoot;
         private StaticFieldV2ExpressionRoute route = StaticFieldV2ExpressionRoute.NotSelected;
         private StaticFieldV2ScopedContextOutcome? scopedContext;
+        private bool bareCandidatePending;
+        private StaticFieldV2BareRootOutcome? settledBareRoot;
         private StaticFieldV2ContextualBindingOutcome? contextualBinding;
         private StaticFieldV2TypeNameBindingOutcome? explicitNameBinding;
         private StaticFieldV2ClosedConstructionOutcome? ownerConstruction;
@@ -2040,9 +2042,88 @@ public static class StaticFieldV2ExpressionPipeline
                 return StaticFieldV2ExpressionRoute.BareStaticMember;
             }
 
+            // A dotted spelling carries both readings, and C# decides between them by resolving the head as a simple
+            // name first: a head that names a value owns the spelling, and only a head that is not a value is read as
+            // a type. The question cannot be asked without a lexical envelope, so a caller supplying none keeps the
+            // qualified reading. When one is supplied the answer is settled at the end of step six, before any owner
+            // is bound, rather than by attempting one reading and retrying the other.
+            foreach (var partition in projected.Partitions)
+            {
+                if (partition.CandidateKind == StaticFieldV2CandidateKind.BareMember &&
+                    request.ScopedContext is { SuppliesLexicalEnvelope: true })
+                {
+                    bareCandidatePending = true;
+                    break;
+                }
+            }
+
             return request.ScopedContext is null
                 ? StaticFieldV2ExpressionRoute.ExplicitMetadataGlobal
                 : StaticFieldV2ExpressionRoute.Contextual;
+        }
+
+        /// <summary>
+        /// Settles which already-parsed reading of a dotted spelling the language selects, using one certification of
+        /// its head and no retry of any step.
+        /// </summary>
+        /// <remarks>
+        /// The head is a value when the bare reading binds one exactly, and equally when a higher-precedence
+        /// declaration — an active local or parameter — shadows it, because a shadowed name is still a name that
+        /// resolves to a value and the type reading is never reached in that case either. Any other certificate says
+        /// the head is not a value here, and the qualified partitions proceed untouched with their own axes.
+        /// </remarks>
+        private void SettleDottedHeadRoute()
+        {
+            if (!bareCandidatePending ||
+                request.ScopedContext is not { SuppliesLexicalEnvelope: true } source ||
+                scopedContext is not { ResultKind: StaticFieldV2ScopedContextResultKind.Exact } context)
+            {
+                return;
+            }
+
+            var barePartition = -1;
+            for (var index = 0; index < descriptor!.Partitions.Length; index++)
+            {
+                if (descriptor.Partitions[index].CandidateKind == StaticFieldV2CandidateKind.BareMember)
+                {
+                    barePartition = index;
+                    break;
+                }
+            }
+            if (barePartition < 0)
+            {
+                return;
+            }
+
+            lexicalEnvelopeCalls++;
+            var envelope = source.AcquireLexicalEnvelope();
+            if (envelope is null)
+            {
+                return;
+            }
+
+            var partition = descriptor.Partitions[barePartition];
+            var candidate = StaticFieldV2LexicalCompleteness.BindBareStaticRoot(StaticFieldV2BareRootRequest.Create(
+                StaticFieldV2LexicalCertificateRequest.Create(
+                    envelope,
+                    descriptor.Segments[partition.FieldSegmentIndex].Identifier,
+                    context.Request.SelectedModule,
+                    context.Request.SelectedTypeDefinition,
+                    request.AncestryPortfolio,
+                    request.FieldCatalogsCore,
+                    request.PropertyCatalogsCore),
+                context,
+                request.AccessibilityMode,
+                request.RequestingAssembly,
+                request.FriendAssemblyGrantsCore));
+            if (candidate.ResultKind != StaticFieldV2BareRootResultKind.Exact &&
+                candidate.Certificate.ResultKind != StaticFieldV2LexicalCertificateResultKind.Shadowed)
+            {
+                return;
+            }
+
+            route = StaticFieldV2ExpressionRoute.BareStaticMember;
+            settledBareRoot = candidate;
         }
 
         private StaticFieldV2ExpressionResult? AcquireContext()
@@ -2080,6 +2161,10 @@ public static class StaticFieldV2ExpressionPipeline
             }
 
             scopedContext = StaticFieldV2ScopedContextBinder.ProjectContext(acquisition.Request);
+            if (scopedContext.ResultKind == StaticFieldV2ScopedContextResultKind.Exact)
+            {
+                SettleDottedHeadRoute();
+            }
             return scopedContext.ResultKind switch
             {
                 StaticFieldV2ScopedContextResultKind.Exact => null,
@@ -2210,6 +2295,21 @@ public static class StaticFieldV2ExpressionPipeline
                 return LexicalStop(DumpExpressionLexicalCompletenessOutcome.Partial);
             }
 
+            // A dotted spelling already certified its head at the end of step six to settle which reading the
+            // language selects; that certification is the answer, so the seam is not consulted a second time.
+            if (settledBareRoot is { } settled)
+            {
+                bareRoot = settled;
+                lexicalCertificate = settled.Certificate;
+                var settledLexical = MapCertificate(lexicalCertificate.ResultKind);
+                if (settledLexical is not (DumpExpressionLexicalCompletenessOutcome.Complete or
+                    DumpExpressionLexicalCompletenessOutcome.NotRequired))
+                {
+                    return LexicalStop(settledLexical);
+                }
+                return CompleteBareRoot();
+            }
+
             lexicalEnvelopeCalls++;
             var envelope = source.AcquireLexicalEnvelope();
             if (envelope is null)
@@ -2239,7 +2339,14 @@ public static class StaticFieldV2ExpressionPipeline
             {
                 return LexicalStop(lexical);
             }
-            if (bareRoot.ResultKind != StaticFieldV2BareRootResultKind.Exact)
+            return CompleteBareRoot();
+        }
+
+        /// <summary>Finishes the bare route once its certificate and root outcome are in hand.</summary>
+        /// <returns>A typed stop, or null when the route may continue to storage.</returns>
+        private StaticFieldV2ExpressionResult? CompleteBareRoot()
+        {
+            if (bareRoot!.ResultKind != StaticFieldV2BareRootResultKind.Exact)
             {
                 return MemberStop(MapBareRoot(bareRoot.ResultKind));
             }
@@ -2284,7 +2391,7 @@ public static class StaticFieldV2ExpressionPipeline
             foreach (var candidate in bareRoot.ImportCandidatesCore)
             {
                 if (candidate.IsAccepted &&
-                    candidate.ContributingImport.TargetClosedConstruction is not null &&
+                    StaticFieldV2ClosedConstructionBinder.CanBindImportedOwner(candidate.ContributingImport) &&
                     candidate.Lookup.SelectedCandidate is { } lookupCandidate &&
                     lookupCandidate.FieldRow.Equals(selected.FieldRow))
                 {

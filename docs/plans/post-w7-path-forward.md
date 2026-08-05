@@ -1187,12 +1187,12 @@ declared-field-type ground-primitive boundary is retired for the mandatory owner
 `0b6bc7a69`, and for ground named signatures — every reference-typed static — once a caller supplies the field's own
 module token catalog; the remaining declared boundaries stay as recorded above.
 
-#### Decided, not yet implemented: which reading a dotted head selects
+#### Decided and implemented: which reading a dotted head selects
 
 A spelling like `ImportedNestedCurrent.Label` has two readings, and the parser already produces both: a bare-member
 partition whose head is the field and whose `.Label` is a suffix, and a qualified-owner partition whose head is a type.
-Route selection today picks the qualified reading whenever any qualified-owner partition exists, so a dotted head that
-is really a *value* never reaches the bare route. `batch-using-static-nested-head` stops there.
+Route selection previously picked the qualified reading whenever any qualified-owner partition existed, so a dotted
+head that is really a *value* never reached the bare route, and `batch-using-static-nested-head` stopped there.
 
 The language rule is not "prefer one partition". C# resolves the head of `E.I` as a simple name first: if it binds to
 a value — a local, a parameter, or a field, including one an `using static` import brings into scope — then `.I` is
@@ -1215,7 +1215,21 @@ an owner for the other routes. The rule therefore belongs at the end of **step 6
 caller's context and can acquire the envelope from the same seam, so the route is fixed before step 7 binds anything.
 Type binding does not move.
 
-Three consequences are named so the implementing slice does not discover them. `Route` becomes a value determined at
+**Landed.** The settlement runs at the end of step 6 as designed, and the head is treated as a value both when the
+bare reading binds one exactly and when an active local or parameter shadows it, because a shadowed name still
+resolves to a value and the type reading is never reached in that case either. One further gap surfaced immediately
+and is closed with it: the bare route deferred *every* construction, including for an import naming an arity-zero
+owner, which has no arguments for anything to say. Such an owner is now frozen exactly as the contextual route freezes
+its own argument-free owner, while a generic imported owner whose target never decoded keeps the declared boundary.
+`batch-using-static-nested-head` executes with all twelve produced axes equal to its predeclared row and its terminal
+read through the unchanged evaluator, raising the executed count to nineteen of thirty-five.
+
+Three consequences were named ahead of the slice, and the measured outcome differs from one of them. `Route` is now
+determined at the end of step 6. A request supplying no lexical envelope keeps the previous selection. But the third —
+that every contextual dotted spelling would acquire an envelope and move its `LexicalEnvelopeCallCount` — did not
+materialize as a broken test: no existing case pinned that count for a contextual route, so nothing had to be
+re-stated. The extra acquisition is real and is the price of asking the language's question; it is recorded here
+rather than left for someone to rediscover as an unexplained counter. `Route` becomes a value determined at
 the end of step 6 rather than at step 5, so every result digest embedding a route for a dotted-head spelling moves and
 is re-frozen as that slice's declared content. A request supplying no lexical envelope keeps today's qualified
 selection, because with no certificate the language question cannot be asked. And — the one that is easy to miss —
@@ -1328,8 +1342,7 @@ The rows that stay manifest-only each stop at one named landed boundary rather t
 contextual owner reaches its predeclared exact terminal, with the fully qualified control converging on the same
 construction identity and value through the explicit route and the two outcomes carrying distinct binding provenance —
 the W8.5 convergence statement, proved over a real dump — but its predeclared row spelled `typeConstruction` as
-`NotRequired`; the remaining bare row's dotted head partitions as a contextual owner name, so the using-static
-nested-head route is never entered; and the active-local row produces exactly the predeclared `Shadowed` certificate under a context
+`NotRequired`; and the active-local row produces exactly the predeclared `Shadowed` certificate under a context
 axis its predeclaration spelled `NotRequired`. Each
 divergence is asserted as a finding rather than retuned. The three W8.1-admitted branches are covered:
 thread-relative and frame-value execute end to end, and the RVA branch reaches its predeclared exact value over the

@@ -474,7 +474,15 @@ public sealed class W8V2ExpressionPipelineTests
         Assert.Equal(DumpExpressionContextOutcome.Exact, result.Axes.Context);
         Assert.Equal(DumpExpressionLexicalCompletenessOutcome.Complete, result.Axes.LexicalCompleteness);
         Assert.Equal(DumpExpressionTypeBindingOutcome.NotRequired, result.Axes.TypeBinding);
-        Assert.Equal(DumpExpressionTypeConstructionOutcome.NotRequired, result.Axes.TypeConstruction);
+
+        // The spelling still binds no owner name, but the import names an arity-zero owner whose construction has no
+        // arguments for anything to say, so it is frozen rather than deferred and the construction boundary is gone.
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, result.Axes.TypeConstruction);
+        Assert.Empty(result.Provenance.OwnerConstruction!.FlattenedArguments);
+        Assert.NotNull(result.Provenance.OwnerConstruction.ImportedOwnerBinding);
+        Assert.DoesNotContain(
+            StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred,
+            result.Provenance.DeclaredCoverageBoundaries);
         Assert.Equal(11, result.SignedValue);
         Assert.Equal(
             StaticFieldV2BareRootSource.UsingStaticImport,

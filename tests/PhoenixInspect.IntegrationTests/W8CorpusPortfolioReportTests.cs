@@ -40,18 +40,19 @@ public sealed class W8CorpusPortfolioReportTests
 
         // The report summarizes the manifest, so its digests are re-frozen whenever a row's runner-execution status
         // legitimately changes. That status is runner bookkeeping, never a predeclared axis: this pair records
-        // eighteen executed and seventeen manifest-only rows after alias and import evidence became decodable. The
-        // four rows that became drivable are the two TypeSpec-alias rows and the constructed `using static` row,
-        // whose shared blocker was the undecoded TypeSpec target, and the extern-alias row, whose blocker was a use
-        // hiding its own declaration. All four reach their predeclared axes unchanged, so no predeclared axis moved.
+        // nineteen executed and sixteen manifest-only rows. The five rows that became drivable are the two
+        // TypeSpec-alias rows and the constructed `using static` row, whose shared blocker was the undecoded TypeSpec
+        // target; the extern-alias row, whose blocker was a use hiding its own declaration; and the nested bare-head
+        // row, whose blocker was route selection preferring the qualified reading of a dotted head the language
+        // resolves as a value. All five reach their predeclared axes unchanged, so no predeclared axis moved.
         Assert.Equal(
-            "d67f354e48eb7ee989e97eeb7152a59f256a5bb8aeff45f4226a1d24c43a15f4",
+            "ad4b7e750a70fbfb82d771e84f553d93557341f1fb3b6f4eeef5d2fcace6d85b",
             Digest(first.MachineReport));
         Assert.Equal(
-            "6641224a9cd5447ff508f64592c84ded1c9cc4e0a53dc550b56abe792cceb5ea",
+            "66e336b710b13b2c2a86d41093cfbb302a1935a10946113cb9700584817fc8c8",
             Digest(first.HumanReport));
-        Assert.Equal(18, first.ExecutedCount);
-        Assert.Equal(17, first.ManifestOnlyCount);
+        Assert.Equal(19, first.ExecutedCount);
+        Assert.Equal(16, first.ManifestOnlyCount);
     }
 
     /// <summary>
