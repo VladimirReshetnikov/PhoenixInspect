@@ -154,7 +154,15 @@ rows alone: each generation shares the baseline Mvid and carries its own distinc
 generation one's base identifier is empty because generation zero has no edit identifier at all, and generation
 two's base identifier equals generation one's edit identifier exactly. Invariant 7's lineage join is therefore
 pairing on the predecessor's edit identifier with an empty-identifier boundary condition at the chain root, now a
-measured fact rather than a hypothesis.
+measured fact rather than a hypothesis. The fourth slice answered probe 2 with a design-changing finding: a
+minimal reader over the dump's own memory-range directory located every byte-identical copy of the applied delta
+blobs, and with the applying frame dead and two forced collections before the pause, the metadata and Portable-PDB
+deltas exist only as managed-heap residue of the process's own payload arrays — no native runtime-retained copy of
+either blob exists anywhere in the captured address space. The runtime integrates the metadata delta into its own
+structures rather than retaining the blob, so E3 cannot acquire deltas by locating the original bytes in a dump; it
+must read the runtime's edit structures, which makes the runtime-structure half of probe 3 the load-bearing open
+question. The Portable-PDB delta's absence from any runtime-owned memory likewise points probe 8 toward the E6
+non-admission arm unless the host-supplied artifact seam carries the delta from outside the dump.
 
 ### E2 — edit detection and typed non-admission
 

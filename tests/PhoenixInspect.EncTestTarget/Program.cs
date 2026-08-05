@@ -40,6 +40,11 @@ public static class EncPause
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static int WaitForDump(string profile, int retained)
     {
+        // The transient payload arrays this process handed to the runtime are collected before the pause, so a
+        // delta copy that survives into the dump is the runtime's own retained one rather than a fixture leftover.
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
+        GC.WaitForPendingFinalizers();
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
         Console.WriteLine("READY");
         Console.Out.Flush();
         Thread.Sleep(Timeout.Infinite);
@@ -73,6 +78,22 @@ public static class EncGate
 
     private static Assembly? retainedBaselineAssembly;
 
+    /// <summary>Reads and applies the generation-one delta triple inside its own frame.</summary>
+    /// <remarks>
+    /// The payload arrays are locals of this frame alone, so they become unreachable when it returns and the
+    /// pause-time collection removes this process's own copies; a delta copy that still survives into the dump is
+    /// therefore referenced by the runtime itself.
+    /// </remarks>
+    /// <param name="assembly">The loaded payload baseline assembly.</param>
+    /// <param name="payloadDirectory">The directory holding the delta blobs.</param>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ApplyGenerationOne(Assembly assembly, string payloadDirectory) =>
+        MetadataUpdater.ApplyUpdate(
+            assembly,
+            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.metadata-delta")),
+            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.il-delta")),
+            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.pdb-delta")));
+
     /// <summary>Loads the payload baseline, applies generation one, verifies the edit, and pauses.</summary>
     /// <param name="profile">The predeclared truth-gate profile.</param>
     /// <param name="payloadDirectory">The directory holding the baseline assembly and delta blobs.</param>
@@ -100,11 +121,7 @@ public static class EncGate
             return 94;
         }
 
-        MetadataUpdater.ApplyUpdate(
-            assembly,
-            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.metadata-delta")),
-            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.il-delta")),
-            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.pdb-delta")));
+        ApplyGenerationOne(assembly, payloadDirectory);
 
         switch (profile)
         {

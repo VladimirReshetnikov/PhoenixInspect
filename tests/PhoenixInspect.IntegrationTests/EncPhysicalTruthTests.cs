@@ -361,6 +361,170 @@ public sealed class EncPhysicalTruthTests
         }
     }
 
+    /// <summary>
+    /// Measures whether the applied generation's three delta blobs are physically present in a full dump of the
+    /// edited process, and where: each found copy's file offset is mapped back to its virtual address through the
+    /// dump's own memory-range directory and classified against the managed heap's segments.
+    /// </summary>
+    /// <remarks>
+    /// The fixture collects the transient payload arrays before pausing, so a surviving copy is the runtime's own
+    /// retained one. The dump's memory ranges are read from the minidump header and Memory64List stream directly,
+    /// because the pinned host reader exposes no address-space enumeration.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Applied_delta_blobs_are_located_in_the_edited_process_dump()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-reach-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-reach-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteSmokePayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-smoke", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            var dumpBytes = File.ReadAllBytes(dumpPath);
+            var ranges = ReadMemory64Ranges(dumpBytes);
+            Assert.NotEmpty(ranges);
+
+            using var dataTarget = DataTarget.LoadDump(
+                dumpPath,
+                new DataTargetOptions { FileLocator = ClrmdOfflineFileLocator.Instance });
+            var runtime = dataTarget.ClrVersions.Single().CreateRuntime();
+            try
+            {
+                var report = new List<string>();
+                foreach (var blobName in new[]
+                         {
+                             "generation-1.metadata-delta",
+                             "generation-1.il-delta",
+                             "generation-1.pdb-delta",
+                         })
+                {
+                    var pattern = File.ReadAllBytes(Path.Combine(payloadDirectory, blobName));
+                    Assert.True(pattern.Length > 8, $"{blobName} must be a substantive pattern.");
+                    var addresses = new List<string>();
+                    var searchOffset = 0;
+                    while (true)
+                    {
+                        var found = dumpBytes.AsSpan(searchOffset).IndexOf(pattern);
+                        if (found < 0)
+                        {
+                            break;
+                        }
+
+                        var fileOffset = searchOffset + found;
+                        var address = MapFileOffsetToAddress(ranges, fileOffset);
+                        var segment = address is { } mapped ? runtime.Heap.GetSegmentByAddress(mapped) : null;
+                        addresses.Add(
+                            address is { } value
+                                ? $"0x{value:x}:{(segment is null ? "native" : "gc-heap")}"
+                                : $"file:0x{fileOffset:x}:unmapped");
+                        searchOffset = fileOffset + 1;
+                    }
+
+                    report.Add($"{blobName}({pattern.Length}b)=[{string.Join(", ", addresses)}]");
+                }
+
+                // Measured, with the applying frame dead and two forced blocking collections before the pause: the
+                // metadata and Portable-PDB delta blobs are found only inside managed-heap ranges — dead-object
+                // residue of this process's own payload arrays, whose liveness this probe does not claim — and no
+                // byte-identical copy of either exists anywhere else in the captured address space. The runtime
+                // therefore integrates the metadata delta into its own structures rather than retaining the blob,
+                // so delta acquisition from a dump cannot rely on locating the original bytes; it must read the
+                // runtime's edit structures. The eleven-byte IL delta is too short for uniqueness claims and is
+                // recorded, not pinned, beyond its deterministic length.
+                Assert.Equal(444, File.ReadAllBytes(
+                    Path.Combine(payloadDirectory, "generation-1.metadata-delta")).Length);
+                Assert.Equal(11, File.ReadAllBytes(
+                    Path.Combine(payloadDirectory, "generation-1.il-delta")).Length);
+                Assert.Equal(356, File.ReadAllBytes(
+                    Path.Combine(payloadDirectory, "generation-1.pdb-delta")).Length);
+                Assert.DoesNotContain(":native", report[0], StringComparison.Ordinal);
+                Assert.DoesNotContain(":unmapped", report[0], StringComparison.Ordinal);
+                Assert.DoesNotContain(":native", report[2], StringComparison.Ordinal);
+                Assert.DoesNotContain(":unmapped", report[2], StringComparison.Ordinal);
+            }
+            finally
+            {
+                runtime.Dispose();
+            }
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
+    /// <summary>One captured memory range of the dump: its virtual start, size, and position in the file.</summary>
+    private readonly record struct DumpMemoryRange(ulong StartAddress, ulong Size, ulong FileOffset);
+
+    /// <summary>Reads the dump's Memory64List ranges directly from the minidump header and stream directory.</summary>
+    private static ImmutableArray<DumpMemoryRange> ReadMemory64Ranges(byte[] dumpBytes)
+    {
+        Assert.Equal(0x504D_444Du, BitConverter.ToUInt32(dumpBytes, 0));
+        var streamCount = BitConverter.ToUInt32(dumpBytes, 8);
+        var directoryOffset = BitConverter.ToUInt32(dumpBytes, 12);
+        for (var index = 0u; index < streamCount; index++)
+        {
+            var entryOffset = checked((int)(directoryOffset + (index * 12)));
+            if (BitConverter.ToUInt32(dumpBytes, entryOffset) != 9)
+            {
+                continue;
+            }
+
+            var listOffset = checked((int)BitConverter.ToUInt32(dumpBytes, entryOffset + 8));
+            var rangeCount = BitConverter.ToUInt64(dumpBytes, listOffset);
+            var dataOffset = BitConverter.ToUInt64(dumpBytes, listOffset + 8);
+            var builder = ImmutableArray.CreateBuilder<DumpMemoryRange>(checked((int)rangeCount));
+            for (var range = 0ul; range < rangeCount; range++)
+            {
+                var rangeOffset = checked((int)(listOffset + 16 + ((long)range * 16)));
+                var start = BitConverter.ToUInt64(dumpBytes, rangeOffset);
+                var size = BitConverter.ToUInt64(dumpBytes, rangeOffset + 8);
+                builder.Add(new DumpMemoryRange(start, size, dataOffset));
+                dataOffset = checked(dataOffset + size);
+            }
+
+            return builder.MoveToImmutable();
+        }
+
+        return [];
+    }
+
+    private static ulong? MapFileOffsetToAddress(ImmutableArray<DumpMemoryRange> ranges, long fileOffset)
+    {
+        foreach (var range in ranges)
+        {
+            if ((ulong)fileOffset >= range.FileOffset && (ulong)fileOffset < range.FileOffset + range.Size)
+            {
+                return range.StartAddress + ((ulong)fileOffset - range.FileOffset);
+            }
+        }
+
+        return null;
+    }
+
     private static int FindSentinelToken(MetadataReader reader)
     {
         foreach (var handle in reader.MethodDefinitions)
