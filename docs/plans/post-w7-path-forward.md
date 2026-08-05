@@ -1431,6 +1431,20 @@ retained as the row's divergence finding, with its declared align counterfactual
 through one seam call. Executed rows go nineteen to twenty-one of thirty-five, and the report goldens are re-frozen
 for that count.
 
+**The nullable-argument row advanced one stage and surfaced its real boundary.** The corpus synthetic core now
+declares `System.Int32` and `System.Nullable`1` alongside the role definitions — both extending `ValueType`, with
+the one `GenericParam` row `T` the nullable head owns — so
+`global::PhoenixInspect.W8CoordinatorShapeTarget.NullableSlot<global::System.Nullable<global::System.Int32>>.Current`
+now binds its spelled argument, closes its owner construction `Exact`, and selects its field. Measured over its real
+dump, the stop moved from `typeConstruction: Partial` to `runtimeConstruction: Absent` on a snapshot whose gate
+provably materializes `NullableSlot<int?>`: the metadata construction's nullable argument is keyed to the synthetic
+core module identity while every runtime candidate derives its ordered arguments from the real corelib module in the
+dump, so no candidate identity can match. The row's recorded reason is corrected to that finding, its predeclared
+axes stay frozen, and closing it needs the composed authority to speak the same corelib identity the runtime speaks —
+either by composing the real corelib module into the corpus authority or by an admitted canonicalization of core
+primitive identities across the metadata and runtime sides. That successor question is product architecture, not a
+runner gap.
+
 Produced-vs-predeclared divergences are documented as findings through the
 `Attempted_incidents_stop_at_their_landed_pipeline_boundaries` and
 `Contextual_and_bare_incidents_stop_at_their_landed_scope_boundaries` tests with axes captured from real runs, and the

@@ -1618,7 +1618,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "owner-type-argument-absent-because-the-composed-core-declares-no-nullable-or-int32-definition"
+        "reason": "the-supplied-core-int32-and-nullable-definitions-bind-the-spelled-argument-and-close-the-owner-construction-but-runtime-construction-is-absent-because-the-arguments-synthetic-core-identity-cannot-match-any-candidates-real-corelib-derived-argument-identity"
       },
       "representative": false
     },

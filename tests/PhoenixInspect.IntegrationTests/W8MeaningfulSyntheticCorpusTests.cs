@@ -630,17 +630,15 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(derivedBase.PredeclaredAxes, produced.Result.Axes);
         }
 
-        // Incident 15 coordinator-nullable-argument-has-value: the owner name binds Exact, but the closed construction
-        // of the nested global::System.Nullable<global::System.Int32> type argument is NonExact (TypeArgumentAbsent).
-        // The composed synthetic core deliberately declares only Object, ValueType, Enum, Delegate, and
-        // MulticastDelegate — it supplies no System.Nullable`1 and no System.Int32 TypeDef — so that spelled argument
-        // resolves to no definition and the owner construction never closes. The field-signature stage that now
-        // substitutes an owner VAR is therefore never reached. The predeclared row expects an Exact construction
-        // reaching one exact has-value form; the produced divergence — landing at typeConstruction Partial upstream of
-        // the broadened owner-VAR field decoder — is the reported finding. Supplying those corelib definitions is an
-        // authority-composition change across the whole corpus, not a field-signature decode change. The extended
-        // decoder itself is proven end to end by the Fast W8V2GenericVarFieldTests; here the corpus authority stops the
-        // run before it, so the predeclared row stays manifest-only and completely untouched.
+        // Incident 15 coordinator-nullable-argument-has-value: the synthetic core now declares System.Int32 and
+        // System.Nullable`1 alongside the role definitions, so the spelled
+        // global::System.Nullable<global::System.Int32> argument binds and the owner construction closes Exact, and
+        // member lookup selects the field. The measured stop moved one stage outward: runtime construction is Absent
+        // over a snapshot whose gate provably materializes NullableSlot<int?>, because the metadata construction's
+        // nullable argument is keyed to the synthetic core module identity while every runtime candidate derives its
+        // ordered arguments from the real corelib module in the dump, so no candidate identity can match. Closing
+        // that needs the composed authority to speak the same corelib identity the runtime speaks — the next named
+        // boundary — so the predeclared row stays manifest-only and the produced divergence is the finding.
         var nullableArgument = manifest.Incidents.Single(
             static incident => incident.Id == "coordinator-nullable-argument-has-value");
         Assert.Equal("manifest-only", nullableArgument.RunnerExecutionStatus);
@@ -649,17 +647,16 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         {
             var produced = world.Evaluate(nullableArgument.Expression, nullableArgument.ReadWidth);
             Assert.Equal(
-                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Partial/NotReached/NotReached/NotReached/" +
-                "NotReached/NotReached/Partial",
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/Absent/NotReached/" +
+                "NotReached/NotReached/NoAnswer",
                 Describe(produced.Result.Axes));
-            Assert.Equal(DumpExpressionTypeBindingOutcome.Exact, produced.Result.Axes.TypeBinding);
-            Assert.Equal(DumpExpressionTypeConstructionOutcome.Partial, produced.Result.Axes.TypeConstruction);
             Assert.Equal(
-                StaticFieldV2ClosedConstructionResultKind.NonExact,
+                StaticFieldV2ClosedConstructionResultKind.Exact,
                 produced.Result.Provenance.OwnerConstruction!.ResultKind);
+            Assert.Equal(DumpExpressionMemberLookupOutcome.Exact, produced.Result.Axes.MemberLookup);
             Assert.Equal(
-                StaticFieldV2ClosedConstructionIssue.TypeArgumentAbsent,
-                produced.Result.Provenance.OwnerConstruction.Issue);
+                DumpExpressionRuntimeConstructionOutcome.Absent,
+                produced.Result.Axes.RuntimeConstruction);
             Assert.Equal(DumpExpressionValueOutcome.NotReached, produced.Result.Axes.Value);
             Assert.Null(produced.Result.SignedValue);
             Assert.NotEqual(nullableArgument.PredeclaredAxes, produced.Result.Axes);
@@ -2728,6 +2725,9 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 moduleDefinition,
                 assemblyDefinition));
 
+        // Int32 and Nullable`1 are declared alongside the role definitions because closed nullable spellings such
+        // as global::System.Nullable<global::System.Int32> must bind their argument and their nullable head to one
+        // exact core definition each; both extend ValueType so ancestry classifies them as value types.
         var namedTypes = new (string NamespaceName, string TypeName, int? Extends)[]
         {
             ("System", "Object", null),
@@ -2735,6 +2735,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             ("System", "Enum", 0x0200_0003),
             ("System", "Delegate", 0x0200_0002),
             ("System", "MulticastDelegate", 0x0200_0005),
+            ("System", "Int32", 0x0200_0003),
+            ("System", "Nullable`1", 0x0200_0003),
         };
         var sourceEnds = MetadataSourceEndIdentity.Create(
             module,
@@ -2745,6 +2747,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 fieldDefinitionsExamined: 0,
                 typeDefinitionRowCount: namedTypes.Length + 1,
                 fieldDefinitionRowCount: 0,
+                genericParameterRowCount: 1,
                 declaredMemberRowCounts: StaticFieldModuleDeclaredMemberRowCounts.Create(
                     constantRowCount: 0,
                     propertyMapRowCount: 0,
@@ -2782,7 +2785,17 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             sourceEnds,
             typeDefinitions,
             ImmutableArray<MetadataNestedClassRowObservationIdentity>.Empty);
-        var genericParameters = MetadataGenericParameterPhysicalTableCatalogIdentity.Create(sourceEnds, default);
+        var genericParameters = MetadataGenericParameterPhysicalTableCatalogIdentity.Create(
+            sourceEnds,
+            [
+                MetadataGenericParameterRowObservationIdentity.Create(
+                    module,
+                    genericParameterToken: 0x2A_00_0001,
+                    number: 0,
+                    flags: 0,
+                    ownerMetadataToken: 0x0200_0008,
+                    name: "T"),
+            ]);
         var methods = MetadataMethodDefinitionTableCatalogIdentity.Create(typeDefinitions, default);
         var authority = MetadataDefinitionAuthorityCatalogIdentity.Create(
             typeDefinitions,
