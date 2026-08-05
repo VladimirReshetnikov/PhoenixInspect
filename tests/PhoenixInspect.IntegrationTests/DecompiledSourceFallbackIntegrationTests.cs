@@ -1,3 +1,4 @@
+using System.Reflection.Metadata;
 using PhoenixInspect.Host.Dump.ClrMD;
 using PhoenixInspect.Inspection;
 using Xunit;
@@ -58,9 +59,16 @@ public sealed class DecompiledSourceFallbackIntegrationTests
                 decompiled.Lines,
                 line => line.Text.Contains(methodShortName, StringComparison.Ordinal));
 
-            // The demo module has a matching PDB, but a CI-mode build records SourceLink's deterministic '/_/'
-            // document paths, which exist on no machine — the "matching sources can't be found" case. The frame
-            // falls back to decompilation, and the reconstruction demonstrably contains the frame's own method.
+            // The demo module has a matching PDB whose recorded document paths exist nowhere — the "matching
+            // sources can't be found" case. That is a property of the demo target's own build, not of this machine:
+            // its project pins ContinuousIntegrationBuild, so the PDB records SourceLink's deterministic '/_/'
+            // repository-root map rather than whatever absolute paths the builder happened to have.
+            //
+            // The precondition is asserted from the artifact rather than assumed, because when it does not hold the
+            // frame resolves to real on-disk source and the assertion below fails as a bare Verification mismatch
+            // that says nothing about why. Reading it here names the cause instead.
+            AssertRecordedDocumentsExistNowhere(Path.ChangeExtension(executable, ".pdb"));
+
             var demoFrame = RequireFrameInModule(session, DemoModuleName);
             var demoDecompiled = SourceNavigationService.ResolveFrameSource(session, demoFrame, []);
             Assert.Equal(
@@ -87,6 +95,31 @@ public sealed class DecompiledSourceFallbackIntegrationTests
             {
                 File.Delete(dumpPath);
             }
+        }
+    }
+
+    /// <summary>
+    /// Asserts every document the demo target's Portable PDB records is unfindable on this machine, which is the
+    /// physical precondition of the "matching PDB, missing sources" fallback trigger.
+    /// </summary>
+    /// <param name="pdbPath">The Portable PDB beside the demo target's assembly.</param>
+    private static void AssertRecordedDocumentsExistNowhere(string pdbPath)
+    {
+        Assert.True(File.Exists(pdbPath), $"Expected the demo target's Portable PDB at '{pdbPath}'.");
+        using var stream = File.OpenRead(pdbPath);
+        using var provider = MetadataReaderProvider.FromPortablePdbStream(stream);
+        var reader = provider.GetMetadataReader();
+        Assert.NotEmpty(reader.Documents);
+
+        foreach (var handle in reader.Documents)
+        {
+            var recorded = reader.GetString(reader.GetDocument(handle).Name);
+            Assert.False(
+                File.Exists(recorded),
+                $"The demo target's PDB records '{recorded}', which exists on this machine, so the frame resolves "
+                + "to verified source and the decompiled-source fallback never triggers. The demo project pins "
+                + "ContinuousIntegrationBuild precisely so its documents stay deterministic '/_/' paths that exist "
+                + "nowhere; a build that dropped that property is the cause, not this test.");
         }
     }
 

@@ -7,6 +7,13 @@
 
     It is built optimized with a Portable PDB, because that is what a production dump is taken from, and the
     selected-frame name context the evaluator can consult comes from exactly such a PDB.
+
+    ContinuousIntegrationBuild is pinned here rather than inherited from the CI environment variable, because this
+    target's PDB is itself evidence two tests read. A production build is deterministic, so its PDB records
+    SourceLink's '/_/' repository-root map rather than the build machine's absolute paths — which is exactly the
+    "the PDB matches but its documents exist nowhere here" case the decompiled-source fallback exists to serve.
+    Left to the ambient variable, a local build without CI=true would record real on-disk paths, the fallback would
+    never trigger, and DecompiledSourceFallbackIntegrationTests would fail depending on who built last.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -16,6 +23,7 @@
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <IsPackable>false</IsPackable>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
 </Project>
