@@ -1148,6 +1148,8 @@ public sealed class StaticFieldV2BareRootOutcome : IEquatable<StaticFieldV2BareR
     public ImmutableArray<StaticFieldV2BareRootImportCandidate> ImportCandidates =>
         ExpressionV2ContractEncoding.Copy(importCandidates);
 
+    internal ImmutableArray<StaticFieldV2BareRootImportCandidate> ImportCandidatesCore => importCandidates;
+
     /// <summary>Gets a defensive ascending copy of every declared coverage boundary.</summary>
     public ImmutableArray<StaticFieldV2LexicalCoverageBoundary> DeclaredCoverageBoundaries =>
         ExpressionV2ContractEncoding.Copy(declaredCoverageBoundaries);
@@ -1683,7 +1685,7 @@ public static class StaticFieldV2LexicalCompleteness
                     continue;
                 }
 
-                var lookup = Lookup(request, ownerModule, ownerType);
+                var lookup = Lookup(request, ownerModule, ownerType, import.TargetClosedConstruction);
                 consulted++;
                 if (lookup.ResultKind == StaticFieldV2MemberLookupResultKind.Absent)
                 {
@@ -1900,10 +1902,20 @@ public static class StaticFieldV2LexicalCompleteness
                 lookup.RelatedMetadataToken),
         };
 
+    /// <summary>
+    /// Looks the bare identifier up on one imported owner, supplying the import's own decoded construction when it
+    /// has one so a field declared through the owner's type parameters is substituted rather than read as ground.
+    /// </summary>
+    /// <param name="request">The bare-root request.</param>
+    /// <param name="ownerModule">The module owning the consulted definition.</param>
+    /// <param name="ownerType">The consulted owner definition.</param>
+    /// <param name="ownerConstruction">The import's decoded closed construction, or null when it names none.</param>
+    /// <returns>The member-lookup outcome for that owner.</returns>
     private static StaticFieldV2MemberLookupOutcome Lookup(
         StaticFieldV2BareRootRequest request,
         StaticFieldMetadataModuleIdentity ownerModule,
-        MetadataTypeDefinitionAuthorityIdentity ownerType) =>
+        MetadataTypeDefinitionAuthorityIdentity ownerType,
+        MetadataClosedTypeIdentity? ownerConstruction = null) =>
         StaticFieldV2MemberLookup.SelectStaticField(StaticFieldV2MemberLookupRequest.Create(
             ownerModule,
             ownerType.TypeDefinitionToken,
@@ -1913,7 +1925,8 @@ public static class StaticFieldV2LexicalCompleteness
             request.CertificateRequest.PropertyCatalogsCore,
             request.AccessibilityMode,
             request.RequestingAssembly,
-            request.FriendAssemblyGrantsCore));
+            request.FriendAssemblyGrantsCore,
+            ownerClosedConstruction: ownerConstruction));
 
     private static int DecidingLevelIndex(StaticFieldV2MemberLookupOutcome lookup)
     {

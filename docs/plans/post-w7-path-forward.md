@@ -1260,7 +1260,17 @@ reaches the same construction, field, slot, and value its fully qualified contro
 `withhold-scoped-context` counterfactual still changes the answer; the second projects an enum literal from the
 complete Constant table with a zero runtime-call count, which is what its predeclared ledger asserts.
 
-`workflow-extern-alias-interface-owner` follows, raising the executed count to seventeen of thirty-five. Its two
+`request-using-static-bare-primitive` follows from the same decode, raising the executed count to eighteen of
+thirty-five. A bare spelling names no owner, which is why the bare route declared a construction boundary: nothing in
+the expression says what the arguments would be. A *constructed* `using static` import does say — its physical
+TypeSpec target names the closed construction — so the bare route now closes that construction through the guarded
+`BindImportedOwnerConstruction` issuer, under the same module, classification, and substituted-constraint validation
+every other route applies, and the closed-construction outcome's tagged binding-evidence union gains a third arm
+naming the import that supplied it. The import's construction is also handed to that import's own member lookup, so a
+field declared through the owner's type parameters is substituted rather than read as ground. The boundary is retired
+exactly for imports that carry a construction and is still declared for an import that names a bare definition.
+
+`workflow-extern-alias-interface-owner` also executes. Its two
 blockers were both rules rather than gaps. First, a compiler emits an extern alias as a *pair*: the declaration that
 names the AssemblyRef lives in the module-level import scope and the `extern alias X;` directive itself is a separate
 import in the file's scope that names only the alias. The innermost-declaration rule treated the second as a
@@ -1279,8 +1289,8 @@ The rows that stay manifest-only each stop at one named landed boundary rather t
 contextual owner reaches its predeclared exact terminal, with the fully qualified control converging on the same
 construction identity and value through the explicit route and the two outcomes carrying distinct binding provenance —
 the W8.5 convergence statement, proved over a real dump — but its predeclared row spelled `typeConstruction` as
-`NotRequired`; the bare `using static` rows certify a complete lexical envelope and then stop at the constructed
-using-static target; and the active-local row produces exactly the predeclared `Shadowed` certificate under a context
+`NotRequired`; the remaining bare row's dotted head partitions as a contextual owner name, so the using-static
+nested-head route is never entered; and the active-local row produces exactly the predeclared `Shadowed` certificate under a context
 axis its predeclaration spelled `NotRequired`. Each
 divergence is asserted as a finding rather than retuned. The three W8.1-admitted branches are covered:
 thread-relative and frame-value execute end to end, and the RVA branch reaches its predeclared exact value over the

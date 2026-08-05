@@ -440,6 +440,90 @@ public sealed class W8V2ExpressionPipelineTests
     }
 
     /// <summary>
+    /// Proves a bare root imported through a <em>constructed</em> <c>using static</c> closes the owner construction
+    /// its import decoded, so the value comes from that construction's own slot rather than from a definition.
+    /// </summary>
+    /// <remarks>
+    /// A bare spelling names no owner, which is why the bare route declared a construction boundary: nothing in the
+    /// expression says what the arguments would be. A constructed import does say — in its physical TypeSpec target —
+    /// so the construction is evidence rather than inference, and the boundary is retired exactly for imports that
+    /// carry one. The runtime candidate the seam returns must therefore be keyed by the import's own arguments.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Bare_root_through_a_constructed_using_static_closes_the_imported_construction()
+    {
+        var aliasWorld = BuildTypeSpecAliasWorld();
+        var world = aliasWorld.World;
+        var result = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "Current",
+            scopedContext: ConstructedUsingStaticContext(aliasWorld),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+
+        Assert.Equal(StaticFieldV2ExpressionRoute.BareStaticMember, result.Route);
+        AssertExactAxes(result);
+        Assert.Equal(DumpExpressionTypeBindingOutcome.NotRequired, result.Axes.TypeBinding);
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, result.Axes.TypeConstruction);
+        Assert.Equal(42, result.SignedValue);
+        Assert.Equal(
+            StaticFieldV2BareRootSource.UsingStaticImport,
+            result.Provenance.BareRoot!.Source);
+
+        // The construction is the import's own decoded target, and its retained evidence names that import rather
+        // than a name binding or a contextual binding, so replay can tell which route closed it.
+        var construction = result.Provenance.OwnerConstruction!;
+        Assert.Equal(StaticFieldV2ClosedConstructionResultKind.Exact, construction.ResultKind);
+        Assert.Null(construction.NameBinding);
+        Assert.Null(construction.ContextualBinding);
+        var importedOwner = Assert.IsType<StaticFieldV2ScopedImportProjection>(construction.ImportedOwnerBinding);
+        Assert.Equal(StaticFieldV2ScopedImportKind.UsingStatic, importedOwner.Kind);
+        Assert.Equal(
+            StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationResolved,
+            importedOwner.TargetDisposition);
+        Assert.Equal(importedOwner.TargetClosedConstruction!.Sha256, construction.OwnerConstruction!.Sha256);
+        Assert.Equal(
+            AppAliasMarkerToken,
+            Assert.Single(construction.FlattenedArguments)
+                .FinalClassification!.TypeDefinition.TypeDefinitionToken);
+        Assert.DoesNotContain(
+            StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred,
+            result.Provenance.DeclaredCoverageBoundaries);
+
+        // Withholding the catalogs leaves the same import undecoded, and the bare route then keeps its declared
+        // boundary and stops before a construction, which is what makes the decoded target the decisive evidence.
+        var withheld = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "Current",
+            scopedContext: StaticFieldV2ScopedContextSource.Create(
+                () => StaticFieldV2ScopedContextRequest.Create(
+                    world.App,
+                    Scopes([DumpPortablePdbImportFact.UsingStatic(
+                        ScopeToken(1),
+                        0,
+                        3,
+                        "Pipe.App.Slot`1",
+                        GroundAliasTypeSpecToken,
+                        [0xAB, 0x01])]),
+                    world.HostType,
+                    world.Ancestry,
+                    world.Resolution),
+                () => LexicalEnvelope(
+                    Scopes([DumpPortablePdbImportFact.UsingStatic(
+                        ScopeToken(1),
+                        0,
+                        3,
+                        "Pipe.App.Slot`1",
+                        GroundAliasTypeSpecToken,
+                        [0xAB, 0x01])]),
+                    AppAliasMarkerToken)),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        Assert.NotEqual(DumpExpressionValueOutcome.ExactValue, withheld.Axes.Value);
+        Assert.Null(withheld.SignedValue);
+        Assert.Null(withheld.Provenance.OwnerConstruction);
+    }
+
+    /// <summary>
     /// Proves a metadata literal reaches an exact value end to end while every runtime, thread, module, slot, and
     /// memory capability probe is poisoned and the runtime seam is absent entirely.
     /// </summary>
@@ -1206,6 +1290,32 @@ public sealed class W8V2ExpressionPipelineTests
             () => LexicalEnvelope(scopes));
     }
 
+    /// <summary>
+    /// Supplies a <c>using static</c> import whose target is the physical TypeSpec row naming a closed construction,
+    /// together with the token-resolution catalogs that let the projection decode it.
+    /// </summary>
+    /// <param name="world">The alias world holding the TypeSpec rows and their catalogs.</param>
+    /// <returns>The caller-owned scoped-context seam with a lexical envelope.</returns>
+    private static StaticFieldV2ScopedContextSource ConstructedUsingStaticContext(TypeSpecAliasWorld world)
+    {
+        var scopes = Scopes([DumpPortablePdbImportFact.UsingStatic(
+            ScopeToken(1),
+            0,
+            3,
+            "Pipe.App.Slot`1",
+            GroundAliasTypeSpecToken,
+            [0xAB, 0x01])]);
+        return StaticFieldV2ScopedContextSource.Create(
+            () => StaticFieldV2ScopedContextRequest.Create(
+                world.World.App,
+                scopes,
+                world.World.HostType,
+                world.World.Ancestry,
+                world.World.Resolution,
+                world.TokenCatalogs),
+            () => LexicalEnvelope(scopes, AppAliasMarkerToken));
+    }
+
     private static StaticFieldV2ScopedContextRequest ContextRequest(
         PipelineWorld world,
         ImmutableArray<DumpPortablePdbImportScopeIdentity> scopes) =>
@@ -1223,7 +1333,8 @@ public sealed class W8V2ExpressionPipelineTests
     private static int ScopeToken(int rowId) => 0x3500_0000 | rowId;
 
     private static DumpSelectedMethodLexicalObservation LexicalEnvelope(
-        ImmutableArray<DumpPortablePdbImportScopeIdentity> importScopes)
+        ImmutableArray<DumpPortablePdbImportScopeIdentity> importScopes,
+        int declaringTypeToken = AppHostToken)
     {
         const int selectedMethodToken = 0x0600_0001;
         const int localScopeToken = 0x3200_0001;
@@ -1246,7 +1357,7 @@ public sealed class W8V2ExpressionPipelineTests
             runtimeModule,
             moduleContent,
             selectedMethodToken,
-            AppHostToken,
+            declaringTypeToken,
             declaringNamespace: "Pipe.App",
             DumpInstructionLocation.Create(0x0040_1234, 10));
         var debugIdentity = DumpPortablePdbDebugIdentity.Create(
@@ -1274,7 +1385,7 @@ public sealed class W8V2ExpressionPipelineTests
 
         var methodRows = ImmutableArray.Create(DumpLexicalMethodDefinitionRowFact.Create(
             selectedMethodToken,
-            AppHostToken,
+            declaringTypeToken,
             relativeVirtualAddress: 0x20,
             MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
             MethodImplAttributes.IL | MethodImplAttributes.Managed,

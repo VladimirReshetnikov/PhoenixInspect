@@ -2203,9 +2203,6 @@ public static class StaticFieldV2ExpressionPipeline
 
         private StaticFieldV2ExpressionResult? BindBareRoot()
         {
-            // The bare route reaches its owner through the lexical envelope's using-static facts and binds that
-            // owner as a definition; unlike the contextual route it never closes a construction over it.
-            boundaries.Add(StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred);
             var partition = descriptor!.Partitions[0];
             suffix = partition.Suffix;
             if (request.ScopedContext is not { SuppliesLexicalEnvelope: true } source)
@@ -2242,9 +2239,60 @@ public static class StaticFieldV2ExpressionPipeline
             {
                 return LexicalStop(lexical);
             }
-            return bareRoot.ResultKind == StaticFieldV2BareRootResultKind.Exact
-                ? null
-                : MemberStop(MapBareRoot(bareRoot.ResultKind));
+            if (bareRoot.ResultKind != StaticFieldV2BareRootResultKind.Exact)
+            {
+                return MemberStop(MapBareRoot(bareRoot.ResultKind));
+            }
+
+            // A bare spelling names no owner, so a construction can come only from the import that supplied the
+            // declaration. An import whose physical target decoded to one closes it here, under the same constraint
+            // validation every other route applies; an import that names a bare definition keeps the declared
+            // boundary, because nothing in the spelling or the import says what its arguments would be.
+            if (SelectedImportedOwner() is { } importedOwner)
+            {
+                ownerConstruction = StaticFieldV2ClosedConstructionBinder.BindImportedOwnerConstruction(
+                    importedOwner,
+                    request.AncestryPortfolio,
+                    request.ConstraintPortfolio,
+                    request.InterfaceImplementationPortfolio);
+                return ownerConstruction.ResultKind == StaticFieldV2ClosedConstructionResultKind.Exact
+                    ? null
+                    : ConstructionStop(MapConstruction(ownerConstruction.ResultKind));
+            }
+
+            boundaries.Add(StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred);
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the <c>using static</c> import that supplied the selected bare declaration and already carries a
+        /// decoded closed construction, otherwise null.
+        /// </summary>
+        /// <returns>The accepted import projection with a decoded target, or null.</returns>
+        private StaticFieldV2ScopedImportProjection? SelectedImportedOwner()
+        {
+            if (bareRoot is not
+                {
+                    ResultKind: StaticFieldV2BareRootResultKind.Exact,
+                    Source: StaticFieldV2BareRootSource.UsingStaticImport,
+                    SelectedField: { } selected,
+                })
+            {
+                return null;
+            }
+
+            foreach (var candidate in bareRoot.ImportCandidatesCore)
+            {
+                if (candidate.IsAccepted &&
+                    candidate.ContributingImport.TargetClosedConstruction is not null &&
+                    candidate.Lookup.SelectedCandidate is { } lookupCandidate &&
+                    lookupCandidate.FieldRow.Equals(selected.FieldRow))
+                {
+                    return candidate.ContributingImport;
+                }
+            }
+
+            return null;
         }
 
         private StaticFieldV2ExpressionResult? SelectRuntimeConstruction()

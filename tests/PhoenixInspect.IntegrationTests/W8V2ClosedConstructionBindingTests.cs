@@ -751,7 +751,12 @@ public sealed class W8V2ClosedConstructionBindingTests
             if (type == typeof(StaticFieldV2ClosedConstructionBinder))
             {
                 Assert.Equal(
-                    ["BindOwnerConstruction", "BindDeclaringBaseConstruction", "BindContextualOwnerConstruction"],
+                    [
+                        "BindOwnerConstruction",
+                        "BindDeclaringBaseConstruction",
+                        "BindImportedOwnerConstruction",
+                        "BindContextualOwnerConstruction",
+                    ],
                     publicStatics);
             }
             else if (!type.IsEnum)
