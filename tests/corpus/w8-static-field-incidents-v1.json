@@ -2157,7 +2157,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-the-malformed-typespec-companion-artifact"
+        "reason": "reaches-an-exact-value-because-the-declared-malformed-typespec-companion-is-not-supplied-to-the-producer-so-the-request-reads-the-targets-unmodified-signature"
       },
       "representative": false
     },
@@ -2245,7 +2245,7 @@
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-construction-depth-cap-injection"
+        "reason": "reaches-an-exact-value-because-the-frozen-four-level-spelling-is-far-below-the-landed-construction-depth-cap-so-no-bound-is-reached"
       },
       "representative": false
     },
@@ -2597,7 +2597,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-runtime-candidate-cap-injection"
+        "reason": "reaches-an-exact-value-because-the-real-snapshot-holds-fewer-runtime-candidates-than-the-declared-cap-and-supplying-more-would-fabricate-evidence-the-dump-does-not-contain"
       },
       "representative": false
     },
@@ -2682,7 +2682,7 @@
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-snapshot-whose-static-slot-is-absent"
+        "reason": "reaches-an-exact-value-because-the-coordinator-target-initializes-that-static-before-its-pause-so-the-slot-is-present-and-read"
       },
       "representative": false
     },

@@ -397,6 +397,48 @@ public sealed class W8MeaningfulSyntheticCorpusTests
     {
         var manifest = W8CorpusManifest.Load();
 
+        // Four rows predeclare an adverse condition their own snapshot does not contain, and each reaches an exact
+        // value instead. Measured, not inferred: every one of them runs end to end here. The finding is about the
+        // predeclaration, so the manifest rows stay frozen and only their recorded reasons are corrected.
+        //
+        //  * request-malformed-typespec-invalid declares the `malformed-typespec-blob` companion as an artifact
+        //    input. No runner supplies it, so the request reads the target's unmodified signature and answers. The
+        //    row needs that companion realized — a copied image with a mutated TypeSpec blob and the original
+        //    retained — exactly as the two Portable-PDB companions were realized for their rows.
+        //  * batch-typespec-depth-cap-plus-one spells four nested `Wrap` levels against a declared depth cap far
+        //    above four, so the spelling is nowhere near cap plus one and constructs exactly. Reaching the cap needs
+        //    a spelling at the landed cap's own depth, which the frozen row does not contain.
+        //  * batch-runtime-candidate-cap-plus-one observes fewer runtime candidates than the declared cap, because
+        //    the real snapshot holds one construction of that owner. Reaching cap plus one would mean handing the
+        //    seam candidates the dump does not contain, which is fabrication rather than evidence.
+        //  * coordinator-unavailable-static-slot names a static whose slot the coordinator target does initialize
+        //    before it pauses, so the slot is present and read. An absent slot needs a snapshot paused before that
+        //    initialization, which is a different pause site than the one this row's profile freezes.
+        foreach (var (id, expectedValue) in new[]
+                 {
+                     ("request-malformed-typespec-invalid", 1358954753L),
+                     ("batch-typespec-depth-cap-plus-one", 1627390470L),
+                     ("batch-runtime-candidate-cap-plus-one", 1627390465L),
+                     ("coordinator-unavailable-static-slot", 1895826179L),
+                 })
+        {
+            var row = manifest.Incidents.Single(incident => incident.Id == id);
+            Assert.Equal("manifest-only", row.RunnerExecutionStatus);
+            using var snapshot = W8CorpusSnapshot.Materialize(row);
+            using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, row.Shape);
+            var produced = world.Evaluate(row.Expression, row.ReadWidth);
+
+            Assert.Equal(
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/Exact/Exact/" +
+                "ExactValue/NotRequested/Complete",
+                Describe(produced.Result.Axes));
+            Assert.Equal(expectedValue, produced.Result.SignedValue);
+            Assert.NotEqual(row.PredeclaredAxes, produced.Result.Axes);
+
+            // Each row predeclared a non-exact terminal, which is precisely the outcome its snapshot cannot produce.
+            Assert.Null(row.ExpectedTerminal);
+        }
+
         // Incident 34 batch-module-rva-storage: the named-RVA fixture now declares the framework public key token
         // its System.Runtime extern always should have carried, so the cross-module owner's System.Object base
         // resolves, its classification carries a role, the owner constructs Exact at arity zero, member lookup
