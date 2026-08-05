@@ -162,7 +162,16 @@ either blob exists anywhere in the captured address space. The runtime integrate
 structures rather than retaining the blob, so E3 cannot acquire deltas by locating the original bytes in a dump; it
 must read the runtime's edit structures, which makes the runtime-structure half of probe 3 the load-bearing open
 question. The Portable-PDB delta's absence from any runtime-owned memory likewise points probe 8 toward the E6
-non-admission arm unless the host-supplied artifact seam carries the delta from outside the dump.
+non-admission arm unless the host-supplied artifact seam carries the delta from outside the dump. The fifth slice
+measured probe 7's host-surface half and probe 3's descriptor direction: the runtime surface resolves the edited
+method's IL from the mapped base image — the address sits inside the module extent and the bytes are the
+generation-zero body — so the effective edited body is unreachable through that surface, which now makes every
+surface measured so far (base image, Portable-PDB identity, member census, IL info) show the pre-edit world; and
+the pinned runtime's captured bytes name no edit structure in the contract-descriptor vocabulary — neither the
+edit module class nor an applied-changes count appears anywhere in the dump, while the descriptor's
+dynamic-metadata field name does — so applied-state detection cannot come from the descriptor's declared
+vocabulary, leaving non-contract runtime structures and the dynamic-metadata field's behavior over an edited
+module as the open candidates.
 
 ### E2 — edit detection and typed non-admission
 

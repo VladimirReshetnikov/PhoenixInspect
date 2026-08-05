@@ -476,6 +476,110 @@ public sealed class EncPhysicalTruthTests
         }
     }
 
+    /// <summary>
+    /// Measures where the edited method's effective IL physically lives — inside the mapped base image or in
+    /// edit-allocated memory — and whether the pinned runtime's contract-descriptor vocabulary names the edit
+    /// structures a later detection stride would need to read.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Edited_method_effective_body_and_descriptor_vocabulary_are_measured()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-body-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-body-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteSmokePayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-smoke", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            var dumpBytes = File.ReadAllBytes(dumpPath);
+            using var dataTarget = DataTarget.LoadDump(
+                dumpPath,
+                new DataTargetOptions { FileLocator = ClrmdOfflineFileLocator.Instance });
+            var runtime = dataTarget.ClrVersions.Single().CreateRuntime();
+            try
+            {
+                var module = Assert.Single(
+                    runtime.EnumerateModules(),
+                    candidate => candidate.Name?.EndsWith(
+                        "PhoenixInspect.EncFixtureBaseline.dll",
+                        StringComparison.OrdinalIgnoreCase) == true);
+                var probeType = module.GetTypeByName("PhoenixInspect.EncFixtureBaseline.Probe");
+                Assert.NotNull(probeType);
+                var sentinel = Assert.Single(
+                    probeType.Methods,
+                    method => string.Equals(method.Name, "Sentinel", StringComparison.Ordinal));
+
+                var ilInfo = sentinel.GetILInfo();
+                var bodyBytes = "<unread>";
+                if (ilInfo is not null && ilInfo.Address != 0)
+                {
+                    var buffer = new byte[Math.Min(16, Math.Max(ilInfo.Length, 8))];
+                    if (dataTarget.DataReader.Read(ilInfo.Address, buffer) == buffer.Length)
+                    {
+                        bodyBytes = Convert.ToHexString(buffer);
+                    }
+                }
+
+                // Probe 7, host-surface half, measured: the runtime surface resolves the method's IL from the
+                // mapped base image — the address sits inside the module extent and the bytes are the
+                // generation-zero body loading the pre-edit sentinel — even though this process provably executed
+                // the generation-one body before pausing. The effective edited body is not reachable through this
+                // surface; like the census and metadata surfaces before it, the IL surface shows the pre-edit
+                // world.
+                Assert.NotNull(ilInfo);
+                Assert.Equal(6, ilInfo.Length);
+                Assert.InRange(ilInfo.Address, module.ImageBase, module.ImageBase + (ulong)module.Size - 1);
+                Assert.StartsWith("2001C06E452A", bodyBytes, StringComparison.Ordinal);
+
+                // Probe 3 direction, measured over the captured runtime binary: the pinned contract-descriptor
+                // vocabulary names no edit structure — neither the edit module class nor an applied-changes count
+                // appears anywhere in the dump's bytes — while the descriptor's DynamicMetadata field name does.
+                // Applied-state detection therefore cannot come from the descriptor's declared vocabulary; the
+                // remaining candidates are non-contract runtime structures and the dynamic-metadata field's
+                // behavior over an edited module, both open for a later slice.
+                Assert.True(
+                    dumpBytes.AsSpan().IndexOf("EditAndContinueModule"u8) < 0,
+                    "The pinned runtime's captured bytes must not name the edit module class.");
+                Assert.True(
+                    dumpBytes.AsSpan().IndexOf("ApplyChangesCount"u8) < 0,
+                    "The pinned runtime's captured bytes must not name an applied-changes count.");
+                Assert.True(
+                    dumpBytes.AsSpan().IndexOf("DynamicMetadata"u8) >= 0,
+                    "The pinned descriptor vocabulary must name the dynamic-metadata field.");
+            }
+            finally
+            {
+                runtime.Dispose();
+            }
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
     /// <summary>One captured memory range of the dump: its virtual start, size, and position in the file.</summary>
     private readonly record struct DumpMemoryRange(ulong StartAddress, ulong Size, ulong FileOffset);
 
