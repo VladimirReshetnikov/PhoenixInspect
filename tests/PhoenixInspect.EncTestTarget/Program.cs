@@ -77,6 +77,7 @@ public static class EncGate
     public const string BaselineAssemblyFileName = "PhoenixInspect.EncFixtureBaseline.dll";
 
     private static Assembly? retainedBaselineAssembly;
+    private static Assembly? retainedComparatorAssembly;
 
     /// <summary>Reads and applies the generation-one delta triple inside its own frame.</summary>
     /// <remarks>
@@ -110,6 +111,21 @@ public static class EncGate
 
         var assembly = Assembly.LoadFrom(Path.Combine(payloadDirectory, BaselineAssemblyFileName));
         retainedBaselineAssembly = assembly;
+
+        // The comparator is loaded under the same modifiable-assemblies gate and never edited, and its sentinel is
+        // invoked once so its module is the edit-enabled, used, but unedited datapoint: a runtime structure that
+        // still differs from it on the edited module differs because of the edit, not because of use.
+        retainedComparatorAssembly = Assembly.LoadFrom(
+            Path.Combine(payloadDirectory, "PhoenixInspect.EncFixtureUnedited.dll"));
+        var comparatorSentinel = retainedComparatorAssembly
+            .GetType("PhoenixInspect.EncFixtureBaseline.Probe", throwOnError: true)!
+            .GetMethod("Sentinel", BindingFlags.Public | BindingFlags.Static)!;
+        if ((int)comparatorSentinel.Invoke(null, null)! != PreEditSentinel)
+        {
+            Console.WriteLine("ENC_COMPARATOR_MISMATCH");
+            Console.Out.Flush();
+            return 98;
+        }
         var probe = assembly.GetType("PhoenixInspect.EncFixtureBaseline.Probe", throwOnError: true)!;
         var sentinel = probe.GetMethod("Sentinel", BindingFlags.Public | BindingFlags.Static)!;
 

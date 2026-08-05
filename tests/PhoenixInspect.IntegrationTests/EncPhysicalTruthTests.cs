@@ -714,18 +714,45 @@ public sealed class EncPhysicalTruthTests
                 }
 
                 // Measured: the dynamic-metadata pointer is null for both modules, so that descriptor field does
-                // not carry edit state and is a recorded dead end. The module flags differ — 0x9019 for the edited
-                // module against 0x8811 for the optimized unedited one — which makes the flags word the live
-                // detector candidate, with one caveat this probe cannot discharge: the comparator is not
-                // edit-enabled, so the differing bits may mark enablement rather than applied edits. The next
-                // measurement adds an edit-enabled-but-unedited comparator to isolate the applied-state bit.
+                // not carry edit state and is a recorded dead end.
                 Assert.Equal(0ul, ReadPointerAt(edited.Address + 744));
                 Assert.Equal(0ul, ReadPointerAt(unedited.Address + 744));
+
+                // The three-way flags comparison separates enablement from applied edits: the edited module, the
+                // edit-enabled-but-never-edited comparator, and the plain optimized module.
+                var comparator = Assert.Single(
+                    runtime.EnumerateModules(),
+                    candidate => candidate.Name?.EndsWith(
+                        "PhoenixInspect.EncFixtureUnedited.dll",
+                        StringComparison.OrdinalIgnoreCase) == true);
+                // Measured three ways — the edited module, an edit-enabled comparator that was loaded and USED but
+                // never edited, and a plain optimized module: the declared flags word marks enablement only, with
+                // the edited module and the used comparator byte-identical there, so flags can ground a sound
+                // conservative refusal (an enabled module's edits can never be excluded) but not applied-state
+                // detection.
                 var editedFlags = ReadUInt32At(edited.Address + 208);
+                var comparatorFlags = ReadUInt32At(comparator.Address + 208);
                 var uneditedFlags = ReadUInt32At(unedited.Address + 208);
                 Assert.Equal(0x9019u, editedFlags);
+                Assert.Equal(0x9019u, comparatorFlags);
                 Assert.Equal(0x8811u, uneditedFlags);
-                Assert.NotEqual(editedFlags, uneditedFlags);
+
+                // The applied-state detector candidate: an undeclared Module counter one pointer past the declared
+                // dynamic-metadata field reads one on the used-but-unedited comparator and two on the module with
+                // one applied generation — one plus the applied-generation count. It survives the use control, so
+                // the difference is caused by the edit; its confirmation over a stacked-generation profile, and
+                // its version fragility as a non-contract offset, are recorded for the next slice.
+                Assert.Equal(2ul, ReadPointerAt(edited.Address + 752));
+                Assert.Equal(1ul, ReadPointerAt(comparator.Address + 752));
+
+                // Secondary edit signatures, recorded rather than relied on: the declared per-module lookup maps
+                // for TypeRef, manifest module references, and MethodDef remain unallocated on the used comparator
+                // yet allocated on the edited module — consistent with the delta extending reference tables — but
+                // a richer unedited workload could allocate them too, so they are corroboration, not detection.
+                Assert.NotEqual(0ul, ReadPointerAt(edited.Address + 8));
+                Assert.Equal(0ul, ReadPointerAt(comparator.Address + 8));
+                Assert.NotEqual(0ul, ReadPointerAt(edited.Address + 376));
+                Assert.Equal(0ul, ReadPointerAt(comparator.Address + 376));
             }
             finally
             {

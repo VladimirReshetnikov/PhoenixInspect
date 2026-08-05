@@ -155,6 +155,28 @@ internal static class EncDeltaCompiler
 
     private static void WriteGenerationChain(string payloadDirectory, params EncGeneration[] generations)
     {
+        // Every payload also carries an edit-enabled-but-never-edited comparator assembly: the same baseline
+        // source compiled under its own name, loaded by the target without any applied generation, so a probe can
+        // separate what enablement marks from what applied edits mark.
+        var comparatorCompilation = Compile("PhoenixInspect.EncFixtureUnedited", BaselineSource);
+        using (var comparatorImage = new MemoryStream())
+        using (var comparatorPdb = new MemoryStream())
+        {
+            var comparatorEmitted = comparatorCompilation.Emit(
+                comparatorImage,
+                comparatorPdb,
+                options: new EmitOptions(debugInformationFormat: DebugInformationFormat.PortablePdb));
+            Assert.True(
+                comparatorEmitted.Success,
+                "The pinned compiler must emit the comparator: " + string.Join("; ", comparatorEmitted.Diagnostics));
+            File.WriteAllBytes(
+                Path.Combine(payloadDirectory, "PhoenixInspect.EncFixtureUnedited.dll"),
+                comparatorImage.ToArray());
+            File.WriteAllBytes(
+                Path.Combine(payloadDirectory, "PhoenixInspect.EncFixtureUnedited.pdb"),
+                comparatorPdb.ToArray());
+        }
+
         var baselineCompilation = Compile("PhoenixInspect.EncFixtureBaseline", BaselineSource);
         using var imageStream = new MemoryStream();
         using var pdbStream = new MemoryStream();

@@ -180,7 +180,15 @@ JSON — every field name and offset, including the flags word and the dynamic-m
 over the edited and an unedited module of one dump measured the dynamic-metadata pointer null for both, a recorded
 dead end, while the module flags words differ. The flags word is the live applied-state detector candidate, with
 one caveat the probe records: the unedited comparator is not edit-enabled, so the next measurement adds an
-edit-enabled-but-unedited module to isolate the applied-state bit from the enablement bits.
+edit-enabled-but-unedited module to isolate the applied-state bit from the enablement bits. The eighth slice ran
+that discrimination three ways — edited, edit-enabled-and-used-but-unedited, and plain — and found the detector:
+the declared flags word marks enablement only, identical between the edited module and the used comparator, so it
+grounds sound conservative refusal but not applied-state detection; and an undeclared Module counter one pointer
+past the declared dynamic-metadata field reads one plus the applied-generation count, surviving the use control so
+its difference is caused by the edit. The per-module TypeRef, manifest-reference, and MethodDef lookup maps stay
+unallocated on the used comparator yet allocated on the edited module — corroboration consistent with the delta's
+reference-table extension, not detection. The counter's confirmation over a stacked-generation profile, and its
+version fragility as a non-contract offset, are the recorded next measurements.
 
 ### E2 — edit detection and typed non-admission
 
