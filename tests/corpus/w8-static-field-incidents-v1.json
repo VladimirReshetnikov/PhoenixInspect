@@ -1533,7 +1533,7 @@
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "the-dotted-bare-head-partitions-as-a-contextual-owner-name-so-the-using-static-nested-head-route-is-never-entered"
+        "reason": "the-parser-produces-both-readings-but-route-selection-prefers-the-qualified-owner-partition-so-the-bare-head-is-never-certified-which-the-recorded-decision-resolves-by-letting-the-lexical-step-choose-between-the-two-parsed-readings"
       },
       "representative": false
     },

@@ -1184,7 +1184,36 @@ are covered, and each exit-gate statement is discharged by named evidence:
 
 The append-only report schema is the pair of byte-identical machine and human portfolio reports at `b1cc5a11d`. The
 declared-field-type ground-primitive boundary is retired for the mandatory owner-`VAR` substitution surface at
-`0b6bc7a69`; the remaining declared boundaries stay as recorded above.
+`0b6bc7a69`, and for ground named signatures — every reference-typed static — once a caller supplies the field's own
+module token catalog; the remaining declared boundaries stay as recorded above.
+
+#### Decided, not yet implemented: which reading a dotted head selects
+
+A spelling like `ImportedNestedCurrent.Label` has two readings, and the parser already produces both: a bare-member
+partition whose head is the field and whose `.Label` is a suffix, and a qualified-owner partition whose head is a type.
+Route selection today picks the qualified reading whenever any qualified-owner partition exists, so a dotted head that
+is really a *value* never reaches the bare route. `batch-using-static-nested-head` stops there.
+
+The language rule is not "prefer one partition". C# resolves the head of `E.I` as a simple name first: if it binds to
+a value — a local, a parameter, or a field, including one an `using static` import brings into scope — then `.I` is
+member access on that value and the type reading is never consulted; only a head that is not a value is read as a
+type. Two tempting shortcuts are therefore wrong and are rejected here explicitly. Preferring the bare partition
+whenever the caller supplies a lexical envelope regresses every contextual `Type.Field` spelling that also supplies
+one, which the executed portfolio rows would catch. Attempting the bare route and falling back to the qualified one
+contradicts the fixed operation order, whose private step cursor exists precisely so a step cannot be re-entered.
+
+**The decision.** The rule is decidable inside the frozen order, because the lexical-completeness step already
+precedes type binding on the twelve axes. When a descriptor carries both readings, the lexical step certifies the bare
+head once: a head the certificate binds to a value selects the bare partition, and a head the certificate reports
+absent as a value leaves the qualified partitions to proceed. One step decides between two already-parsed readings;
+nothing is retried, and no profile falls through to another — the no-fallthrough invariant governs profiles, while
+candidate partitions inside one profile are ordered by the language rule.
+
+Its consequences are named so the implementing slice does not discover them: `Route` becomes a value the composition
+determines after the lexical step rather than before context acquisition, so every result digest that embeds a route
+for a dotted-head spelling moves and is re-frozen as that slice's declared content; a request that supplies no lexical
+envelope keeps today's qualified selection, because with no certificate the language question cannot be asked; and the
+bare route's own axes stay exactly as they are for spellings that already take it.
 
 Route only explicit V2 or W8.1-admitted frame-value requests through their declared bind/prepare/read/evaluate path,
 reuse unchanged W2/W6 suffixes, add append-only consumer/report schemas, and execute the generated cross-product through
