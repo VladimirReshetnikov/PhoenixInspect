@@ -2668,7 +2668,7 @@ public static class StaticFieldV2ExpressionPipeline
                 StorageConstruction() is not
                 { ResultKind: StaticFieldV2ClosedConstructionResultKind.Exact } construction)
             {
-                return null;
+                return GroundNamedDeclaredType(fieldRow, signature);
             }
             var arguments = construction.FlattenedArguments;
             if (ownerVariableIndex < 0 || ownerVariableIndex >= arguments.Length)
@@ -2677,6 +2677,62 @@ public static class StaticFieldV2ExpressionPipeline
             }
             ownerVariableSubstituted = true;
             return arguments[ownerVariableIndex];
+        }
+
+        /// <summary>
+        /// Decodes a ground named FieldSig — a static whose declared type is a definition rather than a primitive —
+        /// through the shared bounded grammar and the caller's own token-resolution catalog for that field's module.
+        /// </summary>
+        /// <remarks>
+        /// Until this decoded, every reference-typed static stopped at the value stage for want of a declared type,
+        /// which is also why a suffix over one could never be reached. The evidence is the same the alias and
+        /// generic-base routes already consume, and it is required rather than assumed: without a catalog for the
+        /// field's own module nothing is decoded and the previous typed non-answer stands. An open, non-exact, or
+        /// unclassified signature likewise returns nothing, so no declared type is ever guessed from a shape.
+        /// </remarks>
+        /// <param name="fieldRow">The catalog-issued FieldDef row whose signature is decoded.</param>
+        /// <param name="signature">The row's complete FieldSig bytes.</param>
+        /// <returns>The exact closed declared type, or null when this evidence cannot produce one.</returns>
+        private MetadataClosedTypeIdentity? GroundNamedDeclaredType(
+            MetadataFieldDefinitionTableRowIdentity fieldRow,
+            ImmutableArray<byte> signature)
+        {
+            if (request.SignatureTokenResolutionCatalogsCore.IsDefaultOrEmpty)
+            {
+                return null;
+            }
+
+            MetadataSignatureTokenResolutionCatalog? tokenCatalog = null;
+            foreach (var candidate in request.SignatureTokenResolutionCatalogsCore)
+            {
+                if (candidate is not null &&
+                    candidate.SourceModule.Equals(fieldRow.SourceEnds.SourceModule))
+                {
+                    tokenCatalog = candidate;
+                    break;
+                }
+            }
+            if (tokenCatalog is not { ResultKind: MetadataSignatureTokenResolutionCatalogResultKind.Exact } catalog)
+            {
+                return null;
+            }
+
+            var projection = MetadataSignatureProjectionAdapter.Decode(
+                signature,
+                BoundedEcmaSignatureForm.Field,
+                catalog);
+            if (projection.Kind != MetadataSignatureDecodeResultKind.Exact || projection.Root is not { } root)
+            {
+                return null;
+            }
+
+            return MetadataTypeConstructionResult.Classify(root) is
+            {
+                Kind: MetadataTypeConstructionResultKind.Exact,
+                ClosedType: { } closedType,
+            }
+                ? closedType
+                : null;
         }
 
         private static bool TryDecodeOwnerVariableIndex(ImmutableArray<byte> signature, out int ownerVariableIndex)

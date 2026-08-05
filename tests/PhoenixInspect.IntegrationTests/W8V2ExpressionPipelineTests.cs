@@ -244,6 +244,55 @@ public sealed class W8V2ExpressionPipelineTests
     }
 
     /// <summary>
+    /// Proves a static whose declared type is a definition rather than a primitive decodes that type from its own
+    /// module's token-resolution catalog, and that without the catalog the same field keeps its previous stop.
+    /// </summary>
+    /// <remarks>
+    /// A ground named FieldSig is the ordinary shape of every reference-typed static, and until it decoded the value
+    /// stage had no declared type to work from, so it stopped Unsupported and no suffix over such a field could ever
+    /// be reached. The evidence is the same the alias and generic-base routes already consume, and it is required:
+    /// the counterfactual withholds only the catalogs and the field returns to its earlier answer.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Ground_named_field_signature_decodes_its_declared_type_from_the_supplied_catalog()
+    {
+        var aliasWorld = BuildTypeSpecAliasWorld();
+        var world = aliasWorld.World;
+        var decoded = StaticFieldV2ExpressionPipeline.Evaluate(StaticFieldV2ExpressionRequest.Create(
+            "global::Pipe.App.Marker.Held",
+            DumpExpressionProfileKind.StaticFieldExpressionV2,
+            world.Ancestry,
+            world.Constraints,
+            world.FieldCatalogs,
+            accessibilityMode: StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
+            runtimeEvidence: ReferenceSlotEvidence(world, AppAliasMarkerToken, 0x4000_0000UL),
+            propertyCatalogs: world.PropertyCatalogs,
+            signatureTokenResolutionCatalogs: aliasWorld.TokenCatalogs));
+
+        Assert.Equal(DumpExpressionValueOutcome.ExactValue, decoded.Axes.Value);
+        Assert.Equal(0x4000_0000UL, decoded.Provenance.RuntimeValue!.ReferenceAddress);
+        Assert.Equal(
+            AppAliasMarkerToken,
+            decoded.Provenance.RuntimeValue.Request.DeclaredType.FinalClassification!
+                .TypeDefinition.TypeDefinitionToken);
+
+        // Withholding only the catalogs returns the identical request to its previous typed stop.
+        var withheld = StaticFieldV2ExpressionPipeline.Evaluate(StaticFieldV2ExpressionRequest.Create(
+            "global::Pipe.App.Marker.Held",
+            DumpExpressionProfileKind.StaticFieldExpressionV2,
+            world.Ancestry,
+            world.Constraints,
+            world.FieldCatalogs,
+            accessibilityMode: StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
+            runtimeEvidence: ReferenceSlotEvidence(world, AppAliasMarkerToken, 0x4000_0000UL),
+            propertyCatalogs: world.PropertyCatalogs));
+
+        Assert.Equal(DumpExpressionValueOutcome.Unsupported, withheld.Axes.Value);
+        Assert.Null(withheld.Provenance.RuntimeValue);
+    }
+
+    /// <summary>
     /// Proves an extern-alias-qualified type argument resolves through the same scope that bound its owner, and that
     /// the identical spelling without a scoped context stays the declared unsupported stop rather than silently
     /// resolving as though the alias qualifier were not written.
@@ -1189,6 +1238,32 @@ public sealed class W8V2ExpressionPipelineTests
             static (_, _) => throw new InvalidOperationException("slot facts"),
             static (_, _) => throw new InvalidOperationException("memory read"));
 
+    /// <summary>Supplies one arity-zero slot whose copied pointer-width bytes hold the requested reference.</summary>
+    /// <param name="world">The composed world owning the arity-zero declaration.</param>
+    /// <param name="ownerToken">The owner definition the single runtime candidate names.</param>
+    /// <param name="referenceAddress">The exact non-null reference the slot holds.</param>
+    /// <returns>The caller-owned runtime evidence seam.</returns>
+    private static StaticFieldV2RuntimeEvidenceSource ReferenceSlotEvidence(
+        PipelineWorld world,
+        int ownerToken,
+        ulong referenceAddress) =>
+        StaticFieldV2RuntimeEvidenceSource.Create(
+            (_, _) =>
+            [
+                StaticFieldV2RuntimeConstructionCandidate.Create(
+                    0x1_0400UL,
+                    0x2_0400UL,
+                    world.App,
+                    ownerToken,
+                    world.App,
+                    world.App.ContainingAssembly,
+                    0x7000,
+                    0x8000,
+                    []),
+            ],
+            static (_, _) => StaticFieldV2RuntimeSlotFacts.Create(sizeof(ulong), 0x5000_0080UL),
+            (_, _) => [.. BitConverter.GetBytes(referenceAddress)]);
+
     internal static StaticFieldV2RuntimeEvidenceSource ConstructedSlotEvidence(PipelineWorld world, byte payload) =>
         StaticFieldV2RuntimeEvidenceSource.Create(
             (construction, strategy) => Candidates(world, construction, strategy),
@@ -1613,6 +1688,9 @@ public sealed class W8V2ExpressionPipelineTests
             ],
             [
                 new PipeFieldRow("Slot`1", "Current", FieldPublic | FieldStatic, Int32Signature),
+
+                // A ground named FieldSig: CLASS Marker, the ordinary shape of a reference-typed static.
+                new PipeFieldRow("Marker", "Held", FieldPublic | FieldStatic, [0x06, 0x12, 0x0C]),
             ],
             [("System", "Object")],
             [CoreAssembly],

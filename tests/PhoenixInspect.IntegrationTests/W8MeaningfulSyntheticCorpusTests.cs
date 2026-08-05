@@ -1,10 +1,12 @@
 using System.Buffers.Binary;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using PhoenixInspect.Core.Abstractions;
 using PhoenixInspect.Host.Dump.ClrMD;
@@ -340,6 +342,62 @@ public sealed class W8MeaningfulSyntheticCorpusTests
                 changed.Length > 0 || changedValue,
                 $"{incident.Id}: the declared counterfactual '{incident.CounterfactualAction}' changed nothing.");
         }
+    }
+
+    /// <summary>
+    /// Proves the unchanged W2/W6 suffix evaluator reaches an exact terminal value when it is rooted at a reference
+    /// the composed V2 pipeline resolved, over a real dump, through the host's own object validation.
+    /// </summary>
+    /// <remarks>
+    /// This is the capability the three suffix-bearing manifest rows need and none of them can currently reach: two
+    /// are blocked upstream by the workflow shape's second load context and the third by route selection. Proving it
+    /// on its own removes any doubt about which of those is the obstacle. Two product gaps had to close for this to
+    /// work at all — a ground named FieldSig had no declared type, so every reference-typed static stopped at the
+    /// value stage, and a V2-resolved address had no route to a validated object — and both are exercised here end to
+    /// end: the field's declared type decodes from its own module's catalog, the address the value stage resolved is
+    /// validated raw-header-first by the session, and the seam is called exactly once for one terminal read.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8MeaningfulSyntheticV1")]
+    public void Suffix_over_a_resolved_reference_reaches_its_terminal_through_the_host_route()
+    {
+        var manifest = W8CorpusManifest.Load();
+        var batchRow = manifest.Incidents.Single(
+            static incident => incident.Id == "batch-using-static-nested-head");
+
+        using var snapshot = W8CorpusSnapshot.Materialize(batchRow);
+        using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, batchRow.Shape);
+        var produced = world.Evaluate(
+            "global::PhoenixInspect.W8BatchShapeTarget.BatchImports.ImportedNestedCurrent?.Label",
+            readWidth: 8,
+            null,
+            null,
+            suppliesSuffixEvaluation: true);
+
+        Assert.Equal(
+            "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/Exact/Exact/" +
+            "ExactValue/Completed/Complete",
+            Describe(produced.Result.Axes));
+        Assert.Equal(DumpExpressionValueOutcome.ExactValue, produced.Result.Axes.Value);
+        Assert.Equal(DumpExpressionSuffixOutcome.Completed, produced.Result.Axes.Suffix);
+
+        // The terminal is the fixture's own label, read through the unchanged evaluator rather than reconstructed.
+        var suffixValue = Assert.IsType<DumpQueryValue>(produced.Result.SuffixValue);
+        Assert.Equal("batch-nested-label", suffixValue.StringValue);
+
+        // Exactly one seam call: the composition resolved the reference itself and asked for one terminal read.
+        Assert.Equal(1, produced.Result.Provenance.EvidenceLedger.SuffixChainEvaluationCallCount);
+
+        // Without the seam the identical spelling reaches the same reference and stops on the suffix axis alone,
+        // which is what makes the host route the decisive evidence rather than an incidental input.
+        var withheld = world.Evaluate(
+            "global::PhoenixInspect.W8BatchShapeTarget.BatchImports.ImportedNestedCurrent?.Label",
+            readWidth: 8);
+        Assert.Equal(DumpExpressionValueOutcome.ExactValue, withheld.Result.Axes.Value);
+        Assert.NotEqual(DumpExpressionSuffixOutcome.Completed, withheld.Result.Axes.Suffix);
+        Assert.Null(withheld.Result.SuffixValue);
+        Assert.Equal(0, withheld.Result.Provenance.EvidenceLedger.SuffixChainEvaluationCallCount);
     }
 
     /// <summary>
@@ -750,7 +808,8 @@ public sealed class W8MeaningfulSyntheticCorpusTests
                 incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null,
                 RequestsScopedContext(incident)
                     ? world.PausedFrameScopedContext(ContextMode(incident))
-                    : null);
+                    : null,
+                suppliesSuffixEvaluation: incident.SuffixProfile != "None");
 
     // A contextual spelling under a declared selected frame consults the scoped-context seam; a fully qualified
     // spelling never does, exactly as the frozen route rule states, so the seam is not even supplied there.
@@ -890,6 +949,7 @@ public sealed class W8CorpusIncident
             ? null
             : element.GetProperty("controlExpression").GetString();
         LanguageProfile = W8CorpusManifest.RequiredString(element, "languageProfile");
+        SuffixProfile = W8CorpusManifest.RequiredString(element, "suffixProfile");
         ExpectedFirstBoundary = W8CorpusManifest.RequiredString(element, "expectedFirstBoundary");
         SupportsSuccessorCategory = W8CorpusManifest.RequiredString(element, "supportsSuccessorCategory");
         Representative = element.GetProperty("representative").GetBoolean();
@@ -966,6 +1026,9 @@ public sealed class W8CorpusIncident
 
     /// <summary>Gets the explicitly selected language profile.</summary>
     public string LanguageProfile { get; }
+
+    /// <summary>Gets the declared suffix profile, or <c>None</c> when the spelling carries no suffix.</summary>
+    public string SuffixProfile { get; }
 
     /// <summary>Gets the predeclared expected first boundary.</summary>
     public string ExpectedFirstBoundary { get; }
@@ -1415,16 +1478,18 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                         MetadataConstraintTargetResolutionPortfolioResultKind.Exact,
                         constraints.ResultKind);
 
+                    ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs =
+                    [
+                        core.FieldCatalog,
+                        .. produced.Select(static module => module.Outcome.FieldDefinitions!),
+                    ];
                     return new W8CorpusEvaluationWorld(
                         session,
                         rawReadTarget,
                         shape,
                         dumpPath,
                         produced.ToImmutable(),
-                        [
-                            core.FieldCatalog,
-                            .. produced.Select(static module => module.Outcome.FieldDefinitions!),
-                        ],
+                        fieldCatalogs,
                         [
                             core.ConstantCatalog,
                             .. produced.Select(static module => module.Outcome.Constants!),
@@ -1436,7 +1501,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                         chainPortfolio,
                         ancestry,
                         constraints,
-                        BuildTokenResolutionCatalogs(ancestry));
+                        BuildTokenResolutionCatalogs(ancestry, fieldCatalogs));
                 }
                 catch
                 {
@@ -1459,6 +1524,82 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             session.Dispose();
             throw;
         }
+    }
+
+    /// <summary>
+    /// Supplies the caller-owned suffix seam by rooting the unchanged W2/W6 evaluator at the reference the pipeline
+    /// resolved, exactly as a host would.
+    /// </summary>
+    /// <remarks>
+    /// Every step acquires evidence rather than asserting it. The address arrives from the composition's own resolved
+    /// static reference; the session validates the object there raw-header-first, so a value the pipeline believed
+    /// was a reference but is not stops as typed host evidence instead of becoming a fabricated root. The typed
+    /// object binding records the honest provenance — an object this host supplied across a boundary — and the query
+    /// the seam prepares is the descriptor's own suffix, spelled from its segments rather than from the incident.
+    /// </remarks>
+    /// <returns>The caller-owned suffix seam.</returns>
+    internal StaticFieldV2SuffixEvaluationSource PausedFrameSuffixEvaluation() =>
+        StaticFieldV2SuffixEvaluationSource.Create(EvaluateSuffix);
+
+    private EvaluationResult<DumpQueryValue> EvaluateSuffix(StaticFieldV2SuffixEvaluationRequest request)
+    {
+        var opened = ClrmdDumpSession.Open(dumpPath);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
+        using var suffixSession = opened.Value!;
+
+        var validated = suffixSession.ValidateExactObjectAtAddress(
+            request.ReferenceAddress,
+            suffixSession.Memory.PointerSize);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, validated.Status);
+        var reference = validated.Value!;
+
+        var projected = suffixSession.ProjectExactObjectForInstanceEvaluation(reference);
+        Assert.Equal(ClrmdEvidenceStatus.Exact, projected.Status);
+
+        var identity = DumpObjectIdentity.FromExactObject(reference);
+        var binding = DumpObjectBinding.Create(
+            identity,
+            DumpObjectProvenance.FromHostSuppliedExactObject(
+                DumpHostSuppliedObjectSourceIdentity.Create(identity, "w8CorpusSuffixRoot")));
+        var rootBinding = DumpQueryRootBinding.FromObjectBinding("suffixRoot", projected.Value!, binding);
+
+        var preparation = DumpQueryEngine.Prepare(suffixSession, SpellSuffix(request.Suffix), rootBinding);
+        return preparation.IsSuccess
+            ? DumpQueryEngine.Evaluate(suffixSession, preparation.Plan!)
+            : preparation.Failure!;
+    }
+
+    /// <summary>Spells one frozen suffix descriptor as the unchanged W2 query text its own segments describe.</summary>
+    /// <remarks>
+    /// The first hop is always spelled direct even when the source wrote <c>?.</c>, because the composition already
+    /// discharged that question: it resolved the reference, proved it non-null, and only then called this seam — an
+    /// exact-null root takes the unchanged no-read path and never arrives here. The W2 grammar refuses conditional
+    /// access on a host-selected root for the same reason, so spelling it would contradict evidence the caller holds.
+    /// Later hops keep their own access kind, which is where conditional access still decides something.
+    /// </remarks>
+    /// <param name="suffix">The descriptor the parser froze.</param>
+    /// <returns>The query text rooted at the seam's compatibility root name.</returns>
+    private static string SpellSuffix(DumpExpressionSuffixDescriptor suffix)
+    {
+        var text = new StringBuilder("suffixRoot");
+        for (var index = 0; index < suffix.Segments.Length; index++)
+        {
+            var segment = suffix.Segments[index];
+            text.Append(
+                    index > 0 && segment.AccessKind == DumpExpressionSuffixAccessKind.Conditional ? "?." : ".")
+                .Append(segment.Identifier.DecodedText);
+        }
+
+        return suffix.FallbackKind switch
+        {
+            DumpExpressionFallbackKind.None => text.ToString(),
+            DumpExpressionFallbackKind.Null => text.Append(" ?? null").ToString(),
+            DumpExpressionFallbackKind.Int32 => text
+                .Append(" ?? ")
+                .Append(suffix.Int32Fallback!.Value.ToString(CultureInfo.InvariantCulture))
+                .ToString(),
+            _ => text.Append(" ?? \"").Append(suffix.StringFallback).Append('"').ToString(),
+        };
     }
 
     /// <summary>
@@ -1673,13 +1814,19 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     /// <param name="suppliesConstantCatalogs">
     /// Whether the complete Constant tables are supplied. Only the declared literal counterfactual withholds them.
     /// </param>
+    /// <param name="suppliesSuffixEvaluation">
+    /// Whether the dump-backed W2/W6 suffix seam is supplied. A row whose spelling carries no suffix never needs it.
+    /// </param>
+    /// <param name="referenceTargetType">The declared reference target a conflict row validates against, or null.</param>
     /// <returns>The produced evaluation together with the acquired physical address, when one exists.</returns>
     internal W8CorpusEvaluation Evaluate(
         string expression,
         int readWidth,
         StaticFieldV2RuntimeThreadSelector? threadSelector = null,
         StaticFieldV2ScopedContextSource? scopedContext = null,
-        bool suppliesConstantCatalogs = true)
+        bool suppliesConstantCatalogs = true,
+        bool suppliesSuffixEvaluation = false,
+        MetadataClosedTypeIdentity? referenceTargetType = null)
     {
         var probes = ExpressionV2CapabilityProbeSet.Create();
         ulong? acquiredSlotAddress = null;
@@ -1723,8 +1870,10 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             FieldCatalogs,
             scopedContext: scopedContext,
             runtimeEvidence: evidence,
+            suffixEvaluation: suppliesSuffixEvaluation ? PausedFrameSuffixEvaluation() : null,
             constantCatalogs: suppliesConstantCatalogs ? ConstantCatalogs : default,
             propertyCatalogs: PropertyCatalogs,
+            referenceTargetType: referenceTargetType,
             capabilityProbes: probes,
             signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
         return new W8CorpusEvaluation(result, acquiredSlotAddress);
@@ -2163,7 +2312,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     /// entry would turn an exact decode into a typed stop.
     /// </remarks>
     private static ImmutableArray<MetadataSignatureTokenResolutionCatalog> BuildTokenResolutionCatalogs(
-        MetadataAncestryAuthorityPortfolioIdentity ancestry)
+        MetadataAncestryAuthorityPortfolioIdentity ancestry,
+        ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs)
     {
         var catalogs = ImmutableArray.CreateBuilder<MetadataSignatureTokenResolutionCatalog>();
         foreach (var entry in ancestry.Entries)
@@ -2180,6 +2330,17 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             foreach (var typeSpecificationRow in entry.ResolutionEntry.ReferenceTables.TypeSpecifications.Rows)
             {
                 CollectSignatureTokens(typeSpecificationRow.Observation.SignatureBytes, tokens);
+            }
+            foreach (var fieldCatalog in fieldCatalogs)
+            {
+                if (!fieldCatalog.SourceEnds.SourceModule.Equals(module))
+                {
+                    continue;
+                }
+                foreach (var fieldRow in fieldCatalog.Rows)
+                {
+                    CollectSignatureTokens(fieldRow.SignatureBytes, tokens, BoundedEcmaSignatureForm.Field);
+                }
             }
             if (tokens.Count == 0)
             {
@@ -2202,12 +2363,15 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         return catalogs.ToImmutable();
     }
 
-    private static void CollectSignatureTokens(ImmutableArray<byte> signatureBytes, SortedSet<int> tokens)
+    private static void CollectSignatureTokens(
+        ImmutableArray<byte> signatureBytes,
+        SortedSet<int> tokens,
+        BoundedEcmaSignatureForm form = BoundedEcmaSignatureForm.TypeSpecification)
     {
         var sink = new TokenCollectingSink(tokens);
         BoundedEcmaSignatureProjection.Decode(
             signatureBytes.AsSpan(),
-            BoundedEcmaSignatureForm.TypeSpecification,
+            form,
             TokenScanLimits,
             sink);
     }

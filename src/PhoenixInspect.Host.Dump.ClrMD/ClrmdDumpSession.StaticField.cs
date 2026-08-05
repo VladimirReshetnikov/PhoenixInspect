@@ -614,6 +614,135 @@ public sealed partial class ClrmdDumpSession
     }
 
     /// <summary>
+    /// Validates the object at one exact caller-resolved address raw-header-first and returns its physical identity.
+    /// </summary>
+    /// <param name="address">The exact nonzero managed address a Product stage already resolved.</param>
+    /// <param name="pointerWidth">The target pointer width in bytes, four or eight.</param>
+    /// <returns>
+    /// An exact object reference after the raw header, its decoded method table, and the runtime type the method
+    /// table names all agree; otherwise a typed unavailable, conflict, or invalid result carrying the reads it made.
+    /// </returns>
+    /// <remarks>
+    /// This is the acquisition half of rooting an unchanged W2/W6 suffix at a reference some other stage resolved.
+    /// A caller that already holds an address — the composed V2 pipeline resolving a static reference, for instance —
+    /// has no way to reach a validated object without it, and hand-assembling the witness would fabricate host
+    /// evidence rather than acquire it.
+    /// <para>
+    /// The procedure is exactly the one the static-field value path performs for its own target: one pointer-width
+    /// header read at the address, one <c>GetTypeByMethodTable</c> lookup with the heap's object type as a
+    /// second witness, and a required agreement between the two method tables. It enumerates no heap and reads no
+    /// payload. A zero address is invalid rather than null-valued: deciding nullness belongs to the caller that
+    /// resolved the reference, and an address this method is asked about is one that caller already called non-null.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="pointerWidth"/> is neither four nor eight.</exception>
+    public ClrmdEvidenceResult<ClrmdExactObjectReference> ValidateExactObjectAtAddress(
+        ulong address,
+        int pointerWidth)
+    {
+        ThrowIfDisposed();
+        if (pointerWidth is not (sizeof(uint) or sizeof(ulong)))
+        {
+            throw new ArgumentOutOfRangeException(nameof(pointerWidth));
+        }
+        if (address == 0)
+        {
+            return ClrmdEvidenceResult<ClrmdExactObjectReference>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData);
+        }
+
+        var header = ReadStaticRaw(address, pointerWidth);
+        var reads = ImmutableArray.Create(MemoryReadResult.Create(
+            Memory.SourceId,
+            header.Address,
+            header.RequestedLength,
+            header.Bytes.AsSpan()));
+        if (!header.IsExact)
+        {
+            return ClrmdEvidenceResult<ClrmdExactObjectReference>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.ObjectUnavailable,
+                evidence: reads);
+        }
+
+        var methodTable = ClrmdStaticPhysicalCanonical.DecodePointer(header.Bytes.AsSpan(), pointerWidth);
+        if (methodTable == 0)
+        {
+            return ClrmdEvidenceResult<ClrmdExactObjectReference>.Create(
+                ClrmdEvidenceStatus.Invalid,
+                ClrmdValueIssue.InvalidData,
+                evidence: reads);
+        }
+
+        ClrType? runtimeType;
+        try
+        {
+            runtimeType = _runtime.GetTypeByMethodTable(methodTable);
+        }
+        catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+        {
+            runtimeType = null;
+        }
+
+        if (runtimeType is null)
+        {
+            try
+            {
+                var objectType = _runtime.Heap.GetObjectType(address);
+                if (objectType?.MethodTable == methodTable)
+                {
+                    runtimeType = objectType;
+                }
+            }
+            catch (Exception exception) when (IsClrmdRuntimeFailure(exception))
+            {
+                runtimeType = null;
+            }
+        }
+
+        if (runtimeType is null)
+        {
+            return ClrmdEvidenceResult<ClrmdExactObjectReference>.Create(
+                ClrmdEvidenceStatus.Unavailable,
+                ClrmdValueIssue.TypeUnavailable,
+                evidence: reads);
+        }
+
+        var projectedTarget = ProjectStaticTargetType(runtimeType);
+        if (projectedTarget.Status != ClrmdEvidenceStatus.Exact || projectedTarget.Value is not { } targetType)
+        {
+            return ClrmdEvidenceResult<ClrmdExactObjectReference>.Create(
+                projectedTarget.Status == ClrmdEvidenceStatus.Exact
+                    ? ClrmdEvidenceStatus.Unavailable
+                    : projectedTarget.Status,
+                projectedTarget.Issue == ClrmdValueIssue.None
+                    ? ClrmdValueIssue.TypeUnavailable
+                    : projectedTarget.Issue,
+                evidence: reads);
+        }
+
+        if (targetType.MethodTable != methodTable)
+        {
+            return ClrmdEvidenceResult<ClrmdExactObjectReference>.Create(
+                ClrmdEvidenceStatus.Conflict,
+                ClrmdValueIssue.TypeMismatch,
+                evidence: reads);
+        }
+
+        return ClrmdEvidenceResult<ClrmdExactObjectReference>.Create(
+            ClrmdEvidenceStatus.Exact,
+            ClrmdValueIssue.None,
+            ClrmdExactObjectReference.Create(ClrmdStaticTargetEvidence.Matched(
+                Snapshot,
+                pointerWidth,
+                address,
+                header,
+                targetType)),
+            reads);
+    }
+
+    /// <summary>
     /// Projects the complete raw specialized-value field catalog needed for Product's nullable layout proof.
     /// </summary>
     /// <param name="runtimeMapping">

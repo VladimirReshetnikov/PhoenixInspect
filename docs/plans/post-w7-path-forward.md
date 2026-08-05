@@ -1305,7 +1305,20 @@ Both `runnerExecution` reasons are corrected to those findings, their predeclare
 divergences are documented with real-run axes. Correcting a stale recorded reason is bookkeeping; retuning a
 predeclared axis would not be.
 
-**The two suffix rows wait on a host route rather than on the evaluator.** `workflow-var-substitution-conditional-chain`
+**The suffix path now reaches an exact terminal over a real dump, and two product gaps closed to get there.** A
+ground named FieldSig — the ordinary shape of every reference-typed static — had no declared type: the value stage
+decoded only two-byte primitives and owner `VAR`s, so a reference-typed static stopped `Unsupported` and no suffix
+over one could ever be reached. It now decodes through the same shared bounded grammar and the same caller-supplied
+per-module token catalogs the alias and generic-base routes consume, and is refused rather than guessed when the
+signature is open, non-exact, or unclassified. Separately, a caller holding a V2-resolved reference address had no
+route to a validated object; `ClrmdDumpSession.ValidateExactObjectAtAddress` performs exactly the raw-header-first
+procedure the static-field value path already performs for its own target — one pointer-width header read, one
+`GetTypeByMethodTable` lookup with the heap's object type as a second witness, and a required agreement between the
+two method tables — so the witness is acquired rather than assembled. With both, a fully qualified reference-typed
+static plus a `?.` terminal reaches `ExactValue`/`Completed` end to end with exactly one seam call, and withholding
+the seam alone returns the same spelling to a suffix-axis stop.
+
+**The two manifest suffix rows still wait, and not on the evaluator.** `workflow-var-substitution-conditional-chain`
 and `workflow-substituted-reference-target-conflict` both recorded the suffix evaluator as unwired. It is wired: the
 composition hands a resolved non-null reference address and the frozen suffix descriptor to the caller-owned
 `StaticFieldV2SuffixEvaluationSource`, and the request already carries the declared reference target type the second
@@ -1313,7 +1326,11 @@ row needs. What is missing is on the host side. The unchanged W2/W6 evaluator is
 `DumpQueryRootBinding`, which requires a validated `ClrmdExactObjectReference`, and that object is minted only from a
 matched raw-header-first target witness produced inside the V1 static-field observation path. A V2-resolved address has
 no such route today, and assembling the witness inside the runner would fabricate host evidence rather than acquire it.
-Both reasons are corrected to that finding; the route itself is a separately owned host slice.
+With the route landed, both rows were measured again: each stops at `typeBinding: Ambiguous`, upstream of any suffix,
+because every workflow-shape profile loads the target's own assembly into a second `AssemblyLoadContext` before it
+pauses — the same second definition that blocks the derived-hiding row. Their reasons are corrected to that finding,
+and the suffix capability they name is proved separately by
+`Suffix_over_a_resolved_reference_reaches_its_terminal_through_the_host_route`.
 
 **Four rows predeclare an adverse condition their own snapshot does not contain**, and each was measured reaching an
 exact value instead of the negative outcome it names. `request-malformed-typespec-invalid` declares the

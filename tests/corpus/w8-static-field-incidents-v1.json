@@ -653,7 +653,7 @@
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "the-pipeline-composes-the-suffix-seam-but-the-runner-supplies-none-because-rooting-the-w2-w6-evaluator-at-a-v2-resolved-reference-address-needs-a-host-route-to-a-validated-exact-object-that-only-the-v1-static-field-observation-path-produces-today"
+        "reason": "the-host-route-and-the-dump-backed-suffix-seam-are-landed-and-proved-separately-but-this-row-stops-at-typebinding-ambiguous-upstream-of-any-suffix-because-every-workflow-profile-loads-its-own-assembly-into-a-second-load-context-before-the-pause"
       },
       "representative": false
     },
@@ -2767,7 +2767,7 @@
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "the-request-already-carries-a-declared-reference-target-type-so-the-row-waits-on-the-same-missing-host-route-from-a-v2-resolved-reference-address-to-a-validated-exact-object-that-the-conditional-chain-row-waits-on"
+        "reason": "the-declared-reference-target-type-and-the-suffix-seam-are-both-available-so-this-row-stops-with-its-sibling-at-typebinding-ambiguous-from-the-workflow-shapes-second-load-context-before-any-target-conflict-can-be-reached"
       },
       "representative": false
     },
