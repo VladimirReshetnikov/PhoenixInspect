@@ -137,9 +137,18 @@ changed-body delta logs *three* default-operation rows, not one, because the com
 new `AssemblyRef` and `TypeRef` rows whose RIDs extend past the baseline's table ends alongside the single updated
 `MethodDef` row, and the edit map assigns exactly those three rows, so generation-aware composition must model
 reference-table extension even for a body-only edit; and the host-surface half of probe 9 holds — the edited method
-remains enumerable under its baseline token. Probes 2, 5, 6, 7, and 8, the runtime-structure half of probe 3, the
-added-member and stacked-generation and extended-scope profiles, and the filtered-dump control remain open for the
-following slices.
+remains enumerable under its baseline token. The second slice landed the added-static profile — the target inserts
+one static field and two accessors through a pure-Insert generation, stores and reads the value through the added
+members in-process, and only then declares readiness — and measured probes 5 and 6 over its real dump: the host
+runtime surface reports the pre-edit census even though the process provably executed the added members, with the
+added field absent from the type's static fields, the added accessors absent from its methods, and the baseline
+sentinel still enumerable under its baseline token; added-member census must therefore come from the generation's
+own delta tables, and with no field object to ask, the added slot's storage location is a typed evidence gap for
+this surface, to be answered from the runtime's edit structures. Two compiler facts were also corrected by
+measurement: a pure Insert generation reports no updated methods, and the added-symbol predicate feeds
+`EmitDifference` from the Insert edits themselves. Probes 2, 7, and 8, the runtime-structure half of probe 3, the
+storage half of probe 6, the stacked-generation and extended-scope profiles, and the filtered-dump control remain
+open for the following slices.
 
 ### E2 — edit detection and typed non-admission
 

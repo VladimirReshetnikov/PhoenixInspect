@@ -210,6 +210,99 @@ public sealed class EncPhysicalTruthTests
         }
     }
 
+    /// <summary>
+    /// Measures the runtime surface and storage of an edit-added static member over a real dump: the added-member
+    /// census against the baseline table ends, and the added slot's location and stored value where observable.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Added_static_member_census_and_storage_are_measured_over_the_edited_dump()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-added-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-added-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteAddedStaticPayload(payloadDirectory);
+            int baselineFieldRows;
+            int baselineMethodRows;
+            using (var stream = File.OpenRead(
+                Path.Combine(payloadDirectory, "PhoenixInspect.EncFixtureBaseline.dll")))
+            using (var peReader = new PEReader(stream))
+            {
+                var baselineReader = peReader.GetMetadataReader();
+                baselineFieldRows = baselineReader.GetTableRowCount(TableIndex.Field);
+                baselineMethodRows = baselineReader.GetTableRowCount(TableIndex.MethodDef);
+            }
+
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-added-static", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            using var dataTarget = DataTarget.LoadDump(
+                dumpPath,
+                new DataTargetOptions { FileLocator = ClrmdOfflineFileLocator.Instance });
+            var runtime = dataTarget.ClrVersions.Single().CreateRuntime();
+            try
+            {
+                var module = Assert.Single(
+                    runtime.EnumerateModules(),
+                    candidate => candidate.Name?.EndsWith(
+                        "PhoenixInspect.EncFixtureBaseline.dll",
+                        StringComparison.OrdinalIgnoreCase) == true);
+                var probeType = module.GetTypeByName("PhoenixInspect.EncFixtureBaseline.Probe");
+                Assert.NotNull(probeType);
+
+                // Probe 5, measured: the process provably executed the added members before READY, yet the host
+                // runtime surface over the dump reports the pre-edit census — the added static field is absent
+                // from the type's static fields and the added accessors are absent from its methods, while the
+                // baseline sentinel stays enumerable under its baseline token. Added-member census therefore
+                // cannot come from this surface; it must come from the generation's own delta tables.
+                Assert.Equal(0, baselineFieldRows);
+                Assert.Equal(1, baselineMethodRows);
+                Assert.Empty(probeType.StaticFields);
+                Assert.DoesNotContain(
+                    probeType.Methods,
+                    method => string.Equals(method.Name, "SetAdded", StringComparison.Ordinal) ||
+                        string.Equals(method.Name, "GetAdded", StringComparison.Ordinal));
+                Assert.Contains(
+                    probeType.Methods,
+                    method => string.Equals(method.Name, "Sentinel", StringComparison.Ordinal) &&
+                        method.MetadataToken == 0x06_00_0001);
+
+                // Probe 6, typed evidence gap for this surface: with the added field invisible, no ClrStaticField
+                // exists to supply the added slot's address, so the storage location must be answered by a later
+                // slice from the runtime's edit structures rather than from this host surface.
+            }
+            finally
+            {
+                runtime.Dispose();
+            }
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
     private static int FindSentinelToken(MetadataReader reader)
     {
         foreach (var handle in reader.MethodDefinitions)

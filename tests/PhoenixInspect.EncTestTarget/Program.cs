@@ -65,6 +65,9 @@ public static class EncGate
     /// <summary>The value the generation-one sentinel method returns after the delta is applied.</summary>
     public const int PostEditSentinel = 0x45_6E_C0_02;
 
+    /// <summary>The value the added-static profile stores through the edit-added accessor.</summary>
+    public const int AddedStaticValue = 0x45_6E_C0_03;
+
     /// <summary>The simple file name of the payload baseline assembly.</summary>
     public const string BaselineAssemblyFileName = "PhoenixInspect.EncFixtureBaseline.dll";
 
@@ -103,18 +106,48 @@ public static class EncGate
             File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.il-delta")),
             File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.pdb-delta")));
 
-        var postEdit = (int)sentinel.Invoke(null, null)!;
-        if (postEdit != PostEditSentinel)
+        switch (profile)
         {
-            Console.WriteLine("ENC_DELTA_NOT_OBSERVED");
-            Console.Out.Flush();
-            return 95;
-        }
+            case "enc-smoke":
+            {
+                var postEdit = (int)sentinel.Invoke(null, null)!;
+                if (postEdit != PostEditSentinel)
+                {
+                    Console.WriteLine("ENC_DELTA_NOT_OBSERVED");
+                    Console.Out.Flush();
+                    return 95;
+                }
 
-        return profile switch
-        {
-            "enc-smoke" => EncPause.WaitForDump(profile, postEdit),
-            _ => 92,
-        };
+                return EncPause.WaitForDump(profile, postEdit);
+            }
+
+            case "enc-added-static":
+            {
+                // The added members are resolved on the same loaded type after the edit, stored through the added
+                // setter, and read back through the added getter, so readiness proves the edit-added static slot
+                // physically exists and holds the stored value in this process.
+                var setAdded = probe.GetMethod("SetAdded", BindingFlags.Public | BindingFlags.Static);
+                var getAdded = probe.GetMethod("GetAdded", BindingFlags.Public | BindingFlags.Static);
+                if (setAdded is null || getAdded is null)
+                {
+                    Console.WriteLine("ENC_ADDED_MEMBER_NOT_OBSERVED");
+                    Console.Out.Flush();
+                    return 96;
+                }
+
+                setAdded.Invoke(null, [AddedStaticValue]);
+                if ((int)getAdded.Invoke(null, null)! != AddedStaticValue)
+                {
+                    Console.WriteLine("ENC_ADDED_STATIC_NOT_OBSERVED");
+                    Console.Out.Flush();
+                    return 97;
+                }
+
+                return EncPause.WaitForDump(profile, AddedStaticValue);
+            }
+
+            default:
+                return 92;
+        }
     }
 }

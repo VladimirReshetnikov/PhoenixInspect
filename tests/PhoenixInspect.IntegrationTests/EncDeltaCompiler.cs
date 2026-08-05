@@ -50,11 +50,68 @@ internal static class EncDeltaCompiler
         }
         """;
 
+    private const string AddedStaticGenerationOneSource = """
+        namespace PhoenixInspect.EncFixtureBaseline;
+
+        /// <summary>Owns the sentinel the edited-process fixture reads before and after the applied delta.</summary>
+        public static class Probe
+        {
+            /// <summary>Stores the static slot the generation-one edit adds.</summary>
+            public static int Added;
+
+            /// <summary>Returns the baseline sentinel value.</summary>
+            public static int Sentinel() => 0x45_6E_C0_01;
+
+            /// <summary>Assigns the added static slot.</summary>
+            public static void SetAdded(int value) => Added = value;
+
+            /// <summary>Reads the added static slot.</summary>
+            public static int GetAdded() => Added;
+        }
+        """;
+
+    /// <summary>
+    /// Writes the added-static payload: the same baseline, and a generation-one delta that inserts one static
+    /// field and its two accessor methods while leaving the sentinel body untouched.
+    /// </summary>
+    /// <param name="payloadDirectory">The directory that will hold the payload files.</param>
+    internal static void WriteAddedStaticPayload(string payloadDirectory) =>
+        WritePayload(
+            payloadDirectory,
+            AddedStaticGenerationOneSource,
+            static (baselineCompilation, generationOneCompilation) =>
+            {
+                var probe = generationOneCompilation.GetTypeByMetadataName("PhoenixInspect.EncFixtureBaseline.Probe");
+                Assert.NotNull(probe);
+                GC.KeepAlive(baselineCompilation);
+                return
+                [
+                    new SemanticEdit(SemanticEditKind.Insert, null, Assert.Single(probe.GetMembers("Added"))),
+                    new SemanticEdit(SemanticEditKind.Insert, null, Assert.Single(probe.GetMembers("SetAdded"))),
+                    new SemanticEdit(SemanticEditKind.Insert, null, Assert.Single(probe.GetMembers("GetAdded"))),
+                ];
+            });
+
     /// <summary>
     /// Writes the smoke payload: the baseline assembly, its portable PDB, and the generation-one delta triple.
     /// </summary>
     /// <param name="payloadDirectory">The directory that will hold the payload files.</param>
-    internal static void WriteSmokePayload(string payloadDirectory)
+    internal static void WriteSmokePayload(string payloadDirectory) =>
+        WritePayload(
+            payloadDirectory,
+            GenerationOneSource,
+            static (baselineCompilation, generationOneCompilation) =>
+            [
+                new SemanticEdit(
+                    SemanticEditKind.Update,
+                    RequireSentinel(baselineCompilation),
+                    RequireSentinel(generationOneCompilation)),
+            ]);
+
+    private static void WritePayload(
+        string payloadDirectory,
+        string generationOneSource,
+        Func<CSharpCompilation, CSharpCompilation, ImmutableArray<SemanticEdit>> createEdits)
     {
         var baselineCompilation = Compile("PhoenixInspect.EncFixtureBaseline", BaselineSource);
         using var imageStream = new MemoryStream();
@@ -86,17 +143,20 @@ internal static class EncDeltaCompiler
             method => ReadLocalSignature(peReader, method),
             hasPortableDebugInformation: true);
 
-        var generationOneCompilation = Compile("PhoenixInspect.EncFixtureBaseline", GenerationOneSource);
-        var baselineSentinel = RequireSentinel(baselineCompilation);
-        var generationOneSentinel = RequireSentinel(generationOneCompilation);
+        var generationOneCompilation = Compile("PhoenixInspect.EncFixtureBaseline", generationOneSource);
+        var edits = createEdits(baselineCompilation, generationOneCompilation);
+        var addedSymbols = edits
+            .Where(static edit => edit.Kind == SemanticEditKind.Insert)
+            .Select(static edit => edit.NewSymbol!)
+            .ToImmutableHashSet(SymbolEqualityComparer.Default);
 
         using var metadataDelta = new MemoryStream();
         using var ilDelta = new MemoryStream();
         using var pdbDelta = new MemoryStream();
         var difference = generationOneCompilation.EmitDifference(
             baseline,
-            [new SemanticEdit(SemanticEditKind.Update, baselineSentinel, generationOneSentinel)],
-            static _ => false,
+            edits,
+            addedSymbols.Contains,
             metadataDelta,
             ilDelta,
             pdbDelta,
@@ -104,7 +164,11 @@ internal static class EncDeltaCompiler
         Assert.True(
             difference.Success,
             "The pinned compiler must emit the delta: " + string.Join("; ", difference.Diagnostics));
-        Assert.NotEmpty(difference.UpdatedMethods);
+        // Measured: only Update edits surface in UpdatedMethods; a pure Insert generation reports none.
+        if (edits.Any(static edit => edit.Kind == SemanticEditKind.Update))
+        {
+            Assert.NotEmpty(difference.UpdatedMethods);
+        }
         File.WriteAllBytes(Path.Combine(payloadDirectory, "generation-1.metadata-delta"), metadataDelta.ToArray());
         File.WriteAllBytes(Path.Combine(payloadDirectory, "generation-1.il-delta"), ilDelta.ToArray());
         File.WriteAllBytes(Path.Combine(payloadDirectory, "generation-1.pdb-delta"), pdbDelta.ToArray());
