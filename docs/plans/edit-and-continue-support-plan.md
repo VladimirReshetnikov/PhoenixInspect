@@ -128,6 +128,19 @@ Independent SRM, ClrMD, and counted raw-memory probes then decide, with retained
 - The filtered-dump profile proves the intended `Unavailable` evidence shape.
 - No product contract changes in this stride.
 
+**Status:** E1 is active; the owner opened the entry gate. Its first slice is landed and measured over the
+changed-body profile in `EncPhysicalTruthTests`: probe 1 holds — the edited process's mapped base metadata is
+byte-identical to the unedited on-disk baseline; the base-image half of probe 3 holds — the mapped Module row still
+names generation zero with empty edit identifiers and zero `EncLog`/`EncMap` rows after a verified, executed edit,
+so nothing produced from the base image alone can reveal the edit; probe 4 produced a corrected finding — the
+changed-body delta logs *three* default-operation rows, not one, because the compiler's generation carries its own
+new `AssemblyRef` and `TypeRef` rows whose RIDs extend past the baseline's table ends alongside the single updated
+`MethodDef` row, and the edit map assigns exactly those three rows, so generation-aware composition must model
+reference-table extension even for a body-only edit; and the host-surface half of probe 9 holds — the edited method
+remains enumerable under its baseline token. Probes 2, 5, 6, 7, and 8, the runtime-structure half of probe 3, the
+added-member and stacked-generation and extended-scope profiles, and the filtered-dump control remain open for the
+following slices.
+
 ### E2 — edit detection and typed non-admission
 
 **Scale:** `~1K–10K LOC`.
