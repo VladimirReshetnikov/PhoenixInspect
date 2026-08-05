@@ -653,7 +653,7 @@
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-the-unwired-w2-w6-suffix-evaluator-over-a-generic-var-field-type"
+        "reason": "the-pipeline-composes-the-suffix-seam-but-the-runner-supplies-none-because-rooting-the-w2-w6-evaluator-at-a-v2-resolved-reference-address-needs-a-host-route-to-a-validated-exact-object-that-only-the-v1-static-field-observation-path-produces-today"
       },
       "representative": false
     },
@@ -2767,7 +2767,7 @@
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "requires-a-declared-reference-target-type-and-a-suffix-evaluator"
+        "reason": "the-request-already-carries-a-declared-reference-target-type-so-the-row-waits-on-the-same-missing-host-route-from-a-v2-resolved-reference-address-to-a-validated-exact-object-that-the-conditional-chain-row-waits-on"
       },
       "representative": false
     },

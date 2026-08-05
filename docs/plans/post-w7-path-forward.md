@@ -1305,6 +1305,16 @@ Both `runnerExecution` reasons are corrected to those findings, their predeclare
 divergences are documented with real-run axes. Correcting a stale recorded reason is bookkeeping; retuning a
 predeclared axis would not be.
 
+**The two suffix rows wait on a host route rather than on the evaluator.** `workflow-var-substitution-conditional-chain`
+and `workflow-substituted-reference-target-conflict` both recorded the suffix evaluator as unwired. It is wired: the
+composition hands a resolved non-null reference address and the frozen suffix descriptor to the caller-owned
+`StaticFieldV2SuffixEvaluationSource`, and the request already carries the declared reference target type the second
+row needs. What is missing is on the host side. The unchanged W2/W6 evaluator is rooted through a
+`DumpQueryRootBinding`, which requires a validated `ClrmdExactObjectReference`, and that object is minted only from a
+matched raw-header-first target witness produced inside the V1 static-field observation path. A V2-resolved address has
+no such route today, and assembling the witness inside the runner would fabricate host evidence rather than acquire it.
+Both reasons are corrected to that finding; the route itself is a separately owned host slice.
+
 **Four rows predeclare an adverse condition their own snapshot does not contain**, and each was measured reaching an
 exact value instead of the negative outcome it names. `request-malformed-typespec-invalid` declares the
 `malformed-typespec-blob` companion as an artifact input that no runner supplies, so the request reads the target's
