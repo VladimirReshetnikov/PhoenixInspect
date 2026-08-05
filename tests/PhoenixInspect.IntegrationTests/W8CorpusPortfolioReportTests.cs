@@ -40,19 +40,19 @@ public sealed class W8CorpusPortfolioReportTests
 
         // The report summarizes the manifest, so its digests are re-frozen whenever a row's runner-execution status
         // legitimately changes. That status is runner bookkeeping, never a predeclared axis: this pair records
-        // twenty-one executed and fourteen manifest-only rows. The two rows that became drivable are the workflow
-        // var-substitution and array-argument rows, whose shared blocker was the workflow gate materializing its
-        // second-definition companion for every profile although only one row declares that companion as an input;
-        // the array row additionally needed its counted root read corrected to one pointer for a reference terminal.
-        // Both reach their predeclared axes unchanged, so no predeclared axis moved.
+        // twenty-two executed and thirteen manifest-only rows. The row that became drivable is the nullable-argument
+        // row, whose blocker was the two sides of runtime construction speaking different corelib identities; the
+        // declared corelib identity collapse and the propagated boxed-nullable geometry carry it to all twelve
+        // predeclared axes, and its produced-value off-by-one against the predeclared terminal spelling is a
+        // recorded finding about the predeclaration, not a moved axis.
         Assert.Equal(
-            "bdb9bb478b274ed2719e9210397edce2a4fc065eac30d8ef8ea5f30d06dfe34d",
+            "6a996b9fe847aba4abf5d5e56b58517a58d1e4661c78f8e125bc6b10360d2e82",
             Digest(first.MachineReport));
         Assert.Equal(
-            "91fa1debc991cdadf07584d9a17993c871fcefc4b6f5adb49e62bbd1d5adbae6",
+            "e1d967d947f04b45f1572ba11cbd95f4aa5012a62fe9e973999351eee63fe875",
             Digest(first.HumanReport));
-        Assert.Equal(21, first.ExecutedCount);
-        Assert.Equal(14, first.ManifestOnlyCount);
+        Assert.Equal(22, first.ExecutedCount);
+        Assert.Equal(13, first.ManifestOnlyCount);
     }
 
     /// <summary>

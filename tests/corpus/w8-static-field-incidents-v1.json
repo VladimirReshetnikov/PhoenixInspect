@@ -1617,8 +1617,8 @@
       },
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "the-supplied-core-int32-and-nullable-definitions-bind-the-spelled-argument-and-close-the-owner-construction-but-runtime-construction-is-absent-because-the-arguments-synthetic-core-identity-cannot-match-any-candidates-real-corelib-derived-argument-identity"
+        "status": "executed",
+        "reason": "the-declared-corelib-identity-collapse-and-the-propagated-nullable-geometry-carry-the-row-to-all-twelve-predeclared-axes-over-one-real-full-dump-with-the-produced-value-being-the-fixtures-own-assigned-constant-one-below-the-predeclared-terminal-spelling"
       },
       "representative": false
     },

@@ -1445,6 +1445,28 @@ either by composing the real corelib module into the corpus authority or by an a
 primitive identities across the metadata and runtime sides. That successor question is product architecture, not a
 runner gap.
 
+**Both sides now speak one corelib identity, and the nullable-argument row executes (twenty-two of thirty-five).**
+Composing the real corelib remains impossible by measurement — `AcquireModule` over the dump's
+`System.Private.CoreLib` stops `Invalid` at the complete MethodDef signature catalog, while the `System.Runtime`
+facade acquires `Exact` — so the admitted canonicalization landed instead, in three additive pieces. First, the
+runtime acquisition gains a caller-declared `StaticFieldV2CoreIdentityCollapse`: an argument whose runtime module is
+the declared corelib and has no binding has its TypeDef's namespace and name read physically from the corelib's own
+metadata row — never from display text — and must select exactly one same-named top-level chain in the declared core
+module; the projection then continues through the ordinary chain and classification path, and the declared boundary
+swaps from `CorelibPrimitiveCollapseNotModeled` to `CorelibDefinitionsCollapsedOntoDeclaredCoreModule` only when a
+collapse is supplied. Second, `ConstructNamed` collapses an exact core primitive value-type definition — top-level,
+arity-zero, `System` namespace, `ValueType` role, a CLI fixed-width or native-size spelling — onto its canonical
+primitive kind, mirroring the nullable-head proof, so a spelled `global::System.Int32` and a runtime-projected
+corelib argument produce one identity byte for byte. Third, the pipeline propagates the caller-supplied
+enum-underlying and nullable-layout facts from the acquired slot facts to the value decoder instead of severing them
+at the decode call, with absence-preserving fact encoding, and the corpus runner acquires the boxed-nullable
+geometry the W8.1 storage truth gate proved — slot pointer, method-table-witnessed box, payload one pointer past the
+header, child offsets from the runtime's own field rows. The row reaches all twelve predeclared axes end to end with
+`value: ExactValue`; its one produced finding is that the fixture's own assigned constant `0x71_00_03_0F`
+(`i32:1895826191`) sits one below the predeclared `nullable-i32:has-value:1895826192` terminal spelling — an
+off-by-one in the predeclaration, recorded rather than retuned. Executed rows go twenty-one to twenty-two of
+thirty-five, and the report goldens are re-frozen for that count.
+
 Produced-vs-predeclared divergences are documented as findings through the
 `Attempted_incidents_stop_at_their_landed_pipeline_boundaries` and
 `Contextual_and_bare_incidents_stop_at_their_landed_scope_boundaries` tests with axes captured from real runs, and the

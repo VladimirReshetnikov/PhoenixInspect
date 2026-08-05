@@ -362,7 +362,11 @@ public sealed class W8MetadataConstructionContractTests
         Assert.Equal(MetadataTypeConstructionResultKind.Exact, classSpecification.Construction.Kind);
         Assert.Equal(MetadataClosedTypeKind.Named, classSpecification.Construction.ClosedType!.Kind);
         Assert.Equal(MetadataTypeConstructionResultKind.Exact, valueSpecification.Construction.Kind);
-        Assert.Equal(MetadataClosedTypeKind.Named, valueSpecification.Construction.ClosedType!.Kind);
+
+        // The exact core primitive value-type definition collapses onto its canonical primitive kind, so a decoded
+        // direct VALUETYPE System.Int32 root and a spelled global::System.Int32 produce one identity.
+        Assert.Equal(MetadataClosedTypeKind.Primitive, valueSpecification.Construction.ClosedType!.Kind);
+        Assert.Equal(MetadataPrimitiveTypeKind.Int32, valueSpecification.Construction.ClosedType.PrimitiveKind);
 
         var openGeneric = MetadataTypeSpecificationIdentity.FromDecodeOutcome(Decode(
             fixture,

@@ -3663,11 +3663,14 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
             throw new ArgumentException("Segment-local groups must exhaust the final flattened arity.", nameof(segments));
         }
         var flattenedArguments = flattened.ToImmutable();
-        if (IsExactNullableDefinition(
-                copied.Select(static segment => segment.Classification).ToImmutableArray(),
-                flattenedArguments))
+        var classifications = copied.Select(static segment => segment.Classification).ToImmutableArray();
+        if (IsExactNullableDefinition(classifications, flattenedArguments))
         {
             return Nullable(copied, flattenedArguments[0]);
+        }
+        if (ExactCorePrimitiveKind(classifications, flattenedArguments) is { } primitiveKind)
+        {
+            return Primitive(primitiveKind);
         }
         return CreateCore(
             MetadataClosedTypeKind.Named,
@@ -3812,6 +3815,10 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
         {
             return Nullable(segments, flattenedArguments[0]);
         }
+        if (ExactCorePrimitiveKind(definitionChain, flattenedArguments) is { } primitiveKind)
+        {
+            return Primitive(primitiveKind);
+        }
         return Named(segments);
     }
 
@@ -3904,6 +3911,52 @@ public sealed class MetadataClosedTypeIdentity : IEquatable<MetadataClosedTypeId
                classification.TypeDefinition.TotalGenericArity == 1 &&
                string.Equals(classification.TypeDefinition.NamespaceName, "System", StringComparison.Ordinal) &&
                string.Equals(classification.TypeDefinition.TypeName, "Nullable`1", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Collapses one exact core primitive value-type definition onto its canonical primitive kind, so a spelled
+    /// <c>global::System.Int32</c> and a runtime-projected corelib argument produce one identity.
+    /// </summary>
+    /// <remarks>
+    /// The rule mirrors the nullable-head proof exactly: a top-level, arity-zero <c>System</c> definition whose
+    /// ValueType role is derived by the ancestry portfolio from the exact immediate <c>System.ValueType</c> base
+    /// edge, and whose name is one of the CLI fixed-width or native-size primitive spellings, is that primitive.
+    /// Reference primitives (<c>String</c>, <c>Object</c>) are deliberately not collapsed here: their named
+    /// constructions carry class-role semantics this rule does not restate.
+    /// </remarks>
+    private static MetadataPrimitiveTypeKind? ExactCorePrimitiveKind(
+        ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain,
+        ImmutableArray<MetadataClosedTypeIdentity> flattenedArguments)
+    {
+        if (definitionChain.Length != 1 || flattenedArguments.Length != 0)
+        {
+            return null;
+        }
+        var classification = definitionChain[0];
+        if (classification.Role != MetadataTypeDefinitionSemanticRole.ValueType ||
+            classification.TypeDefinition.TotalGenericArity != 0 ||
+            !string.Equals(classification.TypeDefinition.NamespaceName, "System", StringComparison.Ordinal))
+        {
+            return null;
+        }
+        return classification.TypeDefinition.TypeName switch
+        {
+            "Boolean" => MetadataPrimitiveTypeKind.Boolean,
+            "Byte" => MetadataPrimitiveTypeKind.UInt8,
+            "SByte" => MetadataPrimitiveTypeKind.Int8,
+            "Int16" => MetadataPrimitiveTypeKind.Int16,
+            "UInt16" => MetadataPrimitiveTypeKind.UInt16,
+            "Int32" => MetadataPrimitiveTypeKind.Int32,
+            "UInt32" => MetadataPrimitiveTypeKind.UInt32,
+            "Int64" => MetadataPrimitiveTypeKind.Int64,
+            "UInt64" => MetadataPrimitiveTypeKind.UInt64,
+            "IntPtr" => MetadataPrimitiveTypeKind.NativeInt,
+            "UIntPtr" => MetadataPrimitiveTypeKind.NativeUInt,
+            "Char" => MetadataPrimitiveTypeKind.Char,
+            "Single" => MetadataPrimitiveTypeKind.Single,
+            "Double" => MetadataPrimitiveTypeKind.Double,
+            _ => null,
+        };
     }
 
     private static void ValidateArrayShape(

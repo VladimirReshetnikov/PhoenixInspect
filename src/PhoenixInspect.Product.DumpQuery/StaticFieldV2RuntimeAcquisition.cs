@@ -203,6 +203,87 @@ public enum StaticFieldV2RuntimeAcquisitionBoundary
     /// module's available-type-parameter hash holds constructed type parameters only.
     /// </summary>
     DefinitionMethodTableSuppliedByTypeDefinitionMap = 11,
+
+    /// <summary>
+    /// Runtime corelib definitions were collapsed onto the caller-declared exact core module by top-level
+    /// namespace/name/arity read physically from the corelib's own metadata rows.
+    /// </summary>
+    CorelibDefinitionsCollapsedOntoDeclaredCoreModule = 12,
+}
+
+/// <summary>
+/// Declares the caller-owned corelib identity collapse: runtime arguments defined in the named corelib module are
+/// projected onto the declared exact core metadata module's same-named top-level definitions.
+/// </summary>
+/// <remarks>
+/// The corelib module itself cannot join the composed authority, because its complete MethodDef signature catalog is
+/// refused by the bounded shared grammar. This declaration therefore extends the same authority-proven rule the
+/// nullable head already uses — an exact top-level System spelling plus role and arity — to the runtime side: the
+/// spelling is read physically from the corelib metadata row the runtime type handle names, never from runtime
+/// display text, and it must select exactly one same-named top-level chain in the declared core module. A definition
+/// the core module does not declare stays unprojectable exactly as before.
+/// </remarks>
+public sealed class StaticFieldV2CoreIdentityCollapse : IEquatable<StaticFieldV2CoreIdentityCollapse>
+{
+    private const string CanonicalDomain = "static-field-v2-core-identity-collapse";
+    private const int CanonicalSchemaVersion = 1;
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    private StaticFieldV2CoreIdentityCollapse(
+        ulong runtimeCorelibModuleAddress,
+        StaticFieldMetadataModuleIdentity coreMetadataModule)
+    {
+        RuntimeCorelibModuleAddress = runtimeCorelibModuleAddress;
+        CoreMetadataModule = coreMetadataModule;
+
+        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
+        writer.WriteUInt64(runtimeCorelibModuleAddress);
+        writer.WriteSha256(coreMetadataModule.Sha256, nameof(coreMetadataModule));
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets the exact runtime module address of the loaded corelib in this snapshot.</summary>
+    public ulong RuntimeCorelibModuleAddress { get; }
+
+    /// <summary>Gets the declared exact core metadata module whose definitions receive the collapse.</summary>
+    public StaticFieldMetadataModuleIdentity CoreMetadataModule { get; }
+
+    /// <summary>Gets a defensive copy of the fixed-reference canonical declaration bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
+
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical declaration.</summary>
+    public string Sha256 { get; }
+
+    /// <summary>Creates one caller-owned corelib identity-collapse declaration.</summary>
+    /// <param name="runtimeCorelibModuleAddress">The nonzero runtime corelib module address.</param>
+    /// <param name="coreMetadataModule">The declared exact core metadata module.</param>
+    /// <returns>A sealed immutable declaration.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="coreMetadataModule"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The runtime corelib module address is zero.</exception>
+    public static StaticFieldV2CoreIdentityCollapse Create(
+        ulong runtimeCorelibModuleAddress,
+        StaticFieldMetadataModuleIdentity coreMetadataModule)
+    {
+        ArgumentNullException.ThrowIfNull(coreMetadataModule);
+        ArgumentOutOfRangeException.ThrowIfZero(runtimeCorelibModuleAddress);
+        return new StaticFieldV2CoreIdentityCollapse(runtimeCorelibModuleAddress, coreMetadataModule);
+    }
+
+    /// <summary>Tests canonical equality between two collapse declarations.</summary>
+    /// <param name="other">The other declaration.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
+    public bool Equals(StaticFieldV2CoreIdentityCollapse? other) =>
+        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
+
+    /// <summary>Tests collapse-declaration equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for a declaration with identical canonical content.</returns>
+    public override bool Equals(object? obj) => Equals(obj as StaticFieldV2CoreIdentityCollapse);
+
+    /// <summary>Computes a deterministic hash code from immutable declaration content.</summary>
+    /// <returns>A hash code for this canonical declaration.</returns>
+    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
 /// <summary>Names the frame-value root families one selected-frame request may name.</summary>
@@ -602,7 +683,8 @@ public sealed class StaticFieldV2RuntimeConstructionAcquisitionRequest :
         MetadataNamedTypeDefinitionChainPortfolioIdentity chainPortfolio,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         ImmutableArray<StaticFieldV2RuntimeModuleBinding> moduleBindings,
-        ExpressionV2CapabilityProbeSet? capabilityProbes)
+        ExpressionV2CapabilityProbeSet? capabilityProbes,
+        StaticFieldV2CoreIdentityCollapse? coreIdentityCollapse)
     {
         MetadataConstruction = metadataConstruction;
         StorageStrategy = storageStrategy;
@@ -610,6 +692,7 @@ public sealed class StaticFieldV2RuntimeConstructionAcquisitionRequest :
         AncestryPortfolio = ancestryPortfolio;
         this.moduleBindings = moduleBindings;
         CapabilityProbes = capabilityProbes;
+        CoreIdentityCollapse = coreIdentityCollapse;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(metadataConstruction.Sha256, nameof(metadataConstruction));
@@ -621,6 +704,15 @@ public sealed class StaticFieldV2RuntimeConstructionAcquisitionRequest :
             moduleBindings,
             static binding => binding.CanonicalBytes);
         writer.WriteBoolean(capabilityProbes is not null);
+
+        // The collapse declaration is appended only when supplied, so every request created without one keeps its
+        // exact previous byte content and its frozen digest unchanged.
+        if (coreIdentityCollapse is not null)
+        {
+            writer.WriteBoolean(true);
+            writer.WriteSha256(coreIdentityCollapse.Sha256, nameof(coreIdentityCollapse));
+        }
+
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -644,6 +736,9 @@ public sealed class StaticFieldV2RuntimeConstructionAcquisitionRequest :
     /// <summary>Gets the caller-owned capability probes this acquisition routes every call through.</summary>
     public ExpressionV2CapabilityProbeSet? CapabilityProbes { get; }
 
+    /// <summary>Gets the optional caller-declared corelib identity collapse, or null when none is declared.</summary>
+    public StaticFieldV2CoreIdentityCollapse? CoreIdentityCollapse { get; }
+
     /// <summary>Gets a defensive copy of the bounded fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -657,6 +752,7 @@ public sealed class StaticFieldV2RuntimeConstructionAcquisitionRequest :
     /// <param name="ancestryPortfolio">The landed exact ancestry authority portfolio.</param>
     /// <param name="moduleBindings">Every caller-supplied runtime-module binding, in any order.</param>
     /// <param name="capabilityProbes">Caller-owned probes whose counters become the retained ledger.</param>
+    /// <param name="coreIdentityCollapse">The optional caller-declared corelib identity collapse.</param>
     /// <returns>A sealed immutable request with a defensively copied binding set.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentException">A supplied outcome or portfolio is not exact.</exception>
@@ -666,7 +762,8 @@ public sealed class StaticFieldV2RuntimeConstructionAcquisitionRequest :
         MetadataNamedTypeDefinitionChainPortfolioIdentity chainPortfolio,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         ImmutableArray<StaticFieldV2RuntimeModuleBinding> moduleBindings,
-        ExpressionV2CapabilityProbeSet? capabilityProbes = null)
+        ExpressionV2CapabilityProbeSet? capabilityProbes = null,
+        StaticFieldV2CoreIdentityCollapse? coreIdentityCollapse = null)
     {
         ArgumentNullException.ThrowIfNull(metadataConstruction);
         ArgumentNullException.ThrowIfNull(storageStrategy);
@@ -710,7 +807,8 @@ public sealed class StaticFieldV2RuntimeConstructionAcquisitionRequest :
             chainPortfolio,
             ancestryPortfolio,
             copied,
-            capabilityProbes);
+            capabilityProbes,
+            coreIdentityCollapse);
     }
 
     /// <summary>Tests canonical equality between two candidate acquisition requests.</summary>
@@ -2103,6 +2201,7 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
     private readonly DataTarget dataTarget;
     private readonly ClrRuntime runtime;
     private readonly ClrmdProcessMemoryReader memoryReader;
+    private readonly Dictionary<ulong, MetadataReaderProvider> collapseMetadataProviders = [];
     private readonly ImmutableDictionary<string, ImmutableDictionary<string, int>> layout;
     private readonly ImmutableArray<ClrModule> runtimeModules;
     private bool disposed;
@@ -2333,7 +2432,9 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
         var boundaries = ImmutableArray.Create(
             StaticFieldV2RuntimeAcquisitionBoundary.RuntimeLayoutSuppliedByContractDescriptor,
             StaticFieldV2RuntimeAcquisitionBoundary.UnprojectableConstructionArgumentsCountedAndExcluded,
-            StaticFieldV2RuntimeAcquisitionBoundary.CorelibPrimitiveCollapseNotModeled);
+            request.CoreIdentityCollapse is null
+                ? StaticFieldV2RuntimeAcquisitionBoundary.CorelibPrimitiveCollapseNotModeled
+                : StaticFieldV2RuntimeAcquisitionBoundary.CorelibDefinitionsCollapsedOntoDeclaredCoreModule);
         var strategy = request.StorageStrategy.Strategy!.Value;
         var probes = request.CapabilityProbes;
         if (request.StorageStrategy.CapabilityRequirements.RuntimeConstruction !=
@@ -2820,9 +2921,99 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
         }
 
         disposed = true;
+        foreach (var provider in collapseMetadataProviders.Values)
+        {
+            provider.Dispose();
+        }
+
+        collapseMetadataProviders.Clear();
         memoryReader.Dispose();
         runtime.Dispose();
         dataTarget.Dispose();
+    }
+
+    /// <summary>
+    /// Collapses one runtime corelib TypeDef token onto the declared core module's same-named top-level definition.
+    /// </summary>
+    /// <remarks>
+    /// The spelling is read physically from the corelib module's own metadata row for the exact token the runtime
+    /// type handle names — never from runtime display text — and it must select exactly one same-named top-level
+    /// chain in the declared core module. A nested corelib definition, an unreadable metadata image, or a name the
+    /// core module does not declare leaves the argument unprojectable exactly as before.
+    /// </remarks>
+    private bool TryCollapseCorelibToken(
+        StaticFieldV2RuntimeConstructionAcquisitionRequest request,
+        StaticFieldV2CoreIdentityCollapse collapse,
+        int corelibTypeDefinitionToken,
+        out int collapsedToken)
+    {
+        collapsedToken = 0;
+        if (!collapseMetadataProviders.TryGetValue(collapse.RuntimeCorelibModuleAddress, out var provider))
+        {
+            var metadataBytes = ReadModuleMetadata(collapse.RuntimeCorelibModuleAddress);
+            if (metadataBytes.IsDefaultOrEmpty)
+            {
+                return false;
+            }
+
+            provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+            collapseMetadataProviders[collapse.RuntimeCorelibModuleAddress] = provider;
+        }
+
+        string namespaceName;
+        string typeName;
+        try
+        {
+            var corelibReader = provider.GetMetadataReader();
+            var rowId = CanonicalReplayEncoding.MetadataTokenRowId(corelibTypeDefinitionToken);
+            if (!CanonicalReplayEncoding.IsMetadataTokenForTable(corelibTypeDefinitionToken, 0x02) ||
+                rowId <= 0 ||
+                rowId > corelibReader.GetTableRowCount(TableIndex.TypeDef))
+            {
+                return false;
+            }
+
+            var definition = corelibReader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(rowId));
+            if (!definition.GetDeclaringType().IsNil)
+            {
+                return false;
+            }
+
+            namespaceName = corelibReader.GetString(definition.Namespace);
+            typeName = corelibReader.GetString(definition.Name);
+        }
+        catch (BadImageFormatException)
+        {
+            return false;
+        }
+
+        var entry = request.ChainPortfolio.Entries
+            .FirstOrDefault(candidate => candidate.SourceModule.Equals(collapse.CoreMetadataModule));
+        if (entry is null)
+        {
+            return false;
+        }
+
+        var matched = 0;
+        foreach (var chain in entry.ChainCatalog.Chains)
+        {
+            if (chain.Segments.Length == 1 &&
+                !chain.IsModulePseudoType &&
+                string.Equals(chain.FinalTypeDefinition.NamespaceName, namespaceName, StringComparison.Ordinal) &&
+                string.Equals(chain.FinalTypeDefinition.TypeName, typeName, StringComparison.Ordinal))
+            {
+                matched = checked(matched + 1);
+                collapsedToken = chain.FinalTypeDefinition.TypeDefinitionToken;
+            }
+        }
+
+        if (matched != 1)
+        {
+            collapsedToken = 0;
+            return false;
+        }
+
+        return true;
     }
 
     private static ImmutableDictionary<ulong, StaticFieldV2RuntimeModuleBinding> BuildBindingMap(
@@ -3383,15 +3574,33 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
                     ImmutableArray<int>.Empty);
             }
 
-            if (!bindings.TryGetValue(identity.ModuleAddress, out var binding) ||
-                identity.TypeDefinitionToken == 0)
+            if (identity.TypeDefinitionToken == 0)
+            {
+                return null;
+            }
+
+            StaticFieldMetadataModuleIdentity projectionModule;
+            int projectionToken;
+            if (bindings.TryGetValue(identity.ModuleAddress, out var binding))
+            {
+                projectionModule = binding.MetadataModule;
+                projectionToken = identity.TypeDefinitionToken;
+            }
+            else if (request.CoreIdentityCollapse is { } collapse &&
+                identity.ModuleAddress == collapse.RuntimeCorelibModuleAddress &&
+                TryCollapseCorelibToken(request, collapse, identity.TypeDefinitionToken, out var collapsedToken))
+            {
+                projectionModule = collapse.CoreMetadataModule;
+                projectionToken = collapsedToken;
+            }
+            else
             {
                 return null;
             }
 
             var chain = request.ChainPortfolio.ExactChainOrDefault(
-                binding.MetadataModule,
-                identity.TypeDefinitionToken);
+                projectionModule,
+                projectionToken);
             if (chain is null || chain.IsModulePseudoType)
             {
                 return null;
@@ -3402,7 +3611,7 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
             foreach (var segment in chain.Segments)
             {
                 var classification = request.AncestryPortfolio.ExactClassificationOrDefault(
-                    binding.MetadataModule,
+                    projectionModule,
                     segment.TypeDefinitionToken);
                 if (classification?.Role is null)
                 {

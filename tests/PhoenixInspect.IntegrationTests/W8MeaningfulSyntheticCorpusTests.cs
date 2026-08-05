@@ -630,37 +630,10 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(derivedBase.PredeclaredAxes, produced.Result.Axes);
         }
 
-        // Incident 15 coordinator-nullable-argument-has-value: the synthetic core now declares System.Int32 and
-        // System.Nullable`1 alongside the role definitions, so the spelled
-        // global::System.Nullable<global::System.Int32> argument binds and the owner construction closes Exact, and
-        // member lookup selects the field. The measured stop moved one stage outward: runtime construction is Absent
-        // over a snapshot whose gate provably materializes NullableSlot<int?>, because the metadata construction's
-        // nullable argument is keyed to the synthetic core module identity while every runtime candidate derives its
-        // ordered arguments from the real corelib module in the dump, so no candidate identity can match. Closing
-        // that needs the composed authority to speak the same corelib identity the runtime speaks — the next named
-        // boundary — so the predeclared row stays manifest-only and the produced divergence is the finding.
-        var nullableArgument = manifest.Incidents.Single(
-            static incident => incident.Id == "coordinator-nullable-argument-has-value");
-        Assert.Equal("manifest-only", nullableArgument.RunnerExecutionStatus);
-        using (var snapshot = W8CorpusSnapshot.Materialize(nullableArgument))
-        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, nullableArgument.Shape))
-        {
-            var produced = world.Evaluate(nullableArgument.Expression, nullableArgument.ReadWidth);
-            Assert.Equal(
-                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/Absent/NotReached/" +
-                "NotReached/NotReached/NoAnswer",
-                Describe(produced.Result.Axes));
-            Assert.Equal(
-                StaticFieldV2ClosedConstructionResultKind.Exact,
-                produced.Result.Provenance.OwnerConstruction!.ResultKind);
-            Assert.Equal(DumpExpressionMemberLookupOutcome.Exact, produced.Result.Axes.MemberLookup);
-            Assert.Equal(
-                DumpExpressionRuntimeConstructionOutcome.Absent,
-                produced.Result.Axes.RuntimeConstruction);
-            Assert.Equal(DumpExpressionValueOutcome.NotReached, produced.Result.Axes.Value);
-            Assert.Null(produced.Result.SignedValue);
-            Assert.NotEqual(nullableArgument.PredeclaredAxes, produced.Result.Axes);
-        }
+        // Incident 15 coordinator-nullable-argument-has-value now executes and reaches all twelve predeclared axes,
+        // so it is asserted by the executed-incident path; its one produced-value finding — the fixture's own
+        // assigned constant sits one below the predeclared terminal spelling — is asserted by the dedicated
+        // Nullable_argument_row_reaches_its_fixture_value_under_one_identity test.
 
         // Incident 23 coordinator-generic-head-arity-disagreement: the pending invalid-arity diagnosis is resolved
         // by the landed W8.4 decision, not by this runner. The name binder deliberately refuses a source arity that
@@ -897,6 +870,39 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         var suffixValue = Assert.IsType<DumpQueryValue>(aligned.Result.SuffixValue);
         Assert.Equal("workflow-step-label", suffixValue.StringValue);
         Assert.Equal(1, aligned.Result.Provenance.EvidenceLedger.SuffixChainEvaluationCallCount);
+    }
+
+    /// <summary>
+    /// Proves the nullable-argument row reaches its exact has-value form through one identity spoken by both sides:
+    /// the declared corelib collapse projects the runtime candidate's corelib-defined argument onto the composed
+    /// core definitions the spelled argument binds, and the propagated boxed-nullable geometry carries the decode.
+    /// </summary>
+    /// <remarks>
+    /// The produced value is the physical fixture's own assigned constant, which sits one below the predeclared
+    /// terminal spelling; the manifest row stays frozen and that off-by-one predeclaration is the recorded finding.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8MeaningfulSyntheticV1")]
+    public void Nullable_argument_row_reaches_its_fixture_value_under_one_identity()
+    {
+        var manifest = W8CorpusManifest.Load();
+        var row = manifest.Incidents.Single(
+            static incident => incident.Id == "coordinator-nullable-argument-has-value");
+        Assert.Equal("executed", row.RunnerExecutionStatus);
+        Assert.Equal("nullable-i32:has-value:1895826192", row.ExpectedTerminal);
+        using var snapshot = W8CorpusSnapshot.Materialize(row);
+        using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, row.Shape);
+        Assert.NotNull(world.CoreIdentityCollapse);
+
+        var produced = world.Evaluate(row.Expression, row.ReadWidth);
+        Assert.Equal(row.PredeclaredAxes, produced.Result.Axes);
+        Assert.Equal(DumpExpressionValueOutcome.ExactValue, produced.Result.Axes.Value);
+
+        // The produced value is the coordinator gate's own assigned 0x71_00_03_0F, measured through the acquired
+        // box hop; the predeclared terminal spelled one more, and that divergence belongs to the predeclaration.
+        Assert.Equal(0x71_00_03_0FL, produced.Result.SignedValue);
+        Assert.Equal(1895826191L, produced.Result.SignedValue);
     }
 
     private static DumpExpressionMemberLookupOutcome DecodeMemberLookup(W8CorpusIncident incident) =>
@@ -1224,6 +1230,8 @@ public sealed class W8CorpusIncident
     public int ReadWidth =>
         !string.Equals(SuffixProfile, "None", StringComparison.Ordinal) ? sizeof(ulong)
         : string.Equals(ExpectedTerminal, "null", StringComparison.Ordinal) ? sizeof(ulong)
+        : ExpectedTerminal is { } nullable && nullable.StartsWith("nullable-i32:", StringComparison.Ordinal)
+            ? 2 * sizeof(int)
         : ExpectedTerminal is { } terminal && terminal.StartsWith("i64:", StringComparison.Ordinal) ? sizeof(long)
         : sizeof(int);
 
@@ -1490,6 +1498,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     private readonly DataTarget rawReadTarget;
     private readonly string shape;
     private readonly string dumpPath;
+    private ClrRuntime? layoutRuntime;
 
     private W8CorpusEvaluationWorld(
         StaticFieldV2RuntimeAcquisitionSession session,
@@ -1541,6 +1550,12 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     /// <summary>Gets the primary module's composed physical TypeSpec table, which retains raw signature bytes.</summary>
     internal MetadataTypeSpecificationPhysicalTableCatalogIdentity PrimaryTypeSpecifications =>
         Primary.Outcome.TypeSpecifications!;
+
+    /// <summary>
+    /// Gets the declared corelib identity collapse: the snapshot's real corelib module collapses onto the composed
+    /// exact core module, so a runtime corelib argument and a spelled core name produce one identity.
+    /// </summary>
+    internal StaticFieldV2CoreIdentityCollapse? CoreIdentityCollapse { get; private set; }
 
     /// <summary>
     /// Builds a caller-declared reference-target construction for one of the primary module's top-level non-generic
@@ -1635,7 +1650,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                         core.FieldCatalog,
                         .. produced.Select(static module => module.Outcome.FieldDefinitions!),
                     ];
-                    return new W8CorpusEvaluationWorld(
+                    var corelibModuleAddress = FindCorelibModuleAddress(session);
+                    var world = new W8CorpusEvaluationWorld(
                         session,
                         rawReadTarget,
                         shape,
@@ -1654,6 +1670,18 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                         ancestry,
                         constraints,
                         BuildTokenResolutionCatalogs(ancestry, fieldCatalogs));
+
+                    // The snapshot's real corelib module collapses onto the composed exact core module, so a runtime
+                    // corelib argument and a spelled core name produce one identity. A snapshot with no readable
+                    // corelib module simply declares no collapse and keeps the prior unprojectable behavior.
+                    if (corelibModuleAddress != 0)
+                    {
+                        world.CoreIdentityCollapse = StaticFieldV2CoreIdentityCollapse.Create(
+                            corelibModuleAddress,
+                            core.Module);
+                    }
+
+                    return world;
                 }
                 catch
                 {
@@ -2099,7 +2127,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                         ChainPortfolio,
                         Ancestry,
                         Bindings,
-                        probes)).Candidates;
+                        probes,
+                        CoreIdentityCollapse)).Candidates;
             },
             slotFacts: (strategy, selection) =>
             {
@@ -2302,15 +2331,124 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             module.Dispose();
         }
 
+        layoutRuntime?.Dispose();
         rawReadTarget.Dispose();
         Session.Dispose();
     }
+
+    /// <summary>
+    /// Acquires the physical nullable geometry of the selected construction's static field from the dump itself,
+    /// exactly as the W8.1 storage truth gate proved it: the static slot holds one pointer to the boxed value, the
+    /// box's own header must name the field type's method table as its witness, and the payload begins one pointer
+    /// past that header with the <c>hasValue</c> and <c>value</c> child offsets read from the runtime's field rows.
+    /// </summary>
+    /// <param name="selection">The exact runtime construction selection, or null when none exists.</param>
+    /// <param name="fieldDefinitionToken">The exact FieldDef token whose static storage is being read.</param>
+    /// <param name="readWidth">The counted payload read width the layout must fill.</param>
+    /// <param name="slotAddress">The acquired static slot address holding the box pointer, or null.</param>
+    /// <returns>The layout and exact payload address, or null when the field's type is not a nullable value type.</returns>
+    private (StaticFieldV2NullableLayoutFact Layout, ulong PayloadAddress)? AcquireNullableGeometry(
+        StaticFieldV2RuntimeConstructionSelection? selection,
+        int fieldDefinitionToken,
+        int readWidth,
+        ulong? slotAddress)
+    {
+        if (selection?.SelectedCandidate is not { } candidate || slotAddress is not { } slot)
+        {
+            return null;
+        }
+
+        layoutRuntime ??= rawReadTarget.ClrVersions[0].CreateRuntime();
+        if (layoutRuntime.GetTypeByMethodTable(candidate.MethodTableAddress) is not { } ownerType)
+        {
+            return null;
+        }
+
+        var fieldType = ownerType.StaticFields
+            .FirstOrDefault(field => field.Token == fieldDefinitionToken)?.Type;
+        if (fieldType is not { IsValueType: true } ||
+            fieldType.Fields.Length != 2)
+        {
+            return null;
+        }
+
+        var hasValueField = fieldType.Fields.FirstOrDefault(
+            static field => string.Equals(field.Name, "hasValue", StringComparison.Ordinal));
+        var valueField = fieldType.Fields.FirstOrDefault(
+            static field => string.Equals(field.Name, "value", StringComparison.Ordinal));
+        if (hasValueField is null || valueField is null || valueField.Size <= 0)
+        {
+            return null;
+        }
+
+        // The box hop is acquired, never assumed: the slot must hold a nonzero pointer, and the object there must
+        // name the field type's own method table before its payload address is trusted.
+        var pointerSize = rawReadTarget.DataReader.PointerSize;
+        var boxPointerBytes = ReadRawBytes(slot, pointerSize);
+        if (boxPointerBytes.Length != pointerSize)
+        {
+            return null;
+        }
+
+        var boxAddress = ReadPointer(boxPointerBytes, pointerSize);
+        if (boxAddress == 0)
+        {
+            return null;
+        }
+
+        var headerBytes = ReadRawBytes(boxAddress, pointerSize);
+        if (headerBytes.Length != pointerSize ||
+            ReadPointer(headerBytes, pointerSize) != fieldType.MethodTable)
+        {
+            return null;
+        }
+
+        return (
+            StaticFieldV2NullableLayoutFact.Create(
+                storageByteCount: readWidth,
+                hasValueOffset: hasValueField.Offset,
+                valueOffset: valueField.Offset,
+                valueByteCount: valueField.Size),
+            checked(boxAddress + (ulong)pointerSize));
+    }
+
+    private static ulong ReadPointer(ImmutableArray<byte> bytes, int pointerSize) =>
+        pointerSize == sizeof(uint)
+            ? BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan())
+            : BinaryPrimitives.ReadUInt64LittleEndian(bytes.AsSpan());
 
     private ImmutableArray<byte> ReadRawBytes(ulong address, int width)
     {
         var buffer = new byte[width];
         var read = rawReadTarget.DataReader.Read(address, buffer);
         return read == width ? [.. buffer] : ImmutableArray<byte>.Empty;
+    }
+
+    /// <summary>Finds the snapshot's corelib module by its own physical metadata module name.</summary>
+    /// <param name="session">The opened runtime acquisition session.</param>
+    /// <returns>The corelib runtime module address, or zero when no readable corelib module exists.</returns>
+    private static ulong FindCorelibModuleAddress(StaticFieldV2RuntimeAcquisitionSession session)
+    {
+        foreach (var observation in session.Modules)
+        {
+            var metadataBytes = session.ReadModuleMetadata(observation.ModuleAddress);
+            if (metadataBytes.IsDefaultOrEmpty)
+            {
+                continue;
+            }
+
+            using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+            var reader = provider.GetMetadataReader();
+            if (string.Equals(
+                reader.GetString(reader.GetModuleDefinition().Name),
+                "System.Private.CoreLib.dll",
+                StringComparison.Ordinal))
+            {
+                return observation.ModuleAddress;
+            }
+        }
+
+        return 0;
     }
 
     private static ArtifactContent ReadArtifactContent(string artifactPath)
@@ -2397,7 +2535,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                     ChainPortfolio,
                     Ancestry,
                     Bindings,
-                    probes));
+                    probes,
+                    CoreIdentityCollapse));
             if (reacquired.ResultKind != StaticFieldV2RuntimeAcquisitionResultKind.Exact)
             {
                 return null;
@@ -2427,15 +2566,23 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         }
 
         // The pipeline's own strategy never carries the selected-thread fact: the CustomAttribute table is a declared
-        // coverage boundary there, so its constructed-slot plan admits the exact address alone.
+        // coverage boundary there, so its constructed-slot plan admits the exact address alone. A nullable static's
+        // geometry is acquired from the dump itself — the box hop the W8.1 truth gate proved — so the supplied slot
+        // address is the payload the raw read must copy and the layout carries the runtime's own child offsets.
+        var nullableGeometry = AcquireNullableGeometry(
+            effectiveSelection,
+            strategy.Request.FieldRow.FieldDefinitionToken,
+            readWidth,
+            slot.SlotAddress);
         return StaticFieldV2RuntimeSlotFacts.Create(
             readWidth,
-            slot.SlotAddress,
+            nullableGeometry?.PayloadAddress ?? slot.SlotAddress,
             selectedThread: null,
             moduleContent: declaringBinding?.MetadataModule.ModuleContent,
             fieldRvaRowToken: slot.FieldRvaRowToken,
             mappedRelativeVirtualAddress: slot.MappedRelativeVirtualAddress,
-            mappedAddress: slot.MappedAddress);
+            mappedAddress: slot.MappedAddress,
+            nullableLayout: nullableGeometry?.Layout);
     }
 
     private bool FieldCarriesThreadStaticAttribute(MetadataFieldDefinitionTableRowIdentity fieldRow)

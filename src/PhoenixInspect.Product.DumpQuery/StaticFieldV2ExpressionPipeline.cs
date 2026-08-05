@@ -418,7 +418,9 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
         ModuleContentIdentity? moduleContent,
         int? fieldRvaRowToken,
         uint? mappedRelativeVirtualAddress,
-        ulong? mappedAddress)
+        ulong? mappedAddress,
+        MetadataPrimitiveTypeKind? enumUnderlyingKind,
+        StaticFieldV2NullableLayoutFact? nullableLayout)
     {
         ReadWidth = readWidth;
         SlotAddress = slotAddress;
@@ -427,6 +429,8 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
         FieldRvaRowToken = fieldRvaRowToken;
         MappedRelativeVirtualAddress = mappedRelativeVirtualAddress;
         MappedAddress = mappedAddress;
+        EnumUnderlyingKind = enumUnderlyingKind;
+        NullableLayout = nullableLayout;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteInt32(readWidth);
@@ -444,6 +448,21 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
             writer,
             mappedRelativeVirtualAddress.HasValue ? mappedRelativeVirtualAddress.Value : null);
         ExpressionV2ContractEncoding.WriteOptionalUInt64(writer, mappedAddress);
+
+        // The two value-decode evidence facts are appended only when supplied, so every fact set created without
+        // them keeps its exact previous byte content and its frozen digest unchanged.
+        if (enumUnderlyingKind is not null)
+        {
+            writer.WriteBoolean(true);
+            writer.WriteInt32((int)enumUnderlyingKind.Value);
+        }
+
+        if (nullableLayout is not null)
+        {
+            writer.WriteBoolean(true);
+            writer.WriteSha256(nullableLayout.Sha256, nameof(nullableLayout));
+        }
+
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -469,6 +488,12 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
     /// <summary>Gets the supplied exact mapped image address, or null when none was supplied.</summary>
     public ulong? MappedAddress { get; }
 
+    /// <summary>Gets the supplied exact enum underlying primitive fact, or null when none was supplied.</summary>
+    public MetadataPrimitiveTypeKind? EnumUnderlyingKind { get; }
+
+    /// <summary>Gets the supplied exact nullable physical layout fact, or null when none was supplied.</summary>
+    public StaticFieldV2NullableLayoutFact? NullableLayout { get; }
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical fact bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -483,6 +508,8 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
     /// <param name="fieldRvaRowToken">The supplied exact FieldRVA row token, or null.</param>
     /// <param name="mappedRelativeVirtualAddress">The supplied exact mapped relative virtual address, or null.</param>
     /// <param name="mappedAddress">The supplied exact mapped image address, or null.</param>
+    /// <param name="enumUnderlyingKind">The supplied exact enum underlying primitive fact, or null.</param>
+    /// <param name="nullableLayout">The supplied exact nullable physical layout fact, or null.</param>
     /// <returns>A sealed immutable fact set.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The read width is outside the admitted range.</exception>
     public static StaticFieldV2RuntimeSlotFacts Create(
@@ -492,13 +519,19 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
         ModuleContentIdentity? moduleContent = null,
         int? fieldRvaRowToken = null,
         uint? mappedRelativeVirtualAddress = null,
-        ulong? mappedAddress = null)
+        ulong? mappedAddress = null,
+        MetadataPrimitiveTypeKind? enumUnderlyingKind = null,
+        StaticFieldV2NullableLayoutFact? nullableLayout = null)
     {
         if (readWidth is <= 0 or > StaticFieldV2StaticSlotRequest.MaximumReadWidth)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(readWidth),
                 $"A counted read width of one through {StaticFieldV2StaticSlotRequest.MaximumReadWidth} is required.");
+        }
+        if (enumUnderlyingKind is { } kind)
+        {
+            ExpressionV2ContractEncoding.RequireDefined(kind, nameof(enumUnderlyingKind));
         }
 
         return new StaticFieldV2RuntimeSlotFacts(
@@ -508,7 +541,9 @@ public sealed class StaticFieldV2RuntimeSlotFacts : IEquatable<StaticFieldV2Runt
             moduleContent,
             fieldRvaRowToken,
             mappedRelativeVirtualAddress,
-            mappedAddress);
+            mappedAddress,
+            enumUnderlyingKind,
+            nullableLayout);
     }
 
     /// <summary>Tests canonical equality between two static-slot geometry fact sets.</summary>
@@ -1838,7 +1873,7 @@ public static class StaticFieldV2ExpressionPipeline
             EnterStep(13);
             var value = strategy == StaticFieldV2StorageStrategy.MetadataLiteral
                 ? ProjectLiteral(fieldRow)
-                : DecodeStoredValue(declaredType, staticSlot!.Slot!);
+                : DecodeStoredValue(declaredType, staticSlot!.Slot!, slotFacts!);
 
             // Step 14: validate a non-null reference target through constructed assignability when required.
             EnterStep(14);
@@ -2521,7 +2556,8 @@ public static class StaticFieldV2ExpressionPipeline
 
         private DumpExpressionValueOutcome DecodeStoredValue(
             MetadataClosedTypeIdentity? declaredType,
-            StaticFieldV2StaticSlotIdentity slot)
+            StaticFieldV2StaticSlotIdentity slot,
+            StaticFieldV2RuntimeSlotFacts facts)
         {
             if (declaredType is null)
             {
@@ -2540,13 +2576,15 @@ public static class StaticFieldV2ExpressionPipeline
                 return DumpExpressionValueOutcome.Unavailable;
             }
 
+            // The caller-supplied enum-underlying and nullable-layout facts are propagated from the acquired slot
+            // facts to the decoder, whose value request retains both canonically; they are never assumed here.
             rawValueBytes = ExpressionV2ContractEncoding.Copy(copied);
             runtimeValue = StaticFieldV2ValueDecoder.DecodeValue(StaticFieldV2RuntimeValueRequest.Create(
                 declaredType,
                 rawValueBytes,
                 OwnerModule().Module.PointerWidth,
-                null,
-                null,
+                facts.EnumUnderlyingKind,
+                facts.NullableLayout,
                 request.CapabilityProbes));
             return runtimeValue.ResultKind switch
             {
