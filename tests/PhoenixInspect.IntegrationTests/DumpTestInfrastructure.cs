@@ -97,7 +97,8 @@ internal sealed class TestTargetRunner : IDisposable
         IReadOnlyList<string> arguments,
         string? isolatedDirectory,
         TimeSpan? readinessTimeout = null,
-        Func<StreamReader, Task<string?>>? readReadinessLineAsync = null)
+        Func<StreamReader, Task<string?>>? readReadinessLineAsync = null,
+        IReadOnlyDictionary<string, string>? additionalEnvironment = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
         ArgumentNullException.ThrowIfNull(arguments);
@@ -139,6 +140,17 @@ internal sealed class TestTargetRunner : IDisposable
         process.StartInfo.Environment["INTERPRETER_TEST_ARTIFACT_CANARY"] =
             "must-not-enter-the-full-dump";
         ConfigureIsolatedEnvironment(process.StartInfo, ownedDirectory);
+
+        // Caller-declared additions are applied after the isolation rebuild, so they extend the fixed allowlist
+        // without ever reintroducing inherited host state; the edited-process fixture uses this seam for the
+        // runtime's DOTNET_MODIFIABLE_ASSEMBLIES gate.
+        if (additionalEnvironment is not null)
+        {
+            foreach (var (name, value) in additionalEnvironment)
+            {
+                process.StartInfo.Environment[name] = value;
+            }
+        }
 
         bool started;
         try

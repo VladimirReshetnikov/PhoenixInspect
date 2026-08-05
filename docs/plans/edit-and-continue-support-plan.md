@@ -256,6 +256,15 @@ This plan is research-gated future work, entered through the
 or the owner explicitly prioritizes it, and E1 must be its first scheduled checkpoint in either case. E2 is the
 minimum shippable increment and is worth landing even alone.
 
+The before-entry-gate prerequisites are landed and proven: the hidden `PhoenixInspect.EncTestTarget` fixture loads
+a payload baseline, applies a generation through the runtime's own `MetadataUpdater.ApplyUpdate` path, and prints
+readiness only after observing the edited body execute; the test-infrastructure delta compiler produces the
+baseline and its delta triple with the pinned compiler's `EmitDifference`, reading the EnC local-slot and lambda
+maps and local signatures from the baseline's own portable PDB and method bodies; the dump-target runner gained an
+additive caller-declared environment seam for the `DOTNET_MODIFIABLE_ASSEMBLIES` gate; and the `EncFixtureV1` smoke
+lane proves the edited process pauses verified and a full dump of it captures and reopens. E1 therefore starts at
+its probes, not at its harness.
+
 The capability is complete when every consumer either answers generation-aware over edited modules or carries a
 frozen typed non-admission backed by E1 evidence; when zero-generation behavior has remained byte-frozen through
 every stride; when the edited-process corpus incidents replay; and when the closure commit satisfies repository and
