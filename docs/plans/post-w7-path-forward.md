@@ -1202,18 +1202,28 @@ whenever the caller supplies a lexical envelope regresses every contextual `Type
 one, which the executed portfolio rows would catch. Attempting the bare route and falling back to the qualified one
 contradicts the fixed operation order, whose private step cursor exists precisely so a step cannot be re-entered.
 
-**The decision.** The rule is decidable inside the frozen order, because the lexical-completeness step already
-precedes type binding on the twelve axes. When a descriptor carries both readings, the lexical step certifies the bare
-head once: a head the certificate binds to a value selects the bare partition, and a head the certificate reports
-absent as a value leaves the qualified partitions to proceed. One step decides between two already-parsed readings;
-nothing is retried, and no profile falls through to another — the no-fallthrough invariant governs profiles, while
-candidate partitions inside one profile are ordered by the language rule.
+**The decision.** When a descriptor carries both readings and the caller supplies a lexical envelope, the bare head is
+certified once, before any owner is bound: a head the certificate binds to a value selects the bare partition, and a
+head the certificate reports absent as a value leaves the qualified partitions to proceed. One certification decides
+between two already-parsed readings; nothing is retried, and no profile falls through to another — the no-fallthrough
+invariant governs profiles, while candidate partitions inside one profile are ordered by the language rule.
 
-Its consequences are named so the implementing slice does not discover them: `Route` becomes a value the composition
-determines after the lexical step rather than before context acquisition, so every result digest that embeds a route
-for a dotted-head spelling moves and is re-frozen as that slice's declared content; a request that supplies no lexical
-envelope keeps today's qualified selection, because with no certificate the language question cannot be asked; and the
-bare route's own axes stay exactly as they are for spellings that already take it.
+Where that certification runs is stated exactly, because the twelve-axis order and the execution order are not the
+same thing and assuming they were is the trap here. The axes list `lexicalCompleteness` before `typeBinding`, but the
+composition has no separate lexical step: today the bare route certifies inside step 8, after step 7 has already bound
+an owner for the other routes. The rule therefore belongs at the end of **step 6**, which already acquires the
+caller's context and can acquire the envelope from the same seam, so the route is fixed before step 7 binds anything.
+Type binding does not move.
+
+Three consequences are named so the implementing slice does not discover them. `Route` becomes a value determined at
+the end of step 6 rather than at step 5, so every result digest embedding a route for a dotted-head spelling moves and
+is re-frozen as that slice's declared content. A request supplying no lexical envelope keeps today's qualified
+selection, because with no certificate the language question cannot be asked. And — the one that is easy to miss —
+every *contextual* dotted spelling that supplies an envelope will now acquire it and certify its head, so
+`LexicalEnvelopeCallCount` becomes one where it was zero for those requests, and any test pinning that count as
+evidence of an unconsulted seam must be re-stated in terms of the seam the route did not use. The selected reading's
+own axes are unchanged: a head certified as not-a-value leaves `lexicalCompleteness` `NotRequired`, because that axis
+describes the reading the pipeline selected rather than the question it asked to select it.
 
 Route only explicit V2 or W8.1-admitted frame-value requests through their declared bind/prepare/read/evaluate path,
 reuse unchanged W2/W6 suffixes, add append-only consumer/report schemas, and execute the generated cross-product through
