@@ -618,7 +618,8 @@ public sealed class W8V2ScopedContextBindingTests
             null,
             null,
             null,
-            false));
+            false,
+            null));
         Assert.Throws<ArgumentException>(() => StaticFieldV2ScopedAliasShadowingIdentity.Create(
             new object(),
             shadowing.AliasName,

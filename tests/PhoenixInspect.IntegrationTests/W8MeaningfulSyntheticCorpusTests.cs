@@ -343,6 +343,46 @@ public sealed class W8MeaningfulSyntheticCorpusTests
     }
 
     /// <summary>
+    /// Drives the ground TypeSpec-alias row's own declared counterfactual, which its predeclaration says withholds the
+    /// Constant-row source, and proves the row loses exactly its value while its owner binding is untouched.
+    /// </summary>
+    /// <remarks>
+    /// The row is not decision-changing, so the counterfactual sweep above does not reach it; it is asserted here
+    /// because the arm only became drivable when the alias target became decodable, and an unexercised arm proves
+    /// nothing. The alias, the context, and the owner construction are identical across the pair: the single removed
+    /// input is the complete Constant table the literal projects from.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8MeaningfulSyntheticV1")]
+    public void Executed_literal_incident_loses_only_its_value_without_the_constant_source()
+    {
+        var manifest = W8CorpusManifest.Load();
+        var literal = manifest.Incidents.Single(
+            static incident => incident.Id == "workflow-ground-typespec-alias-enum-literal");
+        Assert.Equal("executed", literal.RunnerExecutionStatus);
+        Assert.Equal("withhold-literal-constant-source", literal.CounterfactualAction);
+
+        using var snapshot = W8CorpusSnapshot.Materialize(literal);
+        using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, literal.Shape);
+        var baseline = EvaluateIncident(world, literal);
+        var withheld = ApplyCounterfactual(world, literal);
+
+        Assert.Equal(DumpExpressionValueOutcome.ExactValue, baseline.Result.Axes.Value);
+        Assert.Equal(2L, baseline.Result.SignedValue);
+        Assert.Equal(0, baseline.Result.Provenance.EvidenceLedger.RuntimeCallCount);
+        Assert.NotEqual(DumpExpressionValueOutcome.ExactValue, withheld.Result.Axes.Value);
+        Assert.Null(withheld.Result.SignedValue);
+        Assert.NotEqual(baseline.Result.Sha256, withheld.Result.Sha256);
+
+        // Only the value stage moved: the alias still decoded and still bound the same owner construction.
+        Assert.Equal(baseline.Result.Axes.TypeBinding, withheld.Result.Axes.TypeBinding);
+        Assert.Equal(
+            baseline.Result.Provenance.OwnerConstruction!.OwnerConstruction!.Sha256,
+            withheld.Result.Provenance.OwnerConstruction!.OwnerConstruction!.Sha256);
+    }
+
+    /// <summary>
     /// Documents the honest produced-versus-predeclared divergence of one attempted incident the composed pipeline
     /// evaluates over a real dump but cannot carry to its predeclared axes.
     /// </summary>
@@ -573,29 +613,28 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(produced.Result.Sha256, control.Result.Sha256);
         }
 
-        // Incident 2 batch-typespec-alias-whole-owner: the whole owner is spelled through a TypeSpec alias whose
-        // target stays physically retained and undecoded, so the contextual binder can never make it a bound head and
-        // the row stops on the type-binding axis. Its argument-carrying siblings now execute end to end; this one
-        // waits on the decoded alias target rather than on any scope evidence.
-        var wholeOwnerAlias = manifest.Incidents.Single(
-            static incident => incident.Id == "batch-typespec-alias-whole-owner");
-        Assert.Equal("manifest-only", wholeOwnerAlias.RunnerExecutionStatus);
-        using (var snapshot = W8CorpusSnapshot.Materialize(wholeOwnerAlias))
-        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, wholeOwnerAlias.Shape))
+        // Incidents 2 and 32, the two TypeSpec-alias rows, no longer stop here: their alias targets now decode to
+        // exact closed constructions from the physical blobs, so both reach their predeclared axes and are asserted
+        // by the executed-incident path. What they leave behind is the narrower boundary below.
+        //
+        // Incident 8 workflow-extern-alias-interface-owner: the spelling is extern-alias qualified and its owner
+        // stops before any construction. The alias-target decode this slice landed does not reach it, because the
+        // stop is on the owner name rather than on an alias target the ImportScope records.
+        var externAlias = manifest.Incidents.Single(
+            static incident => incident.Id == "workflow-extern-alias-interface-owner");
+        Assert.Equal("manifest-only", externAlias.RunnerExecutionStatus);
+        using (var snapshot = W8CorpusSnapshot.Materialize(externAlias))
+        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, externAlias.Shape))
         {
             var produced = world.Evaluate(
-                wholeOwnerAlias.Expression,
-                wholeOwnerAlias.ReadWidth,
+                externAlias.Expression,
+                externAlias.ReadWidth,
                 null,
                 world.PausedFrameScopedContext());
-            Assert.Equal(
-                "Admitted/Exact/NotRequired/NotRequired/Partial/NotReached/NotReached/NotReached/NotReached/" +
-                "NotReached/NotReached/Partial",
-                Describe(produced.Result.Axes));
             Assert.Equal(DumpExpressionContextOutcome.Exact, produced.Result.Axes.Context);
             Assert.Equal(DumpExpressionTypeBindingOutcome.Partial, produced.Result.Axes.TypeBinding);
             Assert.Null(produced.Result.SignedValue);
-            Assert.NotEqual(wholeOwnerAlias.PredeclaredAxes, produced.Result.Axes);
+            Assert.NotEqual(externAlias.PredeclaredAxes, produced.Result.Axes);
         }
 
         // Incident 29 request-active-local-shadows-bare-import: the projected lexical envelope produces exactly the
@@ -749,6 +788,15 @@ public sealed class W8MeaningfulSyntheticCorpusTests
                 incident.Expression,
                 incident.ReadWidth,
                 world.WorkerParkThreadSelector()),
+
+            // The literal route's own counterfactual: the same spelling under the same exact context with no Constant
+            // catalog at all, so the value axis has no source to project and stops instead of reading storage.
+            "withhold-literal-constant-source" => world.Evaluate(
+                incident.Expression,
+                incident.ReadWidth,
+                incident.RequestsPausedFrameThread ? world.PausedFrameThreadSelector() : null,
+                world.PausedFrameScopedContext(),
+                suppliesConstantCatalogs: false),
 
             // The frame-slot counterfactual selects the probe's alternate memory-homed local, which the workflow probe
             // seeds to a different value at a different exact frame home, changing both the value and the slot address.
@@ -1485,12 +1533,15 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 StaticFieldV2ScopedContextAcquisitionDisposition.Partial);
         }
 
+        // The same catalogs member lookup consumes also decode a TypeSpec alias target, so an alias that names a
+        // closed construction reaches it from the physical blob the compiler wrote rather than from the spelling.
         return StaticFieldV2ScopedContextAcquisition.Exact(StaticFieldV2ScopedContextRequest.Create(
             Primary.MetadataModule,
             facts.ImportScopes,
             classification.TypeDefinition,
             Ancestry,
-            Ancestry.ResolutionPortfolio));
+            Ancestry.ResolutionPortfolio,
+            TokenResolutionCatalogs));
     }
 
     /// <summary>
@@ -1597,12 +1648,16 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     /// <param name="readWidth">The counted read width in bytes.</param>
     /// <param name="threadSelector">The declared selected-thread predicate, or null when the row declares none.</param>
     /// <param name="scopedContext">The incident's scoped-context seam, or null when the row declares none.</param>
+    /// <param name="suppliesConstantCatalogs">
+    /// Whether the complete Constant tables are supplied. Only the declared literal counterfactual withholds them.
+    /// </param>
     /// <returns>The produced evaluation together with the acquired physical address, when one exists.</returns>
     internal W8CorpusEvaluation Evaluate(
         string expression,
         int readWidth,
         StaticFieldV2RuntimeThreadSelector? threadSelector = null,
-        StaticFieldV2ScopedContextSource? scopedContext = null)
+        StaticFieldV2ScopedContextSource? scopedContext = null,
+        bool suppliesConstantCatalogs = true)
     {
         var probes = ExpressionV2CapabilityProbeSet.Create();
         ulong? acquiredSlotAddress = null;
@@ -1646,7 +1701,7 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             FieldCatalogs,
             scopedContext: scopedContext,
             runtimeEvidence: evidence,
-            constantCatalogs: ConstantCatalogs,
+            constantCatalogs: suppliesConstantCatalogs ? ConstantCatalogs : default,
             propertyCatalogs: PropertyCatalogs,
             capabilityProbes: probes,
             signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
@@ -2072,11 +2127,19 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         StaticFieldV2Limits.MaximumArrayRank);
 
     /// <summary>
-    /// Builds one signature token-resolution catalog per portfolio module that retains a generic TypeSpec base,
-    /// supplying exactly the entries those base blobs reference. This is the host-side acquisition role: the
-    /// catalogs are derived from the already-produced authority portfolios and the physical blob bytes, so member
-    /// lookup can decode a retained generic base without any new metadata read.
+    /// Builds one signature token-resolution catalog per portfolio module that retains a decodable TypeSpec blob,
+    /// supplying exactly the entries those blobs reference. This is the host-side acquisition role: the catalogs are
+    /// derived from the already-produced authority portfolios and the physical blob bytes, so member lookup can
+    /// decode a retained generic base — and the context projection a TypeSpec alias target — without any new
+    /// metadata read.
     /// </summary>
+    /// <remarks>
+    /// Both consumers are served from one catalog per module. A generic base blob is reached through the module's
+    /// base edges; an alias target is any row of the module's own complete TypeSpec table, and which of those rows an
+    /// ImportScope actually names is not known until the context is projected, so every row contributes its
+    /// referenced tokens. Over-supplying is safe: an entry no blob references is never consulted, while a missing
+    /// entry would turn an exact decode into a typed stop.
+    /// </remarks>
     private static ImmutableArray<MetadataSignatureTokenResolutionCatalog> BuildTokenResolutionCatalogs(
         MetadataAncestryAuthorityPortfolioIdentity ancestry)
     {
@@ -2091,6 +2154,10 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 {
                     CollectSignatureTokens(baseRow.Observation.SignatureBytes, tokens);
                 }
+            }
+            foreach (var typeSpecificationRow in entry.ResolutionEntry.ReferenceTables.TypeSpecifications.Rows)
+            {
+                CollectSignatureTokens(typeSpecificationRow.Observation.SignatureBytes, tokens);
             }
             if (tokens.Count == 0)
             {

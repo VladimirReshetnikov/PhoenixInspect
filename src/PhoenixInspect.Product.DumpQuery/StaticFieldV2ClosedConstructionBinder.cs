@@ -115,6 +115,12 @@ public enum StaticFieldV2ClosedConstructionIssue
 
     /// <summary>A generic contextual owner requires its decoded alias-target construction, which is not supplied.</summary>
     ContextualConstructionRequiresDecodedAliasTarget = 27,
+
+    /// <summary>
+    /// A decoded alias target's own construction chain disagrees with the authority chain of the candidate it
+    /// contributed, so the two descriptions of one owner cannot both be exact.
+    /// </summary>
+    AliasTargetConstructionChainMismatch = 28,
 }
 
 /// <summary>Classifies the disposition of one substituted generic-constraint obligation.</summary>
@@ -858,8 +864,14 @@ public static class StaticFieldV2ClosedConstructionBinder
     /// Arities are matched innermost-first, because a C# spelling always ends at the innermost named type: the last
     /// spelled owner segment supplies the innermost chain segment's arguments, the one before it the next outer, and
     /// so on. Any chain segment left unspelled — the head an alias contributed — must introduce no generic parameter
-    /// at all, because its arguments could only come from the alias target's still-undecoded TypeSpec. That case
-    /// stays the declared typed unsupported stop rather than a guessed construction.
+    /// at all, because its arguments could only come from the alias target's TypeSpec. That case stays the declared
+    /// typed unsupported stop rather than a guessed construction.
+    /// </para>
+    /// <para>
+    /// One spelling escapes that rule with evidence rather than by assumption: a whole-owner alias whose target
+    /// TypeSpec the context projection decoded carries its arguments in the decoded construction itself, so they are
+    /// taken from there. The decoded chain and the candidate's authority chain must name the same definitions in the
+    /// same order first; a disagreement is a typed stop, never a preference for one authority over the other.
     /// </para>
     /// </remarks>
     /// <param name="contextualBinding">The exact contextual binding whose selected candidate names the owner.</param>
@@ -972,7 +984,8 @@ public static class StaticFieldV2ClosedConstructionBinder
     /// aligned from their inner ends. Segments the spelling consumed as namespace text simply run out, which is why
     /// the walk stops at the shorter of the two. A chain segment that outlives the spelling is a head an alias
     /// contributed: it may introduce no generic parameter, because the only place its arguments could come from is
-    /// the alias target's undecoded TypeSpec.
+    /// the alias target's TypeSpec, and that is a separate route. A candidate an alias contributed with its target
+    /// already decoded takes that route instead of this one, because its arguments are physical rather than spelled.
     /// </remarks>
     /// <param name="context">The binding context, carrying the owner's exact scope.</param>
     /// <param name="expression">The descriptor whose owner segments carry the spelled arguments.</param>
@@ -990,6 +1003,21 @@ public static class StaticFieldV2ClosedConstructionBinder
         flattened = ImmutableArray<MetadataClosedTypeIdentity>.Empty;
         var segments = expression.Segments;
         var spelledCount = expression.Partitions[candidate.PartitionIndex].FieldSegmentIndex;
+        if (candidate is
+            {
+                Source: StaticFieldV2ContextualCandidateSource.TypeAlias,
+                ContributingImport.TargetClosedConstruction: { } aliasConstruction,
+            })
+        {
+            return TryBindDecodedAliasArguments(
+                context,
+                segments,
+                spelledCount,
+                aliasConstruction,
+                chainSegments,
+                out flattened);
+        }
+
         var aligned = Math.Min(chainSegments.Length, spelledCount);
         var unspelled = chainSegments.Length - aligned;
 
@@ -1052,6 +1080,81 @@ public static class StaticFieldV2ClosedConstructionBinder
         }
 
         flattened = builder.ToImmutable();
+        return true;
+    }
+
+    /// <summary>
+    /// Takes a whole-owner alias spelling's arguments from the alias target's own decoded construction rather than
+    /// from the spelling, which carries none.
+    /// </summary>
+    /// <remarks>
+    /// The alias name is one spelled segment standing for a construction the compiler recorded in a physical TypeSpec
+    /// blob, so its arguments were never written at the use site and can come from nowhere else. The two descriptions
+    /// of the owner must agree exactly before either is used: the decoded chain and the candidate's authority chain
+    /// must name the same definitions in the same order, and the spelling must add no arguments of its own. A
+    /// disagreement is a typed stop, because an owner that two authorities describe differently is not an exact owner.
+    /// </remarks>
+    /// <param name="context">The binding context, carrying the owner's exact scope.</param>
+    /// <param name="segments">The descriptor's ordered spelled segments.</param>
+    /// <param name="spelledCount">The count of owner segments the winning partition spelled.</param>
+    /// <param name="aliasConstruction">The alias target's decoded ground named construction.</param>
+    /// <param name="chainSegments">The selected candidate's outer-to-inner authority chain.</param>
+    /// <param name="flattened">The alias target's own ordered closed arguments on success.</param>
+    /// <returns><see langword="true"/> when the alias target supplies the complete argument vector exactly.</returns>
+    private static bool TryBindDecodedAliasArguments(
+        BindContext context,
+        ImmutableArray<StaticFieldV2ExpressionNameSegment> segments,
+        int spelledCount,
+        MetadataClosedTypeIdentity aliasConstruction,
+        ImmutableArray<MetadataNamedTypeDefinitionChainSegmentIdentity> chainSegments,
+        out ImmutableArray<MetadataClosedTypeIdentity> flattened)
+    {
+        flattened = ImmutableArray<MetadataClosedTypeIdentity>.Empty;
+        var constructionSegments = aliasConstruction.ConstructionSegments;
+        if (spelledCount != 1 || constructionSegments.Length != chainSegments.Length)
+        {
+            context.Stop(
+                StaticFieldV2ClosedConstructionResultKind.Unsupported,
+                StaticFieldV2ClosedConstructionIssue.ContextualConstructionRequiresDecodedAliasTarget,
+                null,
+                0,
+                chainSegments[^1].TypeDefinitionToken);
+            return false;
+        }
+
+        if (!segments[0].TypeArguments.IsEmpty)
+        {
+            context.Stop(
+                StaticFieldV2ClosedConstructionResultKind.Invalid,
+                StaticFieldV2ClosedConstructionIssue.ArityDisagreement,
+                null,
+                0,
+                chainSegments[^1].TypeDefinitionToken);
+            return false;
+        }
+
+        for (var index = 0; index < chainSegments.Length; index++)
+        {
+            if (constructionSegments[index].Classification.TypeDefinition.TypeDefinitionToken !=
+                chainSegments[index].TypeDefinitionToken)
+            {
+                context.Stop(
+                    StaticFieldV2ClosedConstructionResultKind.Invalid,
+                    StaticFieldV2ClosedConstructionIssue.AliasTargetConstructionChainMismatch,
+                    null,
+                    0,
+                    chainSegments[index].TypeDefinitionToken);
+                return false;
+            }
+        }
+
+        var arguments = aliasConstruction.FlattenedArguments;
+        if (!context.TryAdmitArguments(arguments.Length))
+        {
+            return false;
+        }
+
+        flattened = arguments;
         return true;
     }
 

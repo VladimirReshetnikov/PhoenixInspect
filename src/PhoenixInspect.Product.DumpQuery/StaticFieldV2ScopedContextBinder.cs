@@ -32,9 +32,10 @@ public enum StaticFieldV2ScopedImportKind
 
 /// <summary>Identifies how one projected import's physical target was or was not resolved.</summary>
 /// <remarks>
-/// Only <see cref="NotApplicable"/>, <see cref="TypeDefinitionResolved"/>, <see cref="TypeReferenceResolved"/>, and
-/// <see cref="AssemblyReferenceResolved"/> are exact. Every other value keeps the physical import retained as typed
-/// non-exact evidence, so a retained import can never silently vanish from the projection.
+/// Only <see cref="NotApplicable"/>, <see cref="TypeDefinitionResolved"/>, <see cref="TypeReferenceResolved"/>,
+/// <see cref="TypeSpecificationResolved"/>, and <see cref="AssemblyReferenceResolved"/> are exact. Every other value
+/// keeps the physical import retained as typed non-exact evidence, so a retained import can never silently vanish
+/// from the projection.
 /// </remarks>
 public enum StaticFieldV2ScopedImportTargetDisposition
 {
@@ -50,7 +51,7 @@ public enum StaticFieldV2ScopedImportTargetDisposition
     /// <summary>A TypeRef target token did not resolve to one authority-issued TypeDef.</summary>
     TypeReferenceUnresolved = 4,
 
-    /// <summary>A TypeSpec target row is retained physically and deliberately not decoded by this slice.</summary>
+    /// <summary>A TypeSpec target row is retained physically and was not decoded into one exact construction.</summary>
     TypeSpecificationNotDecoded = 5,
 
     /// <summary>A TypeDef target token names no authority-issued chain in the selected module.</summary>
@@ -70,6 +71,12 @@ public enum StaticFieldV2ScopedImportTargetDisposition
 
     /// <summary>The raw import payload was retained without any semantic interpretation.</summary>
     RawImportNotInterpreted = 11,
+
+    /// <summary>
+    /// A TypeSpec target row decoded into exactly one ground named closed construction over authority-classified
+    /// definitions, so the alias names that construction rather than a bare definition.
+    /// </summary>
+    TypeSpecificationResolved = 12,
 }
 
 /// <summary>Classifies one projected scoped-context view.</summary>
@@ -137,7 +144,7 @@ public enum StaticFieldV2ScopedContextIssue
 /// </remarks>
 public enum StaticFieldV2ScopedContextCoverageBoundary
 {
-    /// <summary>A TypeSpec alias target is retained physically and never becomes a bound head in this slice.</summary>
+    /// <summary>At least one TypeSpec alias target is retained physically without decoding into a bound head.</summary>
     AliasTypeSpecTargetNotDecoded = 1,
 
     /// <summary>Retained <c>using static</c> imports are consumed by the separately owned bare-member slice.</summary>
@@ -209,6 +216,12 @@ public enum StaticFieldV2ContextualRejectionReason
 
     /// <summary>A matching alias was found but its retained target can never become a bound head.</summary>
     AliasTargetNotBindable = 9,
+
+    /// <summary>
+    /// The alias names one decoded closed construction and the spelling continues past it into a nested type, whose
+    /// own arguments this slice does not derive from the enclosing construction.
+    /// </summary>
+    ConstructedAliasHeadNotExtended = 10,
 }
 
 /// <summary>Classifies one examined declaration level of the contextual search.</summary>
@@ -301,6 +314,7 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
 {
     private const string CanonicalDomain = "static-field-v2-scoped-import-projection";
     private const int CanonicalSchemaVersion = 1;
+    private const int TargetClosedConstructionFieldTag = 1;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2ScopedImportProjection(
@@ -313,7 +327,8 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
         MetadataTypeSpecificationPhysicalRowIdentity? targetTypeSpecificationRow,
         MetadataAssemblyReferencePhysicalRowIdentity? assemblyReferenceRow,
         StaticFieldMetadataModuleIdentity? assemblyReferenceTargetModule,
-        bool isShadowed)
+        bool isShadowed,
+        MetadataClosedTypeIdentity? targetClosedConstruction)
     {
         Fact = fact;
         ScopeLevelIndex = scopeLevelIndex;
@@ -325,6 +340,7 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
         AssemblyReferenceRow = assemblyReferenceRow;
         AssemblyReferenceTargetModule = assemblyReferenceTargetModule;
         IsShadowed = isShadowed;
+        TargetClosedConstruction = targetClosedConstruction;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(fact.Sha256, nameof(fact));
@@ -337,6 +353,14 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, assemblyReferenceRow?.Sha256);
         ExpressionV2ContractEncoding.WriteOptionalDigest(writer, assemblyReferenceTargetModule?.Sha256);
         writer.WriteBoolean(isShadowed);
+
+        // The decoded construction is appended only when a TypeSpec target actually decoded, behind its own field
+        // tag, so every projection that carries none keeps its exact previous byte content and its frozen digest.
+        if (targetClosedConstruction is not null)
+        {
+            writer.WriteInt32(TargetClosedConstructionFieldTag);
+            writer.WriteSha256(targetClosedConstruction.Sha256, nameof(targetClosedConstruction));
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -359,8 +383,17 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
     /// <summary>Gets the authority-issued target TypeDef of a type-bearing import, otherwise null.</summary>
     public MetadataTypeDefinitionAuthorityIdentity? TargetTypeDefinition { get; }
 
-    /// <summary>Gets the retained undecoded physical TypeSpec target row, otherwise null.</summary>
+    /// <summary>Gets the retained physical TypeSpec target row, decoded or not, otherwise null.</summary>
     public MetadataTypeSpecificationPhysicalRowIdentity? TargetTypeSpecificationRow { get; }
+
+    /// <summary>Gets the exact ground named construction a decoded TypeSpec target names, otherwise null.</summary>
+    /// <remarks>
+    /// Present exactly when <see cref="TargetDisposition"/> is
+    /// <see cref="StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationResolved"/>. The construction is the
+    /// alias target itself — the arguments come from the physical TypeSpec blob rather than from any spelling — and
+    /// its final classification is the same definition <see cref="TargetTypeDefinition"/> names.
+    /// </remarks>
+    public MetadataClosedTypeIdentity? TargetClosedConstruction { get; }
 
     /// <summary>Gets the exact physical AssemblyRef row this import names, otherwise null.</summary>
     public MetadataAssemblyReferencePhysicalRowIdentity? AssemblyReferenceRow { get; }
@@ -382,6 +415,7 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
         TargetDisposition is StaticFieldV2ScopedImportTargetDisposition.NotApplicable or
             StaticFieldV2ScopedImportTargetDisposition.TypeDefinitionResolved or
             StaticFieldV2ScopedImportTargetDisposition.TypeReferenceResolved or
+            StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationResolved or
             StaticFieldV2ScopedImportTargetDisposition.AssemblyReferenceResolved;
 
     /// <summary>Gets a defensive copy of this fixed-reference canonical projection.</summary>
@@ -416,7 +450,8 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
         MetadataTypeSpecificationPhysicalRowIdentity? targetTypeSpecificationRow,
         MetadataAssemblyReferencePhysicalRowIdentity? assemblyReferenceRow,
         StaticFieldMetadataModuleIdentity? assemblyReferenceTargetModule,
-        bool isShadowed)
+        bool isShadowed,
+        MetadataClosedTypeIdentity? targetClosedConstruction)
     {
         if (!StaticFieldV2ScopedContextOutcome.OwnsRowMintCapability(mintCapability))
         {
@@ -436,6 +471,28 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
                 nameof(targetTypeDefinition));
         }
 
+        // A decoded TypeSpec target is admitted only as the exact pair its disposition claims: the construction and
+        // the definition its final classification names. Neither half can be retained without the other, so no
+        // consumer can read a construction that disagrees with the head definition the same projection publishes.
+        if ((targetDisposition == StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationResolved) !=
+            (targetClosedConstruction is not null))
+        {
+            throw new ArgumentException(
+                "A decoded TypeSpec target construction is retained exactly by the resolved TypeSpec disposition.",
+                nameof(targetClosedConstruction));
+        }
+        if (targetClosedConstruction is not null &&
+            (targetClosedConstruction.FinalClassification is not { } finalClassification ||
+             targetTypeDefinition is null ||
+             targetTypeModule is null ||
+             !finalClassification.TypeDefinition.Equals(targetTypeDefinition) ||
+             !finalClassification.SourceModule.Equals(targetTypeModule)))
+        {
+            throw new ArgumentException(
+                "A decoded TypeSpec construction must name the same head definition and module as the target.",
+                nameof(targetClosedConstruction));
+        }
+
         return new StaticFieldV2ScopedImportProjection(
             fact,
             scopeLevelIndex,
@@ -446,7 +503,8 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
             targetTypeSpecificationRow,
             assemblyReferenceRow,
             assemblyReferenceTargetModule,
-            isShadowed);
+            isShadowed,
+            targetClosedConstruction);
     }
 }
 
@@ -725,7 +783,9 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
 {
     private const string CanonicalDomain = "static-field-v2-scoped-context-request";
     private const int CanonicalSchemaVersion = 1;
+    private const int SignatureTokenResolutionCatalogsFieldTag = 1;
     private readonly ImmutableArray<DumpPortablePdbImportScopeIdentity> importScopes;
+    private readonly ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2ScopedContextRequest(
@@ -733,13 +793,15 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
         ImmutableArray<DumpPortablePdbImportScopeIdentity> importScopes,
         MetadataTypeDefinitionAuthorityIdentity selectedTypeDefinition,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
-        MetadataTypeReferenceResolutionPortfolioIdentity resolutionPortfolio)
+        MetadataTypeReferenceResolutionPortfolioIdentity resolutionPortfolio,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs)
     {
         SelectedModule = selectedModule;
         this.importScopes = importScopes;
         SelectedTypeDefinition = selectedTypeDefinition;
         AncestryPortfolio = ancestryPortfolio;
         ResolutionPortfolio = resolutionPortfolio;
+        this.signatureTokenResolutionCatalogs = signatureTokenResolutionCatalogs;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(selectedModule.Sha256, nameof(selectedModule));
@@ -754,6 +816,18 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
         writer.WriteSha256(selectedTypeDefinition.Sha256, nameof(selectedTypeDefinition));
         writer.WriteSha256(ancestryPortfolio.Sha256, nameof(ancestryPortfolio));
         writer.WriteSha256(resolutionPortfolio.Sha256, nameof(resolutionPortfolio));
+
+        // The token-resolution catalogs are appended only when supplied, behind their distinct field tag, so every
+        // request created without them keeps its exact previous byte content and its frozen digest unchanged.
+        if (!signatureTokenResolutionCatalogs.IsDefault)
+        {
+            writer.WriteInt32(SignatureTokenResolutionCatalogsFieldTag);
+            writer.WriteInt32(signatureTokenResolutionCatalogs.Length);
+            foreach (var catalog in signatureTokenResolutionCatalogs)
+            {
+                ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
+            }
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -777,6 +851,16 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
     /// <summary>Gets the TypeRef resolution portfolio used to resolve import target tokens.</summary>
     public MetadataTypeReferenceResolutionPortfolioIdentity ResolutionPortfolio { get; }
 
+    /// <summary>Gets a defensive copy of the supplied per-module token-resolution catalogs, default when absent.</summary>
+    /// <remarks>
+    /// A catalog is consulted only to decode a TypeSpec alias target in the module that declares it. A request
+    /// without catalogs decodes nothing and keeps every TypeSpec target retained undecoded, exactly as before.
+    /// </remarks>
+    public ImmutableArray<MetadataSignatureTokenResolutionCatalog> SignatureTokenResolutionCatalogs =>
+        signatureTokenResolutionCatalogs.IsDefault
+            ? default
+            : ExpressionV2ContractEncoding.Copy(signatureTokenResolutionCatalogs);
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -792,6 +876,10 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
     /// <param name="selectedTypeDefinition">The selected declaring type's authority-issued TypeDef.</param>
     /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
     /// <param name="resolutionPortfolio">The TypeRef resolution portfolio prerequisite.</param>
+    /// <param name="signatureTokenResolutionCatalogs">
+    /// The optional per-module token-resolution catalogs used to decode TypeSpec alias targets. A default vector
+    /// keeps every TypeSpec target retained undecoded and keeps the request's previous canonical bytes.
+    /// </param>
     /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentException">An initialized scope vector contains a null entry.</exception>
@@ -800,7 +888,8 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
         ImmutableArray<DumpPortablePdbImportScopeIdentity> importScopes,
         MetadataTypeDefinitionAuthorityIdentity selectedTypeDefinition,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
-        MetadataTypeReferenceResolutionPortfolioIdentity resolutionPortfolio)
+        MetadataTypeReferenceResolutionPortfolioIdentity resolutionPortfolio,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs = default)
     {
         ArgumentNullException.ThrowIfNull(selectedModule);
         ArgumentNullException.ThrowIfNull(selectedTypeDefinition);
@@ -827,7 +916,10 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
             scopes,
             selectedTypeDefinition,
             ancestryPortfolio,
-            resolutionPortfolio);
+            resolutionPortfolio,
+            signatureTokenResolutionCatalogs.IsDefault
+                ? default
+                : ImmutableArray.CreateRange(signatureTokenResolutionCatalogs));
     }
 
     /// <summary>Tests canonical equality between two scoped-context requests.</summary>
@@ -846,6 +938,9 @@ public sealed class StaticFieldV2ScopedContextRequest : IEquatable<StaticFieldV2
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 
     internal ImmutableArray<DumpPortablePdbImportScopeIdentity> ImportScopesCore => importScopes;
+
+    internal ImmutableArray<MetadataSignatureTokenResolutionCatalog> SignatureTokenResolutionCatalogsCore =>
+        signatureTokenResolutionCatalogs;
 }
 
 /// <summary>Freezes the complete projection of one exact active ImportScope chain into a scoped view.</summary>
@@ -1036,7 +1131,8 @@ public sealed class StaticFieldV2ScopedContextOutcome : IEquatable<StaticFieldV2
         MetadataTypeSpecificationPhysicalRowIdentity? targetTypeSpecificationRow,
         MetadataAssemblyReferencePhysicalRowIdentity? assemblyReferenceRow,
         StaticFieldMetadataModuleIdentity? assemblyReferenceTargetModule,
-        bool isShadowed) =>
+        bool isShadowed,
+        MetadataClosedTypeIdentity? targetClosedConstruction) =>
         StaticFieldV2ScopedImportProjection.Create(
             RowMintCapability,
             fact,
@@ -1048,7 +1144,8 @@ public sealed class StaticFieldV2ScopedContextOutcome : IEquatable<StaticFieldV2
             targetTypeSpecificationRow,
             assemblyReferenceRow,
             assemblyReferenceTargetModule,
-            isShadowed);
+            isShadowed,
+            targetClosedConstruction);
 
     internal static StaticFieldV2ScopedAliasShadowingIdentity IssueShadowing(
         string aliasName,
@@ -2153,7 +2250,13 @@ public static class StaticFieldV2ScopedContextBinder
         {
             foreach (var fact in scopes[scopeIndex].Imports)
             {
-                pending.Add(ProjectImport(fact, scopeIndex, selectedEntry, resolution));
+                pending.Add(ProjectImport(
+                    fact,
+                    scopeIndex,
+                    selectedEntry,
+                    resolution,
+                    request.AncestryPortfolio,
+                    request.SignatureTokenResolutionCatalogsCore));
             }
         }
 
@@ -2185,7 +2288,8 @@ public static class StaticFieldV2ScopedContextBinder
                 item.TargetTypeSpecificationRow,
                 item.AssemblyReferenceRow,
                 item.AssemblyReferenceTargetModule,
-                shadowed));
+                shadowed,
+                item.TargetClosedConstruction));
         }
 
         var scopeLevels = ImmutableArray.CreateBuilder<StaticFieldV2ScopedScopeLevelIdentity>(scopes.Length);
@@ -2865,6 +2969,16 @@ public static class StaticFieldV2ScopedContextBinder
             return;
         }
 
+        // A decoded alias target already carries its own arguments, and a nested type spelled after it would need
+        // arguments this slice never derives from the enclosing construction. The whole-owner spelling — the one the
+        // alias was written to provide — is admitted; a continuation past it stops typed instead of binding a head
+        // whose construction would be half the alias target's and half nothing.
+        if (count != 0 && alias.TargetClosedConstruction is not null)
+        {
+            collector.Reject(StaticFieldV2ContextualRejectionReason.ConstructedAliasHeadNotExtended);
+            return;
+        }
+
         if (count == 0)
         {
             if (!headChain.CanAppearInCSharpNamedType)
@@ -3109,7 +3223,9 @@ public static class StaticFieldV2ScopedContextBinder
         DumpPortablePdbImportFact fact,
         int scopeLevelIndex,
         MetadataTypeReferenceResolutionModuleIdentity selectedEntry,
-        MetadataTypeReferenceResolutionPortfolioIdentity resolution)
+        MetadataTypeReferenceResolutionPortfolioIdentity resolution,
+        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenCatalogs)
     {
         var kind = fact.Kind switch
         {
@@ -3137,7 +3253,14 @@ public static class StaticFieldV2ScopedContextBinder
 
         if (fact.TargetTypeToken is { } typeToken)
         {
-            return ProjectTypeTarget(fact, scopeLevelIndex, kind, typeToken, selectedEntry);
+            return ProjectTypeTarget(
+                fact,
+                scopeLevelIndex,
+                kind,
+                typeToken,
+                selectedEntry,
+                ancestryPortfolio,
+                tokenCatalogs);
         }
 
         if (fact.AssemblyReferenceToken is { } assemblyReferenceToken)
@@ -3162,7 +3285,9 @@ public static class StaticFieldV2ScopedContextBinder
         int scopeLevelIndex,
         StaticFieldV2ScopedImportKind kind,
         int typeToken,
-        MetadataTypeReferenceResolutionModuleIdentity selectedEntry)
+        MetadataTypeReferenceResolutionModuleIdentity selectedEntry,
+        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenCatalogs)
     {
         if (CanonicalReplayEncoding.IsMetadataTokenForTable(typeToken, TypeDefinitionTable))
         {
@@ -3192,16 +3317,35 @@ public static class StaticFieldV2ScopedContextBinder
 
         if (CanonicalReplayEncoding.IsMetadataTokenForTable(typeToken, TypeSpecificationTable))
         {
-            return new PendingImport(
-                fact,
-                scopeLevelIndex,
-                kind,
-                StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationNotDecoded,
-                null,
-                null,
-                selectedEntry.ReferenceTables.TypeSpecifications.FindRow(typeToken),
-                null,
-                null);
+            var typeSpecificationRow = selectedEntry.ReferenceTables.TypeSpecifications.FindRow(typeToken);
+            var construction = DecodeTypeSpecificationTarget(
+                selectedEntry,
+                typeSpecificationRow,
+                typeToken,
+                ancestryPortfolio,
+                tokenCatalogs);
+            return construction is null
+                ? new PendingImport(
+                    fact,
+                    scopeLevelIndex,
+                    kind,
+                    StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationNotDecoded,
+                    null,
+                    null,
+                    typeSpecificationRow,
+                    null,
+                    null)
+                : new PendingImport(
+                    fact,
+                    scopeLevelIndex,
+                    kind,
+                    StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationResolved,
+                    construction.FinalClassification!.SourceModule,
+                    construction.FinalClassification!.TypeDefinition,
+                    typeSpecificationRow,
+                    null,
+                    null,
+                    construction);
         }
 
         if (!CanonicalReplayEncoding.IsMetadataTokenForTable(typeToken, TypeReferenceTable))
@@ -3240,6 +3384,82 @@ public static class StaticFieldV2ScopedContextBinder
                 null,
                 null,
                 null);
+    }
+
+    /// <summary>
+    /// Decodes one physical TypeSpec alias target into the exact ground named construction it spells, or returns null
+    /// to leave the target retained undecoded.
+    /// </summary>
+    /// <remarks>
+    /// Every input is evidence the caller already produced: the module's own complete TypeSpec table supplies the
+    /// blob, the caller's token-resolution catalog for that same module supplies the classified targets of every
+    /// token inside it, and the shared bounded ECMA grammar consumes the complete blob. Nothing here interprets a
+    /// name. A target that is open, arity-mapped non-exactly, unclassified, malformed, or capped decodes to nothing
+    /// and stays the declared <see cref="StaticFieldV2ScopedContextCoverageBoundary.AliasTypeSpecTargetNotDecoded"/>
+    /// boundary rather than becoming a guessed head. Only a named construction is admitted: an alias whose target is
+    /// an array, a pointer, or a primitive can never own a static field, so admitting one would publish a head no
+    /// consumer could use.
+    /// <para>
+    /// The head classification is cross-checked against the ancestry authority portfolio. The decoder's chain comes
+    /// from the caller-supplied catalog and the portfolio is produced independently, so requiring the two to agree
+    /// keeps the decoded head from resting on one unverified caller input.
+    /// </para>
+    /// </remarks>
+    private static MetadataClosedTypeIdentity? DecodeTypeSpecificationTarget(
+        MetadataTypeReferenceResolutionModuleIdentity selectedEntry,
+        MetadataTypeSpecificationPhysicalRowIdentity? row,
+        int typeSpecificationToken,
+        MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenCatalogs)
+    {
+        if (row is null || tokenCatalogs.IsDefaultOrEmpty)
+        {
+            return null;
+        }
+
+        var module = selectedEntry.SourceModule;
+        MetadataSignatureTokenResolutionCatalog? tokenCatalog = null;
+        foreach (var candidate in tokenCatalogs)
+        {
+            if (candidate is not null && candidate.SourceModule.Equals(module))
+            {
+                tokenCatalog = candidate;
+                break;
+            }
+        }
+        if (tokenCatalog is not { ResultKind: MetadataSignatureTokenResolutionCatalogResultKind.Exact } catalog ||
+            !catalog.ContainsSourceToken(typeSpecificationToken))
+        {
+            return null;
+        }
+
+        var decode = MetadataTypeSignatureDecoder.DecodeTypeSpecification(
+            MetadataTypeSpecificationRowReferenceIdentity.Create(module, typeSpecificationToken),
+            row.Observation.SignatureBytes,
+            catalog);
+        if (decode.Kind != MetadataSignatureDecodeResultKind.Exact || decode.Root is null)
+        {
+            return null;
+        }
+
+        var specification = MetadataTypeSpecificationIdentity.FromDecodeOutcome(decode);
+        if (specification.Construction is not
+            {
+                Kind: MetadataTypeConstructionResultKind.Exact,
+                ClosedType: { Kind: MetadataClosedTypeKind.Named } closedType,
+            } ||
+            closedType.FinalClassification is not { Role: not null } finalClassification)
+        {
+            return null;
+        }
+
+        var portfolioClassification = ancestryPortfolio.ExactClassificationOrDefault(
+            finalClassification.SourceModule,
+            finalClassification.TypeDefinition.TypeDefinitionToken);
+        return portfolioClassification is { Role: not null } &&
+            portfolioClassification.Equals(finalClassification)
+            ? closedType
+            : null;
     }
 
     private static PendingImport ProjectAssemblyTarget(
@@ -3447,5 +3667,6 @@ public static class StaticFieldV2ScopedContextBinder
         MetadataTypeDefinitionAuthorityIdentity? TargetTypeDefinition,
         MetadataTypeSpecificationPhysicalRowIdentity? TargetTypeSpecificationRow,
         MetadataAssemblyReferencePhysicalRowIdentity? AssemblyReferenceRow,
-        StaticFieldMetadataModuleIdentity? AssemblyReferenceTargetModule);
+        StaticFieldMetadataModuleIdentity? AssemblyReferenceTargetModule,
+        MetadataClosedTypeIdentity? TargetClosedConstruction = null);
 }

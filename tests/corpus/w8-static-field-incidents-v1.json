@@ -481,8 +481,8 @@
       },
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "projects-real-scoped-context-from-the-spelling-frame-but-the-whole-owner-typespec-alias-target-stays-undecoded-so-type-binding-produces-partial"
+        "status": "executed",
+        "reason": "the-whole-owner-alias-target-typespec-decodes-to-its-exact-closed-construction-through-the-selected-frames-own-module-catalog-and-reaches-the-controls-construction-field-slot-and-value-over-one-real-full-dump"
       },
       "representative": false
     },
@@ -3119,8 +3119,8 @@
       },
       "supportsSuccessorCategory": "broader-frame-generic-context",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "projects-real-scoped-context-but-the-ground-typespec-alias-target-stays-undecoded-so-type-binding-produces-partial-before-any-constant-row-source-is-consulted"
+        "status": "executed",
+        "reason": "the-ground-alias-target-typespec-decodes-to-its-exact-closed-construction-and-the-enum-literal-projects-from-the-complete-constant-table-with-zero-runtime-calls-over-one-real-full-dump"
       },
       "representative": false
     },

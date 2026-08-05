@@ -38,6 +38,11 @@ public sealed class W8V2ExpressionPipelineTests
 
     private const int LibAssemblyReferenceToken = 0x2300_0002;
 
+    private const int AppAliasSlotToken = 0x0200_0002;
+    private const int AppAliasMarkerToken = 0x0200_0003;
+    private const int GroundAliasTypeSpecToken = 0x1B00_0001;
+    private const int ArityConflictTypeSpecToken = 0x1B00_0002;
+
     private const string ConstructedSlotGoldenSha256 =
         "1b9ddc6550ee983432f50ca7862993e7c5d291a1a3492e840b36f7e8686e78dd";
 
@@ -236,6 +241,113 @@ public sealed class W8V2ExpressionPipelineTests
         Assert.DoesNotContain(
             StaticFieldV2PipelineCoverageBoundary.ContextualRouteClosedConstructionDeferred,
             aliased.Provenance.DeclaredCoverageBoundaries);
+    }
+
+    /// <summary>
+    /// Proves a whole-owner alias whose Portable-PDB target is a physical TypeSpec row reaches the same construction,
+    /// field, and value as the fully qualified control, and that the decode rests on evidence rather than on the
+    /// spelling.
+    /// </summary>
+    /// <remarks>
+    /// The alias spelling carries no type arguments at all — <c>S.Current</c> names a construction only the TypeSpec
+    /// blob records — so this is the one contextual shape whose arguments cannot come from the expression. Three
+    /// facts make the decode evidence rather than inference: withholding the token-resolution catalogs alone returns
+    /// the same request to its previous typed stop, an alias whose target blob instantiates an arity-zero definition
+    /// is refused instead of guessed, and the control reaches the same owner-construction digest through the
+    /// explicit route while the two outcomes keep distinct binding provenance.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Whole_owner_typespec_alias_reaches_the_control_construction_from_the_decoded_target()
+    {
+        var aliasWorld = BuildTypeSpecAliasWorld();
+        var world = aliasWorld.World;
+        var aliased = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "S.Current",
+            scopedContext: TypeSpecAliasContext(aliasWorld, "S", GroundAliasTypeSpecToken),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        var control = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "global::Pipe.App.Slot<global::Pipe.App.Marker>.Current",
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+
+        AssertExactAxes(aliased);
+        AssertExactAxes(control);
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, aliased.Axes.TypeConstruction);
+        Assert.Equal(42, aliased.SignedValue);
+        Assert.Equal(42, control.SignedValue);
+        Assert.Equal(StaticFieldV2ExpressionRoute.Contextual, aliased.Route);
+        Assert.Equal(StaticFieldV2ExpressionRoute.ExplicitMetadataGlobal, control.Route);
+
+        // One construction identity and one physical declaration, reached by two materially different routes.
+        var aliasedConstruction = aliased.Provenance.OwnerConstruction!;
+        var controlConstruction = control.Provenance.OwnerConstruction!;
+        Assert.Equal(
+            controlConstruction.OwnerConstruction!.Sha256,
+            aliasedConstruction.OwnerConstruction!.Sha256);
+        Assert.Single(aliasedConstruction.FlattenedArguments);
+        Assert.Equal(
+            AppAliasMarkerToken,
+            aliasedConstruction.FlattenedArguments[0].FinalClassification!.TypeDefinition.TypeDefinitionToken);
+        Assert.Equal(
+            control.Provenance.MemberLookup!.SelectedCandidate!.FieldDefinitionToken,
+            aliased.Provenance.MemberLookup!.SelectedCandidate!.FieldDefinitionToken);
+        Assert.Null(aliasedConstruction.NameBinding);
+        Assert.NotNull(aliasedConstruction.ContextualBinding);
+        Assert.NotNull(controlConstruction.NameBinding);
+        Assert.Null(controlConstruction.ContextualBinding);
+        Assert.NotEqual(control.Sha256, aliased.Sha256);
+
+        // The alias target itself is the retained evidence: a decoded physical row, not a resolved definition token.
+        var import = Assert.Single(aliased.Provenance.ScopedContext!.ScopeLevels[0].Imports);
+        Assert.Equal(
+            StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationResolved,
+            import.TargetDisposition);
+        Assert.Equal(GroundAliasTypeSpecToken, import.TargetTypeSpecificationRow!.TypeSpecificationToken);
+        Assert.Equal(
+            aliasedConstruction.OwnerConstruction.Sha256,
+            import.TargetClosedConstruction!.Sha256);
+        Assert.Equal(AppAliasSlotToken, import.TargetTypeDefinition!.TypeDefinitionToken);
+        Assert.True(import.IsTargetExact);
+        Assert.DoesNotContain(
+            StaticFieldV2ScopedContextCoverageBoundary.AliasTypeSpecTargetNotDecoded,
+            aliased.Provenance.ScopedContext.DeclaredCoverageBoundaries);
+
+        // Counterfactual: the identical request without the token-resolution catalogs decodes nothing and returns to
+        // the previously declared boundary, so the catalogs are what changed the answer.
+        var withheld = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "S.Current",
+            scopedContext: TypeSpecAliasContext(
+                aliasWorld,
+                "S",
+                GroundAliasTypeSpecToken,
+                supplyTokenCatalogs: false),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        Assert.Equal(DumpExpressionContextOutcome.Exact, withheld.Axes.Context);
+        Assert.Equal(DumpExpressionTypeBindingOutcome.Partial, withheld.Axes.TypeBinding);
+        Assert.Null(withheld.SignedValue);
+        Assert.Contains(
+            StaticFieldV2ScopedContextCoverageBoundary.AliasTypeSpecTargetNotDecoded,
+            withheld.Provenance.ScopedContext!.DeclaredCoverageBoundaries);
+
+        // An alias whose target blob instantiates an arity-zero definition is refused with the catalogs present.
+        var conflicting = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "S.Current",
+            scopedContext: TypeSpecAliasContext(aliasWorld, "S", ArityConflictTypeSpecToken),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        Assert.Equal(DumpExpressionTypeBindingOutcome.Partial, conflicting.Axes.TypeBinding);
+        Assert.Null(conflicting.SignedValue);
+        var refused = Assert.Single(conflicting.Provenance.ScopedContext!.ScopeLevels[0].Imports);
+        Assert.Equal(
+            StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationNotDecoded,
+            refused.TargetDisposition);
+        Assert.Null(refused.TargetClosedConstruction);
+        Assert.Contains(
+            StaticFieldV2ScopedContextCoverageBoundary.AliasTypeSpecTargetNotDecoded,
+            conflicting.Provenance.ScopedContext.DeclaredCoverageBoundaries);
     }
 
     /// <summary>
@@ -1273,6 +1385,115 @@ public sealed class W8V2ExpressionPipelineTests
             app.Ancestry.ChainCatalog.ExactChainOrDefault(AppGenericSlotToken)!.FinalTypeDefinition);
     }
 
+    /// <summary>
+    /// Builds an independent world whose application module declares a generic <c>Slot`1</c>, a non-generic
+    /// <c>Marker</c>, and two physical TypeSpec rows: the closed construction <c>Slot&lt;Marker&gt;</c> a whole-owner
+    /// alias can name, and an arity-disagreeing <c>Marker&lt;Marker&gt;</c> that no decode can admit.
+    /// </summary>
+    /// <remarks>
+    /// It shares none of <see cref="BuildWorld"/>'s frozen-golden modules, because a TypeSpec row changes the source
+    /// ends of the module that declares it and would move every digest frozen over that world.
+    /// </remarks>
+    private static TypeSpecAliasWorld BuildTypeSpecAliasWorld()
+    {
+        var core = BuildModule(
+            CoreAssembly,
+            0xE100,
+            '1',
+            [
+                new PipeTypeRow("System", "Object", PublicClass, null),
+                new PipeTypeRow("System", "ValueType", PublicClass, 0x0200_0002),
+                new PipeTypeRow("System", "Enum", PublicClass, 0x0200_0003),
+                new PipeTypeRow("System", "Delegate", PublicClass, 0x0200_0002),
+                new PipeTypeRow("System", "MulticastDelegate", PublicClass, 0x0200_0005),
+            ],
+            []);
+        var app = BuildModule(
+            AppAssembly,
+            0xE300,
+            '3',
+            [
+                new PipeTypeRow("Pipe.App", "Slot`1", PublicClass, 0x0100_0001, GenericArity: 1),
+                new PipeTypeRow("Pipe.App", "Marker", PublicClass, 0x0100_0001),
+            ],
+            [
+                new PipeFieldRow("Slot`1", "Current", FieldPublic | FieldStatic, Int32Signature),
+            ],
+            [("System", "Object")],
+            [CoreAssembly],
+            default,
+            [
+                // GENERICINST CLASS Slot`1 <1> CLASS Marker — the construction a whole-owner alias names.
+                new PipeTypeSpecRow(GroundAliasTypeSpecToken, [0x15, 0x12, 0x08, 0x01, 0x12, 0x0C]),
+
+                // GENERICINST CLASS Marker <1> CLASS Marker — arity 0 instantiated with one argument.
+                new PipeTypeSpecRow(ArityConflictTypeSpecToken, [0x15, 0x12, 0x0C, 0x01, 0x12, 0x0C]),
+            ]);
+
+        var ancestryWorld = W8MetadataAncestryAuthorityContractTests.BuildAncestryWorld(core.Ancestry, app.Ancestry);
+        Assert.Equal(MetadataAncestryAuthorityPortfolioResultKind.Exact, ancestryWorld.Ancestry.ResultKind);
+
+        var byModule = new[] { core, app }.ToDictionary(static built => built.Ancestry.Module);
+        var order = ancestryWorld.Ancestry.Entries.Select(static entry => entry.SourceModule).ToArray();
+        var constraints = MetadataConstraintTargetResolutionPortfolioIdentity.Create(
+            ancestryWorld.Resolution,
+            [.. order.Select(module => byModule[module].Constraints)]);
+        Assert.Equal(MetadataConstraintTargetResolutionPortfolioResultKind.Exact, constraints.ResultKind);
+
+        var world = new PipelineWorld(
+            app.Ancestry.Module,
+            ancestryWorld.Resolution,
+            ancestryWorld.Ancestry,
+            constraints,
+            [.. order.Select(module => byModule[module].FieldCatalog)],
+            [.. order.Select(module => byModule[module].PropertyCatalog)],
+            app.Ancestry.ChainCatalog.ExactChainOrDefault(AppAliasMarkerToken)!.FinalTypeDefinition);
+
+        // The host-side acquisition role: one catalog for the module whose TypeSpec blobs name these tokens, with
+        // exactly the classified targets those blobs reference. Nothing here interprets a name.
+        var appModule = app.Ancestry.Module;
+        var tokenCatalog = MetadataSignatureTokenResolutionCatalog.Create(
+            app.FieldCatalog.SourceEnds,
+            [
+                NamedTokenEntry(ancestryWorld.Ancestry, appModule, AppAliasSlotToken),
+                NamedTokenEntry(ancestryWorld.Ancestry, appModule, AppAliasMarkerToken),
+            ]);
+        Assert.Equal(MetadataSignatureTokenResolutionCatalogResultKind.Exact, tokenCatalog.ResultKind);
+        return new TypeSpecAliasWorld(world, [tokenCatalog]);
+    }
+
+    private static MetadataSignatureTokenResolutionEntry NamedTokenEntry(
+        MetadataAncestryAuthorityPortfolioIdentity ancestry,
+        StaticFieldMetadataModuleIdentity module,
+        int typeDefinitionToken)
+    {
+        var classification = ancestry.ExactClassificationOrDefault(module, typeDefinitionToken);
+        Assert.NotNull(classification);
+        return MetadataSignatureTokenResolutionEntry.Named(
+            MetadataTypeDefOrRefTargetIdentity.FromTypeDefinition(classification),
+            [classification]);
+    }
+
+    private static StaticFieldV2ScopedContextSource TypeSpecAliasContext(
+        TypeSpecAliasWorld world,
+        string alias,
+        int typeSpecificationToken,
+        bool supplyTokenCatalogs = true) =>
+        StaticFieldV2ScopedContextSource.Create(() => StaticFieldV2ScopedContextRequest.Create(
+            world.World.App,
+            Scopes([DumpPortablePdbImportFact.TypeAlias(
+                ScopeToken(1),
+                0,
+                9,
+                alias,
+                "Pipe.App.Slot`1",
+                typeSpecificationToken,
+                [0xAB, 0x03])]),
+            world.World.HostType,
+            world.World.Ancestry,
+            world.World.Resolution,
+            supplyTokenCatalogs ? world.TokenCatalogs : default));
+
     private static ImmutableArray<byte> Int32Signature => [0x06, 0x08];
 
     private static ImmutableArray<byte> StringSignature => [0x06, 0x0E];
@@ -1289,7 +1510,8 @@ public sealed class W8V2ExpressionPipelineTests
         ImmutableArray<PipeFieldRow> fields,
         ImmutableArray<(string NamespaceName, string TypeName)> typeReferences = default,
         ImmutableArray<string> assemblyReferences = default,
-        ImmutableArray<PipeMethodRow> methods = default)
+        ImmutableArray<PipeMethodRow> methods = default,
+        ImmutableArray<PipeTypeSpecRow> typeSpecifications = default)
     {
         var module = W8CompilerNameMappingContractTests.CreateMetadataModule(
             moduleAddress,
@@ -1298,6 +1520,7 @@ public sealed class W8V2ExpressionPipelineTests
         var referenceSpecs = typeReferences.IsDefault ? [] : typeReferences;
         var assemblySpecs = assemblyReferences.IsDefault ? [] : assemblyReferences;
         var methodSpecs = methods.IsDefault ? [] : methods;
+        var typeSpecificationSpecs = typeSpecifications.IsDefault ? [] : typeSpecifications;
 
         var assemblyReferenceRows =
             ImmutableArray.CreateBuilder<MetadataAssemblyReferenceRowObservationIdentity>(assemblySpecs.Length);
@@ -1380,6 +1603,7 @@ public sealed class W8V2ExpressionPipelineTests
                 typeDefinitionRowCount: totalTypeCount,
                 fieldDefinitionRowCount: fieldObservations.Count,
                 typeReferenceRowCount: typeReferenceRows.Count,
+                typeSpecificationRowCount: typeSpecificationSpecs.Length,
                 assemblyReferenceRowCount: assemblyReferenceRows.Count,
                 methodDefinitionRowCount: methodObservations.Count,
                 genericParameterRowCount: genericParameterRows.Count,
@@ -1444,7 +1668,10 @@ public sealed class W8V2ExpressionPipelineTests
                 ImmutableArray<MetadataModuleReferenceRowObservationIdentity>.Empty),
             MetadataTypeSpecificationPhysicalTableCatalogIdentity.Create(
                 referenceEnds,
-                ImmutableArray<MetadataTypeSpecificationRowObservationIdentity>.Empty),
+                [.. typeSpecificationSpecs.Select(row => MetadataTypeSpecificationRowObservationIdentity.Create(
+                    module,
+                    row.TypeSpecificationToken,
+                    row.SignatureBytes))]),
             MetadataAssemblyReferencePhysicalTableCatalogIdentity.Create(
                 referenceEnds,
                 assemblyReferenceRows.ToImmutable()),
@@ -1521,6 +1748,12 @@ public sealed class W8V2ExpressionPipelineTests
         ImmutableArray<byte> Signature);
 
     private sealed record PipeMethodRow(string TypeName, string Name, int Attributes);
+
+    private sealed record PipeTypeSpecRow(int TypeSpecificationToken, ImmutableArray<byte> SignatureBytes);
+
+    private sealed record TypeSpecAliasWorld(
+        PipelineWorld World,
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> TokenCatalogs);
 
     private sealed record PipeModule(
         W8MetadataAncestryAuthorityContractTests.AncestryModule Ancestry,

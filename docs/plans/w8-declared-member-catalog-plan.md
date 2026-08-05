@@ -423,6 +423,11 @@ incident 31, `coordinator-property-shares-bare-name`, whose blocker really was t
 `manifest-only`, so the arm would have been unreachable code asserting nothing. It is deliberately absent. When
 incident 32's own blocker — the undecoded ground TypeSpec alias — is closed, the arm goes in with it.
 
+*Discharged.* The alias-target decode closed that blocker, incident 32 executes, and the arm went in with it. It is
+driven by `Executed_literal_incident_loses_only_its_value_without_the_constant_source` rather than by the
+decision-changing sweep, because the row is not decision-changing: withholding the complete Constant tables costs
+that row exactly its value while its alias, context, and owner construction stay identical.
+
 **Deviation, stated plainly.** Section 7 called for a new Fast file `W8V2PropertyNameHidingTests`. The hiding tests
 live in `W8V2MemberLookupTests` instead, because `LookupWorld` and its module builder are private to that file and a
 separate file would have had to duplicate roughly four hundred lines of world construction to earn its name. The

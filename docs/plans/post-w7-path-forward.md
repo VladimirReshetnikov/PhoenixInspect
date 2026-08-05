@@ -972,9 +972,10 @@ member lookup, hiding, declared-owner selection, literals, accessibility, and fi
 **Status:** Complete at `d475f4e3b` for its name-binding scope. Import-scope projection, alias shadowing,
 first-viable-level namespace resolution, same-level import accumulation and convergence, extern-alias module
 restriction, and the retained-evidence absence guard have landed. The `using static` bare-member route that consumes
-the retained using-static facts is W8.7, TypeSpec alias targets stay undecoded until the construction slice consumes
-them, and selection between the W7 metadata-global compatibility route and this contextual route belongs to the
-W8.8 composition slice; each is a declared coverage boundary rather than a silent gap. The first exit-gate statement
+the retained using-static facts is W8.7, and selection between the W7 metadata-global compatibility route and this
+contextual route belongs to the W8.8 composition slice; each is a declared coverage boundary rather than a silent
+gap. TypeSpec alias targets stayed undecoded here and are decoded by the W8.8 composition slice, where a caller can
+supply the token-resolution catalogs that make the decode evidence rather than inference. The first exit-gate statement
 is discharged over a real dump by the W8.9 corpus: an inner namespace-level alias that shadows an identically spelled
 compilation-unit alias reaches the same value and the byte-identical owner construction as the fully qualified control
 does through the explicit route, with the two outcomes retaining their distinct tagged binding provenance.
@@ -1121,8 +1122,23 @@ else, so an argument the scope cannot reach is the typed `TypeArgumentAbsent` st
 fallback. Arities are matched innermost-first, because a C# spelling always ends at the innermost named type; a chain
 segment an alias contributed and the spelling never named must introduce no generic parameter, and otherwise stays
 the declared `ContextualConstructionRequiresDecodedAliasTarget` stop, since its arguments could come only from the
-alias target's still-undecoded TypeSpec. A whole-owner TypeSpec alias remains blocked at name binding for the same
-undecoded-target reason.
+alias target's TypeSpec.
+
+That alias target is now decoded where the evidence to decode it exists. A caller may supply the scoped-context
+projection the same per-module signature token-resolution catalogs member lookup already consumes; with them, an
+import whose target token names a TypeSpec row decodes that row's complete blob through the shared bounded ECMA
+grammar and retains the exact ground named construction it spells, as the new `TypeSpecificationResolved`
+disposition. A whole-owner alias spelling therefore takes its arguments from the physical blob the compiler wrote
+rather than from a spelling that carries none, and reaches the same construction identity, field, slot, and value the
+fully qualified control reaches through the explicit route, with the two outcomes keeping their distinct tagged
+binding provenance. The decode is refused rather than guessed whenever the target is open, arity-mapped non-exactly,
+unclassified, malformed, capped, or not a named construction, and whenever the decoded head disagrees with the
+ancestry portfolio's own classification of it; each refusal keeps the row retained and the
+`AliasTypeSpecTargetNotDecoded` boundary declared. Two narrower boundaries remain: a request that supplies no
+catalogs decodes nothing, and a spelling that continues past a decoded alias head into a nested type stops at the
+typed `ConstructedAliasHeadNotExtended` rejection, because this slice derives no nested type's arguments from its
+enclosing construction. Every added input is absence-preserving additive encoding, so requests, projections, and
+outcomes without the new evidence keep their frozen digests byte-identically.
 
 The W2/W6 suffix is now evaluated end to end at `727dbdb7d`: the pipeline hands the resolved non-null static-field
 reference address and the frozen suffix descriptor to a caller-supplied member-chain evidence seam
@@ -1236,17 +1252,26 @@ counterfactuals, raising the executed count to thirteen of thirty-five. The firs
 namespace-aliased type argument through the selected frame's own import scope; the second converges two same-level
 imports on one owner whose argument binds through that same scope.
 
+**Three further incidents execute as their named blockers close.** The declared-member catalogs made
+`coordinator-property-shares-bare-name` drivable (thirteen to fourteen), and the decoded alias target above makes both
+TypeSpec-alias rows drivable: `batch-typespec-alias-whole-owner` and `workflow-ground-typespec-alias-enum-literal`
+execute end to end over their own real dumps with all twelve produced axes equal to their predeclared rows, raising
+the executed count to sixteen of thirty-five. The first reaches the same construction, field, slot, and value its
+fully qualified control reaches, and its declared `withhold-scoped-context` counterfactual still changes the answer;
+the second projects an enum literal from the complete Constant table with a zero runtime-call count, which is what its
+predeclared ledger asserts. Neither row's predeclared axes moved.
+
 The rows that stay manifest-only each stop at one named landed boundary rather than at a runner gap: an argument-free
 contextual owner reaches its predeclared exact terminal, with the fully qualified control converging on the same
 construction identity and value through the explicit route and the two outcomes carrying distinct binding provenance —
 the W8.5 convergence statement, proved over a real dump — but its predeclared row spelled `typeConstruction` as
-`NotRequired`; a whole-owner or ground TypeSpec alias stops at `Partial` because the alias target stays undecoded; the
-bare `using static` rows certify a complete lexical envelope and then stop at the constructed using-static target or,
-for the property-shares-a-name row, at a declaration absence because no landed catalog models the Property table; and
-the active-local row produces exactly the predeclared `Shadowed` certificate under a context axis its predeclaration
-spelled `NotRequired`. Each divergence is asserted as a finding rather than retuned. The three W8.1-admitted branches
-are covered: thread-relative and frame-value execute end to end, and the RVA branch reaches its predeclared exact
-value over the corrected fixture (below).
+`NotRequired`; the extern-alias-qualified owner stops at `Partial` on its owner name, which the alias-target decode
+does not reach because no ImportScope records that owner as an alias target; the bare `using static` rows certify a
+complete lexical envelope and then stop at the constructed using-static target; and the active-local row produces
+exactly the predeclared `Shadowed` certificate under a context axis its predeclaration spelled `NotRequired`. Each
+divergence is asserted as a finding rather than retuned. The three W8.1-admitted branches are covered:
+thread-relative and frame-value execute end to end, and the RVA branch reaches its predeclared exact value over the
+corrected fixture (below).
 
 The owner-`VAR` field-signature decoder landed at `0b6bc7a69` and, in doing so, disproved the reason previously
 recorded against the two generic-`VAR` incidents. Real runs show neither is blocked by the decoder: the nullable

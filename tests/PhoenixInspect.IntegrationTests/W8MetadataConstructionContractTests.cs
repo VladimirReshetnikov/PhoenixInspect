@@ -1552,6 +1552,7 @@ public sealed class W8MetadataConstructionContractTests
                 "StaticFieldV2RuntimeConstructionCandidate.ClosedArguments",
                 "StaticFieldV2RuntimeValueAcquisitionRequest.DeclaredType",
                 "StaticFieldV2RuntimeValueRequest.DeclaredType",
+                "StaticFieldV2ScopedImportProjection.TargetClosedConstruction",
             },
             guardedProperties.Select(static property =>
                 $"{property.DeclaringType!.Name}.{property.Name}").ToArray());
