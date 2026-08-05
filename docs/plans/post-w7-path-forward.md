@@ -1409,6 +1409,28 @@ constructed `using static` import, or a generic-base crossing in member lookup. 
 therefore unreachable from its own fully qualified spelling; its recorded reason is corrected to that finding, its
 predeclared axes stay frozen, and the measurement is asserted by the dedicated realized-companion corpus test.
 
+**The workflow gate now honors its declared companion input, and two more rows execute (twenty-one of
+thirty-five).** The workflow shape gate materialized its second collectible-context definition before every profile's
+pause, although exactly one incident — `workflow-two-definitions-ambiguous` — declares the
+`workflow-second-load-context-definition` companion as an artifact input. Every other workflow row therefore
+evaluated over a snapshot polluted with an undeclared companion, and four of them stopped at an owner ambiguity their
+own manifests never spelled. The gate now materializes the second definition only for the profile whose row declares
+it, which is a fixture correction toward the frozen contract, not a retune; the ambiguity row keeps both definitions
+and keeps executing. Measured over fresh dumps: `workflow-var-substitution-conditional-chain` reaches its predeclared
+twelve axes and its `string:workflow-step-label` terminal end to end through the host suffix route, and its declared
+substitute-closed-argument counterfactual — the shape's own array construction — flips the completed label to the
+exact null it holds; `workflow-array-nested-argument-exact-null` reaches its predeclared `ExactNull` terminal once
+its counted root read is corrected to one pointer, because an exact-null terminal is a reference read (the same
+width rule the suffix rows already applied); `workflow-derived-unsupported-member-hides-base` produces precisely its
+predeclared `HiddenByUnsupportedMember` stop with its base-field counterfactual reaching the exact value, and stays
+manifest-only on one axis alone — the construction-axis conflation three other rows already document; and
+`workflow-substituted-reference-target-conflict` reaches reference-target validation under a runner-supplied
+non-assignable declared target, where the landed contract records the exact read value and blocks the suffix with
+zero seam calls rather than conflating both axes to `Conflict` as the row predeclared — richer diagnosable evidence,
+retained as the row's divergence finding, with its declared align counterfactual completing the identical spelling
+through one seam call. Executed rows go nineteen to twenty-one of thirty-five, and the report goldens are re-frozen
+for that count.
+
 Produced-vs-predeclared divergences are documented as findings through the
 `Attempted_incidents_stop_at_their_landed_pipeline_boundaries` and
 `Contextual_and_bare_incidents_stop_at_their_landed_scope_boundaries` tests with axes captured from real runs, and the

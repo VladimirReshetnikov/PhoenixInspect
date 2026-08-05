@@ -299,6 +299,16 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             {
                 Assert.Equal(long.Parse(terminal[4..]), produced.Result.SignedValue);
             }
+            else if (incident.ExpectedTerminal is { } suffixTerminal &&
+                suffixTerminal.StartsWith("string:", StringComparison.Ordinal))
+            {
+                var suffixValue = Assert.IsType<DumpQueryValue>(produced.Result.SuffixValue);
+                Assert.Equal(suffixTerminal["string:".Length..], suffixValue.StringValue);
+            }
+            else if (string.Equals(incident.ExpectedTerminal, "null", StringComparison.Ordinal))
+            {
+                Assert.Null(produced.Result.SignedValue);
+            }
         }
 
         Assert.True(
@@ -349,13 +359,14 @@ public sealed class W8MeaningfulSyntheticCorpusTests
     /// the composed V2 pipeline resolved, over a real dump, through the host's own object validation.
     /// </summary>
     /// <remarks>
-    /// This is the capability the three suffix-bearing manifest rows need and none of them can currently reach: two
-    /// are blocked upstream by the workflow shape's second load context and the third by route selection. Proving it
-    /// on its own removes any doubt about which of those is the obstacle. Two product gaps had to close for this to
-    /// work at all — a ground named FieldSig had no declared type, so every reference-typed static stopped at the
-    /// value stage, and a V2-resolved address had no route to a validated object — and both are exercised here end to
-    /// end: the field's declared type decodes from its own module's catalog, the address the value stage resolved is
-    /// validated raw-header-first by the session, and the seam is called exactly once for one terminal read.
+    /// This is the capability the suffix-bearing manifest rows consume, proved on its own so no incident's upstream
+    /// circumstances can cast doubt on it. All three such rows now reach it: the nested-head row and the
+    /// var-substitution row complete through it, and the reference-target row is blocked before it by design. Two
+    /// product gaps had to close for this to work at all — a ground named FieldSig had no declared type, so every
+    /// reference-typed static stopped at the value stage, and a V2-resolved address had no route to a validated
+    /// object — and both are exercised here end to end: the field's declared type decodes from its own module's
+    /// catalog, the address the value stage resolved is validated raw-header-first by the session, and the seam is
+    /// called exactly once for one terminal read.
     /// </remarks>
     [Fact]
     [Trait("Category", "Dump")]
@@ -683,31 +694,12 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(arityDisagreement.PredeclaredAxes, produced.Result.Axes);
         }
 
-        // Incident 16 workflow-array-nested-argument-exact-null: the Workflow shape target materializes a second
-        // definition of its whole module in a separate collectible load context, and the runner composes every module
-        // observation whose content matches the on-disk artifact. Both copies therefore enter the authority, so the
-        // owner name Stage`1 has two definitions and binds Ambiguous. That double composition is deliberate — incident
-        // 24 workflow-two-definitions-ambiguous depends on exactly it — so it is not deduplicated to force this row.
-        // The run stops at typeBinding before construction, member lookup, and the broadened owner-VAR field decoder.
-        // The predeclared row expects an Exact binding reaching exact null; the produced Ambiguous binding is the
-        // reported finding, so the predeclared row stays manifest-only and completely untouched.
-        var arrayArgument = manifest.Incidents.Single(
-            static incident => incident.Id == "workflow-array-nested-argument-exact-null");
-        Assert.Equal("manifest-only", arrayArgument.RunnerExecutionStatus);
-        using (var snapshot = W8CorpusSnapshot.Materialize(arrayArgument))
-        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, arrayArgument.Shape))
-        {
-            var produced = world.Evaluate(arrayArgument.Expression, arrayArgument.ReadWidth);
-            Assert.Equal(
-                "Admitted/NotRequired/NotRequired/NotRequired/Ambiguous/NotReached/NotReached/NotReached/NotReached/" +
-                "NotReached/NotReached/NoAnswer",
-                Describe(produced.Result.Axes));
-            Assert.Equal(DumpExpressionTypeBindingOutcome.Ambiguous, produced.Result.Axes.TypeBinding);
-            Assert.Equal(DumpExpressionTypeConstructionOutcome.NotReached, produced.Result.Axes.TypeConstruction);
-            Assert.Equal(DumpExpressionValueOutcome.NotReached, produced.Result.Axes.Value);
-            Assert.Null(produced.Result.SignedValue);
-            Assert.NotEqual(arrayArgument.PredeclaredAxes, produced.Result.Axes);
-        }
+        // Incident 16 workflow-array-nested-argument-exact-null formerly stopped here at an Ambiguous owner binding:
+        // the workflow gate materialized its second collectible-context definition for every profile although only
+        // incident 24 declares that companion as an artifact input, and the runner composes every matching module
+        // observation. With the gate honoring the declared per-row input, and with the row's counted root read
+        // corrected to one pointer for its exact-null reference terminal, the row reaches its predeclared axes and
+        // is asserted by the executed-incident path.
     }
 
     /// <summary>
@@ -816,15 +808,16 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         }
 
         // Incident 31 coordinator-property-shares-bare-name now executes and reaches its predeclared axes, so it is
-        // asserted by the executed-incident path rather than here. What replaces it is incident 12, whose blocker the
-        // Property table turned out not to be.
+        // asserted by the executed-incident path rather than here.
         //
-        // Incident 12 workflow-derived-unsupported-member-hides-base: the derived property does own the spelling, but
-        // the answer never reaches a member stage to say so. Every workflow-shape profile loads the target's own
-        // assembly into a second AssemblyLoadContext before selecting a profile, so both definitions of the derived
-        // owner are in the snapshot and type binding stops Ambiguous first. That is a second, independent gap this
-        // slice does not close, and the produced divergence below is the finding. Do not read it as evidence about
-        // the Property table either way.
+        // Incident 12 workflow-derived-unsupported-member-hides-base: with the workflow gate materializing its
+        // second-definition companion only for the row that declares it, the derived owner binds exactly and the
+        // landed Property catalog produces precisely the predeclared HiddenByUnsupportedMember stop — the derived
+        // property owns the spelling and no member stage falls through to the base field. The one remaining
+        // divergence is the predeclared row's conflation of the two construction axes as NotRequired where the
+        // pipeline constructs the non-generic spelled owner Exact at arity zero — the same conflation the
+        // inner-alias, module-RVA, and derived-base rows document — so the row stays manifest-only and the
+        // single-axis divergence is the finding.
         var memberHiding = manifest.Incidents.Single(
             static incident => incident.Id == "workflow-derived-unsupported-member-hides-base");
         Assert.Equal("manifest-only", memberHiding.RunnerExecutionStatus);
@@ -833,25 +826,80 @@ public sealed class W8MeaningfulSyntheticCorpusTests
         {
             var produced = world.Evaluate(memberHiding.Expression, memberHiding.ReadWidth);
             Assert.Equal(
-                "Admitted/NotRequired/NotRequired/NotRequired/Ambiguous/NotReached/NotReached/NotReached/" +
+                "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/HiddenByUnsupportedMember/NotReached/" +
                 "NotReached/NotReached/NotReached/NoAnswer",
                 Describe(produced.Result.Axes));
-
-            // The stop is upstream of every member stage: neither an owner construction nor a member lookup ran.
-            Assert.Null(produced.Result.Provenance.OwnerConstruction);
-            Assert.Null(produced.Result.Provenance.MemberLookup);
+            Assert.Equal(DumpExpressionMemberLookupOutcome.HiddenByUnsupportedMember, produced.Result.Axes.MemberLookup);
+            Assert.Equal(DumpExpressionMemberLookupOutcome.HiddenByUnsupportedMember, DecodeMemberLookup(memberHiding));
             Assert.Equal(
-                DumpExpressionMemberLookupOutcome.HiddenByUnsupportedMember,
-                DecodeMemberLookup(memberHiding));
+                DumpExpressionTypeConstructionOutcome.NotRequired,
+                memberHiding.PredeclaredAxes.TypeConstruction);
+            Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, produced.Result.Axes.TypeConstruction);
             Assert.NotEqual(memberHiding.PredeclaredAxes, produced.Result.Axes);
 
-            // The declared counterfactual would spell the base field, and it stops identically: the ambiguity is the
-            // owner's, not the member's, which is exactly why this row cannot be driven yet.
+            // The declared counterfactual spells the base declaration directly and reaches its exact value on the
+            // same snapshot, exactly as the row's counterfactual difference states.
             var counterfactual = world.Evaluate(memberHiding.CounterfactualExpression!, memberHiding.ReadWidth);
-            Assert.Equal(
-                DumpExpressionTypeBindingOutcome.Ambiguous,
-                counterfactual.Result.Axes.TypeBinding);
+            Assert.Equal(DumpExpressionValueOutcome.ExactValue, counterfactual.Result.Axes.Value);
+            Assert.Equal(1090520076L, counterfactual.Result.SignedValue);
         }
+    }
+
+    /// <summary>
+    /// Measures the substituted-reference-target row under its own declared circumstance: a caller-declared target
+    /// the substituted signature does not satisfy, over the row's real dump with the corrected workflow gate.
+    /// </summary>
+    /// <remarks>
+    /// The row predeclared value and suffix both as Conflict. The landed contract deliberately answers differently:
+    /// it records the exact read value and blocks the suffix without one seam call, retaining the non-assignable
+    /// validation as typed provenance — richer diagnosable evidence than conflating both axes. The produced
+    /// divergence is the finding; the manifest row stays frozen. The row's declared align counterfactual is also
+    /// driven: with the target the substituted signature names, the identical spelling completes its suffix.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "W8MeaningfulSyntheticV1")]
+    public void Reference_target_conflict_row_blocks_its_suffix_and_records_the_read_value()
+    {
+        var manifest = W8CorpusManifest.Load();
+        var row = manifest.Incidents.Single(
+            static incident => incident.Id == "workflow-substituted-reference-target-conflict");
+        Assert.Equal("manifest-only", row.RunnerExecutionStatus);
+        using var snapshot = W8CorpusSnapshot.Materialize(row);
+        using var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, row.Shape);
+
+        var conflicting = world.Evaluate(
+            row.Expression,
+            row.ReadWidth,
+            suppliesSuffixEvaluation: true,
+            referenceTargetType: world.DeclaredReferenceTarget("HidingStage"));
+        Assert.Equal(
+            "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/Exact/Exact/" +
+            "ExactValue/Blocked/NoAnswer",
+            Describe(conflicting.Result.Axes));
+        Assert.NotEqual(
+            StaticFieldV2AssignabilityResultKind.Assignable,
+            conflicting.Result.Provenance.ReferenceTargetValidation!.ResultKind);
+        Assert.Equal(0, conflicting.Result.Provenance.EvidenceLedger.SuffixChainEvaluationCallCount);
+        Assert.NotEqual(row.PredeclaredAxes, conflicting.Result.Axes);
+
+        // The declared align counterfactual: the target the substituted signature names admits the suffix, and the
+        // identical spelling completes through the host route with exactly one seam call.
+        var aligned = world.Evaluate(
+            row.Expression,
+            row.ReadWidth,
+            suppliesSuffixEvaluation: true,
+            referenceTargetType: world.DeclaredReferenceTarget("StepContext"));
+        Assert.Equal(
+            "Admitted/NotRequired/NotRequired/NotRequired/Exact/Exact/Exact/Exact/Exact/" +
+            "ExactValue/Completed/Complete",
+            Describe(aligned.Result.Axes));
+        Assert.Equal(
+            StaticFieldV2AssignabilityResultKind.Assignable,
+            aligned.Result.Provenance.ReferenceTargetValidation!.ResultKind);
+        var suffixValue = Assert.IsType<DumpQueryValue>(aligned.Result.SuffixValue);
+        Assert.Equal("workflow-step-label", suffixValue.StringValue);
+        Assert.Equal(1, aligned.Result.Provenance.EvidenceLedger.SuffixChainEvaluationCallCount);
     }
 
     private static DumpExpressionMemberLookupOutcome DecodeMemberLookup(W8CorpusIncident incident) =>
@@ -1172,11 +1220,13 @@ public sealed class W8CorpusIncident
     /// <summary>Gets the counted read width the row's own root implies.</summary>
     /// <remarks>
     /// A row that requests a suffix reads its root as a reference, so the counted root read is one pointer wide; the
-    /// terminal's own width belongs to the suffix evaluation rather than to the root. Only a row whose terminal is
-    /// the root itself takes its width from that terminal.
+    /// terminal's own width belongs to the suffix evaluation rather than to the root. A row whose terminal is the
+    /// exact null reference also reads its root as a reference, so its counted width is one pointer too. Only a row
+    /// whose terminal is a primitive root takes its width from that terminal.
     /// </remarks>
     public int ReadWidth =>
         !string.Equals(SuffixProfile, "None", StringComparison.Ordinal) ? sizeof(ulong)
+        : string.Equals(ExpectedTerminal, "null", StringComparison.Ordinal) ? sizeof(ulong)
         : ExpectedTerminal is { } terminal && terminal.StartsWith("i64:", StringComparison.Ordinal) ? sizeof(long)
         : sizeof(int);
 
@@ -1247,6 +1297,18 @@ public sealed class W8CorpusIncident
         "batch-nested-per-segment-arity" => Expression.Replace(
             ".BatchValue>",
             ".BatchKey>",
+            StringComparison.Ordinal),
+
+        // The different closed argument the action names is the shape's own other materialized construction: the
+        // array argument holds exact null, so the completed label changes, and the non-array argument holds the
+        // live step, so the null value changes.
+        "workflow-var-substitution-conditional-chain" => Expression.Replace(
+            ".StepContext>",
+            ".StepContext[]>",
+            StringComparison.Ordinal),
+        "workflow-array-nested-argument-exact-null" => Expression.Replace(
+            ".StepContext[]>",
+            ".StepContext>",
             StringComparison.Ordinal),
         _ => Expression,
     };
@@ -1482,6 +1544,20 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     /// <summary>Gets the primary module's composed physical TypeSpec table, which retains raw signature bytes.</summary>
     internal MetadataTypeSpecificationPhysicalTableCatalogIdentity PrimaryTypeSpecifications =>
         Primary.Outcome.TypeSpecifications!;
+
+    /// <summary>
+    /// Builds a caller-declared reference-target construction for one of the primary module's top-level non-generic
+    /// classes, from the same composed classification chain the pipeline itself consumes.
+    /// </summary>
+    /// <param name="typeName">The metadata type name inside the shape's own namespace.</param>
+    /// <returns>The exact closed construction of that definition at arity zero.</returns>
+    internal MetadataClosedTypeIdentity DeclaredReferenceTarget(string typeName)
+    {
+        var token = FindTypeToken(Primary.Reader, PrimaryNamespace(), typeName);
+        var classification = Ancestry.ExactClassificationOrDefault(Primary.MetadataModule, token);
+        Assert.NotNull(classification);
+        return MetadataClosedTypeIdentity.ConstructNamed([classification], []);
+    }
 
     private ProducedModule Primary => modules[0];
 

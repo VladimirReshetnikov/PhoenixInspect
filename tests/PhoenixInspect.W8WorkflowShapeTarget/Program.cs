@@ -80,7 +80,14 @@ public static class WorkflowShapeGate
             wflib::PhoenixInspect.W8AliasTarget.ExternalRequestContext>.Current =
             new wflib::PhoenixInspect.W8AliasTarget.ExternalRequestContext("workflow-external-311");
 
-        MaterializeSecondDefinition();
+        // The second collectible-context definition is the workflow-second-load-context-definition companion, and
+        // exactly one incident declares it as an artifact input. Materializing it for every profile hands an
+        // undeclared companion to rows whose manifests never spelled it, and those rows then stop at an owner
+        // ambiguity their own snapshot contract does not contain.
+        if (profile == "workflow-definition-ambiguity")
+        {
+            MaterializeSecondDefinition();
+        }
 
         return profile switch
         {

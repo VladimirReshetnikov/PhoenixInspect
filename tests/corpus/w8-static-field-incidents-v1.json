@@ -652,8 +652,8 @@
       },
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "the-host-route-and-the-dump-backed-suffix-seam-are-landed-and-proved-separately-but-this-row-stops-at-typebinding-ambiguous-upstream-of-any-suffix-because-every-workflow-profile-loads-its-own-assembly-into-a-second-load-context-before-the-pause"
+        "status": "executed",
+        "reason": "the-corrected-workflow-gate-materializes-the-second-definition-only-for-the-row-that-declares-it-so-the-owner-binds-exactly-and-the-var-substituted-reference-completes-its-conditional-chain-through-the-host-suffix-route-over-one-real-full-dump"
       },
       "representative": false
     },
@@ -1354,7 +1354,7 @@
       "supportsSuccessorCategory": "static-property-or-method-execution",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "the-workflow-shape-gate-loads-its-own-assembly-into-a-second-load-context-for-every-profile-so-the-derived-owner-binds-ambiguous-before-any-member-stage-runs-which-the-property-table-catalog-does-not-close"
+        "reason": "the-corrected-workflow-gate-binds-the-derived-owner-exactly-and-produces-the-predeclared-hidden-by-unsupported-member-stop-but-owner-typeconstruction-produces-exact-at-arity-zero-where-the-row-predeclared-not-required-the-same-construction-axis-conflation-three-other-rows-document"
       },
       "representative": false
     },
@@ -1702,8 +1702,8 @@
       },
       "supportsSuccessorCategory": "additional-static-storage-family",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "owner-name-binding-ambiguous-because-the-target-module-is-deliberately-double-composed"
+        "status": "executed",
+        "reason": "the-corrected-workflow-gate-composes-one-definition-and-the-pointer-width-root-read-returns-the-exact-null-array-typed-reference-over-one-real-full-dump"
       },
       "representative": false
     },
@@ -2767,7 +2767,7 @@
       "supportsSuccessorCategory": "collection-and-indexing",
       "runnerExecution": {
         "status": "manifest-only",
-        "reason": "the-declared-reference-target-type-and-the-suffix-seam-are-both-available-so-this-row-stops-with-its-sibling-at-typebinding-ambiguous-from-the-workflow-shapes-second-load-context-before-any-target-conflict-can-be-reached"
+        "reason": "the-corrected-gate-binds-the-owner-exactly-and-a-non-assignable-declared-target-now-reaches-validation-but-the-landed-contract-records-the-exact-read-value-and-blocks-the-suffix-without-a-seam-call-rather-than-conflating-both-axes-to-conflict-as-the-row-predeclared"
       },
       "representative": false
     },
