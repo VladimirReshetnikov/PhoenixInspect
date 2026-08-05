@@ -1000,8 +1000,8 @@
       },
       "supportsSuccessorCategory": "observed-boundary-hardening",
       "runnerExecution": {
-        "status": "manifest-only",
-        "reason": "composes-the-referenced-alias-module-and-projects-real-scoped-context-but-the-extern-alias-qualified-owner-name-produces-partial"
+        "status": "executed",
+        "reason": "the-extern-alias-use-that-brings-the-alias-into-scope-no-longer-hides-the-enclosing-declaration-that-names-its-assemblyref-so-the-qualified-interface-owner-binds-across-the-exact-reference-over-one-real-full-dump"
       },
       "representative": false
     },

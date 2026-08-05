@@ -41,7 +41,7 @@ issuer is deleted, and an assembly-wide reflection guard enforces the boundary. 
 the host-owned metadata producer, the definition-side name/construction/member binder, scope-precise import and alias
 binding — including a whole-owner TypeSpec alias whose target is decoded from its physical blob rather than from the
 spelling — the runtime construction/storage/value mapping over real dumps, lexical completeness, interface-implementation
-authority, and the sixteen-step product composition. W8.9's thirty-five-incident portfolio is the active work: sixteen
+authority, and the sixteen-step product composition. W8.9's thirty-five-incident portfolio is the active work: seventeen
 rows execute end to end today, and every row that does not stops at a named landed boundary recorded as a produced
 finding. The umbrella scale remains `~100K LOC`, split primarily into `~10K LOC`
 checkpoints, and the meaningful portfolio minimum is now thirty-five independent incidents.

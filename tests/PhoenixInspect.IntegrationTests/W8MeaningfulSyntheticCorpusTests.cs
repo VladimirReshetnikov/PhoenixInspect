@@ -613,29 +613,9 @@ public sealed class W8MeaningfulSyntheticCorpusTests
             Assert.NotEqual(produced.Result.Sha256, control.Result.Sha256);
         }
 
-        // Incidents 2 and 32, the two TypeSpec-alias rows, no longer stop here: their alias targets now decode to
-        // exact closed constructions from the physical blobs, so both reach their predeclared axes and are asserted
-        // by the executed-incident path. What they leave behind is the narrower boundary below.
-        //
-        // Incident 8 workflow-extern-alias-interface-owner: the spelling is extern-alias qualified and its owner
-        // stops before any construction. The alias-target decode this slice landed does not reach it, because the
-        // stop is on the owner name rather than on an alias target the ImportScope records.
-        var externAlias = manifest.Incidents.Single(
-            static incident => incident.Id == "workflow-extern-alias-interface-owner");
-        Assert.Equal("manifest-only", externAlias.RunnerExecutionStatus);
-        using (var snapshot = W8CorpusSnapshot.Materialize(externAlias))
-        using (var world = W8CorpusEvaluationWorld.Open(snapshot.DumpPath, externAlias.Shape))
-        {
-            var produced = world.Evaluate(
-                externAlias.Expression,
-                externAlias.ReadWidth,
-                null,
-                world.PausedFrameScopedContext());
-            Assert.Equal(DumpExpressionContextOutcome.Exact, produced.Result.Axes.Context);
-            Assert.Equal(DumpExpressionTypeBindingOutcome.Partial, produced.Result.Axes.TypeBinding);
-            Assert.Null(produced.Result.SignedValue);
-            Assert.NotEqual(externAlias.PredeclaredAxes, produced.Result.Axes);
-        }
+        // Incidents 2, 32, and 8 no longer stop here. The two TypeSpec-alias rows decode their targets from the
+        // physical blobs, and the extern-alias row binds now that a use no longer hides the declaration that names
+        // its AssemblyRef; all three reach their predeclared axes and are asserted by the executed-incident path.
 
         // Incident 29 request-active-local-shadows-bare-import: the projected lexical envelope produces exactly the
         // predeclared Shadowed certificate over the real frame, and every later axis stays NotReached. The only

@@ -244,6 +244,61 @@ public sealed class W8V2ExpressionPipelineTests
     }
 
     /// <summary>
+    /// Proves an extern-alias-qualified type argument resolves through the same scope that bound its owner, and that
+    /// the identical spelling without a scoped context stays the declared unsupported stop rather than silently
+    /// resolving as though the alias qualifier were not written.
+    /// </summary>
+    /// <remarks>
+    /// The two halves matter together. Dropping an alias qualifier the metadata-global route cannot interpret would
+    /// answer with whatever assembly the plain name reaches, which is exactly the confusion an extern alias exists to
+    /// prevent; the fixture makes that concrete by giving two composed assemblies the same spelling and reading the
+    /// value that only the aliased one holds.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Extern_alias_qualified_type_argument_binds_through_the_scope_that_bound_its_owner()
+    {
+        var world = BuildWorld();
+        var aliased = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "GenericSlot<lib::Pipe.Dup.Twin>.Current",
+            scopedContext: ImportAndExternAliasContext(world, "Pipe.App"),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+
+        AssertExactAxes(aliased);
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Exact, aliased.Axes.TypeConstruction);
+        Assert.Equal(42, aliased.SignedValue);
+
+        // The argument the alias names is the library's Twin, not the application's identically spelled one.
+        var argument = Assert.Single(aliased.Provenance.OwnerConstruction!.FlattenedArguments);
+        Assert.Equal(
+            LibAssembly,
+            argument.FinalClassification!.SourceModule.ContainingAssembly.AssemblyDefinition.Name);
+
+        // The same argument without the alias qualifier is ambiguous over the two composed modules that spell it,
+        // which is what the alias exists to settle: the alias answers a name the plain spelling cannot.
+        var unaliased = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "GenericSlot<Pipe.Dup.Twin>.Current",
+            scopedContext: ImportAndExternAliasContext(world, "Pipe.App"),
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        Assert.NotEqual(DumpExpressionTypeConstructionOutcome.Exact, unaliased.Axes.TypeConstruction);
+        Assert.Null(unaliased.SignedValue);
+
+        // Without a scoped context the same spelling has no alias to interpret and stops typed rather than dropping
+        // the qualifier: an argument named through an alias the route cannot read is never resolved as a plain name.
+        var unscoped = StaticFieldV2ExpressionPipeline.Evaluate(Request(
+            world,
+            "global::Pipe.App.GenericSlot<lib::Pipe.Dup.Twin>.Current",
+            runtimeEvidence: ConstructedSlotEvidence(world, 0x2A)));
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Unsupported, unscoped.Axes.TypeConstruction);
+        Assert.Equal(
+            StaticFieldV2ClosedConstructionIssue.TypeArgumentAliasUnsupported,
+            unscoped.Provenance.OwnerConstruction!.Issue);
+        Assert.Null(unscoped.SignedValue);
+    }
+
+    /// <summary>
     /// Proves a whole-owner alias whose Portable-PDB target is a physical TypeSpec row reaches the same construction,
     /// field, and value as the fully qualified control, and that the decode rests on evidence rather than on the
     /// spelling.
@@ -1093,6 +1148,35 @@ public sealed class W8V2ExpressionPipelineTests
                 1,
                 imported,
                 [0xAB, 0x02])])));
+
+    /// <summary>
+    /// Supplies one scope declaring both a namespace import, which reaches the owner, and the extern alias its type
+    /// argument names, so the owner and the argument are answered by the same level walk.
+    /// </summary>
+    /// <param name="world">The composed pipeline world.</param>
+    /// <param name="imported">The imported namespace the owner spelling reaches through.</param>
+    /// <returns>The caller-owned scoped-context seam.</returns>
+    private static StaticFieldV2ScopedContextSource ImportAndExternAliasContext(
+        PipelineWorld world,
+        string imported) =>
+        StaticFieldV2ScopedContextSource.Create(() => ContextRequest(
+            world,
+            Scopes(
+            [
+                DumpPortablePdbImportFact.NamespaceImport(
+                    ScopeToken(1),
+                    0,
+                    1,
+                    imported,
+                    [0xAB, 0x02]),
+                DumpPortablePdbImportFact.ExternAlias(
+                    ScopeToken(1),
+                    1,
+                    6,
+                    "lib",
+                    [0xAB, 0x00],
+                    LibAssemblyReferenceToken),
+            ])));
 
     private static StaticFieldV2ScopedContextSource ExternAliasContext(PipelineWorld world) =>
         StaticFieldV2ScopedContextSource.Create(() => ExternAliasContextRequest(world));

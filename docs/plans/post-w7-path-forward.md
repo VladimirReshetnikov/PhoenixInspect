@@ -1252,23 +1252,36 @@ counterfactuals, raising the executed count to thirteen of thirty-five. The firs
 namespace-aliased type argument through the selected frame's own import scope; the second converges two same-level
 imports on one owner whose argument binds through that same scope.
 
-**Three further incidents execute as their named blockers close.** The declared-member catalogs made
+**Four further incidents execute as their named blockers close.** The declared-member catalogs made
 `coordinator-property-shares-bare-name` drivable (thirteen to fourteen), and the decoded alias target above makes both
 TypeSpec-alias rows drivable: `batch-typespec-alias-whole-owner` and `workflow-ground-typespec-alias-enum-literal`
-execute end to end over their own real dumps with all twelve produced axes equal to their predeclared rows, raising
-the executed count to sixteen of thirty-five. The first reaches the same construction, field, slot, and value its
-fully qualified control reaches, and its declared `withhold-scoped-context` counterfactual still changes the answer;
-the second projects an enum literal from the complete Constant table with a zero runtime-call count, which is what its
-predeclared ledger asserts. Neither row's predeclared axes moved.
+execute end to end over their own real dumps with all twelve produced axes equal to their predeclared rows. The first
+reaches the same construction, field, slot, and value its fully qualified control reaches, and its declared
+`withhold-scoped-context` counterfactual still changes the answer; the second projects an enum literal from the
+complete Constant table with a zero runtime-call count, which is what its predeclared ledger asserts.
+
+`workflow-extern-alias-interface-owner` follows, raising the executed count to seventeen of thirty-five. Its two
+blockers were both rules rather than gaps. First, a compiler emits an extern alias as a *pair*: the declaration that
+names the AssemblyRef lives in the module-level import scope and the `extern alias X;` directive itself is a separate
+import in the file's scope that names only the alias. The innermost-declaration rule treated the second as a
+redefinition of the first and hid the only row that says what the alias targets, so the alias resolved to nothing. A
+use declares nothing — it states that an alias declared elsewhere is in scope — so it now neither enters the
+innermost-declaration map nor is hidden by one, is projected as the exact `ExternAliasUseWithoutTarget` disposition
+rather than a failed lookup, and records the typed `ExternAliasUseDeclaresNoTarget` rejection at the level that
+examined it. Second, an argument carrying its own named alias qualifier was refused outright, which predated the rule
+that a contextual argument resolves through the scope that bound its owner; it now takes that route. The refusal is
+kept exactly where it is still true: on the metadata-global route, where there is no scope to interpret an alias, an
+alias-qualified argument stays the typed `TypeArgumentAliasUnsupported` stop, because resolving `alias::Name` as
+though it were `global::Name` would answer with another assembly's identically spelled declaration. No row's
+predeclared axes moved with any of the four.
 
 The rows that stay manifest-only each stop at one named landed boundary rather than at a runner gap: an argument-free
 contextual owner reaches its predeclared exact terminal, with the fully qualified control converging on the same
 construction identity and value through the explicit route and the two outcomes carrying distinct binding provenance —
 the W8.5 convergence statement, proved over a real dump — but its predeclared row spelled `typeConstruction` as
-`NotRequired`; the extern-alias-qualified owner stops at `Partial` on its owner name, which the alias-target decode
-does not reach because no ImportScope records that owner as an alias target; the bare `using static` rows certify a
-complete lexical envelope and then stop at the constructed using-static target; and the active-local row produces
-exactly the predeclared `Shadowed` certificate under a context axis its predeclaration spelled `NotRequired`. Each
+`NotRequired`; the bare `using static` rows certify a complete lexical envelope and then stop at the constructed
+using-static target; and the active-local row produces exactly the predeclared `Shadowed` certificate under a context
+axis its predeclaration spelled `NotRequired`. Each
 divergence is asserted as a finding rather than retuned. The three W8.1-admitted branches are covered:
 thread-relative and frame-value execute end to end, and the RVA branch reaches its predeclared exact value over the
 corrected fixture (below).

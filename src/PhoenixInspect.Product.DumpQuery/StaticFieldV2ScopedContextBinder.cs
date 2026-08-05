@@ -33,9 +33,9 @@ public enum StaticFieldV2ScopedImportKind
 /// <summary>Identifies how one projected import's physical target was or was not resolved.</summary>
 /// <remarks>
 /// Only <see cref="NotApplicable"/>, <see cref="TypeDefinitionResolved"/>, <see cref="TypeReferenceResolved"/>,
-/// <see cref="TypeSpecificationResolved"/>, and <see cref="AssemblyReferenceResolved"/> are exact. Every other value
-/// keeps the physical import retained as typed non-exact evidence, so a retained import can never silently vanish
-/// from the projection.
+/// <see cref="TypeSpecificationResolved"/>, <see cref="ExternAliasUseWithoutTarget"/>, and
+/// <see cref="AssemblyReferenceResolved"/> are exact. Every other value keeps the physical import retained as typed
+/// non-exact evidence, so a retained import can never silently vanish from the projection.
 /// </remarks>
 public enum StaticFieldV2ScopedImportTargetDisposition
 {
@@ -77,6 +77,12 @@ public enum StaticFieldV2ScopedImportTargetDisposition
     /// definitions, so the alias names that construction rather than a bare definition.
     /// </summary>
     TypeSpecificationResolved = 12,
+
+    /// <summary>
+    /// An extern-alias import brings an alias into scope without declaring its target, which is the complete physical
+    /// form of an <c>extern alias</c> directive; the declaration that names the AssemblyRef is a separate import.
+    /// </summary>
+    ExternAliasUseWithoutTarget = 13,
 }
 
 /// <summary>Classifies one projected scoped-context view.</summary>
@@ -222,6 +228,12 @@ public enum StaticFieldV2ContextualRejectionReason
     /// own arguments this slice does not derive from the enclosing construction.
     /// </summary>
     ConstructedAliasHeadNotExtended = 10,
+
+    /// <summary>
+    /// The matching extern-alias import brings the alias into scope without declaring its target, so this level
+    /// contributes no candidate and the level that declares the AssemblyRef answers the spelling.
+    /// </summary>
+    ExternAliasUseDeclaresNoTarget = 11,
 }
 
 /// <summary>Classifies one examined declaration level of the contextual search.</summary>
@@ -416,6 +428,7 @@ public sealed class StaticFieldV2ScopedImportProjection : IEquatable<StaticField
             StaticFieldV2ScopedImportTargetDisposition.TypeDefinitionResolved or
             StaticFieldV2ScopedImportTargetDisposition.TypeReferenceResolved or
             StaticFieldV2ScopedImportTargetDisposition.TypeSpecificationResolved or
+            StaticFieldV2ScopedImportTargetDisposition.ExternAliasUseWithoutTarget or
             StaticFieldV2ScopedImportTargetDisposition.AssemblyReferenceResolved;
 
     /// <summary>Gets a defensive copy of this fixed-reference canonical projection.</summary>
@@ -2260,10 +2273,12 @@ public static class StaticFieldV2ScopedContextBinder
             }
         }
 
+        // Shadowing is a relation between declarations. An extern-alias use declares nothing — it states that an alias
+        // declared elsewhere is in scope here — so it neither enters this map nor hides the declaration it refers to.
         var innermostAliasLevel = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var item in pending)
         {
-            if (item.Fact.Alias is not { } alias)
+            if (item.Fact.Alias is not { } alias || IsExternAliasUse(item))
             {
                 continue;
             }
@@ -2276,8 +2291,10 @@ public static class StaticFieldV2ScopedContextBinder
         var projections = new List<StaticFieldV2ScopedImportProjection>(pending.Count);
         foreach (var item in pending)
         {
-            var shadowed = item.Fact.Alias is { } alias &&
-                innermostAliasLevel[alias] > item.ScopeLevelIndex;
+            var shadowed = !IsExternAliasUse(item) &&
+                item.Fact.Alias is { } alias &&
+                innermostAliasLevel.TryGetValue(alias, out var innermostLevel) &&
+                innermostLevel > item.ScopeLevelIndex;
             projections.Add(StaticFieldV2ScopedContextOutcome.IssueImport(
                 item.Fact,
                 item.ScopeLevelIndex,
@@ -2922,6 +2939,14 @@ public static class StaticFieldV2ScopedContextBinder
                     count);
                 return;
             case StaticFieldV2ScopedImportKind.ExternAlias:
+                // A use states that the alias is in scope, never what it targets; the level that declares the target
+                // answers the spelling, so this level records why it contributed nothing and the walk continues.
+                if (alias.TargetDisposition ==
+                    StaticFieldV2ScopedImportTargetDisposition.ExternAliasUseWithoutTarget)
+                {
+                    collector.Reject(StaticFieldV2ContextualRejectionReason.ExternAliasUseDeclaresNoTarget);
+                    return;
+                }
                 if (!allowExternAlias ||
                     alias.TargetDisposition !=
                         StaticFieldV2ScopedImportTargetDisposition.AssemblyReferenceResolved)
@@ -3219,6 +3244,13 @@ public static class StaticFieldV2ScopedContextBinder
         return groups.MoveToImmutable();
     }
 
+    /// <summary>Tests whether one projected import is an extern-alias use rather than a declaration.</summary>
+    /// <param name="item">The projected import.</param>
+    /// <returns><see langword="true"/> for an extern-alias row that names no AssemblyRef at all.</returns>
+    private static bool IsExternAliasUse(PendingImport item) =>
+        item.Kind == StaticFieldV2ScopedImportKind.ExternAlias &&
+        item.Fact.AssemblyReferenceToken is null;
+
     private static PendingImport ProjectImport(
         DumpPortablePdbImportFact fact,
         int scopeLevelIndex,
@@ -3274,8 +3306,12 @@ public static class StaticFieldV2ScopedContextBinder
                 resolution);
         }
 
+        // An extern-alias import that names no AssemblyRef at all is not a failed declaration: it is the physical form
+        // of the `extern alias X;` directive, which brings an alias into scope without saying what it targets. The
+        // declaration that does name the AssemblyRef is a separate import in an enclosing scope, so this row is exact
+        // evidence of a use and never hides that declaration.
         var disposition = kind == StaticFieldV2ScopedImportKind.ExternAlias
-            ? StaticFieldV2ScopedImportTargetDisposition.AssemblyReferenceRowAbsent
+            ? StaticFieldV2ScopedImportTargetDisposition.ExternAliasUseWithoutTarget
             : StaticFieldV2ScopedImportTargetDisposition.NotApplicable;
         return new PendingImport(fact, scopeLevelIndex, kind, disposition, null, null, null, null, null);
     }

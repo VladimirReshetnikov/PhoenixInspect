@@ -1185,17 +1185,6 @@ public static class StaticFieldV2ClosedConstructionBinder
 
     private static MetadataClosedTypeIdentity? BindNamed(BindContext context, StaticFieldV2TypeSyntax syntax)
     {
-        if (syntax.AliasQualifier is { Kind: StaticFieldV2AliasKind.Named })
-        {
-            context.Stop(
-                StaticFieldV2ClosedConstructionResultKind.Unsupported,
-                StaticFieldV2ClosedConstructionIssue.TypeArgumentAliasUnsupported,
-                null,
-                0,
-                null);
-            return null;
-        }
-
         var nameSegments = syntax.NameSegments;
         if (!TryResolveArgumentName(context, syntax, nameSegments, out var module, out var chain, out var namespaceCount))
         {
@@ -1417,6 +1406,21 @@ public static class StaticFieldV2ClosedConstructionBinder
         if (context.ScopedContext is not { } scopedContext ||
             syntax.AliasQualifier is { Kind: StaticFieldV2AliasKind.Global })
         {
+            // An alias qualifier the metadata-global route cannot interpret must never be dropped: resolving
+            // `alias::Name` as though it were `global::Name` would answer with a different assembly's declaration.
+            if (syntax.AliasQualifier is { Kind: StaticFieldV2AliasKind.Named })
+            {
+                module = null!;
+                chain = null!;
+                namespaceSegmentCount = 0;
+                context.Stop(
+                    StaticFieldV2ClosedConstructionResultKind.Unsupported,
+                    StaticFieldV2ClosedConstructionIssue.TypeArgumentAliasUnsupported,
+                    null,
+                    0,
+                    null);
+                return false;
+            }
             return TryResolveNamedArgument(context, nameSegments, out module, out chain, out namespaceSegmentCount);
         }
 

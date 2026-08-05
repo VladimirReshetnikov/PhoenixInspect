@@ -317,6 +317,75 @@ public sealed class W8V2ScopedContextBindingTests
     }
 
     /// <summary>
+    /// Proves an inner <c>extern alias</c> use does not hide the enclosing declaration that names its AssemblyRef,
+    /// which is the exact pair a compiler emits: the declaration in the module-level scope and the use in the file's.
+    /// </summary>
+    /// <remarks>
+    /// The two rows carry the same alias name, so the ordinary innermost-declaration rule would treat the inner one
+    /// as a redefinition and hide the only row that says what the alias targets. A use declares nothing: it states
+    /// that an alias declared elsewhere is in scope. Both rows therefore stay active and unshadowed, the level that
+    /// holds the use records why it contributed no candidate, and the level that declares the target answers.
+    /// </remarks>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Extern_alias_use_does_not_hide_the_declaration_that_names_its_assembly_reference()
+    {
+        var context = Context(Chain(
+            [ExternAliasImport("lib", LibAssemblyReferenceToken)],
+            [ExternAliasUseImport("lib")]));
+
+        var declaration = Assert.Single(context.ScopeLevels[0].Imports);
+        var use = Assert.Single(context.ScopeLevels[1].Imports);
+        Assert.Equal(
+            StaticFieldV2ScopedImportTargetDisposition.AssemblyReferenceResolved,
+            declaration.TargetDisposition);
+        Assert.Equal(
+            StaticFieldV2ScopedImportTargetDisposition.ExternAliasUseWithoutTarget,
+            use.TargetDisposition);
+        Assert.Null(use.AssemblyReferenceRow);
+        Assert.Null(use.Fact.AssemblyReferenceToken);
+
+        // Neither row hides the other, both are exact evidence, and no shadowing row is recorded at all.
+        Assert.False(declaration.IsShadowed);
+        Assert.False(use.IsShadowed);
+        Assert.True(declaration.IsTargetExact);
+        Assert.True(use.IsTargetExact);
+        Assert.Empty(context.AliasShadowings);
+        Assert.True(context.IsExhaustive);
+        Assert.Equal([declaration, use], context.ActiveAliasProjections("lib").ToArray());
+
+        var outcome = StaticFieldV2ScopedContextBinder.BindContextualRoute(
+            Parse("lib::Shared.Widget.Field"),
+            context);
+        Assert.Equal(StaticFieldV2ContextualBindingResultKind.Exact, outcome.ResultKind);
+        var selected = Assert.IsType<StaticFieldV2ContextualCandidateGroup>(outcome.SelectedCandidate);
+        Assert.Equal(LibSharedWidgetToken, selected.FinalTypeDefinitionToken);
+        Assert.Equal(
+            StaticFieldV2ContextualCandidateSource.ExternAlias,
+            selected.Candidates[0].Source);
+        Assert.Equal(declaration, selected.Candidates[0].ContributingImport);
+
+        // A named alias qualifier examines every active projection of that alias in one level record. The record
+        // therefore shows both halves of the pair: the use rejected for declaring no target, and the declaration
+        // accepted, which is the evidence that the two rows were consulted together rather than one hiding the other.
+        var partition = outcome.PartitionResults.First(
+            static result => result.ResultKind == StaticFieldV2ContextualBindingResultKind.Exact);
+        var level = Assert.Single(partition.Levels);
+        Assert.Equal(StaticFieldV2ContextualLevelDisposition.Selected, level.Disposition);
+        Assert.Equal(
+            StaticFieldV2ContextualRejectionReason.ExternAliasUseDeclaresNoTarget,
+            level.FirstRejectionReason);
+
+        // Without the enclosing declaration the same use answers nothing, which is what makes it the decisive row.
+        var alone = Context(Chain([], [ExternAliasUseImport("lib")]));
+        var unreachable = StaticFieldV2ScopedContextBinder.BindContextualRoute(
+            Parse("lib::Shared.Widget.Field"),
+            alone);
+        Assert.Equal(StaticFieldV2ContextualBindingResultKind.Absent, unreachable.ResultKind);
+        Assert.Null(unreachable.SelectedCandidate);
+    }
+
+    /// <summary>
     /// Proves a retained <c>using static</c> import projects its exact owner without contributing any contextual
     /// candidate, and that every declared coverage boundary of this slice is emitted in ascending order.
     /// </summary>
@@ -852,6 +921,14 @@ public sealed class W8V2ScopedContextBindingTests
             alias,
             Payload(ordinal),
             assemblyReferenceToken);
+
+    private static ImportSpec ExternAliasUseImport(string alias) =>
+        (scopeToken, ordinal) => DumpPortablePdbImportFact.ExternAlias(
+            scopeToken,
+            ordinal,
+            5,
+            alias,
+            Payload(ordinal));
 
     private static ImportSpec UsingStaticImport(string target, int targetTypeToken) =>
         (scopeToken, ordinal) => DumpPortablePdbImportFact.UsingStatic(
