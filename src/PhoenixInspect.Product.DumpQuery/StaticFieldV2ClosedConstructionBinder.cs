@@ -715,9 +715,7 @@ public static class StaticFieldV2ClosedConstructionBinder
         // An owner module declared with applied edit generations refuses before any construction: every base-image
         // fact the later steps would consume is potentially stale, and the E1 disposition proves no composed
         // surface can distinguish the stale parts, so the only honest answer is this prefix-free typed stop.
-        if (!moduleEditDeclarations.IsDefault &&
-            moduleEditDeclarations.Any(declaration =>
-                declaration.EditState.HasAppliedEdits && declaration.MetadataModule.Equals(ownerModule)))
+        if (IsDeclaredEdited(moduleEditDeclarations, ownerModule))
         {
             return context.Stopped(
                 StaticFieldV2ClosedConstructionResultKind.NonExact,
@@ -912,6 +910,9 @@ public static class StaticFieldV2ClosedConstructionBinder
     /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
     /// <param name="constraintPortfolio">The constraint-target resolution portfolio prerequisite.</param>
     /// <param name="interfaceImplementationPortfolio">The optional interface-implementation portfolio.</param>
+    /// <param name="moduleEditDeclarations">
+    /// Optional caller-declared per-module edit states; a declared edited owner module refuses with its typed stop.
+    /// </param>
     /// <returns>A sealed immutable outcome carrying the imported construction, or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException">A required argument is null.</exception>
     /// <exception cref="ArgumentException">The import carries no decoded closed construction.</exception>
@@ -919,7 +920,8 @@ public static class StaticFieldV2ClosedConstructionBinder
         StaticFieldV2ScopedImportProjection importedOwner,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
-        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null)
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null,
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations = default)
     {
         ArgumentNullException.ThrowIfNull(importedOwner);
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
@@ -945,6 +947,14 @@ public static class StaticFieldV2ClosedConstructionBinder
             return context.Stopped(
                 StaticFieldV2ClosedConstructionResultKind.Invalid,
                 StaticFieldV2ClosedConstructionIssue.OwnerModuleNotInPortfolio,
+                ownerToken);
+        }
+
+        if (IsDeclaredEdited(moduleEditDeclarations, ownerModule))
+        {
+            return context.Stopped(
+                StaticFieldV2ClosedConstructionResultKind.NonExact,
+                StaticFieldV2ClosedConstructionIssue.OwnerModuleEditedGenerationsNotComposed,
                 ownerToken);
         }
 
@@ -1075,6 +1085,9 @@ public static class StaticFieldV2ClosedConstructionBinder
     /// <param name="ancestryPortfolio">The ancestry authority portfolio prerequisite.</param>
     /// <param name="constraintPortfolio">The constraint-target resolution portfolio prerequisite.</param>
     /// <param name="interfaceImplementationPortfolio">The optional interface-implementation portfolio.</param>
+    /// <param name="moduleEditDeclarations">
+    /// Optional caller-declared per-module edit states; a declared edited owner module refuses with its typed stop.
+    /// </param>
     /// <returns>A sealed immutable outcome carrying the contextual construction, or one prefix-free typed stop.</returns>
     /// <exception cref="ArgumentNullException">A required argument is null.</exception>
     /// <exception cref="ArgumentException">The contextual binding is not exact with one selected candidate.</exception>
@@ -1082,7 +1095,8 @@ public static class StaticFieldV2ClosedConstructionBinder
         StaticFieldV2ContextualBindingOutcome contextualBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
-        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null)
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null,
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations = default)
     {
         ArgumentNullException.ThrowIfNull(contextualBinding);
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
@@ -1107,6 +1121,14 @@ public static class StaticFieldV2ClosedConstructionBinder
             return context.Stopped(
                 StaticFieldV2ClosedConstructionResultKind.Invalid,
                 StaticFieldV2ClosedConstructionIssue.OwnerModuleNotInPortfolio,
+                candidate.FinalTypeDefinitionToken);
+        }
+
+        if (IsDeclaredEdited(moduleEditDeclarations, ownerModule))
+        {
+            return context.Stopped(
+                StaticFieldV2ClosedConstructionResultKind.NonExact,
+                StaticFieldV2ClosedConstructionIssue.OwnerModuleEditedGenerationsNotComposed,
                 candidate.FinalTypeDefinitionToken);
         }
 
@@ -1809,6 +1831,14 @@ public static class StaticFieldV2ClosedConstructionBinder
         }
         return selected;
     }
+
+    /// <summary>Tests whether the owner module is declared with applied edit generations.</summary>
+    private static bool IsDeclaredEdited(
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations,
+        StaticFieldMetadataModuleIdentity ownerModule) =>
+        !moduleEditDeclarations.IsDefault &&
+        moduleEditDeclarations.Any(declaration =>
+            declaration.EditState.HasAppliedEdits && declaration.MetadataModule.Equals(ownerModule));
 
     private static bool IsExactNullableDefinition(
         ImmutableArray<MetadataTypeDefinitionSemanticClassificationIdentity> definitionChain,

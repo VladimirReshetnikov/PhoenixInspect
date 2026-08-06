@@ -64,6 +64,28 @@ public sealed class EncEditRefusalTests
         Assert.NotEqual(absent.Sha256, refused.Sha256);
     }
 
+    /// <summary>The contextual route refuses an edited owner module through the same typed stop.</summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Contextual_route_refuses_an_edited_owner_module()
+    {
+        var world = W8V2ExpressionPipelineTests.BuildWorld();
+        var refused = StaticFieldV2ExpressionPipeline.Evaluate(W8V2ExpressionPipelineTests.Request(
+            world,
+            "GenericSlot<Holder>.Current",
+            scopedContext: W8V2ExpressionPipelineTests.NamespaceImportContext(world, "Pipe.App"),
+            moduleEditDeclarations:
+            [
+                StaticFieldV2ModuleEditDeclaration.Create(world.App, EditState(generationCounter: 2)),
+            ]));
+        Assert.Equal(DumpExpressionTypeBindingOutcome.Exact, refused.Axes.TypeBinding);
+        Assert.Equal(DumpExpressionTypeConstructionOutcome.Partial, refused.Axes.TypeConstruction);
+        Assert.Equal(
+            StaticFieldV2ClosedConstructionIssue.OwnerModuleEditedGenerationsNotComposed,
+            refused.Provenance.OwnerConstruction!.Issue);
+        Assert.Equal(DumpExpressionMemberLookupOutcome.NotReached, refused.Axes.MemberLookup);
+    }
+
     private static StaticFieldV2ModuleEditStateOutcome EditState(ulong generationCounter) =>
         StaticFieldV2ModuleEditStateOutcome.IssueExact(
             runtimeModuleAddress: 0x7000_0000,

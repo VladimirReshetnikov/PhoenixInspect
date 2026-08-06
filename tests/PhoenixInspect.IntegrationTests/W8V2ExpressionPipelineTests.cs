@@ -1308,7 +1308,7 @@ public sealed class W8V2ExpressionPipelineTests
             0x8000,
             arguments);
 
-    private static StaticFieldV2ScopedContextSource NamespaceImportContext(PipelineWorld world, string imported) =>
+    internal static StaticFieldV2ScopedContextSource NamespaceImportContext(PipelineWorld world, string imported) =>
         StaticFieldV2ScopedContextSource.Create(() => ContextRequest(
             world,
             Scopes([DumpPortablePdbImportFact.NamespaceImport(

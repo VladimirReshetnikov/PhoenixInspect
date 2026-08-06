@@ -2285,7 +2285,8 @@ public static class StaticFieldV2ExpressionPipeline
                         contextualBinding,
                         request.AncestryPortfolio,
                         request.ConstraintPortfolio,
-                        request.InterfaceImplementationPortfolio);
+                        request.InterfaceImplementationPortfolio,
+                        request.ModuleEditDeclarationsCore);
                     return ownerConstruction.ResultKind == StaticFieldV2ClosedConstructionResultKind.Exact
                         ? null
                         : ConstructionStop(MapConstruction(ownerConstruction.ResultKind));
@@ -2435,7 +2436,8 @@ public static class StaticFieldV2ExpressionPipeline
                     importedOwner,
                     request.AncestryPortfolio,
                     request.ConstraintPortfolio,
-                    request.InterfaceImplementationPortfolio);
+                    request.InterfaceImplementationPortfolio,
+                    request.ModuleEditDeclarationsCore);
                 return ownerConstruction.ResultKind == StaticFieldV2ClosedConstructionResultKind.Exact
                     ? null
                     : ConstructionStop(MapConstruction(ownerConstruction.ResultKind));

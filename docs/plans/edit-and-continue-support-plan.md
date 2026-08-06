@@ -234,9 +234,10 @@ module edit declarations — the metadata module joined to its acquired edit sta
 tag so requests without them keep their frozen digests — and the explicit route's owner construction refuses with
 the typed `OwnerModuleEditedGenerationsNotComposed` stop before consuming any base-image fact when the bound
 owner's module is declared with applied generations. An unedited declaration and an absent vector both keep the
-previous behavior exactly, which the refusal tests prove arm by arm. The contextual, imported, and bare routes,
-member lookup, and the IL-consuming paths remain to be wired in the following slices, and the lexical-envelope
-refusal remains after those.
+previous behavior exactly, which the refusal tests prove arm by arm. The third slice extended the same refusal to the
+contextual and imported owner-construction routes through one shared predicate at each route's own owner-module
+seam, with the contextual arm proved over the synthetic scoped-context world. Member lookup over edited base
+modules, the IL-consuming paths, and the lexical-envelope refusal remain for the following slices.
 
 ### E3 — delta metadata acquisition
 
