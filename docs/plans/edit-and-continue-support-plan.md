@@ -244,7 +244,13 @@ counterfactual, and finding rather than asserted. The fifth slice wired member l
 refuses a declared edited module with its own typed stop before the level's rows are read — the defense-in-depth
 guard below the construction refusal, covering the cross-module case where a base level lives in a different,
 edited module — with the guard proved by direct contract test and its cross-module positive arm recorded for the
-edited corpus stride. The IL-consuming paths and the lexical-envelope refusal remain for the following slices.
+edited corpus stride. The sixth slice wired the lexical envelope: a selected module declared with applied edits makes the
+envelope's scope facts untrustworthy, so the dotted-head certification treats it exactly like an unavailable
+envelope — the qualified reading proceeds under its own refusals — and the bare route's completeness refuses with
+the same partial stop an absent envelope produces, with the corpus bare rows over real dumps proving the negative
+arm and the positive arm recorded for the edited corpus stride. The IL-consuming paths remain, and they are host-
+and execution-side consumers outside this pipeline: their refusal belongs to the session and resolver seams the
+E5 stride owns, so E2's pipeline-side refusal coverage is complete with this slice.
 
 ### E3 — delta metadata acquisition
 

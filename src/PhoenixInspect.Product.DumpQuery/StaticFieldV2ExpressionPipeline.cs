@@ -2168,6 +2168,15 @@ public static class StaticFieldV2ExpressionPipeline
                 return;
             }
 
+            // A selected module declared with applied edits makes the envelope's scope facts untrustworthy — the
+            // base Portable PDB describes pre-edit source — so the head certification treats the envelope exactly
+            // like an unavailable one: the qualified reading proceeds, and its own construction and member
+            // refusals govern whatever it binds.
+            if (IsModuleDeclaredEdited(context.Request.SelectedModule))
+            {
+                return;
+            }
+
             lexicalEnvelopeCalls++;
             var envelope = source.AcquireLexicalEnvelope();
             if (envelope is null)
@@ -2362,11 +2371,25 @@ public static class StaticFieldV2ExpressionPipeline
         private StaticFieldV2ClosedConstructionOutcome? StorageConstruction() =>
             declaringConstruction ?? ownerConstruction;
 
+        /// <summary>Tests whether the module is declared with applied edit generations.</summary>
+        private bool IsModuleDeclaredEdited(StaticFieldMetadataModuleIdentity module) =>
+            !request.ModuleEditDeclarationsCore.IsDefault &&
+            request.ModuleEditDeclarationsCore.Any(declaration =>
+                declaration.EditState.HasAppliedEdits && declaration.MetadataModule.Equals(module));
+
         private StaticFieldV2ExpressionResult? BindBareRoot()
         {
             var partition = descriptor!.Partitions[0];
             suffix = partition.Suffix;
             if (request.ScopedContext is not { SuppliesLexicalEnvelope: true } source)
+            {
+                return LexicalStop(DumpExpressionLexicalCompletenessOutcome.Partial);
+            }
+
+            // The bare route reads its members and blockers from the selected module's envelope; declared applied
+            // edits make those scope facts untrustworthy, so completeness refuses with the same partial stop an
+            // absent envelope produces rather than certifying from pre-edit source.
+            if (scopedContext is { } acquired && IsModuleDeclaredEdited(acquired.Request.SelectedModule))
             {
                 return LexicalStop(DumpExpressionLexicalCompletenessOutcome.Partial);
             }
