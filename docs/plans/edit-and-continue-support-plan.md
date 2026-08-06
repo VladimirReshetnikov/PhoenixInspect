@@ -187,8 +187,12 @@ grounds sound conservative refusal but not applied-state detection; and an undec
 past the declared dynamic-metadata field reads one plus the applied-generation count, surviving the use control so
 its difference is caused by the edit. The per-module TypeRef, manifest-reference, and MethodDef lookup maps stay
 unallocated on the used comparator yet allocated on the edited module — corroboration consistent with the delta's
-reference-table extension, not detection. The counter's confirmation over a stacked-generation profile, and its
-version fragility as a non-contract offset, are the recorded next measurements.
+reference-table extension, not detection. The ninth slice confirmed the counter over the stacked profile: the fixture applies both chained
+generations and observes the generation-two body before pausing, and the edited module's counter reads exactly
+three — one plus the applied-generation count, now measured across zero, one, and two generations — while the used
+comparator stays at one. The counter is the truth gate's applied-state detector; its remaining caveat is version
+fragility as a non-contract offset, which E2 must carry as a pinned-runtime fact validated per descriptor rather
+than an assumed layout.
 
 ### E2 — edit detection and typed non-admission
 

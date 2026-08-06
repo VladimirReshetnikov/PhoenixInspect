@@ -773,6 +773,81 @@ public sealed class EncPhysicalTruthTests
         }
     }
 
+    /// <summary>
+    /// Confirms the applied-state counter tracks the generation count: over a process with two stacked applied
+    /// generations, the edited module's counter reads three — one plus the applied generations — while the used
+    /// unedited comparator stays at one.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Stacked_generations_advance_the_applied_state_counter()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-count-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-count-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteStackedPayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-stacked", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            using var dataTarget = DataTarget.LoadDump(
+                dumpPath,
+                new DataTargetOptions { FileLocator = ClrmdOfflineFileLocator.Instance });
+            var runtime = dataTarget.ClrVersions.Single().CreateRuntime();
+            try
+            {
+                var edited = Assert.Single(
+                    runtime.EnumerateModules(),
+                    candidate => candidate.Name?.EndsWith(
+                        "PhoenixInspect.EncFixtureBaseline.dll",
+                        StringComparison.OrdinalIgnoreCase) == true);
+                var comparator = Assert.Single(
+                    runtime.EnumerateModules(),
+                    candidate => candidate.Name?.EndsWith(
+                        "PhoenixInspect.EncFixtureUnedited.dll",
+                        StringComparison.OrdinalIgnoreCase) == true);
+
+                var buffer = new byte[sizeof(ulong)];
+                ulong ReadPointerAt(ulong address)
+                {
+                    Assert.Equal(buffer.Length, dataTarget.DataReader.Read(address, buffer));
+                    return BitConverter.ToUInt64(buffer);
+                }
+
+                Assert.Equal(3ul, ReadPointerAt(edited.Address + 752));
+                Assert.Equal(1ul, ReadPointerAt(comparator.Address + 752));
+            }
+            finally
+            {
+                runtime.Dispose();
+            }
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
     /// <summary>One captured memory range of the dump: its virtual start, size, and position in the file.</summary>
     private readonly record struct DumpMemoryRange(ulong StartAddress, ulong Size, ulong FileOffset);
 

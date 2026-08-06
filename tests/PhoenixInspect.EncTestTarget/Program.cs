@@ -73,13 +73,16 @@ public static class EncGate
     /// <summary>The value the added-static profile stores through the edit-added accessor.</summary>
     public const int AddedStaticValue = 0x45_6E_C0_03;
 
+    /// <summary>The value the generation-two sentinel method returns after both deltas are applied.</summary>
+    public const int StackedSentinel = 0x45_6E_C0_04;
+
     /// <summary>The simple file name of the payload baseline assembly.</summary>
     public const string BaselineAssemblyFileName = "PhoenixInspect.EncFixtureBaseline.dll";
 
     private static Assembly? retainedBaselineAssembly;
     private static Assembly? retainedComparatorAssembly;
 
-    /// <summary>Reads and applies the generation-one delta triple inside its own frame.</summary>
+    /// <summary>Reads and applies one generation's delta triple inside its own frame.</summary>
     /// <remarks>
     /// The payload arrays are locals of this frame alone, so they become unreachable when it returns and the
     /// pause-time collection removes this process's own copies; a delta copy that still survives into the dump is
@@ -87,13 +90,14 @@ public static class EncGate
     /// </remarks>
     /// <param name="assembly">The loaded payload baseline assembly.</param>
     /// <param name="payloadDirectory">The directory holding the delta blobs.</param>
+    /// <param name="generation">The one-based generation number of the delta triple.</param>
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ApplyGenerationOne(Assembly assembly, string payloadDirectory) =>
+    private static void ApplyGeneration(Assembly assembly, string payloadDirectory, int generation) =>
         MetadataUpdater.ApplyUpdate(
             assembly,
-            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.metadata-delta")),
-            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.il-delta")),
-            File.ReadAllBytes(Path.Combine(payloadDirectory, "generation-1.pdb-delta")));
+            File.ReadAllBytes(Path.Combine(payloadDirectory, $"generation-{generation}.metadata-delta")),
+            File.ReadAllBytes(Path.Combine(payloadDirectory, $"generation-{generation}.il-delta")),
+            File.ReadAllBytes(Path.Combine(payloadDirectory, $"generation-{generation}.pdb-delta")));
 
     /// <summary>Loads the payload baseline, applies generation one, verifies the edit, and pauses.</summary>
     /// <param name="profile">The predeclared truth-gate profile.</param>
@@ -137,7 +141,7 @@ public static class EncGate
             return 94;
         }
 
-        ApplyGenerationOne(assembly, payloadDirectory);
+        ApplyGeneration(assembly, payloadDirectory, 1);
 
         switch (profile)
         {
@@ -177,6 +181,22 @@ public static class EncGate
                 }
 
                 return EncPause.WaitForDump(profile, AddedStaticValue);
+            }
+
+            case "enc-stacked":
+            {
+                // The second generation is applied on top of the first, and readiness proves the runtime
+                // observably executes the generation-two body.
+                ApplyGeneration(assembly, payloadDirectory, 2);
+                var stacked = (int)sentinel.Invoke(null, null)!;
+                if (stacked != StackedSentinel)
+                {
+                    Console.WriteLine("ENC_STACKED_NOT_OBSERVED");
+                    Console.Out.Flush();
+                    return 99;
+                }
+
+                return EncPause.WaitForDump(profile, stacked);
             }
 
             default:
