@@ -128,7 +128,10 @@ Independent SRM, ClrMD, and counted raw-memory probes then decide, with retained
 - The filtered-dump profile proves the intended `Unavailable` evidence shape.
 - No product contract changes in this stride.
 
-**Status:** E1 is active; the owner opened the entry gate. Its first slice is landed and measured over the
+**Status:** E1 is complete against its exit gate. Every probe question has a retained observation or a typed
+evidence gap frozen in the [E1 Physical-Truth Disposition](enc-e1-physical-truth-disposition.md), which is the
+citable record; the slice narrative below is the working history that produced it, and E2 is the next stride. Its
+first slice was landed and measured over the
 changed-body profile in `EncPhysicalTruthTests`: probe 1 holds — the edited process's mapped base metadata is
 byte-identical to the unedited on-disk baseline; the base-image half of probe 3 holds — the mapped Module row still
 names generation zero with empty edit identifiers and zero `EncLog`/`EncMap` rows after a verified, executed edit,
