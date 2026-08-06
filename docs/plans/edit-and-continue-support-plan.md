@@ -236,8 +236,12 @@ the typed `OwnerModuleEditedGenerationsNotComposed` stop before consuming any ba
 owner's module is declared with applied generations. An unedited declaration and an absent vector both keep the
 previous behavior exactly, which the refusal tests prove arm by arm. The third slice extended the same refusal to the
 contextual and imported owner-construction routes through one shared predicate at each route's own owner-module
-seam, with the contextual arm proved over the synthetic scoped-context world. Member lookup over edited base
-modules, the IL-consuming paths, and the lexical-envelope refusal remain for the following slices.
+seam, with the contextual arm proved over the synthetic scoped-context world. The fourth slice realized the
+host-side join in the corpus runner: at world composition it acquires each composed module's edit state physically
+through the session and declares the joined vector on every evaluation, and the entire meaningful-synthetic lane
+stays green over real dumps — the zero-generation obligation demonstrated across every executed incident,
+counterfactual, and finding rather than asserted. Member lookup over edited base modules, the IL-consuming paths,
+and the lexical-envelope refusal remain for the following slices.
 
 ### E3 — delta metadata acquisition
 

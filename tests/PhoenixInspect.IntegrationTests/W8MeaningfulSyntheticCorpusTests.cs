@@ -1558,6 +1558,13 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     internal StaticFieldV2CoreIdentityCollapse? CoreIdentityCollapse { get; private set; }
 
     /// <summary>
+    /// Gets the per-module edit declarations this world acquired physically at composition, exactly as a host must:
+    /// each composed module's runtime edit state joined to its metadata identity, so every evaluation refuses a
+    /// module with applied edit generations instead of answering from its stale base-image authority.
+    /// </summary>
+    internal ImmutableArray<StaticFieldV2ModuleEditDeclaration> EditDeclarations { get; private set; }
+
+    /// <summary>
     /// Builds a caller-declared reference-target construction for one of the primary module's top-level non-generic
     /// classes, from the same composed classification chain the pipeline itself consumes.
     /// </summary>
@@ -1680,6 +1687,20 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                             corelibModuleAddress,
                             core.Module);
                     }
+
+                    // Each composed module's edit state is acquired physically and declared on every evaluation,
+                    // exactly as a host must. The corpus shape targets are never edited, so every declaration here
+                    // proves zero applied generations and no evaluation behavior changes; the declaration is the
+                    // host obligation, not a fixture assumption.
+                    world.EditDeclarations =
+                    [
+                        .. world.modules.Select(module =>
+                        {
+                            var editState = session.AcquireModuleEditState(module.Binding.RuntimeModuleAddress);
+                            Assert.Equal(StaticFieldV2ModuleEditStateResultKind.Exact, editState.ResultKind);
+                            return StaticFieldV2ModuleEditDeclaration.Create(module.MetadataModule, editState);
+                        }),
+                    ];
 
                     return world;
                 }
@@ -2161,7 +2182,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             propertyCatalogs: PropertyCatalogs,
             referenceTargetType: referenceTargetType,
             capabilityProbes: probes,
-            signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
+            signatureTokenResolutionCatalogs: TokenResolutionCatalogs,
+            moduleEditDeclarations: EditDeclarations));
         return new W8CorpusEvaluation(result, acquiredSlotAddress);
     }
 
@@ -2177,7 +2199,8 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
             constantCatalogs: ConstantCatalogs,
             propertyCatalogs: PropertyCatalogs,
             capabilityProbes: probes,
-            signatureTokenResolutionCatalogs: TokenResolutionCatalogs));
+            signatureTokenResolutionCatalogs: TokenResolutionCatalogs,
+            moduleEditDeclarations: EditDeclarations));
         return new W8CorpusEvaluation(result, null);
     }
 
