@@ -187,6 +187,12 @@ public enum StaticFieldV2MemberLookupIssue
 
     /// <summary>A Property catalog's definition authority differed from its module's portfolio authority.</summary>
     PropertyCatalogAuthorityMismatch = 43,
+
+    /// <summary>
+    /// A walked ancestry level's module is declared with applied edit generations no composed authority covers, so
+    /// the lookup refuses the level's base-image members rather than selecting from potentially stale rows.
+    /// </summary>
+    BaseModuleEditedGenerationsNotComposed = 44,
 }
 
 /// <summary>Classifies the physical storage shape of one selected static-field declaration.</summary>
@@ -613,10 +619,12 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     private const int CanonicalSchemaVersion = 3;
     private const int TokenResolutionCatalogsFieldTag = 1;
     private const int OwnerClosedConstructionFieldTag = 2;
+    private const int ModuleEditDeclarationsFieldTag = 3;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
     private readonly ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
     private readonly ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenResolutionCatalogs;
+    private readonly ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations;
     private readonly ImmutableArray<byte> canonicalBytes;
 
     private StaticFieldV2MemberLookupRequest(
@@ -631,7 +639,8 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants,
         MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio,
         ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenResolutionCatalogs,
-        MetadataClosedTypeIdentity? ownerClosedConstruction)
+        MetadataClosedTypeIdentity? ownerClosedConstruction,
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations)
     {
         OwnerModule = ownerModule;
         OwnerTypeDefinitionToken = ownerTypeDefinitionToken;
@@ -645,6 +654,7 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         InterfaceImplementationPortfolio = interfaceImplementationPortfolio;
         this.tokenResolutionCatalogs = tokenResolutionCatalogs;
         OwnerClosedConstruction = ownerClosedConstruction;
+        this.moduleEditDeclarations = moduleEditDeclarations;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         writer.WriteSha256(ownerModule.Sha256, nameof(ownerModule));
@@ -691,6 +701,15 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         {
             writer.WriteInt32(OwnerClosedConstructionFieldTag);
             writer.WriteSha256(ownerClosedConstruction.Sha256, nameof(ownerClosedConstruction));
+        }
+        if (!moduleEditDeclarations.IsDefault)
+        {
+            writer.WriteInt32(ModuleEditDeclarationsFieldTag);
+            writer.WriteInt32(moduleEditDeclarations.Length);
+            foreach (var declaration in moduleEditDeclarations)
+            {
+                writer.WriteSha256(declaration.Sha256, nameof(moduleEditDeclarations));
+            }
         }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
@@ -751,6 +770,14 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// </remarks>
     public MetadataClosedTypeIdentity? OwnerClosedConstruction { get; }
 
+    /// <summary>Gets a defensive copy of the caller-declared module edit states, or default when none were supplied.</summary>
+    public ImmutableArray<StaticFieldV2ModuleEditDeclaration> ModuleEditDeclarations =>
+        moduleEditDeclarations.IsDefault
+            ? default
+            : ExpressionV2ContractEncoding.Copy(moduleEditDeclarations);
+
+    internal ImmutableArray<StaticFieldV2ModuleEditDeclaration> ModuleEditDeclarationsCore => moduleEditDeclarations;
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -792,6 +819,10 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
     /// The optional exact closed construction of the requested owner, supplying the ordered closed arguments
     /// that bind owner variables inside the owner's own generic base TypeSpec.
     /// </param>
+    /// <param name="moduleEditDeclarations">
+    /// Optional caller-declared per-module edit states; a walked ancestry level in a declared edited module
+    /// refuses with its typed stop before its rows are read.
+    /// </param>
     /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The owner token is not a TypeDef token or the mode is undefined.</exception>
@@ -808,7 +839,8 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
         ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants = default,
         MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null,
         ImmutableArray<MetadataSignatureTokenResolutionCatalog> tokenResolutionCatalogs = default,
-        MetadataClosedTypeIdentity? ownerClosedConstruction = null)
+        MetadataClosedTypeIdentity? ownerClosedConstruction = null,
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations = default)
     {
         ArgumentNullException.ThrowIfNull(ownerModule);
         ArgumentNullException.ThrowIfNull(fieldName);
@@ -862,7 +894,10 @@ public sealed class StaticFieldV2MemberLookupRequest : IEquatable<StaticFieldV2M
             grants,
             interfaceImplementationPortfolio,
             resolutionCatalogs,
-            ownerClosedConstruction);
+            ownerClosedConstruction,
+            moduleEditDeclarations.IsDefault
+                ? default
+                : ExpressionV2ContractEncoding.Copy(moduleEditDeclarations));
     }
 
     /// <summary>Tests canonical equality between two member-lookup requests.</summary>
@@ -1365,6 +1400,24 @@ public static class StaticFieldV2MemberLookup
         for (var levelIndex = 0; levelIndex < walkLevels.Count; levelIndex++)
         {
             var walkModule = walkLevels[levelIndex].SourceModule;
+
+            // A walked level in a module declared with applied edit generations refuses before its rows are read:
+            // the owner module was already refused at construction, so this guards the cross-module ancestry case
+            // where a base level lives in a different, edited module.
+            if (!request.ModuleEditDeclarationsCore.IsDefault &&
+                request.ModuleEditDeclarationsCore.Any(declaration =>
+                    declaration.EditState.HasAppliedEdits && declaration.MetadataModule.Equals(walkModule)))
+            {
+                return Stop(
+                    request,
+                    StaticFieldV2MemberLookupResultKind.NonExact,
+                    StaticFieldV2MemberLookupIssue.BaseModuleEditedGenerationsNotComposed,
+                    boundaries,
+                    null,
+                    observedCount,
+                    walkLevels[levelIndex].DeclaringTypeDefinition.TypeDefinitionToken);
+            }
+
             var walkType = walkLevels[levelIndex].DeclaringTypeDefinition;
             var walkConstruction = walkLevels[levelIndex].DeclaringConstruction;
             var catalog = catalogsByModule[walkModule];

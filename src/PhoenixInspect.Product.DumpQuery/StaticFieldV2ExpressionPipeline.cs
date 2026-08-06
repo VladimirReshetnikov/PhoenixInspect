@@ -2326,7 +2326,8 @@ public static class StaticFieldV2ExpressionPipeline
                 !request.SignatureTokenResolutionCatalogsCore.IsDefault &&
                 ownerConstruction is { ResultKind: StaticFieldV2ClosedConstructionResultKind.Exact } bound
                     ? bound.OwnerConstruction
-                    : null));
+                    : null,
+                request.ModuleEditDeclarationsCore));
             return memberLookup.ResultKind == StaticFieldV2MemberLookupResultKind.Exact
                 ? null
                 : MemberStop(MapMemberLookup(memberLookup.ResultKind));

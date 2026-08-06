@@ -240,8 +240,11 @@ seam, with the contextual arm proved over the synthetic scoped-context world. Th
 host-side join in the corpus runner: at world composition it acquires each composed module's edit state physically
 through the session and declares the joined vector on every evaluation, and the entire meaningful-synthetic lane
 stays green over real dumps — the zero-generation obligation demonstrated across every executed incident,
-counterfactual, and finding rather than asserted. Member lookup over edited base modules, the IL-consuming paths,
-and the lexical-envelope refusal remain for the following slices.
+counterfactual, and finding rather than asserted. The fifth slice wired member lookup: every walked ancestry level
+refuses a declared edited module with its own typed stop before the level's rows are read — the defense-in-depth
+guard below the construction refusal, covering the cross-module case where a base level lives in a different,
+edited module — with the guard proved by direct contract test and its cross-module positive arm recorded for the
+edited corpus stride. The IL-consuming paths and the lexical-envelope refusal remain for the following slices.
 
 ### E3 — delta metadata acquisition
 

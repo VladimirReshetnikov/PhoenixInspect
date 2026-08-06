@@ -86,6 +86,34 @@ public sealed class EncEditRefusalTests
         Assert.Equal(DumpExpressionMemberLookupOutcome.NotReached, refused.Axes.MemberLookup);
     }
 
+    /// <summary>
+    /// Member lookup refuses a walked level in a declared edited module through its own typed stop — the
+    /// defense-in-depth guard below the construction-stage refusal, whose cross-module positive arm only an
+    /// edited multi-module corpus can exercise end to end.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Member_lookup_refuses_a_walked_level_in_an_edited_module()
+    {
+        var world = W8V2ExpressionPipelineTests.BuildWorld();
+        var lookup = StaticFieldV2MemberLookup.SelectStaticField(StaticFieldV2MemberLookupRequest.Create(
+            world.App,
+            world.HostType.TypeDefinitionToken,
+            DumpExpressionIdentifier.Create("Text"),
+            world.Ancestry,
+            world.FieldCatalogs,
+            world.PropertyCatalogs,
+            StaticFieldV2AccessibilityMode.QualifiedInspectionBypass,
+            moduleEditDeclarations:
+            [
+                StaticFieldV2ModuleEditDeclaration.Create(world.App, EditState(generationCounter: 2)),
+            ]));
+        Assert.Equal(StaticFieldV2MemberLookupResultKind.NonExact, lookup.ResultKind);
+        Assert.Equal(
+            StaticFieldV2MemberLookupIssue.BaseModuleEditedGenerationsNotComposed,
+            lookup.Issue);
+    }
+
     private static StaticFieldV2ModuleEditStateOutcome EditState(ulong generationCounter) =>
         StaticFieldV2ModuleEditStateOutcome.IssueExact(
             runtimeModuleAddress: 0x7000_0000,
