@@ -250,7 +250,13 @@ envelope — the qualified reading proceeds under its own refusals — and the b
 the same partial stop an absent envelope produces, with the corpus bare rows over real dumps proving the negative
 arm and the positive arm recorded for the edited corpus stride. The IL-consuming paths remain, and they are host-
 and execution-side consumers outside this pipeline: their refusal belongs to the session and resolver seams the
-E5 stride owns, so E2's pipeline-side refusal coverage is complete with this slice.
+E5 stride owns, so E2's pipeline-side refusal coverage is complete with this slice. The seventh slice proved the chain end to
+end over a really edited process: the corpus world composer gained metadata-module-name selection so its unchanged
+composition, physical edit-state acquisition, and declaration steps run over the edited fixture dump, and a fully
+qualified spelling whose owner lives in the edited module refuses at construction with the typed stop — while the
+identical spelling over the enabled-but-unedited comparator stops at a measured fixture-reference classification
+gap rather than the edit refusal, proving the declared edit states alone decide it. The silent-staleness hazard is
+closed end to end for the pipeline's binding surface.
 
 ### E3 — delta metadata acquisition
 

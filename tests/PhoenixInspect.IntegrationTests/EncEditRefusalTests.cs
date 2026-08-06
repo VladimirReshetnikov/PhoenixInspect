@@ -114,6 +114,88 @@ public sealed class EncEditRefusalTests
             lookup.Issue);
     }
 
+    /// <summary>
+    /// Closes the silent-staleness hazard end to end over a really edited process: a fully qualified spelling
+    /// whose owner lives in the edited module refuses at construction through the complete acquired chain —
+    /// composition, physical edit-state acquisition, declaration, and typed stop — while the identical spelling
+    /// over the edit-enabled-but-unedited comparator module proceeds past construction into member lookup.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Edited_process_evaluation_refuses_end_to_end_over_the_real_dump()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-e2e-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-e2e-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteSmokePayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-smoke", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            const string expression = "global::PhoenixInspect.EncFixtureBaseline.Probe.Sentinel";
+            using (var edited = W8CorpusEvaluationWorld.Open(
+                dumpPath,
+                "Request",
+                metadataModuleNames: ["PhoenixInspect.EncFixtureBaseline.dll"]))
+            {
+                var refused = edited.Evaluate(expression, sizeof(int));
+                Assert.Equal(DumpExpressionTypeBindingOutcome.Exact, refused.Result.Axes.TypeBinding);
+                Assert.Equal(
+                    DumpExpressionTypeConstructionOutcome.Partial,
+                    refused.Result.Axes.TypeConstruction);
+                Assert.Equal(
+                    StaticFieldV2ClosedConstructionIssue.OwnerModuleEditedGenerationsNotComposed,
+                    refused.Result.Provenance.OwnerConstruction!.Issue);
+                Assert.Equal(DumpExpressionMemberLookupOutcome.NotReached, refused.Result.Axes.MemberLookup);
+            }
+
+            // The identical spelling over the edit-enabled-but-unedited comparator does not produce the edit
+            // refusal: through the same composition path it stops at the measured classification gap instead —
+            // the fixture payload compiles against implementation assemblies, so its Object TypeRef targets the
+            // corelib identity rather than the composed core's — which proves the declared edit states, not
+            // composition or enablement, decide the refusal. The unedited proceed-through behavior itself is
+            // proved by the corpus rows over their real dumps.
+            using (var unedited = W8CorpusEvaluationWorld.Open(
+                dumpPath,
+                "Request",
+                metadataModuleNames: ["PhoenixInspect.EncFixtureUnedited.dll"]))
+            {
+                var comparator = unedited.Evaluate(expression, sizeof(int));
+                Assert.Equal(DumpExpressionTypeBindingOutcome.Exact, comparator.Result.Axes.TypeBinding);
+                Assert.Equal(
+                    StaticFieldV2ClosedConstructionIssue.DefinitionClassificationAbsent,
+                    comparator.Result.Provenance.OwnerConstruction!.Issue);
+                Assert.NotEqual(
+                    StaticFieldV2ClosedConstructionIssue.OwnerModuleEditedGenerationsNotComposed,
+                    comparator.Result.Provenance.OwnerConstruction.Issue);
+            }
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
     private static StaticFieldV2ModuleEditStateOutcome EditState(ulong generationCounter) =>
         StaticFieldV2ModuleEditStateOutcome.IssueExact(
             runtimeModuleAddress: 0x7000_0000,

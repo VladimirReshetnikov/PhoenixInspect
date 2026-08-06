@@ -1583,9 +1583,10 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
     internal static W8CorpusEvaluationWorld Open(
         string dumpPath,
         string shape,
-        bool suppliesMalformedTypeSpecCompanion = false)
+        bool suppliesMalformedTypeSpecCompanion = false,
+        ImmutableArray<string> metadataModuleNames = default)
     {
-        var artifacts = ShapeArtifacts(shape);
+        var artifacts = metadataModuleNames.IsDefault ? ShapeArtifacts(shape) : default;
         var session = StaticFieldV2RuntimeAcquisitionSession.Open(dumpPath);
         try
         {
@@ -1597,8 +1598,26 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
                 var produced = ImmutableArray.CreateBuilder<ProducedModule>();
                 try
                 {
+                    // A caller may compose by exact metadata module name instead of shape artifacts — the
+                    // edited-process fixture worlds use this — and every downstream step, including the edit-state
+                    // declarations, runs unchanged over whichever selection produced the modules.
+                    if (!metadataModuleNames.IsDefault)
+                    {
+                        foreach (var metadataModuleName in metadataModuleNames)
+                        {
+                            var named = session.Modules
+                                .Where(candidate => MetadataModuleNameMatches(session, candidate, metadataModuleName))
+                                .OrderBy(static candidate => candidate.ModuleAddress)
+                                .ToArray();
+                            var observation = Assert.Single(named);
+                            produced.Add(ProducedModule.Bind(session, observation));
+                        }
+                    }
+
                     var isPrimary = true;
-                    foreach (var (artifactPath, required) in artifacts)
+                    foreach (var (artifactPath, required) in metadataModuleNames.IsDefault
+                        ? artifacts
+                        : ImmutableArray<(string, bool)>.Empty)
                     {
                         var artifact = ReadArtifactContent(W8ShapeTargetPaths.RequireArtifact(artifactPath));
                         var observations = session.Modules
@@ -2445,6 +2464,26 @@ internal sealed class W8CorpusEvaluationWorld : IDisposable
         var buffer = new byte[width];
         var read = rawReadTarget.DataReader.Read(address, buffer);
         return read == width ? [.. buffer] : ImmutableArray<byte>.Empty;
+    }
+
+    /// <summary>Tests whether one runtime module's own metadata module name matches exactly.</summary>
+    private static bool MetadataModuleNameMatches(
+        StaticFieldV2RuntimeAcquisitionSession session,
+        StaticFieldV2RuntimeModuleObservation observation,
+        string metadataModuleName)
+    {
+        var metadataBytes = session.ReadModuleMetadata(observation.ModuleAddress);
+        if (metadataBytes.IsDefaultOrEmpty)
+        {
+            return false;
+        }
+
+        using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+        var reader = provider.GetMetadataReader();
+        return string.Equals(
+            reader.GetString(reader.GetModuleDefinition().Name),
+            metadataModuleName,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Finds the snapshot's corelib module by its own physical metadata module name.</summary>
