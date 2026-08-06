@@ -121,6 +121,12 @@ public enum StaticFieldV2ClosedConstructionIssue
     /// contributed, so the two descriptions of one owner cannot both be exact.
     /// </summary>
     AliasTargetConstructionChainMismatch = 28,
+
+    /// <summary>
+    /// The bound owner's module is declared with applied edit generations that no composed authority covers, so
+    /// every base-image fact about it is potentially stale and the construction refuses rather than answers.
+    /// </summary>
+    OwnerModuleEditedGenerationsNotComposed = 29,
 }
 
 /// <summary>Classifies the disposition of one substituted generic-constraint obligation.</summary>
@@ -576,6 +582,11 @@ public static class StaticFieldV2ClosedConstructionBinder
     /// deferred and unprovable; supplying it decides the obligation from the argument's bounded transitive interface
     /// closure and never reports an incomplete closure as a violation.
     /// </param>
+    /// <param name="moduleEditDeclarations">
+    /// Optional caller-declared per-module edit states. When the bound owner's module is declared with applied edit
+    /// generations, the construction refuses with its typed stop before consuming any base-image fact; omitting the
+    /// vector keeps the previous behavior exactly.
+    /// </param>
     /// <remarks>
     /// Every prerequisite is checked before any construction begins, every declared topology bound is checked
     /// before a construction factory is called so a crossing yields cap-plus-one evidence rather than an exception,
@@ -587,7 +598,8 @@ public static class StaticFieldV2ClosedConstructionBinder
         StaticFieldV2TypeNameBindingOutcome nameBinding,
         MetadataAncestryAuthorityPortfolioIdentity ancestryPortfolio,
         MetadataConstraintTargetResolutionPortfolioIdentity constraintPortfolio,
-        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null)
+        MetadataInterfaceImplementationPortfolioIdentity? interfaceImplementationPortfolio = null,
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations = default)
     {
         ArgumentNullException.ThrowIfNull(nameBinding);
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
@@ -697,6 +709,19 @@ public static class StaticFieldV2ClosedConstructionBinder
             return context.Stopped(
                 StaticFieldV2ClosedConstructionResultKind.Invalid,
                 StaticFieldV2ClosedConstructionIssue.OwnerModuleNotInPortfolio,
+                candidate.FinalTypeDefinitionToken);
+        }
+
+        // An owner module declared with applied edit generations refuses before any construction: every base-image
+        // fact the later steps would consume is potentially stale, and the E1 disposition proves no composed
+        // surface can distinguish the stale parts, so the only honest answer is this prefix-free typed stop.
+        if (!moduleEditDeclarations.IsDefault &&
+            moduleEditDeclarations.Any(declaration =>
+                declaration.EditState.HasAppliedEdits && declaration.MetadataModule.Equals(ownerModule)))
+        {
+            return context.Stopped(
+                StaticFieldV2ClosedConstructionResultKind.NonExact,
+                StaticFieldV2ClosedConstructionIssue.OwnerModuleEditedGenerationsNotComposed,
                 candidate.FinalTypeDefinitionToken);
         }
 

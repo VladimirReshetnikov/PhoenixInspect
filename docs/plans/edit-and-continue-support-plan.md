@@ -229,7 +229,14 @@ the same Debug-configuration module isolated the single enablement bit `0x8` fro
 enablement is now a decoded fact rather than a raw-word comparison. Measured over real dumps: the edited module
 reports enabled with one applied generation, the used comparator enabled with zero, the optimized module
 non-enabled with zero despite its unrelated slot content, and the gate-off Debug module non-enabled with zero at
-its pinned flags word. Consumer refusal wiring is the next slice.
+its pinned flags word. The second slice landed the first refusal wiring: the request carries optional caller-owned
+module edit declarations — the metadata module joined to its acquired edit state, appended behind a distinct field
+tag so requests without them keep their frozen digests — and the explicit route's owner construction refuses with
+the typed `OwnerModuleEditedGenerationsNotComposed` stop before consuming any base-image fact when the bound
+owner's module is declared with applied generations. An unedited declaration and an absent vector both keep the
+previous behavior exactly, which the refusal tests prove arm by arm. The contextual, imported, and bare routes,
+member lookup, and the IL-consuming paths remain to be wired in the following slices, and the lexical-envelope
+refusal remains after those.
 
 ### E3 — delta metadata acquisition
 

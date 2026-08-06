@@ -433,6 +433,75 @@ public sealed class StaticFieldV2ModuleEditStateOutcome : IEquatable<StaticField
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
+/// <summary>Joins one physically acquired edit state to the metadata module the composed authority describes.</summary>
+/// <remarks>
+/// The caller owns the join because only the caller holds both sides: the runtime module address the edit state was
+/// read from and the metadata module identity its composed catalogs carry. A declaration whose edit state proves
+/// applied generations tells every consumer of that module's base-image authority to refuse with its typed
+/// disposition until generation-aware composition exists.
+/// </remarks>
+public sealed class StaticFieldV2ModuleEditDeclaration : IEquatable<StaticFieldV2ModuleEditDeclaration>
+{
+    private const string CanonicalDomain = "static-field-v2-module-edit-declaration";
+    private const int CanonicalSchemaVersion = 1;
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    private StaticFieldV2ModuleEditDeclaration(
+        StaticFieldMetadataModuleIdentity metadataModule,
+        StaticFieldV2ModuleEditStateOutcome editState)
+    {
+        MetadataModule = metadataModule;
+        EditState = editState;
+
+        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
+        writer.WriteSha256(metadataModule.Sha256, nameof(metadataModule));
+        writer.WriteSha256(editState.Sha256, nameof(editState));
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets the metadata module identity the composed authority describes.</summary>
+    public StaticFieldMetadataModuleIdentity MetadataModule { get; }
+
+    /// <summary>Gets the physically acquired edit state of that module's runtime instance.</summary>
+    public StaticFieldV2ModuleEditStateOutcome EditState { get; }
+
+    /// <summary>Gets a defensive copy of the fixed-reference canonical declaration bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
+
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical declaration.</summary>
+    public string Sha256 { get; }
+
+    /// <summary>Creates one caller-owned module edit declaration.</summary>
+    /// <param name="metadataModule">The metadata module identity the composed authority describes.</param>
+    /// <param name="editState">The physically acquired edit state of that module's runtime instance.</param>
+    /// <returns>A sealed immutable declaration.</returns>
+    /// <exception cref="ArgumentNullException">Either argument is null.</exception>
+    public static StaticFieldV2ModuleEditDeclaration Create(
+        StaticFieldMetadataModuleIdentity metadataModule,
+        StaticFieldV2ModuleEditStateOutcome editState)
+    {
+        ArgumentNullException.ThrowIfNull(metadataModule);
+        ArgumentNullException.ThrowIfNull(editState);
+        return new StaticFieldV2ModuleEditDeclaration(metadataModule, editState);
+    }
+
+    /// <summary>Tests canonical equality between two module edit declarations.</summary>
+    /// <param name="other">The other declaration.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
+    public bool Equals(StaticFieldV2ModuleEditDeclaration? other) =>
+        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
+
+    /// <summary>Tests module-edit-declaration equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for a declaration with identical canonical content.</returns>
+    public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ModuleEditDeclaration);
+
+    /// <summary>Computes a deterministic hash code from immutable declaration content.</summary>
+    /// <returns>A hash code for this canonical declaration.</returns>
+    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
+}
+
 /// <summary>Names the frame-value root families one selected-frame request may name.</summary>
 /// <remarks>
 /// The first three families are admitted and can reach an exact memory home. The two generic-argument families exist

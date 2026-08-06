@@ -982,9 +982,11 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     private const string CanonicalDomain = "static-field-v2-expression-pipeline-request";
     private const int CanonicalSchemaVersion = 4;
     private const int SignatureTokenResolutionCatalogsFieldTag = 2;
+    private const int ModuleEditDeclarationsFieldTag = 3;
     private readonly ImmutableArray<MetadataFieldDefinitionTableCatalogIdentity> fieldCatalogs;
     private readonly ImmutableArray<StaticFieldV2FriendAssemblyGrantIdentity> friendAssemblyGrants;
     private readonly ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs;
+    private readonly ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations;
     private readonly ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs;
     private readonly ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs;
     private readonly ImmutableArray<byte> canonicalBytes;
@@ -1007,7 +1009,8 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         MetadataClosedTypeIdentity? referenceTargetType,
         ExpressionV2CapabilityProbeSet? capabilityProbes,
         StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation,
-        ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs)
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs,
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations)
     {
         ExpressionText = expressionText;
         Profile = profile;
@@ -1027,6 +1030,7 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         CapabilityProbes = capabilityProbes;
         FrameRootEvaluation = frameRootEvaluation;
         this.signatureTokenResolutionCatalogs = signatureTokenResolutionCatalogs;
+        this.moduleEditDeclarations = moduleEditDeclarations;
 
         var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
         ExpressionV2ContractEncoding.WriteOptionalString(writer, expressionText);
@@ -1088,6 +1092,18 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             foreach (var catalog in signatureTokenResolutionCatalogs)
             {
                 ExpressionV2ContractEncoding.WriteOptionalDigest(writer, catalog?.Sha256);
+            }
+        }
+
+        // The edit declarations are appended only when supplied, behind their distinct field tag, so every request
+        // created without them keeps its exact previous byte content and its frozen digest unchanged.
+        if (!moduleEditDeclarations.IsDefault)
+        {
+            writer.WriteInt32(ModuleEditDeclarationsFieldTag);
+            writer.WriteInt32(moduleEditDeclarations.Length);
+            foreach (var declaration in moduleEditDeclarations)
+            {
+                writer.WriteSha256(declaration.Sha256, nameof(moduleEditDeclarations));
             }
         }
         canonicalBytes = writer.ToImmutableArray();
@@ -1180,6 +1196,19 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             ? default
             : ExpressionV2ContractEncoding.Copy(signatureTokenResolutionCatalogs);
 
+    /// <summary>Gets a defensive copy of the caller-declared module edit states, or default when none were supplied.</summary>
+    /// <remarks>
+    /// A declaration whose edit state proves applied generations makes every construction over that module refuse
+    /// with its typed disposition, because the E1 disposition proves no composed surface can distinguish the stale
+    /// parts of an edited module's base-image authority. An absent vector keeps the previous behavior exactly.
+    /// </remarks>
+    public ImmutableArray<StaticFieldV2ModuleEditDeclaration> ModuleEditDeclarations =>
+        moduleEditDeclarations.IsDefault
+            ? default
+            : ExpressionV2ContractEncoding.Copy(moduleEditDeclarations);
+
+    internal ImmutableArray<StaticFieldV2ModuleEditDeclaration> ModuleEditDeclarationsCore => moduleEditDeclarations;
+
     /// <summary>Gets a defensive copy of the fixed-reference canonical request bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
 
@@ -1209,6 +1238,11 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
     /// retained generic base TypeSpec and continue through its exact substituted construction; omitting them keeps
     /// the previous incomplete-ancestry behavior at a generic base terminal.
     /// </param>
+    /// <param name="moduleEditDeclarations">
+    /// Optional caller-declared per-module edit states. A declaration proving applied edit generations makes every
+    /// construction over that module refuse with its typed disposition; omitting the vector keeps the previous
+    /// behavior exactly.
+    /// </param>
     /// <returns>A sealed immutable request with defensively copied evidence.</returns>
     /// <exception cref="ArgumentNullException">A required reference argument is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An enum argument is undefined.</exception>
@@ -1232,7 +1266,8 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
         MetadataClosedTypeIdentity? referenceTargetType = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null,
         StaticFieldV2FrameRootEvaluationSource? frameRootEvaluation = null,
-        ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs = default)
+        ImmutableArray<MetadataSignatureTokenResolutionCatalog> signatureTokenResolutionCatalogs = default,
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations = default)
     {
         ArgumentNullException.ThrowIfNull(ancestryPortfolio);
         ArgumentNullException.ThrowIfNull(constraintPortfolio);
@@ -1285,7 +1320,10 @@ public sealed class StaticFieldV2ExpressionRequest : IEquatable<StaticFieldV2Exp
             referenceTargetType,
             capabilityProbes,
             frameRootEvaluation,
-            resolutionCatalogs);
+            resolutionCatalogs,
+            moduleEditDeclarations.IsDefault
+                ? default
+                : ExpressionV2ContractEncoding.Copy(moduleEditDeclarations));
     }
 
     /// <summary>Tests canonical equality between two composed evaluation requests.</summary>
@@ -2224,7 +2262,8 @@ public static class StaticFieldV2ExpressionPipeline
                         explicitNameBinding,
                         request.AncestryPortfolio,
                         request.ConstraintPortfolio,
-                        request.InterfaceImplementationPortfolio);
+                        request.InterfaceImplementationPortfolio,
+                        request.ModuleEditDeclarationsCore);
                     return ownerConstruction.ResultKind == StaticFieldV2ClosedConstructionResultKind.Exact
                         ? null
                         : ConstructionStop(MapConstruction(ownerConstruction.ResultKind));

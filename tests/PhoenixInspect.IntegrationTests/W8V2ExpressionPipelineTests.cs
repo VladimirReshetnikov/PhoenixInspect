@@ -1171,7 +1171,8 @@ public sealed class W8V2ExpressionPipelineTests
         ImmutableArray<MetadataConstantTableCatalogIdentity> constantCatalogs = default,
         MetadataClosedTypeIdentity? referenceTargetType = null,
         ExpressionV2CapabilityProbeSet? capabilityProbes = null,
-        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs = default) =>
+        ImmutableArray<MetadataPropertyTableCatalogIdentity> propertyCatalogs = default,
+        ImmutableArray<StaticFieldV2ModuleEditDeclaration> moduleEditDeclarations = default) =>
         StaticFieldV2ExpressionRequest.Create(
             expressionText,
             profile,
@@ -1188,7 +1189,8 @@ public sealed class W8V2ExpressionPipelineTests
             constantCatalogs,
             propertyCatalogs.IsDefault ? world.PropertyCatalogs : propertyCatalogs,
             referenceTargetType,
-            capabilityProbes);
+            capabilityProbes,
+            moduleEditDeclarations: moduleEditDeclarations);
 
     /// <summary>
     /// Builds one exact Constant catalog per composed module, giving every literal field the requested value.
