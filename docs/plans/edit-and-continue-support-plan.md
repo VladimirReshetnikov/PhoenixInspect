@@ -275,7 +275,15 @@ truncated, foreign, or out-of-order deltas. The module's lineage chain — base,
 - Poisoned inputs (truncated blob, foreign-module delta, gap in the generation chain) produce their typed stops.
 - The filtered dump stops `Unavailable` before any catalog is issued.
 
-**Status:** E3 is active; its first slice landed the acquisition contracts on the artifact-seam arm the E1
+**Status:** E3 is complete against its exit gate on the artifact-seam arm, with the second slice discharging the
+remaining clauses: the pure-Insert generation's retained log is pinned as the complete measured Insert vocabulary —
+reference-table extension, the parent TypeDef paired with the add-field and add-method operations and each added
+member row, and the add-parameter pairing — so every fixture edit kind's rows describe exactly the compiled edits;
+a chain mixing generations from two different edit histories of the same baseline refuses at the pair join; a
+non-exact declared edit state is refused as its own typed stop rather than counted as zero; and the filtered-dump
+clause holds more strongly than written, because a filtered capture drops the contract descriptor's own memory and
+the acquisition session refuses to open at its first physical read, so no edit state or catalog can be issued over
+one at all. The first slice landed the acquisition contracts on the artifact-seam arm the E1
 disposition mandates — the runtime retains no delta blob in a dump, so delta bytes reach acquisition through a
 caller-owned seam exactly as Portable-PDB bytes do, and the contracts add the physical validation the caller
 cannot assert. One generation outcome decodes each supplied blob's Module-row lineage identifiers and complete

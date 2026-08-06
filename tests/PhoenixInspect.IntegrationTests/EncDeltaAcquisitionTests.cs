@@ -97,6 +97,18 @@ public sealed class EncDeltaAcquisitionTests
             Assert.Equal(MetadataEditLineageChainResultKind.Invalid, foreign.ResultKind);
             Assert.Equal(MetadataEditLineageChainIssue.ForeignModuleVersionId, foreign.Issue);
 
+            // A non-exact declared edit state validates nothing: the chain refuses it as its own typed stop
+            // rather than counting an unavailable truth as zero applied generations.
+            var unavailableState = MetadataEditLineageChainOutcome.Compose(
+                baselineMvid,
+                [one],
+                StaticFieldV2ModuleEditStateOutcome.IssueStop(
+                    StaticFieldV2ModuleEditStateResultKind.Unavailable,
+                    StaticFieldV2ModuleEditStateIssue.DescriptorFieldAbsent,
+                    0x7000_0000));
+            Assert.Equal(MetadataEditLineageChainResultKind.Invalid, unavailableState.ResultKind);
+            Assert.Equal(MetadataEditLineageChainIssue.EditStateNotExact, unavailableState.Issue);
+
             // A chain that disagrees with the physically acquired counter is a conflict, never a preference.
             var conflicted = MetadataEditLineageChainOutcome.Compose(
                 baselineMvid,
@@ -112,6 +124,116 @@ public sealed class EncDeltaAcquisitionTests
         }
         finally
         {
+            Directory.Delete(payloadDirectory, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// A pure-Insert generation's retained log describes exactly the compiled member additions, and a chain mixing
+    /// generations from two different edit histories refuses at the pair join.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Fast")]
+    public void Insert_generation_rows_and_mixed_history_chains_are_typed()
+    {
+        var addedDirectory = Path.Combine(Path.GetTempPath(), $"enc-acq-add-{Guid.NewGuid():N}");
+        var stackedDirectory = Path.Combine(Path.GetTempPath(), $"enc-acq-stack-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(addedDirectory);
+        Directory.CreateDirectory(stackedDirectory);
+        try
+        {
+            EncDeltaCompiler.WriteAddedStaticPayload(addedDirectory);
+            EncDeltaCompiler.WriteStackedPayload(stackedDirectory);
+            var addedOne = MetadataEditGenerationOutcome.Acquire(
+                1,
+                [.. File.ReadAllBytes(Path.Combine(addedDirectory, "generation-1.metadata-delta"))]);
+            var stackedTwo = MetadataEditGenerationOutcome.Acquire(
+                2,
+                [.. File.ReadAllBytes(Path.Combine(stackedDirectory, "generation-2.metadata-delta"))]);
+            Assert.Equal(MetadataEditGenerationResultKind.Exact, addedOne.ResultKind);
+            Assert.Equal(MetadataEditGenerationResultKind.Exact, stackedTwo.ResultKind);
+
+            // Measured, the complete Insert vocabulary: the generation extends the reference tables, then logs the
+            // parent TypeDef with the AddField operation followed by the added Field row, the parent twice with
+            // AddMethod followed by each added Method row, and the added setter with AddParameter followed by its
+            // Param row. These operation-paired rows are exactly what E4's generation-aware projection consumes.
+            ImmutableArray<MetadataEditLogRow> expectedLog =
+            [
+                new MetadataEditLogRow(0x23_00_0002, 0),
+                new MetadataEditLogRow(0x01_00_0007, 0),
+                new MetadataEditLogRow(0x02_00_0002, 2),
+                new MetadataEditLogRow(0x04_00_0001, 0),
+                new MetadataEditLogRow(0x02_00_0002, 1),
+                new MetadataEditLogRow(0x06_00_0002, 0),
+                new MetadataEditLogRow(0x02_00_0002, 1),
+                new MetadataEditLogRow(0x06_00_0003, 0),
+                new MetadataEditLogRow(0x06_00_0002, 3),
+                new MetadataEditLogRow(0x08_00_0001, 0),
+            ];
+            Assert.Equal(
+                string.Join(",", expectedLog.Select(static row => $"{row.Token:x8}:{row.Operation}")),
+                string.Join(",", addedOne.EditLogRows.Select(static row => $"{row.Token:x8}:{row.Operation}")));
+
+            // Two histories of the same baseline share its module version identifier yet carry different edit
+            // identifiers, so a chain mixing them refuses at the pair join rather than composing a fiction.
+            Assert.Equal(addedOne.ModuleVersionId, stackedTwo.ModuleVersionId);
+            Assert.NotEqual(addedOne.EditId, stackedTwo.EditBaseId);
+            var mixed = MetadataEditLineageChainOutcome.Compose(
+                addedOne.ModuleVersionId,
+                [addedOne, stackedTwo]);
+            Assert.Equal(MetadataEditLineageChainResultKind.Invalid, mixed.ResultKind);
+            Assert.Equal(MetadataEditLineageChainIssue.ChainPairMismatch, mixed.Issue);
+        }
+        finally
+        {
+            Directory.Delete(addedDirectory, recursive: true);
+            Directory.Delete(stackedDirectory, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// Discharges the E3 exit gate's filtered-dump clause: over a filtered capture the edit state acquires as the
+    /// typed unavailable stop, and a chain declared against that state refuses before any catalog is issued.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Filtered_capture_stops_the_chain_before_any_catalog()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-acq-filter-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-acq-filter-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteSmokePayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-smoke", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteNormalDump(target.Pid, dumpPath);
+            }
+
+            // Measured, and stronger than the clause requires: the filtered capture drops the memory the contract
+            // descriptor itself lives in, so the acquisition session refuses to open at its first physical read.
+            // No edit state can be acquired and no catalog can be issued over a filtered capture at all; the typed
+            // acquisition exception is the stop, and it fires before any delta byte is consulted.
+            var refused = Assert.Throws<StaticFieldV2RuntimeAcquisitionException>(
+                () => StaticFieldV2RuntimeAcquisitionSession.Open(dumpPath));
+            Assert.Contains("snapshot read", refused.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
             Directory.Delete(payloadDirectory, recursive: true);
         }
     }

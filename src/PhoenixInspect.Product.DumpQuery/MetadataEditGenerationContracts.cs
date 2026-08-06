@@ -339,6 +339,9 @@ public enum MetadataEditLineageChainIssue
 
     /// <summary>The chain length disagrees with the declared physically acquired applied-generation count.</summary>
     GenerationCountDisagreesWithEditState = 5,
+
+    /// <summary>The declared edit state is itself non-exact, so no chain can be validated against it.</summary>
+    EditStateNotExact = 6,
 }
 
 /// <summary>
@@ -476,6 +479,19 @@ public sealed class MetadataEditLineageChainOutcome : IEquatable<MetadataEditLin
             }
 
             expectedBaseId = generation.EditId;
+        }
+
+        // A non-exact declared edit state is refused rather than counted as zero applied generations: the caller
+        // asked for validation against the dump's own truth, and an unavailable or invalid truth validates
+        // nothing — a filtered capture therefore stops here, before any catalog is issued.
+        if (declaredEditState is not null &&
+            declaredEditState.ResultKind != StaticFieldV2ModuleEditStateResultKind.Exact)
+        {
+            return new MetadataEditLineageChainOutcome(
+                MetadataEditLineageChainResultKind.Invalid,
+                MetadataEditLineageChainIssue.EditStateNotExact,
+                baselineModuleVersionId,
+                []);
         }
 
         if (declaredEditState is not null && declaredEditState.AppliedGenerationCount != copied.Length)
