@@ -275,6 +275,19 @@ truncated, foreign, or out-of-order deltas. The module's lineage chain — base,
 - Poisoned inputs (truncated blob, foreign-module delta, gap in the generation chain) produce their typed stops.
 - The filtered dump stops `Unavailable` before any catalog is issued.
 
+**Status:** E3 is active; its first slice landed the acquisition contracts on the artifact-seam arm the E1
+disposition mandates — the runtime retains no delta blob in a dump, so delta bytes reach acquisition through a
+caller-owned seam exactly as Portable-PDB bytes do, and the contracts add the physical validation the caller
+cannot assert. One generation outcome decodes each supplied blob's Module-row lineage identifiers and complete
+retained edit-log and edit-map rows with typed stops for unreadable blobs, ordinal disagreement, empty edit
+identifiers, and the byte-count cap; the lineage chain composes generations by the measured pairing rule with
+typed stops for non-exact generations, foreign module identity, pair mismatch, and the generation cap; and a
+declared physically acquired edit state joins the artifacts to the dump's truth — a chain whose length disagrees
+with the applied-generation counter is a typed conflict, never a preference. Both are proved over real
+`EmitDifference` output from the stacked payload, exact arm and poison arms alike. Dump-resident acquisition of
+delta content remains gated on characterizing the runtime's edit structures, recorded with probe 3's remaining
+half; the generation-aware effective-table projection is E4's work over these retained rows.
+
 ### E4 — generation-aware authority composition
 
 **Scale:** `~10K–100K LOC`, expected to split into per-table-family checkpoints.
