@@ -106,6 +106,25 @@ public static class EncGate
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static int Run(string profile, string payloadDirectory)
     {
+        if (string.Equals(profile, "enc-disabled", StringComparison.Ordinal))
+        {
+            // The disabled profile loads the same Debug-configuration payload assemblies without the
+            // modifiable-assemblies gate and applies nothing, so a probe can separate what the flags word marks
+            // for debuggability from what it marks for edit enablement.
+            if (MetadataUpdater.IsSupported)
+            {
+                Console.WriteLine("ENC_UNEXPECTEDLY_SUPPORTED");
+                Console.Out.Flush();
+                return 89;
+            }
+
+            retainedBaselineAssembly = Assembly.LoadFrom(
+                Path.Combine(payloadDirectory, BaselineAssemblyFileName));
+            retainedComparatorAssembly = Assembly.LoadFrom(
+                Path.Combine(payloadDirectory, "PhoenixInspect.EncFixtureUnedited.dll"));
+            return EncPause.WaitForDump(profile, PreEditSentinel);
+        }
+
         if (!MetadataUpdater.IsSupported)
         {
             Console.WriteLine("ENC_NOT_SUPPORTED");

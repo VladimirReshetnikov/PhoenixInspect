@@ -219,6 +219,18 @@ W1–W8 goldens prove.
 - The zero-generation world keeps every canonical digest byte-identically.
 - The silent-staleness hazard of section 2 is closed even if no later stride ever lands.
 
+**Status:** E2 is active; its first slice landed the exact per-module edit-state contract. The session acquires
+`StaticFieldV2ModuleEditStateOutcome` physically — the declared flags word plus the generation counter one pointer
+past the declared dynamic-metadata field — with the descriptor anchors parsed as optional fields so their absence
+is a typed unavailable stop rather than a session refusal. Two measurements sharpened the contract beyond the E1
+disposition: the counter slot holds unrelated data on a non-edit-enabled module, so the count is derived only
+under enablement, where the runtime's own gate proves no edit could otherwise apply; and the gate-off control over
+the same Debug-configuration module isolated the single enablement bit `0x8` from the debuggability bits, so
+enablement is now a decoded fact rather than a raw-word comparison. Measured over real dumps: the edited module
+reports enabled with one applied generation, the used comparator enabled with zero, the optimized module
+non-enabled with zero despite its unrelated slot content, and the gate-off Debug module non-enabled with zero at
+its pinned flags word. Consumer refusal wiring is the next slice.
+
 ### E3 — delta metadata acquisition
 
 **Scale:** `~10K LOC`.

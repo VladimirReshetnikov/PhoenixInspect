@@ -4,6 +4,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Microsoft.Diagnostics.Runtime;
 using PhoenixInspect.Host.Dump.ClrMD;
+using PhoenixInspect.Product.DumpQuery;
 using Xunit;
 
 namespace PhoenixInspect.IntegrationTests;
@@ -833,6 +834,174 @@ public sealed class EncPhysicalTruthTests
             {
                 runtime.Dispose();
             }
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Proves the product session's edit-state acquisition — the first E2 contract — reports the exact applied
+    /// generations per module over a real edited-process dump: one for the edited module, zero for the used
+    /// comparator and for the optimized target module, with the additive API leaving every other behavior alone.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Session_edit_state_acquisition_reports_the_applied_generations()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-state-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-state-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteSmokePayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-smoke", "--payload", payloadDirectory],
+                isolatedDirectory: null,
+                additionalEnvironment: new Dictionary<string, string>
+                {
+                    ["DOTNET_MODIFIABLE_ASSEMBLIES"] = "Debug",
+                }))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            using var session = StaticFieldV2RuntimeAcquisitionSession.Open(dumpPath);
+            ulong ModuleAddressByName(string metadataModuleName)
+            {
+                foreach (var observation in session.Modules)
+                {
+                    var metadataBytes = session.ReadModuleMetadata(observation.ModuleAddress);
+                    if (metadataBytes.IsDefaultOrEmpty)
+                    {
+                        continue;
+                    }
+
+                    using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+                    var reader = provider.GetMetadataReader();
+                    if (string.Equals(
+                        reader.GetString(reader.GetModuleDefinition().Name),
+                        metadataModuleName,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return observation.ModuleAddress;
+                    }
+                }
+
+                return 0;
+            }
+
+            var edited = session.AcquireModuleEditState(
+                ModuleAddressByName("PhoenixInspect.EncFixtureBaseline.dll"));
+            Assert.Equal(StaticFieldV2ModuleEditStateResultKind.Exact, edited.ResultKind);
+            Assert.True(edited.IsEditEnabled);
+            Assert.True(edited.HasAppliedEdits);
+            Assert.Equal(1, edited.AppliedGenerationCount);
+
+            var comparator = session.AcquireModuleEditState(
+                ModuleAddressByName("PhoenixInspect.EncFixtureUnedited.dll"));
+            Assert.Equal(StaticFieldV2ModuleEditStateResultKind.Exact, comparator.ResultKind);
+            Assert.False(comparator.HasAppliedEdits);
+            Assert.Equal(0, comparator.AppliedGenerationCount);
+
+            // The zero-generation world stays additive-only: an ordinary optimized module reports no applied
+            // edits, and its raw flags differ from the enabled pair only in the enablement bits the disposition
+            // recorded.
+            var optimized = session.AcquireModuleEditState(
+                ModuleAddressByName("PhoenixInspect.EncTestTarget.dll"));
+            Assert.Equal(StaticFieldV2ModuleEditStateResultKind.Exact, optimized.ResultKind);
+            Assert.False(optimized.HasAppliedEdits);
+            Assert.Equal(0, optimized.AppliedGenerationCount);
+            Assert.Equal(edited.ModuleFlags, comparator.ModuleFlags);
+            Assert.NotEqual(edited.ModuleFlags, optimized.ModuleFlags);
+        }
+        finally
+        {
+            if (File.Exists(dumpPath))
+            {
+                File.Delete(dumpPath);
+            }
+
+            if (Directory.Exists(payloadDirectory))
+            {
+                Directory.Delete(payloadDirectory, recursive: true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Separates debuggability from edit enablement in the module flags word: the same Debug-configuration payload
+    /// assemblies are loaded without the modifiable-assemblies gate, and their flags are measured against the
+    /// enabled pair and the optimized module of the gated dumps.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Dump")]
+    [Trait("Corpus", "EncFixtureV1")]
+    public void Disabled_gate_isolates_the_enablement_bits_from_debuggability()
+    {
+        var payloadDirectory = Path.Combine(Path.GetTempPath(), $"enc-off-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(payloadDirectory);
+        var dumpPath = Path.Combine(Path.GetTempPath(), $"enc-off-{Guid.NewGuid():N}.dmp");
+        try
+        {
+            EncDeltaCompiler.WriteSmokePayload(payloadDirectory);
+            using (var target = TestTargetRunner.StartAndWaitReady(
+                W8ShapeTargetPaths.RequireArtifact(
+                    W8ShapeTargetPaths.ResolveExecutable("PhoenixInspect.EncTestTarget")),
+                ["--truth-gate", "enc-disabled", "--payload", payloadDirectory],
+                isolatedDirectory: null))
+            {
+                DumpWriter.WriteFullDump(target.Pid, dumpPath);
+            }
+
+            using var session = StaticFieldV2RuntimeAcquisitionSession.Open(dumpPath);
+            ulong ModuleAddressByName(string metadataModuleName)
+            {
+                foreach (var observation in session.Modules)
+                {
+                    var metadataBytes = session.ReadModuleMetadata(observation.ModuleAddress);
+                    if (metadataBytes.IsDefaultOrEmpty)
+                    {
+                        continue;
+                    }
+
+                    using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+                    var reader = provider.GetMetadataReader();
+                    if (string.Equals(
+                        reader.GetString(reader.GetModuleDefinition().Name),
+                        metadataModuleName,
+                        StringComparison.OrdinalIgnoreCase))
+                    {
+                        return observation.ModuleAddress;
+                    }
+                }
+
+                return 0;
+            }
+
+            // Measured: the same Debug-configuration module reads flags 0x9011 without the gate and 0x9019 with
+            // it, so the single differing bit 0x8 is the enablement bit, cleanly separated from the 0x1800
+            // debuggability bits that distinguish Debug from optimized modules. Without enablement the outcome
+            // derives zero applied generations by the runtime's own admission rule, whatever the raw slot holds.
+            var debugDisabled = session.AcquireModuleEditState(
+                ModuleAddressByName("PhoenixInspect.EncFixtureBaseline.dll"));
+            Assert.Equal(StaticFieldV2ModuleEditStateResultKind.Exact, debugDisabled.ResultKind);
+            Assert.Equal(0x9011u, debugDisabled.ModuleFlags);
+            Assert.False(debugDisabled.IsEditEnabled);
+            Assert.False(debugDisabled.HasAppliedEdits);
+            Assert.Equal(0, debugDisabled.AppliedGenerationCount);
         }
         finally
         {

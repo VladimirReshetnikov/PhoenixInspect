@@ -286,6 +286,153 @@ public sealed class StaticFieldV2CoreIdentityCollapse : IEquatable<StaticFieldV2
     public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
 }
 
+/// <summary>Classifies one per-module edit-state acquisition answer.</summary>
+public enum StaticFieldV2ModuleEditStateResultKind
+{
+    /// <summary>Both edit-state facts were read physically and are coherent.</summary>
+    Exact = 1,
+
+    /// <summary>A required descriptor field or memory read was unavailable; no fact is claimed.</summary>
+    Unavailable = 2,
+
+    /// <summary>A read succeeded but contradicts the frozen pinned-runtime relation.</summary>
+    Invalid = 3,
+}
+
+/// <summary>Names the typed issue of one non-exact edit-state acquisition.</summary>
+public enum StaticFieldV2ModuleEditStateIssue
+{
+    /// <summary>No issue applies to an exact outcome.</summary>
+    None = 0,
+
+    /// <summary>The pinned descriptor does not declare a required module field.</summary>
+    DescriptorFieldAbsent = 1,
+
+    /// <summary>A counted memory read of the module structure did not complete.</summary>
+    ModuleStructureUnreadable = 2,
+
+    /// <summary>The generation counter read zero, below the frozen floor of one.</summary>
+    GenerationCounterUnderflow = 3,
+}
+
+/// <summary>
+/// Freezes one module's physically acquired edit state: the declared flags word and the applied-generation count.
+/// </summary>
+/// <remarks>
+/// The facts and their sources are frozen by the E1 physical-truth disposition of the Edit-and-Continue plan. The
+/// flags word is read at the descriptor-declared <c>Module.Flags</c> offset and marks edit enablement only — it is
+/// byte-identical between an edited module and an enabled-but-unedited one — so it grounds sound conservative
+/// refusal. The generation counter is read one pointer past the descriptor-declared <c>Module.DynamicMetadata</c>
+/// field, a pinned-runtime fact rather than a declared contract offset, measured to hold one plus the
+/// applied-generation count across zero, one, and two applied generations under enablement and use controls. A
+/// module with <see cref="AppliedGenerationCount"/> zero is unedited; a positive count is exact applied-edit
+/// evidence the consumers of this module's base-image authority must refuse until generation-aware composition
+/// exists.
+/// </remarks>
+public sealed class StaticFieldV2ModuleEditStateOutcome : IEquatable<StaticFieldV2ModuleEditStateOutcome>
+{
+    private const string CanonicalDomain = "static-field-v2-module-edit-state";
+    private const int CanonicalSchemaVersion = 1;
+    private readonly ImmutableArray<byte> canonicalBytes;
+
+    private StaticFieldV2ModuleEditStateOutcome(
+        StaticFieldV2ModuleEditStateResultKind resultKind,
+        StaticFieldV2ModuleEditStateIssue issue,
+        ulong runtimeModuleAddress,
+        uint moduleFlags,
+        ulong generationCounter)
+    {
+        ResultKind = resultKind;
+        Issue = issue;
+        RuntimeModuleAddress = runtimeModuleAddress;
+        ModuleFlags = moduleFlags;
+        GenerationCounter = generationCounter;
+
+        var writer = new CanonicalReplayEncoding.Writer(CanonicalDomain, CanonicalSchemaVersion);
+        writer.WriteInt32((int)resultKind);
+        writer.WriteInt32((int)issue);
+        writer.WriteUInt64(runtimeModuleAddress);
+        writer.WriteUInt64(moduleFlags);
+        writer.WriteUInt64(generationCounter);
+        canonicalBytes = writer.ToImmutableArray();
+        Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
+    }
+
+    /// <summary>Gets whether this acquisition is exact, unavailable, or invalid.</summary>
+    public StaticFieldV2ModuleEditStateResultKind ResultKind { get; }
+
+    /// <summary>Gets the typed issue of a non-exact acquisition.</summary>
+    public StaticFieldV2ModuleEditStateIssue Issue { get; }
+
+    /// <summary>Gets the runtime module address the facts were read from.</summary>
+    public ulong RuntimeModuleAddress { get; }
+
+    /// <summary>Gets the raw declared flags word, retained undecoded; zero for every non-exact stop.</summary>
+    public uint ModuleFlags { get; }
+
+    /// <summary>Gets the raw generation counter, retained as read; zero for every non-exact stop.</summary>
+    public ulong GenerationCounter { get; }
+
+    /// <summary>
+    /// The single flags bit that flips with the modifiable-assemblies gate, measured over otherwise identical
+    /// Debug-configuration modules loaded with the gate on and off.
+    /// </summary>
+    public const uint EditEnabledFlag = 0x8;
+
+    /// <summary>Gets whether the module was loaded edit-enabled; a non-enabled module cannot receive edits.</summary>
+    public bool IsEditEnabled =>
+        ResultKind == StaticFieldV2ModuleEditStateResultKind.Exact && (ModuleFlags & EditEnabledFlag) != 0;
+
+    /// <summary>
+    /// Gets the exact applied-generation count. The counter word is meaningful only on an edit-enabled module —
+    /// on a non-enabled module the same slot holds unrelated data, and no edit can have been applied there, so
+    /// the count is zero by the runtime's own admission rule rather than by reading that slot.
+    /// </summary>
+    public int AppliedGenerationCount =>
+        IsEditEnabled ? checked((int)(GenerationCounter - 1)) : 0;
+
+    /// <summary>Gets whether an exact outcome proves at least one applied edit.</summary>
+    public bool HasAppliedEdits => IsEditEnabled && GenerationCounter > 1;
+
+    /// <summary>Gets a defensive copy of the fixed-reference canonical outcome bytes.</summary>
+    public ImmutableArray<byte> CanonicalBytes => ExpressionV2ContractEncoding.Copy(canonicalBytes);
+
+    /// <summary>Gets the lowercase SHA-256 digest of the canonical outcome.</summary>
+    public string Sha256 { get; }
+
+    internal static StaticFieldV2ModuleEditStateOutcome IssueExact(
+        ulong runtimeModuleAddress,
+        uint moduleFlags,
+        ulong generationCounter) =>
+        new(
+            StaticFieldV2ModuleEditStateResultKind.Exact,
+            StaticFieldV2ModuleEditStateIssue.None,
+            runtimeModuleAddress,
+            moduleFlags,
+            generationCounter);
+
+    internal static StaticFieldV2ModuleEditStateOutcome IssueStop(
+        StaticFieldV2ModuleEditStateResultKind resultKind,
+        StaticFieldV2ModuleEditStateIssue issue,
+        ulong runtimeModuleAddress) =>
+        new(resultKind, issue, runtimeModuleAddress, 0, 0);
+
+    /// <summary>Tests canonical equality between two edit-state outcomes.</summary>
+    /// <param name="other">The other outcome.</param>
+    /// <returns><see langword="true"/> only for byte-identical canonical content.</returns>
+    public bool Equals(StaticFieldV2ModuleEditStateOutcome? other) =>
+        other is not null && CanonicalReplayEncoding.CanonicalEquals(canonicalBytes, other.canonicalBytes);
+
+    /// <summary>Tests edit-state outcome equality against an arbitrary object.</summary>
+    /// <param name="obj">The object to compare.</param>
+    /// <returns><see langword="true"/> only for an outcome with identical canonical content.</returns>
+    public override bool Equals(object? obj) => Equals(obj as StaticFieldV2ModuleEditStateOutcome);
+
+    /// <summary>Computes a deterministic hash code from immutable canonical outcome content.</summary>
+    /// <returns>A hash code for this canonical outcome.</returns>
+    public override int GetHashCode() => CanonicalReplayEncoding.CanonicalHashCode(canonicalBytes);
+}
+
 /// <summary>Names the frame-value root families one selected-frame request may name.</summary>
 /// <remarks>
 /// The first three families are admitted and can reach an exact memory home. The two generic-argument families exist
@@ -2198,6 +2345,13 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
         ("ParamTypeDesc", "TypeArg"),
     ];
 
+    /// <summary>Declared fields the session retains when present without requiring them to open.</summary>
+    private static readonly (string TypeName, string FieldName)[] OptionalDescriptorFields =
+    [
+        ("Module", "Flags"),
+        ("Module", "DynamicMetadata"),
+    ];
+
     private readonly DataTarget dataTarget;
     private readonly ClrRuntime runtime;
     private readonly ClrmdProcessMemoryReader memoryReader;
@@ -3192,6 +3346,18 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
                     fieldBuilder.Add(field.FieldName, ReadDescriptorFieldOffset(fieldElement, typeName, field.FieldName));
                 }
 
+                // Optional fields are retained when the descriptor declares them and are otherwise simply absent,
+                // so their consumers produce typed unavailable stops instead of this session refusing to open.
+                foreach (var field in OptionalDescriptorFields.Where(candidate => candidate.TypeName == typeName))
+                {
+                    if (typeElement.TryGetProperty(field.FieldName, out var fieldElement))
+                    {
+                        fieldBuilder.Add(
+                            field.FieldName,
+                            ReadDescriptorFieldOffset(fieldElement, typeName, field.FieldName));
+                    }
+                }
+
                 typeBuilder.Add(typeName, fieldBuilder.ToImmutable());
             }
 
@@ -3253,6 +3419,68 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
             : BinaryPrimitives.ReadUInt64LittleEndian(bytes);
 
     private static ulong Add(ulong address, int offset) => checked(address + checked((ulong)offset));
+
+    /// <summary>Acquires one module's edit state physically: the declared flags word and the generation counter.</summary>
+    /// <remarks>
+    /// Both sources are frozen by the E1 physical-truth disposition of the Edit-and-Continue plan. The flags word
+    /// comes from the descriptor-declared <c>Module.Flags</c> offset; the generation counter is read one pointer
+    /// past the descriptor-declared <c>Module.DynamicMetadata</c> field, a pinned-runtime fact validated over
+    /// edited, enabled-but-unedited, and plain modules. A descriptor that does not declare either anchor field
+    /// yields the typed unavailable stop rather than a guessed offset, and a counter below its frozen floor of one
+    /// is invalid rather than clamped.
+    /// </remarks>
+    /// <param name="runtimeModuleAddress">The nonzero runtime module address.</param>
+    /// <returns>A sealed immutable outcome that is one exact edit state or one typed stop.</returns>
+    /// <exception cref="ObjectDisposedException">The session is already disposed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The runtime module address is zero.</exception>
+    public StaticFieldV2ModuleEditStateOutcome AcquireModuleEditState(ulong runtimeModuleAddress)
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+        ArgumentOutOfRangeException.ThrowIfZero(runtimeModuleAddress);
+
+        if (!layout.TryGetValue("Module", out var moduleFields) ||
+            !moduleFields.TryGetValue("Flags", out var flagsOffset) ||
+            !moduleFields.TryGetValue("DynamicMetadata", out var dynamicMetadataOffset))
+        {
+            return StaticFieldV2ModuleEditStateOutcome.IssueStop(
+                StaticFieldV2ModuleEditStateResultKind.Unavailable,
+                StaticFieldV2ModuleEditStateIssue.DescriptorFieldAbsent,
+                runtimeModuleAddress);
+        }
+
+        var reader = new ExactSnapshotReader(dataTarget.DataReader);
+        uint moduleFlags;
+        ulong generationCounter;
+        try
+        {
+            moduleFlags = reader.ReadUInt32(Add(runtimeModuleAddress, flagsOffset));
+            generationCounter = reader.ReadPointer(
+                Add(runtimeModuleAddress, checked(dynamicMetadataOffset + Evidence.PointerWidth)));
+        }
+        catch (StaticFieldV2RuntimeAcquisitionException)
+        {
+            return StaticFieldV2ModuleEditStateOutcome.IssueStop(
+                StaticFieldV2ModuleEditStateResultKind.Unavailable,
+                StaticFieldV2ModuleEditStateIssue.ModuleStructureUnreadable,
+                runtimeModuleAddress);
+        }
+
+        // The counter's frozen floor of one applies only where the counter is a counter: on an edit-enabled
+        // module. On a non-enabled module the slot holds unrelated data that is retained raw and never
+        // interpreted, because the runtime's own gate proves no edit can have been applied there.
+        if ((moduleFlags & StaticFieldV2ModuleEditStateOutcome.EditEnabledFlag) != 0 && generationCounter == 0)
+        {
+            return StaticFieldV2ModuleEditStateOutcome.IssueStop(
+                StaticFieldV2ModuleEditStateResultKind.Invalid,
+                StaticFieldV2ModuleEditStateIssue.GenerationCounterUnderflow,
+                runtimeModuleAddress);
+        }
+
+        return StaticFieldV2ModuleEditStateOutcome.IssueExact(
+            runtimeModuleAddress,
+            moduleFlags,
+            generationCounter);
+    }
 
     private int FieldOffset(string typeName, string fieldName)
     {
