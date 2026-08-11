@@ -31,6 +31,22 @@ public sealed class LiveAttachIntegrationTests
             Assert.StartsWith("live-attach-sha256:", session.Snapshot.MemorySourceId, StringComparison.Ordinal);
             Assert.NotEmpty(session.Modules);
 
+            // Live attach and dump sessions share the same descriptor-derived, immutable edit-state acquisition.
+            // This ordinary target is unedited, and repeated consumers must reuse the sole retained observation.
+            var targetModule = Assert.Single(
+                session.Modules,
+                static module => string.Equals(
+                    module.Name,
+                    "Contoso.OrderService.dll",
+                    StringComparison.OrdinalIgnoreCase));
+            var editState = session.ReadModuleEditState(targetModule);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, editState.Status);
+            Assert.Equal(false, editState.Value!.HasAppliedEdits);
+            Assert.Same(editState, session.ReadModuleEditState(targetModule));
+            Assert.Same(
+                editState.Value.GenerationCounterMemory,
+                session.ReadModuleEditState(targetModule).Value!.GenerationCounterMemory);
+
             // The static-field pipeline binds from live metadata exactly as from a dump.
             var counter = ExpressionEvaluationService.EvaluateStaticField(
                 session,

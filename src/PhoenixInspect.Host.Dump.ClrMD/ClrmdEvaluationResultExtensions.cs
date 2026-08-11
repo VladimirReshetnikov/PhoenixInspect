@@ -129,6 +129,7 @@ public static class ClrmdEvaluationResultExtensions
         ClrmdValueIssue.ArtifactUnavailable => "DUMP_ARTIFACT_UNAVAILABLE",
         ClrmdValueIssue.ArtifactInvalid => "DUMP_ARTIFACT_INVALID",
         ClrmdValueIssue.RuntimeUnsupported => "DUMP_RUNTIME_UNSUPPORTED",
+        ClrmdValueIssue.RuntimeContractUnavailable => "DUMP_RUNTIME_CONTRACT_UNAVAILABLE",
         ClrmdValueIssue.ObjectUnavailable => "DUMP_OBJECT_UNAVAILABLE",
         ClrmdValueIssue.FieldUnavailable => "DUMP_FIELD_UNAVAILABLE",
         ClrmdValueIssue.TypeUnavailable => "DUMP_TYPE_UNAVAILABLE",
@@ -142,6 +143,7 @@ public static class ClrmdEvaluationResultExtensions
         ClrmdValueIssue.TypeMismatch => "DUMP_TYPE_MISMATCH",
         ClrmdValueIssue.MemoryUnavailable => "DUMP_MEMORY_UNAVAILABLE",
         ClrmdValueIssue.InvalidData => "DUMP_INVALID_DATA",
+        ClrmdValueIssue.EditGenerationCounterUnderflow => "DUMP_EDIT_GENERATION_COUNTER_UNDERFLOW",
         ClrmdValueIssue.LimitExceeded => "DUMP_LIMIT_EXCEEDED",
         ClrmdValueIssue.None => throw new ArgumentOutOfRangeException(nameof(issue)),
         _ => throw new ArgumentOutOfRangeException(nameof(issue)),
@@ -155,6 +157,8 @@ public static class ClrmdEvaluationResultExtensions
         ClrmdValueIssue.ArtifactUnavailable => "The dump artifact could not be opened.",
         ClrmdValueIssue.ArtifactInvalid => "The dump artifact is structurally invalid.",
         ClrmdValueIssue.RuntimeUnsupported => "The dump runtime configuration is outside the supported profile.",
+        ClrmdValueIssue.RuntimeContractUnavailable =>
+            "The runtime contract descriptor does not expose the required physical layout.",
         ClrmdValueIssue.ObjectUnavailable => "The selected runtime object is unavailable.",
         ClrmdValueIssue.FieldUnavailable => "The requested runtime field is unavailable.",
         ClrmdValueIssue.TypeUnavailable => "The requested runtime type is unavailable.",
@@ -172,6 +176,8 @@ public static class ClrmdEvaluationResultExtensions
         ClrmdValueIssue.TypeMismatch => "The selected runtime evidence has an incompatible type.",
         ClrmdValueIssue.MemoryUnavailable => "Required dump-memory bytes are incomplete or unavailable.",
         ClrmdValueIssue.InvalidData => "Captured runtime evidence violates a supported layout invariant.",
+        ClrmdValueIssue.EditGenerationCounterUnderflow =>
+            "An edit-enabled module reports an invalid zero generation counter.",
         ClrmdValueIssue.LimitExceeded => "A deterministic evidence bound truncated the operation.",
         ClrmdValueIssue.None => throw new ArgumentOutOfRangeException(nameof(issue)),
         _ => throw new ArgumentOutOfRangeException(nameof(issue)),

@@ -225,6 +225,17 @@ public static class DumpQueryEngine
                     parsed.DiagnosticMessage!))));
         }
 
+        var admission = session.ReadModuleEditAdmission();
+        if (!admission.IsAdmitted)
+        {
+            return DumpQueryPreparationResult.Failed(CreateAdmissionFailure(
+                session,
+                rootBinding.Root,
+                rootBinding.AppliedBounds,
+                parsed.AppliedBounds,
+                admission));
+        }
+
         var query = parsed.Query!;
         context = CreateEvidenceContext(
             session,
@@ -341,6 +352,17 @@ public static class DumpQueryEngine
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(plan);
+
+        var admission = session.ReadModuleEditAdmission();
+        if (!admission.IsAdmitted)
+        {
+            return CreateAdmissionFailure(
+                session,
+                plan.RootBinding.Root,
+                plan.RootBinding.AppliedBounds,
+                plan.ParserBounds,
+                admission);
+        }
 
         var root = plan.RootBinding.Root!;
         var rootEvidenceBelongsToSession = RootEvidenceBelongsToSession(session, plan.RootBinding);
@@ -699,6 +721,34 @@ public static class DumpQueryEngine
             ImmutableArray.Create(new EvaluationDiagnostic(
                 "QUERY_COALESCE_TYPE_UNSUPPORTED",
                 "The null-coalescing literal is incompatible with the selected field type.")));
+
+    private static EvaluationResult<DumpQueryValue> CreateAdmissionFailure(
+        ClrmdDumpSession session,
+        ClrmdHeapObjectInfo? root,
+        ImmutableArray<EvaluationDeterministicBound> upstreamBounds,
+        DumpQueryParserBounds parserBounds,
+        ClrmdModuleEditAdmission admission)
+    {
+        var provenance = ImmutableArray.CreateBuilder<EvaluationProvenance>();
+        ModuleEditAdmissionPolicy.AppendProvenance(provenance, admission);
+        return CreateResult(
+            CreateEvidenceContext(
+                session,
+                root,
+                upstreamBounds,
+                adapterBounds: [],
+                parserBounds: parserBounds,
+                rawMemoryReadBoundApplied: !admission.Evidence.IsEmpty,
+                observedStringBoundApplied: false),
+            ModuleEditAdmissionPolicy.Completion(admission),
+            EvaluationCompleteness.None,
+            ModuleEditAdmissionPolicy.Evidence(admission),
+            value: null,
+            provenance.ToImmutable(),
+            ImmutableArray.Create(new EvaluationDiagnostic(
+                ModuleEditAdmissionPolicy.Code(admission),
+                ModuleEditAdmissionPolicy.Message(admission))));
+    }
 
     private static void AppendCoalesceProvenance(
         ImmutableArray<EvaluationProvenance>.Builder provenance,

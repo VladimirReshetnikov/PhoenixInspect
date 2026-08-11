@@ -274,6 +274,8 @@ internal static class Program
                 ProjectClassificationFailure(outcome.ClassificationFailure!),
             DumpExpressionEvaluationOutcomeKind.AcquisitionFailure =>
                 ProjectAcquisitionFailure(request!, outcome.AcquisitionFailure!),
+            DumpExpressionEvaluationOutcomeKind.AdmissionFailure =>
+                ProjectAdmissionFailure(request!, outcome.AdmissionFailure!),
             _ => throw new InvalidDataException("The evaluator returned an unknown outcome case."),
         };
     }
@@ -359,6 +361,29 @@ internal static class Program
         CollectBounds(request, ImmutableArray<EvaluationDeterministicBound>.Empty),
         ImmutableArray<ProvenanceProjection>.Empty,
         ImmutableArray.Create(new DiagnosticProjection(failure.Code, failure.Message)),
+        UnderlyingArtifactSha256: null,
+        UnderlyingCanonicalBase64: null);
+
+    private static OutcomeProjection ProjectAdmissionFailure(
+        DumpExpressionRequest request,
+        ClrmdModuleEditAdmission admission) => new(
+        DumpExpressionEvaluationOutcomeKind.AdmissionFailure.ToString(),
+        SemanticMode: null,
+        Completion: ModuleEditAdmissionPolicy.Completion(admission).ToString(),
+        Completeness: EvaluationCompleteness.None.ToString(),
+        Evidence: $"Adapter:{admission.Status}",
+        Effects: EvaluationEffectStatus.None.ToString(),
+        Value: null,
+        CollectBounds(request, ImmutableArray<EvaluationDeterministicBound>.Empty),
+        admission.Evidence.Select(static read => new ProvenanceProjection(
+            EvaluationProvenanceKind.DumpMemory.ToString(),
+            read.SourceId,
+            read.Address,
+            read.RequestedLength,
+            read.Bytes.Length)).ToImmutableArray(),
+        ImmutableArray.Create(new DiagnosticProjection(
+            ModuleEditAdmissionPolicy.Code(admission),
+            ModuleEditAdmissionPolicy.Message(admission))),
         UnderlyingArtifactSha256: null,
         UnderlyingCanonicalBase64: null);
 

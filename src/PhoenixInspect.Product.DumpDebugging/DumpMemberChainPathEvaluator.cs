@@ -52,6 +52,23 @@ public static class DumpMemberChainPathEvaluator
                 stepBounds: ImmutableArray<EvaluationDeterministicBound>.Empty);
         }
 
+        var admission = session.ReadModuleEditAdmission();
+        if (!admission.IsAdmitted)
+        {
+            var admissionProvenance = CreateBaseProvenance(request);
+            ModuleEditAdmissionPolicy.AppendProvenance(admissionProvenance, admission);
+            return Failure(
+                session,
+                request,
+                admission.Status,
+                ModuleEditAdmissionPolicy.Code(admission),
+                ModuleEditAdmissionPolicy.Message(admission),
+                admissionProvenance,
+                rawMemoryReadReached: !admission.Evidence.IsEmpty,
+                stepBounds: [],
+                completion: ModuleEditAdmissionPolicy.Completion(admission));
+        }
+
         var provenance = CreateBaseProvenance(request);
         provenance.Add(new EvaluationProvenance(
             EvaluationProvenanceKind.Policy,

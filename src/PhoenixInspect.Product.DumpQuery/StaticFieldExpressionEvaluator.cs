@@ -138,6 +138,12 @@ public static class StaticFieldExpressionEvaluator
                 diagnosticMessage: syntax.DiagnosticMessage);
         }
 
+        var admission = session.ReadModuleEditAdmission();
+        if (!admission.IsAdmitted)
+        {
+            return AdmissionFailure(syntax, admission);
+        }
+
         source ??= new ClrmdStaticFieldMetadataBindingSource(session);
         var descriptor = syntax.Descriptor!;
         var binding = prebound ?? (context is null
@@ -386,6 +392,12 @@ public static class StaticFieldExpressionEvaluator
         if (syntax.Status != StaticFieldSyntaxStatus.Accepted)
         {
             return EvaluateCore(session, syntax, context: null);
+        }
+
+        var admission = session.ReadModuleEditAdmission();
+        if (!admission.IsAdmitted)
+        {
+            return AdmissionFailure(syntax, admission);
         }
 
         var source = new ClrmdStaticFieldMetadataBindingSource(session);
@@ -811,7 +823,8 @@ public static class StaticFieldExpressionEvaluator
         DumpMemberChainPlan? memberChainSuffixPlan = null,
         EvaluationResult<DumpQueryValue>? suffixResult = null,
         string? diagnosticCode = null,
-        string? diagnosticMessage = null) =>
+        string? diagnosticMessage = null,
+        ClrmdModuleEditAdmission? moduleEditAdmission = null) =>
         new(
             syntax,
             symbolBinding,
@@ -841,7 +854,23 @@ public static class StaticFieldExpressionEvaluator
             memberChainSuffixPlan,
             suffixResult,
             diagnosticCode,
-            diagnosticMessage);
+            diagnosticMessage,
+            moduleEditAdmission);
+
+    private static StaticFieldExpressionEvaluationResult AdmissionFailure(
+        StaticFieldSyntaxOutcome syntax,
+        ClrmdModuleEditAdmission admission) =>
+        Result(
+            syntax,
+            symbolBinding: null,
+            StaticFieldExpressionEvaluationStage.EditStateAdmission,
+            admission.Disposition == ClrmdModuleEditAdmissionDisposition.Invalid
+                ? StaticFieldExpressionEvaluationStatus.Invalid
+                : StaticFieldExpressionEvaluationStatus.Unavailable,
+            runtimeIssue: admission.Issue == ClrmdValueIssue.None ? null : admission.Issue,
+            diagnosticCode: ModuleEditAdmissionPolicy.Code(admission),
+            diagnosticMessage: ModuleEditAdmissionPolicy.Message(admission),
+            moduleEditAdmission: admission);
 
     private static bool ModuleMatches(ClrmdModuleInfo candidate, StaticFieldModuleInstanceIdentity expected)
     {

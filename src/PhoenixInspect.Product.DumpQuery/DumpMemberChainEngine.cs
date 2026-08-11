@@ -35,7 +35,27 @@ public static class DumpMemberChainEngine
         DumpMemberChainPlan plan)
     {
         ArgumentNullException.ThrowIfNull(session);
-        return Evaluate(new ClrmdDumpMemberChainEvidenceSource(session), plan);
+        ArgumentNullException.ThrowIfNull(plan);
+        var admission = session.ReadModuleEditAdmission();
+        var source = new ClrmdDumpMemberChainEvidenceSource(session);
+        if (!admission.IsAdmitted)
+        {
+            return FromPreparationFailure(
+                source,
+                plan.RootBinding,
+                plan.RequestBounds,
+                plan.RequestSha256,
+                new DumpMemberChainPreparationFailure(
+                    ModuleEditAdmissionPolicy.Code(admission),
+                    ModuleEditAdmissionPolicy.Message(admission),
+                    admission.Status,
+                    admission.Issue,
+                    admission.Evidence,
+                    appliedBounds: [],
+                    moduleEditAdmission: admission));
+        }
+
+        return Evaluate(source, plan);
     }
 
     internal static EvaluationResult<DumpQueryValue> Evaluate(

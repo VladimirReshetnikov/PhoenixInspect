@@ -72,7 +72,7 @@ public static class StaticFieldFullyQualifiedBinder
     /// at most once through the session's counted memory-evidence boundary. The caller retains ownership of
     /// <paramref name="session"/>.
     /// </remarks>
-    public static StaticFieldSymbolBindingOutcome Bind(
+    internal static StaticFieldSymbolBindingOutcome Bind(
         ClrmdDumpSession session,
         StaticFieldExpressionDescriptor descriptor)
     {

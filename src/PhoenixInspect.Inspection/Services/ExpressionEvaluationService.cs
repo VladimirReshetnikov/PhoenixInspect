@@ -210,6 +210,22 @@ public static class ExpressionEvaluationService
         var candidates = portablePdbCandidates.IsDefault ? [] : portablePdbCandidates;
         var stopwatch = Stopwatch.StartNew();
 
+        // Preserve the evidence-free subset even when this snapshot cannot establish base-image authority. The
+        // null-session pass can fold only literals and the closed deterministic BCL surface; a qualified dump name,
+        // metadata literal, or resolver-backed value remains NotConstant and must pass edit-state admission below.
+        var pureConstant = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
+        {
+            stopwatch.Stop();
+            return BuildConstantReport(expression, pureConstant, stopwatch.Elapsed);
+        }
+
+        if (BuildModuleEditAdmissionStop(session, expression, stopwatch, out var admittedModuleCount) is
+            { } admissionStop)
+        {
+            return admissionStop;
+        }
+
         // Constant expressions — folded arithmetic, metadata literal fields, and composed expressions consuming
         // stored static values as operands — are a pre-stage the frozen static-field pipeline rejects by design.
         // A not-constant disposition falls through untouched, so every bare stored-field answer stays exactly
@@ -224,7 +240,9 @@ public static class ExpressionEvaluationService
         if (constant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
-            return BuildConstantReport(expression, constant, stopwatch.Elapsed);
+            return WithModuleEditAdmission(
+                BuildConstantReport(expression, constant, stopwatch.Elapsed),
+                admittedModuleCount);
         }
 
         var result = contextSelector is null
@@ -237,10 +255,12 @@ public static class ExpressionEvaluationService
             result.HostObservation?.Value?.ObjectReference is { } reference
                 ? RootSelection.FromObjectBinding(reference, objectBinding, expression)
                 : null;
-        return BuildStaticFieldReport(expression, contextSelector, result, stopwatch.Elapsed) with
-        {
-            PromotableRoot = promotable,
-        };
+        return WithModuleEditAdmission(
+            BuildStaticFieldReport(expression, contextSelector, result, stopwatch.Elapsed) with
+            {
+                PromotableRoot = promotable,
+            },
+            admittedModuleCount);
     }
 
     /// <summary>Evaluates a root-relative expression against one exact heap object.</summary>
@@ -266,10 +286,29 @@ public static class ExpressionEvaluationService
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(root);
         ArgumentNullException.ThrowIfNull(policy);
+        var stopwatch = Stopwatch.StartNew();
+
+        // Evaluate the evidence-free subset before resolving the root. EvaluateWatch deliberately routes a lexical
+        // root token even inside a string/interpolation to this entry point, so a genuinely pure constant must not
+        // become unavailable merely because the surrounding session contains edits.
+        var pureConstant = ConstantExpressionEvaluator.Evaluate(session: null, expression);
+        if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
+        {
+            stopwatch.Stop();
+            return BuildConstantReport(expression, pureConstant, stopwatch.Elapsed);
+        }
+
+        if (BuildModuleEditAdmissionStop(session, expression, stopwatch, out var admittedModuleCount) is
+            { } admissionStop)
+        {
+            return admissionStop;
+        }
+
         var (rootBinding, stop) = root.Resolve(session, rootIdentifier);
         if (rootBinding is null)
         {
-            return new EvaluationReport
+            stopwatch.Stop();
+            return WithModuleEditAdmission(new EvaluationReport
             {
                 Expression = expression,
                 Path = "Root-relative expression",
@@ -279,10 +318,9 @@ public static class ExpressionEvaluationService
                 Value = "No value was produced.",
                 Facts = [new PropertyRow("Root", "Selection", root.Description)],
                 Diagnostics = [new DiagnosticRow("EXPLORER_ROOT_UNRESOLVED", stop!)],
-            };
+                Duration = stopwatch.Elapsed,
+            }, admittedModuleCount);
         }
-
-        var stopwatch = Stopwatch.StartNew();
 
         // A composed expression — arithmetic, comparison, or string composition around one or more root-relative
         // chains — folds in the constant pre-stage, with each chain evaluated by the frozen root-relative pipeline
@@ -305,12 +343,166 @@ public static class ExpressionEvaluationService
         if (constant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
-            return BuildConstantReport(expression, constant, stopwatch.Elapsed);
+            return WithModuleEditAdmission(
+                BuildConstantReport(expression, constant, stopwatch.Elapsed),
+                admittedModuleCount);
         }
 
         var outcome = DumpExpressionEvaluator.Evaluate(session, expression, rootBinding, policy, languageProfile);
         stopwatch.Stop();
-        return BuildRootRelativeReport(expression, rootBinding, languageProfile, outcome, stopwatch.Elapsed);
+        return WithModuleEditAdmission(
+            BuildRootRelativeReport(expression, rootBinding, languageProfile, outcome, stopwatch.Elapsed),
+            admittedModuleCount);
+    }
+
+    /// <summary>
+    /// Proves the conservative first-release authority rule: every loaded managed module must have an exact physical
+    /// edit-state observation with zero applied generations before any base metadata, static storage, root object, or
+    /// method body may contribute to an answer.
+    /// </summary>
+    private static EvaluationReport? BuildModuleEditAdmissionStop(
+        ClrmdDumpSession session,
+        string expression,
+        Stopwatch stopwatch,
+        out int admittedModuleCount)
+    {
+        var admission = session.ReadModuleEditAdmission();
+        admittedModuleCount = admission.InspectedModuleCount;
+        if (admission.IsAdmitted)
+        {
+            return null;
+        }
+
+        if (admission.StoppedModule is { } stoppedModule)
+        {
+            var admissionReads = ImmutableArray.CreateBuilder<MemoryReadRow>();
+            AddReads(admissionReads, admission.Evidence);
+            var invalid = admission.Disposition == ClrmdModuleEditAdmissionDisposition.Invalid;
+            var edited = admission.Disposition == ClrmdModuleEditAdmissionDisposition.EditedModulesNotComposed;
+            return BuildModuleEditAdmissionStop(
+                expression,
+                stopwatch,
+                stoppedModule,
+                admission.InspectedModuleCount,
+                admission.TotalModuleCount,
+                admission.Status,
+                admission.Issue,
+                admission.StoppedObservation,
+                admissionReads,
+                invalid
+                    ? "EXPLORER_MODULE_EDIT_STATE_INVALID"
+                    : edited
+                        ? "EXPLORER_MODULE_EDITED_GENERATIONS_NOT_COMPOSED"
+                        : "EXPLORER_MODULE_EDIT_STATE_UNAVAILABLE",
+                invalid ? "Invalid" : edited ? "Blocked" : "Unavailable",
+                invalid
+                    ? "A loaded managed module's physical edit-state evidence violated the supported runtime contract; base-image authority cannot be established."
+                    : edited
+                        ? "At least one loaded managed module has applied edit generations, but generation-aware metadata and IL composition is not implemented."
+                        : "A loaded managed module's edit state could not be proven exactly; base-image authority cannot be established.");
+        }
+
+        // The Host contract guarantees that the only refusal without a stopped module is a zero-module session.
+        stopwatch.Stop();
+        return new EvaluationReport
+        {
+            Expression = expression,
+            Path = "Session edit-state admission",
+            Severity = EvaluationSeverity.Stopped,
+            Status = "Unavailable",
+            Stage = "Evaluation refused before base-image authority was consulted",
+            Value = "No value was produced.",
+            Facts =
+            [
+                new PropertyRow("Routing", "Entry point", "ExpressionEvaluationService"),
+                new PropertyRow("Admission", "Policy", "Every loaded managed module must prove zero applied edits"),
+                new PropertyRow(
+                    "Admission",
+                    "Modules inspected",
+                    $"{DisplayFormatting.Count(admission.InspectedModuleCount)} of {DisplayFormatting.Count(admission.TotalModuleCount)}"),
+            ],
+            Diagnostics =
+            [
+                new DiagnosticRow(
+                    "EXPLORER_MODULE_EDIT_STATE_UNAVAILABLE",
+                    "The session contains no managed module catalog from which base-image authority can be proven."),
+            ],
+            Duration = stopwatch.Elapsed,
+        };
+    }
+
+    private static EvaluationReport WithModuleEditAdmission(EvaluationReport report, int admittedModuleCount) =>
+        report with
+        {
+            Facts = report.Facts.Add(new PropertyRow(
+                "Admission",
+                "Module edit state",
+                $"Exact for {DisplayFormatting.Count(admittedModuleCount)} managed modules; zero applied generations",
+                "The session-wide fail-closed guard ran before any base-image metadata, runtime storage, root object, "
+                + "or method body contributed to this result.")),
+        };
+
+    private static EvaluationReport BuildModuleEditAdmissionStop(
+        string expression,
+        Stopwatch stopwatch,
+        ClrmdModuleInfo module,
+        int inspectedModuleCount,
+        int moduleCount,
+        ClrmdEvidenceStatus status,
+        ClrmdValueIssue issue,
+        ClrmdModuleEditStateObservation? observation,
+        ImmutableArray<MemoryReadRow>.Builder reads,
+        string diagnosticCode,
+        string terminalStatus,
+        string diagnosticMessage)
+    {
+        stopwatch.Stop();
+        var facts = ImmutableArray.CreateBuilder<PropertyRow>();
+        facts.Add(new PropertyRow("Routing", "Entry point", "ExpressionEvaluationService"));
+        facts.Add(new PropertyRow(
+            "Admission",
+            "Policy",
+            "Every loaded managed module must prove zero applied edits"));
+        facts.Add(new PropertyRow(
+            "Admission",
+            "Modules inspected",
+            $"{DisplayFormatting.Count(inspectedModuleCount)} of {DisplayFormatting.Count(moduleCount)}"));
+        facts.Add(new PropertyRow("Stopped module", "Name", module.Name));
+        facts.Add(new PropertyRow(
+            "Stopped module",
+            "Runtime address",
+            DisplayFormatting.Address(module.Identity.ModuleAddress)));
+        facts.Add(new PropertyRow("Stopped module", "Status", status.ToString()));
+        facts.Add(new PropertyRow("Stopped module", "Issue", issue.ToString()));
+        if (observation?.ModuleFlags is uint moduleFlags)
+        {
+            facts.Add(new PropertyRow(
+                "Stopped module",
+                "Flags",
+                "0x" + moduleFlags.ToString("X8", CultureInfo.InvariantCulture)));
+            facts.Add(new PropertyRow(
+                "Stopped module",
+                "Edit enabled",
+                observation.IsEditEnabled == true ? "Yes" : "No"));
+            facts.Add(new PropertyRow(
+                "Stopped module",
+                "Applied generations",
+                observation.AppliedGenerationCount!.Value.ToString("N0", CultureInfo.InvariantCulture)));
+        }
+
+        return new EvaluationReport
+        {
+            Expression = expression,
+            Path = "Session edit-state admission",
+            Severity = EvaluationSeverity.Stopped,
+            Status = terminalStatus,
+            Stage = "Evaluation refused before base-image authority was consulted",
+            Value = "No value was produced.",
+            Facts = facts.ToImmutable(),
+            MemoryReads = reads.ToImmutable(),
+            Diagnostics = [new DiagnosticRow(diagnosticCode, diagnosticMessage)],
+            Duration = stopwatch.Elapsed,
+        };
     }
 
     private static ConstantOperandResolution MapStaticOperand(
@@ -516,6 +708,35 @@ public static class ExpressionEvaluationService
         ConstantExpressionEvaluation constant,
         TimeSpan duration)
     {
+        if (constant.ModuleEditAdmission is { } admission)
+        {
+            var admissionReads = ImmutableArray.CreateBuilder<MemoryReadRow>();
+            AddReads(admissionReads, admission.Evidence);
+            var invalid = admission.Disposition == ClrmdModuleEditAdmissionDisposition.Invalid;
+            return new EvaluationReport
+            {
+                Expression = expression,
+                Path = "Session edit-state admission",
+                Severity = EvaluationSeverity.Stopped,
+                Status = invalid ? "Invalid" : "Unavailable",
+                Stage = "Constant evaluation refused before dump metadata or resolver evidence was consulted",
+                Value = "No value was produced.",
+                Facts =
+                [
+                    new PropertyRow("Routing", "Entry point", "ConstantExpressionEvaluator"),
+                    new PropertyRow("Admission", "Disposition", admission.Disposition.ToString()),
+                    new PropertyRow(
+                        "Admission",
+                        "Modules inspected",
+                        $"{DisplayFormatting.Count(admission.InspectedModuleCount)} of {DisplayFormatting.Count(admission.TotalModuleCount)}"),
+                ],
+                MemoryReads = admissionReads.ToImmutable(),
+                Diagnostics = [new DiagnosticRow(constant.DiagnosticCode!, constant.DiagnosticMessage!)],
+                Duration = duration,
+                Sha256 = constant.Sha256,
+            };
+        }
+
         var facts = ImmutableArray.CreateBuilder<PropertyRow>();
         facts.Add(new PropertyRow("Routing", "Entry point", "ConstantExpressionEvaluator"));
         facts.Add(new PropertyRow(

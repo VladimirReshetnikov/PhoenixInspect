@@ -31,7 +31,7 @@ public static class StaticFieldContextualBinder
     /// Every module metadata image is read at most once. The operation performs no static-storage or value read and
     /// does not take ownership of <paramref name="session"/>.
     /// </remarks>
-    public static StaticFieldSymbolBindingOutcome Bind(
+    internal static StaticFieldSymbolBindingOutcome Bind(
         ClrmdDumpSession session,
         StaticFieldExpressionDescriptor descriptor,
         DumpExpressionBindingContext context)

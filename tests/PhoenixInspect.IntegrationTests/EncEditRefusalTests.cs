@@ -1,4 +1,10 @@
 using System.Collections.Immutable;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using PhoenixInspect.Core.Abstractions;
+using PhoenixInspect.Host.Dump.ClrMD;
+using PhoenixInspect.Inspection;
+using PhoenixInspect.Product.DumpDebugging;
 using PhoenixInspect.Product.DumpQuery;
 using Xunit;
 
@@ -181,6 +187,176 @@ public sealed class EncEditRefusalTests
                     StaticFieldV2ClosedConstructionIssue.OwnerModuleEditedGenerationsNotComposed,
                     comparator.Result.Provenance.OwnerConstruction.Issue);
             }
+
+            // The released CLI and Desktop share ExpressionEvaluationService rather than the V2 corpus pipeline.
+            // Prove that this real edited snapshot is refused at that public boundary too, while the closed
+            // evidence-free constant subset remains usable.
+            var opened = ClrmdDumpSession.Open(dumpPath);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, opened.Status);
+            using (var hostSession = opened.Value!)
+            {
+                var admission = hostSession.ReadModuleEditAdmission();
+                Assert.Same(admission, hostSession.ReadModuleEditAdmission());
+                Assert.Equal(
+                    ClrmdModuleEditAdmissionDisposition.EditedModulesNotComposed,
+                    admission.Disposition);
+                Assert.Equal(hostSession.Modules.Length, admission.InspectedModuleCount);
+                Assert.Equal(hostSession.Modules.Length, admission.TotalModuleCount);
+                Assert.NotNull(admission.StoppedModule);
+                Assert.NotEmpty(admission.Evidence);
+
+                var pure = ExpressionEvaluationService.EvaluateStaticField(hostSession, "2 + 2", null, []);
+                Assert.Equal(EvaluationSeverity.Exact, pure.Severity);
+                Assert.Equal("4", pure.Value);
+                Assert.Equal("Folded without dump evidence", pure.Stage);
+                Assert.Empty(pure.MemoryReads);
+
+                var pureDirect = ConstantExpressionEvaluator.Evaluate(hostSession, "2 + 2");
+                var pureWithoutSession = ConstantExpressionEvaluator.Evaluate(session: null, "2 + 2");
+                Assert.Equal(ConstantExpressionStatus.Exact, pureDirect.Status);
+                Assert.Null(pureDirect.ModuleEditAdmission);
+                Assert.Equal(pureWithoutSession.Sha256, pureDirect.Sha256);
+
+                var directConstant = ConstantExpressionEvaluator.Evaluate(hostSession, expression);
+                Assert.Equal(ConstantExpressionStatus.Unavailable, directConstant.Status);
+                Assert.Same(admission, directConstant.ModuleEditAdmission);
+                Assert.Equal("DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED", directConstant.DiagnosticCode);
+
+                var directStatic = StaticFieldExpressionEvaluator.Evaluate(hostSession, expression);
+                Assert.Equal(StaticFieldExpressionEvaluationStage.EditStateAdmission, directStatic.Stage);
+                Assert.Equal(StaticFieldExpressionEvaluationStatus.Unavailable, directStatic.Status);
+                Assert.Same(admission, directStatic.ModuleEditAdmission);
+                Assert.Equal("DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED", directStatic.DiagnosticCode);
+
+                var contextualStatic = StaticFieldExpressionEvaluator.Evaluate(
+                    hostSession,
+                    expression,
+                    DumpSelectedFrameSelector.Create(hostSession.Snapshot, threadOrdinal: 0, frameOrdinal: 0),
+                    portablePdbCandidates: []);
+                Assert.Equal(StaticFieldExpressionEvaluationStage.EditStateAdmission, contextualStatic.Stage);
+                Assert.Same(admission, contextualStatic.ModuleEditAdmission);
+
+                // Syntax rejection remains evidence-free and wins before edit-state admission.
+                var rejectedStatic = StaticFieldExpressionEvaluator.Evaluate(hostSession, "global::Broken..Field");
+                Assert.Equal(StaticFieldExpressionEvaluationStage.Syntax, rejectedStatic.Stage);
+                Assert.Null(rejectedStatic.ModuleEditAdmission);
+
+                var rootObject = new ClrmdHeapObjectInfo(
+                    hostSession.Snapshot,
+                    address: 0x1000,
+                    typeName: "Synthetic.Root",
+                    methodTable: 0x2000,
+                    rootAddress: 0x3000,
+                    rootKind: "AdmissionTest",
+                    module: hostSession.Modules[0],
+                    evidence: []);
+                var rootBinding = DumpQueryRootBinding.FromExactObject("root", rootObject);
+                var directQuery = DumpQueryEngine.Prepare(hostSession, "root.Marker", rootBinding);
+                Assert.False(directQuery.IsSuccess);
+                Assert.Contains(
+                    directQuery.Failure!.Diagnostics,
+                    diagnostic => diagnostic.Code == "DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED");
+
+                var queryPlan = new DumpQueryPlan(
+                    rootBinding,
+                    new ClrmdInstanceFieldInfo(
+                        hostSession.Snapshot,
+                        rootObject.Address,
+                        rootObject.MethodTable,
+                        rootObject.TypeName,
+                        name: "Marker",
+                        metadataToken: 0x04000001,
+                        address: 0x4000,
+                        size: sizeof(int),
+                        isObjectReference: false,
+                        elementType: "Int32",
+                        fieldTypeName: "System.Int32",
+                        nullableInt32Layout: null),
+                    DumpQueryPlanFieldKind.Int32,
+                    coalesceLiteral: null,
+                    parserBounds: DumpQueryParserBounds.None,
+                    fieldSelectionBounds: []);
+                var directPlanEvaluation = DumpQueryEngine.Evaluate(hostSession, queryPlan);
+                Assert.Contains(
+                    directPlanEvaluation.Diagnostics,
+                    diagnostic => diagnostic.Code == "DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED");
+
+                var rejectedQuery = DumpQueryEngine.Prepare(hostSession, "root..Marker", rootBinding);
+                Assert.False(rejectedQuery.IsSuccess);
+                Assert.DoesNotContain(
+                    rejectedQuery.Failure!.Diagnostics,
+                    diagnostic => diagnostic.Code == "DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED");
+
+                var policy = DumpExpressionPolicy.Create(
+                    DumpMethodEvaluationMode.Interpreted,
+                    instructionLimit: 100,
+                    logicalDepthLimit: 4,
+                    traversalLimit: 10);
+                var routed = DumpExpressionEvaluator.Evaluate(
+                    hostSession,
+                    "root.Marker",
+                    rootBinding,
+                    policy);
+                Assert.Equal(DumpExpressionEvaluationOutcomeKind.AdmissionFailure, routed.Kind);
+                Assert.Same(admission, routed.AdmissionFailure);
+
+                var methodRequest = Assert.IsType<DumpExpressionRequest>(DumpExpressionClassifier.Classify(
+                    "root.GetMarkerSummary()",
+                    rootBinding,
+                    policy).Request);
+                var method = DumpMethodAcquisitionFacade.Acquire(hostSession, methodRequest);
+                Assert.False(method.IsSuccess);
+                Assert.Equal(DumpMethodAcquisitionFailureKind.EditStateAdmission, method.Failure!.Kind);
+                Assert.Same(admission, method.Failure.ModuleEditAdmission);
+
+                var chainRequest = Assert.IsType<DumpExpressionRequest>(DumpExpressionClassifier.Classify(
+                    "root.Child.Marker",
+                    rootBinding,
+                    policy,
+                    DumpExpressionLanguageProfile.FixedDepthMemberChainV1).Request);
+                var chainPreparation = DumpMemberChainPreparationFacade.Prepare(hostSession, chainRequest);
+                Assert.False(chainPreparation.IsSuccess);
+                Assert.Same(admission, chainPreparation.Failure!.ModuleEditAdmission);
+
+                var pathRequest = Assert.IsType<DumpExpressionRequest>(DumpExpressionClassifier.Classify(
+                    "root.Child.Grandchild.Marker",
+                    rootBinding,
+                    policy,
+                    DumpExpressionLanguageProfile.MemberChainV2).Request);
+                var path = DumpMemberChainPathEvaluator.Evaluate(hostSession, pathRequest);
+                Assert.Contains(
+                    path.Diagnostics,
+                    diagnostic => diagnostic.Code == "DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED");
+
+                // An edited session cannot honestly prepare a plan. A minimal detached plan shell proves the public
+                // evaluation overload checks admission before it dereferences any plan evidence or opens its source.
+                var detachedPlan = CreateAdmissionSentinelPlan(rootBinding);
+                var chainEvaluation = DumpMemberChainEngine.Evaluate(hostSession, detachedPlan);
+                Assert.Contains(
+                    chainEvaluation.Diagnostics,
+                    diagnostic => diagnostic.Code == "DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED");
+
+                var hostRefusal = ExpressionEvaluationService.EvaluateStaticField(
+                    hostSession,
+                    expression,
+                    contextSelector: null,
+                    portablePdbCandidates: []);
+                Assert.Equal(EvaluationSeverity.Stopped, hostRefusal.Severity);
+                Assert.Equal("Session edit-state admission", hostRefusal.Path);
+                Assert.Equal(
+                    "Evaluation refused before base-image authority was consulted",
+                    hostRefusal.Stage);
+                Assert.Contains(
+                    hostRefusal.Diagnostics,
+                    diagnostic => diagnostic.Code == "EXPLORER_MODULE_EDITED_GENERATIONS_NOT_COMPOSED");
+                Assert.Contains(
+                    hostRefusal.Facts,
+                    fact => fact.Group == "Stopped module" &&
+                        fact.Name == "Name" &&
+                        fact.Value == "PhoenixInspect.EncFixtureBaseline.dll");
+                Assert.NotEmpty(hostRefusal.MemoryReads);
+                Assert.Null(hostRefusal.PromotableRoot);
+            }
         }
         finally
         {
@@ -201,4 +377,17 @@ public sealed class EncEditRefusalTests
             runtimeModuleAddress: 0x7000_0000,
             moduleFlags: 0x9019,
             generationCounter: generationCounter);
+
+    private static DumpMemberChainPlan CreateAdmissionSentinelPlan(DumpQueryRootBinding rootBinding)
+    {
+        var plan = (DumpMemberChainPlan)RuntimeHelpers.GetUninitializedObject(typeof(DumpMemberChainPlan));
+        SetField(plan, "<RootBinding>k__BackingField", rootBinding);
+        SetField(plan, "<RequestSha256>k__BackingField", new string('a', 64));
+        SetField(plan, "requestBounds", ImmutableArray<EvaluationDeterministicBound>.Empty);
+        return plan;
+    }
+
+    private static void SetField(object instance, string name, object value) =>
+        instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(instance, value);
 }

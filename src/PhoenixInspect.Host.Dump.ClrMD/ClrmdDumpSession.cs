@@ -61,6 +61,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
     private readonly DataTarget _dataTarget;
     private readonly ClrRuntime _runtime;
     private readonly ClrmdProcessMemoryReader _memory;
+    private readonly ClrmdRuntimeContractDescriptorReadResult _runtimeContractDescriptorRead;
     private readonly IReadOnlyDictionary<ClrmdRuntimeModuleIdentity, ClrModule> _runtimeModules;
     private readonly IReadOnlyDictionary<(ulong AppDomainAddress, ulong ModuleAddress), ClrmdModuleInfo> _moduleInfos;
     private bool _disposed;
@@ -71,6 +72,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
         ClrRuntime runtime,
         ClrmdSnapshotIdentity snapshot,
         ClrmdProcessMemoryReader memory,
+        ClrmdRuntimeContractDescriptorReadResult runtimeContractDescriptorRead,
         ImmutableArray<ClrmdModuleInfo> modules,
         IReadOnlyDictionary<ClrmdRuntimeModuleIdentity, ClrModule> runtimeModules,
         IReadOnlyDictionary<(ulong AppDomainAddress, ulong ModuleAddress), ClrmdModuleInfo> moduleInfos,
@@ -82,6 +84,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
         _dataTarget = dataTarget;
         _runtime = runtime;
         _memory = memory;
+        _runtimeContractDescriptorRead = runtimeContractDescriptorRead;
         Snapshot = snapshot;
         Modules = modules;
         _runtimeModules = runtimeModules;
@@ -152,6 +155,10 @@ public sealed partial class ClrmdDumpSession : IDisposable
         _dataTarget.CacheOptions.MaxDumpCacheSize == MaximumClrmdDumpCacheSize &&
         !_dataTarget.CacheOptions.CacheStackTraces &&
         !_dataTarget.CacheOptions.CacheStackRoots;
+
+    /// <summary>Gets the retained descriptor read for adapter-level evidence tests and product composition.</summary>
+    internal ClrmdRuntimeContractDescriptorReadResult RuntimeContractDescriptorRead =>
+        _runtimeContractDescriptorRead;
 
     /// <summary>
     /// Gets the immutable catalog projection of the exact module selected by
@@ -446,7 +453,13 @@ public sealed partial class ClrmdDumpSession : IDisposable
                     $"The walking-skeleton adapter requires one CLR runtime, but the target contains {dataTarget.ClrVersions.Length}.");
             }
 
-            runtime = dataTarget.ClrVersions[0].CreateRuntime();
+            var clrInfo = dataTarget.ClrVersions[0];
+            runtime = clrInfo.CreateRuntime();
+            var runtimeContractDescriptorRead = ClrmdRuntimeContractDescriptorReader.Read(
+                dataTarget,
+                clrInfo,
+                Array.Empty<ClrmdRuntimeContractField>(),
+                ClrmdRuntimeContractDescriptorReader.ModuleEditStateFields);
             var projectedModules = new List<(ClrmdModuleInfo Info, ClrModule RuntimeModule)>();
 
             foreach (var module in runtime.EnumerateModules())
@@ -492,6 +505,7 @@ public sealed partial class ClrmdDumpSession : IDisposable
                 runtime,
                 snapshot,
                 memory,
+                runtimeContractDescriptorRead,
                 modules,
                 runtimeModules,
                 moduleInfos,

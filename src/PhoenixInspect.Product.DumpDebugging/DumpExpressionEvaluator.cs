@@ -21,6 +21,9 @@ public enum DumpExpressionEvaluationOutcomeKind
 
     /// <summary>The existing W4 runner returned its complete value-free preparation failure.</summary>
     CounterfactualPreparationFailure = 5,
+
+    /// <summary>Full-session edit-state admission refused all base-image semantic routes.</summary>
+    AdmissionFailure = 6,
 }
 
 /// <summary>
@@ -41,7 +44,8 @@ public sealed class DumpExpressionEvaluationOutcome
         CounterfactualExecutionResult? counterfactualExecutionResult,
         DumpExpressionClassification? classificationFailure,
         DumpMethodAcquisitionFailure? acquisitionFailure,
-        CounterfactualMethodPreparationFailure? counterfactualPreparationFailure)
+        CounterfactualMethodPreparationFailure? counterfactualPreparationFailure,
+        ClrmdModuleEditAdmission? admissionFailure)
     {
         Kind = kind;
         Request = request;
@@ -50,6 +54,7 @@ public sealed class DumpExpressionEvaluationOutcome
         ClassificationFailure = classificationFailure;
         AcquisitionFailure = acquisitionFailure;
         CounterfactualPreparationFailure = counterfactualPreparationFailure;
+        AdmissionFailure = admissionFailure;
     }
 
     /// <summary>Gets the discriminator for the one populated payload.</summary>
@@ -88,6 +93,9 @@ public sealed class DumpExpressionEvaluationOutcome
     /// </summary>
     public CounterfactualMethodPreparationFailure? CounterfactualPreparationFailure { get; }
 
+    /// <summary>Gets the cached Host refusal only for <see cref="DumpExpressionEvaluationOutcomeKind.AdmissionFailure"/>.</summary>
+    public ClrmdModuleEditAdmission? AdmissionFailure { get; }
+
     internal static DumpExpressionEvaluationOutcome FromDerivedQuery(
         DumpExpressionRequest request,
         EvaluationResult<DumpQueryValue> result) => new(
@@ -97,7 +105,8 @@ public sealed class DumpExpressionEvaluationOutcome
         counterfactualExecutionResult: null,
         classificationFailure: null,
         acquisitionFailure: null,
-        counterfactualPreparationFailure: null);
+        counterfactualPreparationFailure: null,
+        admissionFailure: null);
 
     internal static DumpExpressionEvaluationOutcome FromCounterfactualExecution(
         DumpExpressionRequest request,
@@ -108,7 +117,8 @@ public sealed class DumpExpressionEvaluationOutcome
         result ?? throw new ArgumentNullException(nameof(result)),
         classificationFailure: null,
         acquisitionFailure: null,
-        counterfactualPreparationFailure: null);
+        counterfactualPreparationFailure: null,
+        admissionFailure: null);
 
     internal static DumpExpressionEvaluationOutcome FromClassificationFailure(
         DumpExpressionClassification classification) => new(
@@ -118,7 +128,8 @@ public sealed class DumpExpressionEvaluationOutcome
         counterfactualExecutionResult: null,
         classification,
         acquisitionFailure: null,
-        counterfactualPreparationFailure: null);
+        counterfactualPreparationFailure: null,
+        admissionFailure: null);
 
     internal static DumpExpressionEvaluationOutcome FromAcquisitionFailure(
         DumpExpressionRequest request,
@@ -129,7 +140,8 @@ public sealed class DumpExpressionEvaluationOutcome
         counterfactualExecutionResult: null,
         classificationFailure: null,
         failure ?? throw new ArgumentNullException(nameof(failure)),
-        counterfactualPreparationFailure: null);
+        counterfactualPreparationFailure: null,
+        admissionFailure: null);
 
     internal static DumpExpressionEvaluationOutcome FromCounterfactualPreparationFailure(
         DumpExpressionRequest request,
@@ -140,7 +152,20 @@ public sealed class DumpExpressionEvaluationOutcome
         counterfactualExecutionResult: null,
         classificationFailure: null,
         acquisitionFailure: null,
-        failure ?? throw new ArgumentNullException(nameof(failure)));
+        failure ?? throw new ArgumentNullException(nameof(failure)),
+        admissionFailure: null);
+
+    internal static DumpExpressionEvaluationOutcome FromAdmissionFailure(
+        DumpExpressionRequest request,
+        ClrmdModuleEditAdmission admission) => new(
+        DumpExpressionEvaluationOutcomeKind.AdmissionFailure,
+        request ?? throw new ArgumentNullException(nameof(request)),
+        derivedQueryResult: null,
+        counterfactualExecutionResult: null,
+        classificationFailure: null,
+        acquisitionFailure: null,
+        counterfactualPreparationFailure: null,
+        admissionFailure: admission ?? throw new ArgumentNullException(nameof(admission)));
 }
 
 /// <summary>Composes the W2 evaluator, W4 runner, and opt-in W6 chain engine behind one expression entry path.</summary>
@@ -232,6 +257,12 @@ public static class DumpExpressionEvaluator
         }
 
         var request = classification.Request!;
+        var admission = session.ReadModuleEditAdmission();
+        if (!admission.IsAdmitted)
+        {
+            return DumpExpressionEvaluationOutcome.FromAdmissionFailure(request, admission);
+        }
+
         if (classification.Kind == DumpExpressionKind.DerivedQuery)
         {
             var preparation = DumpQueryEngine.PrepareParsed(

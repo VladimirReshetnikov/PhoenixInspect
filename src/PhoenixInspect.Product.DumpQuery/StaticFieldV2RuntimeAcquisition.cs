@@ -1,12 +1,9 @@
 using System.Buffers.Binary;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text.Json;
 using PhoenixInspect.Core.Abstractions;
 using PhoenixInspect.Host.Abstractions;
 using PhoenixInspect.Host.Dump.ClrMD;
@@ -2364,10 +2361,12 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
     public const int MaximumModuleMetadataByteCount = 64 * 1_024 * 1_024;
 
     /// <summary>Gets the maximum admitted contract-descriptor JSON byte count.</summary>
-    public const int MaximumDescriptorByteCount = 4 * 1_024 * 1_024;
+    public const int MaximumDescriptorByteCount =
+        ClrmdRuntimeContractDescriptorReader.MaximumDescriptorByteCount;
 
     /// <summary>Gets the maximum admitted contract-descriptor pointer-data slot count.</summary>
-    public const int MaximumPointerDataSlotCount = 65_536;
+    public const int MaximumPointerDataSlotCount =
+        ClrmdRuntimeContractDescriptorReader.MaximumPointerDataSlotCount;
 
     /// <summary>Gets the maximum admitted closed-argument projection depth of one candidate.</summary>
     public const int MaximumProjectionDepth = StaticFieldV2Limits.MaximumClosedTypeTopologyDepth;
@@ -2381,9 +2380,6 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
     /// <summary>Gets the maximum admitted static-field count examined per construction.</summary>
     public const int MaximumFieldCountPerConstruction = StaticFieldV2Limits.MaximumFieldCountPerConstruction;
 
-    private const string DescriptorExportName = "DotNetRuntimeContractDescriptor";
-    private const ulong DescriptorMagic = 0x0043414443434E44UL;
-    private const uint DescriptorPointerSizeFlag = 0x2;
     private const uint MethodTableGenericsMask = 0x30;
     private const uint MethodTableCategoryMask = 0x000F0000;
     private const uint MethodTableArrayCategory = 0x00080000;
@@ -2393,33 +2389,29 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
     private const int HashBucketPrefixSlotCount = 3;
     private const ulong HashEndSentinelMask = 0x1;
     private const ulong TypeHandleDescriptorMask = 0x2;
-    private const int MaximumDescriptorFieldOffset = 1 * 1_024 * 1_024;
 
-    private static readonly (string TypeName, string FieldName)[] RequiredDescriptorFields =
+    private static readonly ClrmdRuntimeContractField[] RequiredDescriptorFields =
     [
-        ("Module", "AvailableTypeParams"),
-        ("EETypeHashTable", "Buckets"),
-        ("EETypeHashTable", "Count"),
-        ("EETypeHashTable", "VolatileEntryValue"),
-        ("EETypeHashTable", "VolatileEntryNextEntry"),
-        ("MethodTable", "MTFlags"),
-        ("MethodTable", "MTFlags2"),
-        ("MethodTable", "Module"),
-        ("MethodTable", "PerInstInfo"),
-        ("MethodTable", "EEClassOrCanonMT"),
-        ("GenericsDictInfo", "NumDicts"),
-        ("GenericsDictInfo", "NumTypeArgs"),
-        ("ArrayClass", "Rank"),
-        ("TypeDesc", "TypeAndFlags"),
-        ("ParamTypeDesc", "TypeArg"),
+        new("Module", "AvailableTypeParams"),
+        new("EETypeHashTable", "Buckets"),
+        new("EETypeHashTable", "Count"),
+        new("EETypeHashTable", "VolatileEntryValue"),
+        new("EETypeHashTable", "VolatileEntryNextEntry"),
+        new("MethodTable", "MTFlags"),
+        new("MethodTable", "MTFlags2"),
+        new("MethodTable", "Module"),
+        new("MethodTable", "PerInstInfo"),
+        new("MethodTable", "EEClassOrCanonMT"),
+        new("GenericsDictInfo", "NumDicts"),
+        new("GenericsDictInfo", "NumTypeArgs"),
+        new("ArrayClass", "Rank"),
+        new("TypeDesc", "TypeAndFlags"),
+        new("ParamTypeDesc", "TypeArg"),
     ];
 
     /// <summary>Declared fields the session retains when present without requiring them to open.</summary>
-    private static readonly (string TypeName, string FieldName)[] OptionalDescriptorFields =
-    [
-        ("Module", "Flags"),
-        ("Module", "DynamicMetadata"),
-    ];
+    private static readonly ImmutableArray<ClrmdRuntimeContractField> OptionalDescriptorFields =
+        ClrmdRuntimeContractDescriptorReader.ModuleEditStateFields;
 
     private readonly DataTarget dataTarget;
     private readonly ClrRuntime runtime;
@@ -2501,7 +2493,7 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
             {
                 var memoryReader = new ClrmdProcessMemoryReader(dataTarget.DataReader, dumpPath);
                 var reader = new ExactSnapshotReader(dataTarget.DataReader);
-                var descriptor = ReadContractDescriptor(dataTarget, clrInfo, reader);
+                var descriptor = ReadContractDescriptor(dataTarget, clrInfo);
                 var modules = runtime
                     .EnumerateModules()
                     .Take(MaximumRuntimeModuleCount + 1)
@@ -3268,224 +3260,24 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
         return CanonicalReplayEncoding.ComputeSha256(writer.ToImmutableArray().AsSpan());
     }
 
-    private static ParsedContractDescriptor ReadContractDescriptor(
+    private static ClrmdRuntimeContractDescriptor ReadContractDescriptor(
         DataTarget dataTarget,
-        ClrInfo clrInfo,
-        ExactSnapshotReader reader)
+        ClrInfo clrInfo)
     {
-        var runtimeModules = dataTarget.DataReader
-            .EnumerateModules()
-            .Where(candidate => candidate.ImageBase == clrInfo.ModuleInfo.ImageBase)
-            .Take(2)
-            .ToArray();
-        if (runtimeModules.Length != 1)
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.RuntimeCardinalityCode,
-                $"The pinned snapshot exposes {runtimeModules.Length} runtime modules at the reported image base.");
-        }
-
-        var descriptorAddress = runtimeModules[0].GetExportSymbolAddress(DescriptorExportName);
-        if (descriptorAddress == 0)
+        var read = ClrmdRuntimeContractDescriptorReader.Read(
+            dataTarget,
+            clrInfo,
+            RequiredDescriptorFields,
+            OptionalDescriptorFields);
+        if (read.Status != ClrmdEvidenceStatus.Exact || read.Descriptor is not { } descriptor)
         {
             throw new StaticFieldV2RuntimeAcquisitionException(
                 StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                $"The pinned runtime module does not export {DescriptorExportName}.");
-        }
-        if (clrInfo.ContractDescriptorAddress != 0 && clrInfo.ContractDescriptorAddress != descriptorAddress)
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                "The runtime module export and the reported descriptor addresses disagree.");
+                read.Diagnostic);
         }
 
-        var pointerDataOffset = checked(24 + reader.PointerSize);
-        var header = reader.ReadExact(descriptorAddress, checked(pointerDataOffset + reader.PointerSize));
-        if (BinaryPrimitives.ReadUInt64LittleEndian(header) != DescriptorMagic)
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                $"Descriptor address 0x{descriptorAddress:x} does not carry the little-endian descriptor magic.");
-        }
-
-        var flags = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(8, sizeof(uint)));
-        var descriptorPointerSize = (flags & DescriptorPointerSizeFlag) == 0 ? sizeof(ulong) : sizeof(uint);
-        if (descriptorPointerSize != reader.PointerSize)
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                "The descriptor pointer size and the snapshot pointer size disagree.");
-        }
-
-        var descriptorSize = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(12, sizeof(uint)));
-        if (descriptorSize == 0 || descriptorSize > MaximumDescriptorByteCount)
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                $"The descriptor byte count {descriptorSize} is outside the admitted range.");
-        }
-
-        var jsonAddress = ReadPointerValue(header.AsSpan(16, reader.PointerSize), reader.PointerSize);
-        var pointerDataCount = BinaryPrimitives.ReadUInt32LittleEndian(
-            header.AsSpan(checked(16 + reader.PointerSize), sizeof(uint)));
-        if (pointerDataCount > MaximumPointerDataSlotCount)
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                $"The descriptor pointer-data slot count {pointerDataCount} is outside the admitted range.");
-        }
-
-        var pointerDataAddress = ReadPointerValue(header.AsSpan(pointerDataOffset, reader.PointerSize), reader.PointerSize);
-        if (jsonAddress == 0 || (pointerDataCount != 0 && pointerDataAddress == 0))
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                "The descriptor contains a null address for required data.");
-        }
-
-        var jsonBytes = reader.ReadExact(jsonAddress, checked((int)descriptorSize));
-        var pointerDataBytes = pointerDataCount == 0
-            ? []
-            : reader.ReadExact(pointerDataAddress, checked((int)pointerDataCount * reader.PointerSize));
-        var parsed = ParseDescriptorJson(jsonBytes);
-        return new ParsedContractDescriptor(
-            descriptorAddress,
-            flags,
-            descriptorSize,
-            Convert.ToHexString(SHA256.HashData(jsonBytes)).ToLowerInvariant(),
-            Convert.ToHexString(SHA256.HashData(pointerDataBytes)).ToLowerInvariant(),
-            parsed.LoaderContractVersion,
-            parsed.RuntimeTypeSystemContractVersion,
-            parsed.Layout);
+        return descriptor;
     }
-
-    private static ParsedDescriptorJson ParseDescriptorJson(byte[] jsonBytes)
-    {
-        JsonDocument document;
-        try
-        {
-            document = JsonDocument.Parse(jsonBytes);
-        }
-        catch (JsonException exception)
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                "The pinned runtime descriptor JSON could not be parsed.",
-                exception);
-        }
-
-        using (document)
-        {
-            var root = document.RootElement;
-            var descriptorVersion = ReadDescriptorVersion(root, "version");
-            var contracts = root.GetProperty("contracts");
-            var loaderVersion = ReadDescriptorVersion(contracts, "Loader");
-            var runtimeTypeSystemVersion = ReadDescriptorVersion(contracts, "RuntimeTypeSystem");
-            if (descriptorVersion != 0 || loaderVersion != 1 || runtimeTypeSystemVersion != 1)
-            {
-                throw new StaticFieldV2RuntimeAcquisitionException(
-                    StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                    $"Observed descriptor/Loader/RuntimeTypeSystem versions " +
-                    $"{descriptorVersion}/{loaderVersion}/{runtimeTypeSystemVersion}.");
-            }
-
-            var typeElements = root.GetProperty("types");
-            var typeBuilder = ImmutableDictionary.CreateBuilder<string, ImmutableDictionary<string, int>>(
-                StringComparer.Ordinal);
-            foreach (var typeName in RequiredDescriptorFields.Select(static field => field.TypeName).Distinct())
-            {
-                if (!typeElements.TryGetProperty(typeName, out var typeElement) ||
-                    typeElement.ValueKind != JsonValueKind.Object)
-                {
-                    throw new StaticFieldV2RuntimeAcquisitionException(
-                        StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                        $"The pinned runtime descriptor does not define type {typeName}.");
-                }
-
-                var fieldBuilder = ImmutableDictionary.CreateBuilder<string, int>(StringComparer.Ordinal);
-                foreach (var field in RequiredDescriptorFields.Where(candidate => candidate.TypeName == typeName))
-                {
-                    if (!typeElement.TryGetProperty(field.FieldName, out var fieldElement))
-                    {
-                        throw new StaticFieldV2RuntimeAcquisitionException(
-                            StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                            $"The pinned runtime descriptor does not define {typeName}.{field.FieldName}.");
-                    }
-
-                    fieldBuilder.Add(field.FieldName, ReadDescriptorFieldOffset(fieldElement, typeName, field.FieldName));
-                }
-
-                // Optional fields are retained when the descriptor declares them and are otherwise simply absent,
-                // so their consumers produce typed unavailable stops instead of this session refusing to open.
-                foreach (var field in OptionalDescriptorFields.Where(candidate => candidate.TypeName == typeName))
-                {
-                    if (typeElement.TryGetProperty(field.FieldName, out var fieldElement))
-                    {
-                        fieldBuilder.Add(
-                            field.FieldName,
-                            ReadDescriptorFieldOffset(fieldElement, typeName, field.FieldName));
-                    }
-                }
-
-                typeBuilder.Add(typeName, fieldBuilder.ToImmutable());
-            }
-
-            return new ParsedDescriptorJson(loaderVersion, runtimeTypeSystemVersion, typeBuilder.ToImmutable());
-        }
-    }
-
-    private static int ReadDescriptorVersion(JsonElement parent, string propertyName)
-    {
-        if (!parent.TryGetProperty(propertyName, out var element))
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                $"The pinned runtime descriptor does not declare {propertyName}.");
-        }
-        if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var numeric))
-        {
-            return numeric;
-        }
-        if (element.ValueKind == JsonValueKind.String &&
-            int.TryParse(element.GetString(), NumberStyles.None, CultureInfo.InvariantCulture, out numeric))
-        {
-            return numeric;
-        }
-        throw new StaticFieldV2RuntimeAcquisitionException(
-            StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-            $"The pinned runtime descriptor value {propertyName} is not an integer version.");
-    }
-
-    private static int ReadDescriptorFieldOffset(JsonElement element, string typeName, string fieldName)
-    {
-        var offsetElement = element;
-        if (element.ValueKind == JsonValueKind.Array)
-        {
-            var enumerator = element.EnumerateArray();
-            if (!enumerator.MoveNext())
-            {
-                throw new StaticFieldV2RuntimeAcquisitionException(
-                    StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                    $"The pinned runtime descriptor field {typeName}.{fieldName} has an empty offset tuple.");
-            }
-            offsetElement = enumerator.Current;
-        }
-        if (offsetElement.ValueKind != JsonValueKind.Number ||
-            !offsetElement.TryGetInt32(out var offset) ||
-            offset < 0 ||
-            offset > MaximumDescriptorFieldOffset)
-        {
-            throw new StaticFieldV2RuntimeAcquisitionException(
-                StaticFieldV2RuntimeAcquisitionCodes.DescriptorUnavailableCode,
-                $"The pinned runtime descriptor field {typeName}.{fieldName} has an inadmissible offset.");
-        }
-        return offset;
-    }
-
-    private static ulong ReadPointerValue(ReadOnlySpan<byte> bytes, int pointerSize) =>
-        pointerSize == sizeof(uint)
-            ? BinaryPrimitives.ReadUInt32LittleEndian(bytes)
-            : BinaryPrimitives.ReadUInt64LittleEndian(bytes);
 
     private static ulong Add(ulong address, int offset) => checked(address + checked((ulong)offset));
 
@@ -4442,21 +4234,6 @@ public sealed class StaticFieldV2RuntimeAcquisitionSession : IDisposable
         uint MethodTableFlags,
         ImmutableArray<ulong> TypeArgumentHandles,
         ulong ElementOrPerInstInfoAddress);
-
-    private sealed record ParsedDescriptorJson(
-        int LoaderContractVersion,
-        int RuntimeTypeSystemContractVersion,
-        ImmutableDictionary<string, ImmutableDictionary<string, int>> Layout);
-
-    private sealed record ParsedContractDescriptor(
-        ulong Address,
-        uint Flags,
-        uint Size,
-        string JsonSha256,
-        string PointerDataSha256,
-        int LoaderContractVersion,
-        int RuntimeTypeSystemContractVersion,
-        ImmutableDictionary<string, ImmutableDictionary<string, int>> Layout);
 
     private sealed class ExactSnapshotReader
     {

@@ -30,6 +30,26 @@ public static class DumpMemberChainPreparationFacade
         DumpExpressionRequest request)
     {
         ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.AdmittedKind == DumpExpressionKind.FixedDepthMemberChain &&
+            (request.LanguageProfile is DumpExpressionLanguageProfile.FixedDepthMemberChainV1 or
+                DumpExpressionLanguageProfile.MemberChainV2) &&
+            request.MemberChainExpressionIdentity is not null)
+        {
+            var admission = session.ReadModuleEditAdmission();
+            if (!admission.IsAdmitted)
+            {
+                return DumpMemberChainPreparationResult.Failed(new DumpMemberChainPreparationFailure(
+                    ModuleEditAdmissionPolicy.Code(admission),
+                    ModuleEditAdmissionPolicy.Message(admission),
+                    admission.Status,
+                    admission.Issue,
+                    admission.Evidence,
+                    appliedBounds: [],
+                    moduleEditAdmission: admission));
+            }
+        }
+
         return Prepare(new ClrmdDumpMemberChainEvidenceSource(session), request);
     }
 

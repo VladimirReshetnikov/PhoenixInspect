@@ -39,6 +39,9 @@ public enum StaticFieldExpressionEvaluationStage
 
     /// <summary>A frozen W2/W6 suffix plan ran but did not produce one exact complete answer.</summary>
     SuffixEvaluation = 9,
+
+    /// <summary>Full-session edit-state admission refused base-image semantic evidence.</summary>
+    EditStateAdmission = 10,
 }
 
 /// <summary>Identifies whether a selected static field is terminal or feeds an existing instance-suffix engine.</summary>
@@ -125,7 +128,8 @@ public sealed class StaticFieldExpressionEvaluationResult :
         DumpMemberChainPlan? memberChainSuffixPlan,
         EvaluationResult<DumpQueryValue>? suffixResult,
         string? diagnosticCode,
-        string? diagnosticMessage)
+        string? diagnosticMessage,
+        ClrmdModuleEditAdmission? moduleEditAdmission = null)
     {
         Syntax = syntax ?? throw new ArgumentNullException(nameof(syntax));
         SymbolBinding = symbolBinding;
@@ -152,6 +156,7 @@ public sealed class StaticFieldExpressionEvaluationResult :
         SuffixResult = suffixResult;
         DiagnosticCode = diagnosticCode;
         DiagnosticMessage = diagnosticMessage;
+        ModuleEditAdmission = moduleEditAdmission;
 
         ValidateShape();
         var writer = new CanonicalReplayEncoding.Writer("static-field-expression-evaluation-result", 2);
@@ -186,6 +191,19 @@ public sealed class StaticFieldExpressionEvaluationResult :
                     static value => value.ToCanonicalReplayProjection()).ToImmutableArray());
         WriteOptionalString(writer, diagnosticCode);
         WriteOptionalString(writer, diagnosticMessage);
+        // This extension is intentionally present only for the new refusal arm. Every pre-existing successful or
+        // non-admission result therefore retains byte-identical schema-v2 canonical bytes and digests.
+        if (moduleEditAdmission is not null)
+        {
+            writer.WriteString("module-edit-admission-v1");
+            writer.WriteInt32((int)moduleEditAdmission.Disposition);
+            writer.WriteInt32((int)moduleEditAdmission.Status);
+            writer.WriteInt32((int)moduleEditAdmission.Issue);
+            writer.WriteInt32(moduleEditAdmission.InspectedModuleCount);
+            writer.WriteInt32(moduleEditAdmission.TotalModuleCount);
+            writer.WriteString(moduleEditAdmission.StoppedModule?.Identity.SourceId ?? "none");
+            WriteReads(writer, moduleEditAdmission.Evidence);
+        }
         canonicalBytes = writer.ToImmutableArray();
         Sha256 = CanonicalReplayEncoding.ComputeSha256(canonicalBytes.AsSpan());
     }
@@ -263,6 +281,9 @@ public sealed class StaticFieldExpressionEvaluationResult :
     /// <summary>Gets an artifact-independent evaluator-level explanation paired with <see cref="DiagnosticCode"/>.</summary>
     public string? DiagnosticMessage { get; }
 
+    /// <summary>Gets the cached Host admission decision only when evaluation stopped at edit-state admission.</summary>
+    public ClrmdModuleEditAdmission? ModuleEditAdmission { get; }
+
     /// <summary>Gets a defensive copy of the complete versioned replay bytes.</summary>
     public ImmutableArray<byte> CanonicalBytes => CanonicalReplayEncoding.Copy(canonicalBytes);
 
@@ -289,7 +310,25 @@ public sealed class StaticFieldExpressionEvaluationResult :
         {
             throw new ArgumentException("The evaluator disposition or paired diagnostic is invalid.");
         }
-        if ((Syntax.Status == StaticFieldSyntaxStatus.Accepted) != (SymbolBinding is not null))
+        if ((Stage == StaticFieldExpressionEvaluationStage.EditStateAdmission) !=
+            (ModuleEditAdmission is not null))
+        {
+            throw new ArgumentException("Exactly the edit-state admission stage must retain an admission payload.");
+        }
+        if (Stage == StaticFieldExpressionEvaluationStage.EditStateAdmission)
+        {
+            if (Syntax.Status != StaticFieldSyntaxStatus.Accepted || SymbolBinding is not null ||
+                ModuleEditAdmission is not { IsAdmitted: false } admission ||
+                Status != (admission.Disposition == ClrmdModuleEditAdmissionDisposition.Invalid
+                    ? StaticFieldExpressionEvaluationStatus.Invalid
+                    : StaticFieldExpressionEvaluationStatus.Unavailable) ||
+                RuntimeIssue != (admission.Issue == ClrmdValueIssue.None ? null : admission.Issue) ||
+                !string.Equals(DiagnosticCode, ModuleEditAdmissionPolicy.Code(admission), StringComparison.Ordinal))
+            {
+                throw new ArgumentException("An edit-state admission stop requires accepted syntax and one refusal.");
+            }
+        }
+        else if ((Syntax.Status == StaticFieldSyntaxStatus.Accepted) != (SymbolBinding is not null))
         {
             throw new ArgumentException("Exactly accepted syntax must retain one symbol-binding outcome.");
         }

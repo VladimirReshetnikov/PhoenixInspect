@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using PhoenixInspect.Core.Abstractions;
 using PhoenixInspect.Host.Dump.ClrMD;
+using PhoenixInspect.Product.DumpQuery;
 
 namespace PhoenixInspect.Product.DumpDebugging;
 
@@ -30,6 +31,9 @@ public enum DumpMethodAcquisitionFailureKind
 
     /// <summary>The request or captured evidence violated a required invariant.</summary>
     Invalid = 8,
+
+    /// <summary>Full-session edit-state admission refused all base-image method evidence.</summary>
+    EditStateAdmission = 9,
 }
 
 /// <summary>Retains one bounded typed explanation for a failed W5 method acquisition.</summary>
@@ -40,7 +44,8 @@ public sealed record DumpMethodAcquisitionFailure
         string code,
         string message,
         ClrmdEvidenceStatus? evidenceStatus,
-        ClrmdValueIssue? evidenceIssue)
+        ClrmdValueIssue? evidenceIssue,
+        ClrmdModuleEditAdmission? moduleEditAdmission = null)
     {
         if (!Enum.IsDefined(kind))
         {
@@ -57,11 +62,21 @@ public sealed record DumpMethodAcquisitionFailure
             throw new ArgumentException("A bounded acquisition explanation is required.", nameof(message));
         }
 
+        if ((kind == DumpMethodAcquisitionFailureKind.EditStateAdmission) !=
+            (moduleEditAdmission is not null) ||
+            moduleEditAdmission is { } admission &&
+                (admission.IsAdmitted || evidenceStatus != admission.Status || evidenceIssue != admission.Issue ||
+                 !string.Equals(code, ModuleEditAdmissionPolicy.Code(admission), StringComparison.Ordinal)))
+        {
+            throw new ArgumentException("The method-acquisition admission tag and retained Host refusal disagree.");
+        }
+
         Kind = kind;
         Code = code;
         Message = message;
         EvidenceStatus = evidenceStatus;
         EvidenceIssue = evidenceIssue;
+        ModuleEditAdmission = moduleEditAdmission;
     }
 
     /// <summary>Gets the stable product-level failure category.</summary>
@@ -78,6 +93,9 @@ public sealed record DumpMethodAcquisitionFailure
 
     /// <summary>Gets the adapter issue when the failure originated at an adapter operation.</summary>
     public ClrmdValueIssue? EvidenceIssue { get; }
+
+    /// <summary>Gets the cached Host admission refusal when method acquisition was not allowed to start.</summary>
+    public ClrmdModuleEditAdmission? ModuleEditAdmission { get; }
 }
 
 /// <summary>Contains either one detached existing W4 binding or one typed W5 acquisition failure.</summary>
@@ -148,6 +166,22 @@ public static class DumpMethodAcquisitionFacade
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(request);
+        if (request.AdmittedKind == DumpExpressionKind.CounterfactualMethod &&
+            request.MethodExpressionIdentity is not null)
+        {
+            var admission = session.ReadModuleEditAdmission();
+            if (!admission.IsAdmitted)
+            {
+                return Failed(
+                    DumpMethodAcquisitionFailureKind.EditStateAdmission,
+                    ModuleEditAdmissionPolicy.Code(admission),
+                    ModuleEditAdmissionPolicy.Message(admission),
+                    admission.Status,
+                    admission.Issue,
+                    admission);
+            }
+        }
+
         return Acquire(new ClrmdDumpMethodEvidenceSource(session), request);
     }
 
@@ -469,15 +503,18 @@ public static class DumpMethodAcquisitionFacade
         string code,
         string message,
         ClrmdEvidenceStatus? status = null,
-        ClrmdValueIssue? issue = null) =>
-        DumpMethodAcquisitionResult.Failed(Failure(kind, code, message, status, issue));
+        ClrmdValueIssue? issue = null,
+        ClrmdModuleEditAdmission? moduleEditAdmission = null) =>
+        DumpMethodAcquisitionResult.Failed(Failure(kind, code, message, status, issue, moduleEditAdmission));
 
     private static DumpMethodAcquisitionFailure Failure(
         DumpMethodAcquisitionFailureKind kind,
         string code,
         string message,
         ClrmdEvidenceStatus? status = null,
-        ClrmdValueIssue? issue = null) => new(kind, code, message, status, issue);
+        ClrmdValueIssue? issue = null,
+        ClrmdModuleEditAdmission? moduleEditAdmission = null) =>
+        new(kind, code, message, status, issue, moduleEditAdmission);
 
     private static DumpMethodAcquisitionFailureKind MapEvidence(
         ClrmdEvidenceStatus status,

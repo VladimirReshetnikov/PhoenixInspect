@@ -27,6 +27,9 @@ public enum ConstantExpressionStatus
     /// culture-sensitive or unsupported member, an unsupported literal type, or an ambiguous metadata declaration.
     /// </summary>
     Invalid = 3,
+
+    /// <summary>Constant-shaped evaluation was blocked because required dump authority was unavailable.</summary>
+    Unavailable = 4,
 }
 
 /// <summary>Identifies the value domain of one exact constant result.</summary>
@@ -162,7 +165,8 @@ public sealed class ConstantExpressionEvaluation
         string? valueTypeName = null,
         string? valueText = null,
         int dumpValuesConsumed = 0,
-        ImmutableArray<ConstantValueChild> children = default)
+        ImmutableArray<ConstantValueChild> children = default,
+        ClrmdModuleEditAdmission? moduleEditAdmission = null)
     {
         ValueTypeName = valueTypeName;
         ValueText = valueText;
@@ -187,6 +191,25 @@ public sealed class ConstantExpressionEvaluation
         MetadataLiteralsConsumed = metadataLiteralsConsumed;
         DiagnosticCode = diagnosticCode;
         DiagnosticMessage = diagnosticMessage;
+        ModuleEditAdmission = moduleEditAdmission;
+        if (moduleEditAdmission is { } admission)
+        {
+            var expectedStatus = admission.Disposition == ClrmdModuleEditAdmissionDisposition.Invalid
+                ? ConstantExpressionStatus.Invalid
+                : ConstantExpressionStatus.Unavailable;
+            if (admission.IsAdmitted || status != expectedStatus || kind != ConstantValueKind.None ||
+                moduleName is not null || moduleContentSha256 is not null || typeToken is not null ||
+                fieldToken is not null || modulesScanned != 0 || moduleCount != admission.TotalModuleCount ||
+                metadataLiteralsConsumed != 0 || dumpValuesConsumed != 0 ||
+                !string.Equals(diagnosticCode, ModuleEditAdmissionPolicy.Code(admission), StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The constant admission result and retained Host refusal disagree.");
+            }
+        }
+        else if (status == ConstantExpressionStatus.Unavailable)
+        {
+            throw new ArgumentException("An unavailable constant result requires a retained admission refusal.");
+        }
         Sha256 = ComputeSha256();
     }
 
@@ -266,11 +289,14 @@ public sealed class ConstantExpressionEvaluation
     /// </summary>
     public ImmutableArray<ConstantValueChild> Children { get; }
 
-    /// <summary>Gets the stable diagnostic code for an invalid outcome; otherwise null.</summary>
+    /// <summary>Gets the stable diagnostic code for an invalid or unavailable outcome; otherwise null.</summary>
     public string? DiagnosticCode { get; }
 
-    /// <summary>Gets the artifact-independent explanation for an invalid outcome; otherwise null.</summary>
+    /// <summary>Gets the artifact-independent explanation for an invalid or unavailable outcome; otherwise null.</summary>
     public string? DiagnosticMessage { get; }
+
+    /// <summary>Gets the cached Host admission refusal when session authority blocked constant evaluation.</summary>
+    public ClrmdModuleEditAdmission? ModuleEditAdmission { get; }
 
     /// <summary>Gets the lowercase SHA-256 identity of the canonical outcome projection.</summary>
     public string Sha256 { get; }
@@ -325,6 +351,32 @@ public sealed class ConstantExpressionEvaluation
         message,
         dumpValuesConsumed: dumpValuesConsumed);
 
+    internal static ConstantExpressionEvaluation AdmissionResult(
+        string expression,
+        ClrmdModuleEditAdmission admission) => new(
+        admission.Disposition == ClrmdModuleEditAdmissionDisposition.Invalid
+            ? ConstantExpressionStatus.Invalid
+            : ConstantExpressionStatus.Unavailable,
+        expression,
+        ConstantValueKind.None,
+        int32Value: null,
+        stringValue: null,
+        charValue: null,
+        booleanValue: null,
+        enumTypeFullName: null,
+        enumMemberName: null,
+        underlyingTypeName: null,
+        moduleName: null,
+        moduleContentSha256: null,
+        typeToken: null,
+        fieldToken: null,
+        modulesScanned: 0,
+        moduleCount: admission.TotalModuleCount,
+        metadataLiteralsConsumed: 0,
+        diagnosticCode: ModuleEditAdmissionPolicy.Code(admission),
+        diagnosticMessage: ModuleEditAdmissionPolicy.Message(admission),
+        moduleEditAdmission: admission);
+
     private string ComputeSha256()
     {
         var builder = new StringBuilder();
@@ -347,6 +399,25 @@ public sealed class ConstantExpressionEvaluation
         Append(builder, ValueText ?? "none");
         Append(builder, DumpValuesConsumed.ToString(CultureInfo.InvariantCulture));
         Append(builder, DiagnosticCode ?? "none");
+        // Preserve every pre-existing hash literally; only the new admission result appends its typed authority arm.
+        if (ModuleEditAdmission is not null)
+        {
+            Append(builder, "module-edit-admission-v1");
+            Append(builder, ((int)ModuleEditAdmission.Disposition).ToString(CultureInfo.InvariantCulture));
+            Append(builder, ((int)ModuleEditAdmission.Status).ToString(CultureInfo.InvariantCulture));
+            Append(builder, ((int)ModuleEditAdmission.Issue).ToString(CultureInfo.InvariantCulture));
+            Append(builder, ModuleEditAdmission.InspectedModuleCount.ToString(CultureInfo.InvariantCulture));
+            Append(builder, ModuleEditAdmission.TotalModuleCount.ToString(CultureInfo.InvariantCulture));
+            Append(builder, ModuleEditAdmission.StoppedModule?.Identity.SourceId ?? "none");
+            foreach (var read in ModuleEditAdmission.Evidence)
+            {
+                Append(builder, read.SourceId);
+                Append(builder, read.Address.ToString("x16", CultureInfo.InvariantCulture));
+                Append(builder, read.RequestedLength.ToString(CultureInfo.InvariantCulture));
+                Append(builder, ((int)read.Status).ToString(CultureInfo.InvariantCulture));
+                Append(builder, Convert.ToHexString(read.Bytes.AsSpan()).ToLowerInvariant());
+            }
+        }
         return Convert.ToHexString(
             SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString()))).ToLowerInvariant();
     }
@@ -665,6 +736,23 @@ public static partial class ConstantExpressionEvaluator
             IsBareDumpExpression(syntax, bareRootIdentifier))
         {
             return ConstantExpressionEvaluation.NotConstantResult(expression);
+        }
+
+        if (session is not null)
+        {
+            // Preserve the evidence-free subset (including its typed arithmetic/member errors) before consulting
+            // session admission. The recursive null-session pass cannot read metadata or invoke dump resolvers.
+            var pure = Evaluate(session: null, expression, resolvers: null);
+            if (pure.Status != ConstantExpressionStatus.NotConstant)
+            {
+                return pure;
+            }
+
+            var admission = session.ReadModuleEditAdmission();
+            if (!admission.IsAdmitted)
+            {
+                return ConstantExpressionEvaluation.AdmissionResult(expression, admission);
+            }
         }
 
         // A bare qualified-name chain keeps its dedicated literal-field path so the result retains complete

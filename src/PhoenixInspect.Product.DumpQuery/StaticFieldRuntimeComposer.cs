@@ -21,7 +21,7 @@ public static class StaticFieldRuntimeComposer
     /// <exception cref="ArgumentException">
     /// Binding or target evidence is non-exact, metadata is incomplete or over bound, or the target is not assignable.
     /// </exception>
-    public static StaticFieldRuntimeAssignabilityProof ProveReferenceAssignability(
+    internal static StaticFieldRuntimeAssignabilityProof ProveReferenceAssignability(
         ClrmdDumpSession session,
         StaticFieldSymbolBindingOutcome symbolBinding,
         ClrmdStaticFieldValueObservation hostObservation)
@@ -79,7 +79,7 @@ public static class StaticFieldRuntimeComposer
     /// <exception cref="ArgumentException">
     /// Binding is non-exact or non-nullable, metadata is incomplete, or counted metadata and runtime facts disagree.
     /// </exception>
-    public static StaticFieldNullableInt32RuntimeLayoutIdentity ComposeNullableInt32Layout(
+    internal static StaticFieldNullableInt32RuntimeLayoutIdentity ComposeNullableInt32Layout(
         ClrmdDumpSession session,
         StaticFieldSymbolBindingOutcome symbolBinding,
         ClrmdStaticNullableRuntimeLayoutIdentity runtimeLayout)

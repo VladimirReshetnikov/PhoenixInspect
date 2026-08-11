@@ -21,7 +21,8 @@ public sealed class DumpMemberChainPreparationFailure
         ClrmdEvidenceStatus status,
         ClrmdValueIssue issue,
         ImmutableArray<MemoryReadResult> evidence = default,
-        ImmutableArray<EvaluationDeterministicBound> appliedBounds = default)
+        ImmutableArray<EvaluationDeterministicBound> appliedBounds = default,
+        ClrmdModuleEditAdmission? moduleEditAdmission = null)
     {
         if (string.IsNullOrWhiteSpace(code) || code.Length > 128)
         {
@@ -33,9 +34,14 @@ public sealed class DumpMemberChainPreparationFailure
             throw new ArgumentException("A bounded preparation explanation is required.", nameof(message));
         }
 
-        if (status == ClrmdEvidenceStatus.Exact || issue == ClrmdValueIssue.None)
+        if (moduleEditAdmission is null &&
+                (status == ClrmdEvidenceStatus.Exact || issue == ClrmdValueIssue.None) ||
+            moduleEditAdmission is { } admission &&
+                (admission.IsAdmitted || status != admission.Status || issue != admission.Issue ||
+                 !string.Equals(code, ModuleEditAdmissionPolicy.Code(admission), StringComparison.Ordinal) ||
+                 evidence.IsDefault || !evidence.AsSpan().SequenceEqual(admission.Evidence.AsSpan())))
         {
-            throw new ArgumentException("A preparation failure requires a non-exact evidence status and issue.");
+            throw new ArgumentException("The preparation failure and retained admission refusal disagree.");
         }
 
         Code = code;
@@ -48,6 +54,7 @@ public sealed class DumpMemberChainPreparationFailure
         this.appliedBounds = appliedBounds.IsDefault
             ? ImmutableArray<EvaluationDeterministicBound>.Empty
             : ImmutableArray.CreateRange(appliedBounds.AsSpan().ToArray());
+        ModuleEditAdmission = moduleEditAdmission;
     }
 
     /// <summary>Gets the bounded stable machine-readable stopping code.</summary>
@@ -69,6 +76,9 @@ public sealed class DumpMemberChainPreparationFailure
     /// <summary>Gets a defensive copy of every deterministic adapter bound actually reached before failure.</summary>
     public ImmutableArray<EvaluationDeterministicBound> AppliedBounds =>
         ImmutableArray.CreateRange(appliedBounds.AsSpan().ToArray());
+
+    /// <summary>Gets the cached Host admission refusal when edit state stopped preparation.</summary>
+    public ClrmdModuleEditAdmission? ModuleEditAdmission { get; }
 }
 
 /// <summary>Contains either one complete immutable W6 member-chain plan or one typed value-free failure.</summary>

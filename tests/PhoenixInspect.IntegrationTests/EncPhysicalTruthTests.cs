@@ -926,6 +926,57 @@ public sealed class EncPhysicalTruthTests
             Assert.Equal(0, optimized.AppliedGenerationCount);
             Assert.Equal(edited.ModuleFlags, comparator.ModuleFlags);
             Assert.NotEqual(edited.ModuleFlags, optimized.ModuleFlags);
+
+            // The general ClrMD host session consumes the same descriptor parser and E1 relation. This is real
+            // edited and unedited evidence for the host-side fail-closed seam, not a synthetic flags fixture.
+            var hostOpen = ClrmdDumpSession.Open(dumpPath);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, hostOpen.Status);
+            using var hostSession = hostOpen.Value!;
+            ClrmdModuleInfo HostModuleByName(string name) => Assert.Single(
+                hostSession.Modules,
+                candidate => string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase));
+
+            var hostEditedResult = hostSession.ReadModuleEditState(
+                HostModuleByName("PhoenixInspect.EncFixtureBaseline.dll"));
+            Assert.Equal(ClrmdEvidenceStatus.Exact, hostEditedResult.Status);
+            var hostEdited = Assert.IsType<ClrmdModuleEditStateObservation>(hostEditedResult.Value);
+            Assert.Equal((uint?)edited.ModuleFlags, hostEdited.ModuleFlags);
+            Assert.Equal((ulong?)edited.GenerationCounter, hostEdited.GenerationCounter);
+            Assert.Equal(true, hostEdited.IsEditEnabled);
+            Assert.Equal((ulong)edited.AppliedGenerationCount, hostEdited.AppliedGenerationCount);
+            Assert.Equal(true, hostEdited.HasAppliedEdits);
+
+            var hostComparatorModule = HostModuleByName("PhoenixInspect.EncFixtureUnedited.dll");
+            var hostComparatorResult = hostSession.ReadModuleEditState(hostComparatorModule);
+            Assert.Equal(ClrmdEvidenceStatus.Exact, hostComparatorResult.Status);
+            var hostComparator = Assert.IsType<ClrmdModuleEditStateObservation>(hostComparatorResult.Value);
+            Assert.Equal((uint?)comparator.ModuleFlags, hostComparator.ModuleFlags);
+            Assert.Equal((ulong?)comparator.GenerationCounter, hostComparator.GenerationCounter);
+            Assert.Equal((ulong)comparator.AppliedGenerationCount, hostComparator.AppliedGenerationCount);
+            Assert.Equal(false, hostComparator.HasAppliedEdits);
+
+            // Acquisition is immutable per session: repeated evaluations return the exact same retained result and
+            // do not read either runtime word again.
+            Assert.Same(hostComparatorResult, hostSession.ReadModuleEditState(hostComparatorModule));
+            Assert.Same(
+                hostComparator.GenerationCounterMemory,
+                hostSession.ReadModuleEditState(hostComparatorModule).Value!.GenerationCounterMemory);
+
+            // Every V2 descriptor evidence value is now supplied by the shared host parser without changing its
+            // canonical evidence input.
+            Assert.Equal(ClrmdEvidenceStatus.Exact, hostSession.RuntimeContractDescriptorRead.Status);
+            var sharedDescriptor = Assert.IsType<ClrmdRuntimeContractDescriptor>(
+                hostSession.RuntimeContractDescriptorRead.Descriptor);
+            Assert.Equal(session.Evidence.PointerWidth, sharedDescriptor.PointerSize);
+            Assert.Equal(session.Evidence.DescriptorAddress, sharedDescriptor.Address);
+            Assert.Equal(session.Evidence.DescriptorFlags, sharedDescriptor.Flags);
+            Assert.Equal(session.Evidence.DescriptorSize, sharedDescriptor.Size);
+            Assert.Equal(session.Evidence.DescriptorJsonSha256, sharedDescriptor.JsonSha256);
+            Assert.Equal(session.Evidence.PointerDataSha256, sharedDescriptor.PointerDataSha256);
+            Assert.Equal(session.Evidence.LoaderContractVersion, sharedDescriptor.LoaderContractVersion);
+            Assert.Equal(
+                session.Evidence.RuntimeTypeSystemContractVersion,
+                sharedDescriptor.RuntimeTypeSystemContractVersion);
         }
         finally
         {
