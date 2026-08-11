@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 2,
+  "corpusId": "interpreter-w8-static-field-incidents-v2",
+  "corpusKind": "MeaningfulSyntheticExecutionReconciliation",
+  "evidenceKind": "derived-produced-designed-synthetic",
+  "predeclaredBeforeImplementation": false,
+  "declaredPurpose": "Preserve the frozen v1 predeclaration byte-for-byte while reconciling its thirteen produced-versus-predeclared divergences to the outcomes the existing physical targets, companion artifacts, full-dump materializer, and composed V2 evaluator actually produce. This successor is an execution contract, not a retroactive predeclaration and not a representative observation.",
+  "baseCorpus": {
+    "path": "tests/corpus/w8-static-field-incidents-v1.json",
+    "schemaVersion": 1,
+    "corpusId": "interpreter-w8-static-field-incidents-v1",
+    "sha256": "64bd03319c774b16a4e49dca0c85c43059f8f7d220873ecc8f31c6774842ff37"
+  },
+  "reconciliationRules": [
+    "the-base-v1-file-is-read-only-and-content-addressed",
+    "only-v1-manifest-only-rows-may-have-a-v2-correction",
+    "identity-shape-target-expression-and-inputs-are-inherited-from-v1",
+    "each-correction-freezes-produced-axes-from-the-existing-physical-corpus",
+    "all-v1-executed-rows-inherit-their-already-verified-produced-axes",
+    "counterfactual-disposition-is-separate-from-baseline-executability",
+    "no-row-is-a-representative-observation"
+  ],
+  "runnerExecution": {
+    "status": "executable",
+    "expectedIncidentCount": 35,
+    "inheritedExecutedIncidentCount": 22,
+    "correctedExecutedIncidentCount": 13,
+    "expectedManifestOnlyIncidentCount": 0
+  },
+  "counterfactualDispositionKinds": [
+    "not-required-non-decision-changing",
+    "verified-current-artifacts",
+    "executable-derived-input",
+    "premise-disproved-owner-disposition-required",
+    "new-physical-circumstance-or-owner-disposition-required"
+  ],
+  "corrections": [
+    {
+      "id": "request-inner-alias-shadows-outer-alias",
+      "ordinal": 9,
+      "divergentAxes": ["typeConstruction"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "Exact", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "Exact",
+        "storage": "Exact", "value": "ExactValue", "suffix": "NotRequested", "completeness": "Complete"
+      },
+      "expectedProducedFirstBoundary": "none",
+      "expectedProducedTerminal": "i32:1358954761",
+      "counterfactualDisposition": "not-required-non-decision-changing",
+      "evidence": "The contextual and fully qualified routes converge on one exact construction; the landed pipeline constructs the non-generic alias target at arity zero."
+    },
+    {
+      "id": "coordinator-derived-owner-base-field",
+      "ordinal": 11,
+      "divergentAxes": ["typeConstruction"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "Exact",
+        "storage": "Exact", "value": "ExactValue", "suffix": "NotRequested", "completeness": "Complete"
+      },
+      "expectedProducedFirstBoundary": "none",
+      "expectedProducedTerminal": "i32:1895826187",
+      "counterfactualDisposition": "not-required-non-decision-changing",
+      "evidence": "The derived owner constructs exactly and member lookup crosses its exact closed generic base to the declaring construction."
+    },
+    {
+      "id": "workflow-derived-unsupported-member-hides-base",
+      "ordinal": 12,
+      "divergentAxes": ["typeConstruction"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "HiddenByUnsupportedMember", "runtimeConstruction": "NotReached",
+        "storage": "NotReached", "value": "NotReached", "suffix": "NotReached", "completeness": "NoAnswer"
+      },
+      "expectedProducedFirstBoundary": "member-hidden-by-unsupported-member",
+      "expectedProducedTerminal": null,
+      "counterfactualDisposition": "verified-current-artifacts",
+      "evidence": "The exact derived construction is blocked by its own property and the declared-field counterfactual reaches an exact value on the same dump."
+    },
+    {
+      "id": "workflow-competing-aliases-ambiguous",
+      "ordinal": 20,
+      "divergentAxes": ["context", "rootAttribution", "lexicalCompleteness", "typeBinding", "typeConstruction", "memberLookup", "runtimeConstruction", "storage", "value", "suffix", "completeness"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "Exact", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "Exact",
+        "storage": "Exact", "value": "ExactValue", "suffix": "NotRequested", "completeness": "Complete"
+      },
+      "expectedProducedFirstBoundary": "none",
+      "expectedProducedTerminal": "i32:1090520084",
+      "counterfactualDisposition": "premise-disproved-owner-disposition-required",
+      "evidence": "The selected spelling frame physically declares one surviving alias, so context is exact and there is no ambiguity for an exact-alias counterfactual to resolve."
+    },
+    {
+      "id": "request-malformed-typespec-invalid",
+      "ordinal": 21,
+      "divergentAxes": ["typeConstruction", "memberLookup", "runtimeConstruction", "storage", "value", "suffix", "completeness"],
+      "evaluationOverrides": { "malformedTypeSpecCompanion": true },
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "Exact",
+        "storage": "Exact", "value": "ExactValue", "suffix": "NotRequested", "completeness": "Complete"
+      },
+      "expectedProducedFirstBoundary": "none",
+      "expectedProducedTerminal": "i32:1358954753",
+      "counterfactualDisposition": "premise-disproved-owner-disposition-required",
+      "evidence": "The malformed TypeSpec row is retained physically, but this fully qualified spelling constructs from definition chains and never consults that row; repair changes neither axes nor value."
+    },
+    {
+      "id": "batch-typespec-depth-cap-plus-one",
+      "ordinal": 22,
+      "divergentAxes": ["typeConstruction", "memberLookup", "runtimeConstruction", "storage", "value", "suffix", "completeness"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "Exact",
+        "storage": "Exact", "value": "ExactValue", "suffix": "NotRequested", "completeness": "Complete"
+      },
+      "expectedProducedFirstBoundary": "none",
+      "expectedProducedTerminal": "i32:1627390470",
+      "counterfactualDisposition": "premise-disproved-owner-disposition-required",
+      "evidence": "The frozen spelling has four nested Wrap levels and is below the landed construction-depth cap, so it cannot evidence cap plus one."
+    },
+    {
+      "id": "coordinator-generic-head-arity-disagreement",
+      "ordinal": 23,
+      "divergentAxes": ["typeBinding"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Absent", "typeConstruction": "NotReached", "memberLookup": "NotReached", "runtimeConstruction": "NotReached",
+        "storage": "NotReached", "value": "NotReached", "suffix": "NotReached", "completeness": "NoAnswer"
+      },
+      "expectedProducedFirstBoundary": "type-binding-absent",
+      "expectedProducedTerminal": null,
+      "counterfactualDisposition": "executable-derived-input",
+      "evidence": "The landed binder reports a complete absent answer while retaining ArityMismatch rejection evidence; an arity-aligned spelling is a derived input over the same dump."
+    },
+    {
+      "id": "batch-runtime-candidate-cap-plus-one",
+      "ordinal": 26,
+      "divergentAxes": ["runtimeConstruction", "storage", "value", "suffix", "completeness"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "Exact",
+        "storage": "Exact", "value": "ExactValue", "suffix": "NotRequested", "completeness": "Complete"
+      },
+      "expectedProducedFirstBoundary": "none",
+      "expectedProducedTerminal": "i32:1627390465",
+      "counterfactualDisposition": "premise-disproved-owner-disposition-required",
+      "evidence": "The real snapshot contains fewer runtime candidates than the cap; adding candidates or raising a cap that was not reached would fabricate or fail to change evidence."
+    },
+    {
+      "id": "coordinator-unavailable-static-slot",
+      "ordinal": 27,
+      "divergentAxes": ["storage", "value", "suffix", "completeness"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "Exact",
+        "storage": "Exact", "value": "ExactValue", "suffix": "NotRequested", "completeness": "Complete"
+      },
+      "expectedProducedFirstBoundary": "none",
+      "expectedProducedTerminal": "i32:1895826179",
+      "counterfactualDisposition": "premise-disproved-owner-disposition-required",
+      "evidence": "The target initializes the selected construction's static before the frozen pause site, so the slot is present and restore-static-slot changes nothing."
+    },
+    {
+      "id": "workflow-substituted-reference-target-conflict",
+      "ordinal": 28,
+      "divergentAxes": ["value", "suffix"],
+      "evaluationOverrides": { "referenceTargetType": "HidingStage" },
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "Exact",
+        "storage": "Exact", "value": "ExactValue", "suffix": "Blocked", "completeness": "NoAnswer"
+      },
+      "expectedProducedFirstBoundary": "suffix-blocked",
+      "expectedProducedTerminal": null,
+      "counterfactualDisposition": "verified-current-artifacts",
+      "evidence": "The landed contract retains the exact root read, records non-assignability, and blocks the suffix with zero seam calls; the aligned target completes on the same dump."
+    },
+    {
+      "id": "request-active-local-shadows-bare-import",
+      "ordinal": 29,
+      "divergentAxes": ["context"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "Exact", "rootAttribution": "NotRequired", "lexicalCompleteness": "Shadowed",
+        "typeBinding": "NotReached", "typeConstruction": "NotReached", "memberLookup": "NotReached", "runtimeConstruction": "NotReached",
+        "storage": "NotReached", "value": "NotReached", "suffix": "NotReached", "completeness": "NoAnswer"
+      },
+      "expectedProducedFirstBoundary": "lexical-shadowed",
+      "expectedProducedTerminal": null,
+      "counterfactualDisposition": "new-physical-circumstance-or-owner-disposition-required",
+      "evidence": "The bare route necessarily acquires exact scoped context before its real lexical envelope proves the active local shadow; removing that active local requires a different program point or an explicitly admitted derived envelope."
+    },
+    {
+      "id": "batch-incomplete-local-catalogs",
+      "ordinal": 30,
+      "divergentAxes": ["context", "rootAttribution", "lexicalCompleteness"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "Partial", "rootAttribution": "NotReached", "lexicalCompleteness": "NotReached",
+        "typeBinding": "NotReached", "typeConstruction": "NotReached", "memberLookup": "NotReached", "runtimeConstruction": "NotReached",
+        "storage": "NotReached", "value": "NotReached", "suffix": "NotReached", "completeness": "Partial"
+      },
+      "expectedProducedFirstBoundary": "context-partial",
+      "expectedProducedTerminal": null,
+      "counterfactualDisposition": "executable-derived-input",
+      "evidence": "The declared truncated Portable PDB is a partial context acquisition and stops before any lexical envelope; restoring the complete PDB is executable over the same dump."
+    },
+    {
+      "id": "batch-module-rva-storage",
+      "ordinal": 34,
+      "divergentAxes": ["typeConstruction"],
+      "expectedProducedAxes": {
+        "syntax": "Admitted", "context": "NotRequired", "rootAttribution": "NotRequired", "lexicalCompleteness": "NotRequired",
+        "typeBinding": "Exact", "typeConstruction": "Exact", "memberLookup": "Exact", "runtimeConstruction": "NotRequired",
+        "storage": "Exact", "value": "ExactValue", "suffix": "NotRequested", "completeness": "Complete"
+      },
+      "expectedProducedFirstBoundary": "none",
+      "expectedProducedTerminal": "i32:553941601",
+      "counterfactualDisposition": "new-physical-circumstance-or-owner-disposition-required",
+      "evidence": "The non-generic RVA owner constructs exactly at arity zero; withholding mapped module geometry still needs an explicit runner seam or an owner disposition."
+    }
+  ],
+  "representativeObservationCount": 0,
+  "promotionPolicy": "no-generated-row-may-be-promoted-to-representative-observation"
+}
