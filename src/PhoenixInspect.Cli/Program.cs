@@ -29,7 +29,7 @@ public static class Program
 
         if (!CommandLineOptions.TryParse(args, out var options, out var usageError))
         {
-            var plain = new ConsoleRenderer(Console.Error, styled: false);
+            var plain = new ConsoleRenderer(usageError is null ? Console.Out : Console.Error, styled: false);
             if (usageError is not null)
             {
                 plain.Error(usageError);

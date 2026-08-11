@@ -46,12 +46,26 @@ internal static class DesktopSmokeTest
         ("Avalonia.Controls", "AVALONIA_CONTROLS"),
         ("Avalonia.Controls.DataGrid", "AVALONIA_DATA_GRID"),
         ("Avalonia.Desktop", "AVALONIA_DESKTOP"),
+        ("Avalonia.HarfBuzz", "AVALONIA_HARFBUZZ"),
         ("Avalonia.Markup.Xaml", "AVALONIA_XAML"),
+        ("Avalonia.Skia", "AVALONIA_SKIA"),
         ("Avalonia.Themes.Simple", "AVALONIA_SIMPLE_THEME"),
+        ("Avalonia.Win32", "AVALONIA_WIN32"),
         ("AvaloniaEdit", "AVALONIA_EDIT"),
         ("Dock.Avalonia", "DOCK_AVALONIA"),
         ("Dock.Avalonia.Themes.Simple", "DOCK_SIMPLE_THEME"),
+        ("Dock.Controls.DeferredContentControl", "DOCK_DEFERRED_CONTENT"),
+        ("Dock.Controls.ProportionalStackPanel", "DOCK_PROPORTIONAL_STACK"),
+        ("Dock.Controls.Recycling", "DOCK_RECYCLING"),
+        ("Dock.Controls.Recycling.Model", "DOCK_RECYCLING_MODEL"),
+        ("Dock.MarkupExtension", "DOCK_MARKUP"),
+        ("Dock.Model", "DOCK_MODEL"),
         ("Dock.Model.Mvvm", "DOCK_MODEL_MVVM"),
+        ("ProDataGrid.FormulaEngine", "PRO_DATA_GRID_FORMULA"),
+        ("ProDataGrid.FormulaEngine.Excel", "PRO_DATA_GRID_EXCEL"),
+        ("ICSharpCode.Decompiler", "DECOMPILER"),
+        ("Microsoft.CodeAnalysis.CSharp", "ROSLYN_CSHARP"),
+        ("Microsoft.Diagnostics.Runtime", "CLRMD"),
     ];
 
     internal static int Run()
@@ -137,7 +151,7 @@ internal static class DesktopSmokeTest
                         asset.Value.TryGetProperty("locale", out var localeElement)
                             ? localeElement.GetString()
                             : null;
-                    VerifyPayloadAsset(payloadRoot, asset.Name, locale);
+                    VerifyPayloadAsset(payloadRoot, asset.Name, locale, assetType);
                     selectedAssetCount++;
                     if (assetType == "native")
                     {
@@ -186,14 +200,18 @@ internal static class DesktopSmokeTest
                 Require(!string.IsNullOrWhiteSpace(locale), "DEPS_RESOURCE_LOCALE_INVALID");
             }
 
-            VerifyPayloadAsset(payloadRoot, asset.Name, locale);
+            VerifyPayloadAsset(payloadRoot, asset.Name, locale, groupName);
             count++;
         }
 
         return count;
     }
 
-    private static void VerifyPayloadAsset(string payloadRoot, string assetPath, string? locale)
+    private static void VerifyPayloadAsset(
+        string payloadRoot,
+        string assetPath,
+        string? locale,
+        string assetType)
     {
         Require(!string.IsNullOrWhiteSpace(assetPath), "DEPS_ASSET_PATH_INVALID");
         var fileName = Path.GetFileName(assetPath.Replace('/', Path.DirectorySeparatorChar));
@@ -217,6 +235,22 @@ internal static class DesktopSmokeTest
             "DEPS_ASSET_OUTSIDE_PAYLOAD");
         Require(File.Exists(fullPath), "DEPS_ASSET_MISSING");
         Require(new FileInfo(fullPath).Length > 0, "DEPS_ASSET_EMPTY");
+        if (assetType == "runtime" &&
+            string.Equals(Path.GetExtension(fullPath), ".dll", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                Require(AssemblyName.GetAssemblyName(fullPath).Name is { Length: > 0 }, "DEPS_MANAGED_ASSET_INVALID");
+            }
+            catch (SmokeTestFailureException)
+            {
+                throw;
+            }
+            catch
+            {
+                throw new SmokeTestFailureException("DEPS_MANAGED_ASSET_INVALID");
+            }
+        }
     }
 
     private static (Assembly Assembly, string ProductVersion) VerifyEntryAssembly()

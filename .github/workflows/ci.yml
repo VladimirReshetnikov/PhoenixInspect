@@ -28,6 +28,63 @@ jobs:
       - name: Verify headless managed workflow invocations
         shell: pwsh
         run: ./eng/verify-headless-workflows.ps1
+      - name: Enforce the prerelease non-distribution boundary
+        shell: pwsh
+        run: |
+          $workflowPath = Join-Path $env:GITHUB_WORKSPACE '.github/workflows/ci.yml'
+          $workflow = [System.IO.File]::ReadAllText($workflowPath)
+          $jobMatch = [regex]::Match(
+            $workflow,
+            '(?ms)^  prerelease-artifacts:\r?\n(?<body>.*?)(?=^  [A-Za-z0-9_-]+:\r?\n|\z)')
+          if (-not $jobMatch.Success) {
+            throw 'The prerelease-artifacts validation job is missing.'
+          }
+
+          $jobBody = $jobMatch.Groups['body'].Value
+          if ($jobBody -notmatch '(?m)^    needs: \[documentation, fast\]\r?$') {
+            throw 'The prerelease-artifacts job must remain gated on both documentation and fast validation.'
+          }
+          [string[]] $forbiddenJobPatterns = @(
+            '(?im)^\s*uses:\s*actions/upload-artifact@',
+            '(?im)^\s*uses:\s*(?:actions/upload-release-asset|softprops/action-gh-release|ncipollo/release-action|svenstaro/upload-release-action)@',
+            '(?im)^\s*(?:run:\s*)?gh\s+release(?:\s|$)',
+            '(?im)^\s*(?:run:\s*)?gh\s+api\b[^\r\n]*/releases\b'
+          )
+          foreach ($pattern in $forbiddenJobPatterns) {
+            if ($jobBody -match $pattern) {
+              throw "The prerelease-artifacts job contains a forbidden distribution operation matching '$pattern'."
+            }
+          }
+
+          # Until license/notice clearance is recorded, this workflow may reference the local output path only in
+          # the builder invocation. Any upload requires an intentional change to this guard and its documented gate.
+          $prereleasePath = 'artifacts/' + 'prerelease'
+          $pathPattern = '(?i)(?:\./)?' + [regex]::Escape($prereleasePath)
+          $builderPattern = '(?m)^\s*run:\s*\./eng/Publish-PrereleaseArtifacts\.ps1 -OutputDirectory \./' +
+            [regex]::Escape($prereleasePath) + '\s*$'
+          if ([regex]::Matches($workflow, $pathPattern).Count -ne 1 -or
+              $jobBody -notmatch $builderPattern) {
+            throw 'The prerelease output path may appear only in the local validation builder invocation.'
+          }
+
+          $uploadUses = [regex]::Matches($workflow, '(?im)^\s*uses:\s*actions/upload-artifact@')
+          $allowedDemoUpload = '(?ms)^      - name: Upload the demo transcript\r?\n        if: always\(\)\r?\n        uses: actions/upload-artifact@[^\r\n]+\r?\n        with:\r?\n          name: preview-demo-transcript\r?\n          path: \./artifacts/preview-demo/demo-session\.txt\r?\n          if-no-files-found: warn\r?$'
+          if ($uploadUses.Count -ne 1 -or $workflow -notmatch $allowedDemoUpload) {
+            throw 'Only the explicitly allowlisted preview-demo transcript upload is permitted before release clearance.'
+          }
+
+          [string[]] $forbiddenWorkflowPatterns = @(
+            '(?im)^\s*contents:\s*write\s*$',
+            '(?im)^\s*packages:\s*write\s*$',
+            '(?im)^\s*uses:\s*(?:actions/upload-release-asset|softprops/action-gh-release|ncipollo/release-action|svenstaro/upload-release-action)@',
+            '(?im)^\s*(?:run:\s*)?gh\s+release(?:\s|$)',
+            '(?im)^\s*(?:run:\s*)?gh\s+api\b[^\r\n]*/releases\b'
+          )
+          foreach ($pattern in $forbiddenWorkflowPatterns) {
+            if ($workflow -match $pattern) {
+              throw "The workflow contains a release-capable operation matching '$pattern'."
+            }
+          }
 
   fast:
     name: Build and fast tests
@@ -46,8 +103,8 @@ jobs:
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Run semantic and differential tests
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
-      - name: Run fast adapter tests
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Fast" --verbosity minimal
+      - name: Run non-dump adapter tests
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category!=Dump" --verbosity minimal
 
   dump-evidence:
     name: Real dump evidence
@@ -95,6 +152,25 @@ jobs:
           name: preview-demo-transcript
           path: ./artifacts/preview-demo/demo-session.txt
           if-no-files-found: warn
+
+  prerelease-artifacts:
+    name: Local prerelease package validation (non-distributed)
+    needs: [documentation, fast]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      # This lane proves only that the two preview application payloads can be built, inventoried, hashed, archived,
+      # and that the extracted CLI and Desktop pass bounded headless/non-UI smokes. Generated third-party evidence is
+      # included, but human legal review is still pending. It does not distribute, sign, publish, or claim W8.10 closure.
+      - name: Build and smoke-test the bounded win-x64 artifact set
+        shell: pwsh
+        run: ./eng/Publish-PrereleaseArtifacts.ps1 -OutputDirectory ./artifacts/prerelease
 
   optimized-context-evidence:
     name: Optimized Release context evidence

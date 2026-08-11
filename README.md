@@ -3,7 +3,7 @@
 **Post-mortem .NET inspection: open a memory dump and ask it C# questions.**
 
 [![CI](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/VladimirReshetnikov/PhoenixInspect/actions/workflows/ci.yml)
-[![License: Unlicense OR MIT-0](https://img.shields.io/badge/license-Unlicense%20OR%20MIT--0-blue)](LICENSE)
+[![License: MIT-0](https://img.shields.io/badge/license-MIT--0-blue)](LICENSE)
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4)
 ![Status: early preview](https://img.shields.io/badge/status-early%20preview-orange)

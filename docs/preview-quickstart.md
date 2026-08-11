@@ -10,6 +10,7 @@ preview can and cannot answer.
 
 - Windows. ClrMD dump loading and the desktop shell both require it.
 - The .NET SDK pinned in [`global.json`](../global.json).
+- PowerShell 7 (`pwsh`) for the repository automation scripts.
 
 ## Run the demo
 
@@ -53,6 +54,32 @@ equally valid input. The capture command exists so a first session does not requ
 
 For a window instead of a prompt, run [`src/PhoenixInspect.Desktop`](../src/PhoenixInspect.Desktop). Both hosts are described
 in [`Hosts`](hosts.md).
+
+## Validate the unsigned Windows artifact layout locally
+
+```text
+pwsh ./eng/Publish-PrereleaseArtifacts.ps1
+```
+
+This locked-restores and publishes exactly the CLI and desktop applications as self-contained `win-x64` Release
+directories, derives and verifies a common third-party dependency/license-evidence bundle from their exact
+`.deps.json` graphs, smoke-launches the packaged CLI, runs the Desktop's exact non-UI `--smoke-test`, and writes two
+ZIPs plus `SHA256SUMS.txt` under `artifacts/prerelease`. Every ZIP contains the generated evidence and a complete
+per-file SHA-256 manifest. Entries are sorted and their timestamps are normalized to remove two incidental sources of
+variation. Byte-for-byte reproducibility is not yet a supported or tested claim, even when the same toolchain is used.
+
+These files are unsigned local-validation outputs. **Do not redistribute them.** Each contains the repository
+`LICENSE` plus a mechanically generated `THIRD-PARTY-NOTICES` evidence directory: every selected external
+`.deps.json` asset and the SDK-generated apphost are attributed to verified NuGet archives or the .NET runtime pack,
+and policy-pinned license/notice materials are hash-checked. The separate payload manifest covers every packaged file.
+That evidence is deliberately not a legal-clearance assertion; human review of the bundled .NET runtime and NuGet
+dependencies is still required. CI builds and inspects the ZIPs only within the validation job; it does not upload or
+otherwise distribute them. The Desktop
+smoke verifies the packaged entry assembly and product version, loads a selected Avalonia/product dependency surface,
+checks every selected `.deps.json` asset for presence and managed-assembly metadata, and requires the exact fifteen
+compiled XAML registrations without initializing Avalonia or creating a window. It does **not** parse each view or
+prove that a visible UI can start. These are not NuGet packages and do not include an SBOM, provenance, or evidence of
+W8.10 release closure. CI does not create a tag, artifact upload, or GitHub release from this lane.
 
 ## The shape of a session
 
@@ -168,6 +195,11 @@ object search with the traversal counters that say how exhaustive it was.
 
 ## What the preview does not do
 
+- **It does not compose Edit-and-Continue generations yet.** Before an expression may consult dump metadata,
+  runtime storage, an adopted root, or method IL, the shared host service proves that every loaded managed module has
+  an exact zero applied-generation count. An edited module, or a module whose edit state cannot be classified
+  exactly, produces a typed session-admission stop instead of a plausible answer from the stale base image. Pure
+  constants such as `2 + 2` remain available because they consume no dump evidence.
 - **It does not run your code.** Nothing is resumed, stepped, mutated, or re-executed. Evaluation reads storage; it
   does not invoke property getters or methods to produce a value.
 - **It does not guess.** A name the metadata does not declare, a byte range the snapshot does not contain, or a shape
