@@ -87,6 +87,14 @@ Only one session is open at a time, and every adapter call runs on one dedicated
 exposes an immutable snapshot but does not promise concurrent use, so both hosts serialize access rather than
 introducing a usage pattern the libraries do not support.
 
+Expression evaluation also has one shared Edit-and-Continue safety gate. The session reads and caches each managed
+module's runtime-descriptor-derived flags and generation counter from the already-open dump or suspended live target;
+it never reopens a dump path. Pure constants remain evidence-free. Before any metadata, storage, adopted-root, or
+method-IL evidence contributes to an answer, every loaded module must prove an exact zero applied-generation count.
+Applied edits produce `EXPLORER_MODULE_EDITED_GENERATIONS_NOT_COMPOSED`; unavailable or contradictory edit-state
+evidence produces its own typed stop. The hosts therefore refuse rather than displaying an exact-looking value from
+an edited module's stale base image.
+
 The workspace is docked the way ILSpy and a debugger are: the call stack and the tabbed Modules / Heap Search tools
 dock left, documents fill the center, the evaluation console docks at the bottom, and the evidence pane docks right.
 Every tool window can be resized, re-docked, or floated through the dock chrome. The center is a real document area:

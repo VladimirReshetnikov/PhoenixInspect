@@ -11,24 +11,25 @@
 > detection stride at `~1K–10K LOC` and closure at `~1K LOC`. These are logarithmic orders of magnitude and may be
 > revised when implementation exposes the actual volume.
 >
-> **Evidence boundary:** Section 2 records what the current code measurably does; everything else in this document
-> is design intent. No stride after E1 may begin before E1's physical-truth disposition is frozen, because the
-> runtime's delta retention, dump memory coverage, and Portable-PDB delta reachability are hypotheses until probed.
+> **Evidence boundary:** Section 2 preserves the measured pre-E1 baseline. E1 physical truth, E2 typed refusal for the
+> composed binding pipeline and shared host-facing evaluator, and E3 artifact-seam delta acquisition are complete;
+> E4 and later strides remain design intent. This plan remains future/research-gated and is not the active release
+> milestone.
 
 ## 1) Purpose
 
 A debugger expression evaluator reads dumps of processes it did not control. Some of those processes were edited
 while running: Visual Studio Edit-and-Continue and .NET Hot Reload both apply metadata, IL, and Portable-PDB deltas
 to loaded modules through the runtime's single edit application path, and a dump captured afterward holds a module
-whose mapped image no longer tells the whole truth. Today the evaluator composes its entire metadata authority from
-that mapped base image. For an edited module this produces the worst class of answer this project recognizes: a
-*silently* stale one, presented with the same exact dispositions as a truthful answer.
+whose mapped image no longer tells the whole truth. At this plan's entry baseline, the evaluator composed its entire
+metadata authority from that mapped base image. For an edited module that produced the worst class of answer this
+project recognizes: a *silently* stale one, presented with the same exact dispositions as a truthful answer.
 
 This plan makes edits part of the evidence model. Its order is the project's standard order: physical truth first,
 typed refusal second, admitted capability last. The refusal stride is independently shippable and removes the
 silent-staleness hazard even if delta composition never lands.
 
-## 2) Measured current state
+## 2) Measured entry state
 
 These facts were established by direct code reading at commit `0eee5378b` and are the baseline this plan corrects:
 
@@ -130,7 +131,7 @@ Independent SRM, ClrMD, and counted raw-memory probes then decide, with retained
 
 **Status:** E1 is complete against its exit gate. Every probe question has a retained observation or a typed
 evidence gap frozen in the [E1 Physical-Truth Disposition](enc-e1-physical-truth-disposition.md), which is the
-citable record; the slice narrative below is the working history that produced it, and E2 is the next stride. Its
+citable record; the slice narrative below is the working history that produced it, and E2 was the next stride. Its
 first slice was landed and measured over the
 changed-body profile in `EncPhysicalTruthTests`: probe 1 holds — the edited process's mapped base metadata is
 byte-identical to the unedited on-disk baseline; the base-image half of probe 3 holds — the mapped Module row still
@@ -219,7 +220,7 @@ W1–W8 goldens prove.
 - The zero-generation world keeps every canonical digest byte-identically.
 - The silent-staleness hazard of section 2 is closed even if no later stride ever lands.
 
-**Status:** E2 is active; its first slice landed the exact per-module edit-state contract. The session acquires
+**Status:** E2 is complete for the composed binding pipeline against its exit gate; its first slice landed the exact per-module edit-state contract. The session acquires
 `StaticFieldV2ModuleEditStateOutcome` physically — the declared flags word plus the generation counter one pointer
 past the declared dynamic-metadata field — with the descriptor anchors parsed as optional fields so their absence
 is a typed unavailable stop rather than a session refusal. Two measurements sharpened the contract beyond the E1
@@ -248,15 +249,22 @@ edited corpus stride. The sixth slice wired the lexical envelope: a selected mod
 envelope's scope facts untrustworthy, so the dotted-head certification treats it exactly like an unavailable
 envelope — the qualified reading proceeds under its own refusals — and the bare route's completeness refuses with
 the same partial stop an absent envelope produces, with the corpus bare rows over real dumps proving the negative
-arm and the positive arm recorded for the edited corpus stride. The IL-consuming paths remain, and they are host-
-and execution-side consumers outside this pipeline: their refusal belongs to the session and resolver seams the
-E5 stride owns, so E2's pipeline-side refusal coverage is complete with this slice. The seventh slice proved the chain end to
+arm and the positive arm recorded for the edited corpus stride. At that checkpoint the IL-consuming paths remained
+host- and execution-side consumers outside this pipeline, so E2's pipeline-side refusal coverage was complete while
+their session boundary remained open. The seventh slice proved the chain end to
 end over a really edited process: the corpus world composer gained metadata-module-name selection so its unchanged
 composition, physical edit-state acquisition, and declaration steps run over the edited fixture dump, and a fully
 qualified spelling whose owner lives in the edited module refuses at construction with the typed stop — while the
 identical spelling over the enabled-but-unedited comparator stops at a measured fixture-reference classification
 gap rather than the edit refusal, proving the declared edit states alone decide it. The silent-staleness hazard is
-closed end to end for the pipeline's binding surface.
+closed end to end for the pipeline's binding surface. The eighth, release-safety slice then moved the descriptor
+reader and module edit-state acquisition into the already-open `ClrmdDumpSession`, cached one immutable observation
+per module for both dump and suspended live sessions, and placed a conservative session-wide admission guard at
+`ExpressionEvaluationService`, the boundary shared by the CLI and Desktop Watch/Immediate hosts. Pure constants
+still evaluate without dump evidence. Every metadata, storage, root, and method/IL path now requires every loaded
+managed module to prove an exact zero applied-generation count; an edited, unavailable, or invalid module stops
+before base-image authority is consulted with stable host diagnostics and retained physical reads. This closes the
+public-host bypass without claiming E4 generation-aware composition or E5 edit-added execution/storage support.
 
 ### E3 — delta metadata acquisition
 
@@ -380,10 +388,10 @@ checkpoint that changes their truth.
 
 ## 8) Entry gate and completion definition
 
-This plan is research-gated future work, entered through the
-[Future Work Planning](future-work-planning.md) backlog: it becomes delivery work only when the W8 sequence closes
-or the owner explicitly prioritizes it, and E1 must be its first scheduled checkpoint in either case. E2 is the
-minimum shippable increment and is worth landing even alone.
+This plan remains research-gated future work under the
+[Future Work Planning](future-work-planning.md) backlog. Owner prioritization advanced E1 through E3 without making
+E4 the active release milestone. E4 generation-aware composition begins only through a new explicit priority after
+the active W8 release work; E2 remains the minimum independently shippable increment.
 
 The before-entry-gate prerequisites are landed and proven: the hidden `PhoenixInspect.EncTestTarget` fixture loads
 a payload baseline, applies a generation through the runtime's own `MetadataUpdater.ApplyUpdate` path, and prints
