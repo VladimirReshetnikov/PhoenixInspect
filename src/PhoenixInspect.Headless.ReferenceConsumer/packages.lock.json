@@ -155,13 +155,13 @@
       "phoenixinspect.core.execution": {
         "type": "Project",
         "dependencies": {
-          "PhoenixInspect.Core.Abstractions": "[1.0.0, )"
+          "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )"
         }
       },
       "phoenixinspect.domain.concrete": {
         "type": "Project",
         "dependencies": {
-          "PhoenixInspect.Core.Abstractions": "[1.0.0, )"
+          "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )"
         }
       },
       "phoenixinspect.host.abstractions": {
@@ -170,41 +170,41 @@
       "phoenixinspect.host.dump.clrmd": {
         "type": "Project",
         "dependencies": {
-          "PhoenixInspect.Core.Abstractions": "[1.0.0, )",
-          "PhoenixInspect.Host.Abstractions": "[1.0.0, )",
-          "PhoenixInspect.Metadata.SRM": "[1.0.0, )",
-          "Microsoft.Diagnostics.Runtime": "[4.0.732401, )"
+          "Microsoft.Diagnostics.Runtime": "[4.0.732401, )",
+          "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )",
+          "PhoenixInspect.Host.Abstractions": "[0.1.0-preview.1, )",
+          "PhoenixInspect.Metadata.SRM": "[0.1.0-preview.1, )"
         }
       },
       "phoenixinspect.metadata.abstractions": {
         "type": "Project",
         "dependencies": {
-          "PhoenixInspect.Core.Abstractions": "[1.0.0, )"
+          "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )"
         }
       },
       "phoenixinspect.metadata.srm": {
         "type": "Project",
         "dependencies": {
-          "PhoenixInspect.Metadata.Abstractions": "[1.0.0, )"
+          "PhoenixInspect.Metadata.Abstractions": "[0.1.0-preview.1, )"
         }
       },
       "phoenixinspect.product.dumpdebugging": {
         "type": "Project",
         "dependencies": {
-          "PhoenixInspect.Core.Abstractions": "[1.0.0, )",
-          "PhoenixInspect.Core.Execution": "[1.0.0, )",
-          "PhoenixInspect.Domain.Concrete": "[1.0.0, )",
-          "PhoenixInspect.Host.Abstractions": "[1.0.0, )",
-          "PhoenixInspect.Host.Dump.ClrMD": "[1.0.0, )",
-          "PhoenixInspect.Product.DumpQuery": "[1.0.0, )"
+          "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )",
+          "PhoenixInspect.Core.Execution": "[0.1.0-preview.1, )",
+          "PhoenixInspect.Domain.Concrete": "[0.1.0-preview.1, )",
+          "PhoenixInspect.Host.Abstractions": "[0.1.0-preview.1, )",
+          "PhoenixInspect.Host.Dump.ClrMD": "[0.1.0-preview.1, )",
+          "PhoenixInspect.Product.DumpQuery": "[0.1.0-preview.1, )"
         }
       },
       "phoenixinspect.product.dumpquery": {
         "type": "Project",
         "dependencies": {
-          "PhoenixInspect.Core.Abstractions": "[1.0.0, )",
-          "PhoenixInspect.Host.Dump.ClrMD": "[1.0.0, )",
-          "Microsoft.CodeAnalysis.CSharp": "[5.3.0, )"
+          "Microsoft.CodeAnalysis.CSharp": "[5.3.0, )",
+          "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )",
+          "PhoenixInspect.Host.Dump.ClrMD": "[0.1.0-preview.1, )"
         }
       },
       "Microsoft.CodeAnalysis.CSharp": {
@@ -235,6 +235,13 @@
           "Azure.Identity": "1.21.0",
           "Microsoft.Diagnostics.NETCore.Client": "0.2.661903"
         }
+      }
+    },
+    "net10.0/win-x64": {
+      "System.Security.Cryptography.ProtectedData": {
+        "type": "Transitive",
+        "resolved": "4.5.0",
+        "contentHash": "wLBKzFnDCxP12VL9ANydSYhk59fC4cvOr9ypYQLPnAj48NQIhqnjdD2yhP8yEKyBJEjERWS9DisKL7rX5eU25Q=="
       }
     }
   }

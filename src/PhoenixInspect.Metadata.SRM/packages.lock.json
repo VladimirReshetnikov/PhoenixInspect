@@ -8,9 +8,10 @@
       "phoenixinspect.metadata.abstractions": {
         "type": "Project",
         "dependencies": {
-          "PhoenixInspect.Core.Abstractions": "[1.0.0, )"
+          "PhoenixInspect.Core.Abstractions": "[0.1.0-preview.1, )"
         }
       }
-    }
+    },
+    "net10.0/win-x64": {}
   }
 }
