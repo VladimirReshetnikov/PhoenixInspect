@@ -12,5 +12,13 @@
     -->
     <VersionPrefix>0.1.0</VersionPrefix>
     <VersionSuffix>preview.1</VersionSuffix>
+    <!-- The current product and evidence hosts are Windows-only; this also keeps the self-contained RID graph locked. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <!--
+      The current prerelease lane creates application ZIPs only for local validation; redistribution remains blocked
+      pending third-party notice and bundled-license review. Keep every project under src/ non-packable until the
+      repository defines package-specific compatibility, licensing, and validation contracts.
+    -->
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 </Project>
