@@ -126,6 +126,8 @@ public sealed class PreviewDemoIntegrationTests
             ("root.CurrentBatch.Tags.Contains(\"priority\")", EvaluationSeverity.Exact, "true"),
             ("root.CurrentBatch.Tags.Length", EvaluationSeverity.Exact, "3"),
             ("root.RecentDispatchDurationsMs.Max()", EvaluationSeverity.Exact, "30045"),
+            ("TimeSpan.FromMilliseconds(root.RecentDispatchDurationsMs.Max()).TotalSeconds",
+                EvaluationSeverity.Exact, "30.045"),
         ];
 
     /// <summary>The exact rendered answer the demo must produce for each constant expression.</summary>
@@ -245,6 +247,11 @@ public sealed class PreviewDemoIntegrationTests
             var report = ExpressionEvaluationService.EvaluateStaticField(session, expression, null, []);
             Assert.Equal(severity, report.Severity);
             Assert.Equal(value, report.Value);
+            Assert.Contains(
+                report.Facts,
+                fact => fact.Group == "Admission" &&
+                    fact.Name == "Module edit state" &&
+                    fact.Value.StartsWith("Exact for ", StringComparison.Ordinal));
         }
     }
 

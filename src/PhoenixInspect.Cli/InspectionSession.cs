@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Globalization;
 using PhoenixInspect.Host.Dump.ClrMD;
 using PhoenixInspect.Inspection;
-using PhoenixInspect.Product.DumpDebugging;
 
 namespace PhoenixInspect.Cli;
 
@@ -174,7 +173,7 @@ public sealed class InspectionSession
 
         renderer.Heading("Expression routing");
         renderer.Note(
-            "  An expression whose first identifier is the current root identifier is evaluated against that object.");
+            "  An expression containing the current root identifier as a standalone token is evaluated against that object.");
         renderer.Note(
             "  Every other expression is treated as a static-field expression and bound from module metadata.");
         return CommandOutcome.Continue;
@@ -604,9 +603,15 @@ public sealed class InspectionSession
             return CommandOutcome.Failed;
         }
 
-        var report = UsesRoot(expression)
-            ? await EvaluateRootRelativeAsync(expression).ConfigureAwait(false)
-            : await EvaluateStaticFieldAsync(expression).ConfigureAwait(false);
+        var watchContext = new WatchEvaluationContext
+        {
+            ContextSelector = contextFrame?.Selector,
+            PortablePdbCandidates = portablePdbCandidates,
+            Root = root,
+            RootIdentifier = rootIdentifier,
+        };
+        var report = await host.QueryAsync(session =>
+            ExpressionEvaluationService.EvaluateWatch(session, expression, watchContext)).ConfigureAwait(false);
 
         RecordEvaluation(report);
         renderer.ResultHeadline(report);
@@ -626,24 +631,6 @@ public sealed class InspectionSession
             ExpressionEvaluationService.EvaluateStaticField(session, expression, selector, candidates));
     }
 
-    private Task<EvaluationReport> EvaluateRootRelativeAsync(string expression)
-    {
-        var selected = root!;
-        var identifier = rootIdentifier;
-        var policy = DumpExpressionPolicy.Create(
-            DumpMethodEvaluationMode.Interpreted,
-            instructionLimit: 100_000,
-            logicalDepthLimit: 8,
-            traversalLimit: CounterfactualMethodRequest.MaximumTraversalUnits);
-        return host.QueryAsync(session => ExpressionEvaluationService.EvaluateRootRelative(
-            session,
-            expression,
-            selected,
-            identifier,
-            policy,
-            DumpExpressionLanguageProfile.MemberChainV2));
-    }
-
     private void RecordEvaluation(EvaluationReport report)
     {
         EvaluationCount++;
@@ -651,24 +638,6 @@ public sealed class InspectionSession
         {
             NonExactEvaluationCount++;
         }
-    }
-
-    private bool UsesRoot(string expression)
-    {
-        if (root is null)
-        {
-            return false;
-        }
-
-        var length = 0;
-        while (length < expression.Length &&
-               (char.IsLetterOrDigit(expression[length]) || expression[length] == '_'))
-        {
-            length++;
-        }
-
-        return length == rootIdentifier.Length &&
-            string.CompareOrdinal(expression, 0, rootIdentifier, 0, length) == 0;
     }
 
     private static string Describe(string declaringNamespace) =>

@@ -86,6 +86,10 @@ eval root.CurrentBatch.Tags.Contains("priority")
 eval root.CurrentBatch.Tags.Length
 eval root.RecentDispatchDurationsMs.Max()
 
+# The root token can appear anywhere in a composed expression. The shared watch router selects the root-relative
+# path before folding, so the CLI and desktop answer the same mixed BCL/dump-value expression.
+eval TimeSpan.FromMilliseconds(root.RecentDispatchDurationsMs.Max()).TotalSeconds
+
 echo == 9. Constants are evidence too: metadata, not memory. ==
 
 # An enum member or a const is a literal in the module's metadata Constant table, so the snapshot can answer it
