@@ -138,9 +138,7 @@ public sealed class W6RoslynExpressionFrontEndTests
             "packages.lock.json")));
         var dependency = lockFile.RootElement
             .GetProperty("dependencies")
-            .EnumerateObject()
-            .Single()
-            .Value
+            .GetProperty("net10.0")
             .GetProperty(DumpCSharpExpressionProfile.PackageId);
         Assert.Equal("Direct", dependency.GetProperty("type").GetString());
         Assert.Equal(DumpCSharpExpressionProfile.PackageVersion, dependency.GetProperty("resolved").GetString());
