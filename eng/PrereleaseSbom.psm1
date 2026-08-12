@@ -1017,7 +1017,11 @@ function Test-PrereleaseSbomRecords {
     }
     [string[]] $fileSha1Values = @(
         foreach ($file in @($sbom.files)) {
-            [string](($file.checksums | Where-Object { $_.algorithm -ceq 'SHA1' } | Select-Object -First 1).checksumValue)
+            # Microsoft SBOM Tool computes the package verification code from its internal uppercase hash strings,
+            # then lowercases the same values while serializing each SPDX file checksum. Mirror that v4.1.5
+            # implementation detail here while retaining the exact lowercase file-checksum contract above.
+            ([string](($file.checksums | Where-Object { $_.algorithm -ceq 'SHA1' } |
+                Select-Object -First 1).checksumValue)).ToUpperInvariant()
         }
     )
     [Array]::Sort($fileSha1Values, [StringComparer]::Ordinal)
@@ -1442,7 +1446,9 @@ function Complete-PrereleaseSbomSyntheticFixture {
         $safeIdPath = [regex]::Replace($path, '[^A-Za-z0-9.-]', '-')
         $id = "SPDXRef-File-$safeIdPath-$($sha1.ToUpperInvariant())"
         $fileIds.Add($id)
-        $fileSha1Values.Add($sha1)
+        # The standalone v4.1.5 tool retains uppercase internal SHA-1 strings for packageVerificationCode even
+        # though its SPDX file serializer emits the corresponding checksums in lowercase.
+        $fileSha1Values.Add($sha1.ToUpperInvariant())
         $fileRecords.Add([ordered]@{
             fileName = "./$path"
             SPDXID = $id
@@ -1682,6 +1688,36 @@ function Invoke-PrereleaseSbomSelfTest {
 
         $manifestPath = Join-Path $base.Path '_manifest/spdx_2.2/manifest.spdx.json'
         $manifestText = [IO.File]::ReadAllText($manifestPath)
+        $manifestObject = ConvertFrom-StrictJsonBytes ([IO.File]::ReadAllBytes($manifestPath)) 'Self-test SPDX manifest' 100
+        [string[]] $lowercaseFileSha1Values = @(
+            foreach ($file in @($manifestObject.files)) {
+                [string](($file.checksums | Where-Object { $_.algorithm -ceq 'SHA1' } |
+                    Select-Object -First 1).checksumValue)
+            }
+        )
+        [Array]::Sort($lowercaseFileSha1Values, [StringComparer]::Ordinal)
+        $lowercaseVerificationAlgorithm = [Security.Cryptography.SHA1]::Create()
+        try {
+            $lowercaseVerificationCode = ([BitConverter]::ToString($lowercaseVerificationAlgorithm.ComputeHash(
+                $script:Utf8NoBom.GetBytes($lowercaseFileSha1Values -join '')))).Replace('-', '').ToLowerInvariant()
+        }
+        finally { $lowercaseVerificationAlgorithm.Dispose() }
+        $rootFixturePackage = @($manifestObject.packages | Where-Object { $_.SPDXID -ceq 'SPDXRef-RootPackage' })
+        if ($rootFixturePackage.Count -ne 1) { throw 'Synthetic manifest does not contain exactly one root package.' }
+        $toolNativeVerificationCode = [string]$rootFixturePackage[0].packageVerificationCode.packageVerificationCodeValue
+        if ($toolNativeVerificationCode -ceq $lowercaseVerificationCode) {
+            throw 'Synthetic package verification fixture does not distinguish tool-native uppercase input hashes.'
+        }
+        $lowercaseVerificationCopy = Join-Path $root ('invalid-lowercase-verification-' + [guid]::NewGuid().ToString('N'))
+        Copy-DirectoryFixture $base.Path $lowercaseVerificationCopy
+        $lowercaseVerificationManifest = Join-Path $lowercaseVerificationCopy '_manifest/spdx_2.2/manifest.spdx.json'
+        $lowercaseVerificationText = [IO.File]::ReadAllText($lowercaseVerificationManifest).Replace(
+            "`"packageVerificationCodeValue`": `"$toolNativeVerificationCode`"",
+            "`"packageVerificationCodeValue`": `"$lowercaseVerificationCode`"")
+        [IO.File]::WriteAllText($lowercaseVerificationManifest, $lowercaseVerificationText, $script:Utf8NoBom)
+        Assert-SelfTestThrows {
+            $null = Test-PrereleaseSbomPayload $lowercaseVerificationCopy $base.Evidence
+        } 'lowercase-serialized hashes used for package verification code'
         foreach ($mutation in @(
             [pscustomobject]@{ Name = 'mutated dependency version'; Old = '"versionInfo": "1.0.0"'; New = '"versionInfo": "1.0.1"' },
             [pscustomobject]@{ Name = 'mutated dependency relationship'; Old = '"relationshipType": "DEPENDS_ON"'; New = '"relationshipType": "CONTAINS"' },
