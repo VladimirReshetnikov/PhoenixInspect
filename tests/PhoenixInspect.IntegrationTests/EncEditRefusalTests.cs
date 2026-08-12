@@ -217,6 +217,18 @@ public sealed class EncEditRefusalTests
                 Assert.Null(pureDirect.ModuleEditAdmission);
                 Assert.Equal(pureWithoutSession.Sha256, pureDirect.Sha256);
 
+                // A type that may be an enum declared in dump-module metadata is not a pure typed error. The
+                // evidence-free probe defers that one resolution attempt, and this edited session must therefore
+                // retain the same admission refusal without scanning metadata through the constant evaluator.
+                var deferredType = ConstantExpressionEvaluator.Evaluate(
+                    hostSession,
+                    "typeof(System.ConsoleColor).IsEnum");
+                Assert.Equal(ConstantExpressionStatus.Unavailable, deferredType.Status);
+                Assert.Same(admission, deferredType.ModuleEditAdmission);
+                Assert.Equal("DUMP_MODULE_EDITED_GENERATIONS_NOT_COMPOSED", deferredType.DiagnosticCode);
+                Assert.Equal(0, deferredType.ModulesScanned);
+                Assert.Equal(0, deferredType.MetadataLiteralsConsumed);
+
                 var directConstant = ConstantExpressionEvaluator.Evaluate(hostSession, expression);
                 Assert.Equal(ConstantExpressionStatus.Unavailable, directConstant.Status);
                 Assert.Same(admission, directConstant.ModuleEditAdmission);

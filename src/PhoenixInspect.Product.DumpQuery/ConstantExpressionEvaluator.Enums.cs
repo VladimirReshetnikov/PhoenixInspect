@@ -195,6 +195,10 @@ public static partial class ConstantExpressionEvaluator
     {
         if (context.Session is not { } session)
         {
+            // The evidence-free probe cannot distinguish an unsupported type from an enum declared in dump-module
+            // metadata. Retain that precise dependency so its provisional Invalid result cannot preempt admission and
+            // the authoritative session-backed pass.
+            context.DeferSessionAuthority();
             return (null, null);
         }
 

@@ -143,6 +143,7 @@ public sealed class ConstantExpressionEnumTests
     [InlineData("DayOfWeek.Friday.ToString(\"Q\")", "System.FormatException")]
     [InlineData("5 - DayOfWeek.Monday", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
     [InlineData("typeof(int) + typeof(int)", "CONSTANT_OPERAND_TYPE_UNSUPPORTED")]
+    [InlineData("typeof(System.ConsoleColor).IsEnum", "CONSTANT_MEMBER_UNSUPPORTED")]
     [InlineData("typeof(System.Collections.ArrayList)", "CONSTANT_MEMBER_UNSUPPORTED")]
     public void Enum_stops_are_typed(string expression, string expectedCode)
     {

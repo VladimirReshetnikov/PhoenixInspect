@@ -699,12 +699,24 @@ public static partial class ConstantExpressionEvaluator
     public static ConstantExpressionEvaluation Evaluate(
         ClrmdDumpSession? session,
         string? expression,
-        ConstantOperandResolvers? resolvers)
+        ConstantOperandResolvers? resolvers) =>
+        RunEvaluationPass(
+            session,
+            expression,
+            resolvers,
+            recordDeferredSessionAuthority: false).Evaluation;
+
+    private static EvaluationPassResult RunEvaluationPass(
+        ClrmdDumpSession? session,
+        string? expression,
+        ConstantOperandResolvers? resolvers,
+        bool recordDeferredSessionAuthority)
     {
         if (string.IsNullOrWhiteSpace(expression) ||
             expression.Length > CSharpExpressionFrontEnd.MaximumExpressionLength)
         {
-            return ConstantExpressionEvaluation.NotConstantResult(expression ?? string.Empty);
+            return EvaluationPassResult.Completed(
+                ConstantExpressionEvaluation.NotConstantResult(expression ?? string.Empty));
         }
 
         ExpressionSyntax syntax;
@@ -714,19 +726,19 @@ public static partial class ConstantExpressionEvaluator
         }
         catch (ArgumentException)
         {
-            return ConstantExpressionEvaluation.NotConstantResult(expression);
+            return EvaluationPassResult.Completed(ConstantExpressionEvaluation.NotConstantResult(expression));
         }
 
         if (syntax.GetDiagnostics().Any(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error) ||
             syntax.DescendantTokens(descendIntoTrivia: true).Any(static token => token.IsMissing))
         {
-            return ConstantExpressionEvaluation.NotConstantResult(expression);
+            return EvaluationPassResult.Completed(ConstantExpressionEvaluation.NotConstantResult(expression));
         }
 
         if (syntax.DescendantNodesAndTokensAndSelf(descendIntoTrivia: false).Count() >
             CSharpExpressionFrontEnd.MaximumNodeTokenCount)
         {
-            return ConstantExpressionEvaluation.NotConstantResult(expression);
+            return EvaluationPassResult.Completed(ConstantExpressionEvaluation.NotConstantResult(expression));
         }
 
         // A bare root-relative expression — the root alone, a chain, an invocation, an element access, or any of
@@ -735,15 +747,21 @@ public static partial class ConstantExpressionEvaluator
         if (resolvers?.RootIdentifier is { } bareRootIdentifier &&
             IsBareDumpExpression(syntax, bareRootIdentifier))
         {
-            return ConstantExpressionEvaluation.NotConstantResult(expression);
+            return EvaluationPassResult.Completed(ConstantExpressionEvaluation.NotConstantResult(expression));
         }
 
         if (session is not null)
         {
             // Preserve the evidence-free subset (including its typed arithmetic/member errors) before consulting
-            // session admission. The recursive null-session pass cannot read metadata or invoke dump resolvers.
-            var pure = Evaluate(session: null, expression, resolvers: null);
-            if (pure.Status != ConstantExpressionStatus.NotConstant)
+            // session admission. The null-session probe cannot read metadata or invoke dump resolvers, and it records
+            // when an otherwise-invalid fold reached the one resolver whose answer can change with module metadata.
+            var pure = RunEvaluationPass(
+                session: null,
+                expression,
+                resolvers: null,
+                recordDeferredSessionAuthority: true);
+            if (!pure.DeferredSessionAuthority &&
+                pure.Evaluation.Status != ConstantExpressionStatus.NotConstant)
             {
                 return pure;
             }
@@ -751,7 +769,8 @@ public static partial class ConstantExpressionEvaluator
             var admission = session.ReadModuleEditAdmission();
             if (!admission.IsAdmitted)
             {
-                return ConstantExpressionEvaluation.AdmissionResult(expression, admission);
+                return EvaluationPassResult.Completed(
+                    ConstantExpressionEvaluation.AdmissionResult(expression, admission));
             }
         }
 
@@ -767,14 +786,15 @@ public static partial class ConstantExpressionEvaluator
             !(syntax is MemberAccessExpressionSyntax typeStaticCandidate &&
                 TryReadTypeReceiver(typeStaticCandidate.Expression, out _)))
         {
-            return session is null || nameParts.Length < 3
-                ? ConstantExpressionEvaluation.NotConstantResult(expression)
-                : ResolveLiteralField(session, expression, nameParts);
+            return EvaluationPassResult.Completed(
+                session is null || nameParts.Length < 3
+                    ? ConstantExpressionEvaluation.NotConstantResult(expression)
+                    : ResolveLiteralField(session, expression, nameParts));
         }
 
-        var context = new FoldContext(session, resolvers);
+        var context = new FoldContext(session, resolvers, recordDeferredSessionAuthority);
         var outcome = Fold(syntax, context);
-        return outcome.Disposition switch
+        var evaluation = outcome.Disposition switch
         {
             FoldDisposition.Folded => FromOperand(expression, outcome.Operand, context),
             FoldDisposition.Error => ConstantExpressionEvaluation.InvalidResult(
@@ -785,9 +805,21 @@ public static partial class ConstantExpressionEvaluator
                 dumpValuesConsumed: context.DumpValuesConsumed),
             _ => ConstantExpressionEvaluation.NotConstantResult(expression),
         };
+        return new EvaluationPassResult(evaluation, context.DeferredSessionAuthority);
     }
 
-    private sealed class FoldContext(ClrmdDumpSession? session, ConstantOperandResolvers? resolvers)
+    private readonly record struct EvaluationPassResult(
+        ConstantExpressionEvaluation Evaluation,
+        bool DeferredSessionAuthority)
+    {
+        internal static EvaluationPassResult Completed(ConstantExpressionEvaluation evaluation) =>
+            new(evaluation, DeferredSessionAuthority: false);
+    }
+
+    private sealed class FoldContext(
+        ClrmdDumpSession? session,
+        ConstantOperandResolvers? resolvers,
+        bool recordDeferredSessionAuthority)
     {
         // Lambda-parameter bindings, innermost last. Folding is single-threaded recursive descent, so a simple
         // push/pop stack gives correct lexical scoping and shadowing without allocating per scope.
@@ -797,9 +829,19 @@ public static partial class ConstantExpressionEvaluator
 
         internal ConstantOperandResolvers? Resolvers { get; } = resolvers;
 
+        internal bool DeferredSessionAuthority { get; private set; }
+
         internal int MetadataLiteralsConsumed { get; set; }
 
         internal int DumpValuesConsumed { get; set; }
+
+        internal void DeferSessionAuthority()
+        {
+            if (recordDeferredSessionAuthority)
+            {
+                DeferredSessionAuthority = true;
+            }
+        }
 
         /// <summary>Caches enum-shape resolutions so one expression scans module metadata at most once per name.</summary>
         internal Dictionary<string, (EnumShape? Shape, FoldOutcome? Error)> EnumShapes { get; } =

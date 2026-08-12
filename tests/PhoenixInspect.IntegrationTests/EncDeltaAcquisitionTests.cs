@@ -221,8 +221,8 @@ public sealed class EncDeltaAcquisitionTests
 
             // Measured, and stronger than the clause requires: the filtered capture drops the memory the contract
             // descriptor itself lives in, so the acquisition session refuses to open at its first physical read.
-            // No edit state can be acquired and no catalog can be issued over a filtered capture at all; the typed
-            // acquisition exception is the stop, and it fires before any delta byte is consulted.
+            // No edit state can be acquired and no catalog can be issued over a filtered capture at all; the frozen
+            // descriptor-unavailable code is the typed stop, and it fires before any delta byte is consulted.
             var refused = Assert.Throws<StaticFieldV2RuntimeAcquisitionException>(
                 () => StaticFieldV2RuntimeAcquisitionSession.Open(dumpPath));
             Assert.Equal(
