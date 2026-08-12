@@ -74,7 +74,7 @@ jobs:
       - name: Restore locked dependencies
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
       - name: Build Release
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal /m:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Run semantic and differential tests
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.Tests/PhoenixInspect.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal --logger "trx;LogFileName=unit.trx" --results-directory artifacts/ci-results/unit
       - name: Validate semantic and differential test evidence
@@ -101,7 +101,7 @@ jobs:
       - name: Restore locked dependencies
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
       - name: Build Release
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal /m:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Generate and inspect a real dump
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus!=ModeledIncidentContextV1" --verbosity normal --logger "trx;LogFileName=ordinary-dump.trx" --results-directory artifacts/ci-results/ordinary-dump
       - name: Validate real-dump test evidence
@@ -123,7 +123,7 @@ jobs:
       - name: Restore locked dependencies
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore PhoenixInspect.sln --locked-mode
       - name: Build Release
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build PhoenixInspect.sln --configuration Release --no-restore --verbosity minimal /m:1 --disable-build-servers /p:UseSharedCompilation=false
       # The demo is the preview's front door. Running it here means a broken demo fails the build rather than a
       # reader's first attempt. The transcript is retained so a failure can be read without reproducing the run.
       - name: Run the preview demo end to end
@@ -171,7 +171,7 @@ jobs:
       - name: Restore locked dependencies
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet restore tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --locked-mode
       - name: Build optimized context evidence
-        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-restore --verbosity minimal --maxcpucount:1 --disable-build-servers /p:UseSharedCompilation=false
+        run: ./eng/Invoke-HeadlessProcess.ps1 dotnet build tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-restore --verbosity minimal /m:1 --disable-build-servers /p:UseSharedCompilation=false
       - name: Measure the versioned optimized incident corpus
         run: ./eng/Invoke-HeadlessProcess.ps1 dotnet test tests/PhoenixInspect.IntegrationTests/PhoenixInspect.IntegrationTests.csproj --configuration Release --no-build --no-restore --filter "Category=Dump&Corpus=ModeledIncidentContextV1" --verbosity normal --logger "trx;LogFileName=optimized-context.trx" --results-directory artifacts/ci-results/optimized-context
       - name: Validate optimized-context test evidence
