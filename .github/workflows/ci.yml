@@ -50,6 +50,15 @@ jobs:
               -not $plan.localOnly -or $plan.hostedEvidence -cne 'NotRun' -or $plan.closureClaim) {
             throw 'The W8 local release-validation plan has an unexpected scope or command inventory.'
           }
+      - name: Verify authored W8 scope vocabulary
+        shell: pwsh
+        run: ./eng/Invoke-W8LocalReleaseValidation.ps1 -InternalGuard AuthoredVocabulary
+      - name: Verify the sole Roslyn parser site
+        shell: pwsh
+        run: ./eng/Invoke-W8LocalReleaseValidation.ps1 -InternalGuard OneParserSite
+      - name: Verify the checkout remains clean
+        shell: pwsh
+        run: ./eng/Invoke-W8LocalReleaseValidation.ps1 -InternalGuard CleanTree
 
   fast:
     name: Build and fast tests
