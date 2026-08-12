@@ -718,26 +718,35 @@ public static partial class ConstantExpressionEvaluator
     /// resolution. An unaliased reference joins the global scope beside the session's modules; an aliased
     /// reference is reachable only through its alias qualifier.
     /// </param>
+    /// <param name="usings">
+    /// The active <c>using</c> directives, or null for none. They expand a prefix-less name into the candidate
+    /// fully qualified names the resolvers try, so an imported namespace, statically imported type, or alias binds
+    /// a short name exactly as it would in source.
+    /// </param>
     /// <returns>An exact value, a typed constant-domain error, or a not-constant disposition.</returns>
     public static ConstantExpressionEvaluation Evaluate(
         ClrmdDumpSession? session,
         string? expression,
         ConstantOperandResolvers? resolvers,
-        ImmutableArray<ConstantReferenceAssembly> references) =>
+        ImmutableArray<ConstantReferenceAssembly> references,
+        ConstantUsingDirectiveSet? usings = null) =>
         RunEvaluationPass(
             session,
             expression,
             resolvers,
             recordDeferredSessionAuthority: false,
-            references).Evaluation;
+            references,
+            usings).Evaluation;
 
     private static EvaluationPassResult RunEvaluationPass(
         ClrmdDumpSession? session,
         string? expression,
         ConstantOperandResolvers? resolvers,
         bool recordDeferredSessionAuthority,
-        ImmutableArray<ConstantReferenceAssembly> references = default)
+        ImmutableArray<ConstantReferenceAssembly> references = default,
+        ConstantUsingDirectiveSet? usings = null)
     {
+        var effectiveUsings = usings ?? ConstantUsingDirectiveSet.Empty;
         if (string.IsNullOrWhiteSpace(expression) ||
             expression.Length > CSharpExpressionFrontEnd.MaximumExpressionLength)
         {
@@ -788,7 +797,8 @@ public static partial class ConstantExpressionEvaluator
                 expression,
                 resolvers: null,
                 recordDeferredSessionAuthority: true,
-                references);
+                references,
+                effectiveUsings);
             if (!pure.DeferredSessionAuthority &&
                 pure.Evaluation.Status != ConstantExpressionStatus.NotConstant)
             {
@@ -809,26 +819,40 @@ public static partial class ConstantExpressionEvaluator
         // 'Guid.Empty.Version' — folds instead, because those members are type statics and their values, not
         // metadata literals declared in dump modules; and a chain ending in '.Length' folds so an array or
         // string field's length can answer.
-        if (TryReadQualifiedName(syntax, out var nameParts, out var nameAlias) &&
+        // A lone identifier is only a literal candidate when a static import could promote it, and a lambda
+        // parameter never is; expanding it otherwise would shadow the frozen not-a-name path for bare identifiers.
+        var allowSingleIdentifier = !effectiveUsings.IsEmpty;
+        if (TryReadQualifiedName(syntax, out var nameParts, out var nameAlias, allowSingleIdentifier) &&
             nameParts[^1] != "Length" &&
             !IsKnownTypeHead(nameParts) &&
             !(syntax is MemberAccessExpressionSyntax typeStaticCandidate &&
                 TryReadTypeReceiver(typeStaticCandidate.Expression, out _)))
         {
             // An alias-qualified name resolves only through the references carrying that alias, never through the
-            // session's modules, exactly as extern-alias scoping works in source.
+            // session's modules, exactly as extern-alias scoping works in source. An unqualified name expands
+            // through the active using directives before it resolves.
             var applicableReferences = ApplicableReferences(references, nameAlias);
-            return EvaluationPassResult.Completed(
-                (session is null && applicableReferences.IsEmpty) || nameParts.Length < 3
-                    ? ConstantExpressionEvaluation.NotConstantResult(expression)
-                    : ResolveLiteralField(
-                        nameAlias is null ? session : null,
-                        applicableReferences,
-                        expression,
-                        nameParts));
+            if (session is null && applicableReferences.IsEmpty)
+            {
+                return EvaluationPassResult.Completed(ConstantExpressionEvaluation.NotConstantResult(expression));
+            }
+
+            var candidates = nameAlias is null
+                ? effectiveUsings.ExpandMemberCandidates(nameParts)
+                : [string.Join('.', nameParts)];
+            return EvaluationPassResult.Completed(ResolveLiteralFieldCandidates(
+                nameAlias is null ? session : null,
+                applicableReferences,
+                expression,
+                candidates));
         }
 
-        var context = new FoldContext(session, resolvers, recordDeferredSessionAuthority, references);
+        var context = new FoldContext(
+            session,
+            resolvers,
+            recordDeferredSessionAuthority,
+            references,
+            effectiveUsings);
         var outcome = Fold(syntax, context);
         var evaluation = outcome.Disposition switch
         {
@@ -856,7 +880,8 @@ public static partial class ConstantExpressionEvaluator
         ClrmdDumpSession? session,
         ConstantOperandResolvers? resolvers,
         bool recordDeferredSessionAuthority,
-        ImmutableArray<ConstantReferenceAssembly> references = default)
+        ImmutableArray<ConstantReferenceAssembly> references = default,
+        ConstantUsingDirectiveSet? usings = null)
     {
         // Lambda-parameter bindings, innermost last. Folding is single-threaded recursive descent, so a simple
         // push/pop stack gives correct lexical scoping and shadowing without allocating per scope.
@@ -868,6 +893,8 @@ public static partial class ConstantExpressionEvaluator
 
         internal ImmutableArray<ConstantReferenceAssembly> References { get; } =
             references.IsDefault ? [] : references;
+
+        internal ConstantUsingDirectiveSet Usings { get; } = usings ?? ConstantUsingDirectiveSet.Empty;
 
         internal bool DeferredSessionAuthority { get; private set; }
 
@@ -1948,15 +1975,19 @@ public static partial class ConstantExpressionEvaluator
     {
         // A metadata literal wins when one declares the name; a stored static field then resolves through the
         // caller's bridge to the frozen pipeline, so composed expressions can consume its exact value. An
-        // alias-qualified name resolves only through the references carrying that alias.
+        // alias-qualified name resolves only through the references carrying that alias; an unqualified name
+        // expands through the active using directives first.
         var applicableReferences = ApplicableReferences(context.References, alias);
-        if ((context.Session is not null || !applicableReferences.IsEmpty) && parts.Length >= 3)
+        if (context.Session is not null || !applicableReferences.IsEmpty)
         {
-            var resolved = ResolveLiteralField(
+            var candidates = alias is null
+                ? context.Usings.ExpandMemberCandidates(parts)
+                : [string.Join('.', parts)];
+            var resolved = ResolveLiteralFieldCandidates(
                 alias is null ? context.Session : null,
                 applicableReferences,
                 string.Join('.', parts),
-                parts);
+                candidates);
             switch (resolved.Status)
             {
                 case ConstantExpressionStatus.Exact:
@@ -2443,7 +2474,8 @@ public static partial class ConstantExpressionEvaluator
     private static bool TryReadQualifiedName(
         ExpressionSyntax syntax,
         out ImmutableArray<string> parts,
-        out string? alias)
+        out string? alias,
+        bool allowSingleIdentifier = false)
     {
         alias = null;
         var builder = ImmutableArray.CreateBuilder<string>();
@@ -2479,7 +2511,63 @@ public static partial class ConstantExpressionEvaluator
         }
 
         parts = builder.ToImmutable();
-        return parts.Length >= 2;
+
+        // A lone identifier is admitted only when a static import could promote it to a member; without one it is
+        // not a qualified name and keeps its previous not-a-name path, so no behavior changes without a directive.
+        return parts.Length >= 2 || (parts.Length == 1 && allowSingleIdentifier);
+    }
+
+    /// <summary>
+    /// Resolves the first using-expanded candidate that names a literal, and reports a genuine cross-candidate
+    /// collision as ambiguity rather than silently taking the first import.
+    /// </summary>
+    private static ConstantExpressionEvaluation ResolveLiteralFieldCandidates(
+        ClrmdDumpSession? session,
+        ImmutableArray<ConstantReferenceAssembly> references,
+        string expression,
+        ImmutableArray<string> candidateNames)
+    {
+        ConstantExpressionEvaluation? firstExact = null;
+        ConstantExpressionEvaluation? firstInvalid = null;
+        foreach (var candidateName in candidateNames)
+        {
+            var candidateParts = candidateName.Split('.').ToImmutableArray();
+            if (candidateParts.Length < 3)
+            {
+                continue;
+            }
+
+            var resolved = ResolveLiteralField(session, references, expression, candidateParts);
+            switch (resolved.Status)
+            {
+                case ConstantExpressionStatus.Exact:
+                    // The written name is the first candidate, so a fully qualified name never collides. Two
+                    // distinct imports that both resolve the same short name to different declarations are the
+                    // ambiguity C# reports; the same declaration reached two ways is not.
+                    if (firstExact is { } prior &&
+                        !(prior.EnumTypeFullName == resolved.EnumTypeFullName &&
+                          prior.EnumMemberName == resolved.EnumMemberName &&
+                          prior.Int32Value == resolved.Int32Value &&
+                          prior.StringValue == resolved.StringValue &&
+                          prior.TypeToken == resolved.TypeToken))
+                    {
+                        return ConstantExpressionEvaluation.InvalidResult(
+                            expression,
+                            AmbiguousCode,
+                            "The name is ambiguous between imported scopes; qualify it to select one.",
+                            resolved.ModulesScanned,
+                            resolved.ModuleCount);
+                    }
+
+                    firstExact ??= resolved;
+                    break;
+                case ConstantExpressionStatus.Invalid:
+                    firstInvalid ??= resolved;
+                    break;
+            }
+        }
+
+        return firstExact ?? firstInvalid ?? ConstantExpressionEvaluation.NotConstantResult(expression);
     }
 
     private static ConstantExpressionEvaluation ResolveLiteralField(

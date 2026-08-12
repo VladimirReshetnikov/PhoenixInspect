@@ -209,71 +209,96 @@ public static partial class ConstantExpressionEvaluator
             return (null, null);
         }
 
-        var separator = scopedName.LastIndexOf('.');
-        var typeNamespace = separator < 0 ? string.Empty : scopedName[..separator];
-        var typeName = separator < 0 ? scopedName : scopedName[(separator + 1)..];
-        var matches = new List<EnumShape>();
+        // The written name is the first candidate, then using-expanded candidates; an alias-qualified name is not
+        // expanded because its scope is already named. The first candidate that any source declares wins, and two
+        // distinct candidates that both resolve are ambiguous between imported scopes.
+        var candidateNames = alias is null
+            ? context.Usings.ExpandTypeCandidates(scopedName.Split('.').ToImmutableArray())
+            : [scopedName];
 
-        void ScanImage(ImmutableArray<byte> metadataBytes)
+        EnumShape? resolvedShape = null;
+        string? resolvedCandidate = null;
+        foreach (var candidate in candidateNames)
         {
-            try
+            var separator = candidate.LastIndexOf('.');
+            var typeNamespace = separator < 0 ? string.Empty : candidate[..separator];
+            var typeName = separator < 0 ? candidate : candidate[(separator + 1)..];
+            var matches = new List<EnumShape>();
+
+            void ScanImage(ImmutableArray<byte> metadataBytes)
             {
-                using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
-                var reader = provider.GetMetadataReader();
-                foreach (var handle in reader.TypeDefinitions)
+                try
                 {
-                    var typeDefinition = reader.GetTypeDefinition(handle);
-                    if (!typeDefinition.GetDeclaringType().IsNil ||
-                        !reader.StringComparer.Equals(typeDefinition.Name, typeName) ||
-                        !reader.StringComparer.Equals(typeDefinition.Namespace, typeNamespace) ||
-                        !IsEnumType(reader, typeDefinition))
+                    using var provider = MetadataReaderProvider.FromMetadataImage(metadataBytes);
+                    var reader = provider.GetMetadataReader();
+                    foreach (var handle in reader.TypeDefinitions)
+                    {
+                        var typeDefinition = reader.GetTypeDefinition(handle);
+                        if (!typeDefinition.GetDeclaringType().IsNil ||
+                            !reader.StringComparer.Equals(typeDefinition.Name, typeName) ||
+                            !reader.StringComparer.Equals(typeDefinition.Namespace, typeNamespace) ||
+                            !IsEnumType(reader, typeDefinition))
+                        {
+                            continue;
+                        }
+
+                        if (ReadEnumShape(reader, typeDefinition, candidate) is { } read)
+                        {
+                            matches.Add(read);
+                        }
+                    }
+                }
+                catch (BadImageFormatException)
+                {
+                    // A malformed metadata image cannot contribute a declaration; other sources still can.
+                }
+            }
+
+            if (alias is null && context.Session is { } session)
+            {
+                foreach (var module in session.Modules)
+                {
+                    var metadata = session.ReadModuleContentIdentity(module);
+                    if (metadata.Status != ClrmdEvidenceStatus.Exact ||
+                        metadata.Value is null ||
+                        metadata.Evidence.Length != 1 ||
+                        metadata.Evidence[0].Status != MemoryReadStatus.Exact)
                     {
                         continue;
                     }
 
-                    if (ReadEnumShape(reader, typeDefinition, scopedName) is { } read)
-                    {
-                        matches.Add(read);
-                    }
+                    ScanImage(metadata.Evidence[0].Bytes);
                 }
             }
-            catch (BadImageFormatException)
-            {
-                // A malformed metadata image cannot contribute a declaration; other sources still can.
-            }
-        }
 
-        if (alias is null && context.Session is { } session)
-        {
-            foreach (var module in session.Modules)
+            foreach (var reference in applicableReferences)
             {
-                var metadata = session.ReadModuleContentIdentity(module);
-                if (metadata.Status != ClrmdEvidenceStatus.Exact ||
-                    metadata.Value is null ||
-                    metadata.Evidence.Length != 1 ||
-                    metadata.Evidence[0].Status != MemoryReadStatus.Exact)
+                ScanImage(reference.MetadataBytesCore);
+            }
+
+            if (matches.Count > 1)
+            {
+                return (null, FoldOutcome.Error(
+                    AmbiguousCode,
+                    $"{matches.Count.ToString(CultureInfo.InvariantCulture)} module instances declare enum "
+                    + $"'{candidate}'; no instance is selected by enumeration order."));
+            }
+
+            if (matches.Count == 1)
+            {
+                if (resolvedShape is not null && resolvedCandidate != candidate)
                 {
-                    continue;
+                    return (null, FoldOutcome.Error(
+                        AmbiguousCode,
+                        $"enum '{scopedName}' is ambiguous between imported scopes; qualify it to select one."));
                 }
 
-                ScanImage(metadata.Evidence[0].Bytes);
+                resolvedShape = matches[0];
+                resolvedCandidate = candidate;
             }
         }
 
-        foreach (var reference in applicableReferences)
-        {
-            ScanImage(reference.MetadataBytesCore);
-        }
-
-        return matches.Count switch
-        {
-            0 => (null, null),
-            1 => (matches[0], null),
-            _ => (null, FoldOutcome.Error(
-                AmbiguousCode,
-                $"{matches.Count.ToString(CultureInfo.InvariantCulture)} module instances declare enum "
-                + $"'{typeFullName}'; no instance is selected by enumeration order.")),
-        };
+        return (resolvedShape, null);
     }
 
     /// <summary>Reads one enum declaration completely: underlying kind, literal members, and flags-ness.</summary>

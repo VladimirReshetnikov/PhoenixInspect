@@ -142,20 +142,22 @@ public static class ExpressionEvaluationService
         ClrmdDumpSession session,
         string expression,
         WatchEvaluationContext context) =>
-        EvaluateWatch(session, expression, context, references: default);
+        EvaluateWatch(session, expression, context, references: default, usings: null);
 
     /// <summary>Evaluates a watch expression, additionally resolving names through caller-referenced assemblies.</summary>
     /// <param name="session">The open dump session.</param>
     /// <param name="expression">The raw expression text, submitted without normalization.</param>
     /// <param name="context">The adopted root, context frame, and options.</param>
     /// <param name="references">Caller-referenced assemblies, empty by default.</param>
+    /// <param name="usings">The active using directives, or null for none.</param>
     /// <returns>A complete display report for whichever path the classifier selected.</returns>
     /// <exception cref="ArgumentNullException">A required argument is null.</exception>
     public static EvaluationReport EvaluateWatch(
         ClrmdDumpSession session,
         string expression,
         WatchEvaluationContext context,
-        ImmutableArray<ConstantReferenceAssembly> references)
+        ImmutableArray<ConstantReferenceAssembly> references,
+        ConstantUsingDirectiveSet? usings)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(context);
@@ -167,7 +169,8 @@ public static class ExpressionEvaluationService
                 expression,
                 context.ContextSelector,
                 context.PortablePdbCandidates,
-                references);
+                references,
+                usings);
     }
 
     /// <summary>
@@ -220,11 +223,13 @@ public static class ExpressionEvaluationService
     /// Caller-referenced assemblies whose literal fields, enums, and type names participate in resolution, empty by
     /// default.
     /// </param>
+    /// <param name="usings">The active using directives, or null for none.</param>
     /// <returns>A complete display report: an exact constant value or the typed no-snapshot stop.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="expression"/> is null.</exception>
     public static EvaluationReport EvaluateWithoutSnapshot(
         string expression,
-        ImmutableArray<ConstantReferenceAssembly> references = default)
+        ImmutableArray<ConstantReferenceAssembly> references = default,
+        ConstantUsingDirectiveSet? usings = null)
     {
         ArgumentNullException.ThrowIfNull(expression);
         var effectiveReferences = references.IsDefault ? [] : references;
@@ -233,7 +238,8 @@ public static class ExpressionEvaluationService
             session: null,
             expression,
             resolvers: null,
-            effectiveReferences);
+            effectiveReferences,
+            usings);
         stopwatch.Stop();
         if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
         {
@@ -286,7 +292,13 @@ public static class ExpressionEvaluationService
         string expression,
         DumpSelectedFrameSelector? contextSelector,
         ImmutableArray<string> portablePdbCandidates) =>
-        EvaluateStaticField(session, expression, contextSelector, portablePdbCandidates, references: default);
+        EvaluateStaticField(
+            session,
+            expression,
+            contextSelector,
+            portablePdbCandidates,
+            references: default,
+            usings: null);
 
     /// <summary>Evaluates a static-field expression, additionally resolving through caller-referenced assemblies.</summary>
     /// <param name="session">The open dump session.</param>
@@ -294,6 +306,7 @@ public static class ExpressionEvaluationService
     /// <param name="contextSelector">The selected frame supplying name context, or null.</param>
     /// <param name="portablePdbCandidates">Caller-discovered Portable-PDB candidate paths, possibly empty.</param>
     /// <param name="references">Caller-referenced assemblies, empty by default.</param>
+    /// <param name="usings">The active using directives, or null for none.</param>
     /// <returns>A complete display report for the outcome.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="session"/> is null.</exception>
     public static EvaluationReport EvaluateStaticField(
@@ -301,7 +314,8 @@ public static class ExpressionEvaluationService
         string expression,
         DumpSelectedFrameSelector? contextSelector,
         ImmutableArray<string> portablePdbCandidates,
-        ImmutableArray<ConstantReferenceAssembly> references)
+        ImmutableArray<ConstantReferenceAssembly> references,
+        ConstantUsingDirectiveSet? usings)
     {
         ArgumentNullException.ThrowIfNull(session);
         var candidates = portablePdbCandidates.IsDefault ? [] : portablePdbCandidates;
@@ -316,7 +330,8 @@ public static class ExpressionEvaluationService
             session: null,
             expression,
             resolvers: null,
-            effectiveReferences);
+            effectiveReferences,
+            usings);
         if (pureConstant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();
@@ -343,7 +358,8 @@ public static class ExpressionEvaluationService
             session,
             expression,
             resolvers,
-            effectiveReferences);
+            effectiveReferences,
+            usings);
         if (constant.Status != ConstantExpressionStatus.NotConstant)
         {
             stopwatch.Stop();

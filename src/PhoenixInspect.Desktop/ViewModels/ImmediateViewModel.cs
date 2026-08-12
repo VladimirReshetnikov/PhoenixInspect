@@ -21,6 +21,7 @@ public sealed class ImmediateViewModel : ObservableObject
     private int historyIndex = -1;
     private string inputText = string.Empty;
     private ImmutableArray<ConstantReferenceAssembly> references = [];
+    private ConstantUsingDirectiveSet usings = ConstantUsingDirectiveSet.Empty;
 
     /// <summary>Creates the immediate pane.</summary>
     /// <param name="shell">The shell services used for serialized session access.</param>
@@ -103,24 +104,42 @@ public sealed class ImmediateViewModel : ObservableObject
             return;
         }
 
+        // A 'using' directive imports a namespace, statically imports a type, or binds an alias for subsequent
+        // expressions, so they may omit the imported prefixes; like '#r' it names scope rather than a value.
+        if (UsingDirective.IsDirective(text))
+        {
+            var applied = UsingDirective.TryApply(text, usings, out var updatedUsings, out var usingMessage);
+            if (applied)
+            {
+                usings = updatedUsings;
+            }
+
+            AppendLine($"// {usingMessage}");
+            AppendLine(string.Empty);
+            shell.SetStatus($"Immediate: using — {(applied ? "imported" : "not imported")}");
+            return;
+        }
+
         if (!shell.IsDumpOpen)
         {
             // The sessionless entry folds the evidence-free constant subset and refuses everything beyond it
-            // with the typed no-snapshot stop, so the prompt is useful before any dump opens. References
-            // contribute their literals, enums, and type names even with no snapshot.
-            RenderReport(ExpressionEvaluationService.EvaluateWithoutSnapshot(text, references));
+            // with the typed no-snapshot stop, so the prompt is useful before any dump opens. References and
+            // using directives contribute their literals, enums, and type names even with no snapshot.
+            RenderReport(ExpressionEvaluationService.EvaluateWithoutSnapshot(text, references, usings));
             return;
         }
 
         var contextFactory = evaluate.CreateWatchContextFactory();
         var pinnedReferences = references;
+        var pinnedUsings = usings;
         var report = await shell.RunAsync(
             "Evaluating immediate expression…",
             session => ExpressionEvaluationService.EvaluateWatch(
                 session,
                 text,
                 contextFactory(session),
-                pinnedReferences))
+                pinnedReferences,
+                pinnedUsings))
             .ConfigureAwait(true);
         if (report is null)
         {
